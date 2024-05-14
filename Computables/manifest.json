@@ -1,0 +1,20 @@
+{
+    "context": "ECL`",
+    "description": "Computables",
+    "dependencies": [
+        "LegacySLL`",
+        "EmeraldUnits`",
+        "Core`",
+        "Usage`",
+        "Locations`",
+        "Objects`",
+        "Constellation`",
+        "WLExtension`"
+    ],
+    "sources": [
+        "Computables.m"
+    ],
+    "symbols": [
+      "GainStage"
+    ]
+}

@@ -1,0 +1,20 @@
+{
+    "context": "ECL`",
+    "description": "Literature`",
+    "dependencies": [
+      "Packager`",
+      "SafeOpen`"
+    ],
+    "sources": [
+      "Literature.m",
+      "Management.m"
+    ],
+    "symbols": [
+      "JournalP",
+      "JournalConversions",
+      "KeywordP",
+      "FindJournal",
+      "ExactMatch",
+      "FindKeyword"
+    ]
+}

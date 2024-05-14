@@ -1,0 +1,6 @@
+{
+  "paclet:Constellation/ref/Download":{
+			"bucket":"example-bucket",
+			"key":"commit-hash/Constellation/Documentation/English/ReferencePages/Symbols/Download.nb"
+  }
+}

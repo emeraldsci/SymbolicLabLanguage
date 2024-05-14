@@ -1,0 +1,34 @@
+{
+    "context": "ECL`",
+    "description": "CloudFiles",
+    "dependencies": [
+        "Objects`",
+        "Constellation`",
+        "Options`",
+        "OptionsHandling`",
+        "Patterns`",
+        "LegacySLL`",
+        "EmeraldUnits`",
+        "Widgets`",
+        "WLExtension`",
+        "Web`",
+        "SafeOpen`"
+    ],
+    "sources": [
+        "CloudFiles.m"
+    ],
+    "symbols": [
+        "DeleteLocalFiles",
+        "DownloadCloudFile",
+        "ImportCloudFile",
+        "OpenCloudFile",
+        "UploadCloudFile",
+        "UploadCloudFileOptions",
+        "ValidUploadCloudFileQ",
+        "UploadCloudFilePreview",
+        "RenameCloudFile",
+        "RenameCloudFileOptions",
+        "ValidRenameCloudFileQ",
+        "RenameCloudFilePreview"
+    ]
+}

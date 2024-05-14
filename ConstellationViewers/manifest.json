@@ -1,0 +1,51 @@
+{
+    "context": "ECL`",
+    "description": "ConstellationViewers",
+    "dependencies": [
+        "AppHelpers`",
+        "Constellation`",
+        "Packager`",
+        "Plot`",
+        "OptionsHandling`",
+        "Web`",
+        "SafeOpen`"
+    ],
+    "sources": [
+        "CloudFileViewer.m",
+        "UnitOperationViewer.m",
+        "ObjectLog.m",
+        "Inspect.m",
+        "Bookmark.m",
+        "Favorites.m",
+        "Inventory.m",
+        "NativeTypes.m",
+        "Publish.m",
+        "WatchProtocol.m"
+    ],
+    "symbols": [
+        "CollapseOptions",
+        "ConvertNotebookToPackageFile",
+        "ConvertPackageFileToNotebook",
+        "IncludeEmptyOptions",
+        "$UnitOperationBlobs",
+        "AddFavoriteObject",
+        "BookmarkObject",
+        "GetBookmarkObjects",
+        "ConstellationViewers",
+        "GetAbstractFields",
+        "Inspect",
+        "ObjectLog",
+        "ObjectLogAssociationP",
+        "ObjectLogOutputP",
+        "OutputFormat",
+        "Publish",
+        "TwelveHourDateString",
+        "PlotFavoriteFolder",
+        "PlotFavoriteBookmarksOnNotebook",
+        "PlotInventory",
+        "Unpublish",
+        "EraseFavoriteFolder",
+        "Watch",
+        "WatchProtocol"
+    ]
+}

@@ -1,0 +1,29 @@
+{
+    "context":"ECL`",
+    "description":"Scripts`",
+    "dependencies":[
+        "Options`",
+        "OptionsHandling`",
+        "Experiment`",
+        "UnitTest`",
+        "AppHelpers`",
+        "InternalUpload`",
+        "Usage`",
+        "Constellation`",
+        "Objects`",
+        "CloudFiles`"
+    ],
+    "sources":[
+        "Scripts.m"
+    ],
+    "symbols":[
+        "$ScriptInput",
+        "SaveScriptOutput",
+        "Parallel",
+        "ExperimentScript",
+        "RunScript",
+        "PauseScript",
+        "StopScript",
+        "ValidExperimentScriptQ"
+    ]
+}

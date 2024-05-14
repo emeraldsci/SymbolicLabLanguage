@@ -1,0 +1,34 @@
+//Step 1: Remove the buffer from all cassettes (this takes ~90 seconds per cassette)
+RemoveBuffer,1,20000
+RemoveBuffer,2,20000
+RemoveBuffer,3,20000
+RemoveBuffer,4,20000
+//
+//Step 2: Add stain (this takes ~60 seconds per cassette, but using the timer to allow 90 seconds between cassettes so that the delay between cassette for applying the stain is the same as the delay between cassette for removing the stain)
+TimerReset,0,0
+AddStain,1,12000
+TimerWaitFor,90,0
+AddStain,2,12000
+TimerWaitFor,180,0
+AddStain,3,12000
+TimerWaitFor,270,0
+AddStain,4,12000
+//
+//Even if less than 4 cassettes are being stained, allow a full 360 seconds before removing the stain so that the protocol remains the same regardless of how many cassettes are being run
+TimerWaitFor,STAININGDURATION,0
+//
+//Step 3: Remove the stain (this takes ~90 seconds per cassette)
+TimerReset,0,0
+RemoveBuffer,1,20000
+TimerWaitFor,90,0
+RemoveBuffer,2,20000
+TimerWaitFor,180,0
+RemoveBuffer,3,20000
+TimerWaitFor,270,0
+RemoveBuffer,4,20000
+//
+//Step 4: Add a rinse buffer
+AddRinse,1,12000
+AddRinse,2,12000
+AddRinse,3,12000
+AddRinse,4,12000
