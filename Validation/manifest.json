@@ -1,0 +1,17 @@
+{
+    "context": "ECL`",
+    "description": "Validation",
+    "dependencies": [
+        "Options`",
+        "UnitTest`",
+        "WLExtension`"
+    ],
+    "sources": [
+        "Validation.m"
+    ],
+    "symbols": [
+        "OutputFormat",
+        "PrintIndexOnly",
+        "RunValidQTest"
+    ]
+}

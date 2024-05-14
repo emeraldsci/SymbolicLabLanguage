@@ -1,0 +1,6 @@
+# prevent accidental rewriting of entire files with changed line endings
+# eol=lf will cause LF endings to be checked in AND out of the repo
+
+*.yml           eol=lf
+*.bat           eol=crlf
+*.m             eol=lf

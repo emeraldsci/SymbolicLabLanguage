@@ -1,0 +1,29 @@
+<?xml version="1.0"?>
+<Setup last_modified=`ModificationDate` flexControlVersion="3.3.108.0" InstrumentSerialNo="254472.00123" crc32="db60a31d">
+<Digitizer>
+<SensitivityMin>200</SensitivityMin>
+<SensitivityMedium>100</SensitivityMedium>
+<SensitivityMax>50</SensitivityMax>
+<AnalogOffsetLinMin>100</AnalogOffsetLinMin>
+<AnalogOffsetLinMedium>50</AnalogOffsetLinMedium>
+<AnalogOffsetLinMax>25</AnalogOffsetLinMax>
+<AnalogOffsetRefMin>100</AnalogOffsetRefMin>
+<AnalogOffsetRefMedium>50</AnalogOffsetRefMedium>
+<AnalogOffsetRefMax>25</AnalogOffsetRefMax>
+<DigitalOffsetLin>127</DigitalOffsetLin>
+<DigitalOffsetRef>127</DigitalOffsetRef>
+<TriggerLevel>1500</TriggerLevel>
+<StartOnTrigger>0</StartOnTrigger>
+</Digitizer>
+<HighVoltageSupplies>
+<DetectorGainBaseLin>2500</DetectorGainBaseLin>
+<DetectorGainBaseRef>1400</DetectorGainBaseRef>
+</HighVoltageSupplies>
+<Laser>
+<Focus>20</Focus>
+<FocusMin>0</FocusMin>
+<FocusMax>100</FocusMax>
+<PowerMin>0</PowerMin>
+<PowerMax>100</PowerMax>
+</Laser>
+</Setup>

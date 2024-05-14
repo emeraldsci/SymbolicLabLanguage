@@ -1,0 +1,314 @@
+(* ::Package:: *)
+
+(* ::Text:: *)
+(*\[Copyright] 2011-2023 Emerald Cloud Lab, Inc.*)
+
+
+DefineObjectType[Object[Simulation, PrimerSet], {
+	Description->"A simulation to generate ideal sets of nucleic acid primers and beacons for use in a qPCR experiment given a particular target gene sequence or transcript sequence.",
+	CreatePrivileges->None,
+	Cache->Session,
+	Fields -> {
+		Target -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Model[Molecule,Transcript][PrimerSimulations]|Model[Molecule,Transcript][PrimerSimulations],
+			Description -> "The model of the RNA transcript that the simulation seeks to detect and amplified via PCR in this primer set simulation.",
+			Category -> "General",
+			Abstract -> True
+		},
+		TargetName -> {
+			Format -> Single,
+			Class -> String,
+			Pattern :> _String,
+			Description -> "The name (e.g. gene name or transcript name) of the target sequence being detected and amplified.",
+			Category -> "General"
+		},
+		TargetSequence -> {
+			Format -> Single,
+			Class -> String,
+			Pattern :> SequenceP,
+			Description -> "The sequence of the transcript target being detected and amplified.",
+			Category -> "General"
+		},
+		MinPrimerLength -> {
+			Format -> Single,
+			Class -> Integer,
+			Pattern :> GreaterEqualP[0*Nucleotide],
+			Units -> Nucleotide,
+			Description -> "The minimum allowed length of the primers simulated.",
+			Category -> "General"
+		},
+		MaxPrimerLength -> {
+			Format -> Single,
+			Class -> Integer,
+			Pattern :> GreaterEqualP[0*Nucleotide],
+			Units -> Nucleotide,
+			Description -> "The maxmimum allowed length of the primers simulated.",
+			Category -> "General"
+		},
+		MinAmpliconLength -> {
+			Format -> Single,
+			Class -> Integer,
+			Pattern :> GreaterEqualP[0*Nucleotide],
+			Units -> Nucleotide,
+			Description -> "The minimum allowed length of the qPCR amplicon sequence.",
+			Category -> "General"
+		},
+		MaxAmpliconLength -> {
+			Format -> Single,
+			Class -> Integer,
+			Pattern :> GreaterEqualP[0*Nucleotide],
+			Units -> Nucleotide,
+			Description -> "The maximum allowed length of the qPCR amplicon sequence.",
+			Category -> "General"
+		},
+		PrimerConcentration -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterEqualP[0*Molar*Micro],
+			Units -> Micromolar,
+			Description -> "The concentration of the primer to be used in the simulation.",
+			Category -> "General"
+		},
+		ProbeConcentration -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterEqualP[0*Molar*Micro],
+			Units -> Micromolar,
+			Description -> "The concentration of the probe/beacon to be used in the simulation.",
+			Category -> "General"
+		},
+		TargetConcentration -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterEqualP[0*Molar*Micro],
+			Units -> Femtomolar,
+			Description -> "The concentration of the target sequence to be used in the simulation.",
+			Category -> "General"
+		},
+		AnnealingTime -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterEqualP[0*Second],
+			Units -> Second,
+			Description -> "The simulated annealing time for the primer pairs in each binding reaction.",
+			Category -> "General"
+		},
+		AnnealingTemperature -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterP[0*Kelvin],
+			Units -> Celsius,
+			Description -> "The temperature at which annealing took place in the simulation for each binding reaction.",
+			Category -> "General"
+		},
+		MinBeaconStemLength -> {
+			Format -> Single,
+			Class -> Integer,
+			Pattern :> GreaterEqualP[0*Nucleotide],
+			Units -> Nucleotide,
+			Description -> "The minimum allowed beacon stem length that the simulation can use.  The beacons are chosen to optimally bind to the Target between the forward and reverse primers.",
+			Category -> "General"
+		},
+		MaxBeaconStemLength -> {
+			Format -> Single,
+			Class -> Integer,
+			Pattern :> GreaterEqualP[0*Nucleotide],
+			Units -> Nucleotide,
+			Description -> "The maximum allowed beacon stem length that the simulation can use.  The beacons are chosen to optimally bind to the Target between the forward and reverse primers.",
+			Category -> "General"
+		},
+		Orientation -> {
+			Format -> Single,
+			Class -> Expression,
+			Pattern :> PrimerSetOrientationP,
+			Description -> "Indicates whether the beacon probe binds to the sense strand or the antisense strand.",
+			Category -> "General"
+		},
+		NumberOfCandidates -> {
+			Format -> Single,
+			Class -> Integer,
+			Pattern :> GreaterEqualP[0, 1],
+			Units -> None,
+			Description -> "The number of top primer sets the simulation will pass onto each round of ranking for beacon binding.",
+			Category -> "General"
+		},
+		Models -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Model[PrimerSet][DesignSimulation]|Model[PrimerSet][DesignSimulation],
+			Description -> "The top primer sets generated by this simulation.",
+			Category -> "Simulation Results",
+			Abstract -> True
+		},
+		TopForwardPrimers -> {
+			Format -> Multiple,
+			Class -> {Integer, Integer, Expression, Real, Real},
+			Pattern :> {GreaterEqualP[0*Nucleotide], GreaterEqualP[0*Nucleotide], StrandP, GreaterEqualP[0*Molar], GreaterEqualP[0*Molar]},
+			Units -> {Nucleotide, Nucleotide, None, Micromolar, Micromolar},
+			Description -> "The forward primers from the simulation that exhibited the strongest binding to the target sequence.",
+			Category -> "Simulation Results",
+			Abstract -> True,
+			Headers->{"Binding Position Start","Binding Position End","Primer Sequence","Unbound Primer Concentration","Bound Primer Concentration"}
+		},
+		TopBeacons -> {
+			Format -> Multiple,
+			Class -> {Integer, Integer, Expression, Real, Real, Real, Integer},
+			Pattern :> {GreaterEqualP[0*Nucleotide], GreaterEqualP[0*Nucleotide], StrandP, ConcentrationP, ConcentrationP, ConcentrationP, GreaterEqualP[0*Nucleotide]},
+			Units -> {Nucleotide, Nucleotide, None, Micromolar, Micromolar, Micromolar, Nucleotide},
+			Description -> "The beacons from the simulation that exhibited the strongest binding to the target sequence and folding upon themselves.",
+			Category -> "Simulation Results",
+			Abstract -> True,
+			Headers->{"Binding Position Start","Binding Position End","Beacon Sequence","Unbound Beacon Concentration","Bound Beacon Concentration at Annealing Temperature","Bound Beacon Concentration at Melting Temperature","Beacon Stem Length"}
+		},
+		PrimerPairs -> {
+			Format -> Multiple,
+			Class -> {Integer, Integer, Integer, Integer},
+			Pattern :> {GreaterEqualP[0*Nucleotide], GreaterEqualP[0*Nucleotide], GreaterEqualP[0*Nucleotide], GreaterEqualP[0*Nucleotide]},
+			Units -> {Nucleotide, Nucleotide, Nucleotide, Nucleotide},
+			Description -> "The positions of the primer pairs from the simulation that exhibited the strongest target sequence binding.",
+			Category -> "Simulation Results",
+			Headers -> {"Forward Start Position","Forward End Position", "Reverse Start Position","Reverse End Position"}
+		},
+		ForwardPrimers -> {
+			Format -> Multiple,
+			Class -> {Integer,Integer,Expression,Real,Real},
+			Pattern :> {GreaterEqualP[0 * Nucleotide],GreaterEqualP[0 * Nucleotide],StrandP,ConcentrationP,ConcentrationP},
+			Units -> {Nucleotide,Nucleotide,None,Micromolar,Micromolar},
+			Description -> "The forward primers from the simulation of all potential primers binding to the target sequence.",
+			Category -> "Simulation Results",
+			Headers -> {"Binding Position Start","Binding Position End","Primer Sequence","Unbound Primer Concentration","Bound Primer Concentration"}
+		},
+		ForwardPrimerSequences -> {
+			Format -> Multiple,
+			Class -> Expression,
+			Pattern :> _?ECL`StrandQ,
+			Description -> "The sequences of the forward primers resulting from simulating the interactions between the primers, probe, and target sequence.",
+			Category -> "Simulation Results"
+		},
+		ForwardPrimerPositions -> {
+			Format -> Multiple,
+			Class -> {Integer, Integer},
+			Pattern :> {GreaterEqualP[0*Nucleotide], GreaterEqualP[0*Nucleotide]},
+			Units -> {Nucleotide, Nucleotide},
+			Description -> "The positions of the forward primers resulting from simulating the interactions between the primers, probe, and target sequence.",
+			Category -> "Simulation Results",
+			Headers -> {"Start Position","End Position"}
+		},
+		ForwardPrimerConcentrations -> {
+			Format -> Multiple,
+			Class -> Real,
+			Pattern :> GreaterEqualP[0*Molar*Micro],
+			Units -> Micromolar,
+			Description -> "The concentrations of the forward primers resulting from simulating the interactions between the primers, probe, and target sequence.",
+			Category -> "Simulation Results"
+		},
+		ReversePrimerSequences -> {
+			Format -> Multiple,
+			Class -> Expression,
+			Pattern :> StrandP,
+			Description -> "The sequences of the reverse primers resulting from simulating the interactions between the primers, probe, and target sequence.",
+			Category -> "Simulation Results"
+		},
+		ReversePrimerPositions -> {
+			Format -> Multiple,
+			Class -> {Integer, Integer},
+			Pattern :> {GreaterEqualP[0*Nucleotide], GreaterEqualP[0*Nucleotide]},
+			Units -> {Nucleotide, Nucleotide},
+			Description -> "The positions of the reverse primers resulting from simulating the interactions between the primers, probe, and target sequence.",
+			Category -> "Simulation Results",
+			Headers -> {"Start Position","End Position"}
+		},
+		ReversePrimerConcentrations -> {
+			Format -> Multiple,
+			Class -> Real,
+			Pattern :> GreaterEqualP[0*Molar*Micro],
+			Units -> Micromolar,
+			Description -> "The concentrations of the reverse primers resulting from simulating the interactions between the primers, probe, and target sequence.",
+			Category -> "Simulation Results"
+		},
+		Beacons -> {
+			Format -> Multiple,
+			Class -> {Integer, Integer, Expression, Real, Real, Real, Integer},
+			Pattern :> {GreaterEqualP[1*Nucleotide], GreaterEqualP[1*Nucleotide], StrandP, ConcentrationP, ConcentrationP, ConcentrationP, GreaterEqualP[0*Nucleotide]},
+			Units -> {Nucleotide, Nucleotide, None, Micromolar, Micromolar, Micromolar, Nucleotide},
+			Description -> "The beacons from the simulation of all potential primers binding to the target sequence.",
+			Category -> "Simulation Results",
+			Headers->{"Binding Position Start","Binding Position End","Beacon Sequence","Unbound Beacon Concentration","Bound Beacon Concentration at Annealing Temperature","Bound Beacon Concentration at Melting Temperature","Beacon Stem Length"}
+
+		},
+		BeaconSequences -> {
+			Format -> Multiple,
+			Class -> Expression,
+			Pattern :> StrandP,
+			Description -> "The sequences of the beacons resulting from simulating the interactions between the primers, probe, and target sequence.",
+			Category -> "Simulation Results"
+		},
+		BeaconPositions -> {
+			Format -> Multiple,
+			Class -> {Integer, Integer},
+			Pattern :> {GreaterEqualP[0*Nucleotide], GreaterEqualP[0*Nucleotide]},
+			Units -> {Nucleotide, Nucleotide},
+			Description -> "The positions of the beacons resulting from simulating the interactions between the primers, probe, and target sequence.",
+			Category -> "Simulation Results",
+			Headers->{"Start Position","End Position"}
+		},
+		BeaconConcentrations -> {
+			Format -> Multiple,
+			Class -> Real,
+			Pattern :> GreaterEqualP[0*Molar*Micro],
+			Units -> Micromolar,
+			Description -> "The concentrations of the beacons resulting from simulating the interactions between the primers, probe, and target sequence.",
+			Category -> "Simulation Results"
+		},
+		BeaconStemLengths -> {
+			Format -> Multiple,
+			Class -> Integer,
+			Pattern :> GreaterEqualP[0*Nucleotide],
+			Units -> Nucleotide,
+			Description -> "The final beacon hairpin stem lengths chosen by the simulation.  These stem lengths correspond to the beacon sequences in the BeaconSequences field.",
+			Category -> "Simulation Results"
+		},
+		PrimerDimerConcentrations -> {
+			Format -> Multiple,
+			Class -> Real,
+			Pattern :> GreaterEqualP[0*Molar*Micro],
+			Units -> Micromolar,
+			Description -> "The primer dimer concentrations resulting from simulating the interactions between the primers, probe, and target sequence.",
+			Category -> "Simulation Results"
+		},
+		PrimerProbeSets -> {
+			Format -> Computable,
+			Expression :> SafeEvaluate[
+				{
+					Field[ForwardPrimerPositions],
+					Field[ForwardPrimerSequences],
+					Field[ForwardPrimerConcentrations],
+					Field[ReversePrimerSequences],
+					Field[ReversePrimerConcentrations],
+					Field[ReversePrimerPositions]
+				},
+				Computables`Private`primerProbeSets[
+					Field[ForwardPrimerPositions],
+					Field[ForwardPrimerSequences],
+					Field[ForwardPrimerConcentrations],
+					Field[ReversePrimerPositions],
+					Field[ReversePrimerSequences],
+					Field[ReversePrimerConcentrations],
+					Field[BeaconPositions],
+					Field[BeaconSequences],
+					Field[BeaconConcentrations],
+					Field[PrimerDimerConcentrations],
+					Field[BeaconStemLengths]
+				]
+			],
+			Pattern :> {{{GreaterEqualP[1, 1], GreaterEqualP[1, 1]}, StrandP, NumericP, {GreaterEqualP[1, 1], GreaterEqualP[1, 1]}, StrandP, GreaterEqualP[0], {GreaterEqualP[1, 1], GreaterEqualP[1, 1]}, StrandP, GreaterEqualP[0], GreaterEqualP[0], GreaterEqualP[0, 1]}..},
+			Description -> "A list of the transposed results of the primer set generation simulation function, with each primer.",
+			Category -> "Simulation Results",
+			Headers -> {"Forward Primer Positions","Forward Primer Sequence","Forward Primer Concentration","Reverse Primer Positions","Reverse Primer Sequence","Reverse Primer Concentration","Beacon Position","Beacon Sequence","Beacon Concentration","Primer Dimer Concentration","Beacon Stem Length"}
+		}
+	}
+}];

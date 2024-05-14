@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<cartridge>
+	<description>12 Channel Size Selection Cassette</description>
+	<loadingAspirateVolume>SAMPLELOADINGVOLUME</loadingAspirateVolume> <!-- Amount of sample that is aspirated from the source plate-->
+	<loadingWellVolume>SAMPLELOADINGVOLUME</loadingWellVolume> <!-- Amount of sample that is dispensed into the loading well-->
+	<dyeBrewVolume>2</dyeBrewVolume> <!-- Amount of dye brew in the sample, for display purposes only-->
+	<extractionWellVolume>0</extractionWellVolume> <!-- Size of extraction well, a value of zero is used for analytics cassettes -->
+	<extractionWellMigrationTimeMS>80000</extractionWellMigrationTimeMS> <!-- -->
+	<primingVolume>0</primingVolume> <!-- -->
+	<loadBlowoutVolume>0</loadBlowoutVolume> <!-- -->
+	<loadingWellPrefillFraction>0</loadingWellPrefillFraction> <!-- -->
+	<extractionWellPrefillFraction>0</extractionWellPrefillFraction> <!-- -->
+	<outerDimensions>
+		<origin><X></X><Y></Y><Z></Z></origin>
+		<widthX>109.5</widthX>
+		<lengthY>-107.0</lengthY>
+		<heightZ>22.0</heightZ>
+	</outerDimensions>
+	<bufferWellGroup>
+		<type>Buffer Loading</type>
+		<spacing>9</spacing>
+		<numberOfWells>12</numberOfWells>
+		<trajectory>
+			<point><X>5.13</X><Y>-15.00</Y><Z>14.5</Z></point>
+			<point><X>5.13</X><Y>-15.00</Y><Z>21.0</Z></point>
+		</trajectory>
+	</bufferWellGroup>
+	<bufferWellGroup>
+		<type>Buffer Extraction</type>
+		<spacing>9</spacing>
+		<numberOfWells>12</numberOfWells>
+		<trajectory>
+			<point><X>5.13</X><Y>-97.40</Y><Z>14.5</Z></point>
+			<point><X>5.13</X><Y>-97.40</Y><Z>21.0</Z></point>
+		</trajectory>
+	</bufferWellGroup>
+	<channelGroup>
+		<bufferLoadingGroup>0</bufferLoadingGroup>
+		<bufferExtractionGroup>0</bufferExtractionGroup>
+		<wellGroup>
+			<type>Loading</type>
+			<spacing>9</spacing>
+			<numberOfWells>12</numberOfWells>
+			<trajectory>
+				<point><X>5.13</X><Y>-28.25</Y><Z>20.5</Z></point>
+				<point><X>5.13</X><Y>-28.25</Y><Z>19.0</Z></point>
+				<point><X>5.13</X><Y>-27.5</Y><Z>19.5</Z></point>
+				<point><X>5.13</X><Y>-27.5</Y><Z>21.5</Z></point>
+				<point><X>5.13</X><Y>-30.0</Y><Z>21.5</Z></point>
+			</trajectory>
+		</wellGroup>
+		<wellGroup>
+			<type>Extraction</type>
+			<spacing>9</spacing>
+			<numberOfWells>12</numberOfWells>
+			<trajectory>
+				<point><X>5.13</X><Y>-97.40</Y><Z>14.5</Z></point>
+				<point><X>5.13</X><Y>-97.40</Y><Z>21.0</Z></point>
+			</trajectory>
+		</wellGroup>
+	</channelGroup>
+
+</cartridge>

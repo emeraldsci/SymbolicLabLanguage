@@ -1,0 +1,23 @@
+{
+    "context": "ECL`",
+    "description": "Protocol`",
+    "dependencies": [
+      "LegacySLL`",
+      "Core`",
+      "OptionsHandling`",
+      "InternalUpload`",
+      "Constellation`",
+      "Objects`",
+      "EmeraldUnits`",
+      "WLExtension`",
+      "Resources`"
+    ],
+    "sources": [
+      "Protocols.m"
+    ],
+    "symbols": [
+      "CancelProtocol",
+      "ConfirmProtocol",
+      "UnconfirmProtocol"
+    ]
+}

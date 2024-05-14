@@ -1,0 +1,12 @@
+# prevent accidental rewriting of entire files with changed line endings
+# eol=lf will cause LF endings to be checked in AND out of the repo
+
+.gitattributes  eol=lf
+#*.m     eol=lf
+*.wl    eol=lf
+
+
+# lock down line endings in only those .m files it seems safe to, now
+Notebook.m  eol=lf
+Team.m      eol=lf
+User.m      eol=lf

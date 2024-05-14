@@ -1,0 +1,13 @@
+{
+  "context": "ECL`",
+  "description": "GeneralMessages`",
+  "dependencies": [
+    "Packager`"
+  ],
+  "sources": [
+    "GeneralMessages.m"
+  ],
+  "symbols": [
+    "Error"
+  ]
+}

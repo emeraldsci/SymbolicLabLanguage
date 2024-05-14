@@ -1,0 +1,37 @@
+{
+    "context": "ECL`",
+    "description": "WLExtension",
+    "dependencies": [
+        "Options`",
+        "GoLink`"
+    ],
+    "sources": [
+        "ListManipulation.m",
+        "Patterns.m",
+        "Comparisons.m",
+        "Handlers.m"
+    ],
+    "symbols": [
+        "SafeAddHandler",
+        "BooleanP",
+        "FirstOrDefault",
+        "InfiniteNumericP",
+        "InfiniteNumericQ",
+        "KeyPatternsQ",
+        "LastOrDefault",
+        "LookupPath",
+        "LookupPathDataP",
+        "MostOrDefault",
+        "NegativePadding",
+        "NullP",
+        "NullQ",
+        "PartitionRemainder",
+        "PatternUnion",
+        "RestOrDefault",
+        "RoundMatchQ",
+        "RoundReals",
+        "RulesP",
+        "SafeEvaluate",
+        "ToList"
+    ]
+}

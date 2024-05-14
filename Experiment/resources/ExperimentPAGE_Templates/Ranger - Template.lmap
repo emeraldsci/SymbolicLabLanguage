@@ -1,0 +1,24 @@
+//The structure of this file is as follows:
+//Name of labware, Labware Position ID, Pedestal Name, Pedestal Site ID
+//
+//Note:	Labware is numbered sequentially according to the type of labware and
+//		the order in which it appears in the file
+//
+// eg. Labware_Name, Pedestal_Site:Pedestal_Name, Labware_Position
+Hamilton 300uL Filtered Tips,	1:Hamilton FTR,	1, AH
+Hamilton 300uL Filtered Tips,	1:Hamilton FTR,	2, AH
+//Hamilton 300uL Filtered Tips,	1:Hamilton FTR,	3, AH
+Hamilton 300uL Filtered Tips Adapter,	1:Hamilton FTR,	11, AH
+ABGene1000, 1:Hamilton DWP, 5, AH
+P-96-450-V-C, 1:Hamilton DWP, 8, AH
+INSERTCARTRIDGETYPE, 1:CG-10064-04 Ranger Pedestal Front, 6, H
+INSERTCARTRIDGETYPE, 2:CG-10064-04 Ranger Pedestal Front, 6, H
+INSERTCARTRIDGETYPE, 3:CG-10064-04 Ranger Pedestal Front, 6, H
+INSERTCARTRIDGETYPE, 4:CG-10064-04 Ranger Pedestal Front, 6, H
+//CassetteXML, 1:CG-10064-04 Ranger Pedestal Rear, 4, A
+//CassetteXML, 2:CG-10064-04 Ranger Pedestal Rear, 4, A
+//CassetteXML, 3:CG-10064-04 Ranger Pedestal Rear, 4, A
+//CassetteXML, 4:CG-10064-04 Ranger Pedestal Rear, 4, A
+
+//Camera Calibration Block
+CalibrationBlock, 1:CG-10064-04 Ranger Pedestal Front, 6, H

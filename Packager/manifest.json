@@ -1,0 +1,46 @@
+{
+    "context": "Packager`",
+    "description": "Packager`",
+    "dependencies": [
+        "JSONTools`",
+        "PacletManager`"
+    ],
+    "sources": [
+        "Packager.m"
+    ],
+    "symbols": [
+        "ReloadManifest",
+        "AppendPackagePath",
+        "AvailablePackages",
+        "DirectoryPackage",
+        "DistroMetadata",
+        "FunctionPackage",
+        "KernelVersionMatchQ",
+        "ListPacletVersions",
+        "IncludeContexts",
+        "SearchRemote",
+        "LoadDistro",
+        "LoadPackage",
+        "LoadUsage",
+        "NewPackage",
+        "OnLoad",
+        "PackageDirectory",
+        "PackageDocumentationDirectory",
+        "PackageFunctions",
+        "PackageGraph",
+        "PackageMetadata",
+        "PackageQ",
+        "PackagesGraph",
+        "PackageSources",
+        "PackagesRootDirectories",
+        "PackageSymbols",
+        "ReloadFile",
+        "ReloadPackage",
+        "SymbolPackageName",
+        "SymbolPackages",
+        "WritePackageMx",
+        "$AllowPublicObjects",
+        "$DebugLoading",
+        "$DebugLoadingThreshold"
+    ]
+}

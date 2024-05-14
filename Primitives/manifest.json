@@ -1,0 +1,50 @@
+{
+  "context": "ECL`",
+  "description": "Primitives",
+  "dependencies": [
+    "Packager`",
+    "SummaryBoxes`",
+    "Options`",
+    "Objects`",
+    "WLExtension`"
+  ],
+  "sources": [
+    "Primitives.m"
+  ],
+  "symbols": [
+    "ManualSamplePreparationMethodP",
+    "RoboticSamplePreparationMethodP",
+    "ManualCellPreparationMethodP",
+    "RoboticCellPreparationMethodP",
+    "ExperimentMethodP",
+    "Methods",
+    "CellPreparation",
+    "OutputUnitOperationParserFunction",
+    "PrimitiveSetP",
+    "PrimitiveP",
+    "$PrimitiveSetPrimitiveLookup",
+    "WorkCellResolverFunction",
+    "RoboticExporterFunction",
+    "RoboticParserFunction",
+    "Primitives",
+    "GenerativeLabelOption",
+    "Experiment",
+    "SamplePreparation",
+    "Generative",
+    "MethodResolverFunction",
+    "LabeledOptions",
+    "InputOptions",
+    "CompletedOptions",
+    "PrimitiveMethodIndex",
+    "PrimitiveMethod",
+    "WorkCells",
+    "DefinePrimitiveSet",
+    "Category",
+    "WorkCell",
+    "Icon",
+    "RequiredSharedOptions",
+    "PrimitiveHead",
+    "ExperimentFunction",
+    "DefinePrimitive"
+  ]
+}

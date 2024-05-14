@@ -1,0 +1,470 @@
+Notebook[{
+
+Cell[CellGroupData[{
+Cell["Style Definitions", "Title",ExpressionUUID->"f1d19139-ccef-4aa0-b5d5-7c451657b056"],
+
+Cell[CellGroupData[{
+
+Cell["Inherited Style Definitions", "Section",ExpressionUUID->"e880c800-3f62-4af5-873f-9a15ce120878"],
+
+Cell[StyleData[StyleDefinitions -> "Default.nb"],ExpressionUUID->"a6b2f7fe-c7b8-4cd9-90f0-01943a07b007"]
+}, Closed]],
+
+Cell[CellGroupData[{
+
+Cell["Notebook Options", "Section",ExpressionUUID->"c46c7f07-59ad-4f6d-98ec-cdeae9161a26"],
+
+Cell[StyleData["Notebook"],
+ Editable->False,
+ Saveable->False,
+ WindowTitle->"Test Results",
+ ShowCellBracket->False,
+ ShowGroupOpener->False,
+ CreateCellID->True,
+ ShowCellLabel->False,
+ ShowCellTags->False,
+ DefaultDuplicateCellStyle->"Input",
+ StyleMenuListing->1,
+ $CellContext`CreateCellID -> True,
+ $CellContext`TrackCellChangeTimes -> 
+ True,ExpressionUUID->"ca3d1906-849c-44fc-8aa5-9f19e086b81c"]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell["Summary Docked Cell", "Section",
+ CellChangeTimes->{{3.623965969822332*^9, 
+  3.623965974213125*^9}},ExpressionUUID->"8e1bd769-bc9a-41a9-80cd-\
+fc3becbc0e37"],
+
+Cell[StyleData["SummaryDockedCell"],
+ CellFrame->1,
+ CellMargins->{{0, 0}, {0, 0}},
+ CellGroupingRules->{"OutputGrouping", 20100},
+ CellFrameMargins->{{10, 0}, {15, 15}},
+ CellFrameColor->RGBColor[0.6, 0.6, 0.6],
+ FontFamily->"Helvetica",
+ FontSize->16,
+ FontColor->GrayLevel[0.1],
+ Background->GrayLevel[
+  0.8],ExpressionUUID->"7606a23c-2ddc-4864-a37f-9861320292d4"]
+}, Closed]],
+
+Cell[CellGroupData[{
+
+Cell["Category Headers", "Section",
+ CellChangeTimes->{{3.623695328050322*^9, 
+  3.6236953326414957`*^9}},ExpressionUUID->"335ea7db-acb3-48f1-90f7-\
+d9469b389ffb"],
+
+Cell[StyleData["TestSymbol"],
+ Editable->False,
+ Selectable->False,
+ CellFrame->{{0, 0}, {0, 0}},
+ CellMargins->{{10, Inherited}, {5, 0}},
+ CellGroupingRules->{"SectionGrouping", 30},
+ PageBreakBelow->False,
+ CounterIncrements->"Section",
+ CounterAssignments->{{"Subsection", 0}, {"Subsubsection", 0}, {"Item", 0}, {
+   "Subitem", 0}, {"Subsubitem", 0}, {"ItemNumbered", 0}, {
+   "SubitemNumbered", 0}, {"SubsubitemNumbered", 0}},
+ FontFamily->"Arial",
+ FontSize->30,
+ FontWeight->Bold,ExpressionUUID->"b2629eb8-b309-4cba-964f-45c6a678ef6a"],
+
+Cell[StyleData["ResultSummary"],
+ Editable->False,
+ Selectable->False,
+ CellMargins->{{20, Inherited}, {0, 0}},
+ CellGroupingRules->{"SectionGrouping", 40},
+ PageBreakBelow->False,
+ CounterIncrements->"Subsection",
+ CounterAssignments->{{"Subsubsection", 0}, {"Item", 0}, {"Subitem", 0}, {
+   "Subsubitem", 0}, {"ItemNumbered", 0}, {"SubitemNumbered", 0}, {
+   "SubsubitemNumbered", 0}},
+ FontFamily->"Arial",
+ FontSize->20,
+ FontWeight->Bold,ExpressionUUID->"fc1b743c-71b8-4bc8-8b74-ebdd83d9bcfd"],
+
+Cell[StyleData["TestCategory"],
+ Editable->False,
+ Selectable->False,
+ CellMargins->{{20, Inherited}, {0, 0}},
+ CellGroupingRules->{"SectionGrouping", 40},
+ PageBreakBelow->False,
+ CounterIncrements->"Subsection",
+ CounterAssignments->{{"Subsubsection", 0}, {"Item", 0}, {"Subitem", 0}, {
+   "Subsubitem", 0}, {"ItemNumbered", 0}, {"SubitemNumbered", 0}, {
+   "SubsubitemNumbered", 0}},
+ FontFamily->"Arial",
+ FontSize->20,
+ FontWeight->Bold,ExpressionUUID->"dc13371f-9ef4-45bb-abb1-fa44476f971a"],
+
+Cell[StyleData["TestRunning", StyleDefinitions -> StyleData["ToolbarCell"]],
+ Editable->False,
+ CellMargins->{{20, Inherited}, {0, 5}},
+ CellGroupingRules->{"SectionGrouping", 50},
+ CellHorizontalScrolling->False,
+ PageBreakBelow->False,
+ ShowCellLabel->False,
+ CellLabelMargins->{{23, Inherited}, {Inherited, Inherited}},
+ CounterIncrements->"Subsubsection",
+ CounterAssignments->{{"Subsubsubsection", 0}, {"Item", 0}, {"Subitem", 0}, {
+   "Subsubitem", 0}, {"ItemNumbered", 0}, {"SubitemNumbered", 0}, {
+   "SubsubitemNumbered", 0}},
+ FontFamily->"Arial",
+ FontSize->14,
+ FontWeight->Bold,
+ FontColor->RGBColor[1, 1, 1],
+ Background->GrayLevel[
+  0.35],ExpressionUUID->"7fb97a3a-e2a0-4066-826f-39690a709921"],
+
+Cell[StyleData["TestName", StyleDefinitions -> StyleData["ToolbarCell"]],
+ Editable->False,
+ CellMargins->{{20, Inherited}, {0, 5}},
+ CellGroupingRules->{"SectionGrouping", 50},
+ CellHorizontalScrolling->False,
+ PageBreakBelow->False,
+ ShowCellLabel->False,
+ CellLabelMargins->{{23, Inherited}, {Inherited, Inherited}},
+ CounterIncrements->"Subsubsection",
+ CounterAssignments->{{"Subsubsubsection", 0}, {"Item", 0}, {"Subitem", 0}, {
+   "Subsubitem", 0}, {"ItemNumbered", 0}, {"SubitemNumbered", 0}, {
+   "SubsubitemNumbered", 0}},
+ FontFamily->"Arial",
+ FontSize->14,
+ Background->RGBColor[
+  0.835294, 0.835294, 
+   0.835294],ExpressionUUID->"20b0ec00-e956-4ef5-ba8e-38063c788e69"],
+
+Cell[StyleData["TestSuccess", StyleDefinitions -> StyleData["ToolbarCell"]],
+ Editable->False,
+ CellFrame->{{1, 1}, {0.5, 0.5}},
+ CellMargins->{{20, Inherited}, {0, 5}},
+ CellGroupingRules->{"SectionGrouping", 50},
+ CellHorizontalScrolling->False,
+ PageBreakBelow->False,
+ ShowCellLabel->False,
+ CellLabelMargins->{{23, Inherited}, {Inherited, Inherited}},
+ CellFrameColor->GrayLevel[0.85],
+ CounterIncrements->"Subsubsection",
+ CounterAssignments->{{"Subsubsubsection", 0}, {"Item", 0}, {"Subitem", 0}, {
+   "Subsubitem", 0}, {"ItemNumbered", 0}, {"SubitemNumbered", 0}, {
+   "SubsubitemNumbered", 0}},
+ FontFamily->"Arial",
+ FontSize->14,
+ FontWeight->"Bold",
+ FontColor->RGBColor[1, 1, 1],
+ Background->RGBColor[
+  0.380392, 0.603922, 
+   0.384314],ExpressionUUID->"db95a7e0-4061-45c8-97b0-229fb5a1cbd1"],
+
+Cell[StyleData["TestResultFailure", StyleDefinitions -> StyleData[
+ "ToolbarCell"]],
+ Editable->False,
+ CellFrame->{{1, 1}, {0.5, 0.5}},
+ CellMargins->{{20, Inherited}, {0, 5}},
+ CellGroupingRules->{"SectionGrouping", 50},
+ CellHorizontalScrolling->False,
+ PageBreakBelow->False,
+ ShowCellLabel->False,
+ CellLabelMargins->{{23, Inherited}, {Inherited, Inherited}},
+ CellFrameColor->GrayLevel[0.85],
+ CounterIncrements->"Subsubsection",
+ CounterAssignments->{{"Subsubsubsection", 0}, {"Item", 0}, {"Subitem", 0}, {
+   "Subsubitem", 0}, {"ItemNumbered", 0}, {"SubitemNumbered", 0}, {
+   "SubsubitemNumbered", 0}},
+ FontFamily->"Arial",
+ FontSize->14,
+ FontWeight->"Bold",
+ FontColor->RGBColor[1, 1, 1],
+ Background->RGBColor[
+  0.74902, 0.403922, 
+   0.4],ExpressionUUID->"e2b5ad6a-2152-4461-b179-7f172a67288d"],
+
+Cell[StyleData["TestMessageFailure", StyleDefinitions -> StyleData[
+ "ToolbarCell"]],
+ Editable->False,
+ CellFrame->{{1, 1}, {0.5, 0.5}},
+ CellMargins->{{20, Inherited}, {0, 5}},
+ CellGroupingRules->{"SectionGrouping", 50},
+ CellHorizontalScrolling->False,
+ PageBreakBelow->False,
+ ShowCellLabel->False,
+ CellLabelMargins->{{23, Inherited}, {Inherited, Inherited}},
+ CellFrameColor->GrayLevel[0.85],
+ CounterIncrements->"Subsubsection",
+ CounterAssignments->{{"Subsubsubsection", 0}, {"Item", 0}, {"Subitem", 0}, {
+   "Subsubitem", 0}, {"ItemNumbered", 0}, {"SubitemNumbered", 0}, {
+   "SubsubitemNumbered", 0}},
+ FontFamily->"Arial",
+ FontSize->14,
+ FontWeight->"Bold",
+ FontColor->RGBColor[1, 1, 1],
+ Background->RGBColor[
+  0.921569, 0.678431, 
+   0.337255],ExpressionUUID->"905d1e64-94f6-4f20-a6fa-769b4f229c6f"],
+
+Cell[StyleData["TestTimeoutFailure", StyleDefinitions -> StyleData[
+ "ToolbarCell"]],
+ Editable->False,
+ CellFrame->{{1, 1}, {0.5, 0.5}},
+ CellMargins->{{20, Inherited}, {0, 5}},
+ CellGroupingRules->{"SectionGrouping", 50},
+ CellHorizontalScrolling->False,
+ PageBreakBelow->False,
+ ShowCellLabel->False,
+ CellLabelMargins->{{23, Inherited}, {Inherited, Inherited}},
+ CellFrameColor->GrayLevel[0.85],
+ CounterIncrements->"Subsubsection",
+ CounterAssignments->{{"Subsubsubsection", 0}, {"Item", 0}, {"Subitem", 0}, {
+   "Subsubitem", 0}, {"ItemNumbered", 0}, {"SubitemNumbered", 0}, {
+   "SubsubitemNumbered", 0}},
+ FontFamily->"Arial",
+ FontSize->14,
+ FontWeight->"Bold",
+ FontColor->RGBColor[1, 1, 1],
+ Background->RGBColor[
+  0.945, 0.81, 0.314],ExpressionUUID->"d0fad013-1fae-43b5-84af-a786d24d57b8"],
+
+Cell[StyleData["TestExpression", StyleDefinitions -> StyleData["Input"]],
+ Editable->False,
+ CellFrame->{{1, 1}, {0.5, 0.5}},
+ CellMargins->{{20, Inherited}, {0, 0}},
+ StyleKeyMapping->{
+  "Tab" -> "Subsubsubsubsection", "Backspace" -> "Subsubsection", 
+   KeyEvent["Tab", Modifiers -> {Shift}] -> "Subsubsection"},
+ CellGroupingRules->{"SectionGrouping", 60},
+ CellHorizontalScrolling->False,
+ PageBreakBelow->False,
+ CellDynamicExpression:>(Refresh[
+     FE`AC[
+      EvaluationCell[], 
+      Cell[
+      "Expression", "Text", FontFamily -> "Arial", FontSize -> 8, FontColor -> 
+       GrayLevel[0.6]], Evaluate@{
+      If[$VersionNumber>13.0, Offset[{3, -2}, 0], Offset[{-4, -2}, 0]], {Left, Top}}, {Left, Top}], None]),
+ ShowCellLabel->False,
+ CellLabelMargins->{{23, Inherited}, {Inherited, Inherited}},
+ CellFrameMargins->{{10, 10}, {Inherited, 14}},
+ CellFrameColor->GrayLevel[0.85],
+ CounterIncrements->"Subsubsubsection",
+ CounterAssignments->{{"Subsubsubsubsection", 0}, {"Item", 0}, {
+   "Subitem", 0}, {"Subsubitem", 0}, {"ItemNumbered", 0}, {
+   "SubitemNumbered", 0}, {"SubsubitemNumbered", 0}},
+ FontFamily->"Arial",ExpressionUUID->"3ad8fb89-7891-4159-9d7f-e3aa6559d58e"],
+
+Cell[StyleData["TestOutput", StyleDefinitions -> StyleData["Input"]],
+ Editable->False,
+ CellFrame->{{1, 1}, {0.5, 1}},
+ CellMargins->{{20, Inherited}, {0, 0}},
+ CellGroupingRules->{"SectionGrouping", 60},
+ CellHorizontalScrolling->False,
+ PageBreakBelow->False,
+ CellDynamicExpression:>(Refresh[
+     FE`AC[
+      EvaluationCell[], 
+      Cell[
+      "Actual Output", "Text", FontFamily -> "Arial", FontSize -> 8, 
+       FontColor -> GrayLevel[0.6]], Evaluate@{
+       If[$VersionNumber>13.0, Offset[{3, -2}, 0], Offset[{-4, -2}, 0]], {Left, Top}}, {Left, Top}], None]),
+ ShowCellLabel->False,
+ CellLabelMargins->{{23, Inherited}, {Inherited, Inherited}},
+ CellFrameMargins->{{10, 10}, {Inherited, 14}},
+ CellFrameColor->GrayLevel[0.85],
+ CounterIncrements->"Subsubsubsection",
+ CounterAssignments->{{"Subsubsubsubsection", 0}, {"Item", 0}, {
+   "Subitem", 0}, {"Subsubitem", 0}, {"ItemNumbered", 0}, {
+   "SubitemNumbered", 0}, {"SubsubitemNumbered", 0}},
+ FontFamily->"Arial",
+ FontSize->12,ExpressionUUID->"8593181e-2ab5-42c4-8c90-4d06bff3c314"],
+
+Cell[StyleData["TestExpectedOutput", StyleDefinitions -> StyleData["Input"]],
+ Editable->False,
+ CellFrame->{{1, 1}, {0.5, 1}},
+ CellMargins->{{20, Inherited}, {0, 0}},
+ CellGroupingRules->{"SectionGrouping", 60},
+ CellHorizontalScrolling->False,
+ PageBreakBelow->False,
+ CellDynamicExpression:>(Refresh[
+     FE`AC[
+      EvaluationCell[], 
+      Cell[
+      "Expected Output", "Text", FontFamily -> "Arial", FontSize -> 8, 
+       FontColor -> GrayLevel[0.6]], Evaluate@{
+       If[$VersionNumber>13.0, Offset[{3, -2}, 0], Offset[{-4, -2}, 0]], {Left, Top}}, {Left, Top}], None]),
+ ShowCellLabel->False,
+ CellLabelMargins->{{23, Inherited}, {Inherited, Inherited}},
+ CellFrameMargins->{{10, 10}, {Inherited, 14}},
+ CellFrameColor->GrayLevel[0.85],
+ CounterIncrements->"Subsubsubsection",
+ CounterAssignments->{{"Subsubsubsubsection", 0}, {"Item", 0}, {
+   "Subitem", 0}, {"Subsubitem", 0}, {"ItemNumbered", 0}, {
+   "SubitemNumbered", 0}, {"SubsubitemNumbered", 0}},
+ FontFamily->"Arial",ExpressionUUID->"bbfbddff-f819-48c7-a0d5-d1641a694cfb"],
+
+Cell[StyleData["TestExpectedMessages", StyleDefinitions -> StyleData["Input"]],
+ Editable->False,
+ CellFrame->{{1, 1}, {0.5, 1}},
+ CellMargins->{{20, Inherited}, {0, 0}},
+ CellGroupingRules->{"SectionGrouping", 60},
+ CellHorizontalScrolling->False,
+ PageBreakBelow->False,
+ CellDynamicExpression:>(Refresh[
+     FE`AC[
+      EvaluationCell[], 
+      Cell[
+      "Expected Messages", "Text", FontFamily -> "Arial", FontSize -> 8, 
+       FontColor -> GrayLevel[0.6]], Evaluate@{
+       If[$VersionNumber>13.0, Offset[{3, -2}, 0], Offset[{-4, -2}, 0]], {Left, Top}}, {Left, Top}], None]),
+ ShowCellLabel->False,
+ CellLabelMargins->{{23, Inherited}, {Inherited, Inherited}},
+ CellFrameMargins->{{10, 10}, {Inherited, 14}},
+ CellFrameColor->GrayLevel[0.85],
+ CounterIncrements->"Subsubsubsection",
+ CounterAssignments->{{"Subsubsubsubsection", 0}, {"Item", 0}, {
+   "Subitem", 0}, {"Subsubitem", 0}, {"ItemNumbered", 0}, {
+   "SubitemNumbered", 0}, {"SubsubitemNumbered", 0}},
+ FontFamily->"Arial",ExpressionUUID->"d6adbd38-03d8-4ae1-a62f-26d7ddc686bb"],
+
+Cell[StyleData["TestMessages", StyleDefinitions -> StyleData["Input"]],
+ Editable->False,
+ CellFrame->{{1, 1}, {0.5, 1}},
+ CellMargins->{{20, Inherited}, {0, 0}},
+ CellGroupingRules->{"SectionGrouping", 60},
+ CellHorizontalScrolling->False,
+ PageBreakBelow->False,
+ CellDynamicExpression:>(Refresh[
+     FE`AC[
+      EvaluationCell[], 
+      Cell[
+      "Actual Messages", "Text", FontFamily -> "Arial", FontSize -> 8, 
+       FontColor -> GrayLevel[0.6]], Evaluate@{
+       If[$VersionNumber>13.0, Offset[{3, -2}, 0], Offset[{-4, -2}, 0]], {Left, Top}}, {Left, Top}], None]),
+ ShowCellLabel->False,
+ CellLabelMargins->{{23, Inherited}, {Inherited, Inherited}},
+ CellFrameMargins->{{10, 10}, {Inherited, 14}},
+ CellFrameColor->GrayLevel[0.85],
+ CounterIncrements->"Subsubsubsection",
+ CounterAssignments->{{"Subsubsubsubsection", 0}, {"Item", 0}, {
+   "Subitem", 0}, {"Subsubitem", 0}, {"ItemNumbered", 0}, {
+   "SubitemNumbered", 0}, {"SubsubitemNumbered", 0}},
+ FontFamily->"Arial",ExpressionUUID->"446f2b7c-4b20-487f-bf57-ac9ab44fdb94"],
+
+Cell[StyleData["StartDate/EndDate", StyleDefinitions -> StyleData["Input"]],
+ Editable->False,
+ CellFrame->{{1, 1}, {0.5, 1}},
+ CellMargins->{{20, Inherited}, {0, 0}},
+ CellGroupingRules->{"SectionGrouping", 60},
+ CellHorizontalScrolling->False,
+ PageBreakBelow->False,
+ CellDynamicExpression:>(Refresh[
+     FE`AC[
+      EvaluationCell[], 
+      Cell[
+      "StartDate/EndDate", "Text", FontFamily -> "Arial", FontSize -> 8, 
+       FontColor -> GrayLevel[0.6]], Evaluate@{
+       If[$VersionNumber>13.0, Offset[{3, -2}, 0], Offset[{-4, -2}, 0]], {Left, Top}}, {Left, Top}], None]),
+ ShowCellLabel->False,
+ CellLabelMargins->{{23, Inherited}, {Inherited, Inherited}},
+ CellFrameMargins->{{10, 10}, {Inherited, 14}},
+ CellFrameColor->GrayLevel[0.85],
+ CounterIncrements->"Subsubsubsection",
+ CounterAssignments->{{"Subsubsubsubsection", 0}, {"Item", 0}, {
+   "Subitem", 0}, {"Subsubitem", 0}, {"ItemNumbered", 0}, {
+   "SubitemNumbered", 0}, {"SubsubitemNumbered", 0}},
+ FontFamily->"Arial",ExpressionUUID->"f1dfa9d2-456b-42a5-9756-d349c9e654e5"],
+
+Cell[StyleData["SetUpMessages", StyleDefinitions -> StyleData["Input"]],
+ Editable->False,
+ CellFrame->{{1, 1}, {0.5, 1}},
+ CellMargins->{{20, Inherited}, {0, 0}},
+ CellGroupingRules->{"SectionGrouping", 60},
+ CellHorizontalScrolling->False,
+ PageBreakBelow->False,
+ CellDynamicExpression:>(Refresh[
+     FE`AC[
+      EvaluationCell[], 
+      Cell[
+      "SetUp Messages", "Text", FontFamily -> "Arial", FontSize -> 8, 
+       FontColor -> GrayLevel[0.6]], Evaluate@{
+       If[$VersionNumber>13.0, Offset[{3, -2}, 0], Offset[{-4, -2}, 0]], {Left, Top}}, {Left, Top}], None]),
+ ShowCellLabel->False,
+ CellLabelMargins->{{23, Inherited}, {Inherited, Inherited}},
+ CellFrameMargins->{{10, 10}, {Inherited, 14}},
+ CellFrameColor->GrayLevel[0.85],
+ CounterIncrements->"Subsubsubsection",
+ CounterAssignments->{{"Subsubsubsubsection", 0}, {"Item", 0}, {
+   "Subitem", 0}, {"Subsubitem", 0}, {"ItemNumbered", 0}, {
+   "SubitemNumbered", 0}, {"SubsubitemNumbered", 0}},
+ FontFamily->"Arial",ExpressionUUID->"d1cef253-d0c0-41ff-bb2b-2c6ff80f6837"],
+
+Cell[StyleData["TearDownMessages", StyleDefinitions -> StyleData["Input"]],
+ Editable->False,
+ CellFrame->{{1, 1}, {0.5, 1}},
+ CellMargins->{{20, Inherited}, {0, 0}},
+ CellGroupingRules->{"SectionGrouping", 60},
+ CellHorizontalScrolling->False,
+ PageBreakBelow->False,
+ CellDynamicExpression:>(Refresh[
+     FE`AC[
+      EvaluationCell[], 
+      Cell[
+      "TearDown Messages", "Text", FontFamily -> "Arial", FontSize -> 8, 
+       FontColor -> GrayLevel[0.6]], Evaluate@{
+       If[$VersionNumber>13.0, Offset[{3, -2}, 0], Offset[{-4, -2}, 0]], {Left, Top}}, {Left, Top}], None]),
+ ShowCellLabel->False,
+ CellLabelMargins->{{23, Inherited}, {Inherited, Inherited}},
+ CellFrameMargins->{{10, 10}, {Inherited, 14}},
+ CellFrameColor->GrayLevel[0.85],
+ CounterIncrements->"Subsubsubsection",
+ CounterAssignments->{{"Subsubsubsubsection", 0}, {"Item", 0}, {
+   "Subitem", 0}, {"Subsubitem", 0}, {"ItemNumbered", 0}, {
+   "SubitemNumbered", 0}, {"SubsubitemNumbered", 0}},
+ FontFamily->"Arial",ExpressionUUID->"556a7abb-dd67-4c85-8ce8-bd1fe266b3d2"],
+
+Cell[StyleData["Simulation", StyleDefinitions -> StyleData["Input"]],
+ Editable->False,
+ CellFrame->{{1, 1}, {0.5, 1}},
+ CellMargins->{{20, Inherited}, {0, 0}},
+ CellGroupingRules->{"SectionGrouping", 60},
+ CellHorizontalScrolling->False,
+ PageBreakBelow->False,
+ CellDynamicExpression:>(Refresh[
+     FE`AC[
+      EvaluationCell[], 
+      Cell[
+      "Simulation", "Text", FontFamily -> "Arial", FontSize -> 8, FontColor -> 
+       GrayLevel[0.6]], Evaluate@{
+       If[$VersionNumber>13.0, Offset[{3, -2}, 0], Offset[{-4, -2}, 0]], {Left, Top}}, {Left, Top}], None]),
+ ShowCellLabel->False,
+ CellLabelMargins->{{23, Inherited}, {Inherited, Inherited}},
+ CellFrameMargins->{{10, 10}, {Inherited, 14}},
+ CellFrameColor->GrayLevel[0.85],
+ CounterIncrements->"Subsubsubsection",
+ CounterAssignments->{{"Subsubsubsubsection", 0}, {"Item", 0}, {
+   "Subitem", 0}, {"Subsubitem", 0}, {"ItemNumbered", 0}, {
+   "SubitemNumbered", 0}, {"SubsubitemNumbered", 0}},
+ FontFamily->"Arial",ExpressionUUID->"d5c262d5-b41c-4fdf-834f-1119dde7ffd5"],
+
+Cell[StyleData["QuantityPanel"],
+ PanelBoxOptions->{
+ Appearance->None},ExpressionUUID->"ef552bbe-17d3-4c66-ba8b-64bf5dd5dbc9"]
+}, Open  ]]
+}, Open  ]]
+},
+Editable->True,
+Saveable->True,
+WindowSize->{1920., 1011.75},
+WindowMargins->{{-6, Automatic}, {Automatic, -6}},
+WindowStatusArea->"Dev last logged in at 11/02/2014 2:18 pm          Kernel: \
+'Local'",
+FrontEndVersion->"13.2 for Microsoft Windows (64-bit) (January 30, 2023)",
+StyleDefinitions->Notebook[{
+   Cell[
+    StyleData[StyleDefinitions -> "StylesheetFormatting.nb"]]}, Visible -> 
+  False, FrontEndVersion -> 
+  "13.2 for Microsoft Windows (64-bit) (January 30, 2023)", StyleDefinitions -> 
+  "PrivateStylesheetFormatting.nb"],
+ExpressionUUID->"015e8681-e184-4781-81d6-8cab05cbc3d8"
+]

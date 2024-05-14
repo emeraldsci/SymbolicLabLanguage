@@ -1,0 +1,30 @@
+{
+    "context": "ECL`",
+    "description": "Public Inventory Functionality",
+    "dependencies": [
+        "EmeraldUnits`",
+        "Core`",
+        "OptionsHandling`",
+        "Locations`",
+        "Inventory`",
+        "Constellation`",
+        "Objects`",
+        "Options`",
+        "Patterns`",
+        "WLExtension`",
+        "InternalUpload`",
+        "Experiment`",
+        "CloudFiles`",
+        "Packager`"
+    ],
+    "sources": [
+        "Inventory.m"
+    ],
+    "symbols": [
+        "Border",
+        "PrintStickers",
+        "StickerModel",
+        "StickerType",
+        "TextScaling"
+    ]
+}
