@@ -1,4 +1,4 @@
-Symbolic Lab Language © 2024 by Emerald Cloud Laboratory Inc. is licensed under GNU GPL v3 
+Symbolic Lab Language © 2024 by Emerald Cloud Lab Inc. is licensed under GNU GPL v3 
 
 # SymbolicLabLanguage
 
