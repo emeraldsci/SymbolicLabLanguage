@@ -126,6 +126,14 @@ DefineTests[AnalyzeDownsampling,
 			],
 			ObjectP[Object[Analysis,Downsampling]]
 		],
+		Example[{Options,NoiseThreshold,"Setting NoiseThreshold->None disables replacing values close to zero by zero:"},
+			AnalyzeDownsampling[
+				Object[Data, ChromatographyMassSpectra, "Test Object for AnalyzeDownsampling"],
+				IonAbundance3D,
+				NoiseThreshold->None
+			],
+			ObjectP[Object[Analysis,Downsampling]]
+		],
 		Test["Noise threshold of test data is in the correct range:",
 			Lookup[
 				AnalyzeDownsampling[

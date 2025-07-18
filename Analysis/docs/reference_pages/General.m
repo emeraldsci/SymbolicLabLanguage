@@ -15,6 +15,7 @@ DefineUsage[Absorbance,
 		{"Absorbance[absorbanceSpectrum,wavelength,blank]", "absorbance", "returns the 'absorbance' from a provided 'absorbanceSpectrum' at the indicated 'wavelength', with the blank spectrum provided."}
 	},
 	MoreInformation -> {
+		"If the requested wavelength is not directly measured in the provided absorbanceSpectrum, interpolation is applied to estimate the absorbance at that wavelength.",
 		"If the blank spectrum is not used, the provided spectrum will be assumed to be already blanked",
 		"If an absorbance data object is provided as either input or as the blank spectrum, the relevant spectrum will be assumed to be in the field AbsorbanceSpectrum."
 	},

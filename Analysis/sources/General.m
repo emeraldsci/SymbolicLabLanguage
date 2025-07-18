@@ -235,7 +235,7 @@ DefineOptions[PathLength,
 
 
 PathLength::BlankSmallerThanSample="The provided blank distance, `1`, is smaller than the provided sample distance, `2`. As path length is being determined assuming an above-sample reference point, the blank distance is expected to be larger than the sample distance.";
-PathLength::MismatchedEmptyAndSampleLenghts="`1` empty absorbance data objects were provided, and `2` sample absorbance objects. These lists must match in length in order for blanking and path length calculation to proceed properly.";
+PathLength::MismatchedEmptyAndSampleLengths="`1` empty absorbance data objects were provided, and `2` sample absorbance objects. These lists must match in length in order for blanking and path length calculation to proceed properly.";
 PathLength::NonLinearPathLengthFit="The provided volume calibration object, `1`, contains a fit that is non-linear and not suitable for inversion to create a volume-to-pathlength fit. Please provide a calibration with a linear fit function.";
 
 
@@ -326,7 +326,7 @@ PathLength[emptyAbsorbanceList:{ObjectP[Object[Data, AbsorbanceSpectroscopy]]..}
 
 	(* return if the two lists aren't the same length *)
 	If[!SameLengthQ[emptyAbsorbanceList, sampleAbsorbanceList],
-		Message[PathLength::MismatchedEmptyAndSampleLenghts,Length[emptyAbsorbanceList],Length[sampleAbsorbanceList]];
+		Message[PathLength::MismatchedEmptyAndSampleLengths,Length[emptyAbsorbanceList],Length[sampleAbsorbanceList]];
 		Return[$Failed]
 	];
 

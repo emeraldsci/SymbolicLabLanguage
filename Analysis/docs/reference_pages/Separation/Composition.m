@@ -34,10 +34,7 @@ DefineUsage[AnalyzeComposition,
 		"AnalyzePeaks",
 		"ExperimentHPLC"
 	},
-	Author -> {
-		"kevin.hou",
-		"thomas"
-	},
+	Author -> {"melanie.reschke", "kevin.hou", "thomas"},
 	Preview->True
 }];
 
@@ -74,10 +71,7 @@ DefineUsage[AnalyzeCompositionOptions,
 		"AnalyzeCompositionPreview",
 		"ValidAnalyzeCompositionQ"
 	},
-	Author -> {
-		"kevin.hou",
-		"thomas"
-	}
+	Author -> {"melanie.reschke", "kevin.hou", "thomas"}
 }];
 
 
@@ -113,10 +107,7 @@ DefineUsage[AnalyzeCompositionPreview,
 		"AnalyzeCompositionOptions",
 		"ValidAnalyzeCompositionQ"
 	},
-	Author -> {
-		"kevin.hou",
-		"thomas"
-	}
+	Author -> {"melanie.reschke", "kevin.hou", "thomas"}
 }];
 
 
@@ -151,8 +142,5 @@ DefineUsage[ValidAnalyzeCompositionQ,
 		"AnalyzeCompositionOptions",
 		"AnalyzeCompositionPreview"
 	},
-	Author -> {
-		"kevin.hou",
-		"thomas"
-	}
+	Author -> {"melanie.reschke", "kevin.hou", "thomas"}
 }];

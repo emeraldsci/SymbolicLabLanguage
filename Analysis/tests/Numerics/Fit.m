@@ -617,7 +617,7 @@ DefineTests[AnalyzeFit, {
 			AnalyzeFit[ExponentialData,Circle]=
 			stripAppendReplaceKeyHeads[AnalyzeFit[ExponentialData,Circle, Upload->False]]
 		},
-		Messages:>{Error::InvalidInput}
+		Messages:>{Error::InvalidInput,Error::ValueDoesNotMatchPattern}
 	],
 	Example[{Messages,"InvalidExpressionType","Given known expression type with incompatible data:"},
 		AnalyzeFit[LinearData4D,Sigmoid],

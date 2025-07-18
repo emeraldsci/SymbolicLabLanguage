@@ -5,15 +5,15 @@
 
 
 (* ::Subsubsection::Closed:: *)
-(*AnalyzePeaks*)
+(*AdvancedAnalyzePeaks*)
 
 
-DefineUsage[AnalyzePeaks,
+DefineUsage[AdvancedAnalyzePeaks,
 {
 	BasicDefinitions -> {
 		{
-			Definition -> {"AnalyzePeaks[dataObject]", "analysisObject"},
-			Description -> "finds peaks in the data from the field of 'dataObject' defined by the ReferenceField option, and computes peak properties such as Position, Height, Width, and Area.",
+			Definition -> {"AdvancedAnalyzePeaks[dataObject]", "analysisObject"},
+			Description -> "an updated version of AnalyzePeaks with improved display and additional peak selection capabilities. This definition finds peaks in the provided 'dataObject' and computes their properties. (Beta)",
 			Inputs:>{
 				IndexMatching[
 					{
@@ -27,7 +27,7 @@ DefineUsage[AnalyzePeaks,
 								Object[Data,IRSpectroscopy],Object[Data,AgaroseGelElectrophoresis],
 								Object[Data,DifferentialScanningCalorimetry],Object[Data,MeltingCurve],
 								Object[Data,CircularDichroism],Object[Data,DynamicLightScattering],Object[Data,CapillaryGelElectrophoresisSDS],Object[Data,CoulterCount],
-								Object[Data,CapillaryIsoelectricFocusing],Object[Data,FragmentAnalysis]
+								Object[Data, CapillaryIsoelectricFocusing],Object[Data,FragmentAnalysis]
 							}
 						]]
 					},
@@ -38,13 +38,13 @@ DefineUsage[AnalyzePeaks,
 				{
 					OutputName -> "analysisObject",
 					Description -> "An analysis object containing information about peaks in the given data, including peak heights and areas.",
-					Pattern :> {_?NumericQ...}
+					Pattern :> ObjectP[Object[Analysis,Peaks]]
 				}
 			}
 		},
 		{
-			Definition -> {"AnalyzePeaks[protocol]", "{AnalysisObject..}"},
-			Description -> "finds peaks in all DataObjects linked to the given 'protocol', and computes peak properties such as Position, Height, Width, and Area.",
+			Definition -> {"AdvancedAnalyzePeaks[protocol]", "{AnalysisObject..}"},
+			Description -> "an updated version of AnalyzePeaks with improved display and additional peak selection capabilities. This definition finds peaks in all data linked to 'protocol'. (Beta)",
 			Inputs:>{
 				{
 					InputName -> "protocol",
@@ -69,8 +69,7 @@ DefineUsage[AnalyzePeaks,
 							Object[Protocol,SupercriticalFluidChromatography],
 							Object[Protocol,CapillaryGelElectrophoresisSDS],
 							Object[Protocol,CoulterCount],
-							Object[Protocol,CapillaryIsoelectricFocusing],
-							Object[Protocol,FragmentAnalysis]
+							Object[Protocol,CapillaryIsoelectricFocusing]
 						}]
 					]
 				}
@@ -79,13 +78,13 @@ DefineUsage[AnalyzePeaks,
 				{
 					OutputName -> "analysisObject",
 					Description -> "An analysis object containing information about peaks in the given data, including peak heights and areas.",
-					Pattern :> {_?NumericQ...}
+					Pattern :> ObjectP[Object[Analysis,Peaks]]
 				}
 			}
 		},
 		{
-			Definition -> {"AnalyzePeaks[numericalData]", "analysisObject"},
-			Description -> "finds peaks in the 'numericalData', and computes peak properties such as Position, Height, Width, and Area.",
+			Definition -> {"AdvancedAnalyzePeaks[numericalData]", "analysisObject"},
+			Description -> "an updated version of AnalyzePeaks with improved display and additional peak selection capabilities. This definition finds peaks in raw numeric data. (Beta)",
 			Inputs:>{
 				{
 					InputName -> "numericalData",
@@ -98,7 +97,7 @@ DefineUsage[AnalyzePeaks,
 				{
 					OutputName -> "analysisObject",
 					Description -> "An analysis object containing information about peaks in the given data, including peak heights and areas.",
-					Pattern :> {_?NumericQ...}
+					Pattern :> ObjectP[Object[Analysis,Peaks]]
 				}
 			}
 		}
@@ -117,22 +116,22 @@ DefineUsage[AnalyzePeaks,
 		"PlotPeaks",
 		"PeakPurity"
 	},
-	Author -> {"malav.desai", "kevin.hou", "david.hattery", "qian", "alice", "brad"},
+	Author -> {"brad", "hiren.patel"},
 	Preview->True,
-	PreviewOptions -> {"PeakLabels","PeakAssignments"}
+	PreviewOptions -> {"PeakLabels","PeakAssignments","Include","Exclude", "AbsoluteThreshold","Domain","RelativeTreshold","WidthThreshold","Split", "ManualPeakRanges", "ManualPeakPositions","ManualPeakBaselines", "ManualPeakAssignments"}
 }];
 
 
 (* ::Subsubsection::Closed:: *)
-(*AnalyzePeaksOptions*)
+(*AdvancedAnalyzePeaksOptions*)
 
 
-DefineUsage[AnalyzePeaksOptions,
+DefineUsage[AdvancedAnalyzePeaksOptions,
 {
 	BasicDefinitions -> {
 		{
-			Definition -> {"AnalyzePeaksOptions[data]", "options"},
-			Description -> "resolve options to conduct AnalyzePeaks based on input data 'data'.",
+			Definition -> {"AdvancedAnalyzePeaksOptions[data]", "options"},
+			Description -> "resolve options to conduct AdvancedAnalyzePeaks based on input data 'data'.",
 			Inputs:>{
 				IndexMatching[
 					{
@@ -156,14 +155,14 @@ DefineUsage[AnalyzePeaksOptions,
 			Outputs:>{
 				{
 					OutputName -> "options",
-					Description -> "Resolved options for AnalyzePeaks.",
+					Description -> "Resolved options for AdvancedAnalyzePeaks.",
 					Pattern :> {Rule[_Symbol,Except[Automatic|$Failed]]|RuleDelayed[_Symbol,Except[Automatic|$Failed]]..}
 				}
 			}
 		},
 		{
-			Definition -> {"AnalyzePeaksOptions[protocol]", "{options..}"},
-			Description -> "resolve options to conduct AnalyzePeaks based on input protocol.",
+			Definition -> {"AdvancedAnalyzePeaksOptions[protocol]", "{options..}"},
+			Description -> "resolve options to conduct AdvancedAnalyzePeaks based on input protocol.",
 			Inputs:>{
 				{
 					InputName -> "protocol",
@@ -196,14 +195,14 @@ DefineUsage[AnalyzePeaksOptions,
 			Outputs:>{
 				{
 					OutputName -> "options",
-					Description -> "Resolved options for AnalyzePeaks.",
+					Description -> "Resolved options for AdvancedAnalyzePeaks.",
 					Pattern :> {Rule[_Symbol,Except[Automatic|$Failed]]|RuleDelayed[_Symbol,Except[Automatic|$Failed]]..}
 				}
 			}
 		},
 		{
-			Definition -> {"AnalyzePeaksOptions[xy]", "options"},
-			Description -> "resolve options to conduct AnalyzePeaks based on input data 'xy'.",
+			Definition -> {"AdvancedAnalyzePeaksOptions[xy]", "options"},
+			Description -> "resolve options to conduct AdvancedAnalyzePeaks based on input data 'xy'.",
 			Inputs:>{
 				{
 					InputName -> "xy",
@@ -214,31 +213,31 @@ DefineUsage[AnalyzePeaksOptions,
 			Outputs:>{
 				{
 					OutputName -> "options",
-					Description -> "Resolved options for AnalyzePeaks.",
+					Description -> "Resolved options for AdvancedAnalyzePeaks.",
 					Pattern :> {Rule[_Symbol,Except[Automatic|$Failed]]|RuleDelayed[_Symbol,Except[Automatic|$Failed]]..}
 				}
 			}
 		}
 	},
 	SeeAlso -> {
-		"AnalyzePeaks",
-		"AnalyzePeaksPreview",
-		"ValidAnalyzePeaksQ"
+		"AdvancedAnalyzePeaks",
+		"AdvancedAnalyzePeaksPreview",
+		"ValidAdvancedAnalyzePeaksQ"
 	},
-	Author -> {"malav.desai", "david.hattery", "qian", "alice", "brad"}
+	Author -> {"brad", "hiren.patel"}
 }];
 
 
 (* ::Subsubsection::Closed:: *)
-(*AnalyzePeaksPreview*)
+(*AdvancedAnalyzePeaksPreview*)
 
 
-DefineUsage[AnalyzePeaksPreview,
+DefineUsage[AdvancedAnalyzePeaksPreview,
 {
 	BasicDefinitions -> {
 		{
-			Definition -> {"AnalyzePeaksPreview[data]", "preview"},
-			Description -> "generate a graph as a preview of AnalyzePeaks result.",
+			Definition -> {"AdvancedAnalyzePeaksPreview[data]", "preview"},
+			Description -> "generate a graph as a preview of AdvancedAnalyzePeaks result.",
 			Inputs:>{
 				IndexMatching[
 					{
@@ -262,14 +261,14 @@ DefineUsage[AnalyzePeaksPreview,
 			Outputs:>{
 				{
 					OutputName -> "preview",
-					Description -> "Preview of AnalyzePeaks result.",
+					Description -> "Preview of AdvancedAnalyzePeaks result.",
 					Pattern :> ValidGraphicsP[] | Null
 				}
 			}
 		},
 		{
-			Definition -> {"AnalyzePeaksPreview[protocol]", "{preview..}"},
-			Description -> "generate a graph as a preview of AnalyzePeaks result.",
+			Definition -> {"AdvancedAnalyzePeaksPreview[protocol]", "{preview..}"},
+			Description -> "generate a graph as a preview of AdvancedAnalyzePeaks result.",
 			Inputs:>{
 				{
 					InputName -> "protocol",
@@ -302,14 +301,14 @@ DefineUsage[AnalyzePeaksPreview,
 			Outputs:>{
 				{
 					OutputName -> "preview",
-					Description -> "Preview of AnalyzePeaks result.",
+					Description -> "Preview of AdvancedAnalyzePeaks result.",
 					Pattern :> ValidGraphicsP[] | Null
 				}
 			}
 		},
 		{
-			Definition -> {"AnalyzePeaksPreview[xy]", "preview"},
-			Description -> "generate a graph as a preview of AnalyzePeaks result.",
+			Definition -> {"AdvancedAnalyzePeaksPreview[xy]", "preview"},
+			Description -> "generate a graph as a preview of AdvancedAnalyzePeaks result.",
 			Inputs:>{
 				{
 					InputName -> "xy",
@@ -320,30 +319,30 @@ DefineUsage[AnalyzePeaksPreview,
 			Outputs:>{
 				{
 					OutputName -> "preview",
-					Description -> "Preview of AnalyzePeaks result.",
+					Description -> "Preview of AdvancedAnalyzePeaks result.",
 					Pattern :> ValidGraphicsP[] | Null
 				}
 			}
 		}
 	},
 	SeeAlso -> {
-		"AnalyzePeaks",
-		"AnalyzePeaksOptions",
-		"ValidAnalyzePeaksQ"
+		"AdvancedAnalyzePeaks",
+		"AdvancedAnalyzePeaksOptions",
+		"ValidAdvancedAnalyzePeaksQ"
 	},
-	Author -> {"malav.desai", "kevin.hou", "david.hattery", "qian", "alice", "brad"}
+	Author -> {"brad", "hiren.patel"}
 }];
 
 
 (* ::Subsubsection::Closed:: *)
-(*ValidAnalyzePeaksQ*)
+(*ValidAdvancedAnalyzePeaksQ*)
 
 
-DefineUsage[ValidAnalyzePeaksQ,
+DefineUsage[ValidAdvancedAnalyzePeaksQ,
 {
 	BasicDefinitions -> {
 		{
-			Definition -> {"ValidAnalyzePeaksQ[data]", "tests"},
+			Definition -> {"ValidAdvancedAnalyzePeaksQ[data]", "tests"},
 			Description -> "return an EmeraldTestSummary which contains the test results for all the gathered tests/warnings or a single Boolean indicating validity.",
 			Inputs:>{
 				IndexMatching[
@@ -374,7 +373,7 @@ DefineUsage[ValidAnalyzePeaksQ,
 			}
 		},
 		{
-			Definition -> {"ValidAnalyzePeaksQ[protocol]", "{tests..}"},
+			Definition -> {"ValidAdvancedAnalyzePeaksQ[protocol]", "{tests..}"},
 			Description -> "return an EmeraldTestSummary which contains the test results for all the gathered tests/warnings or a single Boolean indicating validity.",
 			Inputs:>{
 				{
@@ -414,7 +413,7 @@ DefineUsage[ValidAnalyzePeaksQ,
 			}
 		},
 		{
-			Definition -> {"ValidAnalyzePeaksQ[xy]", "tests"},
+			Definition -> {"ValidAdvancedAnalyzePeaksQ[xy]", "tests"},
 			Description -> "return an EmeraldTestSummary which contains the test results for all the gathered tests/warnings or a single Boolean indicating validity.",
 			Inputs:>{
 				{
@@ -433,62 +432,9 @@ DefineUsage[ValidAnalyzePeaksQ,
 		}
 	},
 	SeeAlso -> {
-		"AnalyzePeaks",
-		"AnalyzePeaksOptions",
-		"AnalyzePeaksPreview"
+		"AdvancedAnalyzePeaks",
+		"AdvancedAnalyzePeaksOptions",
+		"AdvancedAnalyzePeaksPreview"
 	},
-	Author -> {"malav.desai", "david.hattery", "qian", "alice", "brad"}
-}];
-
-
-(* ::Subsubsection::Closed:: *)
-(*PeakResolution*)
-
-
-DefineUsage[PeakResolution,
-{
-	BasicDefinitions -> {
-		{"PeakResolution[peaks, pkA, pkB]", "resolution", "returns the resolution between 'pkA' and 'pkB'."}
-	},
-	Input :> {
-		{"peaks", ObjectP[{Object[Analysis,Peaks],Object[Data]}], "Peak data in the form of ObjectP[Object[Analysis,Peaks]] or ObjectP[Object[Data]]."},
-		{"pkA", _String | _?NumericQ, "First peak as a peak label in the form of _String or as a number within the peak range in the form of _?NumericQ."},
-		{"pkB", _String | _?NumericQ, "Second peak as a peak label in the form of _String or as a number within the peak range in the form of _?NumericQ."}
-	},
-	Output :> {
-		{"resolution", _NumericQ, "The resolution between 'pkA' and 'pkB' as specified in 'peaks'."}
-	},
-	SeeAlso -> {
-		"AnalyzePeaks",
-		"PeakEpilog"
-	},
-	Author -> {"scicomp", "brad"}
-}];
-
-
-(* ::Subsection:: *)
-(*Plotting*)
-
-
-(* ::Subsubsection::Closed:: *)
-(*PeakEpilog*)
-
-
-DefineUsage[PeakEpilog,
-{
-	BasicDefinitions -> {
-		{"PeakEpilog[plotData,peakData]", "epilog_Graphics", "generates an epilog graphic for denoting the information derived from peaks."}
-	},
-	Input :> {
-		{"plotData", {{_?NumericQ, _?NumericQ}..}, "The data being plotted from which the peaks will come."},
-		{"peakData", ObjectP[Object[Analysis, Peaks]], "The peak data as determined by peaks matching the peak pattern."}
-	},
-	Output :> {
-		{"epilog", _, "Pictographic documentation of the peaks to be overlaid on a plot."}
-	},
-	SeeAlso -> {
-		"PlotFractions",
-		"PlotChromatography"
-	},
-	Author -> {"scicomp", "brad"}
+	Author -> {"brad", "hiren.patel"}
 }];
