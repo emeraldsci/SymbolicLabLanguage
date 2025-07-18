@@ -1,3 +1,311 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:dc00c9239d12d059023ead18417eb7cf9200b7d93fdb08b9d1ebfd6a15a6046c
-size 12441
+(* Content-type: application/vnd.wolfram.mathematica *)
+
+(*** Wolfram Notebook File ***)
+(* http://www.wolfram.com/nb *)
+
+(* CreatedBy='Mathematica 11.3' *)
+
+(*CacheID: 234*)
+(* Internal cache information:
+NotebookFileLineBreakTest
+NotebookFileLineBreakTest
+NotebookDataPosition[       158,          7]
+NotebookDataLength[     11930,        301]
+NotebookOptionsPosition[      8627,        235]
+NotebookOutlinePosition[     10118,        272]
+CellTagsIndexPosition[     10075,        269]
+WindowTitle->IncludingLiteratureReferences
+WindowFrame->Normal*)
+
+(* Beginning of Notebook Content *)
+Notebook[{
+Cell[BoxData[GridBox[{
+   {GridBox[{
+      {
+       ItemBox[Cell[BoxData[
+         RowBox[{
+          InterpretationBox[
+           StyleBox[
+            GraphicsBox[{},
+             BaselinePosition->Baseline,
+             ImageSize->{8, 0}],
+            CacheGraphics->False],
+           Spacer[8],
+           Selectable->False], Cell["EMERALD GUIDE", "PacletNameCell",
+           TextAlignment->Center,ExpressionUUID->
+           "7908e89f-b893-47ac-459a-a815c351d89e"], 
+          InterpretationBox[
+           StyleBox[
+            GraphicsBox[{},
+             BaselinePosition->Baseline,
+             ImageSize->{8, 0}],
+            CacheGraphics->False],
+           Spacer[8],
+           Selectable->False]}]],
+         TextAlignment->Center,ExpressionUUID->
+         "867f6861-a9ab-4486-7f3f-3ad8f927adfb"],
+        Background->RGBColor[
+         0.24313725490196078`, 0.27058823529411763`, 0.2980392156862745],
+        ItemSize->Full], ""}
+     },
+     GridBoxAlignment->{"Rows" -> {{Center}}},
+     GridBoxItemSize->{"Columns" -> {Full, 
+         Scaled[0.02]}, "Rows" -> {{2.5}}}], Cell[TextData[{
+     Cell[BoxData[
+      ActionMenuBox[
+       FrameBox[Cell[TextData[{
+         "Functions",
+         " ",
+         Cell[BoxData[
+          GraphicsBox[
+           {RGBColor[183/256., 197/256., 211/256.], Thickness[0.13], 
+            LineBox[{{-1.8, 0.5}, {0, 0}, {1.8, 0.5}}]},
+           AspectRatio->1,
+           ImageSize->20,
+           PlotRange->{{-3, 4}, {-1, 1}}]],ExpressionUUID->
+          "694de692-8ae2-4609-a502-ce26dc1a6d56"]
+        }],ExpressionUUID->"6c696a30-bead-4e86-b387-0f8dbd09b986"],
+        StripOnInput->False], {"\<\"FindJournal\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Literature/ref/FindJournal"], "\<\"FindKeyword\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Literature/ref/FindKeyword"], "\<\"PDBIDExistsQ\"\>":>
+       Documentation`HelpLookup[
+       "paclet:LegacySLL/ref/PDBIDExistsQ"], "\<\"UploadLiterature\"\>":>
+       Documentation`HelpLookup["paclet:ExternalUpload/ref/UploadLiterature"]},
+       LineSpacing -> {1.4, 0},
+       Appearance->None,
+       MenuAppearance->Automatic,
+       MenuStyle->"GuideFunction"]],ExpressionUUID->
+      "e1245a94-9a86-486a-84a2-6d41b213fe27"],
+     "\[ThickSpace]\[ThickSpace]\[ThickSpace]\[ThickSpace]\[ThickSpace]\
+\[ThickSpace]",
+     Cell[BoxData[
+      ActionMenuBox[
+       FrameBox[Cell[TextData[{
+         "Related Guides",
+         " ",
+         Cell[BoxData[
+          GraphicsBox[
+           {RGBColor[183/256., 197/256., 211/256.], Thickness[0.13], 
+            LineBox[{{-1.8, 0.5}, {0, 0}, {1.8, 0.5}}]},
+           AspectRatio->1,
+           ImageSize->20,
+           PlotRange->{{-3, 4}, {-1, 1}}]],ExpressionUUID->
+          "d36e7147-b257-4a21-b3b2-64e020b278d1"]
+        }],ExpressionUUID->"843f2855-c79d-4d05-bdad-c6fec84bea68"],
+        StripOnInput->False], {"\<\"ConstellationUtilityFunctions\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Docs/guide/ConstellationUtilityFunctions"], \
+"\<\"EmeraldCloudFiles\"\>":>Documentation`HelpLookup[
+       "paclet:Docs/guide/EmeraldCloudFiles"], "\<\"ObjectOntology\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Docs/guide/ObjectOntology"], \
+"\<\"WorkingWithConstellationObjects\"\>":>Documentation`HelpLookup[
+       "paclet:Docs/guide/WorkingWithConstellationObjects"]},
+       LineSpacing -> {1.4, 0},
+       Appearance->None,
+       MenuAppearance->Automatic,
+       MenuStyle->"GuideFunction"]],ExpressionUUID->
+      "8b8fd32d-f8a5-4775-a735-b5f65b6b2d59"]
+    }], "AnchorBar",ExpressionUUID->"2226a756-6100-4db7-af2a-660522790570"]}
+  }]], "AnchorBarGrid",
+ CellID->1,ExpressionUUID->"986e63b8-867c-4186-9b5d-252dfda56a37"],
+
+Cell["Including Literature References", "GuideTitle",
+ CellID->644724342,ExpressionUUID->"37efec6c-c05c-4e76-a97e-7c4e2f3831d1"],
+
+Cell["\<\
+Collection of functions for uploading literature references (such as journal \
+articles, books, etc.) and linking them to Constellation objects where \
+appropriate.\
+\>", "GuideAbstract",
+ CellID->346894978,ExpressionUUID->"59e79ee2-5645-4f9e-a11a-610f728d954a"],
+
+Cell["\t", "GuideDelimiterSubsection",
+ CellID->19552262,ExpressionUUID->"a8d2fb7d-d32d-4f39-9a65-c71c10525a8f"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["UploadLiterature"]],
+    "paclet:ExternalUpload/ref/UploadLiterature"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "78b98c24-7ede-4c3b-89e5-7e1bdcc42419"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Given a Pubmed ID or EndNote File, returns a packet for a Report \
+Literature Constellation object so that this literature may be linked to \
+other Constellation objects."
+}], "GuideText",
+ CellID->477457055,ExpressionUUID->"58366fa2-1282-4ad9-ac3a-c8a74572c9c4"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["FindJournal"]],"paclet:Literature/ref/FindJournal"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "34033bce-a1c5-4738-a981-fcda6350a326"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Returns the closest matching journal name based on a provided string."
+}], "GuideText",
+ CellID->17368072,ExpressionUUID->"5ff807a1-b9ae-4a11-8a3a-4b2cdac37d38"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["FindKeyword"]],"paclet:Literature/ref/FindKeyword"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "ffdf839d-e5d6-4324-bda1-f27bd9b4e71f"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Returns the closest matching keyword based on a provided string."
+}], "GuideText",
+ CellID->171827071,ExpressionUUID->"7e5b162a-ab93-4154-8401-df7c27d9b6a1"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["PDBIDExistsQ"]],"paclet:LegacySLL/ref/PDBIDExistsQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "30b3831c-2355-4458-9531-d3698be72506"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks to see if a given ID can be found in the Protein Data Bank."
+}], "GuideText",
+ CellID->245897822,ExpressionUUID->"d85f9fcb-5f54-4e36-8d09-f41bfb10bc8b"],
+
+Cell["", "SectionFooterSpacer",
+ CellID->355259450,ExpressionUUID->"5816417f-8f9d-4fe8-83d3-c74faa68c565"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  InterpretationBox[
+   StyleBox[
+    GraphicsBox[{},
+     BaselinePosition->Baseline,
+     ImageSize->{6, 0}],
+    CacheGraphics->False],
+   Spacer[6]]],ExpressionUUID->"05528a6e-3be1-4b79-9ac8-3fffff53b612"],
+ "Related Guides"
+}], "GuideMoreAboutSection",
+ WholeCellGroupOpener->True,
+ CellID->118578948,ExpressionUUID->"c950d244-7dbe-4b5e-a4b4-bd12466868b4"],
+
+Cell["", "SectionHeaderSpacer",
+ CellID->130323883,ExpressionUUID->"5b16279c-5d61-45e9-877f-2b1269dd96c7"],
+
+Cell[BoxData[
+ TemplateBox[{Cell[
+    TextData["WorkingWithConstellationObjects"]],
+   "paclet:Docs/guide/WorkingWithConstellationObjects"},
+  "RefLink",
+  BaseStyle->"GuideMoreAboutSub"]], "GuideMoreAboutSub",
+ CellID->326148849,ExpressionUUID->"176b1223-7d83-44fb-8360-8fa474f35228"],
+
+Cell[BoxData[
+ TemplateBox[{Cell[
+    TextData["ObjectOntology"]],"paclet:Docs/guide/ObjectOntology"},
+  "RefLink",
+  BaseStyle->"GuideMoreAboutSub"]], "GuideMoreAboutSub",
+ CellID->487191575,ExpressionUUID->"d3b7fd45-1d86-4b46-8364-de1a5a6fd301"],
+
+Cell[BoxData[
+ TemplateBox[{Cell[
+    TextData["EmeraldCloudFiles"]],"paclet:Docs/guide/EmeraldCloudFiles"},
+  "RefLink",
+  BaseStyle->"GuideMoreAboutSub"]], "GuideMoreAboutSub",
+ CellID->611888471,ExpressionUUID->"e0295751-ca05-4415-b4c4-f6becab02525"],
+
+Cell[BoxData[
+ TemplateBox[{Cell[
+    TextData["ConstellationUtilityFunctions"]],
+   "paclet:Docs/guide/ConstellationUtilityFunctions"},
+  "RefLink",
+  BaseStyle->"GuideMoreAboutSub"]], "GuideMoreAboutSub",
+ CellID->90453653,ExpressionUUID->"d85507cf-0742-4085-9e8d-ba40b63183a7"],
+
+Cell["", "FooterCell",
+ CellID->49449140,ExpressionUUID->"6dd3630c-eced-43ea-bb02-d4d5389a11f7"]
+},
+Saveable->False,
+ScreenStyleEnvironment->"Working",
+WindowSize->{775, 872},
+WindowMargins->{{144, Automatic}, {Automatic, 474}},
+WindowTitle->"IncludingLiteratureReferences",
+Visible->False,
+TaggingRules->{
+ "ModificationHighlight" -> False, "ColorType" -> "GuideColor", 
+  "ExampleCounter" -> 1, "NeedPlatMsgIn" -> None, "RootCaptions" -> "", 
+  "Metadata" -> {
+   "built" -> "Mon 10 Dec 2018 18:58:12", "context" -> "Docs`", 
+    "keywords" -> {
+     "UploadLiterature", "FindJournal", "FindKeyword", "PDBIDExistsQ"}, 
+    "specialkeywords" -> {}, "tutorialcollectionlinks" -> {}, "index" -> True,
+     "label" -> "ECL Guide", "language" -> "en", "paclet" -> "Docs", "status" -> 
+    "None", "summary" -> 
+    "Collection of functions for uploading literature references (such as \
+journal articles, books, etc.) and linking them to Constellation objects \
+where appropriate.", "synonyms" -> {}, "titlemodifier" -> "", "Windowtitle" -> 
+    "IncludingLiteratureReferences", "title" -> 
+    "IncludingLiteratureReferences", "type" -> "Guide", "uri" -> 
+    "Docs/guide/IncludingLiteratureReferences", "WorkflowDockedCell" -> ""}, 
+  "SearchTextTranslated" -> "", "LinkTrails" -> ""},
+FrontEndVersion->"11.3 for Microsoft Windows (64-bit) (March 6, 2018)",
+StyleDefinitions->"EmeraldReference.nb",
+CharacterEncoding -> "UTF-8"
+]
+(* End of Notebook Content *)
+
+(* Internal cache information *)
+(*CellTagsOutline
+CellTagsIndex->{}
+*)
+(*CellTagsIndex
+CellTagsIndex->{}
+*)
+(*NotebookFileOutline
+Notebook[{
+Cell[601, 21, 3728, 91, 58, "AnchorBarGrid",ExpressionUUID->"986e63b8-867c-4186-9b5d-252dfda56a37",
+ CellID->1],
+Cell[4332, 114, 128, 1, 50, "GuideTitle",ExpressionUUID->"37efec6c-c05c-4e76-a97e-7c4e2f3831d1",
+ CellID->644724342],
+Cell[4463, 117, 272, 5, 54, "GuideAbstract",ExpressionUUID->"59e79ee2-5645-4f9e-a11a-610f728d954a",
+ CellID->346894978],
+Cell[4738, 124, 112, 1, 22, "GuideDelimiterSubsection",ExpressionUUID->"a8d2fb7d-d32d-4f39-9a65-c71c10525a8f",
+ CellID->19552262],
+Cell[4853, 127, 585, 14, 58, "GuideText",ExpressionUUID->"58366fa2-1282-4ad9-ac3a-c8a74572c9c4",
+ CellID->477457055],
+Cell[5441, 143, 464, 11, 35, "GuideText",ExpressionUUID->"5ff807a1-b9ae-4a11-8a3a-4b2cdac37d38",
+ CellID->17368072],
+Cell[5908, 156, 460, 11, 35, "GuideText",ExpressionUUID->"7e5b162a-ab93-4154-8401-df7c27d9b6a1",
+ CellID->171827071],
+Cell[6371, 169, 463, 11, 35, "GuideText",ExpressionUUID->"d85f9fcb-5f54-4e36-8d09-f41bfb10bc8b",
+ CellID->245897822],
+Cell[6837, 182, 106, 1, 29, "SectionFooterSpacer",ExpressionUUID->"5816417f-8f9d-4fe8-83d3-c74faa68c565",
+ CellID->355259450],
+Cell[6946, 185, 392, 12, 72, "GuideMoreAboutSection",ExpressionUUID->"c950d244-7dbe-4b5e-a4b4-bd12466868b4",
+ CellID->118578948],
+Cell[7341, 199, 106, 1, 14, "SectionHeaderSpacer",ExpressionUUID->"5b16279c-5d61-45e9-877f-2b1269dd96c7",
+ CellID->130323883],
+Cell[7450, 202, 285, 6, 24, "GuideMoreAboutSub",ExpressionUUID->"176b1223-7d83-44fb-8360-8fa474f35228",
+ CellID->326148849],
+Cell[7738, 210, 247, 5, 24, "GuideMoreAboutSub",ExpressionUUID->"d3b7fd45-1d86-4b46-8364-de1a5a6fd301",
+ CellID->487191575],
+Cell[7988, 217, 253, 5, 24, "GuideMoreAboutSub",ExpressionUUID->"e0295751-ca05-4415-b4c4-f6becab02525",
+ CellID->611888471],
+Cell[8244, 224, 280, 6, 24, "GuideMoreAboutSub",ExpressionUUID->"d85507cf-0742-4085-9e8d-ba40b63183a7",
+ CellID->90453653],
+Cell[8527, 232, 96, 1, 41, "FooterCell",ExpressionUUID->"6dd3630c-eced-43ea-bb02-d4d5389a11f7",
+ CellID->49449140]
+}
+]
+*)
+
+(* End of internal cache information *)
+

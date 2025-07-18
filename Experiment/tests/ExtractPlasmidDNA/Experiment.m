@@ -867,6 +867,89 @@ DefineTests[ExperimentExtractPlasmidDNA,
 
     (* - Input Errors - *)
 
+    Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a sample that does not exist (name form):"},
+      ExperimentExtractPlasmidDNA[Object[Sample, "Nonexistent sample"]],
+      $Failed,
+      Messages :> {Download::ObjectDoesNotExist}
+    ],
+    Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a container that does not exist (name form):"},
+      ExperimentExtractPlasmidDNA[Object[Container, Vessel, "Nonexistent container"]],
+      $Failed,
+      Messages :> {Download::ObjectDoesNotExist}
+    ],
+    Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a sample that does not exist (ID form):"},
+      ExperimentExtractPlasmidDNA[Object[Sample, "id:12345678"]],
+      $Failed,
+      Messages :> {Download::ObjectDoesNotExist}
+    ],
+    Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a container that does not exist (ID form):"},
+      ExperimentExtractPlasmidDNA[Object[Container, Vessel, "id:12345678"]],
+      $Failed,
+      Messages :> {Download::ObjectDoesNotExist}
+    ],
+    Example[{Messages, "ObjectDoesNotExist", "Do NOT throw a message if we have a simulated sample but a simulation is specified that indicates that it is simulated:"},
+      Module[{containerPackets, containerID, sampleID, samplePackets, simulationToPassIn},
+        containerPackets = UploadSample[
+          Model[Container,Vessel,"2mL Tube"],
+          {"Work Surface", Object[Container, Bench, "The Bench of Testing"]},
+          Upload -> False,
+          SimulationMode -> True,
+          FastTrack -> True
+        ];
+        simulationToPassIn = Simulation[containerPackets];
+        containerID = Lookup[First[containerPackets], Object];
+        samplePackets = UploadSample[
+          {{100 VolumePercent, Model[Cell, Bacteria, "E.coli MG1655"]}},
+          {"A1", containerID},
+          Upload -> False,
+          Living->True,
+          CultureAdhesion->Suspension,
+          CellType->Bacterial,
+          SimulationMode -> True,
+          FastTrack -> True,
+          Simulation -> simulationToPassIn,
+          InitialAmount -> 0.1 Milliliter
+        ];
+        sampleID = Lookup[First[samplePackets], Object];
+        simulationToPassIn = UpdateSimulation[simulationToPassIn, Simulation[samplePackets]];
+
+        ExperimentExtractPlasmidDNA[sampleID, Simulation -> simulationToPassIn, Output -> Options]
+      ],
+      {__Rule},
+      TimeConstraint -> 600
+    ],
+    Example[{Messages, "ObjectDoesNotExist", "Do NOT throw a message if we have a simulated container but a simulation is specified that indicates that it is simulated:"},
+      Module[{containerPackets, containerID, sampleID, samplePackets, simulationToPassIn},
+        containerPackets = UploadSample[
+          Model[Container,Vessel,"2mL Tube"],
+          {"Work Surface", Object[Container, Bench, "The Bench of Testing"]},
+          Upload -> False,
+          SimulationMode -> True,
+          FastTrack -> True
+        ];
+        simulationToPassIn = Simulation[containerPackets];
+        containerID = Lookup[First[containerPackets], Object];
+        samplePackets = UploadSample[
+          {{100 VolumePercent, Model[Cell, Bacteria, "E.coli MG1655"]}},
+          {"A1", containerID},
+          Upload -> False,
+          SimulationMode -> True,
+          FastTrack -> True,
+          Living->True,
+          CultureAdhesion->Suspension,
+          CellType->Bacterial,
+          Simulation -> simulationToPassIn,
+          InitialAmount -> 0.1 Milliliter
+        ];
+        sampleID = Lookup[First[samplePackets], Object];
+        simulationToPassIn = UpdateSimulation[simulationToPassIn, Simulation[samplePackets]];
+
+        ExperimentExtractPlasmidDNA[containerID, Simulation -> simulationToPassIn, Output -> Options]
+      ],
+      {__Rule},
+      TimeConstraint -> 600
+    ],
+
     Example[{Messages, "InvalidSolidMediaSample", "An error is returned if the input cell samples are in solid media since only suspended or adherent cells are supported for plasmid DNA extraction:"},
       ExperimentExtractPlasmidDNA[
         Object[Sample, "Solid Media Cell Sample (Test for ExperimentExtractPlasmidDNA) " <> $SessionUUID],
@@ -5239,7 +5322,7 @@ DefineTests[ExperimentExtractPlasmidDNA,
     ],
 
     (* -- MagneticBeadSeparationSelectionStrategy, MagneticBeadSeparationMode, MagneticBeadCollectionStorageCondition, MagnetizationRack, LoadingMagnetizationTime, MagneticBeadSeparationLoadingCollectionContainer, MagneticBeadSeparationLoadingCollectionStorageCondition, and MagneticBeadSeparationLoadingAirDry Tests -- *)
-    Example[{Options, {MagneticBeadSeparationSelectionStrategy, MagneticBeadSeparationMode, MagneticBeadCollectionStorageCondition, MagnetizationRack, LoadingMagnetizationTime, MagneticBeadSeparationLoadingCollectionContainer, MagneticBeadSeparationLoadingCollectionStorageCondition, MagneticBeadSeparationLoadingAirDry}, "By default, MagneticBeadSeparationSelectionStrategy is set to Positive, MagneticBeadSeparationMode is set to NormalPhase, MagneticBeadCollectionStorageCondition is automatically set to Disposal, MagnetizationRack is automatically set to Model[Item, MagnetizationRack, \"Alpaqua 96S Super Magnet 96-well Plate Rack\"], MagneticBeadSeparationLoadingMix is automatically set to True, LoadingMagnetizationTime is automatically set to 5 minutes, MagneticBeadSeparationLoadingCollectionContainer is automatically set to Model[Container, Plate, \"96-well 2mL Deep Well Plate\"], MagneticBeadSeparationLoadingCollectionStorageCondition is automatically set to Refrigerator, and MagneticBeadSeparationLoadingAirDry is automatically set to False unless otherwise specified:"},
+    Example[{Options, {MagneticBeadSeparationSelectionStrategy, MagneticBeadSeparationMode, MagneticBeadCollectionStorageCondition, MagnetizationRack, LoadingMagnetizationTime, MagneticBeadSeparationLoadingCollectionContainer, MagneticBeadSeparationLoadingCollectionStorageCondition, MagneticBeadSeparationLoadingAirDry}, "By default, MagneticBeadSeparationSelectionStrategy is set to Positive, MagneticBeadSeparationMode is set to NormalPhase, MagneticBeadCollectionStorageCondition is automatically set to Disposal, MagnetizationRack is automatically set to Model[Item,MagnetizationRack,\"Alpaqua Magnum FLX Enhanced Universal Magnet 96-well Plate Rack\"], MagneticBeadSeparationLoadingMix is automatically set to True, LoadingMagnetizationTime is automatically set to 5 minutes, MagneticBeadSeparationLoadingCollectionContainer is automatically set to Model[Container, Plate, \"96-well 2mL Deep Well Plate\"], MagneticBeadSeparationLoadingCollectionStorageCondition is automatically set to Refrigerator, and MagneticBeadSeparationLoadingAirDry is automatically set to False unless otherwise specified:"},
       ExperimentExtractPlasmidDNA[
         Object[Sample, "Previously Extracted Plasmid DNA Sample (Test for ExperimentExtractPlasmidDNA) " <> $SessionUUID],
         Purification -> MagneticBeadSeparation,
@@ -5252,7 +5335,7 @@ DefineTests[ExperimentExtractPlasmidDNA,
             MagneticBeadSeparationSelectionStrategy -> Positive,
             MagneticBeadSeparationMode -> NormalPhase,
             MagneticBeadCollectionStorageCondition -> Disposal,
-            MagnetizationRack -> ObjectP[Model[Item, MagnetizationRack, "Alpaqua 96S Super Magnet 96-well Plate Rack"]],
+            MagnetizationRack -> ObjectP[Model[Item, MagnetizationRack, "id:kEJ9mqJYljjz"]],(*Model[Item,MagnetizationRack,"Alpaqua Magnum FLX Enhanced Universal Magnet 96-well Plate Rack"]*)
             MagneticBeadSeparationLoadingMix -> True,
             LoadingMagnetizationTime -> EqualP[5 Minute],
             MagneticBeadSeparationLoadingCollectionContainer -> {(_String), ObjectP[Model[Container, Plate, "96-well 2mL Deep Well Plate"]]},
@@ -5522,7 +5605,7 @@ DefineTests[ExperimentExtractPlasmidDNA,
     ],
 
     (* -- NumberOfMagneticBeadSeparationPreWashMixes, MagneticBeadSeparationPreWashMixTipType, and MagneticBeadSeparationPreWashMixTipMaterial Tests -- *)
-    Example[{Options, {NumberOfMagneticBeadSeparationPreWashMixes, MagneticBeadSeparationPreWashMixTipType, MagneticBeadSeparationPreWashMixTipMaterial}, "If MagneticBeadSeparationPreWashMixType is set to Pipette, NumberOfMagneticBeadSeparationPreWashMixes is automatically set to 10, MagneticBeadSeparationPreWashMixTipType is automatically set to WideBore, and MagneticBeadSeparationPreWashMixTipMaterial is automatically set to Polypropylene unless otherwise specified:"},
+    Example[{Options, {NumberOfMagneticBeadSeparationPreWashMixes, MagneticBeadSeparationPreWashMixTipType, MagneticBeadSeparationPreWashMixTipMaterial}, "If MagneticBeadSeparationPreWashMixType is set to Pipette, NumberOfMagneticBeadSeparationPreWashMixes is automatically set to 20, MagneticBeadSeparationPreWashMixTipType is automatically set to WideBore, and MagneticBeadSeparationPreWashMixTipMaterial is automatically set to Polypropylene unless otherwise specified:"},
       ExperimentExtractPlasmidDNA[
         Object[Sample, "Previously Extracted Plasmid DNA Sample (Test for ExperimentExtractPlasmidDNA) " <> $SessionUUID],
         MagneticBeadSeparationPreWashMixType -> Pipette,
@@ -5532,7 +5615,7 @@ DefineTests[ExperimentExtractPlasmidDNA,
         ObjectP[Object[Protocol, RoboticCellPreparation]],
         KeyValuePattern[
           {
-            NumberOfMagneticBeadSeparationPreWashMixes -> 10,
+            NumberOfMagneticBeadSeparationPreWashMixes -> 20,
             MagneticBeadSeparationPreWashMixTipType -> WideBore,
             MagneticBeadSeparationPreWashMixTipMaterial -> Polypropylene
           }
@@ -5542,7 +5625,7 @@ DefineTests[ExperimentExtractPlasmidDNA,
     ],
 
     (* -- MagneticBeadSeparationPreWashMixVolume Tests -- *)
-    Example[{Options, MagneticBeadSeparationPreWashMixVolume, "If MagneticBeadSeparationPreWashMixType is set to Pipette and 50% of the combined MagneticBeadSeparationPreWashSolutionVolume and magnetic beads volume is less than the MaxRoboticSingleTransferVolume (0.970 mL), MagneticBeadSeparationPreWashMixVolume is automatically set to 50% of the combined MagneticBeadSeparationPreWashSolutionVolume and magnetic beads volume:"},
+    Example[{Options, MagneticBeadSeparationPreWashMixVolume, "If MagneticBeadSeparationPreWashMixType is set to Pipette and 80% of the combined MagneticBeadSeparationPreWashSolutionVolume and magnetic beads volume is less than the MaxRoboticSingleTransferVolume (0.970 mL), MagneticBeadSeparationPreWashMixVolume is automatically set to 80% of the combined MagneticBeadSeparationPreWashSolutionVolume and magnetic beads volume:"},
       ExperimentExtractPlasmidDNA[
         Object[Sample, "Previously Extracted Plasmid DNA Sample (Test for ExperimentExtractPlasmidDNA) " <> $SessionUUID],
         MagneticBeadSeparationPreWashMixType -> Pipette,
@@ -5554,13 +5637,13 @@ DefineTests[ExperimentExtractPlasmidDNA,
         ObjectP[Object[Protocol, RoboticCellPreparation]],
         KeyValuePattern[
           {
-            MagneticBeadSeparationPreWashMixVolume -> EqualP[0.2 Milliliter]
+            MagneticBeadSeparationPreWashMixVolume -> EqualP[0.32 Milliliter]
           }
         ]
       },
       TimeConstraint -> 600
     ],
-    Example[{Options, MagneticBeadSeparationPreWashMixVolume, "If MagneticBeadSeparationPreWashMixType is set to Pipette and 50% of the combined MagneticBeadSeparationPreWashSolutionVolume and magnetic beads volume is greater than the MaxRoboticSingleTransferVolume (0.970 mL), MagneticBeadSeparationPreWashMixVolume is automatically set to the MaxRoboticSingleTransferVolume (0.970 mL):"},
+    Example[{Options, MagneticBeadSeparationPreWashMixVolume, "If MagneticBeadSeparationPreWashMixType is set to Pipette and 80% of the combined MagneticBeadSeparationPreWashSolutionVolume and magnetic beads volume is greater than the MaxRoboticSingleTransferVolume (0.970 mL), MagneticBeadSeparationPreWashMixVolume is automatically set to the MaxRoboticSingleTransferVolume (0.970 mL):"},
       ExperimentExtractPlasmidDNA[
         Object[Sample, "Previously Extracted Plasmid DNA Sample (Test for ExperimentExtractPlasmidDNA) " <> $SessionUUID],
         MagneticBeadSeparationPreWashMixType -> Pipette,
@@ -5780,7 +5863,7 @@ DefineTests[ExperimentExtractPlasmidDNA,
     ],
 
     (* -- NumberOfMagneticBeadSeparationEquilibrationMixes, MagneticBeadSeparationEquilibrationMixTipType, and MagneticBeadSeparationEquilibrationMixTipMaterial Tests -- *)
-    Example[{Options, {NumberOfMagneticBeadSeparationEquilibrationMixes, MagneticBeadSeparationEquilibrationMixTipType, MagneticBeadSeparationEquilibrationMixTipMaterial}, "If MagneticBeadSeparationEquilibrationMixType is set to Pipette, NumberOfMagneticBeadSeparationEquilibrationMixes is automatically set to 10, MagneticBeadSeparationEquilibrationMixTipType is automatically set to WideBore, and MagneticBeadSeparationEquilibrationMixTipMaterial is automatically set to Polypropylene unless otherwise specified:"},
+    Example[{Options, {NumberOfMagneticBeadSeparationEquilibrationMixes, MagneticBeadSeparationEquilibrationMixTipType, MagneticBeadSeparationEquilibrationMixTipMaterial}, "If MagneticBeadSeparationEquilibrationMixType is set to Pipette, NumberOfMagneticBeadSeparationEquilibrationMixes is automatically set to 20, MagneticBeadSeparationEquilibrationMixTipType is automatically set to WideBore, and MagneticBeadSeparationEquilibrationMixTipMaterial is automatically set to Polypropylene unless otherwise specified:"},
       ExperimentExtractPlasmidDNA[
         Object[Sample, "Previously Extracted Plasmid DNA Sample (Test for ExperimentExtractPlasmidDNA) " <> $SessionUUID],
         MagneticBeadSeparationEquilibrationMixType -> Pipette,
@@ -5790,7 +5873,7 @@ DefineTests[ExperimentExtractPlasmidDNA,
         ObjectP[Object[Protocol, RoboticCellPreparation]],
         KeyValuePattern[
           {
-            NumberOfMagneticBeadSeparationEquilibrationMixes -> 10,
+            NumberOfMagneticBeadSeparationEquilibrationMixes -> 20,
             MagneticBeadSeparationEquilibrationMixTipType -> WideBore,
             MagneticBeadSeparationEquilibrationMixTipMaterial -> Polypropylene
           }
@@ -5800,7 +5883,7 @@ DefineTests[ExperimentExtractPlasmidDNA,
     ],
 
     (* -- MagneticBeadSeparationEquilibrationMixVolume Tests -- *)
-    Example[{Options, MagneticBeadSeparationEquilibrationMixVolume, "If MagneticBeadSeparationEquilibrationMixType is set to Pipette and 1/2 of the combined MagneticBeadSeparationEquilibrationSolution and magnetic beads volume is less than 970 microliters, MagneticBeadSeparationEquilibrationMixVolume is automatically set to 1/2 of the combined MagneticBeadSeparationEquilibrationSolution and magnetic beads volume:"},
+    Example[{Options, MagneticBeadSeparationEquilibrationMixVolume, "If MagneticBeadSeparationEquilibrationMixType is set to Pipette and 80% of the combined MagneticBeadSeparationEquilibrationSolution and magnetic beads volume is less than 970 microliters, MagneticBeadSeparationEquilibrationMixVolume is automatically set to 80% of the combined MagneticBeadSeparationEquilibrationSolution and magnetic beads volume:"},
       ExperimentExtractPlasmidDNA[
         Object[Sample, "Previously Extracted Plasmid DNA Sample (Test for ExperimentExtractPlasmidDNA) " <> $SessionUUID],
         MagneticBeadSeparationEquilibrationMixType -> Pipette,
@@ -5812,13 +5895,13 @@ DefineTests[ExperimentExtractPlasmidDNA,
         ObjectP[Object[Protocol, RoboticCellPreparation]],
         KeyValuePattern[
           {
-            MagneticBeadSeparationEquilibrationMixVolume -> EqualP[0.2 Milliliter]
+            MagneticBeadSeparationEquilibrationMixVolume -> EqualP[0.32 Milliliter]
           }
         ]
       },
       TimeConstraint -> 600
     ],
-    Example[{Options, MagneticBeadSeparationEquilibrationMixVolume, "If MagneticBeadSeparationEquilibrationMixType is set to Pipette and 1/2 of the combined MagneticBeadSeparationEquilibrationSolution and magnetic beads volume is greater than 970 microliters, MagneticBeadSeparationEquilibrationMixVolume is automatically set to 970 microliters:"},
+    Example[{Options, MagneticBeadSeparationEquilibrationMixVolume, "If MagneticBeadSeparationEquilibrationMixType is set to Pipette and 80% of the combined MagneticBeadSeparationEquilibrationSolution and magnetic beads volume is greater than 970 microliters, MagneticBeadSeparationEquilibrationMixVolume is automatically set to 970 microliters:"},
       ExperimentExtractPlasmidDNA[
         Object[Sample, "Previously Extracted Plasmid DNA Sample (Test for ExperimentExtractPlasmidDNA) " <> $SessionUUID],
         MagneticBeadSeparationEquilibrationMixType -> Pipette,
@@ -5962,7 +6045,7 @@ DefineTests[ExperimentExtractPlasmidDNA,
     ],
 
     (* -- NumberOfMagneticBeadSeparationLoadingMixes Tests -- *)
-    Example[{Options, {NumberOfMagneticBeadSeparationLoadingMixes, MagneticBeadSeparationLoadingMixTipType, MagneticBeadSeparationLoadingMixTipMaterial}, "If MagneticBeadSeparationLoadingMixType is set to Pipette, NumberOfMagneticBeadSeparationLoadingMixes is automatically set to 10, MagneticBeadSeparationLoadingMixTipType is automatically set to WideBore, and MagneticBeadSeparationLoadingMixTipMaterial is automatically set to Polypropylene unless otherwise specified:"},
+    Example[{Options, {NumberOfMagneticBeadSeparationLoadingMixes, MagneticBeadSeparationLoadingMixTipType, MagneticBeadSeparationLoadingMixTipMaterial}, "If MagneticBeadSeparationLoadingMixType is set to Pipette, NumberOfMagneticBeadSeparationLoadingMixes is automatically set to 20, MagneticBeadSeparationLoadingMixTipType is automatically set to WideBore, and MagneticBeadSeparationLoadingMixTipMaterial is automatically set to Polypropylene unless otherwise specified:"},
       ExperimentExtractPlasmidDNA[
         Object[Sample, "Previously Extracted Plasmid DNA Sample (Test for ExperimentExtractPlasmidDNA) " <> $SessionUUID],
         MagneticBeadSeparationLoadingMixType -> Pipette,
@@ -5972,7 +6055,7 @@ DefineTests[ExperimentExtractPlasmidDNA,
         ObjectP[Object[Protocol, RoboticCellPreparation]],
         KeyValuePattern[
           {
-            NumberOfMagneticBeadSeparationLoadingMixes -> 10,
+            NumberOfMagneticBeadSeparationLoadingMixes -> 20,
             MagneticBeadSeparationLoadingMixTipType -> WideBore,
             MagneticBeadSeparationLoadingMixTipMaterial -> Polypropylene
           }
@@ -5982,7 +6065,7 @@ DefineTests[ExperimentExtractPlasmidDNA,
     ],
 
     (* -- MagneticBeadSeparationLoadingMixVolume Tests -- *)
-    Example[{Options, MagneticBeadSeparationLoadingMixVolume, "If MagneticBeadSeparationLoadingMixType is set to Pipette and 50% of the MagneticBeadSeparationSampleVolume is less than 970 microliters, MagneticBeadSeparationLoadingMixVolume is automatically set to 50% of the MagneticBeadSeparationSampleVolume:"},
+    Example[{Options, MagneticBeadSeparationLoadingMixVolume, "If MagneticBeadSeparationLoadingMixType is set to Pipette and 80% of the MagneticBeadSeparationSampleVolume is less than 970 microliters, MagneticBeadSeparationLoadingMixVolume is automatically set to 80% of the MagneticBeadSeparationSampleVolume:"},
       ExperimentExtractPlasmidDNA[
         Object[Sample, "Previously Extracted Plasmid DNA Sample (Test for ExperimentExtractPlasmidDNA) " <> $SessionUUID],
         MagneticBeadSeparationLoadingMixType -> Pipette,
@@ -5994,13 +6077,13 @@ DefineTests[ExperimentExtractPlasmidDNA,
         ObjectP[Object[Protocol, RoboticCellPreparation]],
         KeyValuePattern[
           {
-            MagneticBeadSeparationLoadingMixVolume -> EqualP[0.11 Milliliter]
+            MagneticBeadSeparationLoadingMixVolume -> EqualP[0.176 Milliliter]
           }
         ]
       },
       TimeConstraint -> 600
     ],
-    Example[{Options, MagneticBeadSeparationLoadingMixVolume, "If MagneticBeadSeparationLoadingMixType is set to Pipette and set to 50% of the MagneticBeadSeparationSampleVolume is greater than 970 microliters, MagneticBeadSeparationLoadingMixVolume is automatically set to 970 microliters:"},
+    Example[{Options, MagneticBeadSeparationLoadingMixVolume, "If MagneticBeadSeparationLoadingMixType is set to Pipette and set to 80% of the MagneticBeadSeparationSampleVolume is greater than 970 microliters, MagneticBeadSeparationLoadingMixVolume is automatically set to 970 microliters:"},
       ExperimentExtractPlasmidDNA[
         Object[Sample, "Previously Extracted Plasmid DNA Sample (Test for ExperimentExtractPlasmidDNA) " <> $SessionUUID],
         MagneticBeadSeparationLoadingMixType -> Pipette,
@@ -6221,7 +6304,7 @@ DefineTests[ExperimentExtractPlasmidDNA,
     ],
 
     (* -- MagneticBeadSeparationWashMixVolume Tests -- *)
-    Example[{Options, MagneticBeadSeparationWashMixVolume, "If MagneticBeadSeparationWashMixType is set to Pipette and 1/2 of the combined MagneticBeadSeparationWashSolution and magnetic beads volume is less than 970 microliters, MagneticBeadSeparationWashMixVolume is automatically set to 1/2 of the combined MagneticBeadSeparationWashSolution and magnetic beads volume:"},
+    Example[{Options, MagneticBeadSeparationWashMixVolume, "If MagneticBeadSeparationWashMixType is set to Pipette and 80% of the combined MagneticBeadSeparationWashSolution and magnetic beads volume is less than 970 microliters, MagneticBeadSeparationWashMixVolume is automatically set to 80% of the combined MagneticBeadSeparationWashSolution and magnetic beads volume:"},
       ExperimentExtractPlasmidDNA[
         Object[Sample, "Previously Extracted Plasmid DNA Sample (Test for ExperimentExtractPlasmidDNA) " <> $SessionUUID],
         MagneticBeadSeparationWashMixType -> Pipette,
@@ -6233,13 +6316,13 @@ DefineTests[ExperimentExtractPlasmidDNA,
         ObjectP[Object[Protocol, RoboticCellPreparation]],
         KeyValuePattern[
           {
-            MagneticBeadSeparationWashMixVolume -> EqualP[0.2 Milliliter]
+            MagneticBeadSeparationWashMixVolume -> EqualP[0.32 Milliliter]
           }
         ]
       },
       TimeConstraint -> 600
     ],
-    Example[{Options, MagneticBeadSeparationWashMixVolume, "If MagneticBeadSeparationWashMixType is set to Pipette and 1/2 of the combined MagneticBeadSeparationWashSolution and magnetic beads volume is greater than 970 microliters, MagneticBeadSeparationWashMixVolume is automatically set to 970 microliters:"},
+    Example[{Options, MagneticBeadSeparationWashMixVolume, "If MagneticBeadSeparationWashMixType is set to Pipette and 80% of the combined MagneticBeadSeparationWashSolution and magnetic beads volume is greater than 970 microliters, MagneticBeadSeparationWashMixVolume is automatically set to 970 microliters:"},
       ExperimentExtractPlasmidDNA[
         Object[Sample, "Previously Extracted Plasmid DNA Sample (Test for ExperimentExtractPlasmidDNA) " <> $SessionUUID],
         MagneticBeadSeparationWashMixType -> Pipette,
@@ -6277,7 +6360,7 @@ DefineTests[ExperimentExtractPlasmidDNA,
     ],
 
     (* -- NumberOfMagneticBeadSeparationWashMixes, MagneticBeadSeparationWashMixTipType, MagneticBeadSeparationWashMixTipMaterial Tests -- *)
-    Example[{Options, {NumberOfMagneticBeadSeparationWashMixes, MagneticBeadSeparationWashMixTipType, MagneticBeadSeparationWashMixTipMaterial}, "If MagneticBeadSeparationWashMixType is set to Pipette, NumberOfMagneticBeadSeparationWashMixes is automatically set to 10, MagneticBeadSeparationWashMixTipType is automatically set to WideBore and MagneticBeadSeparationWashMixTipMaterial is automatically set to Polypropylene unless otherwise specified:"},
+    Example[{Options, {NumberOfMagneticBeadSeparationWashMixes, MagneticBeadSeparationWashMixTipType, MagneticBeadSeparationWashMixTipMaterial}, "If MagneticBeadSeparationWashMixType is set to Pipette, NumberOfMagneticBeadSeparationWashMixes is automatically set to 20, MagneticBeadSeparationWashMixTipType is automatically set to WideBore and MagneticBeadSeparationWashMixTipMaterial is automatically set to Polypropylene unless otherwise specified:"},
       ExperimentExtractPlasmidDNA[
         Object[Sample, "Previously Extracted Plasmid DNA Sample (Test for ExperimentExtractPlasmidDNA) " <> $SessionUUID],
         MagneticBeadSeparationWashMixType -> Pipette,
@@ -6287,7 +6370,7 @@ DefineTests[ExperimentExtractPlasmidDNA,
         ObjectP[Object[Protocol, RoboticCellPreparation]],
         KeyValuePattern[
           {
-            NumberOfMagneticBeadSeparationWashMixes -> 10,
+            NumberOfMagneticBeadSeparationWashMixes -> 20,
             MagneticBeadSeparationWashMixTipType -> WideBore,
             MagneticBeadSeparationWashMixTipMaterial -> Polypropylene
           }
@@ -6516,7 +6599,7 @@ DefineTests[ExperimentExtractPlasmidDNA,
     ],
 
     (* -- NumberOfMagneticBeadSeparationSecondaryWashMixes, MagneticBeadSeparationSecondaryWashMixTipType, and MagneticBeadSeparationSecondaryWashMixTipMaterial Tests -- *)
-    Example[{Options, {NumberOfMagneticBeadSeparationSecondaryWashMixes, MagneticBeadSeparationSecondaryWashMixTipType, MagneticBeadSeparationSecondaryWashMixTipMaterial}, "If MagneticBeadSeparationSecondaryWashMixType is set to Pipette, NumberOfMagneticBeadSeparationSecondaryWashMixes is automatically set to 10, MagneticBeadSeparationSecondaryWashMixTipType is automatically set to WideBore, and MagneticBeadSeparationSecondaryWashMixTipMaterial is automatically set to Polypropylene unless otherwise specified:"},
+    Example[{Options, {NumberOfMagneticBeadSeparationSecondaryWashMixes, MagneticBeadSeparationSecondaryWashMixTipType, MagneticBeadSeparationSecondaryWashMixTipMaterial}, "If MagneticBeadSeparationSecondaryWashMixType is set to Pipette, NumberOfMagneticBeadSeparationSecondaryWashMixes is automatically set to 20, MagneticBeadSeparationSecondaryWashMixTipType is automatically set to WideBore, and MagneticBeadSeparationSecondaryWashMixTipMaterial is automatically set to Polypropylene unless otherwise specified:"},
       ExperimentExtractPlasmidDNA[
         Object[Sample, "Previously Extracted Plasmid DNA Sample (Test for ExperimentExtractPlasmidDNA) " <> $SessionUUID],
         MagneticBeadSeparationSecondaryWashMixType -> Pipette,
@@ -6528,7 +6611,7 @@ DefineTests[ExperimentExtractPlasmidDNA,
         ObjectP[Object[Protocol, RoboticCellPreparation]],
         KeyValuePattern[
           {
-            NumberOfMagneticBeadSeparationSecondaryWashMixes -> 10,
+            NumberOfMagneticBeadSeparationSecondaryWashMixes -> 20,
             MagneticBeadSeparationSecondaryWashMixTipType -> WideBore,
             MagneticBeadSeparationSecondaryWashMixTipMaterial -> Polypropylene
           }
@@ -6538,7 +6621,7 @@ DefineTests[ExperimentExtractPlasmidDNA,
     ],
 
     (* -- MagneticBeadSeparationSecondaryWashMixVolume Tests -- *)
-    Example[{Options, MagneticBeadSeparationSecondaryWashMixVolume, "If MagneticBeadSeparationSecondaryWashMixType is set to Pipette and 1/2 of the combined MagneticBeadSeparationSecondaryWashSolution and magnetic beads volume is less than 970 microliters, MagneticBeadSeparationSecondaryWashMixVolume is automatically set to 1/2 of the combined MagneticBeadSeparationSecondaryWashSolution and magnetic beads volume:"},
+    Example[{Options, MagneticBeadSeparationSecondaryWashMixVolume, "If MagneticBeadSeparationSecondaryWashMixType is set to Pipette and 80% of the combined MagneticBeadSeparationSecondaryWashSolution and magnetic beads volume is less than 970 microliters, MagneticBeadSeparationSecondaryWashMixVolume is automatically set to 80% of the combined MagneticBeadSeparationSecondaryWashSolution and magnetic beads volume:"},
       ExperimentExtractPlasmidDNA[
         Object[Sample, "Previously Extracted Plasmid DNA Sample (Test for ExperimentExtractPlasmidDNA) " <> $SessionUUID],
         MagneticBeadSeparationSecondaryWashMixType -> Pipette,
@@ -6552,13 +6635,13 @@ DefineTests[ExperimentExtractPlasmidDNA,
         ObjectP[Object[Protocol, RoboticCellPreparation]],
         KeyValuePattern[
           {
-            MagneticBeadSeparationSecondaryWashMixVolume -> EqualP[0.2 Milliliter]
+            MagneticBeadSeparationSecondaryWashMixVolume -> EqualP[0.32 Milliliter]
           }
         ]
       },
       TimeConstraint -> 600
     ],
-    Example[{Options, MagneticBeadSeparationSecondaryWashMixVolume, "If MagneticBeadSeparationSecondaryWashMixType is set to Pipette and 1/2 of the combined MagneticBeadSeparationSecondaryWashSolution and magnetic beads volume is greater than 970 microliters, MagneticBeadSeparationSecondaryWashMixVolume is automatically set to 970 microliters:"},
+    Example[{Options, MagneticBeadSeparationSecondaryWashMixVolume, "If MagneticBeadSeparationSecondaryWashMixType is set to Pipette and 80% of the combined MagneticBeadSeparationSecondaryWashSolution and magnetic beads volume is greater than 970 microliters, MagneticBeadSeparationSecondaryWashMixVolume is automatically set to 970 microliters:"},
       ExperimentExtractPlasmidDNA[
         Object[Sample, "Previously Extracted Plasmid DNA Sample (Test for ExperimentExtractPlasmidDNA) " <> $SessionUUID],
         MagneticBeadSeparationSecondaryWashMixType -> Pipette,
@@ -6831,7 +6914,7 @@ DefineTests[ExperimentExtractPlasmidDNA,
     ],
 
     (* -- NumberOfMagneticBeadSeparationTertiaryWashMixes, MagneticBeadSeparationTertiaryWashMixTipType, and MagneticBeadSeparationTertiaryWashMixTipMaterial Tests -- *)
-    Example[{Options, {NumberOfMagneticBeadSeparationTertiaryWashMixes, MagneticBeadSeparationTertiaryWashMixTipType, MagneticBeadSeparationTertiaryWashMixTipMaterial}, "If MagneticBeadSeparationTertiaryWashMixType is set to Pipette, NumberOfMagneticBeadSeparationTertiaryWashMixes is automatically set to 10, MagneticBeadSeparationTertiaryWashMixTipType is automatically set to WideBore, and MagneticBeadSeparationTertiaryWashMixTipMaterial is automatically set to Polypropylene unless otherwise specified:"},
+    Example[{Options, {NumberOfMagneticBeadSeparationTertiaryWashMixes, MagneticBeadSeparationTertiaryWashMixTipType, MagneticBeadSeparationTertiaryWashMixTipMaterial}, "If MagneticBeadSeparationTertiaryWashMixType is set to Pipette, NumberOfMagneticBeadSeparationTertiaryWashMixes is automatically set to 20, MagneticBeadSeparationTertiaryWashMixTipType is automatically set to WideBore, and MagneticBeadSeparationTertiaryWashMixTipMaterial is automatically set to Polypropylene unless otherwise specified:"},
       ExperimentExtractPlasmidDNA[
         Object[Sample, "Previously Extracted Plasmid DNA Sample (Test for ExperimentExtractPlasmidDNA) " <> $SessionUUID],
         MagneticBeadSeparationTertiaryWashMixType -> Pipette,
@@ -6844,7 +6927,7 @@ DefineTests[ExperimentExtractPlasmidDNA,
         ObjectP[Object[Protocol, RoboticCellPreparation]],
         KeyValuePattern[
           {
-            NumberOfMagneticBeadSeparationTertiaryWashMixes -> 10,
+            NumberOfMagneticBeadSeparationTertiaryWashMixes -> 20,
             MagneticBeadSeparationTertiaryWashMixTipType -> WideBore,
             MagneticBeadSeparationTertiaryWashMixTipMaterial -> Polypropylene
           }
@@ -6854,7 +6937,7 @@ DefineTests[ExperimentExtractPlasmidDNA,
     ],
 
     (* -- MagneticBeadSeparationTertiaryWashMixVolume Tests -- *)
-    Example[{Options, MagneticBeadSeparationTertiaryWashMixVolume, "If MagneticBeadSeparationTertiaryWashMixType is set to Pipette and 1/2 of the combined MagneticBeadSeparationTertiaryWashSolution and magnetic beads volume is less than 970 microliters, MagneticBeadSeparationTertiaryWashMixVolume is automatically set to 1/2 of the combined MagneticBeadSeparationTertiaryWashSolution and magnetic beads volume:"},
+    Example[{Options, MagneticBeadSeparationTertiaryWashMixVolume, "If MagneticBeadSeparationTertiaryWashMixType is set to Pipette and 80% of the combined MagneticBeadSeparationTertiaryWashSolution and magnetic beads volume is less than 970 microliters, MagneticBeadSeparationTertiaryWashMixVolume is automatically set to 80% of the combined MagneticBeadSeparationTertiaryWashSolution and magnetic beads volume:"},
       ExperimentExtractPlasmidDNA[
         Object[Sample, "Previously Extracted Plasmid DNA Sample (Test for ExperimentExtractPlasmidDNA) " <> $SessionUUID],
         MagneticBeadSeparationTertiaryWashMixType -> Pipette,
@@ -6869,13 +6952,13 @@ DefineTests[ExperimentExtractPlasmidDNA,
         ObjectP[Object[Protocol, RoboticCellPreparation]],
         KeyValuePattern[
           {
-            MagneticBeadSeparationTertiaryWashMixVolume -> EqualP[0.2 Milliliter]
+            MagneticBeadSeparationTertiaryWashMixVolume -> EqualP[0.32 Milliliter]
           }
         ]
       },
       TimeConstraint -> 600
     ],
-    Example[{Options, MagneticBeadSeparationTertiaryWashMixVolume, "If MagneticBeadSeparationTertiaryWashMixType is set to Pipette and 1/2 of the combined MagneticBeadSeparationTertiaryWashSolution and magnetic beads volume is greater than 970 microliters, MagneticBeadSeparationTertiaryWashMixVolume is automatically set to 970 microliters:"},
+    Example[{Options, MagneticBeadSeparationTertiaryWashMixVolume, "If MagneticBeadSeparationTertiaryWashMixType is set to Pipette and 80% of the combined MagneticBeadSeparationTertiaryWashSolution and magnetic beads volume is greater than 970 microliters, MagneticBeadSeparationTertiaryWashMixVolume is automatically set to 970 microliters:"},
       ExperimentExtractPlasmidDNA[
         Object[Sample, "Previously Extracted Plasmid DNA Sample (Test for ExperimentExtractPlasmidDNA) " <> $SessionUUID],
         MagneticBeadSeparationTertiaryWashMixType -> Pipette,
@@ -7160,7 +7243,7 @@ DefineTests[ExperimentExtractPlasmidDNA,
     ],
 
     (* -- NumberOfMagneticBeadSeparationQuaternaryWashMixes, MagneticBeadSeparationQuaternaryWashMixTipType, and MagneticBeadSeparationQuaternaryWashMixTipMaterial Tests -- *)
-    Example[{Options, {NumberOfMagneticBeadSeparationQuaternaryWashMixes, MagneticBeadSeparationQuaternaryWashMixTipType, MagneticBeadSeparationQuaternaryWashMixTipMaterial}, "If MagneticBeadSeparationQuaternaryWashMixType is set to Pipette, NumberOfMagneticBeadSeparationQuaternaryWashMixes is automatically set to 10, MagneticBeadSeparationQuaternaryWashMixTipType is automatically set to WideBore, and MagneticBeadSeparationQuaternaryWashMixTipMaterial is automatically set to Polypropylene unless otherwise specified:"},
+    Example[{Options, {NumberOfMagneticBeadSeparationQuaternaryWashMixes, MagneticBeadSeparationQuaternaryWashMixTipType, MagneticBeadSeparationQuaternaryWashMixTipMaterial}, "If MagneticBeadSeparationQuaternaryWashMixType is set to Pipette, NumberOfMagneticBeadSeparationQuaternaryWashMixes is automatically set to 20, MagneticBeadSeparationQuaternaryWashMixTipType is automatically set to WideBore, and MagneticBeadSeparationQuaternaryWashMixTipMaterial is automatically set to Polypropylene unless otherwise specified:"},
       ExperimentExtractPlasmidDNA[
         Object[Sample, "Previously Extracted Plasmid DNA Sample (Test for ExperimentExtractPlasmidDNA) " <> $SessionUUID],
         MagneticBeadSeparationQuaternaryWashMixType -> Pipette,
@@ -7174,7 +7257,7 @@ DefineTests[ExperimentExtractPlasmidDNA,
         ObjectP[Object[Protocol, RoboticCellPreparation]],
         KeyValuePattern[
           {
-            NumberOfMagneticBeadSeparationQuaternaryWashMixes -> 10,
+            NumberOfMagneticBeadSeparationQuaternaryWashMixes -> 20,
             MagneticBeadSeparationQuaternaryWashMixTipType -> WideBore,
             MagneticBeadSeparationQuaternaryWashMixTipMaterial -> Polypropylene
           }
@@ -7184,7 +7267,7 @@ DefineTests[ExperimentExtractPlasmidDNA,
     ],
 
     (* -- MagneticBeadSeparationQuaternaryWashMixVolume Tests -- *)
-    Example[{Options, MagneticBeadSeparationQuaternaryWashMixVolume, "If MagneticBeadSeparationQuaternaryWashMixType is set to Pipette and 1/2 of the combined MagneticBeadSeparationQuaternaryWashSolution and magnetic beads volume is less than 970 microliters, MagneticBeadSeparationQuaternaryWashMixVolume is automatically set to 1/2 of the combined MagneticBeadSeparationQuaternaryWashSolution and magnetic beads volume:"},
+    Example[{Options, MagneticBeadSeparationQuaternaryWashMixVolume, "If MagneticBeadSeparationQuaternaryWashMixType is set to Pipette and 80% of the combined MagneticBeadSeparationQuaternaryWashSolution and magnetic beads volume is less than 970 microliters, MagneticBeadSeparationQuaternaryWashMixVolume is automatically set to 80% of the combined MagneticBeadSeparationQuaternaryWashSolution and magnetic beads volume:"},
       ExperimentExtractPlasmidDNA[
         Object[Sample, "Previously Extracted Plasmid DNA Sample (Test for ExperimentExtractPlasmidDNA) " <> $SessionUUID],
         MagneticBeadSeparationQuaternaryWashMixType -> Pipette,
@@ -7200,13 +7283,13 @@ DefineTests[ExperimentExtractPlasmidDNA,
         ObjectP[Object[Protocol, RoboticCellPreparation]],
         KeyValuePattern[
           {
-            MagneticBeadSeparationQuaternaryWashMixVolume -> EqualP[0.2 Milliliter]
+            MagneticBeadSeparationQuaternaryWashMixVolume -> EqualP[0.32 Milliliter]
           }
         ]
       },
       TimeConstraint -> 600
     ],
-    Example[{Options, MagneticBeadSeparationQuaternaryWashMixVolume, "If MagneticBeadSeparationQuaternaryWashMixType is set to Pipette and 1/2 of the combined MagneticBeadSeparationQuaternaryWashSolution and magnetic beads volume is greater than 970 microliters, MagneticBeadSeparationQuaternaryWashMixVolume is automatically set to 970 microliters:"},
+    Example[{Options, MagneticBeadSeparationQuaternaryWashMixVolume, "If MagneticBeadSeparationQuaternaryWashMixType is set to Pipette and 80% of the combined MagneticBeadSeparationQuaternaryWashSolution and magnetic beads volume is greater than 970 microliters, MagneticBeadSeparationQuaternaryWashMixVolume is automatically set to 970 microliters:"},
       ExperimentExtractPlasmidDNA[
         Object[Sample, "Previously Extracted Plasmid DNA Sample (Test for ExperimentExtractPlasmidDNA) " <> $SessionUUID],
         MagneticBeadSeparationQuaternaryWashMixType -> Pipette,
@@ -7503,7 +7586,7 @@ DefineTests[ExperimentExtractPlasmidDNA,
     ],
 
     (* -- NumberOfMagneticBeadSeparationQuinaryWashMixes, MagneticBeadSeparationQuinaryWashMixTipType, and MagneticBeadSeparationQuinaryWashMixTipMaterial Tests -- *)
-    Example[{Options, {NumberOfMagneticBeadSeparationQuinaryWashMixes, MagneticBeadSeparationQuinaryWashMixTipType, MagneticBeadSeparationQuinaryWashMixTipMaterial}, "If MagneticBeadSeparationQuinaryWashMixType is set to Pipette, NumberOfMagneticBeadSeparationQuinaryWashMixes is automatically set to 10, MagneticBeadSeparationQuinaryWashMixTipType is automatically set to WideBore, and MagneticBeadSeparationQuinaryWashMixTipMaterial is automatically set to Polypropylene unless otherwise specified:"},
+    Example[{Options, {NumberOfMagneticBeadSeparationQuinaryWashMixes, MagneticBeadSeparationQuinaryWashMixTipType, MagneticBeadSeparationQuinaryWashMixTipMaterial}, "If MagneticBeadSeparationQuinaryWashMixType is set to Pipette, NumberOfMagneticBeadSeparationQuinaryWashMixes is automatically set to 20, MagneticBeadSeparationQuinaryWashMixTipType is automatically set to WideBore, and MagneticBeadSeparationQuinaryWashMixTipMaterial is automatically set to Polypropylene unless otherwise specified:"},
       ExperimentExtractPlasmidDNA[
         Object[Sample, "Previously Extracted Plasmid DNA Sample (Test for ExperimentExtractPlasmidDNA) " <> $SessionUUID],
         MagneticBeadSeparationQuinaryWashMixType -> Pipette,
@@ -7518,7 +7601,7 @@ DefineTests[ExperimentExtractPlasmidDNA,
         ObjectP[Object[Protocol, RoboticCellPreparation]],
         KeyValuePattern[
           {
-            NumberOfMagneticBeadSeparationQuinaryWashMixes -> 10,
+            NumberOfMagneticBeadSeparationQuinaryWashMixes -> 20,
             MagneticBeadSeparationQuinaryWashMixTipType -> WideBore,
             MagneticBeadSeparationQuinaryWashMixTipMaterial -> Polypropylene
           }
@@ -7528,7 +7611,7 @@ DefineTests[ExperimentExtractPlasmidDNA,
     ],
 
     (* -- MagneticBeadSeparationQuinaryWashMixVolume Tests -- *)
-    Example[{Options, MagneticBeadSeparationQuinaryWashMixVolume, "If MagneticBeadSeparationQuinaryWashMixType is set to Pipette and 1/2 of the combined MagneticBeadSeparationQuinaryWashSolution and magnetic beads volume is less than 970 microliters, MagneticBeadSeparationQuinaryWashMixVolume is automatically set to 1/2 of the combined MagneticBeadSeparationQuinaryWashSolution and magnetic beads volume:"},
+    Example[{Options, MagneticBeadSeparationQuinaryWashMixVolume, "If MagneticBeadSeparationQuinaryWashMixType is set to Pipette and 80% of the combined MagneticBeadSeparationQuinaryWashSolution and magnetic beads volume is less than 970 microliters, MagneticBeadSeparationQuinaryWashMixVolume is automatically set to 80% of the combined MagneticBeadSeparationQuinaryWashSolution and magnetic beads volume:"},
       ExperimentExtractPlasmidDNA[
         Object[Sample, "Previously Extracted Plasmid DNA Sample (Test for ExperimentExtractPlasmidDNA) " <> $SessionUUID],
         MagneticBeadSeparationQuinaryWashMixType -> Pipette,
@@ -7545,13 +7628,13 @@ DefineTests[ExperimentExtractPlasmidDNA,
         ObjectP[Object[Protocol, RoboticCellPreparation]],
         KeyValuePattern[
           {
-            MagneticBeadSeparationQuinaryWashMixVolume -> EqualP[0.2 Milliliter]
+            MagneticBeadSeparationQuinaryWashMixVolume -> EqualP[0.32 Milliliter]
           }
         ]
       },
       TimeConstraint -> 600
     ],
-    Example[{Options, MagneticBeadSeparationQuinaryWashMixVolume, "If MagneticBeadSeparationQuinaryWashMixType is set to Pipette and 1/2 of the combined MagneticBeadSeparationQuinaryWashSolution and magnetic beads volume is greater than 970 microliters, MagneticBeadSeparationQuinaryWashMixVolume is automatically set to 970 microliters:"},
+    Example[{Options, MagneticBeadSeparationQuinaryWashMixVolume, "If MagneticBeadSeparationQuinaryWashMixType is set to Pipette and 80% of the combined MagneticBeadSeparationQuinaryWashSolution and magnetic beads volume is greater than 970 microliters, MagneticBeadSeparationQuinaryWashMixVolume is automatically set to 970 microliters:"},
       ExperimentExtractPlasmidDNA[
         Object[Sample, "Previously Extracted Plasmid DNA Sample (Test for ExperimentExtractPlasmidDNA) " <> $SessionUUID],
         MagneticBeadSeparationQuinaryWashMixType -> Pipette,
@@ -7860,7 +7943,7 @@ DefineTests[ExperimentExtractPlasmidDNA,
     ],
 
     (* -- NumberOfMagneticBeadSeparationSenaryWashMixes, MagneticBeadSeparationSenaryWashMixTipType, and MagneticBeadSeparationSenaryWashMixTipMaterial Tests -- *)
-    Example[{Options, {NumberOfMagneticBeadSeparationSenaryWashMixes, MagneticBeadSeparationSenaryWashMixTipType, MagneticBeadSeparationSenaryWashMixTipMaterial}, "If MagneticBeadSeparationSenaryWashMixType is set to Pipette, NumberOfMagneticBeadSeparationSenaryWashMixes is automatically set to 10, MagneticBeadSeparationSenaryWashMixTipType is automatically set to WideBore, and MagneticBeadSeparationSenaryWashMixTipMaterial is automatically set to Polypropylene unless otherwise specified:"},
+    Example[{Options, {NumberOfMagneticBeadSeparationSenaryWashMixes, MagneticBeadSeparationSenaryWashMixTipType, MagneticBeadSeparationSenaryWashMixTipMaterial}, "If MagneticBeadSeparationSenaryWashMixType is set to Pipette, NumberOfMagneticBeadSeparationSenaryWashMixes is automatically set to 20, MagneticBeadSeparationSenaryWashMixTipType is automatically set to WideBore, and MagneticBeadSeparationSenaryWashMixTipMaterial is automatically set to Polypropylene unless otherwise specified:"},
       ExperimentExtractPlasmidDNA[
         Object[Sample, "Previously Extracted Plasmid DNA Sample (Test for ExperimentExtractPlasmidDNA) " <> $SessionUUID],
         MagneticBeadSeparationSenaryWashMixType -> Pipette,
@@ -7876,7 +7959,7 @@ DefineTests[ExperimentExtractPlasmidDNA,
         ObjectP[Object[Protocol, RoboticCellPreparation]],
         KeyValuePattern[
           {
-            NumberOfMagneticBeadSeparationSenaryWashMixes -> 10,
+            NumberOfMagneticBeadSeparationSenaryWashMixes -> 20,
             MagneticBeadSeparationSenaryWashMixTipType -> WideBore,
             MagneticBeadSeparationSenaryWashMixTipMaterial -> Polypropylene
           }
@@ -7886,7 +7969,7 @@ DefineTests[ExperimentExtractPlasmidDNA,
     ],
 
     (* -- MagneticBeadSeparationSenaryWashMixVolume Tests -- *)
-    Example[{Options, MagneticBeadSeparationSenaryWashMixVolume, "If MagneticBeadSeparationSenaryWashMixType is set to Pipette and 1/2 of the combined MagneticBeadSeparationSenaryWashSolution and magnetic beads volume is less than 970 microliters, MagneticBeadSeparationSenaryWashMixVolume is automatically set to 1/2 of the combined MagneticBeadSeparationSenaryWashSolution and magnetic beads volume:"},
+    Example[{Options, MagneticBeadSeparationSenaryWashMixVolume, "If MagneticBeadSeparationSenaryWashMixType is set to Pipette and 80% of the combined MagneticBeadSeparationSenaryWashSolution and magnetic beads volume is less than 970 microliters, MagneticBeadSeparationSenaryWashMixVolume is automatically set to 80% of the combined MagneticBeadSeparationSenaryWashSolution and magnetic beads volume:"},
       ExperimentExtractPlasmidDNA[
         Object[Sample, "Previously Extracted Plasmid DNA Sample (Test for ExperimentExtractPlasmidDNA) " <> $SessionUUID],
         MagneticBeadSeparationSenaryWashMixType -> Pipette,
@@ -7904,13 +7987,13 @@ DefineTests[ExperimentExtractPlasmidDNA,
         ObjectP[Object[Protocol, RoboticCellPreparation]],
         KeyValuePattern[
           {
-            MagneticBeadSeparationSenaryWashMixVolume -> EqualP[0.2 Milliliter]
+            MagneticBeadSeparationSenaryWashMixVolume -> EqualP[0.32 Milliliter]
           }
         ]
       },
       TimeConstraint -> 600
     ],
-    Example[{Options, MagneticBeadSeparationSenaryWashMixVolume, "If MagneticBeadSeparationSenaryWashMixType is set to Pipette and 1/2 of the combined MagneticBeadSeparationSenaryWashSolution and magnetic beads volume is greater than 970 microliters, MagneticBeadSeparationSenaryWashMixVolume is automatically set to 970 microliters:"},
+    Example[{Options, MagneticBeadSeparationSenaryWashMixVolume, "If MagneticBeadSeparationSenaryWashMixType is set to Pipette and 80% of the combined MagneticBeadSeparationSenaryWashSolution and magnetic beads volume is greater than 970 microliters, MagneticBeadSeparationSenaryWashMixVolume is automatically set to 970 microliters:"},
       ExperimentExtractPlasmidDNA[
         Object[Sample, "Previously Extracted Plasmid DNA Sample (Test for ExperimentExtractPlasmidDNA) " <> $SessionUUID],
         MagneticBeadSeparationSenaryWashMixType -> Pipette,
@@ -8231,7 +8314,7 @@ DefineTests[ExperimentExtractPlasmidDNA,
     ],
 
     (* -- NumberOfMagneticBeadSeparationSeptenaryWashMixes, MagneticBeadSeparationSeptenaryWashMixTipType, and MagneticBeadSeparationSeptenaryWashMixTipMaterial Tests -- *)
-    Example[{Options, {NumberOfMagneticBeadSeparationSeptenaryWashMixes, MagneticBeadSeparationSeptenaryWashMixTipType, MagneticBeadSeparationSeptenaryWashMixTipMaterial}, "If MagneticBeadSeparationSeptenaryWashMixType is set to Pipette, NumberOfMagneticBeadSeparationSeptenaryWashMixes is automatically set to 10, MagneticBeadSeparationSeptenaryWashMixTipType is automatically set to WideBore, and MagneticBeadSeparationSeptenaryWashMixTipMaterial is automatically set to Polypropylene unless otherwise specified:"},
+    Example[{Options, {NumberOfMagneticBeadSeparationSeptenaryWashMixes, MagneticBeadSeparationSeptenaryWashMixTipType, MagneticBeadSeparationSeptenaryWashMixTipMaterial}, "If MagneticBeadSeparationSeptenaryWashMixType is set to Pipette, NumberOfMagneticBeadSeparationSeptenaryWashMixes is automatically set to 20, MagneticBeadSeparationSeptenaryWashMixTipType is automatically set to WideBore, and MagneticBeadSeparationSeptenaryWashMixTipMaterial is automatically set to Polypropylene unless otherwise specified:"},
       ExperimentExtractPlasmidDNA[
         Object[Sample, "Previously Extracted Plasmid DNA Sample (Test for ExperimentExtractPlasmidDNA) " <> $SessionUUID],
         MagneticBeadSeparationSeptenaryWashMixType -> Pipette,
@@ -8248,7 +8331,7 @@ DefineTests[ExperimentExtractPlasmidDNA,
         ObjectP[Object[Protocol, RoboticCellPreparation]],
         KeyValuePattern[
           {
-            NumberOfMagneticBeadSeparationSeptenaryWashMixes -> 10,
+            NumberOfMagneticBeadSeparationSeptenaryWashMixes -> 20,
             MagneticBeadSeparationSeptenaryWashMixTipType -> WideBore,
             MagneticBeadSeparationSeptenaryWashMixTipMaterial -> Polypropylene
           }
@@ -8258,7 +8341,7 @@ DefineTests[ExperimentExtractPlasmidDNA,
     ],
 
     (* -- MagneticBeadSeparationSeptenaryWashMixVolume Tests -- *)
-    Example[{Options, MagneticBeadSeparationSeptenaryWashMixVolume, "If MagneticBeadSeparationSeptenaryWashMixType is set to Pipette and 1/2 of the combined MagneticBeadSeparationSeptenaryWashSolution and magnetic beads volume is less than 970 microliters, MagneticBeadSeparationSeptenaryWashMixVolume is automatically set to 1/2 of the combined MagneticBeadSeparationSeptenaryWashSolution and magnetic beads volume:"},
+    Example[{Options, MagneticBeadSeparationSeptenaryWashMixVolume, "If MagneticBeadSeparationSeptenaryWashMixType is set to Pipette and 80% of the combined MagneticBeadSeparationSeptenaryWashSolution and magnetic beads volume is less than 970 microliters, MagneticBeadSeparationSeptenaryWashMixVolume is automatically set to 80% of the combined MagneticBeadSeparationSeptenaryWashSolution and magnetic beads volume:"},
       ExperimentExtractPlasmidDNA[
         Object[Sample, "Previously Extracted Plasmid DNA Sample (Test for ExperimentExtractPlasmidDNA) " <> $SessionUUID],
         MagneticBeadSeparationSeptenaryWashMixType -> Pipette,
@@ -8277,13 +8360,13 @@ DefineTests[ExperimentExtractPlasmidDNA,
         ObjectP[Object[Protocol, RoboticCellPreparation]],
         KeyValuePattern[
           {
-            MagneticBeadSeparationSeptenaryWashMixVolume -> EqualP[0.2 Milliliter]
+            MagneticBeadSeparationSeptenaryWashMixVolume -> EqualP[0.32 Milliliter]
           }
         ]
       },
       TimeConstraint -> 600
     ],
-    Example[{Options, MagneticBeadSeparationSeptenaryWashMixVolume, "If MagneticBeadSeparationSeptenaryWashMixType is set to Pipette and 1/2 of the combined MagneticBeadSeparationSeptenaryWashSolution and magnetic beads volume is greater than 970 microliters, MagneticBeadSeparationSeptenaryWashMixVolume is automatically set to 970 microliters:"},
+    Example[{Options, MagneticBeadSeparationSeptenaryWashMixVolume, "If MagneticBeadSeparationSeptenaryWashMixType is set to Pipette and 80% of the combined MagneticBeadSeparationSeptenaryWashSolution and magnetic beads volume is greater than 970 microliters, MagneticBeadSeparationSeptenaryWashMixVolume is automatically set to 970 microliters:"},
       ExperimentExtractPlasmidDNA[
         Object[Sample, "Previously Extracted Plasmid DNA Sample (Test for ExperimentExtractPlasmidDNA) " <> $SessionUUID],
         MagneticBeadSeparationSeptenaryWashMixType -> Pipette,
@@ -8552,7 +8635,7 @@ DefineTests[ExperimentExtractPlasmidDNA,
     ],
 
     (* -- NumberOfMagneticBeadSeparationElutionMixes, MagneticBeadSeparationElutionMixTipType, and MagneticBeadSeparationElutionMixTipMaterial Tests -- *)
-    Example[{Options, {NumberOfMagneticBeadSeparationElutionMixes, MagneticBeadSeparationElutionMixTipType, MagneticBeadSeparationElutionMixTipMaterial}, "If MagneticBeadSeparationElutionMixType is set to Pipette, NumberOfMagneticBeadSeparationElutionMixes is automatically set to 10, MagneticBeadSeparationElutionMixTipType is automatically set to WideBore, and MagneticBeadSeparationElutionMixTipMaterial is automatically set to Polypropylene unless otherwise specified:"},
+    Example[{Options, {NumberOfMagneticBeadSeparationElutionMixes, MagneticBeadSeparationElutionMixTipType, MagneticBeadSeparationElutionMixTipMaterial}, "If MagneticBeadSeparationElutionMixType is set to Pipette, NumberOfMagneticBeadSeparationElutionMixes is automatically set to 20, MagneticBeadSeparationElutionMixTipType is automatically set to WideBore, and MagneticBeadSeparationElutionMixTipMaterial is automatically set to Polypropylene unless otherwise specified:"},
       ExperimentExtractPlasmidDNA[
         Object[Sample, "Previously Extracted Plasmid DNA Sample (Test for ExperimentExtractPlasmidDNA) " <> $SessionUUID],
         MagneticBeadSeparationElutionMixType -> Pipette,
@@ -8562,7 +8645,7 @@ DefineTests[ExperimentExtractPlasmidDNA,
         ObjectP[Object[Protocol, RoboticCellPreparation]],
         KeyValuePattern[
           {
-            NumberOfMagneticBeadSeparationElutionMixes -> 10,
+            NumberOfMagneticBeadSeparationElutionMixes -> 20,
             MagneticBeadSeparationElutionMixTipType -> WideBore,
             MagneticBeadSeparationElutionMixTipMaterial -> Polypropylene
           }
@@ -8572,7 +8655,7 @@ DefineTests[ExperimentExtractPlasmidDNA,
     ],
 
     (* -- MagneticBeadSeparationElutionMixVolume Tests -- *)
-    Example[{Options, MagneticBeadSeparationElutionMixVolume, "If MagneticBeadSeparationElutionMixType is set to Pipette and 1/2 of the combined MagneticBeadSeparationElutionSolutionVolume and MagneticBeadVolume is less than 970 microliters, MagneticBeadSeparationElutionMixVolume is automatically set to 1/2 of theMagneticBeadSeparationElutionSolutionVolume:"},
+    Example[{Options, MagneticBeadSeparationElutionMixVolume, "If MagneticBeadSeparationElutionMixType is set to Pipette and 80% of the combined MagneticBeadSeparationElutionSolutionVolume and MagneticBeadVolume is less than 970 microliters, MagneticBeadSeparationElutionMixVolume is automatically set to 80% of theMagneticBeadSeparationElutionSolutionVolume:"},
       ExperimentExtractPlasmidDNA[
         Object[Sample, "Previously Extracted Plasmid DNA Sample (Test for ExperimentExtractPlasmidDNA) " <> $SessionUUID],
         MagneticBeadSeparationElutionMixType -> Pipette,
@@ -8584,13 +8667,13 @@ DefineTests[ExperimentExtractPlasmidDNA,
         ObjectP[Object[Protocol, RoboticCellPreparation]],
         KeyValuePattern[
           {
-            MagneticBeadSeparationElutionMixVolume -> EqualP[0.2 Milliliter]
+            MagneticBeadSeparationElutionMixVolume -> EqualP[0.32 Milliliter]
           }
         ]
       },
       TimeConstraint -> 600
     ],
-    Example[{Options, MagneticBeadSeparationElutionMixVolume, "If MagneticBeadSeparationElutionMixType is set to Pipette and 1/2 of the combined MagneticBeadSeparationElutionSolutionVolume and MagneticBeadVolume is greater than 970 microliters, MagneticBeadSeparationElutionMixVolume is automatically set to 970 microliters:"},
+    Example[{Options, MagneticBeadSeparationElutionMixVolume, "If MagneticBeadSeparationElutionMixType is set to Pipette and 80% of the combined MagneticBeadSeparationElutionSolutionVolume and MagneticBeadVolume is greater than 970 microliters, MagneticBeadSeparationElutionMixVolume is automatically set to 970 microliters:"},
       ExperimentExtractPlasmidDNA[
         Object[Sample, "Previously Extracted Plasmid DNA Sample (Test for ExperimentExtractPlasmidDNA) " <> $SessionUUID],
         MagneticBeadSeparationElutionMixType -> Pipette,
@@ -8629,7 +8712,7 @@ DefineTests[ExperimentExtractPlasmidDNA,
 
   },
   Parallel -> True,
-  TurnOffMessages :> {Warning::SamplesOutOfStock, Warning::InstrumentUndergoingMaintenance, Warning::DeprecatedProduct},
+  TurnOffMessages :> {Warning::SamplesOutOfStock, Warning::InstrumentUndergoingMaintenance, Warning::DeprecatedProduct, Warning::ConflictingSourceAndDestinationAsepticHandling},
   SymbolSetUp :> Module[{existsFilter, oligomer0, plate0, plate1, plate2, plate3, plate4, plate5, plate6, plate7, plate8, plate9, plate10, plate11, plate12, plate13, plate14, plate15, tube0, sample0, sample1, sample2, sample3, sample4, sample5, sample6, sample7, sample8, sample9, sample10, sample11, sample12, sample13, sample14, sample15, sample16, method0, method1},
     $CreatedObjects = {};
 
@@ -9109,7 +9192,8 @@ DefineTests[ExperimentExtractPlasmidDNA,
         Verbose -> False
       ]];
     ]
-  )
+  ),
+  Skip -> "Skipping temporarily until implemented in lab due to high resource requirement for testing."
 ];
 
 
@@ -9240,6 +9324,7 @@ DefineTests[ExtractPlasmidDNA,
         Verbose -> False
       ]];
     ]
-  )
+  ),
+  Skip -> "Skipping temporarily until implemented in lab due to high resource requirement for testing."
 ];
 

@@ -128,9 +128,13 @@ DefineTests[ExperimentCoulterCount,
 			],
 			Model[Sample, "id:n0k9mGkbr8j6"], (* Model[Sample,"Beckman Coulter ISOTON II Electrolyte Diluent"] *)
 			SetUp :> {
+				$CreatedObjects = {};
+				ClearMemoization[];
 				On[Warning::SolubleSamples]
 			},
 			TearDown :> {
+				EraseObject[$CreatedObjects, Force -> True];
+				Unset[$CreatedObjects];
 				Off[Warning::SolubleSamples]
 			},
 			Messages :> {Warning::SolubleSamples}
@@ -538,7 +542,7 @@ DefineTests[ExperimentCoulterCount,
 				],
 				MinSuitabilityParticleSize
 			],
-			2. * Micrometer,
+			2.1 * Micrometer,
 			EquivalenceFunction -> Equal
 		],
 		(* SuitabilityEquilibrationTime *)
@@ -1216,7 +1220,7 @@ DefineTests[ExperimentCoulterCount,
 			UnitsP[Microliter / Second]
 		],
 		(* MinParticleSize *)
-		Example[{Options, "MinParticleSize", "MinParticleSize is automatically set to 2% of the ApertureDiameter:"},
+		Example[{Options, "MinParticleSize", "MinParticleSize is automatically set to 2.1% of the ApertureDiameter:"},
 			Lookup[
 				ExperimentCoulterCount[Object[Sample, "Test sample 1 for ExperimentCoulterCount unit test "<>$SessionUUID],
 					ApertureDiameter -> 100. Micrometer,
@@ -1224,7 +1228,7 @@ DefineTests[ExperimentCoulterCount,
 				],
 				MinParticleSize
 			],
-			2. * Micrometer,
+			2.1 * Micrometer,
 			EquivalenceFunction -> Equal
 		],
 		(* StopCondition *)
@@ -1355,6 +1359,41 @@ DefineTests[ExperimentCoulterCount,
 			],
 			500 * Microliter / Second * 12 * Second * (2 * 4 + 5 * 4 + 4 * 3 + 2 * 3 + 1) + 2 * Liter,
 			EquivalenceFunction -> Equal
+		],
+		Example[{Options, {PreparedModelContainer, PreparedModelAmount}, "Specify the container in which an input Model[Sample] should be prepared:"},
+			options = ExperimentCoulterCount[
+				{Model[Sample, "Milli-Q water"], Model[Sample, "Milli-Q water"]},
+				PreparedModelContainer -> Model[Container, Vessel, "100 mL Glass Bottle"],
+				PreparedModelAmount -> 100 Milliliter,
+				Output -> Options
+			];
+			prepUOs = Lookup[options, PreparatoryUnitOperations];
+			{
+				prepUOs[[-1, 1]][Sample],
+				prepUOs[[-1, 1]][Container],
+				prepUOs[[-1, 1]][Amount],
+				prepUOs[[-1, 1]][Well],
+				prepUOs[[-1, 1]][ContainerLabel]
+			},
+			{
+				{ObjectP[Model[Sample, "id:8qZ1VWNmdLBD"]]..},
+				{ObjectP[Model[Container, Vessel, "100 mL Glass Bottle"]]..},
+				{EqualP[100 Milliliter]..},
+				{"A1", "A1"},
+				{_String, _String}
+			},
+			Variables :> {options, prepUOs}
+		],
+		Example[{Options, {PreparedModelContainer, PreparedModelAmount}, "Ensure that PreparedSamples is populated properly if doing model input:"},
+			prot = ExperimentCoulterCount[
+				{Model[Sample, "Milli-Q water"], Model[Sample, "Milli-Q water"]},
+				PreparedModelContainer -> Model[Container, Vessel, "100 mL Glass Bottle"],
+				PreparedModelAmount -> 100 Milliliter
+			];
+			Download[prot, PreparedSamples],
+			{{_String, _Symbol, __}..},
+			Variables :> {prot},
+			TimeConstraint -> 600
 		],
 		Example[{Options, "PreparatoryUnitOperations", "Use PreparatoryUnitOperations to specify sample prep procedures before sample is subjected to ExperimentCoulterCount:"},
 			ExperimentCoulterCount["test target container",
@@ -1700,17 +1739,11 @@ DefineTests[ExperimentCoulterCount,
 			SetUp :> {
 				$CreatedObjects = {};
 				ClearMemoization[];
-				Off[Warning::SamplesOutOfStock];
-				Off[Warning::DeprecatedProduct];
-				Off[Warning::SampleMustBeMoved];
 				On[Warning::VolumeModeRecommended];
 			},
 			TearDown :> {
 				EraseObject[$CreatedObjects, Force -> True];
 				Unset[$CreatedObjects];
-				On[Warning::SamplesOutOfStock];
-				On[Warning::DeprecatedProduct];
-				On[Warning::SampleMustBeMoved];
 				Off[Warning::VolumeModeRecommended];
 			}
 		],
@@ -1902,6 +1935,7 @@ DefineTests[ExperimentCoulterCount,
 							SterileTechnique -> False
 						]
 					},
+					Debug -> True,
 					Output -> {Result, Simulation}
 				];
 				(* Look for sample after coulter experiment and transfer *)
@@ -1913,6 +1947,80 @@ DefineTests[ExperimentCoulterCount,
 				]
 			],
 			True
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a sample that does not exist (name form):"},
+			ExperimentCoulterCount[Object[Sample, "Nonexistent sample"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a container that does not exist (name form):"},
+			ExperimentCoulterCount[Object[Container, Vessel, "Nonexistent container"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a sample that does not exist (ID form):"},
+			ExperimentCoulterCount[Object[Sample, "id:12345678"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a container that does not exist (ID form):"},
+			ExperimentCoulterCount[Object[Container, Vessel, "id:12345678"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Do NOT throw a message if we have a simulated sample but a simulation is specified that indicates that it is simulated:"},
+			Module[{containerPackets, containerID, sampleID, samplePackets, simulationToPassIn},
+				containerPackets = UploadSample[
+					Model[Container,Vessel,"50mL Tube"],
+					{"Work Surface", Object[Container, Bench, "The Bench of Testing"]},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True
+				];
+				simulationToPassIn = Simulation[containerPackets];
+				containerID = Lookup[First[containerPackets], Object];
+				samplePackets = UploadSample[
+					Model[Sample, "Milli-Q water"],
+					{"A1", containerID},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True,
+					Simulation -> simulationToPassIn,
+					InitialAmount -> 25 Milliliter
+				];
+				sampleID = Lookup[First[samplePackets], Object];
+				simulationToPassIn = UpdateSimulation[simulationToPassIn, Simulation[samplePackets]];
+
+				ExperimentCoulterCount[sampleID, Simulation -> simulationToPassIn, Output -> Options]
+			],
+			{__Rule}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Do NOT throw a message if we have a simulated container but a simulation is specified that indicates that it is simulated:"},
+			Module[{containerPackets, containerID, sampleID, samplePackets, simulationToPassIn},
+				containerPackets = UploadSample[
+					Model[Container,Vessel,"50mL Tube"],
+					{"Work Surface", Object[Container, Bench, "The Bench of Testing"]},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True
+				];
+				simulationToPassIn = Simulation[containerPackets];
+				containerID = Lookup[First[containerPackets], Object];
+				samplePackets = UploadSample[
+					Model[Sample, "Milli-Q water"],
+					{"A1", containerID},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True,
+					Simulation -> simulationToPassIn,
+					InitialAmount -> 25 Milliliter
+				];
+				sampleID = Lookup[First[samplePackets], Object];
+				simulationToPassIn = UpdateSimulation[simulationToPassIn, Simulation[samplePackets]];
+
+				ExperimentCoulterCount[containerID, Simulation -> simulationToPassIn, Output -> Options]
+			],
+			{__Rule}
 		]
 	},
 	(* Every time a test is run reset $CreatedObjects and erase objects created during that test at the end. *)
@@ -1920,16 +2028,10 @@ DefineTests[ExperimentCoulterCount,
 	SetUp :> (
 		$CreatedObjects = {};
 		ClearMemoization[];
-		Off[Warning::SamplesOutOfStock];
-		Off[Warning::DeprecatedProduct];
-		Off[Warning::SampleMustBeMoved];
 	),
 	TearDown :> (
 		EraseObject[$CreatedObjects, Force -> True];
 		Unset[$CreatedObjects];
-		On[Warning::SamplesOutOfStock];
-		On[Warning::DeprecatedProduct];
-		On[Warning::SampleMustBeMoved];
 	),
 	(* SymbolSetUp/SymbolTearDown only runs once in the beginning and in the end of unit tests. *)
 	SymbolSetUp :> (
@@ -1938,6 +2040,9 @@ DefineTests[ExperimentCoulterCount,
 		(* Turning off this message since it is so prevailing and easy to hit, we will turn it on when we get to the corresponding message test *)
 		Off[Warning::VolumeModeRecommended];
 		Off[Warning::SolubleSamples];
+		Off[Warning::SamplesOutOfStock];
+		Off[Warning::DeprecatedProduct];
+		Off[Warning::SampleMustBeMoved];
 
 		(* Setup Phase *)
 		Block[{$DeveloperUpload = True},
@@ -2325,6 +2430,9 @@ DefineTests[ExperimentCoulterCount,
 	SymbolTearDown :> (
 		On[Warning::VolumeModeRecommended];
 		On[Warning::SolubleSamples];
+		On[Warning::SamplesOutOfStock];
+		On[Warning::DeprecatedProduct];
+		On[Warning::SampleMustBeMoved];
 		experimentCoulterCountTestCleanup[];
 	),
 	Stubs :> {
@@ -2413,7 +2521,7 @@ DefineTests[
 					]
 				}
 			],
-			ObjectP[Object[Protocol, ManualSamplePreparation]]
+			ObjectP[Object[Protocol, ManualCellPreparation]]
 		],
 		Example[{Basic, "Enqueue a series of primitives:"},
 			ExperimentManualSamplePreparation[
@@ -2441,7 +2549,8 @@ DefineTests[
 						Amount -> 10 Milliliter,
 						SterileTechnique -> False
 					]
-				}
+				},
+				Debug -> True
 			],
 			ObjectP[Object[Protocol, ManualSamplePreparation]]
 		],
@@ -2495,18 +2604,15 @@ DefineTests[
 	SetUp :> {
 		$CreatedObjects = {};
 		ClearMemoization[];
-		Off[Warning::SamplesOutOfStock];
-		Off[Warning::DeprecatedProduct];
-		Off[Warning::SampleMustBeMoved];
 	},
 	TearDown :> (
 		EraseObject[$CreatedObjects, Force -> True];
 		Unset[$CreatedObjects];
-		On[Warning::SamplesOutOfStock];
-		On[Warning::DeprecatedProduct];
-		On[Warning::SampleMustBeMoved];
 	),
 	SymbolSetUp :> (
+		Off[Warning::SamplesOutOfStock];
+		Off[Warning::DeprecatedProduct];
+		Off[Warning::SampleMustBeMoved];
 		coulterCountTestsTearDown[];
 		$CreatedObjects = {};
 		Module[{testBench, tube1, tube2, tube3, sample1, sample2, sample3},
@@ -2617,6 +2723,9 @@ DefineTests[
 		];
 	),
 	SymbolTearDown :> (
+		On[Warning::SamplesOutOfStock];
+		On[Warning::DeprecatedProduct];
+		On[Warning::SampleMustBeMoved];
 		coulterCountTestsTearDown[];
 	)
 ];

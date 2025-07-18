@@ -15,12 +15,33 @@ DefineUsage[ExperimentStreakCells,
           IndexMatching[
             {
               InputName -> "objects",
-              Description-> "The samples that cells are streaked from.",
-              Widget->Widget[
-                Type->Object,
-                Pattern:>ObjectP[{Object[Sample],Object[Container]}],
-                Dereference->{
-                  Object[Container]->Field[Contents[[All,2]]]
+              Description-> "The samples that cells are spread from.",
+              Widget->Alternatives[
+                "Sample or Container" -> Widget[
+                  Type -> Object,
+                  Pattern :> ObjectP[{Object[Sample], Object[Container]}],
+                  Dereference -> {
+                    Object[Container] -> Field[Contents[[All, 2]]]
+                  }
+                ],
+                "Container with Well Position" -> {
+                  "Well Position" -> Alternatives[
+                    "A1 to "<>ConvertWell[$MaxNumberOfWells, NumberOfWells -> $MaxNumberOfWells] -> Widget[
+                      Type -> Enumeration,
+                      Pattern :> Alternatives @@ Flatten[AllWells[NumberOfWells -> $MaxNumberOfWells]],
+                      PatternTooltip -> "Enumeration must be any well from A1 to "<>ConvertWell[$MaxNumberOfWells, NumberOfWells -> $MaxNumberOfWells]<>"."
+                    ],
+                    "Container Position" -> Widget[
+                      Type -> String,
+                      Pattern :> LocationPositionP,
+                      PatternTooltip -> "Any valid container position.",
+                      Size -> Line
+                    ]
+                  ],
+                  "Container" -> Widget[
+                    Type -> Object,
+                    Pattern :> ObjectP[{Object[Container]}]
+                  ]
                 }
               ],
               Expandable->False
@@ -43,7 +64,6 @@ DefineUsage[ExperimentStreakCells,
     SeeAlso -> {
       "ValidExperimentStreakCellsQ",
       "ExperimentStreakCellsOptions",
-      "ExperimentStreakCellsPreview",
       "ExperimentInoculateLiquidMedia",
       "ExperimentPickColonies",
       "ExperimentSpreadCells"
@@ -59,7 +79,7 @@ DefineUsage[ExperimentStreakCellsOptions,
     BasicDefinitions->{
       {
         Definition->{"ExperimentStreakCellsOptions[Samples]","ResolvedOptions"},
-        Description->"returns the resolved options for ExperimentStreakCells when it is called on",
+        Description->"returns the resolved options for ExperimentStreakCells when it is called on.",
         Inputs:> {
           IndexMatching[
             {
@@ -133,5 +153,51 @@ DefineUsage[ValidExperimentStreakCellsQ,
       "ExperimentStreakCellsOptions"
     },
     Author->{"harrison.gronlund", "taylor.hochuli"}
+  }
+];
+(* ::Section:: *)
+(* ExperimentStreakCellsPreview *)
+DefineUsage[ExperimentStreakCellsPreview,
+  {
+    BasicDefinitions -> {
+      {
+        Definition -> {"ExperimentStreakCellsPreview[Samples]", "Preview"},
+        Description -> "generates a graphical 'Preview' for streaking cell suspension 'Samples' onto an agar culture plate.",
+        Inputs:> {
+          IndexMatching[
+            {
+              InputName->"Samples",
+              Description->"The suspension culture that is streaked.",
+              Widget->Widget[
+                Type->Object,
+                Pattern:>ObjectP[{Object[Sample],Object[Container]}],
+                Dereference->{
+                  Object[Container]->Field[Contents[[All,2]]]
+                }
+              ],
+              Expandable->False
+            },
+            IndexName->"experiment samples"
+          ]
+        },
+        Outputs :> {
+          {
+            OutputName -> "Preview",
+            Description -> "A graphical representation of the provided StreakCells experiment. This value is always Null.",
+            Pattern :> Null
+          }
+        }
+      }
+    },
+    MoreInformation -> {},
+    SeeAlso -> {
+      "ExperimentStreakCells",
+      "ExperimentStreakCellsOptions",
+      "ValidExperimentStreakCellsQ"
+    },
+    Tutorials -> {
+
+    },
+    Author -> {"harrison.gronlund"}
   }
 ];

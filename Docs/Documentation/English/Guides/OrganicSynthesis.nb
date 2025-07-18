@@ -1,3 +1,365 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:a5a59115935a5a431d93a125fabb0208b279b52336389ac0a59e03ba5b41365c
-size 15013
+(* Content-type: application/vnd.wolfram.mathematica *)
+
+(*** Wolfram Notebook File ***)
+(* http://www.wolfram.com/nb *)
+
+(* CreatedBy='Mathematica 11.3' *)
+
+(*CacheID: 234*)
+(* Internal cache information:
+NotebookFileLineBreakTest
+NotebookFileLineBreakTest
+NotebookDataPosition[       158,          7]
+NotebookDataLength[     14448,        355]
+NotebookOptionsPosition[     10110,        275]
+NotebookOutlinePosition[     11488,        310]
+CellTagsIndexPosition[     11445,        307]
+WindowTitle->OrganicSynthesis
+WindowFrame->Normal*)
+
+(* Beginning of Notebook Content *)
+Notebook[{
+Cell[BoxData[GridBox[{
+   {GridBox[{
+      {
+       ItemBox[Cell[BoxData[
+         RowBox[{
+          InterpretationBox[
+           StyleBox[
+            GraphicsBox[{},
+             BaselinePosition->Baseline,
+             ImageSize->{8, 0}],
+            CacheGraphics->False],
+           Spacer[8],
+           Selectable->False], Cell["EMERALD GUIDE", "PacletNameCell",
+           TextAlignment->Center,ExpressionUUID->
+           "7908e89f-b893-47ac-459a-a815c351d89e"], 
+          InterpretationBox[
+           StyleBox[
+            GraphicsBox[{},
+             BaselinePosition->Baseline,
+             ImageSize->{8, 0}],
+            CacheGraphics->False],
+           Spacer[8],
+           Selectable->False]}]],
+         TextAlignment->Center,ExpressionUUID->
+         "867f6861-a9ab-4486-7f3f-3ad8f927adfb"],
+        Background->RGBColor[
+         0.24313725490196078`, 0.27058823529411763`, 0.2980392156862745],
+        ItemSize->Full], ""}
+     },
+     GridBoxAlignment->{"Rows" -> {{Center}}},
+     GridBoxItemSize->{"Columns" -> {Full, 
+         Scaled[0.02]}, "Rows" -> {{2.5}}}], Cell[TextData[{
+     Cell[BoxData[
+      ActionMenuBox[
+       FrameBox[Cell[TextData[{
+         "Functions",
+         " ",
+         Cell[BoxData[
+          GraphicsBox[
+           {RGBColor[183/256., 197/256., 211/256.], Thickness[0.13], 
+            LineBox[{{-1.8, 0.5}, {0, 0}, {1.8, 0.5}}]},
+           AspectRatio->1,
+           ImageSize->20,
+           PlotRange->{{-3, 4}, {-1, 1}}]],ExpressionUUID->
+          "89c34ac5-0db5-413a-b6c0-a0d979681f48"]
+        }],ExpressionUUID->"cc0214ac-9536-4644-8ca2-da5a2b4048da"],
+        StripOnInput->False], {"\<\"Capping\"\>":>Documentation`HelpLookup[
+       "paclet:Experiment/ref/Capping"], "\<\"Cleaving\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Experiment/ref/Cleaving"], "\<\"Coupling\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Experiment/ref/Coupling"], "\<\"Deprotecting\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Experiment/ref/Deprotecting"], "\<\"Deprotonating\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Experiment/ref/Deprotonating"], \
+"\<\"ExperimentDNASynthesis\"\>":>Documentation`HelpLookup[
+       "paclet:Experiment/ref/ExperimentDNASynthesis"], \
+"\<\"ExperimentPNASynthesis\"\>":>Documentation`HelpLookup[
+       "paclet:Experiment/ref/ExperimentPNASynthesis"], "\<\"Swelling\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Experiment/ref/Swelling"], "\<\"ValidSynthesisStepQ\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Experiment/ref/ValidSynthesisStepQ"], "\<\"Washing\"\>":>
+       Documentation`HelpLookup["paclet:Experiment/ref/Washing"]},
+       LineSpacing -> {1.4, 0},
+       Appearance->None,
+       MenuAppearance->Automatic,
+       MenuStyle->"GuideFunction"]],ExpressionUUID->
+      "8fa5818b-9bd0-424b-89b5-76cf97b8219d"],
+     "\[ThickSpace]\[ThickSpace]\[ThickSpace]\[ThickSpace]\[ThickSpace]\
+\[ThickSpace]",
+     Cell[BoxData[
+      ActionMenuBox[
+       FrameBox[Cell[TextData[{
+         "Related Guides",
+         " ",
+         Cell[BoxData[
+          GraphicsBox[
+           {RGBColor[183/256., 197/256., 211/256.], Thickness[0.13], 
+            LineBox[{{-1.8, 0.5}, {0, 0}, {1.8, 0.5}}]},
+           AspectRatio->1,
+           ImageSize->20,
+           PlotRange->{{-3, 4}, {-1, 1}}]],ExpressionUUID->
+          "cdfebed6-c538-41f6-8d17-9f652739e2b7"]
+        }],ExpressionUUID->"1bffe462-5a36-434b-92cb-c241eb4cce22"],
+        StripOnInput->False], {"\<\"PricingFunctions\"\>":>
+       Documentation`HelpLookup["paclet:Docs/guide/PricingFunctions"]},
+       LineSpacing -> {1.4, 0},
+       Appearance->None,
+       MenuAppearance->Automatic,
+       MenuStyle->"GuideFunction"]],ExpressionUUID->
+      "932979c8-9cfe-41c8-8a87-1dce859adcc5"]
+    }], "AnchorBar",ExpressionUUID->"ede044e1-7a6d-4ca4-857f-32ad4ee2d76b"]}
+  }]], "AnchorBarGrid",
+ CellID->1,ExpressionUUID->"2e71f79c-3cbb-493d-b3d4-dfa1382738d2"],
+
+Cell["Organic Synthesis", "GuideTitle",
+ CellID->147581588,ExpressionUUID->"c047b2d3-17a4-4520-b1c7-406a43116ead"],
+
+Cell["", "GuideAbstract",
+ CellID->62461052,ExpressionUUID->"5f3cbf2b-c1e3-4d7e-8c80-90fab62e6a14"],
+
+Cell["\t", "GuideDelimiterSubsection",
+ CellID->444285091,ExpressionUUID->"f5acc11f-e137-4e7f-8e93-a68d4d9a35c5"],
+
+Cell["Experiments", "GuideFunctionsSubsection",
+ CellID->30799166,ExpressionUUID->"628c9796-6da1-461a-9447-67a2f089381a"],
+
+Cell[TextData[Cell[BoxData[
+ TemplateBox[{Cell[
+    TextData["ExperimentDNASynthesis"]],
+   "paclet:Experiment/ref/ExperimentDNASynthesis"},
+  "RefLink",
+  BaseStyle->
+   "InlineFunctionSans"]], \
+"InlineFunctionSans",ExpressionUUID->"a1ace227-e439-4a1e-bb52-31a44ccd8767"]],\
+ "InlineGuideFunctionListing",
+ CellID->250911855,ExpressionUUID->"6ffd18ac-5b27-4c59-8c40-43705d1497a2"],
+
+Cell[TextData[Cell[BoxData[
+ TemplateBox[{Cell[
+    TextData["ExperimentPNASynthesis"]],
+   "paclet:Experiment/ref/ExperimentPNASynthesis"},
+  "RefLink",
+  BaseStyle->
+   "InlineFunctionSans"]], \
+"InlineFunctionSans",ExpressionUUID->"320e1a26-0334-4a7f-adc7-a1961c91308e"]],\
+ "InlineGuideFunctionListing",
+ CellID->271620711,ExpressionUUID->"135334e2-6552-4185-b72d-a213edacaf98"],
+
+Cell["\t", "GuideDelimiterSubsection",
+ CellID->552112278,ExpressionUUID->"4c014264-aea8-46b5-97ac-f386d8e822a5"],
+
+Cell["Solid Phase Synthesis Primitives", "GuideFunctionsSubsection",
+ CellID->211095658,ExpressionUUID->"c2843ffb-2c47-4dae-9d1e-09427cefecad"],
+
+Cell[TextData[Cell[BoxData[
+ TemplateBox[{Cell[
+    TextData["Swelling"]],"paclet:Experiment/ref/Swelling"},
+  "RefLink",
+  BaseStyle->
+   "InlineFunctionSans"]], \
+"InlineFunctionSans",ExpressionUUID->"72b33a3d-43d0-492c-a6fc-6c825fb508e2"]],\
+ "InlineGuideFunctionListing",
+ CellID->43800769,ExpressionUUID->"36e52bf9-e57b-4ef8-9a1c-17244f0f6c4a"],
+
+Cell[TextData[Cell[BoxData[
+ TemplateBox[{Cell[
+    TextData["Washing"]],"paclet:Experiment/ref/Washing"},
+  "RefLink",
+  BaseStyle->
+   "InlineFunctionSans"]], \
+"InlineFunctionSans",ExpressionUUID->"7df6dd4c-f0a5-431a-8556-f49113f86aad"]],\
+ "InlineGuideFunctionListing",
+ CellID->269826077,ExpressionUUID->"adc85616-8a2e-4463-8487-a9c4ea5eeb5c"],
+
+Cell[TextData[Cell[BoxData[
+ TemplateBox[{Cell[
+    TextData["Coupling"]],"paclet:Experiment/ref/Coupling"},
+  "RefLink",
+  BaseStyle->
+   "InlineFunctionSans"]], \
+"InlineFunctionSans",ExpressionUUID->"509962ef-eecd-4d73-8696-ab761c46943f"]],\
+ "InlineGuideFunctionListing",
+ CellID->583595599,ExpressionUUID->"015834e2-f342-4abd-ad80-26046eabae82"],
+
+Cell[TextData[Cell[BoxData[
+ TemplateBox[{Cell[
+    TextData["Deprotecting"]],"paclet:Experiment/ref/Deprotecting"},
+  "RefLink",
+  BaseStyle->
+   "InlineFunctionSans"]], \
+"InlineFunctionSans",ExpressionUUID->"072f32c6-9da8-45a9-8f1f-814349d1c373"]],\
+ "InlineGuideFunctionListing",
+ CellID->715411734,ExpressionUUID->"43942333-8af3-4102-8b22-1f820644276f"],
+
+Cell[TextData[Cell[BoxData[
+ TemplateBox[{Cell[
+    TextData["Deprotonating"]],"paclet:Experiment/ref/Deprotonating"},
+  "RefLink",
+  BaseStyle->
+   "InlineFunctionSans"]], \
+"InlineFunctionSans",ExpressionUUID->"c1b4c63a-d996-4744-af9c-e6fa20330999"]],\
+ "InlineGuideFunctionListing",
+ CellID->2486199,ExpressionUUID->"74c2847e-28f7-4460-abb1-0993c7651879"],
+
+Cell[TextData[Cell[BoxData[
+ TemplateBox[{Cell[
+    TextData["Capping"]],"paclet:Experiment/ref/Capping"},
+  "RefLink",
+  BaseStyle->
+   "InlineFunctionSans"]], \
+"InlineFunctionSans",ExpressionUUID->"199e9365-432c-40c4-a25d-51a4a9e82995"]],\
+ "InlineGuideFunctionListing",
+ CellID->24565271,ExpressionUUID->"ee49d27b-6379-4094-a091-104376550848"],
+
+Cell[TextData[Cell[BoxData[
+ TemplateBox[{Cell[
+    TextData["Cleaving"]],"paclet:Experiment/ref/Cleaving"},
+  "RefLink",
+  BaseStyle->
+   "InlineFunctionSans"]], \
+"InlineFunctionSans",ExpressionUUID->"84d0ec07-9d50-4627-8058-f3bd26322857"]],\
+ "InlineGuideFunctionListing",
+ CellID->51214750,ExpressionUUID->"88949d8f-8312-48f5-a303-55ebe0f8e3f1"],
+
+Cell["\t", "GuideDelimiterSubsection",
+ CellID->18298450,ExpressionUUID->"0677b4c1-8a0d-4692-8717-a3ad3846e4bd"],
+
+Cell["Validation", "GuideFunctionsSubsection",
+ CellID->29607668,ExpressionUUID->"750dfd40-52ef-4c27-bd1e-f8d1b8f6b280"],
+
+Cell[TextData[Cell[BoxData[
+ TemplateBox[{Cell[
+    TextData["ValidSynthesisStepQ"]],
+   "paclet:Experiment/ref/ValidSynthesisStepQ"},
+  "RefLink",
+  BaseStyle->
+   "InlineFunctionSans"]], \
+"InlineFunctionSans",ExpressionUUID->"12e27266-87d6-43a1-95af-230304991228"]],\
+ "InlineGuideFunctionListing",
+ CellID->135706807,ExpressionUUID->"a1b4cd15-e636-46fb-9795-396033b06ee1"],
+
+Cell["", "SectionFooterSpacer",
+ CellID->689947566,ExpressionUUID->"69da19c8-ba46-43eb-8505-1987feae40c1"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  InterpretationBox[
+   StyleBox[
+    GraphicsBox[{},
+     BaselinePosition->Baseline,
+     ImageSize->{6, 0}],
+    CacheGraphics->False],
+   Spacer[6]]],ExpressionUUID->"a8e8acae-168d-4409-a659-cf11e8d89a66"],
+ "Related Guides"
+}], "GuideMoreAboutSection",
+ WholeCellGroupOpener->True,
+ CellID->214419245,ExpressionUUID->"f46efb9f-7a31-46ab-a9b1-e53f4a6770a5"],
+
+Cell["", "SectionHeaderSpacer",
+ CellID->186288600,ExpressionUUID->"2b3f4573-949f-4f93-bd6e-02661b7277d3"],
+
+Cell[BoxData[
+ TemplateBox[{Cell[
+    TextData["PricingFunctions"]],"paclet:Docs/guide/PricingFunctions"},
+  "RefLink",
+  BaseStyle->"GuideMoreAboutSub"]], "GuideMoreAboutSub",
+ CellID->419059094,ExpressionUUID->"32c31030-8283-409c-bdfe-fd44d2ec6088"],
+
+Cell["", "FooterCell",
+ CellID->599535048,ExpressionUUID->"18229595-4593-44bb-95fb-a5212a7d6bcd"]
+},
+Saveable->False,
+ScreenStyleEnvironment->"Working",
+WindowSize->{775, 872},
+WindowMargins->{{144, Automatic}, {Automatic, 474}},
+WindowTitle->"OrganicSynthesis",
+Visible->False,
+TaggingRules->{
+ "ModificationHighlight" -> False, "ColorType" -> "GuideColor", 
+  "ExampleCounter" -> 1, "NeedPlatMsgIn" -> None, "RootCaptions" -> "", 
+  "Metadata" -> {
+   "built" -> "Fri 5 Oct 2018 15:28:49", "context" -> "Docs`", 
+    "keywords" -> {
+     "ExperimentDNASynthesis", "ExperimentPNASynthesis", "Swelling", 
+      "Washing", "Coupling", "Deprotecting", "Deprotonating", "Capping", 
+      "Cleaving", "ValidSynthesisStepQ"}, "specialkeywords" -> {}, 
+    "tutorialcollectionlinks" -> {}, "index" -> True, "label" -> "ECL Guide", 
+    "language" -> "en", "paclet" -> "Docs", "status" -> "None", "summary" -> 
+    "", "synonyms" -> {}, "titlemodifier" -> "", "Windowtitle" -> 
+    "OrganicSynthesis", "title" -> "OrganicSynthesis", "type" -> "Guide", 
+    "uri" -> "Docs/guide/OrganicSynthesis", "WorkflowDockedCell" -> ""}, 
+  "SearchTextTranslated" -> "", "LinkTrails" -> ""},
+FrontEndVersion->"11.3 for Microsoft Windows (64-bit) (March 6, 2018)",
+StyleDefinitions->"EmeraldReference.nb",
+CharacterEncoding -> "UTF-8"
+]
+(* End of Notebook Content *)
+
+(* Internal cache information *)
+(*CellTagsOutline
+CellTagsIndex->{}
+*)
+(*CellTagsIndex
+CellTagsIndex->{}
+*)
+(*NotebookFileOutline
+Notebook[{
+Cell[588, 21, 3963, 95, 58, "AnchorBarGrid",ExpressionUUID->"2e71f79c-3cbb-493d-b3d4-dfa1382738d2",
+ CellID->1],
+Cell[4554, 118, 114, 1, 50, "GuideTitle",ExpressionUUID->"c047b2d3-17a4-4520-b1c7-406a43116ead",
+ CellID->147581588],
+Cell[4671, 121, 99, 1, 31, "GuideAbstract",ExpressionUUID->"5f3cbf2b-c1e3-4d7e-8c80-90fab62e6a14",
+ CellID->62461052],
+Cell[4773, 124, 113, 1, 22, "GuideDelimiterSubsection",ExpressionUUID->"f5acc11f-e137-4e7f-8e93-a68d4d9a35c5",
+ CellID->444285091],
+Cell[4889, 127, 121, 1, 36, "GuideFunctionsSubsection",ExpressionUUID->"628c9796-6da1-461a-9447-67a2f089381a",
+ CellID->30799166],
+Cell[5013, 130, 382, 9, 23, "InlineGuideFunctionListing",ExpressionUUID->"6ffd18ac-5b27-4c59-8c40-43705d1497a2",
+ CellID->250911855],
+Cell[5398, 141, 382, 9, 23, "InlineGuideFunctionListing",ExpressionUUID->"135334e2-6552-4185-b72d-a213edacaf98",
+ CellID->271620711],
+Cell[5783, 152, 113, 1, 22, "GuideDelimiterSubsection",ExpressionUUID->"4c014264-aea8-46b5-97ac-f386d8e822a5",
+ CellID->552112278],
+Cell[5899, 155, 143, 1, 36, "GuideFunctionsSubsection",ExpressionUUID->"c2843ffb-2c47-4dae-9d1e-09427cefecad",
+ CellID->211095658],
+Cell[6045, 158, 349, 8, 23, "InlineGuideFunctionListing",ExpressionUUID->"36e52bf9-e57b-4ef8-9a1c-17244f0f6c4a",
+ CellID->43800769],
+Cell[6397, 168, 348, 8, 23, "InlineGuideFunctionListing",ExpressionUUID->"adc85616-8a2e-4463-8487-a9c4ea5eeb5c",
+ CellID->269826077],
+Cell[6748, 178, 350, 8, 23, "InlineGuideFunctionListing",ExpressionUUID->"015834e2-f342-4abd-ad80-26046eabae82",
+ CellID->583595599],
+Cell[7101, 188, 358, 8, 23, "InlineGuideFunctionListing",ExpressionUUID->"43942333-8af3-4102-8b22-1f820644276f",
+ CellID->715411734],
+Cell[7462, 198, 358, 8, 23, "InlineGuideFunctionListing",ExpressionUUID->"74c2847e-28f7-4460-abb1-0993c7651879",
+ CellID->2486199],
+Cell[7823, 208, 347, 8, 23, "InlineGuideFunctionListing",ExpressionUUID->"ee49d27b-6379-4094-a091-104376550848",
+ CellID->24565271],
+Cell[8173, 218, 349, 8, 23, "InlineGuideFunctionListing",ExpressionUUID->"88949d8f-8312-48f5-a303-55ebe0f8e3f1",
+ CellID->51214750],
+Cell[8525, 228, 112, 1, 22, "GuideDelimiterSubsection",ExpressionUUID->"0677b4c1-8a0d-4692-8717-a3ad3846e4bd",
+ CellID->18298450],
+Cell[8640, 231, 120, 1, 36, "GuideFunctionsSubsection",ExpressionUUID->"750dfd40-52ef-4c27-bd1e-f8d1b8f6b280",
+ CellID->29607668],
+Cell[8763, 234, 376, 9, 23, "InlineGuideFunctionListing",ExpressionUUID->"a1b4cd15-e636-46fb-9795-396033b06ee1",
+ CellID->135706807],
+Cell[9142, 245, 106, 1, 29, "SectionFooterSpacer",ExpressionUUID->"69da19c8-ba46-43eb-8505-1987feae40c1",
+ CellID->689947566],
+Cell[9251, 248, 392, 12, 72, "GuideMoreAboutSection",ExpressionUUID->"f46efb9f-7a31-46ab-a9b1-e53f4a6770a5",
+ CellID->214419245],
+Cell[9646, 262, 106, 1, 14, "SectionHeaderSpacer",ExpressionUUID->"2b3f4573-949f-4f93-bd6e-02661b7277d3",
+ CellID->186288600],
+Cell[9755, 265, 251, 5, 24, "GuideMoreAboutSub",ExpressionUUID->"32c31030-8283-409c-bdfe-fd44d2ec6088",
+ CellID->419059094],
+Cell[10009, 272, 97, 1, 41, "FooterCell",ExpressionUUID->"18229595-4593-44bb-95fb-a5212a7d6bcd",
+ CellID->599535048]
+}
+]
+*)
+
+(* End of internal cache information *)
+

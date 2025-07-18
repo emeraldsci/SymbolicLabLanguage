@@ -67,6 +67,15 @@ DefineObjectType[Object[Instrument, LiquidLevelDetector], {
 			Description -> "Sensornet volume sensor used by this liquid level detector instrument.",
 			Category -> "Sensor Information",
 			Abstract -> True
+		},
+		EmptyDistances  -> {
+			Format -> Multiple,
+			Class -> {Container->Expression, Distance->Expression},
+			Pattern :> {Container->_Link,Distance->GreaterP[0*Meter]},
+			Relation -> {Container->Model[Container],Distance->Null},
+			Description -> "The measured distances between the liquid level detectors sensor and the well-bottom for each compatible container.",
+			Category -> "Instrument Specifications",
+			Headers -> {Name->"Container", Distribution->"Empty Distance"}
 		}
 	}
 }];

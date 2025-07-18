@@ -25,7 +25,7 @@ DefineOptions[ExperimentPAGEOptions,
   SharedOptions:>{ExperimentPAGE}
 ];
 
-ExperimentPAGEOptions[myInputs:ListableP[ObjectP[{Object[Container,Plate],Object[Container,Vessel],Object[Sample]}]|_String],myOptions:OptionsPattern[]]:=Module[
+ExperimentPAGEOptions[myInputs:ListableP[ObjectP[{Object[Container,Plate],Object[Container,Vessel],Object[Sample], Model[Sample]}]|_String],myOptions:OptionsPattern[]]:=Module[
   {listedOptions,noOutputOptions,options},
 
   (* get the options as a list *)
@@ -54,7 +54,7 @@ DefineOptions[ExperimentPAGEPreview,
   SharedOptions:>{ExperimentPAGE}
 ];
 
-ExperimentPAGEPreview[myInputs:ListableP[ObjectP[{Object[Container,Plate],Object[Container,Vessel],Object[Sample]}]|_String],myOptions:OptionsPattern[]]:=Module[
+ExperimentPAGEPreview[myInputs:ListableP[ObjectP[{Object[Container,Plate],Object[Container,Vessel],Object[Sample], Model[Sample]}]|_String],myOptions:OptionsPattern[]]:=Module[
   {listedOptions,noOutputOptions},
 
   (* Get the options as a list *)
@@ -82,7 +82,7 @@ DefineOptions[ValidExperimentPAGEQ,
 (*ValidExperimentPAGEQ*)
 
 
-ValidExperimentPAGEQ[myInputs:ListableP[ObjectP[{Object[Container,Plate],Object[Container,Vessel],Object[Sample]}]|_String],myOptions:OptionsPattern[]]:=Module[
+ValidExperimentPAGEQ[myInputs:ListableP[ObjectP[{Object[Container,Plate],Object[Container,Vessel],Object[Sample], Model[Sample]}]|_String],myOptions:OptionsPattern[]]:=Module[
   {listedOptions,preparedOptions,ExperimentPAGETests,initialTestDescription,allTests,verbose,outputFormat},
 
   (* Get the options as a list *)

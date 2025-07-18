@@ -9,7 +9,6 @@ DefineObjectType[Object[Maintenance, Decontaminate, LiquidHandler], {
 	CreatePrivileges -> None,
 	Cache -> Session,
 	Fields -> {
-
 		DeckRackPlacements -> {
 			Format -> Multiple,
 			Class -> {Link, Link, String},
@@ -28,6 +27,23 @@ DefineObjectType[Object[Maintenance, Decontaminate, LiquidHandler], {
 			Description -> "Right to Left order of racks present on the target.",
 			Headers-> {"Rack","Container","Position"},
 			Category -> "Placements",
+			Developer -> True
+		},
+		SanitizationWipes -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> (Model[Item]|Object[Item]),
+			Description ->"The sanitization wipes that will be used for the decontamination.",
+			Category -> "Sanitization"
+		},
+		RequiredInstruments -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Model[Instrument] | Object[Instrument],
+			Description -> "Instruments required for the protocol.",
+			Category -> "General",
 			Developer -> True
 		}
 	}

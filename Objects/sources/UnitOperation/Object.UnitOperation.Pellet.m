@@ -506,6 +506,15 @@ DefineObjectType[Object[UnitOperation,Pellet],
 				Migration->SplitField,
 				IndexMatching->SampleLink
 			},
+			ResuspensionSourceContainerLabel -> {
+				Format -> Multiple,
+				Class -> String,
+				Pattern :> _String,
+				Relation -> Null,
+				Description -> "For each member of SampleLink, the label of the containers of the samples that should be used to resuspend the pellet from the source sample, which is used for identification elsewhere in sample preparation.",
+				Category->"Resuspension",
+				IndexMatching->SampleLink
+			},
 			ResuspensionVolumeReal -> {
 				Format -> Multiple,
 				Class -> Real,

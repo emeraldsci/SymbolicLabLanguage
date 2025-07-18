@@ -843,7 +843,7 @@ DefineObjectType[Object[Protocol, IonChromatography], {
 			Format->Multiple,
 			Class->Expression,
 			Pattern:>SuppressorModeP,
-			Description->"For each member of AnionSamples, the operation method of the anion suppressor. Under DynamidMode, constant voltage is supplied to the suppressor with variable current while under LegacyMode, constant current is supplied.",
+			Description->"For each member of AnionSamples, the operation method of the anion suppressor. Under DynamicMode, constant voltage is supplied to the suppressor with variable current while under LegacyMode, constant current is supplied.",
 			IndexMatching->AnionSamples,
 			Category->"Detection"
 		},
@@ -869,7 +869,7 @@ DefineObjectType[Object[Protocol, IonChromatography], {
 			Format->Multiple,
 			Class->Expression,
 			Pattern:>SuppressorModeP,
-			Description->"For each member of CationSamples, the operation method of the cation suppressor. Under DynamidMode, constant voltage is supplied to the suppressor with variable current while under LegacyMode, constant current is supplied.",
+			Description->"For each member of CationSamples, the operation method of the cation suppressor. Under DynamicMode, constant voltage is supplied to the suppressor with variable current while under LegacyMode, constant current is supplied.",
 			IndexMatching->CationSamples,
 			Category->"Detection"
 		},
@@ -905,8 +905,8 @@ DefineObjectType[Object[Protocol, IonChromatography], {
 			Class->Real,
 			Pattern:>GreaterEqualP[0*Celsius],
 			Units->Celsius,
-			Description->"For each member of AnionSamples, the temperature of the cell where conducutivity measurement is collected for cation channel.",
-			IndexMatching->AnionSamples,
+			Description->"For each member of CationSamples, the temperature of the cell where conducutivity measurement is collected for cation channel.",
+			IndexMatching->CationSamples,
 			Category->"Detection"
 		},
 		AbsorbanceWavelength->{
@@ -1195,13 +1195,15 @@ DefineObjectType[Object[Protocol, IonChromatography], {
 			Headers->{"Object to Place", "Destination Object", "Destination Position"}
 		},
 		PlateSeal->{
-			Format->Single,
-			Class->Link,
-			Pattern:>_Link,
-			Relation->Alternatives[Object[Sample], Model[Sample], Object[Item], Model[Item]],
-			Description->"The package of piercable, adhesive film used to cover plates of injection samples in this experiment in order to mitigate sample evaporation.",
-			Category->"Sample Preparation",
-			Abstract->False
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[
+				Object[Item],
+				Model[Item]
+			],
+			Description -> "For each member of WorkingContainers, the piercable, adhesive film to cover plate(s) of injection sample(s) in this experiment in order to mitigate sample evaporation. For non-plate containers, the plate seal is Null.",
+			Category -> "Sample Preparation"
 		},
 
 		(*--- Standards ---*)
@@ -1421,7 +1423,7 @@ DefineObjectType[Object[Protocol, IonChromatography], {
 			Format->Multiple,
 			Class->Expression,
 			Pattern:>SuppressorModeP,
-			Description->"For each member of AnionStandards, the operation method of the anion suppressor. Under DynamidMode, constant voltage is supplied to the suppressor with variable current while under LegacyMode, constant current is supplied.",
+			Description->"For each member of AnionStandards, the operation method of the anion suppressor. Under DynamicMode, constant voltage is supplied to the suppressor with variable current while under LegacyMode, constant current is supplied.",
 			IndexMatching->AnionStandards,
 			Category->"Standards"
 		},
@@ -1439,7 +1441,7 @@ DefineObjectType[Object[Protocol, IonChromatography], {
 			Class->Real,
 			Pattern:>GreaterEqualP[0*Milli Ampere],
 			Units->Milli Ampere,
-			Description->"For each member of AnionStandards, the rate of electric charge flow between the electrodes in the suppresor during the run for anion channel.",
+			Description->"For each member of AnionStandards, the rate of electric charge flow between the electrodes in the suppressor during the run for anion channel.",
 			IndexMatching->AnionStandards,
 			Category->"Standards"
 		},
@@ -1447,7 +1449,7 @@ DefineObjectType[Object[Protocol, IonChromatography], {
 			Format->Multiple,
 			Class->Expression,
 			Pattern:>SuppressorModeP,
-			Description->"For each member of CationStandards, the operation method of the cation suppressor. Under DynamidMode, constant voltage is supplied to the suppressor with variable current while under LegacyMode, constant current is supplied.",
+			Description->"For each member of CationStandards, the operation method of the cation suppressor. Under DynamicMode, constant voltage is supplied to the suppressor with variable current while under LegacyMode, constant current is supplied.",
 			IndexMatching->CationStandards,
 			Category->"Standards"
 		},
@@ -1465,7 +1467,7 @@ DefineObjectType[Object[Protocol, IonChromatography], {
 			Class->Real,
 			Pattern:>GreaterEqualP[0*Milli Ampere],
 			Units->Milli Ampere,
-			Description->"For each member of CationStandards, the rate of electric charge flow between the electrodes in the suppresor during the run for cation channel.",
+			Description->"For each member of CationStandards, the rate of electric charge flow between the electrodes in the suppressor during the run for cation channel.",
 			IndexMatching->CationStandards,
 			Category->"Standards"
 		},
@@ -1786,7 +1788,7 @@ DefineObjectType[Object[Protocol, IonChromatography], {
 			Format->Multiple,
 			Class->Expression,
 			Pattern:>SuppressorModeP,
-			Description->"For each member of AnionBlanks, the operation method of the anion suppressor. Under DynamidMode, constant voltage is supplied to the suppressor with variable current while under LegacyMode, constant current is supplied.",
+			Description->"For each member of AnionBlanks, the operation method of the anion suppressor. Under DynamicMode, constant voltage is supplied to the suppressor with variable current while under LegacyMode, constant current is supplied.",
 			IndexMatching->AnionBlanks,
 			Category->"Blanking"
 		},
@@ -1804,7 +1806,7 @@ DefineObjectType[Object[Protocol, IonChromatography], {
 			Class->Real,
 			Pattern:>GreaterEqualP[0*Milli Ampere],
 			Units->Milli Ampere,
-			Description->"For each member of AnionBlanks, the rate of electric charge flow between the electrodes in the suppresor during the run for anion channel.",
+			Description->"For each member of AnionBlanks, the rate of electric charge flow between the electrodes in the suppressor during the run for anion channel.",
 			IndexMatching->AnionBlanks,
 			Category->"Blanking"
 		},
@@ -1812,7 +1814,7 @@ DefineObjectType[Object[Protocol, IonChromatography], {
 			Format->Multiple,
 			Class->Expression,
 			Pattern:>SuppressorModeP,
-			Description->"For each member of CationBlanks, the operation method of the cation suppressor. Under DynamidMode, constant voltage is supplied to the suppressor with variable current while under LegacyMode, constant current is supplied.",
+			Description->"For each member of CationBlanks, the operation method of the cation suppressor. Under DynamicMode, constant voltage is supplied to the suppressor with variable current while under LegacyMode, constant current is supplied.",
 			IndexMatching->CationBlanks,
 			Category->"Blanking"
 		},
@@ -1830,7 +1832,7 @@ DefineObjectType[Object[Protocol, IonChromatography], {
 			Class->Real,
 			Pattern:>GreaterEqualP[0*Milli Ampere],
 			Units->Milli Ampere,
-			Description->"For each member of CationBlanks, the rate of electric charge flow between the electrodes in the suppresor during the run for cation channel.",
+			Description->"For each member of CationBlanks, the rate of electric charge flow between the electrodes in the suppressor during the run for cation channel.",
 			IndexMatching->CationBlanks,
 			Category->"Blanking"
 		},
@@ -2495,7 +2497,7 @@ DefineObjectType[Object[Protocol, IonChromatography], {
 			Format->Single,
 			Class->Expression,
 			Pattern:>SuppressorModeP,
-			Description->"For each anion column prime, the operation method of the anion suppressor. Under DynamidMode, constant voltage is supplied to the suppressor with variable current while under LegacyMode, constant current is supplied.",
+			Description->"For each anion column prime, the operation method of the anion suppressor. Under DynamicMode, constant voltage is supplied to the suppressor with variable current while under LegacyMode, constant current is supplied.",
 			Category->"Column Prime"
 		},
 		AnionColumnPrimeSuppressorVoltage->{
@@ -2511,14 +2513,14 @@ DefineObjectType[Object[Protocol, IonChromatography], {
 			Class->Real,
 			Pattern:>GreaterEqualP[0*Milli Ampere],
 			Units->Milli Ampere,
-			Description->"For each column prime, the rate of electric charge flow between the electrodes in the suppresor for anion channel.",
+			Description->"For each column prime, the rate of electric charge flow between the electrodes in the suppressor for anion channel.",
 			Category->"Column Prime"
 		},
 		CationColumnPrimeSuppressorMode->{
 			Format->Single,
 			Class->Expression,
 			Pattern:>SuppressorModeP,
-			Description->"For each cation column prime, the operation method of the cation suppressor. Under DynamidMode, constant voltage is supplied to the suppressor with variable current while under LegacyMode, constant current is supplied.",
+			Description->"For each cation column prime, the operation method of the cation suppressor. Under DynamicMode, constant voltage is supplied to the suppressor with variable current while under LegacyMode, constant current is supplied.",
 			Category->"Column Prime"
 		},
 		CationColumnPrimeSuppressorVoltage->{
@@ -2534,7 +2536,7 @@ DefineObjectType[Object[Protocol, IonChromatography], {
 			Class->Real,
 			Pattern:>GreaterEqualP[0*Milli Ampere],
 			Units->Milli Ampere,
-			Description->"For each column prime, the rate of electric charge flow between the electrodes in the suppresor for cation channel.",
+			Description->"For each column prime, the rate of electric charge flow between the electrodes in the suppressor for cation channel.",
 			Category->"Column Prime"
 		},
 		AnionColumnPrimeDetectionTemperature->{
@@ -2739,7 +2741,7 @@ DefineObjectType[Object[Protocol, IonChromatography], {
 			Format->Single,
 			Class->Expression,
 			Pattern:>SuppressorModeP,
-			Description->"For each anion column flush, the operation method of the anion suppressor. Under DynamidMode, constant voltage is supplied to the suppressor with variable current while under LegacyMode, constant current is supplied.",
+			Description->"For each anion column flush, the operation method of the anion suppressor. Under DynamicMode, constant voltage is supplied to the suppressor with variable current while under LegacyMode, constant current is supplied.",
 			Category->"Column Flush"
 		},
 		AnionColumnFlushSuppressorVoltage->{
@@ -2755,14 +2757,14 @@ DefineObjectType[Object[Protocol, IonChromatography], {
 			Class->Real,
 			Pattern:>GreaterEqualP[0*Milli Ampere],
 			Units->Milli Ampere,
-			Description->"For each column flush, the rate of electric charge flow between the electrodes in the suppresor for anion channel.",
+			Description->"For each column flush, the rate of electric charge flow between the electrodes in the suppressor for anion channel.",
 			Category->"Column Flush"
 		},
 		CationColumnFlushSuppressorMode->{
 			Format->Single,
 			Class->Expression,
 			Pattern:>SuppressorModeP,
-			Description->"For each cation column flush, the operation method of the cation suppressor. Under DynamidMode, constant voltage is supplied to the suppressor with variable current while under LegacyMode, constant current is supplied.",
+			Description->"For each cation column flush, the operation method of the cation suppressor. Under DynamicMode, constant voltage is supplied to the suppressor with variable current while under LegacyMode, constant current is supplied.",
 			Category->"Column Flush"
 		},
 		CationColumnFlushSuppressorVoltage->{
@@ -2778,7 +2780,7 @@ DefineObjectType[Object[Protocol, IonChromatography], {
 			Class->Real,
 			Pattern:>GreaterEqualP[0*Milli Ampere],
 			Units->Milli Ampere,
-			Description->"For each column flush, the rate of electric charge flow between the electrodes in the suppresor for cation channel.",
+			Description->"For each column flush, the rate of electric charge flow between the electrodes in the suppressor for cation channel.",
 			Category->"Column Flush"
 		},
 		AnionColumnFlushDetectionTemperature->{
@@ -3443,15 +3445,6 @@ DefineObjectType[Object[Protocol, IonChromatography], {
 			Description->"For each member of SamplesIn, the physical quantity of each analyte sample (SamplesIn if drawn directly or AliquotSamples if instructed to aliquot prior to the assay) measured immediately after the experiment.",
 			IndexMatching->SamplesIn,
 			Category->"Experimental Results"
-		},
-		WasteWeightData->{
-			Format->Single,
-			Class->Link,
-			Pattern:>_Link,
-			Relation->Object[Data][Protocol],
-			Description->"The weight data of the waste carboy after the HPLC protocol is complete.",
-			Category->"Experimental Results",
-			Developer->True
 		},
 		AnionInitialPressureLowerLimit->{
 			Format->Single,

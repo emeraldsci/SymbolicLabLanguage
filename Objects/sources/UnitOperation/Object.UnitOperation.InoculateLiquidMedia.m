@@ -1,15 +1,14 @@
 (* ::Package:: *)
 
 (* ::Text:: *)
-(*\[Copyright] 2011-2023 Emerald Cloud Lab, Inc.*)
+(*\[Copyright] 2011-2025 Emerald Cloud Lab, Inc.*)
 
-DefineObjectType[Object[UnitOperation,InoculateLiquidMedia],
+DefineObjectType[Object[UnitOperation, InoculateLiquidMedia],
   {
-    Description -> "A protocol for transferring cells growing on solid media, in a liquid culture, or an agar stab to a fresh liquid media.",
+    Description -> "A protocol for transferring cells (e.g., cell suspension or inoculum) into fresh liquid media to initiate culture growth.",
     CreatePrivileges -> None,
     Cache -> Session,
     Fields -> {
-
       (* --------- General ----------- *)
       SampleLink -> {
         Format -> Multiple,
@@ -21,29 +20,28 @@ DefineObjectType[Object[UnitOperation,InoculateLiquidMedia],
           Model[Container],
           Object[Container]
         ],
-        Description -> "The samples that we are transferring microbial cells from.",
+        Description -> "The samples that we are transferring source cells from.",
         Category -> "General",
-        Migration->SplitField
+        Migration -> SplitField
       },
       SampleString -> {
         Format -> Multiple,
         Class -> String,
         Pattern :> _String,
         Relation -> Null,
-        Description -> "The samples that we are transferring microbial cells from.",
+        Description -> "The samples that we are transferring source cells from.",
         Category -> "General",
-        Migration->SplitField
+        Migration -> SplitField
       },
       SampleExpression -> {
         Format -> Multiple,
         Class -> Expression,
         Pattern :> {LocationPositionP, ObjectP[{Model[Container], Object[Container]}]|_String},
         Relation -> Null,
-        Description -> "The samples that we are transferring microbial cells from.",
+        Description -> "The samples that we are transferring source cells from.",
         Category -> "General",
-        Migration->SplitField
+        Migration -> SplitField
       },
-
       SampleLabel -> {
         Format -> Multiple,
         Class -> String,
@@ -60,25 +58,23 @@ DefineObjectType[Object[UnitOperation,InoculateLiquidMedia],
         Description -> "The label of the Sample container that is being used in the experiment, which is used for identification elsewhere in sample preparation.",
         Category -> "General"
       },
-
       InoculationSource -> {
         Format -> Single,
         Class -> Expression,
-        Pattern :> InoculationSourceP, (* SolidMedia|LiquidMedia|AgarStab *)
-        Description -> "The type of the media (Solid, Liquid or AgarStab) where the source cells are stored before the experiment.",
+        Pattern :> InoculationSourceP,
+        Description -> "The type of the media (Solid, Liquid, AgarStab, FreezeDried, or FrozenGlycerol) where the source cells are stored before the experiment.",
         Category -> "General"
       },
       Instrument -> {
         Format -> Multiple,
         Class -> Link,
-        Relation -> Alternatives[Model[Instrument,ColonyHandler],Object[Instrument,ColonyHandler],Object[Instrument,Pipette],Model[Instrument,Pipette]],
+        Relation -> Alternatives[Model[Instrument, LiquidHandler], Object[Instrument, LiquidHandler], Model[Instrument, ColonyHandler], Object[Instrument, ColonyHandler], Object[Instrument, Pipette], Model[Instrument, Pipette]],
         Pattern :> _Link,
-        Description -> "For each member of SampleLink, the instrument that is used to move cells to fresh liquid media from solid media, liquid media, or a bacterial stab.",
+        Description -> "For each member of SampleLink, the instrument that is used to transfer cells (e.g., cell suspension or inoculum) into fresh liquid media to initiate culture growth.",
         IndexMatching -> SampleLink,
         Category -> "General"
       },
-
-      TransferEnvironment->{
+      TransferEnvironment -> {
         Format -> Multiple,
         Class -> Link,
         Pattern :> _Link,
@@ -86,15 +82,15 @@ DefineObjectType[Object[UnitOperation,InoculateLiquidMedia],
           Model[Instrument, BiosafetyCabinet],
           Object[Instrument, BiosafetyCabinet]
         ],
-        Description -> "For each member of SampleLink, the environment in which the inoculation will be performed. Containers involved in the inoculation will first be moved into the TransferEnvironment (with covers on), uncovered inside of the TransferEnvironment, then covered after the inoculation has finished -- before they're moved back onto the operator cart.",
+        Description -> "For each member of SampleLink, the environment in which the inoculation is performed for the input sample (e.g., cell suspension or inoculum).",
         Category -> "General"
       },
       DestinationMediaContainerLink -> {
         Format -> Multiple,
         Class -> Link,
         Pattern :> _Link,
-        Relation -> Alternatives[Object[Container],Model[Container]],
-        Description -> "For each member of SampleLink, the desired container to have cells transferred to.",
+        Relation -> Alternatives[Object[Container], Model[Container]],
+        Description -> "For each member of SampleLink, the container containing liquid media into which the cells are deposited.",
         IndexMatching -> SampleLink,
         Category -> "Deposit",
         Migration -> SplitField
@@ -102,8 +98,17 @@ DefineObjectType[Object[UnitOperation,InoculateLiquidMedia],
       DestinationMediaContainerExpression -> {
         Format -> Multiple,
         Class -> Expression,
-        Pattern :> {(ObjectP[{Object[Container],Model[Container]}] | {ObjectP[Object[Container]]..})..},
-        Description -> "For each member of SampleLink, the desired container to have cells transferred to.",
+        Pattern :> {(ObjectP[{Object[Container], Model[Container]}] | {ObjectP[Object[Container]]..} | (_String))..},
+        Description -> "For each member of SampleLink, the container containing liquid media into which the cells are deposited.",
+        IndexMatching -> SampleLink,
+        Category -> "Deposit",
+        Migration -> SplitField
+      },
+      DestinationMediaContainerString -> {
+        Format -> Multiple,
+        Class -> String,
+        Pattern :> _String,
+        Description -> "For each member of SampleLink, the container containing liquid media into which the cells are deposited.",
         IndexMatching -> SampleLink,
         Category -> "Deposit",
         Migration -> SplitField
@@ -112,15 +117,15 @@ DefineObjectType[Object[UnitOperation,InoculateLiquidMedia],
         Format -> Multiple,
         Class -> Expression,
         Pattern :> ListableP[BooleanP],
-        Description -> "For each member of SampleLink, indicates if mixing will occur after the cells are dispensed into the destination container.",
+        Description -> "For each member of SampleLink, indicates if mixing is performed immediately after the input sample (e.g., cell suspension or inoculum) is dispensed into the destination container.",
         IndexMatching -> SampleLink,
         Category -> "Deposit"
       },
       DestinationMixType -> {
         Format -> Multiple,
         Class -> Expression,
-        Pattern :> ListableP[InoculationMixTypeP],
-        Description -> "For each member of SampleLink, the type of mixing that will occur immediately after the cells are dispensed into the destination container. Pipette performs NumberOfSourceMixes aspiration/dispense cycle(s) of SourceMixVolume using a pipette. Swirl has the operator place the container on the surface of the TransferEnvironment and perform DestinationNumberOfMixes clockwise rotations of the container. Shake moves the pin on the ColonyHandlerHeadCassette used to pick the colony in a circular motion DestinationNumberOfMixes times in the DestinationWell.",
+        Pattern :> ListableP[InoculationMixTypeP|Null],
+        Description -> "For each member of SampleLink, the type of mixing that is performed immediately after the input sample (e.g., cell suspension or inoculum) is dispensed into the destination container.",
         IndexMatching -> SampleLink,
         Category -> "Deposit"
       },
@@ -128,7 +133,7 @@ DefineObjectType[Object[UnitOperation,InoculateLiquidMedia],
         Format -> Multiple,
         Class -> Integer,
         Pattern :> RangeP[0,50,1],
-        Description -> "For each member of SampleLink, the number of times the cells will be mixed in the destination container.",
+        Description -> "For each member of SampleLink, the number of times the cells are mixed in the destination container.",
         IndexMatching -> SampleLink,
         Category -> "Deposit",
         Migration -> SplitField
@@ -136,26 +141,37 @@ DefineObjectType[Object[UnitOperation,InoculateLiquidMedia],
       DestinationNumberOfMixesExpression -> {
         Format -> Multiple,
         Class -> Expression,
-        Pattern :> {Alternatives[RangeP[0, 50, 1],Null]..},
-        Description -> "For each member of SampleLink, the number of times the cells will be mixed in the destination container.",
+        Pattern :> {Alternatives[RangeP[0, 50, 1], Null]..},
+        Description -> "For each member of SampleLink, the number of times the cells are mixed in the destination container.",
         IndexMatching -> SampleLink,
         Category -> "Deposit",
         Migration -> SplitField
       },
-      DestinationMixVolume -> {
+      DestinationMixVolumeReal -> {
         Format -> Multiple,
         Class -> Real,
+        Units -> Microliter,
         Pattern :> GreaterP[0 Microliter],
-        Description -> "For each member of SampleLink, the volume that is repeatedly aspirated and dispensed via pipetting from the destination sample in order to mix the destination sample immediately after the inoculation occurs. The same pipette and tips used in the inoculation are used to mix the destination sample.",
+        Description -> "For each member of SampleLink, the volume that is repeatedly aspirated and dispensed via pipetting from the destination sample in order to mix the destination sample immediately after the inoculation occurs.",
         IndexMatching -> SampleLink,
-        Category -> "Deposit"
+        Category -> "Deposit",
+        Migration -> SplitField
+      },
+      DestinationMixVolumeExpression -> {
+        Format -> Multiple,
+        Class -> Expression,
+        Pattern :> {Alternatives[GreaterP[0 Microliter], Null]..},
+        Description -> "For each member of SampleLink, the volume that is repeatedly aspirated and dispensed via pipetting from the destination sample in order to mix the destination sample immediately after the inoculation occurs.",
+        IndexMatching -> SampleLink,
+        Category -> "Deposit",
+        Migration -> SplitField
       },
       MediaVolumeReal -> {
         Format -> Multiple,
         Class -> Real,
         Pattern :> GreaterP[0 Microliter],
         Units -> Microliter,
-        Description -> "For each member of SampleLink, the starting amount of liquid media in which the picked cells are deposited prior to the cells being added.", (* If doing Nulls and volumes doesnt work just do 0 Microliter for solid and explain in description *)
+        Description -> "For each member of SampleLink, the amount of suspended source cells to transfer to the destination container. Applicable only when the input sample is in liquid form or resuspended from freeze-dried powder.",
         IndexMatching -> SampleLink,
         Category -> "Deposit",
         Migration -> SplitField
@@ -163,8 +179,8 @@ DefineObjectType[Object[UnitOperation,InoculateLiquidMedia],
       MediaVolumeExpression -> {
         Format -> Multiple,
         Class -> Expression,
-        Pattern :> {Alternatives[GreaterP[0 Microliter],Null] ..},
-        Description -> "For each member of SampleLink, the starting amount of liquid media in which the picked cells are deposited prior to the cells being added.", (* If doing Nulls and volumes doesnt work just do 0 Microliter for solid and explain in description *)
+        Pattern :> {Alternatives[GreaterP[0 Microliter], Null]..},
+        Description -> "For each member of SampleLink, the amount of suspended source cells to transfer to the destination container. Applicable only when the input sample is in liquid form or resuspended from freeze-dried powder.",
         IndexMatching -> SampleLink,
         Category -> "Deposit",
         Migration -> SplitField
@@ -173,8 +189,8 @@ DefineObjectType[Object[UnitOperation,InoculateLiquidMedia],
         Format -> Multiple,
         Class -> Link,
         Pattern :> _Link,
-        Relation -> Alternatives[Object[Sample],Model[Sample]],
-        Description -> "For each member of SampleLink, the media in which the picked cells are deposited.",
+        Relation -> Alternatives[Object[Sample], Model[Sample]],
+        Description -> "For each member of SampleLink, the liquid, nutrient-rich solution added to the destination container to provide the necessary conditions for cell growth following inoculation.",
         IndexMatching -> SampleLink,
         Category -> "Deposit",
         Migration -> SplitField
@@ -183,7 +199,7 @@ DefineObjectType[Object[UnitOperation,InoculateLiquidMedia],
         Format -> Multiple,
         Class -> String,
         Pattern :> _String,
-        Description -> "For each member of SampleLink, the media in which the picked cells are deposited.",
+        Description -> "For each member of SampleLink, the liquid, nutrient-rich solution added to the destination container to provide the necessary conditions for cell growth following inoculation.",
         IndexMatching -> SampleLink,
         Category -> "Deposit",
         Migration -> SplitField
@@ -192,54 +208,87 @@ DefineObjectType[Object[UnitOperation,InoculateLiquidMedia],
         Format -> Multiple,
         Class -> Expression,
         Pattern :> {Alternatives[ObjectP[{Object[Sample], Model[Sample]}], ListableP[Null], _String]..},
-        Description -> "For each member of SampleLink, the media in which the picked cells are deposited.",
+        Description -> "For each member of SampleLink, the liquid, nutrient-rich solution added to the destination container to provide the necessary conditions for cell growth following inoculation.",
         IndexMatching -> SampleLink,
         Category -> "Deposit",
         Migration -> SplitField
       },
-
+      ResuspensionMix -> {
+        Format -> Multiple,
+        Class -> Expression,
+        Pattern :> BooleanP,
+        Description -> "For each member of SampleLink, indicates if the cells in resuspension is mixed after adding ResuspensionMedia to the source sample.",
+        IndexMatching -> SampleLink,
+        Category -> "Resuspension"
+      },
+      NumberOfResuspensionMixes -> {
+        Format -> Multiple,
+        Class -> Real,
+        Pattern :> GreaterP[0],
+        Units -> None,
+        Description -> "For each member of SampleLink, the number of times that the cells in resuspension is mixed after adding ResuspensionMedia to the source sample.",
+        Category -> "Aspirate",
+        IndexMatching -> SampleLink
+      },
+      ResuspensionMixVolume -> {
+        Format -> Multiple,
+        Class -> Real,
+        Units -> Microliter,
+        Pattern :> GreaterP[0 Microliter],
+        Description -> "For each member of SampleLink, the volume that will be repeatedly aspirated and dispensed via pipette from the cells in resuspension in order to mix after adding ResuspensionMedia to the source sample. The same pipette and tips used to add the ResuspensionMedia will be used to mix the cell resuspension.",
+        IndexMatching -> SampleLink,
+        Category -> "Resuspension"
+      },
+      ResuspensionMediaLink -> {
+        Format -> Multiple,
+        Class -> Link,
+        Pattern :> _Link,
+        Relation -> Alternatives[Object[Sample], Model[Sample]],
+        Description -> "For each member of SampleLink, the media to add to the source samples in order to resuspend the cells.",
+        IndexMatching -> SampleLink,
+        Category -> "Resuspension",
+        Migration -> SplitField
+      },
+      ResuspensionMediaString -> {
+        Format -> Multiple,
+        Class -> String,
+        Pattern :> _String,
+        Description -> "For each member of SampleLink, the media to add to the source samples in order to resuspend the cells.",
+        IndexMatching -> SampleLink,
+        Category -> "Resuspension",
+        Migration -> SplitField
+      },
+      ResuspensionMediaVolume -> {
+        Format -> Multiple,
+        Class -> Real,
+        Units -> Microliter,
+        Pattern :> GreaterP[0 Microliter],
+        Description -> "For each member of SampleLink, the amount of liquid media added to the source samples in order to resuspend the cells.",
+        IndexMatching -> SampleLink,
+        Category -> "Resuspension"
+      },
+      NumberOfSourceScrapes->{
+        Format -> Multiple,
+        Class -> Real,
+        Pattern :> GreaterP[0],
+        Units -> None,
+        Description -> "For each member of SampleLink, the number of times that the sample is scraped with the tip before it is dipped into the liquid media and swirled.",
+        Category -> "Aspirate",
+        IndexMatching -> SampleLink
+      },
       Populations -> {
         Format -> Multiple,
         Class -> Expression,
-        Pattern :> Alternatives[
-          CustomCoordinates,
-          FluorescencePrimitiveP,
-          AbsorbancePrimitiveP,
-          DiameterPrimitiveP,
-          CircularityPrimitiveP,
-          RegularityPrimitiveP,
-          IsolationPrimitiveP,
-          AllColoniesPrimitiveP,
-          MultiFeaturedPrimitiveP,
-          Fluorescence,
-          Absorbance,
-          Diameter,
-          Circularity,
-          Regularity,
-          Isolation,
-          All,
-          Null,
-          ListableP[Alternatives[
+        Pattern :> ListableP[
+          Alternatives[
             CustomCoordinates,
-            FluorescencePrimitiveP,
-            AbsorbancePrimitiveP,
-            DiameterPrimitiveP,
-            CircularityPrimitiveP,
-            RegularityPrimitiveP,
-            IsolationPrimitiveP,
-            AllColoniesPrimitiveP,
-            MultiFeaturedPrimitiveP,
-            Fluorescence,
-            Absorbance,
-            Diameter,
-            Circularity,
-            Regularity,
-            Isolation,
+            ColonySelectionPrimitiveP,
+            ColonySelectionFeatureP,
             All,
             Null
-          ]]
+          ]
         ],
-        Description -> "For each member of SampleLink, the criteria used to group colonies together into a population. Criteria are based on the ordering of colonies by the desired feature(s): diameter, regularity, circularity, isolation, fluorescence, and absorbance.",
+        Description -> "For each member of SampleLink, the criteria used to group colonies together into a population. Criteria are based on the ordering of colonies by the desired feature(s): Diameter, Regularity, Circularity, Isolation, Fluorescence, and BlueWhiteScreen, or all colonies and colonies at custom coordinates are grouped.",
         IndexMatching -> SampleLink,
         Category -> "Selection"
       },
@@ -302,48 +351,38 @@ DefineObjectType[Object[UnitOperation,InoculateLiquidMedia],
         IndexMatching -> SampleLink,
         Category -> "Selection"
       },
-
+      (* ----------- Imaging -------------- *)
       ImagingChannels -> {
         Format -> Multiple,
         Class -> Expression,
         Pattern :> ListableP[QPixFluorescenceWavelengthsP | QPixAbsorbanceWavelengthsP | BrightField],
-        Description -> "For each member of SampleLink, how to expose the colonies to light/and measure light from the colonies when capturing images of the colonies.",
+        Description -> "For each member of SampleLink, and for each ImagingStrategy, the preset which describes the light source, blue-white filter, and filter pairs for selecting fluorescence excitation and emission wavelengths when capturing images.",
+        IndexMatching -> SampleLink,
+        Developer -> True,
+        Category -> "Imaging"
+      },
+      ImagingStrategies -> {
+        Format -> Multiple,
+        Class -> Expression,
+        Pattern :> ListableP[QPixImagingStrategiesP],
+        Description -> "For each member of SampleLink, the end goals for capturing images of the colonies. The available options include BrightField imaging, BlueWhite Screening, and Fluorescence imaging.",
         IndexMatching -> SampleLink,
         Category -> "Imaging"
       },
       ExposureTimes -> {
         Format -> Multiple,
         Class -> Expression,
-        Pattern :> ListableP[GreaterP[0 Millisecond] | AutoExpose],
-        Description -> "For each member of SampleLink, and for each ImagingChannel, length of time to expose the sample to the channel. An increased ExposureTime leads to brighter images based on a linear scale.",
+        Pattern :> ListableP[GreaterP[0 Millisecond]|Null|AutoExpose],
+        Description -> "For each member of SampleLink, and for each ImagingStrategy, the length of time to allow the camera to capture an image. When auto exposure is desired, exposure time is marked as Null before the optimal exposure time is determined during experiment and multiple images are taken to calculate the optimal exposure time.",
         IndexMatching -> SampleLink,
         Category -> "Imaging"
       },
-
       ColonyPickingTool -> {
         Format -> Multiple,
         Class -> Link,
-        Relation -> Alternatives[Model[Part,ColonyHandlerHeadCassette],Object[Part,ColonyHandlerHeadCassette]],
+        Relation -> Alternatives[Model[Part, ColonyHandlerHeadCassette], Object[Part, ColonyHandlerHeadCassette]],
         Pattern :> _Link,
         Description -> "For each member of SampleLink, the part used to collect the source colonies and deposit them into a destination well.",
-        IndexMatching -> SampleLink,
-        Category -> "Picking"
-      },
-      HeadDiameter -> {
-        Format -> Multiple,
-        Class -> Real,
-        Pattern :> GreaterP[0 Millimeter],
-        Units -> Millimeter,
-        Description -> "For each member of SampleLink, the width of the metal probe that will pick the colonies.",
-        IndexMatching -> SampleLink,
-        Category -> "Picking"
-      },
-      HeadLength -> {
-        Format -> Multiple,
-        Class -> Real,
-        Pattern :> GreaterP[0 Millimeter],
-        Units -> Millimeter,
-        Description -> "For each member of SampleLink, the length of the metal probe that will pick the colonies.",
         IndexMatching -> SampleLink,
         Category -> "Picking"
       },
@@ -352,14 +391,6 @@ DefineObjectType[Object[UnitOperation,InoculateLiquidMedia],
         Class -> Integer,
         Pattern :> GreaterP[0,1],
         Description -> "For each member of SampleLink, the number of metal probes on the ColonyHandlerHeadCassette that will pick the colonies.",
-        IndexMatching -> SampleLink,
-        Category -> "Picking"
-      },
-      ColonyHandlerHeadCassetteApplication -> {
-        Format -> Multiple,
-        Class -> Expression,
-        Pattern :> ColonyHandlerHeadCassetteTypeP,
-        Description -> "For each member of SampleLink, the designed use of the ColonyPickingTool.",
         IndexMatching -> SampleLink,
         Category -> "Picking"
       },
@@ -374,7 +405,7 @@ DefineObjectType[Object[UnitOperation,InoculateLiquidMedia],
       PickCoordinates -> {
         Format -> Multiple,
         Class -> Expression,
-        Pattern :>  {{DistanceP,DistanceP}..}|Null,
+        Pattern :>  {{DistanceP, DistanceP}..}|Null,
         Description -> "For each member of SampleLink, the coordinates, in Millimeters, from which colonies will be collected from the source plate where {0 Millimeter, 0 Millimeter} is the center of the source well.",
         IndexMatching -> SampleLink,
         Category -> "Picking"
@@ -402,7 +433,6 @@ DefineObjectType[Object[UnitOperation,InoculateLiquidMedia],
         IndexMatching -> SampleLink,
         Category -> "Placing"
       },
-
       PrimaryWash -> {
         Format -> Multiple,
         Class -> Boolean,
@@ -415,7 +445,7 @@ DefineObjectType[Object[UnitOperation,InoculateLiquidMedia],
         Format -> Multiple,
         Class -> Link,
         Pattern :> _Link,
-        Relation -> Alternatives[Object[Sample],Model[Sample]],
+        Relation -> Alternatives[Object[Sample], Model[Sample]],
         Description -> "For each member of SampleLink, the first wash solution that is used during the sanitization process prior to each round of picking.",
         IndexMatching -> SampleLink,
         Category -> "Sanitization",
@@ -459,7 +489,7 @@ DefineObjectType[Object[UnitOperation,InoculateLiquidMedia],
         Format -> Multiple,
         Class -> Link,
         Pattern :> _Link,
-        Relation -> Alternatives[Object[Sample],Model[Sample]],
+        Relation -> Alternatives[Object[Sample], Model[Sample]],
         Description -> "For each member of SampleLink, the second wash solution that can be used during the sanitization process prior to each round of picking.",
         IndexMatching -> SampleLink,
         Category -> "Sanitization",
@@ -503,7 +533,7 @@ DefineObjectType[Object[UnitOperation,InoculateLiquidMedia],
         Format -> Multiple,
         Class -> Link,
         Pattern :> _Link,
-        Relation -> Alternatives[Object[Sample],Model[Sample]],
+        Relation -> Alternatives[Object[Sample], Model[Sample]],
         Description -> "For each member of SampleLink, the third wash solution that can be used during the sanitization process prior to each round of picking.",
         IndexMatching -> SampleLink,
         Category -> "Sanitization",
@@ -547,7 +577,7 @@ DefineObjectType[Object[UnitOperation,InoculateLiquidMedia],
         Format -> Multiple,
         Class -> Link,
         Pattern :> _Link,
-        Relation -> Alternatives[Object[Sample],Model[Sample]],
+        Relation -> Alternatives[Object[Sample], Model[Sample]],
         Description -> "For each member of SampleLink, the fourth wash solution that can be used during the process prior to each round of picking.",
         IndexMatching -> SampleLink,
         Category -> "Sanitization",
@@ -579,7 +609,6 @@ DefineObjectType[Object[UnitOperation,InoculateLiquidMedia],
         IndexMatching -> SampleLink,
         Category -> "Sanitization"
       },
-
       VolumeReal -> {
         Format -> Multiple,
         Class -> Real,
@@ -599,7 +628,7 @@ DefineObjectType[Object[UnitOperation,InoculateLiquidMedia],
         Category -> "Sanitization",
         Migration -> SplitField
       },
-      Tips->{
+      InoculationTips -> {
         Format -> Multiple,
         Class -> Link,
         Pattern :> _Link,
@@ -607,19 +636,19 @@ DefineObjectType[Object[UnitOperation,InoculateLiquidMedia],
           Model[Item, Tips],
           Object[Item, Tips]
         ],
-        Description -> "For each member of SampleLink, the pipette tips used to aspirate and dispense the cells.",
+        Description -> "For each member of SampleLink, the pipette tip attached to a manual pipette instrument or robotic hamilton workcell during inoculation to aspirate and dispense the cells.",
         IndexMatching -> SampleLink,
-        Category -> "General"
+        Category -> "Inoculation"
       },
-      TipType->{
+      InoculationTipType -> {
         Format -> Multiple,
         Class -> Expression,
         Pattern :> TipTypeP,
         Description -> "For each member of SampleLink, the type of pipette tips used to aspirate and dispense the cells during the inoculation.",
-        Category -> "General",
+        Category -> "Inoculation",
         IndexMatching -> SampleLink
       },
-      TipMaterial->{
+      InoculationTipMaterial -> {
         Format -> Multiple,
         Class -> Expression,
         Pattern :> MaterialP,
@@ -627,29 +656,29 @@ DefineObjectType[Object[UnitOperation,InoculateLiquidMedia],
         Category -> "General",
         IndexMatching -> SampleLink
       },
-      SourceMix->{
+      SourceMix -> {
         Format -> Multiple,
         Class -> Boolean,
         Pattern :> BooleanP,
         Description -> "For each member of SampleLink, indicates if mixing of the cells in liquid media will occur during aspiration from the source sample.",
-        Category -> "Aspirate",
+        Category -> "Inoculation",
         IndexMatching -> SampleLink
       },
-      SourceMixType->{
+      SourceMixType -> {
         Format -> Multiple,
         Class -> Expression,
         Pattern :> Pipette|Swirl,
-        Description -> "For each member of SampleLink, the type of mixing of the cells that will occur immediately before aspiration from the source container. Pipette performs NumberOfSourceMixes aspiration/dispense cycle(s) of SourceMixVolume using a pipette. Swirl has the operator place the container on the surface of the TransferEnvironment and perform DestinationNumberOfMixes clockwise rotations of the container.",
-        Category -> "Aspirate",
+        Description -> "For each member of SampleLink, the type of mixing that is performed in the container of the input sample before the inoculation. Pipette performs NumberOfSourceMixes aspiration/dispense cycle(s) of SourceMixVolume using a pipette. Swirl has the operator place the container on the surface of the TransferEnvironment and perform DestinationNumberOfMixes clockwise rotations of the container.",
+        Category -> "Inoculation",
         IndexMatching -> SampleLink
       },
-      NumberOfSourceMixes->{
+      NumberOfSourceMixes -> {
         Format -> Multiple,
         Class -> Real,
         Pattern :> GreaterP[0],
         Units -> None,
         Description -> "For each member of SampleLink, the number of times that the source cells will be mixed during aspiration.",
-        Category -> "Aspirate",
+        Category -> "Inoculation",
         IndexMatching -> SampleLink
       },
       SourceMixVolume -> {
@@ -658,36 +687,27 @@ DefineObjectType[Object[UnitOperation,InoculateLiquidMedia],
         Pattern :> GreaterP[0 Microliter],
         Units -> Microliter,
         Description -> "For each member of SampleLink, the volume that will be repeatedly aspirated and dispensed via pipette from the source cells in order to mix the source cells immediately before the inoculation occurs. The same pipette and tips used in the inoculation will be used to mix the source cells.",
-        Category -> "Aspirate",
+        Category -> "Inoculation",
         IndexMatching -> SampleLink
       },
-      PipettingMethod -> {
+      SampleOutLabel -> {
         Format -> Multiple,
-        Class -> Link,
-        Pattern :> _Link,
-        Relation -> Model[Method,Pipetting],
-        Description -> "For each member of SampleLink, the pipetting parameters used to manipulate the source cells.",
-        Category -> "Pipetting Parameters"
-      },
-      SampleOutLabel->{
-        Format->Multiple,
-        Class->Expression,
-        Pattern:>ListableP[ListableP[ListableP[{(_String|Null)..}|_String|Null]]],
-        Description->"For each member of SampleLink, the labels of the sample that will be created in this experiment, which is used for identification elsewhere in sample preparation.",
-        Category->"General",
-        IndexMatching->SampleLink,
-        Migration->NMultiple
+        Class -> Expression,
+        Pattern :> ListableP[ListableP[ListableP[{(_String|Null)..}|_String|Null]]],
+        Description -> "For each member of SampleLink, the labels of the sample that will be created in this experiment, which is used for identification elsewhere in sample preparation.",
+        Category -> "General",
+        IndexMatching -> SampleLink,
+        Migration -> NMultiple
       },
       ContainerOutLabel->{
-        Format->Multiple,
-        Class->Expression,
-        Pattern:>ListableP[ListableP[{Alternatives[_String,Null]..}|_String|Null]],
-        Description->"For each member of SampleLink, the label of the container of the sample that will be created in this experiment, which is used for identification elsewhere in sample preparation.",
-        Category->"General",
-        IndexMatching->SampleLink,
-        Migration->NMultiple
+        Format -> Multiple,
+        Class -> Expression,
+        Pattern :> ListableP[ListableP[{Alternatives[_String, Null]..}|_String|Null]],
+        Description -> "For each member of SampleLink, the label of the container of the sample that will be created in this experiment, which is used for identification elsewhere in sample preparation.",
+        Category -> "General",
+        IndexMatching -> SampleLink,
+        Migration -> NMultiple
       },
-
       SamplesOut -> {
         Format -> Multiple,
         Class -> Expression,
@@ -706,7 +726,6 @@ DefineObjectType[Object[UnitOperation,InoculateLiquidMedia],
         IndexMatching -> SampleLink,
         Migration -> NMultiple
       },
-
       (* Developer *)
       DestinationMediaContainerResources -> {
         Format -> Multiple,
@@ -719,8 +738,8 @@ DefineObjectType[Object[UnitOperation,InoculateLiquidMedia],
           Object[Sample]
         ],
         Description -> "The desired container to have stabbed cells deposited in.",
-        Category->"General",
-        Developer->True
+        Category -> "General",
+        Developer -> True
       },
       (* Data and Analysis *)
       (* These are the flat fields *)
@@ -728,7 +747,7 @@ DefineObjectType[Object[UnitOperation,InoculateLiquidMedia],
         Format -> Multiple,
         Class -> Link,
         Pattern :> _Link,
-        Relation -> Alternatives[Object[Analysis,ImageExposure]],
+        Relation -> Alternatives[Object[Analysis, ImageExposure]],
         Description -> "A list of the exposure analyses performed on the source plate images taken by the QPix.",
         Category -> "Analysis & Reports"
       },
@@ -736,7 +755,7 @@ DefineObjectType[Object[UnitOperation,InoculateLiquidMedia],
         Format -> Multiple,
         Class -> Link,
         Pattern :> _Link,
-        Relation -> Alternatives[Object[Analysis,Colonies]],
+        Relation -> Alternatives[Object[Analysis, Colonies]],
         Description -> "A list of the colony analyses performed on the source plate images taken by the QPix.",
         Category -> "Analysis & Reports"
       },
@@ -744,7 +763,7 @@ DefineObjectType[Object[UnitOperation,InoculateLiquidMedia],
         Format -> Multiple,
         Class -> Link,
         Pattern :> _Link,
-        Relation -> Alternatives[Object[Data,Appearance,Colonies]],
+        Relation -> Alternatives[Object[Data, Appearance, Colonies]],
         Description -> "A list of the data objects containing the images of the source plates taken by the QPix.",
         Category -> "Analysis & Reports"
       },
@@ -752,7 +771,7 @@ DefineObjectType[Object[UnitOperation,InoculateLiquidMedia],
       ImageExposureAnalyses -> {
         Format -> Multiple,
         Class -> Expression,
-        Pattern :> {ObjectP[Object[Analysis,ImageExposure]]...},
+        Pattern :> {ObjectP[Object[Analysis, ImageExposure]]...},
         Description -> "For each member of SampleLink, a list of the exposure analyses performed on the images of the sample taken by the QPix.",
         IndexMatching -> SampleLink,
         Category -> "Analysis & Reports"
@@ -760,7 +779,7 @@ DefineObjectType[Object[UnitOperation,InoculateLiquidMedia],
       ColonyAnalyses -> {
         Format -> Multiple,
         Class -> Expression,
-        Pattern :> {ObjectP[Object[Analysis,Colonies]]...},
+        Pattern :> {ObjectP[Object[Analysis, Colonies]]...},
         Description -> "For each member of SampleLink, a list of the colony analyses performed on the images of the sample taken by the QPix.",
         IndexMatching -> SampleLink,
         Category -> "Analysis & Reports"
@@ -768,7 +787,7 @@ DefineObjectType[Object[UnitOperation,InoculateLiquidMedia],
       ColonyAppearanceData -> {
         Format -> Multiple,
         Class -> Expression,
-        Pattern :> {ObjectP[Object[Data,Appearance,Colonies]]...},
+        Pattern :> {ObjectP[Object[Data, Appearance, Colonies]]...},
         Description -> "For each member of SampleLink, a list of the data objects containing the images of the sample taken by the QPix.",
         IndexMatching -> SampleLink,
         Category -> "Analysis & Reports"
@@ -820,7 +839,7 @@ DefineObjectType[Object[UnitOperation,InoculateLiquidMedia],
         Format -> Single,
         Class -> Expression,
         Pattern :> _List,
-        Description -> "A Nested list of associations storing how the sample packets are physically batched.",
+        Description -> "A Nested list of associations storing how the sample packets are physically batched. For example, in {{{a,b},{c}},{{d,e}}}, abc are from the same physical batch, de are from the same physical batch, ab and c are from different source group.",
         Category -> "General",
         Developer -> True
       },
@@ -833,11 +852,20 @@ DefineObjectType[Object[UnitOperation,InoculateLiquidMedia],
         Category -> "General",
         Developer -> True
       },
+      CassetteHolderResources -> {
+        Format -> Multiple,
+        Class -> Link,
+        Pattern :> _Link,
+        Relation -> Alternatives[Model[Container, ColonyHandlerHeadCassetteHolder], Object[Container, ColonyHandlerHeadCassetteHolder]],
+        Description -> "The list of ColonyHandlerHeadCassetteHolder used as the container for the ColonyHandlerHeadCassette.",
+        Category -> "General",
+        Developer -> True
+      },
       CarrierAndRiserInitialResources -> {
         Format -> Multiple,
         Class -> Link,
         Pattern :> _Link,
-        Relation -> Alternatives[Object[Container,Rack],Model[Container,Rack]],
+        Relation -> Alternatives[Object[Container, Rack], Model[Container, Rack]],
         Description -> "The list of carrier and riser objects to pick during the first physical batch of an output unit operation.",
         Category -> "General",
         Developer -> True
@@ -860,31 +888,31 @@ DefineObjectType[Object[UnitOperation,InoculateLiquidMedia],
         Category -> "General",
         Developer -> True
       },
-      FinalColonyHandlerHeadCassetteReturns -> {
-        Format -> Multiple,
-        Class -> Link,
-        Pattern :> _Link,
-        Relation -> Alternatives[Object[Part,ColonyHandlerHeadCassette]],
-        Description -> "The ColonyHandlerHeadCassettes that need to be returned at the end of the unit operation loop.",
+      FinalColonyHandlerHeadCassetteReturn -> {
+        Format -> Single,
+        Class -> {Link, Link, String},
+        Pattern :> {_Link, _Link, LocationPositionP},
+        Relation -> {Alternatives[Object[Part, ColonyHandlerHeadCassette], Model[Part, ColonyHandlerHeadCassette]], Alternatives[Object[Container], Model[Container]], Null},
+        Description -> "The placement for removing the final colony handler head cassette at the end of the output unit operation loop.",
         Category -> "General",
-        Developer -> True
+        Developer -> True,
+        Headers -> {"Object to Place", "Destination Object","Destination Position"}
       },
       AbsorbanceFilter -> {
         Format -> Single,
         Class -> Link,
         Pattern :> _Link,
-        Relation -> Alternatives[Model[Part,OpticalFilter],Object[Part,OpticalFilter]],
+        Relation -> Alternatives[Model[Part, OpticalFilter], Object[Part, OpticalFilter]],
         Description -> "The Absorbance filter used for any absorbance imaging in this unit operation.",
         Category -> "General",
         Developer -> True
       },
-
       (* BatchedUnitOperation *)
       BatchedUnitOperations -> {
         Format -> Multiple,
         Class -> Link,
         Pattern :> _Link,
-        Relation -> Alternatives[Object[UnitOperation,InoculateLiquidMedia]],
+        Relation -> Alternatives[Object[UnitOperation, InoculateLiquidMedia]],
         Description -> "The physical batches split by destination containers that can fit on the deck at once.",
         Category -> "General",
         Developer -> True
@@ -894,7 +922,7 @@ DefineObjectType[Object[UnitOperation,InoculateLiquidMedia],
         Format -> Multiple,
         Class -> Link,
         Pattern :> _Link,
-        Relation -> Alternatives[Object[Container,Plate], Object[Sample]],
+        Relation -> Alternatives[Object[Container, Plate], Object[Sample]],
         Description -> "A flat list of the source containers that once batched with the lengths in BatchedSourceContainerLengths, represents which pairs of source containers should be placed on deck at the same time.",
         Category -> "General",
         Developer -> True
@@ -903,8 +931,8 @@ DefineObjectType[Object[UnitOperation,InoculateLiquidMedia],
         Format -> Multiple,
         Class -> {Link, Expression},
         Pattern :> {_Link, {LocationPositionP..}},
-        Relation -> {Alternatives[Object[Sample]],Null},
-        Headers -> {"Object","Position"},
+        Relation -> {Alternatives[Object[Sample]], Null},
+        Headers -> {"Object", "Position"},
         Description -> "A flat list of the source container placements that once batched with the lengths in BatchedSourceContainerLengths, represents which pairs of source containers should be placed on the deck at the same time.",
         Category -> "General",
         Developer -> True
@@ -912,7 +940,7 @@ DefineObjectType[Object[UnitOperation,InoculateLiquidMedia],
       BatchedSourceContainerLengths -> {
         Format -> Multiple,
         Class -> Integer,
-        Pattern :> GreaterP[0,1],
+        Pattern :> GreaterP[0, 1],
         Description -> "The batching lengths corresponding to FlatBatchedSourceContainers that are used to partition FlatBatchedSourceContainers.",
         Category -> "General",
         Developer -> True
@@ -928,7 +956,7 @@ DefineObjectType[Object[UnitOperation,InoculateLiquidMedia],
       FlatBatchedRoutineJSONLengths -> {
         Format -> Multiple,
         Class -> Integer,
-        Pattern :> GreaterP[0,1],
+        Pattern :> GreaterP[0, 1],
         Description -> "The length of the batches of any jsons stored in FlatBatchedRoutineJSONPaths.",
         Category -> "General",
         Developer -> True
@@ -944,7 +972,7 @@ DefineObjectType[Object[UnitOperation,InoculateLiquidMedia],
       FlatBatchedAbsorbanceRoutineJSONLengths -> {
         Format -> Multiple,
         Class -> Integer,
-        Pattern :> GreaterEqualP[0,1],
+        Pattern :> GreaterEqualP[0, 1],
         Description -> "The length of the batches of any jsons stored in FlatBatchedAbsorbanceRoutineJSONPaths.",
         Category -> "General",
         Developer -> True
@@ -952,7 +980,7 @@ DefineObjectType[Object[UnitOperation,InoculateLiquidMedia],
       FlatBatchedPickCoordinates -> {
         Format -> Multiple,
         Class -> Expression,
-        Pattern :> {{DistanceP,DistanceP}..}|Null,
+        Pattern :> {{DistanceP, DistanceP}..}|Null,
         Description -> "The lists of predetermined pick coordinates corresponding to the flat batched source samples.",
         Category -> "General",
         Developer -> True
@@ -960,7 +988,7 @@ DefineObjectType[Object[UnitOperation,InoculateLiquidMedia],
       FlatBatchedImagingChannels -> {
         Format -> Multiple,
         Class -> Expression,
-        Pattern :> {Alternatives[QPixFluorescenceWavelengthsP,QPixAbsorbanceWavelengthsP,BrightField]..}|Null,
+        Pattern :> {Alternatives[QPixFluorescenceWavelengthsP, QPixAbsorbanceWavelengthsP, BrightField]..}|Null,
         Description -> "The lists of imaging channels corresponding to the flat batched source samples.",
         Category -> "General",
         Developer -> True
@@ -968,7 +996,7 @@ DefineObjectType[Object[UnitOperation,InoculateLiquidMedia],
       FlatBatchedExposureTimes -> {
         Format -> Multiple,
         Class -> Expression,
-        Pattern :> {Alternatives[GreaterP[0 Millisecond],AutoExpose]..}|Null,
+        Pattern :> {Alternatives[GreaterP[0 Millisecond], AutoExpose]..}|Null,
         Description -> "The lists of exposure times corresponding to the flat batched source samples.",
         Category -> "General",
         Developer -> True
@@ -978,14 +1006,7 @@ DefineObjectType[Object[UnitOperation,InoculateLiquidMedia],
         Class -> Expression,
         Pattern :> ListableP[Alternatives[
           CustomCoordinates,
-          FluorescencePrimitiveP,
-          AbsorbancePrimitiveP,
-          DiameterPrimitiveP,
-          CircularityPrimitiveP,
-          RegularityPrimitiveP,
-          IsolationPrimitiveP,
-          AllColoniesPrimitiveP,
-          MultiFeaturedPrimitiveP
+          ColonySelectionPrimitiveP
         ]],
         Description -> "The lists of populations corresponding to flat batched source samples.",
         Category -> "General",
@@ -994,7 +1015,7 @@ DefineObjectType[Object[UnitOperation,InoculateLiquidMedia],
       FlatBatchedSamplePopulationRoutineGroups -> {
         Format -> Multiple,
         Class -> Expression,
-        Pattern :> ListableP[{ObjectP[Object[Sample]],Alternatives[
+        Pattern :> ListableP[{ObjectP[Object[Sample]], Alternatives[
           CustomCoordinates,
           FluorescencePrimitiveP,
           AbsorbancePrimitiveP,
@@ -1080,7 +1101,7 @@ DefineObjectType[Object[UnitOperation,InoculateLiquidMedia],
         Format -> Multiple,
         Class -> {Link, Expression},
         Pattern :> {_Link, {LocationPositionP..}},
-        Relation -> {Alternatives[Object[Container],Model[Container]], Null},
+        Relation -> {Alternatives[Object[Container], Model[Container]], Null},
         Headers -> {"Riser","Placement Location"},
         Description -> "A list of deck placements used to place any needed risers on the qpix deck at the beginning of the physical batch.",
         Category -> "General",
@@ -1090,7 +1111,7 @@ DefineObjectType[Object[UnitOperation,InoculateLiquidMedia],
         Format -> Multiple,
         Class -> {Link, Expression},
         Pattern :> {_Link, {LocationPositionP..}},
-        Relation -> {Alternatives[Object[Container],Model[Container]], Null},
+        Relation -> {Alternatives[Object[Container], Model[Container]], Null},
         Headers -> {"Carrier", "Placement Location"},
         Description -> "A list of deck placements used to place any needed carriers on the qpix deck at the beginning of the physical batch.",
         Category -> "General",
@@ -1114,31 +1135,68 @@ DefineObjectType[Object[UnitOperation,InoculateLiquidMedia],
         Category -> "General",
         Developer -> True
       },
-      (* If I run into problems in testing here make this a multiple  *)
       ColonyHandlerHeadCassette -> {
         Format -> Single,
         Class -> Link,
         Pattern :> _Link,
-        Relation -> Alternatives[Object[Part,ColonyHandlerHeadCassette], Model[Part,ColonyHandlerHeadCassette]],
+        Relation -> Alternatives[Object[Part, ColonyHandlerHeadCassette], Model[Part, ColonyHandlerHeadCassette]],
         Description -> "The colony handler head cassette that is used for the physical batch.",
         Category -> "General",
         Developer -> True
+      },
+      ColonyHandlerHeadCassetteHolder -> {
+        Format -> Single,
+        Class -> Link,
+        Pattern :> _Link,
+        Relation -> Alternatives[Object[Container, ColonyHandlerHeadCassetteHolder]],
+        Description -> "The colony handler head cassette holder that is used to store the ColonyHandlerHeadCassette for the physical batch.",
+        Category -> "General",
+        Developer -> True
+      },
+      ColonyHandlerHeadCassettePlacement -> {
+        Format -> Single,
+        Class -> {Link, Link, String},
+        Pattern :> {_Link, _Link, LocationPositionP},
+        Relation -> {Alternatives[Object[Part, ColonyHandlerHeadCassette],Model[Part, ColonyHandlerHeadCassette]], Alternatives[Object[Instrument], Model[Instrument]], Null},
+        Description -> "The placement used to place the colony picking tool for the current batch.",
+        Category -> "General",
+        Developer -> True,
+        Headers->{"Object to Place", "Destination Object","Destination Position"}
       },
       ColonyHandlerHeadCassetteReturn -> {
         Format -> Single,
         Class -> Link,
         Pattern :> _Link,
-        Relation -> Alternatives[Object[Part,ColonyHandlerHeadCassette],Model[Part,ColonyHandlerHeadCassette]],
+        Relation -> Alternatives[Object[Part, ColonyHandlerHeadCassette], Model[Part, ColonyHandlerHeadCassette]],
         Description -> "The colony handler head cassette to return to the cart before the new one is placed in the instrument.",
         Category -> "General",
         Developer -> True
+      },
+      ColonyHandlerHeadCassetteReturnHolder -> {
+        Format -> Single,
+        Class -> Link,
+        Pattern :> _Link,
+        Relation -> Alternatives[Object[Container, ColonyHandlerHeadCassetteHolder]],
+        Description -> "The colony handler head cassette holder that is used to store the ColonyHandlerHeadCassetteReturn for the physical batch.",
+        Category -> "General",
+        Developer -> True
+      },
+      ColonyHandlerHeadCassetteReturnPlacement -> {
+        Format -> Single,
+        Class -> {Link, Link, String},
+        Pattern :> {_Link, _Link, LocationPositionP},
+        Relation -> {Alternatives[Object[Part, ColonyHandlerHeadCassette], Model[Part, ColonyHandlerHeadCassette]], Alternatives[Object[Container], Model[Container]], Null},
+        Description -> "The placement used to remove the colony picking tool from the colony handler and move it back to its holder once this batch is complete.",
+        Category -> "General",
+        Developer -> True,
+        Headers->{"Object to Place", "Destination Object","Destination Position"}
       },
       DestinationContainerDeckPlacements -> {
         Format -> Multiple,
         Class -> {Link, Expression},
         Pattern :> {_Link, {LocationPositionP..}},
-        Relation -> {Alternatives[Object[Container]],Null},
-        Headers -> {"Object","Position"},
+        Relation -> {Alternatives[Object[Container]], Null},
+        Headers -> {"Object", "Position"},
         Description -> "The placement of destination containers on the carriers of the qpix for this physical batch.",
         Category -> "General",
         Developer -> True
@@ -1172,7 +1230,7 @@ DefineObjectType[Object[UnitOperation,InoculateLiquidMedia],
       PickListAssociations -> {
         Format -> Multiple,
         Class -> Expression,
-        Pattern :> {_Association,_List},
+        Pattern :> {_Association, _List},
         Description -> "A list of all of the pick lists and the corresponding source samples that were completed for this physical batch.",
         Category -> "General",
         Developer -> True
@@ -1180,7 +1238,7 @@ DefineObjectType[Object[UnitOperation,InoculateLiquidMedia],
       ImageExposureAnalysisObjects -> {
         Format -> Multiple,
         Class -> Expression,
-        Pattern :> {ObjectP[Object[Analysis,ImageExposure]]...},
+        Pattern :> {ObjectP[Object[Analysis, ImageExposure]]...},
         Description -> "For each plate in the batched unit operation, a list of the image exposure analysis objects that were taken for that plate.",
         Category -> "General",
         Developer -> True
@@ -1189,7 +1247,7 @@ DefineObjectType[Object[UnitOperation,InoculateLiquidMedia],
         Format -> Multiple,
         Class -> Link,
         Pattern :> _Link,
-        Relation -> Alternatives[Object[Data,Appearance,Colonies]],
+        Relation -> Alternatives[Object[Data, Appearance, Colonies]],
         Description -> "For each plate in the batched unit operation, the data object containing the final images used for colony analysis.",
         Category -> "General",
         Developer -> True
@@ -1198,7 +1256,7 @@ DefineObjectType[Object[UnitOperation,InoculateLiquidMedia],
         Format -> Multiple,
         Class -> Link,
         Pattern :> _Link,
-        Relation -> Alternatives[Object[Analysis,Colonies]],
+        Relation -> Alternatives[Object[Analysis, Colonies]],
         Description -> "For each plate in the batched unit operation, the colony analysis object that determined the pick locations.",
         Category -> "General",
         Developer -> True

@@ -269,7 +269,7 @@ DefineObjectType[Object[Data,CapillaryGelElectrophoresisSDS],{
 			Format->Single,
 			Class->Expression,
 			Pattern:>{{GreaterEqualP[0*Volt],GreaterP[0*Second]}..},
-			Description->"Indicates the series of voltages and durations applied onto the capillary while docked in running buffer to seperate proteins by molecular weight as they migrate through the separation matrix in the capillary.",
+			Description->"Indicates the series of voltages and durations applied onto the capillary while docked in running buffer to separate proteins by molecular weight as they migrate through the separation matrix in the capillary.",
 			Category -> "General",
 			Abstract->True
 		},

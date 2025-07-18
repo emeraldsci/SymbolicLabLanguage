@@ -74,14 +74,6 @@ DefineObjectType[Model[Container, Vessel, Filter], {
 			Category -> "Container Specifications",
 			Abstract -> True
 		},
-		KitProductsContainers -> {
-			Format -> Multiple,
-			Class -> Link,
-			Pattern :> _Link,
-			Relation -> Object[Product][KitComponents, ProductModel],
-			Description -> "Products ordering information for this filter vessel container with its supplied storage buffer solution as part of one or more kits.",
-			Category -> "Inventory"
-		},
 		RetentateCollectionContainerModel -> {
 			Format -> Single,
 			Class -> Link,

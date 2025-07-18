@@ -117,6 +117,14 @@ DefineObjectType[Model[Instrument], {
 			Description -> "Operating system that the software of instruments of this model runs on.",
 			Category -> "Instrument Specifications"
 		},
+		CompatibleInstrumentSoftware -> {
+			Format -> Multiple,
+			Class -> {Expression, String},
+			Pattern :> {InstrumentSoftwareP, _String},
+			Description -> "The instrument-specific software that are supported for instruments of this model.",
+			Category -> "Instrument Specifications",
+			Headers -> {"Software Name", "Version Number"}
+		},
 		PCICard -> {
 			Format -> Multiple,
 			Class -> {Integer, Expression},
@@ -141,7 +149,7 @@ DefineObjectType[Model[Instrument], {
 				Model[Instrument][SupportedInstruments],
 				Model[Part][SupportedInstruments],
 				Model[Container,PlateSealMagazine][SupportedInstruments],
-				Model[Container,MagazineParkPosition][SupportedInstruments],
+				Model[Container,MagazineRack][SupportedInstruments],
 				Model[Container,Rack][SupportedInstruments],
 				Model[Sensor][SupportedInstruments],
 				Model[Item][SupportedInstruments],
@@ -496,7 +504,6 @@ DefineObjectType[Model[Instrument], {
 			Description -> "Specifications for the wiring ends of this instrument that may plug into and conductively connect to other items, parts or instruments.",
 			Category -> "Wiring Information"
 		},
-
 		(* --- Qualifications & Maintenance --- *)
 		QualificationFrequency -> {
 			Format -> Multiple,
@@ -595,7 +602,7 @@ DefineObjectType[Model[Instrument], {
 			Format -> Single,
 			Class -> Expression,
 			Pattern :> BooleanP,
-			Description -> "Indicates that this model of instrument is used for protocols where SterileTechnique is indicated to be used.",
+			Description -> "Indicates that this model of instrument is used for protocols employing aseptic techniques.",
 			Category -> "Health & Safety"
 		},
 		CultureHandling -> {
@@ -609,7 +616,21 @@ DefineObjectType[Model[Instrument], {
 			Format -> Single,
 			Class -> Boolean,
 			Pattern :> BooleanP,
-			Description -> "Indiciates that this model of instrument permanently resides in the glove box.",
+			Description -> "Indicates if this model of instrument permanently resides in a glove box.",
+			Category -> "Health & Safety"
+		},
+		FumeHoodStorage -> {
+			Format -> Single,
+			Class -> Boolean,
+			Pattern :> BooleanP,
+			Description -> "Indicates if this model of instrument permanently resides in a fume hood.",
+			Category -> "Health & Safety"
+		},
+		BiosafetyCabinetStorage -> {
+			Format -> Single,
+			Class -> Boolean,
+			Pattern :> BooleanP,
+			Description -> "Indicates if this model of instrument permanently resides in a biosafety cabinet.",
 			Category -> "Health & Safety"
 		},
 		HazardCategories -> {
@@ -619,11 +640,18 @@ DefineObjectType[Model[Instrument], {
 			Description -> "Hazards to be aware of during operation of instruments of this model.",
 			Category -> "Health & Safety"
 		},
-		SampleHandlingCategories -> {
-			Format -> Multiple,
-			Class -> Expression,
-			Pattern :> HandlingCategoryP,
-			Description -> "Special handling considerations that samples on this instrument require.",
+		AsepticHandling -> {
+			Format -> Single,
+			Class -> Boolean,
+			Pattern :> BooleanP,
+			Description -> "Indicates if aseptic techniques are followed when handling samples on this model of instrument. Aseptic techniques include sanitizing all equipment, surfaces, and personnel during experimentation and storage.",
+			Category -> "Health & Safety"
+		},
+		AsepticTechniqueEnvironment -> {
+			Format -> Single,
+			Class -> Boolean,
+			Pattern :> BooleanP,
+			Description -> "Indicates if interactions with the interior of the instrument should be done using aseptic practices.",
 			Category -> "Health & Safety"
 		},
 		(* --- Sensor Information --- *)
@@ -644,6 +672,16 @@ DefineObjectType[Model[Instrument], {
 			Category -> "Resources",
 			Developer -> True
 		},
+		CurrentUsers -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[Team, Financing][RequiredInstruments],
+			Description -> "Client financing teams that are actively or imminently using this instrument model.",
+			Category -> "Organizational Information",
+			Developer -> True
+		},
+
 		(* --- Migration Support --- *)
 		LegacyID -> {
 			Format -> Single,

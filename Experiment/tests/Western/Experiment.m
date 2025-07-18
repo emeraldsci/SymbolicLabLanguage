@@ -21,21 +21,11 @@ DefineTests[
 		(* Basic Examples *)
 		Example[{Basic,"Accepts a sample object:"},
 			ExperimentWestern[Object[Sample,"Test 1 mL lysate sample, 0.25 mg/mL total protein for ExperimentWestern"<>$SessionUUID],Object[Sample,"Test Rabbit-AntiERK-1 antibody for ExperimentWestern"<>$SessionUUID]],
-			ObjectP[Object[Protocol,Western]],
-			SetUp:>($CreatedObjects={}),
-			TearDown:>(
-				EraseObject[$CreatedObjects,Force->True,Verbose->False];
-				Unset[$CreatedObjects]
-			)
+			ObjectP[Object[Protocol,Western]]
 		],
 		Example[{Basic,"Accepts a non-empty container as the primary input:"},
 			ExperimentWestern[Object[Container,Vessel,"Test 2mL Tube 1 containing lysate sample for ExperimentWestern"<>$SessionUUID],Object[Sample,"Test Rabbit-AntiERK-1 antibody for ExperimentWestern"<>$SessionUUID]],
-			ObjectP[Object[Protocol,Western]],
-			SetUp:>($CreatedObjects={}),
-			TearDown:>(
-				EraseObject[$CreatedObjects,Force->True,Verbose->False];
-				Unset[$CreatedObjects]
-			)
+			ObjectP[Object[Protocol,Western]]
 		],
 		Example[{Basic,"The secondary input can be an Object or a Model:"},
 			Lookup[ExperimentWestern[{Object[Sample,"Test 1 mL lysate sample, 0.25 mg/mL total protein for ExperimentWestern"<>$SessionUUID],Object[Sample,"Test 1 mL lysate sample, 0.25 mg/mL total protein for ExperimentWestern"<>$SessionUUID]},
@@ -66,30 +56,96 @@ DefineTests[
 				{Object[Sample,"Test Rabbit-AntiERK-1 antibody for ExperimentWestern"<>$SessionUUID],Object[Sample,"Test mouse-derived primary antibody with 200 kDa target"<>$SessionUUID]},
 				Aliquot->{True,False},AliquotAmount->{20*Microliter,Automatic},AssayVolume->{100*Microliter,Automatic},AssayBuffer -> {Model[Sample, StockSolution, "Simple Western 0.1X Sample Buffer"],Automatic}
 			],
-			ObjectP[Object[Protocol,Western]],
-			SetUp:>($CreatedObjects={}),
-			TearDown:>(
-				EraseObject[$CreatedObjects,Force->True,Verbose->False];
-				Unset[$CreatedObjects]
-			)
+			ObjectP[Object[Protocol,Western]]
 		],
 		Example[{Additional,"Accepts a Model-less sample:"},
 			ExperimentWestern[Object[Sample,"Test Modelless 1 mL lysate sample, 0.25 mg/mL total protein for ExperimentWestern"<>$SessionUUID],Object[Sample,"Test Rabbit-AntiERK-1 antibody for ExperimentWestern"<>$SessionUUID]],
-			ObjectP[Object[Protocol, Western]],
-			SetUp:>($CreatedObjects={}),
-			TearDown:>(
-				EraseObject[$CreatedObjects,Force->True,Verbose->False];
-				Unset[$CreatedObjects]
-			)
+			ObjectP[Object[Protocol, Western]]
 		],
 		(* Error Messages before option resolution *)
-		Example[{Messages,"ObjectDoesNotExist","Any specified input samples, antibodies, or options which are Objects must exist in the database:"},
-			ExperimentWestern[Object[Sample,"Fake nonexistent sample for ExperimentWestern tests"],Object[Sample,"Test Rabbit-AntiERK-1 antibody for ExperimentWestern"<>$SessionUUID]],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a sample that does not exist (name form):"},
+			ExperimentWestern[Object[Sample, "Nonexistent sample"],Object[Sample,"Test Rabbit-AntiERK-1 antibody for ExperimentWestern"<>$SessionUUID]],
 			$Failed,
-			Messages:>{
-				Error::ObjectDoesNotExist,
-				Error::InvalidInput
-			}
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have an antibody that does not exist (name form):"},
+			ExperimentWestern[Object[Sample,"Test 1 mL lysate sample, 0.25 mg/mL total protein for ExperimentWestern"<>$SessionUUID],Model[Sample, "Nonexistent antibody"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a container that does not exist (name form):"},
+			ExperimentWestern[Object[Container, Vessel, "Nonexistent container"],Object[Sample,"Test Rabbit-AntiERK-1 antibody for ExperimentWestern"<>$SessionUUID]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a sample that does not exist (ID form):"},
+			ExperimentWestern[Object[Sample, "id:12345678"],Object[Sample,"Test Rabbit-AntiERK-1 antibody for ExperimentWestern"<>$SessionUUID]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have an antibody that does not exist (ID form):"},
+			ExperimentWestern[Object[Sample,"Test 1 mL lysate sample, 0.25 mg/mL total protein for ExperimentWestern"<>$SessionUUID],Object[Sample, "id:123456678"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a container that does not exist (ID form):"},
+			ExperimentWestern[Object[Container, Vessel, "id:12345678"],Object[Sample,"Test Rabbit-AntiERK-1 antibody for ExperimentWestern"<>$SessionUUID]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Do NOT throw a message if we have a simulated sample but a simulation is specified that indicates that it is simulated:"},
+			Module[{containerPackets, containerID, sampleID, samplePackets, simulationToPassIn},
+				containerPackets = UploadSample[
+					Model[Container,Vessel,"50mL Tube"],
+					{"Work Surface", Object[Container, Bench, "The Bench of Testing"]},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True
+				];
+				simulationToPassIn = Simulation[containerPackets];
+				containerID = Lookup[First[containerPackets], Object];
+				samplePackets = UploadSample[
+					Model[Sample, "id:WNa4ZjKMrPeD"],
+					{"A1", containerID},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True,
+					Simulation -> simulationToPassIn,
+					InitialAmount -> 25 Milliliter
+				];
+				sampleID = Lookup[First[samplePackets], Object];
+				simulationToPassIn = UpdateSimulation[simulationToPassIn, Simulation[samplePackets]];
+
+				Quiet[ExperimentWestern[sampleID,Object[Sample,"Test Rabbit-AntiERK-1 antibody for ExperimentWestern"<>$SessionUUID], Simulation -> simulationToPassIn, Output -> Options],{Warning::WesTotalProteinConcentrationNotInformed}]
+			],
+			{__Rule}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Do NOT throw a message if we have a simulated container but a simulation is specified that indicates that it is simulated:"},
+			Module[{containerPackets, containerID, sampleID, samplePackets, simulationToPassIn},
+				containerPackets = UploadSample[
+					Model[Container,Vessel,"50mL Tube"],
+					{"Work Surface", Object[Container, Bench, "The Bench of Testing"]},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True
+				];
+				simulationToPassIn = Simulation[containerPackets];
+				containerID = Lookup[First[containerPackets], Object];
+				samplePackets = UploadSample[
+					Model[Sample, "id:WNa4ZjKMrPeD"],
+					{"A1", containerID},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True,
+					Simulation -> simulationToPassIn,
+					InitialAmount -> 25 Milliliter
+				];
+				sampleID = Lookup[First[samplePackets], Object];
+				simulationToPassIn = UpdateSimulation[simulationToPassIn, Simulation[samplePackets]];
+
+				Quiet[ExperimentWestern[containerID,Object[Sample,"Test Rabbit-AntiERK-1 antibody for ExperimentWestern"<>$SessionUUID], Simulation -> simulationToPassIn, Output -> Options],{Warning::WesTotalProteinConcentrationNotInformed}]
+			],
+			{__Rule}
 		],
 		Example[{Messages,"DiscardedSamples","The input sample cannot have a Status of Discarded:"},
 			ExperimentWestern[Object[Sample,"Test discarded lysate sample for ExperimentWestern"<>$SessionUUID],Object[Sample,"Test Rabbit-AntiERK-1 antibody for ExperimentWestern"<>$SessionUUID]],
@@ -303,11 +359,6 @@ DefineTests[
 				Object[Sample,"Test Rabbit-AntiERK-1 antibody for ExperimentWestern"<>$SessionUUID]
 			],
 			ObjectP[Object[Protocol,Western]],
-			SetUp:>($CreatedObjects={}),
-			TearDown:>(
-				EraseObject[$CreatedObjects,Force->True,Verbose->False];
-				Unset[$CreatedObjects]
-			),
 			Messages :> {
 				Warning::InputContainsTemporalLinks
 			}
@@ -1415,6 +1466,88 @@ DefineTests[
 			Variables:>{options}
 		],
 		(* --- Sample Prep unit tests --- *)
+		Example[{Options, {PreparedModelContainer, PreparedModelAmount}, "Use the PreparatoryUnitOperations option to prepare samples from models before the experiment is run:"},
+			options = ExperimentWestern[
+				(* Simple Western Control HeLa Lysate *)
+				{Model[Sample, "id:WNa4ZjKMrPeD"], Model[Sample, "id:WNa4ZjKMrPeD"]},
+				Object[Sample,"Test mouse-derived primary antibody with 200 kDa target"<>$SessionUUID],
+				PreparedModelAmount -> 1 Milliliter,
+				(* 96-well 2mL Deep Well Plate *)
+				PreparedModelContainer -> Model[Container, Plate, "id:L8kPEjkmLbvW"],
+				Output -> Options
+			];
+			prepUOs = Lookup[options, PreparatoryUnitOperations];
+			{
+				prepUOs[[-1, 1]][Sample],
+				prepUOs[[-1, 1]][Container],
+				prepUOs[[-1, 1]][Amount],
+				prepUOs[[-1, 1]][Well],
+				prepUOs[[-1, 1]][ContainerLabel]
+			},
+			{
+				(* Simple Western Control HeLa Lysate *)
+				{ObjectP[Model[Sample, "id:WNa4ZjKMrPeD"]]..},
+				(* 96-well 2mL Deep Well Plate *)
+				{ObjectP[Model[Container, Plate, "id:L8kPEjkmLbvW"]]..},
+				{EqualP[1 Milliliter]..},
+				{"A1", "B1"},
+				{_String, _String}
+			},
+			Variables :> {options, prepUOs},
+			Messages:>{
+				Warning::WesTotalProteinConcentrationNotInformed
+			}
+		],
+		Example[{Options, {PreparedModelContainer, PreparedModelAmount}, "Use the PreparatoryUnitOperations option to prepare both samples and antibody samples from models before the experiment is run:"},
+			options = ExperimentWestern[
+				(* Simple Western Control HeLa Lysate *)
+				{Model[Sample, "id:WNa4ZjKMrPeD"], Model[Sample, "id:WNa4ZjKMrPeD"]},
+				(* Simple Western Rabbit-AntiERK-1 *)
+				Model[Sample, "id:54n6evLJxqqP"],
+				PreparedModelAmount -> 0.2 Milliliter,
+				(* 2mL Tube *)
+				PreparedModelContainer -> Model[Container, Vessel, "id:3em6Zv9NjjN8"],
+				Output -> Options
+			];
+			prepUOs = Lookup[options, PreparatoryUnitOperations];
+			{
+				prepUOs[[-1, 1]][Sample],
+				prepUOs[[-1, 1]][Container],
+				prepUOs[[-1, 1]][Amount],
+				prepUOs[[-1, 1]][Well],
+				prepUOs[[-1, 1]][ContainerLabel]
+			},
+			{
+				(* Simple Western Control HeLa Lysate *)
+				{ObjectP[Model[Sample, "id:WNa4ZjKMrPeD"]],ObjectP[Model[Sample, "id:WNa4ZjKMrPeD"]],ObjectP[Model[Sample, "id:54n6evLJxqqP"]],ObjectP[Model[Sample, "id:54n6evLJxqqP"]]},
+				(* 2ml tube *)
+				{ObjectP[Model[Container, Vessel, "id:3em6Zv9NjjN8"]]..},
+				{EqualP[0.2 Milliliter]..},
+				{"A1", "A1", "A1", "A1"},
+				{_String, _String, _String, _String}
+			},
+			Variables :> {options, prepUOs},
+			Messages:>{
+				Warning::WesTotalProteinConcentrationNotInformed
+			}
+		],
+		Example[{Options, PreparedModelAmount, "If using model input, the sample preparation options can also be specified:"},
+			ExperimentWestern[
+				(* Simple Western Control HeLa Lysate *)
+				{Model[Sample, "id:WNa4ZjKMrPeD"], Model[Sample, "id:WNa4ZjKMrPeD"]},
+				(* Simple Western Rabbit-AntiERK-1 *)
+				Model[Sample, "id:54n6evLJxqqP"],
+				PreparedModelAmount -> 0.2 Milliliter,
+				(* 2mL Tube and 50mL Tube *)
+				PreparedModelContainer -> Model[Container, Vessel, "id:3em6Zv9NjjN8"],
+				Mix -> True,
+				Aliquot -> True
+			],
+			ObjectP[Object[Protocol, Western]],
+			Messages :> {
+				Warning::WesTotalProteinConcentrationNotInformed
+			}
+		],
 		Example[{Options,PreparatoryUnitOperations,"Specify prepared samples to be run on a capillary-based total protein detection assay:"},
 			options=ExperimentWestern["Lysate Container",Object[Sample,"Test mouse-derived primary antibody with 200 kDa target"<>$SessionUUID],
 				PreparatoryUnitOperations->{
@@ -1484,7 +1617,8 @@ DefineTests[
 			];
 			Lookup[options,MolecularWeightRange],
 			HighMolecularWeight,
-			Variables:>{options}
+			Variables:>{options},
+			TimeConstraint -> 1200
 		],
 		(* THIS TEST IS BRUTAL BUT DO NOT REMOVE IT. MAKE SURE YOUR FUNCTION DOESN'T BUG ON THIS. *)
 		Example[{Additional,"Use the sample preparation options to prepare samples before the main experiment:"},
@@ -1754,7 +1888,7 @@ DefineTests[
 		Example[{Options, AliquotSampleLabel, "Specify a label for the aliquoted ExperimentWestern sample:"},
 			options = ExperimentWestern[Object[Sample,"Test 1 mL lysate sample, 0.25 mg/mL total protein for ExperimentWestern"<>$SessionUUID],Object[Sample,"Test Rabbit-AntiERK-1 antibody for ExperimentWestern"<>$SessionUUID], Aliquot->True,AliquotSampleLabel->"Test Label for ExperimentWesetern sample 1",Output -> Options];
 			Lookup[options, AliquotSampleLabel],
-			"Test Label for ExperimentWesetern sample 1",
+			{"Test Label for ExperimentWesetern sample 1"},
 			Variables :> {options}
 		],
 		Example[{Options, AliquotAmount, "The amount of each sample that should be transferred from the SamplesIn into the AliquotSamples which should be used in lieu of the SamplesIn for the experiment:"},
@@ -1860,7 +1994,7 @@ DefineTests[
 		Example[{Options, AliquotContainer, "The desired type of container that should be used to prepare and house the aliquot samples, with indices indicating grouping of samples in the same plates, if desired:"},
 			options = ExperimentWestern[Object[Sample,"Test 1 mL lysate sample, 0.25 mg/mL total protein for ExperimentWestern"<>$SessionUUID],Object[Sample,"Test Rabbit-AntiERK-1 antibody for ExperimentWestern"<>$SessionUUID], AliquotContainer -> Model[Container, Vessel, "2mL Tube"], Output -> Options];
 			Lookup[options, AliquotContainer],
-			{1, ObjectP[Model[Container, Vessel, "2mL Tube"]]},
+			{{1, ObjectP[Model[Container, Vessel, "2mL Tube"]]}},
 			Variables :> {options}
 		],
 		Example[{Options,IncubateAliquotDestinationWell,"Indicates the desired position in the corresponding IncubateAliquotContainer in which the aliquot samples will be placed:"},
@@ -1884,17 +2018,20 @@ DefineTests[
 		Example[{Options,DestinationWell,"Indicates the desired position in the corresponding AliquotContainer in which the aliquot samples will be placed:"},
 			options=ExperimentWestern[Object[Sample,"Test 1 mL lysate sample, 0.25 mg/mL total protein for ExperimentWestern"<>$SessionUUID],Object[Sample,"Test Rabbit-AntiERK-1 antibody for ExperimentWestern"<>$SessionUUID],DestinationWell -> "A1", Output -> Options];
 			Lookup[options,DestinationWell],
-			"A1",
+			{"A1"},
 			Variables :> {options}
 		]
 	},
+	(* without this, telescope crashes and the test fails *)
+	HardwareConfiguration->HighRAM,
 	Stubs:>{
 		$PersonID=Object[User,"Test user for notebook-less test protocols"]
 	},
 	Parallel->True,
+	(* NOTE: We have to turn these messages off in our SetUp as well since our tests run in parallel on Manifold. *)
 	SetUp:>(
-		(* Turn off the SamplesOutOfStock warning for unit tests *)
 		Off[Warning::SamplesOutOfStock];
+		Off[Warning::InstrumentUndergoingMaintenance];
 		ClearMemoization[];
 	),
 	SymbolSetUp:>{

@@ -127,7 +127,7 @@ DefineObjectType[Object[Data,ImageCells],{
 		FocalHeight->{
 			Format->Single,
 			Class->Real,
-			Pattern:>GreaterEqualP[0 Micrometer],
+			Pattern:>DistanceP,
 			Units->Micrometer,
 			Description->"Indicates the vertical position of the objective at the time the image was acquired relative to the lowest objective position.",
 			Category -> "General"

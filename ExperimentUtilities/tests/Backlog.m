@@ -12,7 +12,7 @@ DefineTests[BacklogTime,
 		Module[{name, report, notebook, protocol, team, processingProtocol},
 			Example[{Basic, "Estimate the time for which a protocol will remain in the backlog:"},
 				BacklogTime[protocol],
-				1440 Minute,
+				RangeP[1438 Minute,1442 Minute],
 				SetUp :> {
 					name="BacklogTime--Estimate the time for which a protocol will remain in the backlog";
 					report=Upload[Association[
@@ -146,13 +146,13 @@ DefineTests[BacklogTime,
 					$MinThreadRelease=24Hour,
 					OpenThreads[_] := {{processingProtocol1},{processingProtocol2}}
 				}
-				]
+			]
 		],
 
 		Module[{name, report, notebook, protocol, team, processingProtocol, completedProtocol},
 			Example[{Additional, "Already completed protocols could still affect the backlog time due to delay in a release of a thread for a both recently created and completed protocol:"},
 				BacklogTime[protocol],
-				30 Minute,
+				RangeP[28 Minute,32 Minute],
 				SetUp :> {
 					name="BacklogTime--Already completed protocols could still affect the backlog time due to delay in a release of a thread for a both recently created and completed protocol";
 					report=Upload[Association[
@@ -220,13 +220,13 @@ DefineTests[BacklogTime,
 					$MinThreadRelease=24Hour,
 					OpenThreads[_] := {{completedProtocol}}
 				}
-				]
+			]
 		],
 
 		Module[{name, report, notebook, protocol, protocolNotInBacklog, team, processingProtocol, now},
 			Example[{Additional, "Backlogged protocols not listed in the team's Backlog team are included in the estimate:"},
 				BacklogTime[protocolNotInBacklog],
-				2580 Minute,
+				RangeP[2578 Minute,2582 Minute],
 				SetUp :> {
 					now=Now;
 					name="BacklogTime--Backlogged protocols not listed in the team's Backlog team are included in the estimate";
@@ -287,7 +287,7 @@ DefineTests[BacklogTime,
 				},
 				TearDown :> {EraseObject[{report, notebook, team, protocol, protocolNotInBacklog, processingProtocol}, Force -> True, Verbose -> False]},
 				Stubs :> {$MinThreadRelease=24Hour}
-				]
+			]
 		],
 
 		Module[{name, report, notebook, runningProtocol, team},
@@ -724,7 +724,7 @@ DefineTests[
 
 		Example[{Basic, "Returns a list of protocols whose status was changed from ShippingMaterials to OperatorStart:"},
 			syncShippingMaterials[Object[Team,Financing,"Test team 1 for syncShippingMaterials "<>$SessionUUID]];
-			Download[Object[Protocol,SampleManipulation,"Test protocol 1 for syncShippingMaterials "<>$SessionUUID], {Status, OperationStatus, DateCreated, DateConfirmed, DateEnqueued, DateStarted}],
+			Download[Object[Protocol,CoulterCount,"Test protocol 1 for syncShippingMaterials "<>$SessionUUID], {Status, OperationStatus, DateCreated, DateConfirmed, DateEnqueued, DateStarted}],
 			{Processing, OperatorStart, _?DateObjectQ, _?DateObjectQ, _?DateObjectQ, Null},
 			Stubs :> {
 				$Notebook = Object[LaboratoryNotebook, "Test notebook 1 for syncShippingMaterials " <> $SessionUUID]
@@ -733,7 +733,7 @@ DefineTests[
 		Example[{Additional, "Returns a list of protocols whose status was changed from ShippingMaterials to OperatorStart for a subprotocol:"},
 			syncShippingMaterials[Object[Team,Financing,"Test team 2 for syncShippingMaterials "<>$SessionUUID]];
 			Download[
-				{Object[Protocol,SampleManipulation,"Test parent protocol 2 for syncShippingMaterials "<>$SessionUUID], Object[Protocol,SampleManipulation,"Test protocol 2 for syncShippingMaterials "<>$SessionUUID]},
+				{Object[Protocol,ManualSamplePreparation,"Test parent protocol 2 for syncShippingMaterials "<>$SessionUUID], Object[Protocol,Transfer,"Test protocol 2 for syncShippingMaterials "<>$SessionUUID]},
 				{Status, OperationStatus, DateCreated, DateConfirmed, DateEnqueued, DateStarted}
 			],
 			{
@@ -761,15 +761,15 @@ DefineTests[
 				Model[Sample,"Test model sample 1 for syncShippingMaterials "<>$SessionUUID],
 				Object[Company,Supplier,"Test supplier 1 for syncShippingMaterials "<>$SessionUUID],
 				Object[Product,"Test product 1 for syncShippingMaterials "<>$SessionUUID],
-				Object[Protocol,SampleManipulation,"Test protocol 1 for syncShippingMaterials "<>$SessionUUID],
+				Object[Protocol,CoulterCount,"Test protocol 1 for syncShippingMaterials "<>$SessionUUID],
 				Object[LaboratoryNotebook,"Test notebook 2 for syncShippingMaterials "<>$SessionUUID],
 				Object[Container,Site,"Test site 2 for syncShippingMaterials "<>$SessionUUID],
 				Object[Team,Financing,"Test team 2 for syncShippingMaterials "<>$SessionUUID],
 				Model[Sample,"Test model sample 2 for syncShippingMaterials "<>$SessionUUID],
 				Object[Company,Supplier,"Test supplier 2 for syncShippingMaterials "<>$SessionUUID],
 				Object[Product,"Test product 2 for syncShippingMaterials "<>$SessionUUID],
-				Object[Protocol,SampleManipulation,"Test parent protocol 2 for syncShippingMaterials "<>$SessionUUID],
-				Object[Protocol,SampleManipulation,"Test protocol 2 for syncShippingMaterials "<>$SessionUUID]
+				Object[Protocol,ManualSamplePreparation,"Test parent protocol 2 for syncShippingMaterials "<>$SessionUUID],
+				Object[Protocol,Transfer,"Test protocol 2 for syncShippingMaterials "<>$SessionUUID]
 			};
 			existingObjs=PickList[objs,DatabaseMemberQ[objs]];
 			EraseObject[existingObjs,Force->True,Verbose->False];
@@ -803,7 +803,8 @@ DefineTests[
 						|>,
 						<|
 							Object->modelSampleIDs[[1]],
-							Name->"Test model sample 1 for syncShippingMaterials "<>$SessionUUID
+							Name->"Test model sample 1 for syncShippingMaterials "<>$SessionUUID,
+							State->Liquid
 						|>,
 						<|
 							Object->supplierIDs[[1]],
@@ -830,12 +831,12 @@ DefineTests[
 				(* Upload notebook to sample and product *)
 				ECL`InternalUpload`UploadNotebook[{modelSampleIDs[[1]],productIDs[[1]]},notebookIDs[[1]]];
 
-				(* Create SM protocol 1 *)
-				protocol=ExperimentSampleManipulation[
-					{
-						Transfer[Source->modelSampleIDs[[1]],Destination->PreferredContainer[500 Milliliter],Amount->200 Milliliter]
-					},
-					Name->"Test protocol 1 for syncShippingMaterials "<>$SessionUUID
+				(* Create protocol 1 *)
+				(* what we really need here is an experiment call that makes a resource for the model lacking instances *)
+				protocol = ExperimentCoulterCount[
+					modelSampleIDs[[1]],
+					ElectrolyteSolution -> modelSampleIDs[[1]],
+					Name -> "Test protocol 1 for syncShippingMaterials "<>$SessionUUID
 				];
 
 				(* Process the protocol object *)
@@ -867,7 +868,8 @@ DefineTests[
 						|>,
 						<|
 							Object->modelSampleIDs[[2]],
-							Name->"Test model sample 2 for syncShippingMaterials "<>$SessionUUID
+							Name->"Test model sample 2 for syncShippingMaterials "<>$SessionUUID,
+							State->Liquid
 						|>,
 						<|
 							Object->supplierIDs[[2]],
@@ -898,7 +900,8 @@ DefineTests[
 				OrderSamples[productIDs[[2]], 1];
 
 				(* Process the second protocol object *)
-				parentProtocol=ExperimentSampleManipulation[
+				(* what we really need here is a function that makes resource for the sample model *)
+				parentProtocol=ExperimentManualSamplePreparation[
 					{
 						Transfer[Source->Model[Sample,"Milli-Q water"],Destination->PreferredContainer[500 Milliliter],Amount->200 Milliliter]
 					},
@@ -908,13 +911,14 @@ DefineTests[
 
 				ECL`InternalUpload`UploadProtocolStatus[parentProtocol,OperatorProcessing];
 
-				protocol2=ExperimentSampleManipulation[
-					{
-						Transfer[Source->modelSampleIDs[[2]],Destination->PreferredContainer[500 Milliliter],Amount->200 Milliliter]
-					},
-					Name->"Test protocol 2 for syncShippingMaterials "<>$SessionUUID,
-					ParentProtocol->parentProtocol,
-					Confirm->True
+				protocol2 = ExperimentTransfer[
+					modelSampleIDs[[2]],
+					PreferredContainer[500 Milliliter],
+					200 Milliliter
+					,
+					Name -> "Test protocol 2 for syncShippingMaterials "<>$SessionUUID,
+					ParentProtocol -> parentProtocol,
+					Confirm -> True
 				];
 				orders=Download[parentProtocol,ShippingMaterials[[All,1]][Object]];
 				Upload[<|Object->#,Status->Received|>&/@orders];
@@ -935,15 +939,15 @@ DefineTests[
 				Model[Sample,"Test model sample 1 for syncShippingMaterials "<>$SessionUUID],
 				Object[Company,Supplier,"Test supplier 1 for syncShippingMaterials "<>$SessionUUID],
 				Object[Product,"Test product 1 for syncShippingMaterials "<>$SessionUUID],
-				Object[Protocol,SampleManipulation,"Test protocol 1 for syncShippingMaterials "<>$SessionUUID],
+				Object[Protocol,ManualSamplePreparation,"Test protocol 1 for syncShippingMaterials "<>$SessionUUID],
 				Object[LaboratoryNotebook,"Test notebook 2 for syncShippingMaterials "<>$SessionUUID],
 				Object[Container,Site,"Test site 2 for syncShippingMaterials "<>$SessionUUID],
 				Object[Team,Financing,"Test team 2 for syncShippingMaterials "<>$SessionUUID],
 				Model[Sample,"Test model sample 2 for syncShippingMaterials "<>$SessionUUID],
 				Object[Company,Supplier,"Test supplier 2 for syncShippingMaterials "<>$SessionUUID],
 				Object[Product,"Test product 2 for syncShippingMaterials "<>$SessionUUID],
-				Object[Protocol,SampleManipulation,"Test parent protocol 2 for syncShippingMaterials "<>$SessionUUID],
-				Object[Protocol,SampleManipulation,"Test protocol 2 for syncShippingMaterials "<>$SessionUUID]
+				Object[Protocol,ManualSamplePreparation,"Test parent protocol 2 for syncShippingMaterials "<>$SessionUUID],
+				Object[Protocol,Transfer,"Test protocol 2 for syncShippingMaterials "<>$SessionUUID]
 			};
 			existingObjs = PickList[objs, DatabaseMemberQ[objs]];
 			EraseObject[existingObjs, Force -> True, Verbose -> False]
@@ -963,23 +967,23 @@ DefineTests[
 			Module[
 				{oldBacklog, newBacklog},
 
-				oldBacklog=Download[Object[Team, Financing, "id:wqW9BP7kP1ew"], Backlog[Object]];
+				oldBacklog=Download[Object[Team, Financing, "test financing team 1 for PrioritizeBacklog "<>$SessionUUID], Backlog[Object]];
 
-				PrioritizeBacklog[Object[Protocol, SampleManipulation, "id:8qZ1VW0MWRYR"]];
+				PrioritizeBacklog[Object[Protocol, ManualSamplePreparation, "test protocol 2 for PrioritizeBacklog "<>$SessionUUID]];
 
-				newBacklog=Download[Object[Team, Financing, "id:wqW9BP7kP1ew"], Backlog[Object]];
+				newBacklog=Download[Object[Team, Financing, "test financing team 1 for PrioritizeBacklog "<>$SessionUUID], Backlog[Object]];
 
 				{oldBacklog, newBacklog}
 			],
 			{
-				{Object[Protocol, HPLC, "id:J8AY5jD1jr9K"], Object[Protocol, SampleManipulation, "id:8qZ1VW0MWRYR"], Object[Protocol, FluorescenceKinetics, "id:rea9jlRpl7nO"]},
-				{Object[Protocol, SampleManipulation, "id:8qZ1VW0MWRYR"], Object[Protocol, HPLC, "id:J8AY5jD1jr9K"], Object[Protocol, FluorescenceKinetics, "id:rea9jlRpl7nO"]}
+				ObjectP /@ {Object[Protocol, HPLC, "test protocol 1 for PrioritizeBacklog "<>$SessionUUID], Object[Protocol, ManualSamplePreparation, "test protocol 2 for PrioritizeBacklog "<>$SessionUUID], Object[Protocol, FluorescenceKinetics, "test protocol 3 for PrioritizeBacklog "<>$SessionUUID]},
+				ObjectP /@ {Object[Protocol, ManualSamplePreparation, "test protocol 2 for PrioritizeBacklog "<>$SessionUUID], Object[Protocol, HPLC, "test protocol 1 for PrioritizeBacklog "<>$SessionUUID], Object[Protocol, FluorescenceKinetics, "test protocol 3 for PrioritizeBacklog "<>$SessionUUID]}
 			},
 			TearDown :> (
 				Upload[
 					Association[
-						Object -> Object[Team, Financing, "id:wqW9BP7kP1ew"],
-						Replace[Backlog] -> Link[{Object[Protocol, HPLC, "id:J8AY5jD1jr9K"], Object[Protocol, SampleManipulation, "id:8qZ1VW0MWRYR"], Object[Protocol, FluorescenceKinetics, "id:rea9jlRpl7nO"]}]
+						Object -> Object[Team, Financing, "test financing team 1 for PrioritizeBacklog "<>$SessionUUID],
+						Replace[Backlog] -> Link[{Object[Protocol, HPLC, "test protocol 1 for PrioritizeBacklog "<>$SessionUUID], Object[Protocol, ManualSamplePreparation, "test protocol 2 for PrioritizeBacklog "<>$SessionUUID], Object[Protocol, FluorescenceKinetics, "test protocol 3 for PrioritizeBacklog "<>$SessionUUID]}]
 					]
 				]
 			)
@@ -988,23 +992,23 @@ DefineTests[
 			Module[
 				{oldBacklog, newBacklog},
 
-				oldBacklog=Download[Object[Team, Financing, "id:wqW9BP7kP1ew"], Backlog[Object]];
+				oldBacklog=Download[Object[Team, Financing, "test financing team 1 for PrioritizeBacklog "<>$SessionUUID], Backlog[Object]];
 
-				PrioritizeBacklog[{Object[Protocol, SampleManipulation, "id:8qZ1VW0MWRYR"], Object[Protocol, HPLC, "id:J8AY5jD1jr9K"], Object[Protocol, FluorescenceKinetics, "id:rea9jlRpl7nO"]}];
+				PrioritizeBacklog[{Object[Protocol, ManualSamplePreparation, "test protocol 2 for PrioritizeBacklog "<>$SessionUUID], Object[Protocol, HPLC, "test protocol 1 for PrioritizeBacklog "<>$SessionUUID], Object[Protocol, FluorescenceKinetics, "test protocol 3 for PrioritizeBacklog "<>$SessionUUID]}];
 
-				newBacklog=Download[Object[Team, Financing, "id:wqW9BP7kP1ew"], Backlog[Object]];
+				newBacklog=Download[Object[Team, Financing, "test financing team 1 for PrioritizeBacklog "<>$SessionUUID], Backlog[Object]];
 
 				{oldBacklog, newBacklog}
 			],
 			{
-				{Object[Protocol, HPLC, "id:J8AY5jD1jr9K"], Object[Protocol, SampleManipulation, "id:8qZ1VW0MWRYR"], Object[Protocol, FluorescenceKinetics, "id:rea9jlRpl7nO"]},
-				{Object[Protocol, SampleManipulation, "id:8qZ1VW0MWRYR"], Object[Protocol, HPLC, "id:J8AY5jD1jr9K"], Object[Protocol, FluorescenceKinetics, "id:rea9jlRpl7nO"]}
+				ObjectP /@ {Object[Protocol, HPLC, "test protocol 1 for PrioritizeBacklog "<>$SessionUUID], Object[Protocol, ManualSamplePreparation, "test protocol 2 for PrioritizeBacklog "<>$SessionUUID], Object[Protocol, FluorescenceKinetics, "test protocol 3 for PrioritizeBacklog "<>$SessionUUID]},
+				ObjectP /@ {Object[Protocol, ManualSamplePreparation, "test protocol 2 for PrioritizeBacklog "<>$SessionUUID], Object[Protocol, HPLC, "test protocol 1 for PrioritizeBacklog "<>$SessionUUID], Object[Protocol, FluorescenceKinetics, "test protocol 3 for PrioritizeBacklog "<>$SessionUUID]}
 			},
 			TearDown :> (
 				Upload[
 					Association[
-						Object -> Object[Team, Financing, "id:wqW9BP7kP1ew"],
-						Replace[Backlog] -> Link[{Object[Protocol, HPLC, "id:J8AY5jD1jr9K"], Object[Protocol, SampleManipulation, "id:8qZ1VW0MWRYR"], Object[Protocol, FluorescenceKinetics, "id:rea9jlRpl7nO"]}]
+						Object -> Object[Team, Financing, "test financing team 1 for PrioritizeBacklog "<>$SessionUUID],
+						Replace[Backlog] -> Link[{Object[Protocol, HPLC, "test protocol 1 for PrioritizeBacklog "<>$SessionUUID], Object[Protocol, ManualSamplePreparation, "test protocol 2 for PrioritizeBacklog "<>$SessionUUID], Object[Protocol, FluorescenceKinetics, "test protocol 3 for PrioritizeBacklog "<>$SessionUUID]}]
 					]
 				]
 			)
@@ -1013,36 +1017,172 @@ DefineTests[
 			Module[
 				{oldBacklog, newBacklog},
 
-				oldBacklog=Download[Object[Team, Financing, "id:wqW9BP7kP1ew"], Backlog[Object]];
+				oldBacklog=Download[Object[Team, Financing, "test financing team 1 for PrioritizeBacklog "<>$SessionUUID], Backlog[Object]];
 
-				PrioritizeBacklog[{Object[Protocol, SampleManipulation, "id:8qZ1VW0MWRYR"], Object[Protocol, FluorescenceKinetics, "id:rea9jlRpl7nO"]}];
+				PrioritizeBacklog[{Object[Protocol, ManualSamplePreparation, "test protocol 2 for PrioritizeBacklog "<>$SessionUUID], Object[Protocol, FluorescenceKinetics, "test protocol 3 for PrioritizeBacklog "<>$SessionUUID]}];
 
-				newBacklog=Download[Object[Team, Financing, "id:wqW9BP7kP1ew"], Backlog[Object]];
+				newBacklog=Download[Object[Team, Financing, "test financing team 1 for PrioritizeBacklog "<>$SessionUUID], Backlog[Object]];
 
 				{oldBacklog, newBacklog}
 			],
 			{
-				{Object[Protocol, HPLC, "id:J8AY5jD1jr9K"], Object[Protocol, SampleManipulation, "id:8qZ1VW0MWRYR"], Object[Protocol, FluorescenceKinetics, "id:rea9jlRpl7nO"]},
-				{Object[Protocol, SampleManipulation, "id:8qZ1VW0MWRYR"], Object[Protocol, FluorescenceKinetics, "id:rea9jlRpl7nO"], Object[Protocol, HPLC, "id:J8AY5jD1jr9K"]}
+				ObjectP /@ {Object[Protocol, HPLC, "test protocol 1 for PrioritizeBacklog "<>$SessionUUID], Object[Protocol, ManualSamplePreparation, "test protocol 2 for PrioritizeBacklog "<>$SessionUUID], Object[Protocol, FluorescenceKinetics, "test protocol 3 for PrioritizeBacklog "<>$SessionUUID]},
+				ObjectP /@ {Object[Protocol, ManualSamplePreparation, "test protocol 2 for PrioritizeBacklog "<>$SessionUUID], Object[Protocol, FluorescenceKinetics, "test protocol 3 for PrioritizeBacklog "<>$SessionUUID], Object[Protocol, HPLC, "test protocol 1 for PrioritizeBacklog "<>$SessionUUID]}
 			},
 			TearDown :> (
 				Upload[
 					Association[
-						Object -> Object[Team, Financing, "id:wqW9BP7kP1ew"],
-						Replace[Backlog] -> Link[{Object[Protocol, HPLC, "id:J8AY5jD1jr9K"], Object[Protocol, SampleManipulation, "id:8qZ1VW0MWRYR"], Object[Protocol, FluorescenceKinetics, "id:rea9jlRpl7nO"]}]
+						Object -> Object[Team, Financing, "test financing team 1 for PrioritizeBacklog "<>$SessionUUID],
+						Replace[Backlog] -> Link[{Object[Protocol, HPLC, "test protocol 1 for PrioritizeBacklog "<>$SessionUUID], Object[Protocol, ManualSamplePreparation, "test protocol 2 for PrioritizeBacklog "<>$SessionUUID], Object[Protocol, FluorescenceKinetics, "test protocol 3 for PrioritizeBacklog "<>$SessionUUID]}]
 					]
 				]
 			)
 		],
 		Example[{Messages, "InvalidProtocolStatuses", "Only allow reprioritization of Backlogged protocols:"},
-			PrioritizeBacklog[Object[Protocol, SampleManipulation, "id:qdkmxzqoLODV"]],
+			PrioritizeBacklog[Object[Protocol, ManualSamplePreparation, "test protocol 4 for PrioritizeBacklog "<>$SessionUUID]],
 			$Failed,
 			Messages :> {PrioritizeBacklog::InvalidProtocolStatuses}
 		],
 		Example[{Messages, "MultipleFinancers", "Protocols' notebooks must only have a single financer:"},
-			PrioritizeBacklog[Object[Protocol, HPLC, "id:rea9jlRpEbeB"]],
+			PrioritizeBacklog[Object[Protocol, HPLC, "test protocol 5 for PrioritizeBacklog "<>$SessionUUID]],
 			$Failed,
 			Messages :> {PrioritizeBacklog::MultipleFinancers}
 		]
+	},
+	SymbolSetUp :> {
+		Module[{objects, objectsExistQ},
+			(* List all test objects to erase. Can use SetUpTestObjects[]+ObjectToString[] to get the comprehensive list. *)
+			objects = Flatten[{
+				Object[Team, Financing, "test financing team 1 for PrioritizeBacklog "<>$SessionUUID],
+				Object[Team, Financing, "test financing team 2 for PrioritizeBacklog "<>$SessionUUID],
+				Object[Team, Financing, "test financing team 3 for PrioritizeBacklog "<>$SessionUUID],
+				Object[LaboratoryNotebook, "test lab notebook 1 for PrioritizeBacklog "<>$SessionUUID],
+				Object[LaboratoryNotebook, "test lab notebook 2 for PrioritizeBacklog "<>$SessionUUID],
+				Object[Protocol, HPLC, "test protocol 1 for PrioritizeBacklog "<>$SessionUUID],
+				Object[Protocol, ManualSamplePreparation, "test protocol 2 for PrioritizeBacklog "<>$SessionUUID],
+				Object[Protocol, FluorescenceKinetics, "test protocol 3 for PrioritizeBacklog "<>$SessionUUID],
+				Object[Protocol, ManualSamplePreparation, "test protocol 4 for PrioritizeBacklog "<>$SessionUUID],
+				Object[Protocol, HPLC, "test protocol 5 for PrioritizeBacklog "<>$SessionUUID],
+				If[MatchQ[$CreatedObjects, _List], $CreatedObjects, Nothing]
+			}];
+			(* Check whether the names we want to give below already exist in the database *)
+			objectsExistQ = DatabaseMemberQ[objects];
+			(* Erase any objects that we failed to erase in the last unit test. *)
+			Quiet[EraseObject[PickList[objects, objectsExistQ], Force -> True, Verbose -> False]];
+
+			Unset[$CreatedObjects];
+		];
+
+		Block[{$DeveloperUpload = True},
+			Module[{team1, team2, team3, nb1, nb2, prot1, prot2, prot3, prot4, prot5},
+				{
+					team1,
+					team2,
+					team3,
+					nb1,
+					nb2,
+					prot1,
+					prot2,
+					prot3,
+					prot4,
+					prot5
+				} = CreateID[{
+					Object[Team, Financing],
+					Object[Team, Financing],
+					Object[Team, Financing],
+					Object[LaboratoryNotebook],
+					Object[LaboratoryNotebook],
+					Object[Protocol, HPLC],
+					Object[Protocol, ManualSamplePreparation],
+					Object[Protocol, FluorescenceKinetics],
+					Object[Protocol, ManualSamplePreparation],
+					Object[Protocol, HPLC]
+				}];
+
+				Upload[{
+					<|
+						Object -> nb1,
+						Name -> "test lab notebook 1 for PrioritizeBacklog "<>$SessionUUID
+					|>,
+					<|
+						Object -> nb2,
+						Name -> "test lab notebook 2 for PrioritizeBacklog "<>$SessionUUID
+					|>,
+					<|
+						Object -> prot1,
+						Name -> "test protocol 1 for PrioritizeBacklog "<>$SessionUUID,
+						Status -> Backlogged,
+						Notebook -> Link[nb1]
+					|>,
+					<|
+						Object -> prot2,
+						Name -> "test protocol 2 for PrioritizeBacklog "<>$SessionUUID,
+						Status -> Backlogged,
+						Notebook -> Link[nb1]
+					|>,
+					<|
+						Object -> prot3,
+						Name -> "test protocol 3 for PrioritizeBacklog "<>$SessionUUID,
+						Status -> Backlogged,
+						Notebook -> Link[nb1]
+					|>,
+					<|
+						Object -> prot4,
+						Name -> "test protocol 4 for PrioritizeBacklog "<>$SessionUUID,
+						Status -> Processing,
+						OperationStatus -> OperatorStart,
+						Notebook -> Link[nb1]
+					|>,
+					<|
+						Object -> prot5,
+						Name -> "test protocol 5 for PrioritizeBacklog "<>$SessionUUID,
+						Status -> Backlogged,
+						Notebook -> Link[nb2]
+					|>,
+					<|
+						Object -> team1,
+						Name -> "test financing team 1 for PrioritizeBacklog "<>$SessionUUID,
+						Replace[Backlog] -> Link[{prot1, prot2, prot3}],
+						Replace[NotebooksFinanced] -> Link[nb1, Financers]
+					|>,
+					<|
+						Object -> team2,
+						Name -> "test financing team 2 for PrioritizeBacklog "<>$SessionUUID,
+						Replace[NotebooksFinanced] -> Link[nb2, Financers]
+					|>,
+					<|
+						Object -> team3,
+						Name -> "test financing team 3 for PrioritizeBacklog "<>$SessionUUID,
+						Replace[NotebooksFinanced] -> Link[nb2, Financers]
+					|>
+				}];
+			]
+		]
+
+	},
+	SymbolTearDown :> {
+		Module[{objects, objectsExistQ},
+			(* List all test objects to erase. Can use SetUpTestObjects[]+ObjectToString[] to get the comprehensive list. *)
+			objects = Flatten[{
+				Object[Team, Financing, "test financing team 1 for PrioritizeBacklog "<>$SessionUUID],
+				Object[Team, Financing, "test financing team 2 for PrioritizeBacklog "<>$SessionUUID],
+				Object[Team, Financing, "test financing team 3 for PrioritizeBacklog "<>$SessionUUID],
+				Object[LaboratoryNotebook, "test lab notebook 1 for PrioritizeBacklog "<>$SessionUUID],
+				Object[LaboratoryNotebook, "test lab notebook 2 for PrioritizeBacklog "<>$SessionUUID],
+				Object[Protocol, HPLC, "test protocol 1 for PrioritizeBacklog "<>$SessionUUID],
+				Object[Protocol, ManualSamplePreparation, "test protocol 2 for PrioritizeBacklog "<>$SessionUUID],
+				Object[Protocol, FluorescenceKinetics, "test protocol 3 for PrioritizeBacklog "<>$SessionUUID],
+				Object[Protocol, ManualSamplePreparation, "test protocol 4 for PrioritizeBacklog "<>$SessionUUID],
+				Object[Protocol, HPLC, "test protocol 5 for PrioritizeBacklog "<>$SessionUUID],
+				If[MatchQ[$CreatedObjects, _List], $CreatedObjects, Nothing]
+			}];
+			(* Check whether the names we want to give below already exist in the database *)
+			objectsExistQ = DatabaseMemberQ[objects];
+			(* Erase any objects that we failed to erase in the last unit test. *)
+			Quiet[EraseObject[PickList[objects, objectsExistQ], Force -> True, Verbose -> False]];
+
+			Unset[$CreatedObjects];
+		]
+
 	}
 ];

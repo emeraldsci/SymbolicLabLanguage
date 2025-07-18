@@ -120,7 +120,7 @@ DefineOptions[ExperimentStockSolution,
 				OptionName->MediaPhase,
 				Default->Automatic,
 				Description->"The physical state of the prepared media at ambient temperature and pressure." (*TODO update description to explain SemiSolid *),
-				AllowNull->False,
+				AllowNull->True,
 				Category->"Hidden",
 				Widget->Widget[
 					Type->Enumeration,
@@ -208,7 +208,14 @@ DefineOptions[ExperimentStockSolution,
 				AllowNull->True,
 				Widget->Widget[
 					Type->Object,
-					Pattern:>ObjectP[Join[MixInstrumentModels,MixInstrumentObjects]]
+					Pattern:>ObjectP[Join[MixInstrumentModels,MixInstrumentObjects]],
+					OpenPaths -> {
+						{
+							Object[Catalog, "Root"],
+							"Instruments",
+							"Mixing Devices"
+						}
+					}
 				],
 				Description->"The instrument that should be used to treat the stock solution at a specified temperature following component combination and filling to volume with solvent.",
 				ResolutionDescription->"Automatically resolves to an appropriate instrument based on container model, or Null if Incubate is set to False.",
@@ -297,7 +304,14 @@ DefineOptions[ExperimentStockSolution,
 				AllowNull->True,
 				Widget -> Widget[
 					Type->Object,
-					Pattern:>ObjectP[Join[MixInstrumentModels,MixInstrumentObjects]]
+					Pattern:>ObjectP[Join[MixInstrumentModels,MixInstrumentObjects]],
+					OpenPaths -> {
+						{
+							Object[Catalog, "Root"],
+							"Instruments",
+							"Mixing Devices"
+						}
+					}
 				],
 				Description->"The instrument that should be used to mechanically incorporate the components of the stock solution following component combination and filling to volume with solvent.",
 				ResolutionDescription->"Automatically resolves based on the MixType and the size of the container in which the stock solution is prepared.",
@@ -382,7 +396,7 @@ DefineOptions[ExperimentStockSolution,
 				AllowNull -> True,
 				Description -> "Indicates which model stir bar to be inserted to mix the stock solution prior to autoclave when HeatSensitiveReagents is not Null.",
 				Widget -> Widget[Type->Object,
-					Pattern :> ObjectP[Model[Part,StirBar],Object[Part,StirBar]],
+					Pattern :> ObjectP[{Model[Part,StirBar],Object[Part,StirBar]}],
 					OpenPaths -> {
 						{
 							Object[Catalog, "Root"],
@@ -404,7 +418,7 @@ DefineOptions[ExperimentStockSolution,
 				],
 				Description->"Indicates if the stock solution should be treated at a specified temperature following component combination and filling to volume with solvent.  May be used in conjunction with mixing.",
 				ResolutionDescription->"Automatically resolves to True if any other incubate options are specified, or, if a template model is provided, resolves based on whether that template has incubation parameters.",
-				Category->"Hidden"
+				Category->"Incubation"
 			},
 			{
 				OptionName->PostAutoclaveIncubator,
@@ -412,11 +426,18 @@ DefineOptions[ExperimentStockSolution,
 				AllowNull->True,
 				Widget->Widget[
 					Type->Object,
-					Pattern:>ObjectP[Join[MixInstrumentModels,MixInstrumentObjects]]
+					Pattern:>ObjectP[Join[MixInstrumentModels,MixInstrumentObjects]],
+					OpenPaths -> {
+						{
+							Object[Catalog, "Root"],
+							"Instruments",
+							"Mixing Devices"
+						}
+					}
 				],
 				Description->"The instrument that should be used to treat the stock solution at a specified temperature following component combination and filling to volume with solvent.",
 				ResolutionDescription->"Automatically resolves to an appropriate instrument based on container model, or Null if Incubate is set to False.",
-				Category->"Hidden"
+				Category->"Incubation"
 			},
 			{
 				OptionName->PostAutoclaveIncubationTemperature,
@@ -429,7 +450,7 @@ DefineOptions[ExperimentStockSolution,
 				],
 				Description->"Temperature at which the stock solution should be treated for the duration of the IncubationTime following component combination and filling to volume with solvent.",
 				ResolutionDescription->"Automatically resolves to the maximum temperature allowed for the incubator and container. Resolves to 37 Celsius if the sample is being incubated, or Null if Incubate is set to False.",
-				Category->"Hidden"
+				Category->"Incubation"
 			},
 			{
 				OptionName->PostAutoclaveIncubationTime,
@@ -442,7 +463,7 @@ DefineOptions[ExperimentStockSolution,
 				],
 				Description->"Duration for which the stock solution should be treated at the IncubationTemperature following component combination and filling to volume with solvent.  Note that if you are mixing AND incubating and this option is specified, it must be the same as the specified value of the MixTime option.",
 				ResolutionDescription->"Automatically resolves to 0.5 Hour if Incubate is set to True and Mix is set to False, or Null otherwise.",
-				Category->"Hidden"
+				Category->"Incubation"
 			},
 			{
 				OptionName->PostAutoclaveAnnealingTime,
@@ -455,7 +476,7 @@ DefineOptions[ExperimentStockSolution,
 				],
 				Description->"Minimum duration for which the stock solution should remain in the incubator allowing the solution and incubator to return to room temperature after the MixTime has passed if mixing while incubating.",
 				ResolutionDescription->"Automatically resolves to 0 Minute, or Null if Incubate is set to False.",
-				Category->"Hidden"
+				Category->"Incubation"
 			},
 
 			(* --- Post-Autoclave Mixing --- *)
@@ -469,7 +490,7 @@ DefineOptions[ExperimentStockSolution,
 				],
 				Description->"Indicates if the components of the stock solution should be mechanically incorporated following component combination and filling to volume with solvent.",
 				ResolutionDescription->"Automatically resolves to True if a new stock solution formula is provided, to True if an existing stock solution model with mixing parameters is provided, and to False if the provided stock solution model has no mixing parameters.",
-				Category->"Hidden"
+				Category->"Mixing"
 			},
 			{
 				OptionName->PostAutoclaveMixType,
@@ -481,7 +502,7 @@ DefineOptions[ExperimentStockSolution,
 				],
 				Description->"The style of motion used to mechanically incorporate the components of the stock solution following component combination and filling to volume with solvent.",
 				ResolutionDescription->"Automatically resolves based on the Volume option and size of the container in which the stock solution is prepared.",
-				Category->"Hidden"
+				Category->"Mixing"
 			},
 			{
 				OptionName->PostAutoclaveMixUntilDissolved,
@@ -492,7 +513,7 @@ DefineOptions[ExperimentStockSolution,
 					Pattern:>BooleanP
 				],
 				Description->"Indicates if the complete dissolution of any solid components should be verified following component combination, filling to volume with solvent, and any specified mixing steps.",
-				Category->"Hidden"
+				Category->"Mixing"
 			},
 			{
 				OptionName->PostAutoclaveMixer,
@@ -500,11 +521,18 @@ DefineOptions[ExperimentStockSolution,
 				AllowNull->True,
 				Widget -> Widget[
 					Type->Object,
-					Pattern:>ObjectP[Join[MixInstrumentModels,MixInstrumentObjects]]
+					Pattern:>ObjectP[Join[MixInstrumentModels,MixInstrumentObjects]],
+					OpenPaths -> {
+						{
+							Object[Catalog, "Root"],
+							"Instruments",
+							"Mixing Devices"
+						}
+					}
 				],
 				Description->"The instrument that should be used to mechanically incorporate the components of the stock solution following component combination and filling to volume with solvent.",
 				ResolutionDescription->"Automatically resolves based on the MixType and the size of the container in which the stock solution is prepared.",
-				Category->"Hidden"
+				Category->"Mixing"
 			},
 			{
 				OptionName->PostAutoclaveMixTime,
@@ -517,7 +545,7 @@ DefineOptions[ExperimentStockSolution,
 				],
 				Description->"The duration for which the stock solution should be mixed following component combination and filling to volume with solvent.",
 				ResolutionDescription->"Automatically resolves from the MixTime field of the stock solution model. If the model has no preferred time, resolves to 3 minutes. If MixType is Pipette or Invert, resolves to Null. 0 minutes indicates no mixing. Note that if you are mixing AND incubating and this option is specified, it must be the same as the specified value of the IncubationTime option.",
-				Category->"Hidden"
+				Category->"Mixing"
 			},
 			{
 				OptionName->PostAutoclaveMaxMixTime,
@@ -530,7 +558,7 @@ DefineOptions[ExperimentStockSolution,
 				],
 				Description->"The maximum duration for which the stock solutions should be mixed in an attempt to dissolve any solid components following component combination and filling to volume with solvent.",
 				ResolutionDescription->"Automatically resolves based on the MixType if MixUntilDissolved is set to True. If MixUntilDissolved is False, resolves to Null.",
-				Category->"Hidden"
+				Category->"Mixing"
 			},
 			{
 				OptionName->PostAutoclaveMixRate,
@@ -543,7 +571,7 @@ DefineOptions[ExperimentStockSolution,
 				],
 				Description->"The frequency of rotation the mixing instrument should use to mechanically incorporate the components of the stock solutions following component combination and filling to volume with solvent.",
 				ResolutionDescription->"Automatically resolves based on the MixType and the size of the container in which the solution is prepared.",
-				Category->"Hidden"
+				Category->"Mixing"
 			},
 			{
 				OptionName->PostAutoclaveNumberOfMixes,
@@ -552,7 +580,7 @@ DefineOptions[ExperimentStockSolution,
 				Widget -> Widget[Type->Number, Pattern:>RangeP[1, 50, 1]],
 				Description->"The number of times the stock solution should be mixed by inversion or repeatedly aspirated and dispensed using a pipette following component combination and filling to volume with solvent.",
 				ResolutionDescription->"Automatically resolves to 10 when MixType is Pipette, 3 when MixType is Invert, or Null otherwise.",
-				Category->"Hidden"
+				Category->"Mixing"
 			},
 			{
 				OptionName->PostAutoclaveMaxNumberOfMixes,
@@ -564,7 +592,7 @@ DefineOptions[ExperimentStockSolution,
 				],
 				Description->"The maximum number of times the stock solutions should be mixed in an attempt to dissolve any solid components following component combination and filling to volume with solvent.",
 				ResolutionDescription->"Automatically resolves based on the MixType if MixUntilDissolved is set to True, and to Null otherwise.",
-				Category->"Hidden"
+				Category->"Mixing"
 			},
 			{
 				OptionName->PostAutoclaveMixPipettingVolume,
@@ -577,7 +605,7 @@ DefineOptions[ExperimentStockSolution,
 				],
 				Description->"The volume of the stock solution that should be aspirated and dispensed with a pipette to mix the solution following component combination and filling to volume with solvent.",
 				ResolutionDescription->"Automatically resolves to 50% of the total stock solution volume if MixType is Pipette, and Null otherwise.",
-				Category->"Hidden"
+				Category->"Mixing"
 			},
 
 			(* --- pH Titration --- *)
@@ -635,7 +663,15 @@ DefineOptions[ExperimentStockSolution,
 				AllowNull->True,
 				Widget->Widget[
 					Type->Object,
-					Pattern:>ObjectP[Model[Sample]]
+					Pattern:>ObjectP[Model[Sample]],
+					OpenPaths -> {
+						{
+							Object[Catalog, "Root"],
+							"Materials",
+							"Reagents",
+							"Acids"
+						}
+					}
 				],
 				Description->"The acid that should be used to lower the pH of the solution following component combination, filling to volume with solvent, and/or mixing.",
 				ResolutionDescription->"Automatically resolves based on the pHingAcid field in the stock solution, to 6N HCl if the pH option is specified but the stock solution has no pHingAcid, or to Null if the pH option is unspecified.",
@@ -647,7 +683,15 @@ DefineOptions[ExperimentStockSolution,
 				AllowNull->True,
 				Widget->Widget[
 					Type->Object,
-					Pattern:>ObjectP[Model[Sample]]
+					Pattern:>ObjectP[Model[Sample]],
+					OpenPaths -> {
+						{
+							Object[Catalog, "Root"],
+							"Materials",
+							"Reagents",
+							"Acids"
+						}
+					}
 				],
 				Description->"The base that should be used to raise the pH of the solution following component combination, filling to volume with solvent, and/or mixing.",
 				ResolutionDescription->"Automatically resolves based on the pHingBase field in the stock solution, to 1.85M NaOH if the pH option is specified but the stock solution has no pHingBase, or to Null if the pH option is unspecified.",
@@ -710,7 +754,38 @@ DefineOptions[ExperimentStockSolution,
 				AllowNull->True,
 				Widget -> Widget[
 					Type->Object,
-					Pattern:>ObjectP[{Model[Instrument, Centrifuge], Model[Instrument, SyringePump], Model[Instrument, PeristalticPump], Model[Instrument, VacuumPump]}]
+					Pattern:>ObjectP[{Model[Instrument, Centrifuge], Model[Instrument, SyringePump], Model[Instrument, PeristalticPump], Model[Instrument, VacuumPump]}],
+					OpenPaths -> {
+						{
+							Object[Catalog, "Root"],
+							"Instruments",
+							"Dead-End Filtering Devices"
+						},
+						{
+							Object[Catalog, "Root"],
+							"Instruments",
+							"Pumps",
+							"Vacuum Pumps"
+						},
+						{
+							Object[Catalog, "Root"],
+							"Instruments",
+							"Centrifugation",
+							"Centrifuges"
+						},
+						{
+							Object[Catalog, "Root"],
+							"Instruments",
+							"Centrifugation",
+							"Microcentrifuges"
+						},
+						{
+							Object[Catalog, "Root"],
+							"Instruments",
+							"Centrifugation",
+							"Robotic Compatible Microcentrifuges"
+						}
+					}
 				],
 				Description->"The instrument that should be used to filter the stock solution following component combination, filling to volume with solvent, mixing, and/or pH titration.",
 				ResolutionDescription->"Automatically resolves to an instrument appropriate to the volume of sample being filtered.",
@@ -722,7 +797,19 @@ DefineOptions[ExperimentStockSolution,
 				AllowNull->True,
 				Widget -> Widget[
 					Type->Object,
-					Pattern:>ObjectP[{Model[Container, Plate, Filter], Model[Container, Vessel, Filter], Model[Item, Filter]}]
+					Pattern:>ObjectP[{Model[Container, Plate, Filter], Model[Container, Vessel, Filter], Model[Item, Filter]}],
+					OpenPaths -> {
+						{
+							Object[Catalog, "Root"],
+							"Containers",
+							"Filters"
+						},
+						{
+							Object[Catalog, "Root"],
+							"Labware",
+							"Filters"
+						}
+					}
 				],
 				Description->"The model of filter that should be used to filter the stock solution following component combination, filling to volume with solvent, mixing, and/or pH titration.",
 				ResolutionDescription->"Automatically resolves to a model of filter compatible with the FilterInstrument/FilterSyringe being used for the filtration.",
@@ -734,7 +821,14 @@ DefineOptions[ExperimentStockSolution,
 				AllowNull->True,
 				Widget -> Widget[
 					Type->Object,
-					Pattern:>ObjectP[Model[Container, Syringe]]
+					Pattern:>ObjectP[Model[Container, Syringe]],
+					OpenPaths -> {
+						{
+							Object[Catalog, "Root"],
+							"Containers",
+							"Syringes"
+						}
+					}
 				],
 				Description->"The syringe that should be used to force the stock solution through a filter following component combination, filling to volume with solvent, mixing, and/or pH titration.",
 				ResolutionDescription->"Automatically resolves to a syringe appropriate to the volume of stock solution being filtered.",
@@ -749,7 +843,14 @@ DefineOptions[ExperimentStockSolution,
 					Pattern:>ObjectP[{
 						Model[Instrument, FilterHousing],
 						Model[Instrument, FilterBlock]
-					}]
+					}],
+					OpenPaths -> {
+						{
+							Object[Catalog, "Root"],
+							"Instruments",
+							"Dead-End Filtering Devices"
+						}
+					}
 				],
 				Description->"The instrument that should be used to hold the filter membrane through which the stock solution is filtered following component combination, filling to volume with solvent, mixing, and/or pH titration.",
 				ResolutionDescription->"Automatically resolves to a housing capable of holding the size of the filter membrane being used.",
@@ -782,7 +883,13 @@ DefineOptions[ExperimentStockSolution,
 				AllowNull->True,
 				Widget->Widget[
 					Type->Object,
-					Pattern:>ObjectP[Model[Container]]
+					Pattern:>ObjectP[Model[Container]],
+					OpenPaths -> {
+						{
+							Object[Catalog, "Root"],
+							"Containers"
+						}
+					}
 				],
 				Description->"The container model in which the newly-made stock solution sample should reside following all preparative steps.",
 				ResolutionDescription->"Automatically selected from ECL's stocked containers based on the volume of solution being prepared.",
@@ -881,6 +988,18 @@ DefineOptions[ExperimentStockSolution,
 				Category->"Storage Information"
 			},
 			{
+				OptionName -> DiscardThreshold,
+				Default -> Automatic,
+				AllowNull -> True,
+				Widget -> Widget[
+					Type -> Quantity,
+					Pattern :> RangeP[0 Percent, 100 Percent], Units -> {1, {Percent, {Percent}}}
+				],
+				Description -> "Indicates when samples of this stock solution are automatically discarded. Specifically, gives the percentage of the total initial volume below which samples of the stock solution will automatically be marked as AwaitingDisposal. For instance, if DiscardThreshold is set to 5% and the initial volume of the stock solution was set to 100 mL, that stock solution sample is automatically marked as AwaitingDisposal once its volume is below 5mL. Set DiscardThreshold -> 0 Percent if you never wish to auto-discard this stock solution.",
+				ResolutionDescription -> "Automatically set to 5 Percent if generating a new stock solution model from formula input, or to Null if preparing an existing stock solution model.",
+				Category -> "Storage Information"
+			},
+			{
 				OptionName->DefaultStorageCondition,
 				Default->Automatic,
 				AllowNull->True,
@@ -889,34 +1008,30 @@ DefineOptions[ExperimentStockSolution,
 						Type->Enumeration,
 						Pattern:>(AmbientStorage|Refrigerator|Freezer|DeepFreezer)
 					],
-					Widget[Type->Object,Pattern:>ObjectP[Model[StorageCondition]]]
+					Widget[
+						Type->Object,
+						Pattern:>ObjectP[Model[StorageCondition]],
+						OpenPaths -> {
+							{
+								Object[Catalog, "Root"],
+								"Storage Conditions"
+							}
+						}
+					]
 				],
 				Description->"The condition in which stock solutions prepared according to the provided formula are stored when not in use by an experiment.",
 				ResolutionDescription->"Automatically resolves based on the default storage conditions of the formula components and any safety information provided for this new formula. If preparing an existing stock solution model, resolves to Null.",
 				Category->"New Formulation"
 			},
 			{
-				OptionName->TransportChilled,
+				OptionName->TransportTemperature,
 				Default->Automatic,
 				AllowNull->True,
-				Widget -> Widget[
-					Type->Enumeration,
-					Pattern:>BooleanP
+				Widget -> Alternatives[
+					"Transport Cold" -> Widget[Type -> Quantity, Pattern :> RangeP[-86 Celsius, 10 Celsius],Units -> {1, {Celsius, {Celsius, Fahrenheit, Kelvin}}}],
+					"Transport Warmed" -> Widget[Type -> Quantity, Pattern :> RangeP[27 Celsius, 105 Celsius],Units -> {1, {Celsius, {Celsius, Fahrenheit, Kelvin}}}]
 				],
-				Description->"Indicates if stock solutions prepared according to the provided formula should be refrigerated during transport when used in experiments.",
-				ResolutionDescription->"Automatically resolves to True if the new stock solution's DefaultStorageCondition resolves to Refrigerator or Freezer, or False for AmbientStorage, unless TransportWarmed is specified, whereupon it resolves to Null. If preparing an existing stock solution model, resolves to Null.",
-				Category->"Storage Information"
-			},
-			{
-				OptionName->TransportWarmed,
-				Default->Null,
-				AllowNull->True,
-				Widget -> Widget[
-					Type->Quantity,
-					Pattern:>RangeP[27*Celsius, 105*Celsius],
-					Units -> {1, {Celsius, {Celsius, Fahrenheit, Kelvin}}}
-				],
-				Description->"Indicates the temperature by which stock solutions prepared according to the provided formula should be heated during transport when used in experiments.",
+				Description->"Indicates the temperature by which stock solutions prepared according to the provided formula should be heated or chilled during transport when used in experiments.",
 				Category->"Storage Information"
 			},
 			{
@@ -927,7 +1042,13 @@ DefineOptions[ExperimentStockSolution,
 					Adder[
 						Widget[
 							Type -> Object,
-							Pattern :> ObjectP[{Model[Sample],Object[Sample]}]
+							Pattern :> ObjectP[{Model[Sample],Object[Sample]}],
+							OpenPaths -> {
+								{
+									Object[Catalog, "Root"],
+									"Materials"
+								}
+							}
 						]
 					],
 					Widget[
@@ -1049,7 +1170,10 @@ DefineOptions[ExperimentStockSolution,
 				OptionName->IncompatibleMaterials,
 				Default->Automatic,
 				AllowNull->True,
-				Widget->With[{insertMe=Flatten[MaterialP]},Widget[Type->MultiSelect,Pattern:>DuplicateFreeListableP[insertMe]]],
+				Widget->Alternatives[
+					With[{insertMe=Flatten[MaterialP]},Widget[Type->MultiSelect,Pattern:>DuplicateFreeListableP[insertMe]]],
+					Widget[Type->Enumeration, Pattern:>Alternatives[{None}]]
+				],
 				Description->"A list of materials that would be damaged if contacted by this formulation.",
 				ResolutionDescription->"Automatically resolves to None if generating a new stock solution model from formula input, or to Null if preparing an existing stock solution model.",
 				Category->"Compatibility"
@@ -1097,7 +1221,7 @@ DefineOptions[ExperimentStockSolution,
 					Pattern:>BooleanP
 				]
 			},
-			{
+			(*{
 				OptionName->PlatingMethod,
 				Default->Null,
 				Description->"Indicates how the liquid media will be transferred from its preparatory container to the incubation plates. Pumping will be performed using a serial filler instrument, which utilizes a peristaltic pump device to transfer the media from a bottle into incubation plates. In Pouring, media will be transferred to incubation plates using a serological pipette.",
@@ -1117,7 +1241,7 @@ DefineOptions[ExperimentStockSolution,
 				Widget->Alternatives[
 					Widget[
 						Type->Object,
-						Pattern:>ObjectP[{Model[Instrument,PlatePourer],Object[Instrument,PlatePourer]}],
+						Pattern:>ObjectP[{Model[Instrument,PlatePourer],Object[Instrument,PlatePourer]}](*,
 						OpenPaths->{
 							{
 								Object[Catalog,"Root"],
@@ -1125,14 +1249,14 @@ DefineOptions[ExperimentStockSolution,
 								"Cell Culture",
 								"Plate Pourer"
 							}
-						}
+						}*)
 					],
 					Widget[
 						Type->Enumeration,
 						Pattern:>Alternatives[None,Automatic]
 					]
 				]
-			},
+			}, *)
 			{
 				OptionName->PrePlatingIncubationTime,
 				Default->Null,
@@ -1200,7 +1324,7 @@ DefineOptions[ExperimentStockSolution,
 				],
 				ResolutionDescription->"Automatically set to the lesser of 75 degrees Celsius or 5 degrees Celsius below the ContainersOut model's MaxTemperature if MediaPhase is set to Solid/SemiSolid and/or if GellingAgents is specified."
 			},
-			{
+			(* {
 				OptionName->PumpFlowRate,
 				Default->Null,
 				Description->"The volume of liquid media pumped per unit time from its source container into PlateOut by the serial filler instrument.",
@@ -1214,7 +1338,7 @@ DefineOptions[ExperimentStockSolution,
 						{-1,{Second,{Second,Minute,Hour}}}
 					]
 				]
-			},
+			}, *)
 			{
 				OptionName->PlatingVolume,
 				Default->Null,
@@ -1350,7 +1474,19 @@ DefineOptions[ExperimentStockSolution,
 
 		(* --- Shared Standard Protocol Options --- *)
 		ProtocolOptions,
-		PostProcessingOptions,
+		{
+			OptionName->MaxNumberOfOverfillingRepreparations,
+			Default->Automatic,
+			Description->"The maximum number of times the StockSolution protocol can be repeated in the event of target volume overfilling in the FillToVolume step of the stock solution preparation. When a repreparation is triggered, the same inputs and options are used, and the value of MaxNumberOfOverfillingRepreparations is decreased by 1. If this value is set to Null, the protocol will complete normally, even if the final sample volume exceeds the target.",
+			ResolutionDescription -> "For a new StockSolution protocol, automatically set to 3 if there is a FillToVolume step. When a repeat protocol is enqueued, the value is decremented by 1 from the current MaxNumberOfOverfillingRepreparations. For all other cases, set to Null.",
+			AllowNull->True,
+			Category->"General",
+			Widget->Widget[
+				Type->Number,
+				Pattern:>RangeP[1,3]
+			]
+		},
+		NonBiologyPostProcessingOptions,
 		SamplesOutStorageOption,
 
 
@@ -1385,7 +1521,7 @@ DefineOptions[ExperimentStockSolution,
 ];
 
 Error::DeprecatedStockSolutions="The requested stock solution(s) (`1`) are marked as deprecated and thus are not available for preparation at this time. Please either remove these models from the input list, or check the AlternativePreparations to see if any other related models are stil available for preparation.";
-Error::NonPreparableStockSolutions="The requested stock solution(s) (`1`) are marked as not preparable and thus cannot be prepared by ExperimentStockSolution.  These stock solutions are only generated by ExperimentSampleManipulation and cannot be prepared in ExperimentStockSolution.";
+Error::NonPreparableStockSolutions="The requested stock solution(s) (`1`) are marked as not preparable and thus cannot be prepared by ExperimentStockSolution.  These stock solutions are only generated by ExperimentSamplePreparation and cannot be prepared in ExperimentStockSolution.";
 Error::StockSolutionTooManySamples = "The (number of input models/formulas * NumberOfReplicates) are above the maximum allowed in one StockSolution protocol. Please select fewer than `1` stock solutions to run this protocol, or split the requested protocol into multiple ExperimentStockSolution calls.";
 Warning::FormulaOptionsUnused="The options `1` have been specifically set; however, these options only apply when a new stock solution formula is provided as input in order to upload and prepare a new stock solution model. Since existing stock solution models were provided as input, these options will be unused.";
 Error::MultipleFixedAmountComponents="The formula `1` contains more than one FixedAmounts components that require resuspension in their original containers. Please make sure there is at most only one FixedAmounts component in a stock solution formula.";
@@ -1395,8 +1531,9 @@ Error::VolumeNotInIncrements="The requested Volume of `1`, `2`, is not a member 
 Error::VolumeOverMaxIncrement="The requested Volume of `1`, `2`, is larger than the largest member of VolumeIncrements for that model (`3`). The resource `4` is requesting this invalid volume. This resource will need to be updated to request less volume in order to proceed.";
 Error::ComponentsScaledOutOfRange="The requested Volumes of `1`, `2`, would require the components `3` to be measured in the amounts `4`. These amounts fall outside of the range for which accurate measurement is possible in ECL at this time (`5` to `6` for solids, and `7` to `8` for liquids). Please either adjust the requested Volume, or leave it Automatic so the stock solution can be prepared exactly according to its formula.";
 Error::BelowFillToVolumeMinimum="The requested Volume(s) of `1`, `2`, are below the minimum fill-to volume that can ensure accurate empirical volume measurements (`3`) when filling to the requested volume with solvent. Please either set the volume to at least `3` or to Automatic.";
-Error::AboveVolumetricFillToVolumeMaximum="The requested Volume(s) of `1`, `2`, are above the maximum volume of any volumetric flasks currently available. Please lower the Volume or set it to Automatic.";
+Error::AboveVolumetricFillToVolumeMaximum="The requested Volume(s) of `1`, `2`, are above the maximum volume of any volumetric flasks currently available`3`. Please lower the Volume or set it to Automatic.";
 Error::BelowpHMinimum="The requested Volume of `1`, `2`, is below the minimum volume for a pH-titrated solution (`3`), due to pH probe size. Please either set the Volume option to at least `3` or to Automatic.";
+Error::IncompatibleStockSolutionContainerOut="The following stock solution models(s) `1` are incompatible with the specified ContainerOut `2`. Please check the IncompatibleMaterials field of the stock solution model and the ContainerMaterials field of the containers to a compatible ContainerOut, or allow the ContainerOut to be determined automatically";
 Error::DeprecatedContainerOut="The requested ContainerOut option (`1`) is marked as deprecated and thus not available to serve as a stock solution container at this time. Please either replace this container with a non-deprecated models (consider using the PreferredContainer function with your desired stock solution volume), or allow the ContainerOut to be determined automatically based on the Volume of stock solution(s) being prepared.";
 Error::ContainerOutTooSmall="The provided ContainerOut option `1` for holding `2` has a MaxVolume of `3`. However, `4` of `2` was requested, so this ContainerOut will not be able to accommodate the volume of solution prepared. Additionally, the volume must be less than 3/4 of the MaxVolume of the container if this stock solution is also being autoclaved. Please request a smaller volume of this solution, request a larger ContainerOut, or allow one or both of the ContainerOut/Volume options to resolve automatically.";
 Error::ContainerOutMaxTemperature="The provided ContainerOut option `1` for holding `2` has a MaxTemperature of `3`. However, a MaxTemperature of 120 Celsius (or higher) is required if the stock solution need to be autoclaved. Please choose another ContainerOut or let this option automatically resolve.";
@@ -1414,7 +1551,6 @@ Error::pHOrderInvalid="The provided MinpH, NominalpH, and MaxpH options are not 
 Error::SynonymsNoName="The Synonyms option is set `1`, but no Name was provided for the corresponding solution(s). Please provide a main Name in order to associate Synonyms with these new formulation(s).";
 Error::DuplicateNames="The StockSolutionName option contains duplicates. The name of each stock solution  model must be unique, and so if specifying a name for each input, please ensure that they are unique.";
 Error::ComponentAmountOutOfRange="The requested amount of `1`, `2`, is outside of the allowed range of component amounts in new stock solutions (`3`, `4` for solids, `5`, `6` for liquids).  Please scale this formula up or down to stay within this range.";
-Error::TransportWarmedChilledConflict="The TransportWarmed option was specified when TransportChilled was also sset to True.  These options cannot both be set simultaneously; please make sure at most one of these options is specified.";
 Error::MixTimeIncubateTimeMismatch="MixTime `1` and IncubationTime `2` were both specified for `3`, but if these options are both specified, they must be the same.  Consider leaving one as Automatic, or changing them to be equal to each other.";
 Error::PostAutoclaveMixTimeIncubateTimeMismatch="PostAutoclaveMixTime `1` and PostAutoclaveIncubationTime `2` were both specified for `3`, but if these options are both specified, they must be the same.  Consider leaving one as Automatic, or changing them to be equal to each other.";
 Error::MixIncubateInstrumentMismatch="Mixer `1` and Incubator `2` were both specified for `3`, but if these options are both specified, they must be the same.  Consider leaving one as Automatic, or changing them to be equal to each other.";
@@ -1422,6 +1558,7 @@ Error::PostAutoclaveMixIncubateInstrumentMismatch="PostAutoclaveMixer `1` and Po
 Error::IncompletelySpecifiedpHingOptions="If a pH is specified, MinpH, MaxpH, pHingAcid, and pHingBase must not be Null. Please make sure these options are not set to Null if a pH is specified.";
 Error::ContainerOutCannotBeFound="A container cannot be found to prepare `1` with the required volume of `2`. The container cannot be more than 75% full for autoclaved stock solutions and 93% full for solutions whose pH needs to be adjusted.";
 Error::AutoclaveHeatSensitiveConflict="`1` was specified for HeatSensitiveReagents, but this option must be set to {} or Null when Autoclave is set to False. Please either set Autoclave to True or do not set HeatSensitiveReagents.";
+Error::InvalidUnitOperationsInput = "Currently the input only contains LabelContainer primitive(s), which is allowed for option-resolving purpose in CommandCenter Desktop, but will fail when attempt to generate a protocol. Please continue adding more primitives.";
 
 (* formerly USSM messages, but now in the real experiment function *)
 Error::AcidBaseConflict="The Acid and Base options have both been set to True. These options cannot simultaneously be true, as dedicated secondary containment for acids and bases are separated. Please make sure at most one of these options is set to True.";
@@ -1431,17 +1568,20 @@ Error::ComponentStateInvalid="The formula component `1` is neither a solid nor a
 Error::DeprecatedComponents="The formula components `1` are deprecated and not available for inclusion in stock solutions (check the Deprecated field). Please provide components that are currently active for use in the ECL.";
 Error::DuplicatedComponents="The formula components `1` are duplicated in the provided formula. Please provide a stock solution formula with unique components.";
 Error::ExpirationShelfLifeConflict="The Expires option is set to False, but one or both of the ShelfLife/UnsealedShelfLife options have been set. Please only set shelf lives if the stock solution expires.";
-Error::FormulaVolumeTooLarge="The total volume of formula components specified with amounts in units of volume (`1`) exceeds the requested total volume of the solution (`2`). Please either increase the total volume, reduce the volumes of formula components, or do not specify a total volume and allow the calculated formula volume to be used.";
+Error::FormulaVolumeTooLarge="The total volume of formula components specified with amounts in units of volume (`1`) equals or exceeds the requested total volume of the solution (`2`). Please either increase the total volume, reduce the volumes of formula components, or do not specify a total volume and allow the calculated formula volume to be used.";
 Error::SolventNotLiquid="The solvent `1` is not in the liquid state, and instead is recorded as having a state of `2` (check the State field). Please provide a solvent that is a liquid.";
 Warning::ComponentStateUnknown="The formula component `1`'s State is unknown; the component's amount has not been validated.";
 Warning::UnsealedShelfLifeLonger="The provided UnsealedShelfLife value(s) `1` are longer than the provided ShelfLife value(s) `2`.";
-Error::ShelfLifeNotSpecified="A ShelfLife value was not specified while an UnsealedShelfLife was specified. Please be sure to specify the ShelfLife of a sample if it expires. Long shelf lives are fine if you expect a stock solution to be stable.";
+Error::ShelfLifeNotSpecified="The Expires option is resolved to be True based on the stock solution components, but one or both of the ShelfLife/UnsealedShelfLife options have been set to Null. Please be sure to specify the ShelfLife/UnsealedShelfLife of a sample if it expires. Long shelf lives are fine if you expect a stock solution to be stable.";
 Error::TemplatesPreperationTypeConflict="The provided templates are both formula- and UnitOperations-based. Please split the ExperimentStockSolution calls to have a call for each preparation type (Formula-based: `1` ; UnitOperations-based: `2`).";
+Error::InvalidModelFormulaForFillToVolume="For the input formula or the formula of the input stock solution model, `1`, the combined total volume of its components is `2`, which is equal to or exceeds the model's specified TotalVolume of `3`. The combined total volume of components must not exceed the TotalVolume, as the TotalVolume is meant to be achieved by adding the FillToVolumeSolvent `4` after combining all components in the formula. Please update the formula input or the relevant fields in the model.";
+Warning::VolumeTooLowForAutoclave = "The provided stock solution(s) `1` has specified volumes of, `2`, which are lower than 100 Milliliter while Autoclave is True. Autoclaving small volumes may result in inaccurate prepared volume and compositions. Please consider scaling up the volume.";
 
 (* These errors are specific to redirection to this function via ExperimentMedia *)
 Error::FilterSolidMedia="Filtration options are specified, but MediaPhase is Solid. Please set Filtration options to Null or MediaPhase to Liquid.";
 Error::NonSterileFilterWithoutAutoclave="For this Media experiment, FilterModel is not Sterile, but Autoclave is not True. Please specify a sterile FilterModel or set Autoclave to True.";
-
+Warning::ModelStockSolutionMixRateNotSafe = "The specified stock solution model has a mix rate of `1`, which is larger than the maximum safe mix rate that can be reached by stir mixing. The max safe mix rate for the desired container model is `2`, so mix rate `2` will be used in this protocol instead."
+Error::SpecifedMixRateNotSafe = "The specified mix rate (`1`) exceeds the MaxOverheadMixRate of the resolved container. Please consider about using a smaller mix rate to avoid overflow or spillage during mixing.";
 
 (* Feature Flag *)
 (* $ExperimentStockSolutionMedia - Indicates if we should allow ExperimentStockSolution to be used for preparing Model[Sample,Media]. This is temporarily allowed before ExperimentMedia is fully released *)
@@ -1479,7 +1619,7 @@ ExperimentStockSolution[myModelStockSolutions:{ObjectP[stockSolutionModelTypes].
 		allDownloadValues, samplesIn, finalizedPackets, frqTests, uploadProtocolOptions, protocolPacket, extraPackets,
 		allTests, validQ, expandedCombinedOptions, specifiedMixType, specifiedMixer, specifiedMixRate, specifiedNumMixes,
 		specifiedMaxNumMixes, optionalMixOptions, failedUSSQ, modelStockSolutionsWithoutTemporalLinks, optionsWithoutTemporalLinks,
-		titrants,allEHSFields,allComponentFields,titrantsPackets
+		titrants,allEHSFields,allComponentFields,titrantsPackets, resolvedOptionsMixRateUpdate
 	},
 
 	(* determine the requested return value; careful not to default this as it will throw error; it's Hidden, assume used correctly *)
@@ -1516,8 +1656,11 @@ ExperimentStockSolution[myModelStockSolutions:{ObjectP[stockSolutionModelTypes].
 		{SafeOptions[ExperimentStockSolution, optionsWithoutTemporalLinks, AutoCorrect -> False], {}}
 	];
 
+	(* change all Names to objects *)
+	{listedStockSolutions, safeOptions, listedOptions} = sanitizeInputs[modelStockSolutionsWithoutTemporalLinks, safeOpsWithNames, optionsWithoutTemporalLinks, Simulation -> Lookup[optionsWithoutTemporalLinks, Simulation, Null]];
+
 	(* If the specified options don't match their patterns, allowed to return an early hard failure; make sure to hit up tests if asked *)
-	If[MatchQ[safeOpsWithNames, $Failed],
+	If[MatchQ[safeOptions, $Failed],
 		Return[
 			outputSpecification /. {
 				Result -> $Failed,
@@ -1530,8 +1673,8 @@ ExperimentStockSolution[myModelStockSolutions:{ObjectP[stockSolutionModelTypes].
 
 	(* make sure options are the right length; we are in the index-matching case, first overload *)
 	{validLengths, validLengthTests} = If[gatherTests,
-		ValidInputLengthsQ[ExperimentStockSolution, {modelStockSolutionsWithoutTemporalLinks}, safeOpsWithNames, 1, Output -> {Result, Tests}],
-		{ValidInputLengthsQ[ExperimentStockSolution, {modelStockSolutionsWithoutTemporalLinks}, safeOpsWithNames, 1], {}}
+		ValidInputLengthsQ[ExperimentStockSolution, {listedStockSolutions}, safeOptions, 1, Output -> {Result, Tests}],
+		{ValidInputLengthsQ[ExperimentStockSolution, {listedStockSolutions}, safeOptions, 1], {}}
 	];
 
 	(* If the specified options don't match their patterns, allowed to return an early hard failure; make sure to hit up tests if asked *)
@@ -1546,14 +1689,16 @@ ExperimentStockSolution[myModelStockSolutions:{ObjectP[stockSolutionModelTypes].
 		]
 	];
 
-	(* change all Names to objects *)
-	{listedStockSolutions, safeOptions, listedOptions} = sanitizeInputs[modelStockSolutionsWithoutTemporalLinks, safeOpsWithNames, optionsWithoutTemporalLinks];
 	(* combine the safe options with what we got from the template options *)
 	combinedOptions = ReplaceRule[safeOptions, unresolvedOptions];
 
 	(* get the ContainerOut option; we need to download some stuff if anything was specified; Cases works even if ContainerOut is singleton, returns a list *)
 	specifiedContainerOut = Lookup[combinedOptions, ContainerOut];
-	containerOutObjects = Join[Cases[ToList[specifiedContainerOut], ObjectP[]], PreferredContainer[All]];
+	containerOutObjects = Join[
+		Cases[ToList[specifiedContainerOut], ObjectP[]],
+		PreferredContainer[All],
+		PreferredContainer[All, LightSensitive -> True]
+	];
 	(* get the PreparedResources option; this is hidden, ASSUME it is index-matched if present; sent in by Engine when doing ResourcePrep *)
 	preparedResources = Lookup[combinedOptions, PreparedResources];
 
@@ -1599,8 +1744,8 @@ ExperimentStockSolution[myModelStockSolutions:{ObjectP[stockSolutionModelTypes].
 
 							PreferredContainers, VolumeIncrements, FulfillmentScale, Preparable, Resuspension,
 
-							LightSensitive, Expires, ShelfLife, UnsealedShelfLife, DefaultStorageCondition,
-							TransportChilled, TransportWarmed, Density, ExtinctionCoefficients, Ventilated, Flammable, Acid, Base, Pyrophoric,
+							LightSensitive, Expires, ShelfLife, UnsealedShelfLife, DiscardThreshold, DefaultStorageCondition,
+							TransportTemperature, Density, ExtinctionCoefficients, Ventilated, Flammable, Acid, Base, Pyrophoric,
 							Fuming, IncompatibleMaterials, UltrasonicIncompatible, CentrifugeIncompatible,
 
 							Autoclave, AutoclaveProgram,
@@ -1614,10 +1759,10 @@ ExperimentStockSolution[myModelStockSolutions:{ObjectP[stockSolutionModelTypes].
 						Packet[FillToVolumeSolvent[DefaultStorageCondition][{StorageCondition}]],
 						Packet[pHingAcid[State]],
 						Packet[pHingBase[State]],
-						Packet[PreferredContainers[{Name, Deprecated, MaxVolume, MinVolume, VolumeCalibrations, PreferredMixer, InternalDimensions, MaxTemperature, Dimensions}]]
+						Packet[PreferredContainers[{Name, Deprecated, MaxVolume, MinVolume, VolumeCalibrations, PreferredMixer, InternalDimensions, MaxTemperature, Dimensions, ContainerMaterials}]]
 					},
 					{
-						Packet[Name, Deprecated, MaxVolume, MinVolume, VolumeCalibrations, PreferredMixer, InternalDimensions, MaxTemperature, Dimensions, Resolution]
+						Packet[Name, Deprecated, MaxVolume, MinVolume, VolumeCalibrations, PreferredMixer, InternalDimensions, MaxTemperature, Dimensions, Resolution, ContainerMaterials, MaxOverheadMixRate]
 					},
 					{
 						Packet[RentContainer]
@@ -1652,7 +1797,7 @@ ExperimentStockSolution[myModelStockSolutions:{ObjectP[stockSolutionModelTypes].
 		SelectFirst[Flatten[parentProtocolDownloadTuple], NullQ[Lookup[#, ParentProtocol]]&, Null]
 	];
 
-	(* we dont want to pull the formula if were handling unit-ops based stock solutions. so lets make sure thats not the case *)
+	(* we don't want to pull the formula if were handling unit-ops based stock solutions. so lets make sure thats not the case *)
 	unitOpsQ =Map[MatchQ[#, KeyValuePattern[PreparationType->UnitOperations]]&, stockSolutionDownloadTuples[[All, 1]]];
 
 	(* pull out the Formula components from the download tuples which will end up being the SamplesIn *)
@@ -1667,6 +1812,7 @@ ExperimentStockSolution[myModelStockSolutions:{ObjectP[stockSolutionModelTypes].
 	newCache = FlattenCachePackets[{stockSolutionDownloadTuples,containerOutDownloadTuples,preparedResourceDownloadTuples,parentProtocolDownloadTuple,titrantsPackets}];
 
 	(* resolve options; if we throw InvalidOption or InvalidInput, we're also getting $Failed and will return early *)
+	(* Note: If listedStockSolutions is a StockSolution model with mix rate larger than safe mix rate, we want to use MaxOverheadMixRate instead. But we do not give the resolvedMixRate as option here to prevent it from generating new StockSolution model. *)
 	resolveOptionsResult = Check[
 		{resolvedOptions, resolutionTests} = If[gatherTests,
 			resolveStockSolutionOptions[listedStockSolutions, ReplaceRule[combinedOptions, {Output -> {Result, Tests}, Cache -> newCache}]],
@@ -1675,17 +1821,79 @@ ExperimentStockSolution[myModelStockSolutions:{ObjectP[stockSolutionModelTypes].
 		$Failed,
 		{Error::InvalidInput, Error::InvalidOption}
 	];
-
 	(* figure out if we want to return early or not *)
 	returnEarlyQ = If[gatherTests,
 		Not[RunUnitTest[<|"Tests" -> Flatten[{applyTemplateOptionTests, safeOptionTests, validLengthTests, resolutionTests}]|>, Verbose -> False, OutputFormat -> SingleBoolean]],
 		MatchQ[resolveOptionsResult, $Failed]
 	];
 
+	(* modify mix rate if necessary *)
+	resolvedOptionsMixRateUpdate = If[MatchQ[resolveOptionsResult, $Failed],
+		resolvedOptions,
+		Module[{safeMaxMixRates, resolvedMixRates, resolvedMixTypes, resolvedPostAutoclaveMixRates, resolvedPostAutoclaveMixTypes, postResolvedMixRates, postResolvedPostAutoclaveMixRates},
+			(* We want to use safe mix rate for over head stirrer so if the model provided mix rate is over safe mix rate, we want to replace it and give warning *)
+			(* find out the safe mix rate of resolved container out -- It is very unlikely that MaxOverheadMixRate is Null for PreferredContainer *)
+			safeMaxMixRates = Lookup[fetchPacketFromCache[#1, Flatten[containerOutDownloadTuples]], MaxOverheadMixRate, Null] &/@ Lookup[resolvedOptions, ContainerOut];
+			(* find out the mix rate, mix type, and post autoclave mix rate and mix type *)
+			resolvedMixRates = ToList[Lookup[resolvedOptions, MixRate]];
+			resolvedMixTypes = ToList[Lookup[resolvedOptions, MixType]];
+			resolvedPostAutoclaveMixRates = ToList[Lookup[resolvedOptions, PostAutoclaveMixRate]];
+			resolvedPostAutoclaveMixTypes = ToList[Lookup[resolvedOptions, PostAutoclaveMixType]];
+
+			(* replace the mix rate to be a safe value if necessary *)
+			postResolvedMixRates = MapThread[
+				Which[
+					MatchQ[#3, Except[Stir]],
+					(* if we are not using Stir, keep the resolved mix rate *)
+					#2,
+
+					(NullQ[#1]||(#1 > #2)),
+					(* if resolved mix rate from given stock solution model is safe, take it to use *)
+					(* Note: we add NullQ check for safe mix rate to avoid crashing, but actually it is unlikely to have Null since this container is from PreferredContainer *)
+					#2,
+
+					True,
+					(* otherwise, give a warning and resolve to max safe mix rate *)
+					If[Not[MatchQ[$ECLApplication,Engine]],
+						Message[Warning::ModelStockSolutionMixRateNotSafe, #2, #1]
+					];
+					(* we need to update the mix rate to use safe value *)
+					#1
+				]&,
+				{safeMaxMixRates, resolvedMixRates, resolvedMixTypes}
+			];
+			(* do the same thing for post autoclave *)
+			postResolvedPostAutoclaveMixRates = MapThread[
+				Which[
+					MatchQ[#3, Except[Stir]],
+					(* if we are not using Stir, keep the resolved mix rate *)
+					#2,
+
+					(NullQ[#1]||(#1 > #2)),
+					(* if resolved mix rate from given stock solution model is safe, take it to use *)
+					(* Note: we add NullQ check for safe mix rate to avoid crashing, but actually it is unlikely to have Null since this container is from PreferredContainer *)
+					#2,
+
+					True,
+					(* otherwise, give a warning and resolve to max safe mix rate *)
+					If[Not[MatchQ[$ECLApplication,Engine]],
+						Message[Warning::ModelStockSolutionMixRateNotSafe, #2, #1]
+					];
+					(* we need to update the mix rate to use safe value *)
+					#1
+				]&,
+				{safeMaxMixRates, resolvedPostAutoclaveMixRates, resolvedPostAutoclaveMixTypes}
+			];
+			(* update resolved options *)
+			ReplaceRule[resolvedOptions, {PostAutoclaveMixRate -> resolvedPostAutoclaveMixRates, MixRate -> postResolvedMixRates}]
+		]
+	];
+
 	(* pull out the PreparatoryVolumes option from the resolved options, and get a resolved options list without it since it isn't _really_ an option *)
-	resolvedPreparationVolumes = Lookup[resolvedOptions, PreparatoryVolumes];
-	resolvedDensityScouts = Lookup[resolvedOptions, DensityScouts];
-	resolvedOptionsNoPrepVolume = Select[resolvedOptions, Not[MatchQ[Keys[#], Alternatives[PreparatoryVolumes,DensityScouts]]]&];
+	(* Also pull out the 'Type' option *)
+	resolvedPreparationVolumes = Lookup[resolvedOptionsMixRateUpdate, PreparatoryVolumes];
+	resolvedDensityScouts = Lookup[resolvedOptionsMixRateUpdate, DensityScouts];
+	resolvedOptionsNoPrepVolume = Select[resolvedOptionsMixRateUpdate, Not[MatchQ[Keys[#], Alternatives[PreparatoryVolumes,DensityScouts,Type]]]&];
 
 	(* need to return early if something bad happened because we're FastTracking USSM below and that would trainwreck otherwise *)
 	If[returnEarlyQ,
@@ -1738,6 +1946,7 @@ ExperimentStockSolution[myModelStockSolutions:{ObjectP[stockSolutionModelTypes].
 	];
 
 	(* also need to prune a bit the options that we send into UploadStockSolution; some name/default differences *)
+	(* although we change the mix rate in model stock solution if it exceeds the max safe mix rate, it's not change by specified option, so MixRate will not be included in optionalMixOptions. *)
 	ussmOptionsPerModel = MapIndexed[
 		Function[{optionNames, indexNum},
 			Join[
@@ -1784,9 +1993,9 @@ ExperimentStockSolution[myModelStockSolutions:{ObjectP[stockSolutionModelTypes].
 
 				(* same between UploadStockSolution and ExpSS; pipe 'em innnn *)
 				Map[
-					If[MatchQ[Lookup[resolvedOptions, #], _List],
-						# -> Extract[Lookup[resolvedOptions, #], indexNum],
-						# -> Lookup[resolvedOptions, #]
+					If[MatchQ[Lookup[resolvedOptionsMixRateUpdate, #], _List],
+						# -> Extract[Lookup[resolvedOptionsMixRateUpdate, #], indexNum],
+						# -> Lookup[resolvedOptionsMixRateUpdate, #]
 					]&,
 					optionNames
 				]
@@ -1798,7 +2007,8 @@ ExperimentStockSolution[myModelStockSolutions:{ObjectP[stockSolutionModelTypes].
 	(* pull out all the resolved options that we are going to pass to UploadStockSolution *)
 	allUploadStockSolutionModelOutputs = Check[
 		MapThread[
-			UploadStockSolution[#1, Sequence @@ #2]&,
+			(* quiet warning for unsafe mix rate since we have already given a message earlier in resolveStockSolutionOptions *)
+			Quiet[UploadStockSolution[#1, Sequence @@ #2], {Warning::SpecifedMixRateNotSafe}]&,
 			{listedStockSolutions, ussmOptionsPerModel}
 		],
 		$Failed,
@@ -1868,6 +2078,7 @@ ExperimentStockSolution[myModelStockSolutions:{ObjectP[stockSolutionModelTypes].
 	(* get all the options for the UploadProtocol call *)
 	uploadProtocolOptions = {
 		Confirm -> Lookup[resolvedOptionsNoPrepVolume, Confirm],
+		CanaryBranch -> Lookup[resolvedOptionsNoPrepVolume, CanaryBranch],
 		ConstellationMessage -> Object[Protocol, StockSolution],
 		ParentProtocol -> Lookup[resolvedOptionsNoPrepVolume, ParentProtocol],
 		Upload -> Lookup[resolvedOptionsNoPrepVolume, Upload],
@@ -1902,12 +2113,20 @@ ExperimentStockSolution[myModelStockSolutions:{ObjectP[stockSolutionModelTypes].
 		True, True
 	];
 
-	(* asemble our options return rule; make sure to collapse indexed when possible, and remove hiddens *)
+	(* assemble our options return rule; make sure to collapse indexed when possible, and remove hiddens depending on our parent experiment *)
 	optionsRule = Options -> Which[
-		MemberQ[listedOutput, Options] && !NullQ[Lookup[resolvedOptionsNoPrepVolume,MediaPhase]],
-			KeyDrop[CollapseIndexMatchedOptions[ExperimentStockSolution, resolvedOptionsNoPrepVolume, Messages -> False, Ignore -> listedOptions], Cache],
+		MemberQ[listedOutput, Options] && !NullQ[Lookup[resolvedOptionsNoPrepVolume,MediaPhase,Null]],
+			Module[{finalOptionsNoType},
+				(* Don't send Type back to ExperimentMedia, it is not an option there *)
+				finalOptionsNoType = Normal[KeyDrop[resolvedOptionsNoPrepVolume,Type],Association];
+
+				(* Collapse and remove media hidden options *)
+				RemoveHiddenOptions[ExperimentMedia,CollapseIndexMatchedOptions[ExperimentStockSolution, finalOptionsNoType, Messages -> False, Ignore -> listedOptions]]
+			],
 		MemberQ[listedOutput, Options],
-			RemoveHiddenOptions[ExperimentStockSolution, CollapseIndexMatchedOptions[ExperimentStockSolution, resolvedOptionsNoPrepVolume, Messages -> False, Ignore -> listedOptions]]
+			RemoveHiddenOptions[ExperimentStockSolution, CollapseIndexMatchedOptions[ExperimentStockSolution, resolvedOptionsNoPrepVolume, Messages -> False, Ignore -> listedOptions]],
+		True,
+			Null
 	];
 
 	(* generate the Preview rule as a Nul *)
@@ -2042,7 +2261,7 @@ experimentStockSolutionFormula[
 		extraPackets, allTests, validQ, newSamplesIn, orderedFormulaModels, componentsAndSolventPackets,
 		validLengths, validLengthTests, flatComponentsAndSolvent, expandedCombinedOptions, fakePacketNames, fakePacketTypes,
 		fakePacketSynonyms, fakePacketLightSensitive, fakePacketExpires, fakePacketShelfLife, fakePacketUnsealedShelfLife,
-		fakePacketDefaultStorageCondition, fakePacketTransportChilled, fakePacketTransportWarmed, fakePacketDensity,
+		fakePacketDefaultStorageCondition, fakePacketTransportTemperature, fakePacketDensity, fakePacketDiscardThreshold,
 		fakePacketExtinctionCoefficients, fakePacketVentilated, fakePacketFlammable, fakePacketAcid, fakePacketBase,
 		fakePacketFuming, fakePacketPyrophoric, fakePacketPyrophoricFixed, fakePacketIncompatibleMaterials, ssIDs,
 		allUploadStockSolutionModelOutputs, notNewStockSolutionPositions, notNewStockSolutions, newStockSolutionPositions,
@@ -2051,7 +2270,7 @@ experimentStockSolutionFormula[
 		resolvedDensityScouts, notNewStockSolutionOriginalComponents, notNewStockSolutionSolvents,finalSSModels, ftvMethods,
 		densityScouts, reResolvedDensityScouts, updatedProtocolPacket, stockSolutionModelCache, safeOpsWithNames,
 		formulaSpecWithoutTemporalLinks, optionsWithoutTemporalLinks, listedFormulaSpecs, combinedOptions,
-		solventsWithoutTemporalLinks, listedSolvents, fakePacketHeatSensitiveReagents},
+		solventsWithoutTemporalLinks, listedSolvents, fakePacketHeatSensitiveReagents, formulaAndSamples},
 
 	(* determine the requested return value; careful not to default this as it will throw error; it's Hidden, assume used correctly *)
 	outputSpecification = Quiet[OptionDefault[OptionValue[Output]], OptionValue::nodef];
@@ -2086,9 +2305,14 @@ experimentStockSolutionFormula[
 		SafeOptions[ExperimentStockSolution, optionsWithoutTemporalLinks, Output -> {Result, Tests}, AutoCorrect -> False],
 		{SafeOptions[ExperimentStockSolution, optionsWithoutTemporalLinks, AutoCorrect -> False], {}}
 	];
-
+	(* change all Names to objects *)
+	{formulaAndSamples, safeOptions, listedOptions} = sanitizeInputs[{formulaSpecWithoutTemporalLinks, solventsWithoutTemporalLinks}, safeOpsWithNames, optionsWithoutTemporalLinks, Simulation -> Lookup[safeOpsWithNames, Simulation]];
+	{listedFormulaSpecs, listedSolvents} = If[MatchQ[formulaAndSamples, $Failed],
+		{$Failed, $Failed},
+		formulaAndSamples
+	];
 	(* If the specified options don't match their patterns, allowed to return an early hard failure; make sure to hit up tests if asked *)
-	If[MatchQ[safeOpsWithNames, $Failed],
+	If[MatchQ[safeOptions, $Failed],
 		Return[
 			outputSpecification /. {
 				Result -> $Failed,
@@ -2102,10 +2326,10 @@ experimentStockSolutionFormula[
 	(* make sure options are the right length; we are in the index-,atching case, first overload *)
 	(* ValidInputLengthsQ doesn't play nice with Nulls, so we need to gate our using inputs 2 or 3 based on whether we have Nulls or not *)
 	{validLengths, validLengthTests} = Which[
-		gatherTests && Not[MemberQ[solventsWithoutTemporalLinks, Null]] && Not[MemberQ[myFinalVolumes, Null]], ValidInputLengthsQ[ExperimentStockSolution, {formulaSpecWithoutTemporalLinks, solventsWithoutTemporalLinks, myFinalVolumes}, safeOpsWithNames, 2, Output -> {Result, Tests}],
-		gatherTests, ValidInputLengthsQ[ExperimentStockSolution, {formulaSpecWithoutTemporalLinks}, safeOpsWithNames, 3, Output -> {Result, Tests}],
-		Not[MemberQ[solventsWithoutTemporalLinks, Null]] && Not[MemberQ[myFinalVolumes, Null]], {ValidInputLengthsQ[ExperimentStockSolution, {formulaSpecWithoutTemporalLinks, solventsWithoutTemporalLinks, myFinalVolumes}, safeOpsWithNames, 2], {}},
-		True, {ValidInputLengthsQ[ExperimentStockSolution, {formulaSpecWithoutTemporalLinks}, safeOpsWithNames, 3], {}}
+		gatherTests && Not[MemberQ[listedSolvents, Null]] && Not[MemberQ[myFinalVolumes, Null]], ValidInputLengthsQ[ExperimentStockSolution, {listedFormulaSpecs, listedSolvents, myFinalVolumes}, safeOptions, 2, Output -> {Result, Tests}],
+		gatherTests, ValidInputLengthsQ[ExperimentStockSolution, {listedFormulaSpecs}, safeOptions, 3, Output -> {Result, Tests}],
+		Not[MemberQ[listedSolvents, Null]] && Not[MemberQ[myFinalVolumes, Null]], {ValidInputLengthsQ[ExperimentStockSolution, {listedFormulaSpecs, listedSolvents, myFinalVolumes}, safeOptions, 2], {}},
+		True, {ValidInputLengthsQ[ExperimentStockSolution, {listedFormulaSpecs}, safeOptions, 3], {}}
 	];
 
 	(* If the specified options don't match their patterns, allowed to return an early hard failure; make sure to hit up tests if asked *)
@@ -2120,9 +2344,6 @@ experimentStockSolutionFormula[
 		]
 	];
 
-
-	(* change all Names to objects *)
-	{{listedFormulaSpecs, listedSolvents}, safeOptions, listedOptions} = sanitizeInputs[{formulaSpecWithoutTemporalLinks, solventsWithoutTemporalLinks}, safeOpsWithNames, optionsWithoutTemporalLinks];
 
 	(* combine the safe options with what we got from the template options *)
 	combinedOptions = ReplaceRule[safeOptions, unresolvedOptions];
@@ -2171,7 +2392,7 @@ experimentStockSolutionFormula[
 						Packet[DefaultStorageCondition[{StorageCondition}]],
 						Packet[Model[{Name, Deprecated, State, Density, DefaultStorageCondition, ShelfLife, UnsealedShelfLife, LightSensitive, Tablet, FixedAmounts, SingleUse, Resuspension, UltrasonicIncompatible, CentrifugeIncompatible, Ventilated, Flammable, Sterile, Fuming, IncompatibleMaterials, Acid, Base, Composition, Solvent}]]
 					},
-					{Packet[Name, Deprecated, MaxVolume, MinVolume, MaxTemperature, Dimensions, Resolution]}
+					{Packet[Name, Deprecated, MaxVolume, MinVolume, MaxTemperature, Dimensions, Resolution, ContainerMaterials]}
 				},
 				Cache -> passedCache,
 				Date -> Now
@@ -2324,11 +2545,11 @@ experimentStockSolutionFormula[
 		fakePacketTypes,
 		fakePacketLightSensitive,
 		fakePacketExpires,
+		fakePacketDiscardThreshold,
 		fakePacketShelfLife,
 		fakePacketUnsealedShelfLife,
 		fakePacketDefaultStorageCondition,
-		fakePacketTransportChilled,
-		fakePacketTransportWarmed,
+		fakePacketTransportTemperature,
 		fakePacketHeatSensitiveReagents,
 		fakePacketDensity,
 		fakePacketExtinctionCoefficients,
@@ -2349,11 +2570,11 @@ experimentStockSolutionFormula[
 			Type,
 			LightSensitive,
 			Expires,
+			DiscardThreshold,
 			ShelfLife,
 			UnsealedShelfLife,
 			DefaultStorageCondition,
-			TransportChilled,
-			TransportWarmed,
+			TransportTemperature,
 			HeatSensitiveReagents,
 			Density,
 			ExtinctionCoefficients,
@@ -2389,7 +2610,7 @@ experimentStockSolutionFormula[
 
 	(* create a fake packet to pass into resolveStockSolutionOptions; populate all the fields as Null (except Formula, which should just have the formula) *)
 	fakePackets = MapThread[
-		Function[{id, type, formula, unitOps, solvent, finalVolume, name, synonym, lightSensitive, expires, shelfLife, unsealedShelfLife, defaultSC, transportChilled, transportWarmed, heatSensitiveReagents, density, extinctionCoefficients, ventilated, flammable, acid, base, fuming, pyrophoric, incompatibleMat, ultrasonicIncompatible, prepareInResuspensionContainer},
+		Function[{id, type, formula, unitOps, solvent, finalVolume, name, synonym, lightSensitive, expires, discardThreshold, shelfLife, unsealedShelfLife, defaultSC, transportTemperature, heatSensitiveReagents, density, extinctionCoefficients, ventilated, flammable, acid, base, fuming, pyrophoric, incompatibleMat, ultrasonicIncompatible, prepareInResuspensionContainer},
 			<|
 				Object -> id,
 				Type-> type,
@@ -2445,12 +2666,12 @@ experimentStockSolutionFormula[
 				Synonyms -> (synonym /. {Null -> {}}),
 				LightSensitive -> lightSensitive,
 				Expires -> expires,
+				DiscardThreshold -> discardThreshold,
 				ShelfLife -> shelfLife,
 				UnsealedShelfLife -> unsealedShelfLife,
 				(* needs to be Null because defaultSC is a symbol and not an object, and this is a link field*)
 				DefaultStorageCondition -> Null,
-				TransportChilled -> transportChilled,
-				TransportWarmed -> transportWarmed,
+				TransportTemperature -> transportTemperature,
 				HeatSensitiveReagents -> heatSensitiveReagents,
 				Density -> density,
 				ExtinctionCoefficients -> extinctionCoefficients,
@@ -2481,11 +2702,11 @@ experimentStockSolutionFormula[
 			fakePacketSynonyms,
 			fakePacketLightSensitive,
 			fakePacketExpires,
+			fakePacketDiscardThreshold,
 			fakePacketShelfLife,
 			fakePacketUnsealedShelfLife,
 			fakePacketDefaultStorageCondition,
-			fakePacketTransportChilled,
-			fakePacketTransportWarmed,
+			fakePacketTransportTemperature,
 			fakePacketHeatSensitiveReagents,
 			fakePacketDensity,
 			fakePacketExtinctionCoefficients,
@@ -2517,12 +2738,11 @@ experimentStockSolutionFormula[
 			Synonyms -> Automatic,
 			LightSensitive -> Automatic,
 			Expires -> Automatic,
+			DiscardThreshold -> Automatic,
 			ShelfLife -> Automatic,
 			UnsealedShelfLife -> Automatic,
 			DefaultStorageCondition -> Automatic,
-			TransportChilled -> Automatic,
-			TransportWarmed -> Null,
-			HeatSensitiveReagents -> Null,
+			TransportTemperature -> Automatic,
 			Ventilated -> Automatic,
 			Flammable -> Automatic,
 			Acid -> Automatic,
@@ -2535,9 +2755,17 @@ experimentStockSolutionFormula[
 	(* resolve options; if we throw InvalidOption or InvalidInput, we're also getting $Failed and will return early *)
 	(* note that we can't actually  *)
 	resolveOptionsResult = Check[
-		{resolvedOptions, resolutionTests} = If[gatherTests,
-			resolveStockSolutionOptions[fakePackets, ReplaceRule[safeOptionsWithFakeAutomatics, {Output -> {Result, Tests}, Cache -> newCache}]],
-			{resolveStockSolutionOptions[fakePackets, ReplaceRule[safeOptionsWithFakeAutomatics, {Output -> Result, Cache -> newCache}]], Null}
+		{resolvedOptions, resolutionTests} = Quiet[
+			If[gatherTests,
+				resolveStockSolutionOptions[fakePackets, ReplaceRule[safeOptionsWithFakeAutomatics, {Output -> {Result, Tests}, Cache -> newCache}]],
+				{resolveStockSolutionOptions[fakePackets, ReplaceRule[safeOptionsWithFakeAutomatics, {Output -> Result, Cache -> newCache}]], Null}
+			],
+			{
+				(*Quiet this error message in formula overload as it is already checked in formula option resolver*)
+				Error::InvalidModelFormulaForFillToVolume,
+				(*Quiet this warninge in formula overload as the specified volume will not be used, and a warning is already thrown about that *)
+				Warning::VolumeTooLowForAutoclave
+			}
 		],
 		$Failed,
 		{Error::InvalidInput, Error::InvalidOption}
@@ -2561,11 +2789,11 @@ experimentStockSolutionFormula[
 			Synonyms -> Lookup[formulaResolvedOptions, Synonyms],
 			LightSensitive -> Lookup[formulaResolvedOptions, LightSensitive],
 			Expires -> Lookup[formulaResolvedOptions, Expires],
+			DiscardThreshold -> Lookup[formulaResolvedOptions, DiscardThreshold],
 			ShelfLife -> Lookup[formulaResolvedOptions, ShelfLife],
 			UnsealedShelfLife -> Lookup[formulaResolvedOptions, UnsealedShelfLife],
 			DefaultStorageCondition -> Lookup[formulaResolvedOptions, DefaultStorageCondition],
-			TransportChilled -> Lookup[formulaResolvedOptions, TransportChilled],
-			TransportWarmed -> Lookup[formulaResolvedOptions, TransportWarmed],
+			TransportTemperature -> Lookup[formulaResolvedOptions, TransportTemperature],
 			Density -> Lookup[formulaResolvedOptions, Density],
 			ExtinctionCoefficients -> Lookup[formulaResolvedOptions, ExtinctionCoefficients],
 			Ventilated -> Lookup[formulaResolvedOptions, Ventilated],
@@ -2614,8 +2842,8 @@ experimentStockSolutionFormula[
 			Mix, MixUntilDissolved, MixTime, MaxMixTime, #,
 			MinpH, MaxpH, pHingAcid, pHingBase,
 			Filter, FilterMaterial, FilterSize,
-			LightSensitive, Expires, ShelfLife,
-			UnsealedShelfLife, DefaultStorageCondition, Density, ExtinctionCoefficients, TransportChilled, TransportWarmed, HeatSensitiveReagents, Ventilated,
+			LightSensitive, Expires, DiscardThreshold, ShelfLife,
+			UnsealedShelfLife, DefaultStorageCondition, Density, ExtinctionCoefficients,TransportTemperature, HeatSensitiveReagents, Ventilated,
 			Flammable, Acid, Base, Fuming, IncompatibleMaterials,
 			Incubate, IncubationTemperature, IncubationTime, PostAutoclaveIncubate, PostAutoclaveIncubationTemperature,
 			PostAutoclaveIncubationTime, OrderOfOperations,
@@ -2672,11 +2900,15 @@ experimentStockSolutionFormula[
 	ussmReadyOptions = Map[
 		Which[
 			(* lots of Safety information can't be Null so make them False for USSM *)
-			MatchQ[Keys[#], LightSensitive|Expires|TransportChilled|Ventilated|Flammable|Acid|Base|Fuming], (# /. {Null -> False}),
+			MatchQ[Keys[#], LightSensitive|Expires|Ventilated|Flammable|Acid|Base|Fuming], (# /. {Null -> False}),
 			(* DefaultStorageCondition can't be Null so make it AmbientStorage for USSM *)
 			MatchQ[Keys[#], DefaultStorageCondition], (# /. {Null -> AmbientStorage}),
+			(* DiscardThreshold can't be Null so change to the default if we don't have anything *)
+			MatchQ[Keys[#], DiscardThreshold], (# /. {Null -> 5 Percent}),
 			(* IncompatibleMaterials, Synonyms, Cache, ExtinctionCoeffficients, and Output are all lists but not index matching options, so don't expand them; otherwise, expand all the index matching options *)
-			MatchQ[Values[#], _List] && Not[MatchQ[Keys[#], Cache|Output|Synonyms|IncompatibleMaterials|ExtinctionCoefficients|OrderOfOperations|Supplements|DropOuts]], Keys[#] -> First[Values[#]],
+			MatchQ[Values[#], _List] && Not[MatchQ[Keys[#], Cache|Output|Synonyms|IncompatibleMaterials|ExtinctionCoefficients|OrderOfOperations|Supplements|DropOuts|HeatSensitiveReagents]], Keys[#] -> First[Values[#]],
+			(*HeatSensitiveReagents needs to be either a single empty list or a list of reagents*)
+			MatchQ[Keys[#], HeatSensitiveReagents] && MatchQ[Values[#], {{}..}], Keys[#] -> First[Values[#]],
 			True, #
 		]&,
 		ussmReadyListyOptions,
@@ -2692,8 +2924,8 @@ experimentStockSolutionFormula[
 			Function[{formula, solvent, finalVolume, options},
 				Which[
 					gatherTests, {Null, {}},
-					MatchQ[solvent, ObjectP[]], UploadStockSolution[formula, solvent, finalVolume, Sequence @@ options],
-					True, UploadStockSolution[formula, Sequence @@ options]
+					MatchQ[solvent, ObjectP[]], Quiet[UploadStockSolution[formula, solvent, finalVolume, Sequence @@ options], {Warning::SpecifedMixRateNotSafe}],
+					True, Quiet[UploadStockSolution[formula, Sequence @@ options], {Warning::SpecifedMixRateNotSafe}]
 				]
 			],
 			{expandedFormulas, listedSolvents, myFinalVolumes, ussmReadyOptions}
@@ -2819,6 +3051,7 @@ experimentStockSolutionFormula[
 	(* get all the options for the UploadProtocol call *)
 	uploadProtocolOptions = Sequence[
 		Confirm -> Lookup[resolvedOptionsFinal, Confirm],
+		CanaryBranch -> Lookup[resolvedOptionsFinal, CanaryBranch],
 		ConstellationMessage -> Object[Protocol, StockSolution],
 		ParentProtocol -> Lookup[resolvedOptionsFinal, ParentProtocol],
 		Upload -> Lookup[resolvedOptionsFinal, Upload],
@@ -2892,13 +3125,21 @@ experimentStockSolutionFormula[
 
 	(* asemble our options return rule; don't need to collapse indexed, we should have errored if we got any listed options *)
 	optionsRule = Options -> Which[
-		MemberQ[listedOutput, Options] && !NullQ[Lookup[resolvedOptionsFinal,MediaPhase]],
-			KeyDrop[CollapseIndexMatchedOptions[ExperimentStockSolution, resolvedOptionsFinal, Messages->False], Cache],
+		MemberQ[listedOutput, Options] && !NullQ[Lookup[resolvedOptionsFinal,MediaPhase,Null]],
+			Module[{finalOptionsNoType},
+				(* Don't send Type back to ExperimentMedia, it is not an option there *)
+				finalOptionsNoType = Normal[KeyDrop[resolvedOptionsFinal,Type],Association];
+
+				(* Collapse and remove media hidden options *)
+				RemoveHiddenOptions[ExperimentMedia,CollapseIndexMatchedOptions[ExperimentStockSolution, finalOptionsNoType, Messages -> False, Ignore -> listedOptions]]
+			],
 		MemberQ[listedOutput, Options],
-			RemoveHiddenOptions[ExperimentStockSolution, CollapseIndexMatchedOptions[ExperimentStockSolution, resolvedOptionsFinal, Messages->False]]
+			RemoveHiddenOptions[ExperimentStockSolution, CollapseIndexMatchedOptions[ExperimentStockSolution, resolvedOptionsFinal, Messages -> False, Ignore -> listedOptions]],
+		True,
+			Null
 	];
 
-	(* generate the Preview rule as a Nul *)
+	(* generate the Preview rule as a Null *)
 	previewRule = Preview -> Null;
 
 	(* assemble all tess we created; a couple of these variables are lists of lists of tests so just flatten it all up *)
@@ -2942,16 +3183,16 @@ experimentStockSolutionFormula[
 		newModelChangePacketsOrExistingModels, ussmTests, optionsRule, previewRule, testsRule, resultRule,
 		specifiedMixType, specifiedMixer, specifiedMixRate, optionalMixOptions,
 		specifiedNumMixes, specifiedMaxNumMixes, finalizedPackets, frqTests, uploadProtocolOptions, protocolPacket,
-		extraPackets, allTests, validQ, newSamplesIn,
-		validLengths, validLengthTests, expandedCombinedOptions, fakePacketNames,
+		extraPackets, allTests, validQ, sanitizedUnitOperations,
+		validLengths, validLengthTests, expandedCombinedOptions, fakePacketNames, fakePacketDiscardThreshold,
 		fakePacketSynonyms, fakePacketLightSensitive, fakePacketExpires, fakePacketShelfLife, fakePacketUnsealedShelfLife,
-		fakePacketDefaultStorageCondition, fakePacketTransportChilled, fakePacketTransportWarmed, fakePacketDensity,
+		fakePacketDefaultStorageCondition, fakePacketTransportTemperature, fakePacketDensity,
 		fakePacketExtinctionCoefficients, fakePacketVentilated, fakePacketFlammable, fakePacketAcid, fakePacketBase, fakePacketHeatSensitiveReagents,
 		fakePacketFuming, fakePacketPyrophoric, fakePacketPyrophoricFixed, fakePacketIncompatibleMaterials, ssIDs,
 		allUploadStockSolutionModelFailure, allUploadStockSolutionModelOutputs, fakeUltrasonicIncompatible,fakeUltrasonicIncompatibleFixed,fakePrepareInResuspensionContainer,
 		resolvedDensityScouts, finalSSModels, ftvMethods,
 		densityScouts, reResolvedDensityScouts, updatedProtocolPacket, stockSolutionModelCache, safeOps,combinedOptions,
-		listedSolvents,resolvedOptionsFinal,resolvedOptionsNoPrepVolume},
+		listedSolvents,resolvedOptionsFinal,resolvedOptionsNoPrepVolume, invalidSubsequentUnitOperations, invalidSubsequentUnitOperationsTest},
 
 	(* determine the requested return value; careful not to default this as it will throw error; it's Hidden, assume used correctly *)
 	outputSpecification = Quiet[OptionDefault[OptionValue[Output]], OptionValue::nodef];
@@ -2986,9 +3227,11 @@ experimentStockSolutionFormula[
 		SafeOptions[ExperimentStockSolution, listedOptions, Output -> {Result, Tests}, AutoCorrect -> False],
 		{SafeOptions[ExperimentStockSolution, listedOptions, AutoCorrect -> False], {}}
 	];
+	(* change all Names to objects *)
+	{sanitizedUnitOperations, safeOptions} = sanitizeInputs[myUnitOperations, safeOps, Simulation -> Lookup[safeOps, Simulation, Null]];
 
 	(* If the specified options don't match their patterns, allowed to return an early hard failure; make sure to hit up tests if asked *)
-	If[MatchQ[safeOps, $Failed],
+	If[MatchQ[safeOptions, $Failed],
 		Return[
 			outputSpecification /. {
 				Result -> $Failed,
@@ -3002,8 +3245,8 @@ experimentStockSolutionFormula[
 	(* make sure options are the right length; we are in the index-,atching case, first overload *)
 	(* ValidInputLengthsQ doesn't play nice with Nulls, so we need to gate our using inputs 2 or 3 based on whether we have Nulls or not *)
 	{validLengths, validLengthTests} = If[gatherTests,
-		ValidInputLengthsQ[ExperimentStockSolution, {myUnitOperations}, safeOps, 4, Output -> {Result, Tests}],
-		{ValidInputLengthsQ[ExperimentStockSolution, {myUnitOperations}, safeOps, 4], {}}
+		ValidInputLengthsQ[ExperimentStockSolution, {sanitizedUnitOperations}, safeOptions, 4, Output -> {Result, Tests}],
+		{ValidInputLengthsQ[ExperimentStockSolution, {sanitizedUnitOperations}, safeOptions, 4], {}}
 	];
 
 	(* If the specified options don't match their patterns, allowed to return an early hard failure; make sure to hit up tests if asked *)
@@ -3018,15 +3261,12 @@ experimentStockSolutionFormula[
 		]
 	];
 
-	(* change all Names to objects *)
-	safeOptions = sanitizeInputs[{}, safeOps][[2]];
-
 	(* combine the safe options with what we got from the template options *)
 	combinedOptions = ReplaceRule[safeOptions, unresolvedOptions];
 
 	(* expand the combined options *)
 	(* it doesn't matter if we are filling to volume or not; in either case, the index matching is the same, so just do it in the simpler way where it's not fill to volume *)
-	expandedCombinedOptions = Last[ExpandIndexMatchedInputs[ExperimentStockSolution, {myUnitOperations}, combinedOptions, 4]];
+	expandedCombinedOptions = Last[ExpandIndexMatchedInputs[ExperimentStockSolution, {sanitizedUnitOperations}, combinedOptions, 4]];
 
 
 	(* before we ever start we should check that everything is valid here *)
@@ -3036,18 +3276,18 @@ experimentStockSolutionFormula[
 			MatchQ[FirstOrDefault[unitOps], _LabelContainer],
 			MatchQ[Lookup[FirstOrDefault[unitOps][[1]], Container], ObjectP[Model[Container]]]
 		]]],
-		myUnitOperations
+		sanitizedUnitOperations
 	];
 
 	If[!gatherTests && Or@@invalidLabelContainerPrimitives,
 		Message[Error::InvalidLabelContainerUnitOperationInput];
-		Message[Error::InvalidInput,PickList[myUnitOperations, invalidLabelContainerPrimitives]];
+		Message[Error::InvalidInput,PickList[sanitizedUnitOperations, invalidLabelContainerPrimitives]];
 	];
 
 	invalidLabelContainerPrimitiveTest=If[gatherTests,
 		MapThread[
 			Test[StringTemplate["Specified UnitOperation `1` begins with a LabelContainer UnitOperations:"][#1],#2,True]&,
-			{myUnitOperations, invalidLabelContainerPrimitives}
+			{sanitizedUnitOperations, invalidLabelContainerPrimitives}
 		],
 		{}
 	];
@@ -3064,8 +3304,42 @@ experimentStockSolutionFormula[
 		]
 	];
 
+	invalidSubsequentUnitOperations = Map[
+		Function[unitOps,
+			MatchQ[unitOps, {_LabelContainer..}]
+		],
+		sanitizedUnitOperations
+	];
+
+	If[!gatherTests && Or@@invalidSubsequentUnitOperations,
+		Message[Error::InvalidUnitOperationsInput];
+		Message[Error::InvalidInput,PickList[sanitizedUnitOperations, invalidSubsequentUnitOperations]]
+	];
+
+	invalidSubsequentUnitOperationsTest=If[gatherTests,
+		MapThread[
+			Test[StringTemplate["Specified UnitOperation `1` begins with a LabelContainer UnitOperations:"][#1],#2,True]&,
+			{sanitizedUnitOperations, invalidSubsequentUnitOperations}
+		],
+		{}
+	];
+
+	(* If the specified options don't match their patterns, allowed to return an early hard failure; make sure to hit up tests if asked *)
+	(* However, make an exception if we are only doing option-resolving in CCD. This is because in CCD we have to add UOs one by one and each time we validate the function will evaluate *)
+	(* we don't want function to error out, just throw a message telling user more UOs are needed *)
+	If[Or@@invalidSubsequentUnitOperations && (!MatchQ[$ECLApplication, CommandCenter] || MemberQ[ToList[outputSpecification], Result]),
+		Return[
+			outputSpecification /. {
+				Result -> $Failed,
+				Tests -> Join[safeOptionTests, invalidLabelContainerPrimitiveTest],
+				Preview -> Null,
+				Options -> $Failed
+			}
+		]
+	];
+
 	(* All unit operations related objects *)
-	unitOpsSpecifiedObjects = Map[Cases[#, ObjectP[{Model[Sample], Model[Container],Object[Sample], Object[Container]}], Infinity]&,myUnitOperations];
+	unitOpsSpecifiedObjects = Map[Cases[#, ObjectP[{Model[Sample], Model[Container],Object[Sample], Object[Container]}], Infinity]&,sanitizedUnitOperations];
 
 	(*  bult tests for Objects specified in unit ops (we only take models) *)
 	onlyModelsInUnitOpsQs = Map[
@@ -3079,7 +3353,7 @@ experimentStockSolutionFormula[
 		MapThread[
 			(* The boolean is True if we have object *)
 			Test[StringTemplate["all sample/containers in specified UnitOperation `1` are Models:"][#1],#2,False]&,
-			{myUnitOperations, onlyModelsInUnitOpsQs}
+			{sanitizedUnitOperations, onlyModelsInUnitOpsQs}
 		],
 		{}
 	];
@@ -3088,8 +3362,8 @@ experimentStockSolutionFormula[
 	(* If objects do not exist, return failure *)
 	If[Or@@onlyModelsInUnitOpsQs,
 		If[!gatherTests,
-			Message[Error::UnitOperationsContainObject,PickList[myUnitOperations,onlyModelsInUnitOpsQs,True]];
-			Message[Error::InvalidInput,PickList[myUnitOperations,onlyModelsInUnitOpsQs,True]]
+			Message[Error::UnitOperationsContainObject,PickList[sanitizedUnitOperations,onlyModelsInUnitOpsQs,True]];
+			Message[Error::InvalidInput,PickList[sanitizedUnitOperations,onlyModelsInUnitOpsQs,True]]
 		];
 		Return[outputSpecification/.{
 			Result -> $Failed,
@@ -3168,25 +3442,30 @@ experimentStockSolutionFormula[
 			];
 			{ops, simulation}
 		]],
-		myUnitOperations
+		sanitizedUnitOperations
 	];
 
 	(* see if we got a composition, if not simulate the samples and grab whatever's in the first container so the sample composition *)
 	{sampleSimulatedCompositions, finalVolumes} = Transpose@MapThread[Function[{unitOps, simulation},
-		Module[{labelOfInterest, simulatedContainer,simulatedSampleComposition, sanitizedSimulatedSampleComposition, volume},
+		Module[{labelOfInterest, simulatedContainer,simulatedSampleComposition, sanitizedSimulatedSampleComposition, volume, updatedSimulation},
 			(*get the first label container unit operation,it should be the very first*)
 			labelOfInterest = First[Cases[unitOps, _LabelContainer]][Label];
 			(*figure out what is the container that was simulated for it and whats in it*)
 			simulatedContainer =Lookup[Lookup[First[simulation], Labels],labelOfInterest];
+			(* Here we need to do a work-around for CCD. In CCD user has to add UOs one by one and so when they add the first LabelSample UO, they have to calculate and verify *)
+			(* However, that will break because there's no transfer into that labeled container, thus there's no Contents in this simulatedContainer *)
+			(* Use the helper below to make a dummy sample *)
+			updatedSimulation = stockSolutionCreateDummySamples[simulatedContainer, simulation];
 			(*get the sample in that container and its volume*)
-			{simulatedSampleComposition,volume} =  Download[simulatedContainer, {Contents[[1, 2]][Composition], Contents[[1, 2]][Volume]},Simulation -> simulation];
+			{simulatedSampleComposition,volume} =  Download[simulatedContainer, {Contents[[1, 2]][Composition], Contents[[1, 2]][Volume]},Simulation -> updatedSimulation];
+
 			(* make sure we're not dealing with links *)
 			sanitizedSimulatedSampleComposition = {#[[1]], Download[#[[2]], Object]}& /@ simulatedSampleComposition;
 
 			(* return composition and volume *)
 			{sanitizedSimulatedSampleComposition,volume}
 		]],
-		{myUnitOperations, simulatedSamplePackets}
+		{sanitizedUnitOperations, simulatedSamplePackets}
 	];
 
 	(* helper to combine simulations into one *)
@@ -3221,7 +3500,7 @@ experimentStockSolutionFormula[
 					ToList[containerOutObjects]
 				},
 				{
-					{Packet[Name, Deprecated, MaxVolume, MinVolume, MaxTemperature, Dimensions, Resolution]}
+					{Packet[Name, Deprecated, MaxVolume, MinVolume, MaxTemperature, Dimensions, Resolution, ContainerMaterials]}
 				},
 				Cache -> passedCache,
 				Simulation->combinedSimulation,
@@ -3283,15 +3562,15 @@ experimentStockSolutionFormula[
 	(* replace Composition optionand  *)
 	updatedOptions = ReplaceRule[expandedCombinedOptions,
 		Join[nullifiedOptions,{
-			UnitOperations->myUnitOperations
+			UnitOperations->sanitizedUnitOperations
 		}]];
 
 
 	(* resolve the formula-only options - passing compositions rather than formula. the same resolver can handle both*)
 	formulaOptionsResult = Check[
 		{formulaResolvedOptions, formulaOptionTests} = If[gatherTests,
-			resolveStockSolutionOptionsFormula[sampleSimulatedCompositionsNullAmount, ConstantArray[Null, Length[finalVolumes]], finalVolumes,myUnitOperations, ReplaceRule[updatedOptions, {Output -> {Result, Tests}, Cache -> newCache,Simulation->combinedSimulation}]],
-			{resolveStockSolutionOptionsFormula[sampleSimulatedCompositionsNullAmount, ConstantArray[Null, Length[finalVolumes]], finalVolumes,myUnitOperations, ReplaceRule[updatedOptions, {Output -> Result, Cache -> newCache,Simulation->combinedSimulation}]], Null}
+			resolveStockSolutionOptionsFormula[sampleSimulatedCompositionsNullAmount, ConstantArray[Null, Length[finalVolumes]], finalVolumes,sanitizedUnitOperations, ReplaceRule[updatedOptions, {Output -> {Result, Tests}, Cache -> newCache,Simulation->combinedSimulation}]],
+			{resolveStockSolutionOptionsFormula[sampleSimulatedCompositionsNullAmount, ConstantArray[Null, Length[finalVolumes]], finalVolumes,sanitizedUnitOperations, ReplaceRule[updatedOptions, {Output -> Result, Cache -> newCache,Simulation->combinedSimulation}]], Null}
 		],
 		$Failed,
 		{Error::InvalidInput, Error::InvalidOption}
@@ -3304,11 +3583,11 @@ experimentStockSolutionFormula[
 		fakePacketSynonyms,
 		fakePacketLightSensitive,
 		fakePacketExpires,
+		fakePacketDiscardThreshold,
 		fakePacketShelfLife,
 		fakePacketUnsealedShelfLife,
 		fakePacketDefaultStorageCondition,
-		fakePacketTransportChilled,
-		fakePacketTransportWarmed,
+		fakePacketTransportTemperature,
 		fakePacketHeatSensitiveReagents,
 		fakePacketDensity,
 		fakePacketExtinctionCoefficients,
@@ -3328,11 +3607,11 @@ experimentStockSolutionFormula[
 			Synonyms,
 			LightSensitive,
 			Expires,
+			DiscardThreshold,
 			ShelfLife,
 			UnsealedShelfLife,
 			DefaultStorageCondition,
-			TransportChilled,
-			TransportWarmed,
+			TransportTemperature,
 			HeatSensitiveReagents,
 			Density,
 			ExtinctionCoefficients,
@@ -3350,23 +3629,23 @@ experimentStockSolutionFormula[
 
 	(* pyrophoric is special; if it is missing, change that to Null *)
 	fakePacketPyrophoricFixed = If[MissingQ[fakePacketPyrophoric],
-		ConstantArray[Null, Length[myUnitOperations]],
+		ConstantArray[Null, Length[sanitizedUnitOperations]],
 		fakePacketPyrophoric
 	];
 	fakeUltrasonicIncompatibleFixed = If[MissingQ[fakeUltrasonicIncompatible],
-		ConstantArray[Null, Length[myUnitOperations]],
+		ConstantArray[Null, Length[sanitizedUnitOperations]],
 		fakeUltrasonicIncompatible
 	];
 
-	expandedFormulas = ConstantArray[{{Null,Null}}, Length[myUnitOperations]];
-	listedSolvents = ConstantArray[Null, Length[myUnitOperations]];
+	expandedFormulas = ConstantArray[{{Null,Null}}, Length[sanitizedUnitOperations]];
+	listedSolvents = ConstantArray[Null, Length[sanitizedUnitOperations]];
 
 	(* make all the stock solution ids *)
-	ssIDs = CreateID[ConstantArray[Model[Sample, StockSolution], Length[myUnitOperations]]];
+	ssIDs = CreateID[ConstantArray[Model[Sample, StockSolution], Length[sanitizedUnitOperations]]];
 
 	(* create a fake packet to pass into resolveStockSolutionOptions; populate all the fields as Null (except Formula, which should just have the formula) *)
 	fakePackets = MapThread[
-		Function[{id, formula, unitOps, solvent, finalVolume, name, synonym, lightSensitive, expires, shelfLife, unsealedShelfLife, defaultSC, transportChilled, transportWarmed, heatSensitiveReagents, density, extinctionCoefficients, ventilated, flammable, acid, base, fuming, pyrophoric, incompatibleMat, ultrasonicIncompatible, prepareInResuspensionContainer},
+		Function[{id, formula, unitOps, solvent, finalVolume, name, synonym, lightSensitive, expires, discardThreshold, shelfLife, unsealedShelfLife, defaultSC, transportTemperature, heatSensitiveReagents, density, extinctionCoefficients, ventilated, flammable, acid, base, fuming, pyrophoric, incompatibleMat, ultrasonicIncompatible, prepareInResuspensionContainer},
 			<|
 				Object -> id,
 				Type->Model[Sample, StockSolution],
@@ -3422,12 +3701,12 @@ experimentStockSolutionFormula[
 				Synonyms -> (synonym /. {Null -> {}}),
 				LightSensitive -> lightSensitive,
 				Expires -> expires,
+				DiscardThreshold -> discardThreshold,
 				ShelfLife -> shelfLife,
 				UnsealedShelfLife -> unsealedShelfLife,
 				(* needs to be Null because defaultSC is a symbol and not an object, and this is a link field*)
 				DefaultStorageCondition -> Null,
-				TransportChilled -> transportChilled,
-				TransportWarmed -> transportWarmed,
+				TransportTemperature -> transportTemperature,
 				HeatSensitiveReagents -> heatSensitiveReagents,
 				Density -> density,
 				ExtinctionCoefficients -> extinctionCoefficients,
@@ -3450,18 +3729,18 @@ experimentStockSolutionFormula[
 		{
 			ssIDs,
 			expandedFormulas,
-			myUnitOperations,
+			sanitizedUnitOperations,
 			listedSolvents,
 			finalVolumes,
 			fakePacketNames,
 			fakePacketSynonyms,
 			fakePacketLightSensitive,
 			fakePacketExpires,
+			fakePacketDiscardThreshold,
 			fakePacketShelfLife,
 			fakePacketUnsealedShelfLife,
 			fakePacketDefaultStorageCondition,
-			fakePacketTransportChilled,
-			fakePacketTransportWarmed,
+			fakePacketTransportTemperature,
 			fakePacketHeatSensitiveReagents,
 			fakePacketDensity,
 			fakePacketExtinctionCoefficients,
@@ -3493,12 +3772,11 @@ experimentStockSolutionFormula[
 			Synonyms -> Automatic,
 			LightSensitive -> Automatic,
 			Expires -> Automatic,
+			DiscardThreshold -> Automatic,
 			ShelfLife -> Automatic,
 			UnsealedShelfLife -> Automatic,
 			DefaultStorageCondition -> Automatic,
-			TransportChilled -> Automatic,
-			TransportWarmed -> Null,
-			HeatSensitiveReagents -> Null,
+			TransportTemperature -> Automatic,
 			Ventilated -> Automatic,
 			Flammable -> Automatic,
 			Acid -> Automatic,
@@ -3537,11 +3815,11 @@ experimentStockSolutionFormula[
 			Synonyms -> Lookup[formulaResolvedOptions, Synonyms],
 			LightSensitive -> Lookup[formulaResolvedOptions, LightSensitive],
 			Expires -> Lookup[formulaResolvedOptions, Expires],
+			DiscardThreshold -> Lookup[formulaResolvedOptions, DiscardThreshold],
 			ShelfLife -> Lookup[formulaResolvedOptions, ShelfLife],
 			UnsealedShelfLife -> Lookup[formulaResolvedOptions, UnsealedShelfLife],
 			DefaultStorageCondition -> Lookup[formulaResolvedOptions, DefaultStorageCondition],
-			TransportChilled -> Lookup[formulaResolvedOptions, TransportChilled],
-			TransportWarmed -> Lookup[formulaResolvedOptions, TransportWarmed],
+			TransportTemperature -> Lookup[formulaResolvedOptions, TransportTemperature],
 			Density -> Lookup[formulaResolvedOptions, Density],
 			ExtinctionCoefficients -> Lookup[formulaResolvedOptions, ExtinctionCoefficients],
 			Ventilated -> Lookup[formulaResolvedOptions, Ventilated],
@@ -3590,8 +3868,8 @@ experimentStockSolutionFormula[
 			Mix, MixUntilDissolved, MixTime, MaxMixTime, #,
 			MinpH, MaxpH, pHingAcid, pHingBase,
 			Filter, FilterMaterial, FilterSize,
-			LightSensitive, Expires, ShelfLife,
-			UnsealedShelfLife, DefaultStorageCondition, Density, ExtinctionCoefficients, TransportChilled, TransportWarmed, HeatSensitiveReagents, Ventilated,
+			LightSensitive, Expires, DiscardThreshold, ShelfLife,
+			UnsealedShelfLife, DefaultStorageCondition, Density, ExtinctionCoefficients, TransportTemperature, HeatSensitiveReagents, Ventilated,
 			Flammable, Acid, Base, Fuming, IncompatibleMaterials,
 			Incubate, IncubationTemperature, IncubationTime, PostAutoclaveIncubate, PostAutoclaveIncubationTemperature,
 			PostAutoclaveIncubationTime, OrderOfOperations,	Autoclave, AutoclaveProgram, FillToVolumeMethod,
@@ -3647,10 +3925,12 @@ experimentStockSolutionFormula[
 	ussmReadyOptions = Map[
 		Which[
 			(* lots of Safety information can't be Null so make them False for USSM *)
-			MatchQ[Keys[#], LightSensitive|Expires|TransportChilled|Ventilated|Flammable|Acid|Base|Fuming], (# /. {Null -> False}),
+			MatchQ[Keys[#], LightSensitive|Expires|Ventilated|Flammable|Acid|Base|Fuming], (# /. {Null -> False}),
 			(* DefaultStorageCondition can't be Null so make it AmbientStorage for USSM *)
 			MatchQ[Keys[#], DefaultStorageCondition], (# /. {Null -> AmbientStorage}),
-			(* IncompatibleMaterials, Synonyms, Cache, ExtinctionCoeffficients, and Output are all lists but not index matching options, so don't expand them; otherwise, expand all the index matching options *)
+			(* DiscardThreshold can't be Null so make it 5 Percent for USSM *)
+			MatchQ[Keys[#], DiscardThreshold], (# /. {Null -> 5 Percent}),
+			(* IncompatibleMaterials, Synonyms, Cache, ExtinctionCoefficients, and Output are all lists but not index matching options, so don't expand them; otherwise, expand all the index matching options *)
 			MatchQ[Values[#], _List] && Not[MatchQ[Keys[#], Cache|Output|Synonyms|IncompatibleMaterials|ExtinctionCoefficients|OrderOfOperations]], Keys[#] -> First[Values[#]],
 			True, #
 		]&,
@@ -3665,9 +3945,9 @@ experimentStockSolutionFormula[
 	allUploadStockSolutionModelFailure = Check[
 		allUploadStockSolutionModelOutputs = MapThread[
 			Function[{unitOperations,options},
-				UploadStockSolution[unitOperations, Sequence @@ options]
+				Quiet[UploadStockSolution[unitOperations, Sequence @@ options], {Warning::SpecifedMixRateNotSafe}]
 			],
-			{myUnitOperations, ussmReadyOptions}
+			{sanitizedUnitOperations, ussmReadyOptions}
 		],
 		$Failed,
 		{Error::InvalidInput, Error::InvalidOption}
@@ -3729,6 +4009,7 @@ experimentStockSolutionFormula[
 	(* get all the options for the UploadProtocol call *)
 	uploadProtocolOptions = Sequence[
 		Confirm -> Lookup[resolvedOptionsFinal, Confirm],
+		CanaryBranch -> Lookup[resolvedOptionsFinal, CanaryBranch],
 		ConstellationMessage -> Object[Protocol, StockSolution],
 		ParentProtocol -> Lookup[resolvedOptionsFinal, ParentProtocol],
 		Upload -> Lookup[resolvedOptionsFinal, Upload],
@@ -3802,10 +4083,18 @@ experimentStockSolutionFormula[
 
 	(* asemble our options return rule; don't need to collapse indexed, we should have errored if we got any listed options *)
 	optionsRule = Options -> Which[
-		MemberQ[listedOutput, Options] && !NullQ[Lookup[resolvedOptionsFinal,MediaPhase]],
-			KeyDrop[CollapseIndexMatchedOptions[ExperimentStockSolution, resolvedOptionsFinal, Messages->False], Cache],
+		MemberQ[listedOutput, Options] && !NullQ[Lookup[resolvedOptionsFinal,MediaPhase,Null]],
+			Module[{finalOptionsNoType},
+				(* Don't send Type back to ExperimentMedia, it is not an option there *)
+				finalOptionsNoType = Normal[KeyDrop[resolvedOptionsFinal,Type],Association];
+
+				(* Collapse and remove media hidden options *)
+				RemoveHiddenOptions[ExperimentMedia,CollapseIndexMatchedOptions[ExperimentStockSolution, finalOptionsNoType, Messages -> False, Ignore -> listedOptions]]
+			],
 		MemberQ[listedOutput, Options],
-			RemoveHiddenOptions[ExperimentStockSolution, CollapseIndexMatchedOptions[ExperimentStockSolution, resolvedOptionsFinal, Messages->False]]
+			RemoveHiddenOptions[ExperimentStockSolution, CollapseIndexMatchedOptions[ExperimentStockSolution, resolvedOptionsFinal, Messages -> False, Ignore -> listedOptions]],
+		True,
+			Null
 	];
 
 	(* generate the Preview rule as a Nul *)
@@ -3854,7 +4143,7 @@ resolveStockSolutionOptions[myModelStockSolutions:{ObjectP[stockSolutionModelTyp
 		formulaOnlyOptionWarnings, multipleFixedAmountComponentsBools, invalidPreparationBools,invalidResuspensionAmountBools, multipleFixedAmountComponents,
 		multipleFixedAmountComponentsTests,invalidPreparationOptions,invalidPreparationTests, invalidResuspensionAmountsOptions,invalidResuspensionAmounts,
 		invalidResuspensionAmountsTests, expandedOptions, inEngine, rootProtocolPacket, specifiedContainerOutPackets,
-		prepResourcesOrNulls, expandedVolumeOption, resolvedMixBools, resolvedIncubateBools,
+		prepResourcesOrNulls, expandedVolumeOption, sanitizedExpandedVolumeOption, resolvedMixBools, resolvedIncubateBools,
 		resolvedFilterBools, preFiltrationImage, preFiltrationError, preFiltrationTest, preFiltrationOptionFailure,
 		resolvedPreFiltrationImage, formulaVolumes, prepVolumes, modelNumMixes, modelMaxNumMixes, modelMixUntilDissolveds,
 		prepOptionNames, prepOptionsByModel, mixSubOptionNames, mixOptionsSetIncorrectly, mixSubOptionsSetIncorrectlyTests,
@@ -3876,10 +4165,10 @@ resolveStockSolutionOptions[myModelStockSolutions:{ObjectP[stockSolutionModelTyp
 		filtrationVolumeTooLowTests, pHingSubOptionNames, pHingOptionsByModel, pHingOptionsSetIncorrectly,
 		pHingOptionsSetIncorrectlyTests, volumeTooLowForpHing, pHVolumeTooLowTests, pHOptionOrderSetIncorrectly,
 		pHOptionOrderSetIncorrectlyTests, resolvedpHingOptionsPerModel, resolvedpHingOptions,
-		expandedContainerOutWithPackets, containerOutDeprecated, deprecatedContainerOutTest, containerOutTooSmall,
-		containerOutTooSmallTests, nameInUseTests, resolvedEmail, resolvedPostProcessingOptions,
-		automaticContainerOutSSModels, automaticContainerOutVolumes, automaticContainerOutLightSensitive,
-		resolvedAutomaticContainerOut, containerOutAutomaticPositions, containerOutReplaceRules, resolvedContainerOut,
+		expandedContainerOutWithPackets, incompatibleContainerOutTest, incompatibleContainerOutOptions,
+		containerOutDeprecated, deprecatedContainerOutTest, containerOutTooSmall,
+		containerOutTooSmallTests, nameInUseTests, resolvedEmail, resolvedPostProcessingOptions, resolvedMaxNumberOfOverfillingRepreparations,
+		resolvedContainerOut, containerOutIncompatibleMaterialQ,
 		resolvedOrderOfOperations,expandedOrderOfOperations,expandedAutoclavePrograms,expandedAutoclaveBooleans,resolvedAutoclavePrograms,resolvedPrepareInResuspensionContainer,
 		resolvedAutoclaveBooleans,containerOutTooLowMaxTemperature,containerOutTooLowMaxTemperatureTests, containerOutTooLowMaxTemperatureOptions,
 		pseudoResolvedFormulaOnlyOptions, resolvedOptions, resultRule, testsRule, mixedPositions, notMixedPositions,
@@ -3906,7 +4195,10 @@ resolveStockSolutionOptions[myModelStockSolutions:{ObjectP[stockSolutionModelTyp
 		mixedIncubationTimes, mixedMixers, mixedIncubators, filteredStockSolutionLightSensitives,resolvedFillToVolumeMethods,
 		fillToVolumeMethodUltrasonicOptions, fillToVolumeMethodVolumetricOptions, fillToVolumeMethodNoSolventOptions, densityScouts, cache, invalidFillToVolumeMethodsUltrasonic,
 		invalidFillToVolumeMethodsVolumetric, invalidFillToVolumeMethodsNoSolvent,
-		automaticContainerOutAutoclaveBooleans,automaticContainerOutpHBooleans,volumetricFlaskVolumes,maxVolumetricFlaskVolume, numReplicates,
+		formulaComponentTotalVolumes, totalVolumes, invalidModelFormulaForFillToVolumeErrors,
+		InvalidModelFormulaForFillToVolumeInputs, validFormulaForFillToVolumeTests,
+		volumeTooLowForAutoclaveWarnings, volumeTooLowForAutoclaveTests,
+		automaticContainerOutAutoclaveBooleans,automaticContainerOutpHBooleans,compatibleVolumetricFlasksForSSModel,compatibleVolumetricFlaskVolumesForSSModel,maxCompatibleVolumetricFlaskVolumeForSSModel, numReplicates,
 		numReplicatesNoNull, numSamples, tooManySamplesQ, tooManySamplesInputs, tooManySamplesTest,resolvedpH,resolvedMinpH,resolvedMaxpH,
 		resolvedpHingAcid,resolvedpHingBase,incompletelySpecifiedpHingQ,incompletelySpecifiedpHingTests,
 		nullpHingOptionsQ, unspecifiedMinpH,unspecifiedMaxpH,unspecifiedpHingAcid,unspecifiedpHingBase, incompletelySpecifiedpHingOptions,
@@ -3919,7 +4211,7 @@ resolveStockSolutionOptions[myModelStockSolutions:{ObjectP[stockSolutionModelTyp
 		resolvedMediaPhases,solidMediaWithFilterBools,invalidSolidMediaWithFilterOptions,solidMediaWithFilterTests,mediaNoAutoclaveNonSterileBools,
 		invalidMediaNoAutoclaveNonSterileOptions,mediaNoAutoclaveNonSterileTests,preResolvedFilterOptionsWithSterilePerModel,
 		filteredStockSolutionSteriles,filterSterileBools,scaledUpVolumes, specifiedStirBars, resolvedStirBars, resolvedHeatSensitiveReagents,
-		resolvedTypes
+		resolvedTypes, mixRateNotSafeTests, mixRateNotSafeOptions, mixRateNotSafe
 	},
 
 	(* make sure the input options are listed *)
@@ -3990,8 +4282,8 @@ resolveStockSolutionOptions[myModelStockSolutions:{ObjectP[stockSolutionModelTyp
 
 					PreferredContainers, Preparable, Resuspension,
 
-					LightSensitive, Expires, ShelfLife, UnsealedShelfLife, DefaultStorageCondition,
-					TransportChilled, TransportWarmed, Density, ExtinctionCoefficients, Ventilated, Flammable, Sterile, Acid, Base, Fuming, Pyrophoric, IncompatibleMaterials,
+					LightSensitive, Expires, DiscardThreshold, ShelfLife, UnsealedShelfLife, DefaultStorageCondition,
+					TransportTemperature, Density, ExtinctionCoefficients, Ventilated, Flammable, Sterile, Acid, Base, Fuming, Pyrophoric, IncompatibleMaterials,
 					FillToVolumeParameterized,UltrasonicIncompatible,OrderOfOperations,Autoclave,AutoclaveProgram,PrepareInResuspensionContainer, HeatSensitiveReagents,
 
 					UnitOperations,PreparationType
@@ -4001,10 +4293,10 @@ resolveStockSolutionOptions[myModelStockSolutions:{ObjectP[stockSolutionModelTyp
 				Packet[Formula[[All, 2]][DefaultStorageCondition][{StorageCondition}]],
 				Packet[FillToVolumeSolvent[{Deprecated, State, DefaultStorageCondition, ShelfLife, UnsealedShelfLife, LightSensitive, UltrasonicIncompatible}]],
 				Packet[FillToVolumeSolvent[DefaultStorageCondition][{StorageCondition}]],
-				Packet[PreferredContainers[{Name, Deprecated, MaxVolume, MinVolume, VolumeCalibrations, PreferredMixer, InternalDimensions, MaxTemperature, Dimensions}]]
+				Packet[PreferredContainers[{Name, Deprecated, MaxVolume, MinVolume, VolumeCalibrations, PreferredMixer, InternalDimensions, MaxTemperature, Dimensions, ContainerMaterials}]]
 			},
 			{
-				Packet[Name, Deprecated, MaxVolume, MinVolume, VolumeCalibrations, PreferredMixer, InternalDimensions, MaxTemperature, Dimensions, Resolution]
+				Packet[Name, Deprecated, MaxVolume, MinVolume, VolumeCalibrations, PreferredMixer, InternalDimensions, MaxTemperature, Dimensions, Resolution, ContainerMaterials, MaxOverheadMixRate]
 			},
 			{
 				Packet[RentContainer]
@@ -4014,7 +4306,7 @@ resolveStockSolutionOptions[myModelStockSolutions:{ObjectP[stockSolutionModelTyp
 				Packet[Repeated[ParentProtocol][{Author, ImageSample}]]
 			},
 			{
-				Packet[Object, MaxVolume]
+				Packet[Object, MaxVolume, ContainerMaterials, Opaque]
 			}
 		},
 		Cache -> cache,
@@ -4027,15 +4319,6 @@ resolveStockSolutionOptions[myModelStockSolutions:{ObjectP[stockSolutionModelTyp
 
 	(* make a fast association here for future use *)
 	fastAssoc = makeFastAssocFromCache[newCache];
-
-	(* Pull out volumetric flask volumes *)
-	volumetricFlaskVolumes = Cases[Lookup[Flatten@volumetricFlaskPackets,MaxVolume,Null],VolumeP];
-
-	(* Determine max volumetric flask volume *)
-	maxVolumetricFlaskVolume = If[MatchQ[volumetricFlaskVolumes,{VolumeP..}],
-		Max[volumetricFlaskVolumes],
-		0*Liter
-	];
 
 	(* get the packets for the input objects in index order *)
 	stockSolutionModelPackets = stockSolutionDownloadTuples[[All, 1]];
@@ -4106,7 +4389,7 @@ resolveStockSolutionOptions[myModelStockSolutions:{ObjectP[stockSolutionModelTyp
 		{{}, {}}
 	];
 
-	(*checkthat we dont mix formula and unitops-based templates *)
+	(*checkthat we don't mix formula and unitops-based templates *)
 	{prepTypeInvalidInputs, prepTypeTests} = If[!fastTrack,
 		Module[{prepTypes, formula, unitOps, resolvedPrepTypes, tests, formulaModels,unitOpsModels,prepTypeInvalidInputsQ},
 
@@ -4205,8 +4488,8 @@ resolveStockSolutionOptions[myModelStockSolutions:{ObjectP[stockSolutionModelTyp
 
 	(* set the option names that we are gonna ignore in this overload (formula only) *)
 	formulaOnlyOptionNames = {
-		StockSolutionName, Synonyms, LightSensitive, Expires, ShelfLife, UnsealedShelfLife, DefaultStorageCondition,
-		TransportChilled, TransportWarmed, Density, ExtinctionCoefficients, Ventilated, Flammable, Acid, Base, Fuming,
+		StockSolutionName, Synonyms, LightSensitive, Expires, DiscardThreshold, ShelfLife, UnsealedShelfLife, DefaultStorageCondition,
+		TransportTemperature, Density, ExtinctionCoefficients, Ventilated, Flammable, Acid, Base, Fuming,
 		IncompatibleMaterials
 	};
 
@@ -4217,9 +4500,9 @@ resolveStockSolutionOptions[myModelStockSolutions:{ObjectP[stockSolutionModelTyp
 			(* get the option values for each of these formula-only options *)
 			optionValues = Lookup[combinedOptions, #]& /@ formulaOnlyOptionNames;
 
-			(* all of these are set if they are not Automatic; EXCEPT Density/StockSolutionName/TransportWarmed/ExtinctionCoefficients, which starts at Null *)
+			(* all of these are set if they are not Automatic; EXCEPT Density/StockSolutionName/ExtinctionCoefficients/TransportTemperature, which starts at Null *)
 			optionSetBools = MapThread[
-				If[MatchQ[#1, Density | StockSolutionName | TransportWarmed | ExtinctionCoefficients],
+				If[MatchQ[#1, Density | StockSolutionName |  ExtinctionCoefficients],
 					MatchQ[#2, Except[Null]],
 					MatchQ[#2, Except[Automatic]]
 				]&,
@@ -4325,9 +4608,13 @@ resolveStockSolutionOptions[myModelStockSolutions:{ObjectP[stockSolutionModelTyp
 		!MatchQ[Lookup[combinedOptions, HeatSensitiveReagents], Automatic],
 		Lookup[combinedOptions, HeatSensitiveReagents],
 
-		(* If user has not specified HSR, we're going to get it from the stock solutions packet *)
+		(* If user has not specified HSR, we're going to get it from the stock solutions packet if it's there *)
+		!MatchQ[Lookup[stockSolutionModelPackets,HeatSensitiveReagents], Automatic|{Automatic..}],
+		Lookup[stockSolutionModelPackets,HeatSensitiveReagents],
+
+		(* Lastly, if we've got no other info, we make this empty *)
 		True,
-		Lookup[stockSolutionModelPackets,HeatSensitiveReagents]
+		ConstantArray[{},Length[resolvedPrimitives]]
 	];
 
 	(* resolve the controlling Mix boolean; if it is still Automatic, check if our model has mix information *)
@@ -4415,8 +4702,7 @@ resolveStockSolutionOptions[myModelStockSolutions:{ObjectP[stockSolutionModelTyp
 
 	(* resolve the controlling PostAutoclaveIncubate boolean; if it is still Automatic, check if our model has incubation information *)
 	resolvedPostAutoclaveIncubateBools = MapThread[
-		Function[{primitives, postAutoclaveIncubate, autoclave, heatSensitiveReagents, modelIncubationTime, postAutoclaveIncubator, postAutoclaveTemperature,
-			postAutoclaveTime, postAutoclaveAnnealingTime},
+		Function[{primitives, postAutoclaveIncubate, autoclave, heatSensitiveReagents},
 			Which[
 
 				(* If incubate is specified, use that *)
@@ -4431,12 +4717,8 @@ resolveStockSolutionOptions[myModelStockSolutions:{ObjectP[stockSolutionModelTyp
 				(* if Autoclave is False, resolve to False *)
 				MatchQ[autoclave,False], False,
 
-				(* If no incubate options are specified, pull from the model *)
-				MatchQ[{postAutoclaveIncubator, postAutoclaveTemperature,	postAutoclaveTime, postAutoclaveAnnealingTime}, {(Automatic | Null)..}],
-					MatchQ[modelIncubationTime, TimeP],
-
-				(* False otherwise *)
-				True, False
+				(* That about covers it - if we have heat sensitive reagents and are autoclaving, then we're going to do a post-autoclave incubate *)
+				True, True
 			]],
 		{resolvedPrimitives, Sequence @@ Lookup[roundedExpandedOptions, {PostAutoclaveIncubate, Autoclave}], resolvedHeatSensitiveReagents,
 			Lookup[stockSolutionModelPackets, PostAutoclaveIncubationTime], Sequence @@ Lookup[roundedExpandedOptions, {PostAutoclaveIncubator,
@@ -4509,13 +4791,85 @@ resolveStockSolutionOptions[myModelStockSolutions:{ObjectP[stockSolutionModelTyp
 		preFiltrationImage
 	];
 
+	(* --- Resolve Autoclave Options --- *)
+	(* Note: We have to resolve the autoclave options before we can resolve the ContainerOut option. *)
+	(* Expand the Autoclave option if it is not already. *)
+	expandedAutoclaveBooleans=If[!MatchQ[Lookup[combinedOptions,Autoclave],{_List..}],
+		ConstantArray[Lookup[combinedOptions,Autoclave], Length[myModelStockSolutions]],
+		Lookup[combinedOptions,Autoclave]
+	];
+
+	(* Expand the AutoclaveProgram option if it is not already. *)
+	expandedAutoclavePrograms=If[!MatchQ[Lookup[combinedOptions,AutoclaveProgram],{_List..}],
+		ConstantArray[Lookup[combinedOptions,AutoclaveProgram], Length[myModelStockSolutions]],
+		Lookup[combinedOptions,AutoclaveProgram]
+	];
+
+	(* Set the Autoclave boolean to True if AutoclaveProgram is set. *)
+	resolvedAutoclaveBooleans=MapThread[
+		Function[{primitives, autoclaveBoolean,autoclaveProgram,stockSolutionModelPacket},
+			Which[
+
+				(* Has the user set Autoclave? Take it *)
+				MatchQ[autoclaveBoolean, Except[Automatic]],
+				autoclaveBoolean,
+
+				(* If we're using primitives, it's false *)
+				MatchQ[primitives, Except[Null]],
+				False,
+
+				(* If we have an autoclave program, it's true *)
+				MatchQ[autoclaveProgram, AutoclaveProgramP],
+				True,
+
+				MatchQ[Lookup[stockSolutionModelPacket, Autoclave], True],
+				True,
+
+				(* If we're doing media, this should be true *)
+				MatchQ[Lookup[stockSolutionModelPacket, Type], Model[Sample, Media]],
+				True,
+
+				True,
+				False
+			]
+		],
+		{resolvedPrimitives, expandedAutoclaveBooleans, expandedAutoclavePrograms, stockSolutionModelPackets}
+	];
+
+	(* Set the AutoclaveProgram to Liquid if Autoclave->True. *)
+	resolvedAutoclavePrograms=MapThread[
+		Function[{autoclaveBoolean,autoclaveProgram,stockSolutionModelPacket},
+			If[MatchQ[autoclaveProgram, Automatic],
+				If[MatchQ[autoclaveBoolean, True],
+					If[MatchQ[Lookup[stockSolutionModelPacket, AutoclaveProgram], AutoclaveProgramP],
+						Lookup[stockSolutionModelPacket, AutoclaveProgram],
+						Liquid
+					],
+					Null
+				],
+				autoclaveProgram
+			]
+		],
+		{resolvedAutoclaveBooleans, expandedAutoclavePrograms, stockSolutionModelPackets}
+	];
+
 	(* for each stock solution, calculate the effective formula volume; just the TotalVolume, but for a first time solution, just use the sum of the form components that are liquid;
 	 	assigning this here since we will re-use this value in a few places *)
-	formulaVolumes = MapThread[
-		Function[{stockSolutionModelPacket,stockSolutionFormulaPacket},
+	{
+		formulaVolumes,
+		totalVolumes,
+		formulaComponentTotalVolumes,
+		sanitizedExpandedVolumeOption,
+		invalidModelFormulaForFillToVolumeErrors,
+		volumeTooLowForAutoclaveWarnings
+	} = Transpose@MapThread[
+		Function[{stockSolutionModelPacket, stockSolutionFormulaPacket, autoclaveBool, preparedResource,specifiedVolume},
 			(* if we're using unit operations, we dont care about the formula volumes *)
 			If[MatchQ[Lookup[stockSolutionModelPacket, UnitOperations, {}], Except[{SamplePreparationP..}]],
-				Module[{formula, totalVolume, componentAmounts, componentDensities},
+				Module[{formula, totalVolume, formulaVolume, bumpedFormulaVolumeForAutoclave,
+					componentAmounts, componentDensities, formulaComponentTotalVolume,
+					invalidModelFormulaForFillToVolumeError, volumeTooLowForAutoclaveWarning,
+					sanitizedExpandedVolume},
 
 					(* get the formula information for the requested stock solution model; also get NominalpH, will use to see if we need to bump up to
 						be over minimum thresholds for these methods, IN ENGINE ONLY *)
@@ -4527,30 +4881,138 @@ resolveStockSolutionOptions[myModelStockSolutions:{ObjectP[stockSolutionModelTyp
 					(* obtain the density of all components *)
 					componentDensities=MapThread[
 						Function[{componentDensity,componentState},
-							If[MatchQ[componentState,Liquid]&&MatchQ[componentDensity,Null],
+							Which[
+								MatchQ[componentState,Liquid] && MatchQ[componentDensity,Null],
 								(* if density is missing for a liquid component, use density of water *)
 								Quantity[0.997`, ("Grams")/("Milliliters")],
-								(* otherwise, use whatever is stored for the component *)
-								componentDensity
+								(* otherwise, use whatever is stored for the liquid component component *)
+								MatchQ[componentState,Liquid], componentDensity,
+								(*Otherwise, don't put anything. If it is solid, the volume cannot be just added to the volume for dissolution *)
+								True, Null
 							]
 						],
 						{Lookup[stockSolutionFormulaPacket, Density],Lookup[stockSolutionFormulaPacket, State]}];
 
+					(*Calculate the total volumes from the formula components*)
+					formulaComponentTotalVolume = Total[Join[
+						Cases[componentAmounts, VolumeP],
+						Cases[componentAmounts/componentDensities, VolumeP]
+					]];
+					(* Throw an error if using FillToVolumeSolvent, which means there will be a FillToVolume primitive, but formula component total volume has already reached total volume to fill to. *)
+					invalidModelFormulaForFillToVolumeError = And[
+						MatchQ[Lookup[stockSolutionModelPacket,FillToVolumeSolvent],ObjectP[]],
+						VolumeQ[totalVolume],
+						VolumeQ[formulaComponentTotalVolume],
+						GreaterEqualQ[formulaComponentTotalVolume,totalVolume]
+					];
+
 					(* determine the volume to use to scale against the requested volume; be aware that TotalVolume may not be populated for a first-time, components-only model  *)
 					(* if we have liquid component transferred by mass, we need to calculate its volume *)
 					(* if we actually have a solids-only mixture then we will have already thrown an error so just default the volume to 1*Liter so that the rest of the function can handle things *)
-					Which[
+					formulaVolume = Which[
 						VolumeQ[totalVolume], totalVolume,
-						VolumeQ[Total[Join[Cases[componentAmounts, VolumeP],Cases[componentAmounts/componentDensities, VolumeP]]]], Total[Join[Cases[componentAmounts, VolumeP],Cases[componentAmounts/componentDensities, VolumeP]]],
-						True, 1*Liter
-					]
+						VolumeQ[formulaComponentTotalVolume], formulaComponentTotalVolume,
+						True, 1 * Liter
+					];
+
+					(* Error checking: do one more round of volume resolving based on if we are doing autoclave, if volume is specified, and whether this is a resource prep protocol *)
+					{bumpedFormulaVolumeForAutoclave, volumeTooLowForAutoclaveWarning, sanitizedExpandedVolume} = Which[
+						(*If Autoclave → True and PreparedResources is populated, we quietly bump the volume to a minimum of 100mL, regardless of the volume option given*)
+						And[
+							TrueQ[autoclaveBool],
+							MatchQ[preparedResource, ObjectP[Object[Resource, Sample]]]
+						],
+							{Max[formulaVolume, 100Milliliter], False, Max[specifiedVolume, 100Milliliter]},
+						(*If Autoclave → True, this is not a spun-off resource prep protocol, and volume is specified to be <100mL, leave as is, it will remain as specified, and throw a warning*)
+						TrueQ[autoclaveBool] && VolumeQ[specifiedVolume] && LessQ[specifiedVolume, 100Milliliter],
+							{formulaVolume, True, specifiedVolume},
+						TrueQ[autoclaveBool] && VolumeQ[specifiedVolume],
+							{formulaVolume, False, specifiedVolume},
+						(*If Autoclave → True, this is not a spun-off resource prep protocol, volume is not specified, we resolve to a minimum of 100mL, no need to throw warning*)
+						TrueQ[autoclaveBool],
+							{Max[formulaVolume, 100Milliliter], False, specifiedVolume},
+						True,
+						(* In all other cases, just use formula volume and no warning *)
+						{formulaVolume, False, specifiedVolume}
+					];
+
+
+					{
+						bumpedFormulaVolumeForAutoclave,
+						(*Also return total volume and total volume of formula components*)
+						totalVolume,
+						formulaComponentTotalVolume,
+						sanitizedExpandedVolume,
+						invalidModelFormulaForFillToVolumeError,
+						volumeTooLowForAutoclaveWarning
+					}
 				],
 				(* if using unitops, just take the expected final volume. *)
-				First[ToList[Lookup[stockSolutionModelPackets,TotalVolume]]]
+				{First[ToList[Lookup[stockSolutionModelPackets, TotalVolume]]], Null, Null, specifiedVolume, False, False}
 			]
 		],
-		{stockSolutionModelPackets,stockSolutionFormulaPackets}
+		{stockSolutionModelPackets,stockSolutionFormulaPackets,resolvedAutoclaveBooleans,prepResourcesOrNulls,expandedVolumeOption}
 	];
+
+	(* throw a warning if we have a volume too low for autoclave. Don't throw warning while in engine *)
+	If[MemberQ[volumeTooLowForAutoclaveWarnings, True] && messages && !MatchQ[$ECLApplication, Engine],
+		Message[Warning::VolumeTooLowForAutoclave, ObjectToString[
+			PickList[Download[myModelStockSolutions,Object],volumeTooLowForAutoclaveWarnings], Cache -> cache], 	PickList[expandedVolumeOption,volumeTooLowForAutoclaveWarnings]]
+	];
+
+	(* generate a warning test if the volume specified is too low for autoclaving *)
+	volumeTooLowForAutoclaveTests = If[gatherTests,
+		Module[{failingModels, failingVolumes, test},
+
+			(* get the models and volumes that fail this test *)
+			failingModels = PickList[Download[myModelStockSolutions,Object],volumeTooLowForAutoclaveWarnings];
+			failingVolumes = PickList[expandedVolumeOption,volumeTooLowForAutoclaveWarnings];
+
+			(* volume too low for autoclave test unknown test *)
+			test = If[Length[failingModels] > 0,
+				Warning["Models " <> ObjectToString[failingModels, Cache -> cache] <> " have volumes specified as " <> failingVolumes <> " which are below 100mL while Autoclave is True:",
+					False,
+					True
+				],
+				Warning["All models are prepared at volume no smaller than 100mL when Autoclave is True:",
+					True,
+					True
+				]
+			]
+		],
+		Null
+	];
+
+	(* For each stock solution model, figure out the compatible volumetric flasks to prepare for FTV resolution, considering the light sensitive requirement and incompatible materials *)
+	compatibleVolumetricFlasksForSSModel=Map[
+		Module[
+			{lightSensitive,incompatibleMaterials},
+			{lightSensitive,incompatibleMaterials}=Lookup[#,{LightSensitive,IncompatibleMaterials}];
+			If[TrueQ[lightSensitive],
+				(* When the stock solution is light sensitive, require Opaque->True and no incompatible materials *)
+				Cases[Flatten@volumetricFlaskPackets,KeyValuePattern[{Opaque->True,ContainerMaterials->Except[{___,Alternatives@@incompatibleMaterials,___}]}]],
+				(* Otherwise just require no incompatible materials *)
+				Cases[Flatten@volumetricFlaskPackets,KeyValuePattern[{ContainerMaterials->Except[{___,Alternatives@@incompatibleMaterials,___}]}]]
+			]
+		]&,
+		stockSolutionModelPackets
+	];
+
+	(* Pull out volumetric flask volumes for each stock solution model *)
+	compatibleVolumetricFlaskVolumesForSSModel = Map[
+		Cases[Lookup[#,MaxVolume,Null],VolumeP]&,
+		compatibleVolumetricFlasksForSSModel
+	];
+
+	(* Determine max volumetric flask volume *)
+	maxCompatibleVolumetricFlaskVolumeForSSModel = Map[
+		If[MatchQ[#,{VolumeP..}],
+			Max[#],
+			0*Liter
+		]&,
+		compatibleVolumetricFlaskVolumesForSSModel
+	];
+
 
 	(*
 	  in order for Volumetric to resolve to True:
@@ -4566,7 +5028,7 @@ resolveStockSolutionOptions[myModelStockSolutions:{ObjectP[stockSolutionModelTyp
 	  (though in reality because we've done a volumetric stock solution, we would have also parametized
 	*)
 	resolvedFillToVolumeMethods = MapThread[
-		Function[{primitives, fillToVolumeMethod,volume,stockSolutionPacket,fillToVolumeSolventPacket, formulaVolume},
+		Function[{primitives, fillToVolumeMethod,volume,stockSolutionPacket,fillToVolumeSolventPacket, formulaVolume, maxVolumetricVolume},
 			Which[
 				(* If the user gave us the method, use it. *)
 				MatchQ[fillToVolumeMethod,Except[Automatic|$Failed|Null]],
@@ -4585,9 +5047,19 @@ resolveStockSolutionOptions[myModelStockSolutions:{ObjectP[stockSolutionModelTyp
 						(* Use the FillToVolumeMethod if the user gave us one. *)
 						MatchQ[Lookup[stockSolutionPacket,FillToVolumeMethod],Except[Null|$Failed]],
 							Lookup[stockSolutionPacket,FillToVolumeMethod],
-						!TrueQ[Lookup[stockSolutionPacket,UltrasonicIncompatible]]&&!TrueQ[Lookup[fillToVolumeSolventPacket,UltrasonicIncompatible]],
+						And[
+							!TrueQ[Lookup[stockSolutionPacket,UltrasonicIncompatible]],
+							!TrueQ[Lookup[fillToVolumeSolventPacket,UltrasonicIncompatible]],
+							MatchQ[formulaVolume,GreaterEqualP[$MinStockSolutionUltrasonicSolventVolume]]
+						],
 							Ultrasonic,
-						MatchQ[volume,LessEqualP[2 Liter]] || (MatchQ[volume, Automatic] && MatchQ[formulaVolume, LessEqualP[2 Liter]]), (* The largest VolumetricFlask we have. *)
+						Or[
+							MatchQ[volume,LessEqualP[maxVolumetricVolume]],
+							And[
+								MatchQ[volume, Automatic],
+								MatchQ[formulaVolume, LessEqualP[maxVolumetricVolume]](* The largest VolumetricFlask compatible with the stock solution model *)
+							]
+						],
 							Volumetric,
 						True,
 							Ultrasonic
@@ -4597,7 +5069,7 @@ resolveStockSolutionOptions[myModelStockSolutions:{ObjectP[stockSolutionModelTyp
 					Null
 			]
 		],
-		{resolvedPrimitives, Lookup[roundedExpandedOptions, FillToVolumeMethod],expandedVolumeOption,stockSolutionModelPackets,stockSolutionSolventPackets, formulaVolumes}
+		{resolvedPrimitives, Lookup[roundedExpandedOptions, FillToVolumeMethod],expandedVolumeOption,stockSolutionModelPackets,stockSolutionSolventPackets, formulaVolumes,maxCompatibleVolumetricFlaskVolumeForSSModel}
 	];
 
 	(* If we were given our FillToVolumeMethod, check it. *)
@@ -4616,14 +5088,17 @@ resolveStockSolutionOptions[myModelStockSolutions:{ObjectP[stockSolutionModelTyp
 		{Lookup[roundedExpandedOptions, FillToVolumeMethod], stockSolutionModelPackets, stockSolutionSolventPackets}
 	];
 	invalidFillToVolumeMethodsVolumetric = MapThread[
-		Function[{fillToVolumeMethod, volume},
+		Function[{fillToVolumeMethod, volume, maxVolumetricVolume},
 			And[
 				(* The user gave us the option. *)
 				MatchQ[fillToVolumeMethod, Volumetric],
-				MatchQ[volume, GreaterP[maxVolumetricFlaskVolume]] (* The largest VolumetricFlask we have. *)
+				Or[
+					MatchQ[volume, GreaterP[maxVolumetricVolume]],  (* The largest VolumetricFlask compatible with the stock solution model *)
+					MatchQ[volume, LessP[$MinStockSolutionSolventVolume]]
+				 ]
 			]
 		],
-		{Lookup[roundedExpandedOptions, FillToVolumeMethod], expandedVolumeOption}
+		{Lookup[roundedExpandedOptions, FillToVolumeMethod], expandedVolumeOption, maxCompatibleVolumetricFlaskVolumeForSSModel}
 	];
 	invalidFillToVolumeMethodsNoSolvent = MapThread[
 		Function[{fillToVolumeMethod, stockSolutionPacket},
@@ -4648,8 +5123,32 @@ resolveStockSolutionOptions[myModelStockSolutions:{ObjectP[stockSolutionModelTyp
 	];
 	fillToVolumeMethodVolumetricOptions = If[MemberQ[invalidFillToVolumeMethodsVolumetric, True],
 		(
+			(* we throw one message for each stock solution model because they may have different requirement for volumetric flasks *)
 			(* adding the weird " " before the string because the way the message is formatted kind of necessitates it to make it look good but also work with UploadStockSolution *)
-			Message[Error::InvalidVolumetricFillToVolumeMethod, " " <> ObjectToString[Download[PickList[myModelStockSolutions, invalidFillToVolumeMethodsVolumetric],Formula]], ObjectToString[maxVolumetricFlaskVolume]];
+			MapThread[
+				If[TrueQ[#2],
+					Module[
+						{lightSensitiveString,incompatibleMaterialsString,volumetricFlaskString},
+						(* Provide a string for how volumetric flasks are being selected *)
+						lightSensitiveString=If[TrueQ[Lookup[#4,LightSensitive]],
+							"Opaque -> True (for light-sensitive stock solution model)",
+							""
+						];
+						incompatibleMaterialsString=If[MatchQ[Lookup[#4,IncompatibleMaterials],{}],
+							"",
+							"not made from the stock solution model's incompatible materials "<>ToString[Lookup[#4,IncompatibleMaterials]]
+						];
+						volumetricFlaskString=Switch[
+							{lightSensitiveString,incompatibleMaterialsString},
+							{"",""},"",
+							{Except[""],Except[""]},"that are "<>lightSensitiveString<>" and "<>incompatibleMaterialsString,
+							_,"that are "<>lightSensitiveString<>incompatibleMaterialsString
+						];
+						Message[Error::InvalidVolumetricFillToVolumeMethod, " " <> ObjectToString[#1], ObjectToString[#3],volumetricFlaskString]
+					]
+				]&,
+				{myModelStockSolutions,invalidFillToVolumeMethodsVolumetric,maxCompatibleVolumetricFlaskVolumeForSSModel,stockSolutionModelPackets}
+			];
 			{FillToVolumeMethod}
 		),
 		{}
@@ -4661,6 +5160,52 @@ resolveStockSolutionOptions[myModelStockSolutions:{ObjectP[stockSolutionModelTyp
 			{FillToVolumeMethod}
 		),
 		{}
+	];
+
+	(* Throw an error if using FillToVolumeSolvent, which means there will be a FillToVolume primitive, but formula component total volume has already reached total volume to fill to. *)
+	InvalidModelFormulaForFillToVolumeInputs = If[MemberQ[invalidModelFormulaForFillToVolumeErrors, True] && messages,
+		Message[Error::InvalidModelFormulaForFillToVolume,
+			ObjectToString[PickList[myModelStockSolutions, invalidModelFormulaForFillToVolumeErrors], Cache -> newCache],
+			PickList[formulaComponentTotalVolumes, invalidModelFormulaForFillToVolumeErrors],
+			PickList[totalVolumes, invalidModelFormulaForFillToVolumeErrors],
+			ObjectToString[PickList[Lookup[stockSolutionSolventPackets,Object],invalidModelFormulaForFillToVolumeErrors],Cache -> newCache]
+		];
+		PickList[myModelStockSolutions, invalidModelFormulaForFillToVolumeErrors],
+		{}
+	];
+	(*Make tests for FillToVolume vs formula volume*)
+	(* make tests for the VolumeIncrements *)
+	validFormulaForFillToVolumeTests = If[gatherTests,
+		Module[{failingModels, passingModels, failingModelTests, passingModelTests},
+
+			(* get the models that will fail this test *)
+			failingModels = PickList[myModelStockSolutions, invalidModelFormulaForFillToVolumeErrors];
+
+			(* get the models that will pass this test *)
+			passingModels = PickList[myModelStockSolutions, invalidModelFormulaForFillToVolumeErrors, False];
+
+			(* create a test for the non-passing inputs *)
+			failingModelTests = If[Length[failingModels] > 0,
+				Test["For the provided models " <> ObjectToString[failingModels] <> ", if FillToVolumeSolvent is specified, the combined volume of the components in the model's Formula is smaller than the model's TotalVolume:",
+					False,
+					True
+				],
+				Nothing
+			];
+
+			(* create a test for the passing inputs *)
+			passingModelTests = If[Length[passingModels] > 0,
+				Test["For the provided models " <> ObjectToString[failingModels] <> ", if FillToVolumeSolvent is specified, the combined volume of the components in the model's Formula is smaller than the model's TotalVolume:",
+					True,
+					True
+				],
+				Nothing
+			];
+
+			(* return the created tests *)
+			{passingModelTests, failingModelTests}
+
+		]
 	];
 
 	(* Ask for a density scout if we're doing Gravimetric and we don't have a density. *)
@@ -4675,7 +5220,7 @@ resolveStockSolutionOptions[myModelStockSolutions:{ObjectP[stockSolutionModelTyp
 	];
 
 	(* I blame cam for this massive MapThread-Which-Module-thing *)
-	(* calculate the volume of soution we should prepare; we want to make sure that we won't scale the formula into a range where the components are measured weird;
+	(* calculate the volume of solution we should prepare; we want to make sure that we won't scale the formula into a range where the components are measured weird;
 	 	also could risk having the total volume be below FtV/filtration/pHing minimums, check for that;
 		do some silent bump upping if we are in Engine *)
 	{
@@ -4691,7 +5236,7 @@ resolveStockSolutionOptions[myModelStockSolutions:{ObjectP[stockSolutionModelTyp
 		volumeOverMaxIncrementErrors,
 		volumeNotInIncrementsErrors
 	} = Transpose@MapThread[
-		Function[{originalModelInput, stockSolutionModelPacket, formulaVolume, volumeOption, fillToVolumeMethodOption, resolvedAdjustpH, filterBool, preparedResourceOrNull},
+		Function[{originalModelInput, stockSolutionModelPacket, formulaVolume, volumeOption, fillToVolumeMethodOption, resolvedAdjustpH, filterBool, preparedResourceOrNull, volumetricFlaskVolumes},
 			Module[{componentsScaledOutOfRangeError, volumeOverMaxIncrementError, volumeNotInIncrementsError,
 				belowFillToVolumeMinimumError, aboveFillToVolumeMaximumError, belowpHMinimumError, belowFiltrationMinimumError},
 
@@ -4745,9 +5290,15 @@ resolveStockSolutionOptions[myModelStockSolutions:{ObjectP[stockSolutionModelTyp
 							],
 							$Failed
 						];
+
+						aboveFillToVolumeMaximumError=FailureQ[prepVolume] && VolumeQ[Lookup[stockSolutionModelPacket, TotalVolume]];
+
 						{
 							If[FailureQ[prepVolume],
-								volumeOption,
+								If[MatchQ[volumeOption,Automatic],
+									Lookup[stockSolutionModelPacket,TotalVolume],
+									volumeOption
+								],
 								prepVolume
 							],
 							{},
@@ -4755,10 +5306,7 @@ resolveStockSolutionOptions[myModelStockSolutions:{ObjectP[stockSolutionModelTyp
 							{},
 							componentsScaledOutOfRangeError,
 							belowFillToVolumeMinimumError,
-							If[FailureQ[prepVolume] && VolumeQ[Lookup[stockSolutionModelPacket, TotalVolume]],
-								True,
-								False
-							],
+							aboveFillToVolumeMaximumError,
 							belowpHMinimumError,
 							belowFiltrationMinimumError,
 							volumeOverMaxIncrementError,
@@ -4917,7 +5465,7 @@ resolveStockSolutionOptions[myModelStockSolutions:{ObjectP[stockSolutionModelTyp
 
 						(* volume is invalid if it's below the FillToVolume minimum and we're using a FillToVolume case *)
 						volumeInvalidFillToVolume = If[MatchQ[solvent, ObjectP[]],
-							volumeOption < $MinStockSolutionSolventVolume,
+							volumeOption < $MinStockSolutionUltrasonicSolventVolume,
 							False
 						];
 
@@ -4961,7 +5509,7 @@ resolveStockSolutionOptions[myModelStockSolutions:{ObjectP[stockSolutionModelTyp
 
 						(* if we're in Engine, we may need to bump up the amount to some minimum; figure out what minimums are in play *)
 						minimumsInPlayForBumpUp = PickList[
-							{minVolumeForComponentAmounts, $MinStockSolutionSolventVolume, $MinStockSolutionpHVolume, $MinStockSolutionFilterVolume},
+							{minVolumeForComponentAmounts, $MinStockSolutionUltrasonicSolventVolume, $MinStockSolutionpHVolume, $MinStockSolutionFilterVolume},
 							{volumeInvalidScaling, volumeInvalidFillToVolume, volumeInvalidpH, volumeInvalidFilter}
 						];
 
@@ -5016,7 +5564,7 @@ resolveStockSolutionOptions[myModelStockSolutions:{ObjectP[stockSolutionModelTyp
 				]
 			]
 		],
-		{myModelStockSolutions, stockSolutionModelPackets, formulaVolumes, expandedVolumeOption, resolvedFillToVolumeMethods, resolvedAdjustpHBools, resolvedFilterBools, prepResourcesOrNulls}
+		{myModelStockSolutions, stockSolutionModelPackets, formulaVolumes, sanitizedExpandedVolumeOption, resolvedFillToVolumeMethods, resolvedAdjustpHBools, resolvedFilterBools, prepResourcesOrNulls, compatibleVolumetricFlaskVolumesForSSModel}
 	];
 
 	(* --- Post MapThread error test and message throwing --- *)
@@ -5157,7 +5705,7 @@ resolveStockSolutionOptions[myModelStockSolutions:{ObjectP[stockSolutionModelTyp
 	(* if we're below the FillToVolume minimum throw an error *)
 	belowFillToVolumeMinimumOptions = If[MemberQ[belowFillToVolumeMinimumErrors, True] && messages,
 		(
-			Message[Error::BelowFillToVolumeMinimum, PickList[myModelStockSolutions, belowFillToVolumeMinimumErrors], PickList[prepVolumes, belowFillToVolumeMinimumErrors], $MinStockSolutionSolventVolume];
+			Message[Error::BelowFillToVolumeMinimum, PickList[myModelStockSolutions, belowFillToVolumeMinimumErrors], PickList[prepVolumes, belowFillToVolumeMinimumErrors], $MinStockSolutionUltrasonicSolventVolume];
 			{Volume}
 		),
 		{}
@@ -5175,7 +5723,7 @@ resolveStockSolutionOptions[myModelStockSolutions:{ObjectP[stockSolutionModelTyp
 
 			(* create a test for the non-passing inputs *)
 			failingModelTests = If[Length[failingModels] > 0,
-				Test["The requested volumes of " <> ObjectToString[failingModels] <> ", if a fill-to-volume solution, is above the minimum threshold for a solvent fill-to volume to ensure accurate volume measurement: " <> ToString[UnitForm[$MinStockSolutionSolventVolume, Brackets -> False]] <> ".:",
+				Test["The requested volumes of " <> ObjectToString[failingModels] <> ", if a fill-to-volume solution, is above the minimum threshold for a solvent fill-to volume to ensure accurate volume measurement: " <> ToString[UnitForm[$MinStockSolutionUltrasonicSolventVolume, Brackets -> False]] <> ".:",
 					False,
 					True
 				],
@@ -5184,7 +5732,7 @@ resolveStockSolutionOptions[myModelStockSolutions:{ObjectP[stockSolutionModelTyp
 
 			(* create a test for the passing inputs *)
 			passingModelTests = If[Length[passingModels] > 0,
-				Test["The requested volumes of " <> ObjectToString[failingModels] <> ", if a fill-to-volume solution, is above the minimum threshold for a solvent fill-to volume to ensure accurate volume measurement: " <> ToString[UnitForm[$MinStockSolutionSolventVolume, Brackets -> False]] <> ".:",
+				Test["The requested volumes of " <> ObjectToString[failingModels] <> ", if a fill-to-volume solution, is above the minimum threshold for a solvent fill-to volume to ensure accurate volume measurement: " <> ToString[UnitForm[$MinStockSolutionUltrasonicSolventVolume, Brackets -> False]] <> ".:",
 					True,
 					True
 				],
@@ -5200,7 +5748,31 @@ resolveStockSolutionOptions[myModelStockSolutions:{ObjectP[stockSolutionModelTyp
 	(* if we're above the maximum volumetric FillToVolume flask available throw an error  *)
 	aboveFillToVolumeMaximumOptions = If[MemberQ[aboveFillToVolumeMaximumErrors, True] && messages,
 		(
-			Message[Error::AboveVolumetricFillToVolumeMaximum, PickList[Download[myModelStockSolutions,Object], aboveFillToVolumeMaximumErrors], PickList[prepVolumes, aboveFillToVolumeMaximumErrors]];
+			(* we throw one message for each stock solution model because they may have different requirement for volumetric flasks *)
+			MapThread[
+				If[TrueQ[#2],
+					Module[
+						{lightSensitiveString,incompatibleMaterialsString,volumetricFlaskString},
+						(* Provide a string for how volumetric flasks are being selected *)
+						lightSensitiveString=If[TrueQ[Lookup[#4,LightSensitive]],
+							"Opaque -> True (for light-sensitive stock solution model)",
+							""
+						];
+						incompatibleMaterialsString=If[MatchQ[Lookup[#4,IncompatibleMaterials],{}],
+							"",
+							"not made from the stock solution model's incompatible materials "<>ToString[Lookup[#4,IncompatibleMaterials]]
+						];
+						volumetricFlaskString=Switch[
+							{lightSensitiveString,incompatibleMaterialsString},
+							{"",""},"",
+							{Except[""],Except[""]},"that are "<>lightSensitiveString<>" and "<>incompatibleMaterialsString,
+							_,"that are "<>lightSensitiveString<>incompatibleMaterialsString
+						];
+						Message[Error::AboveVolumetricFillToVolumeMaximum, ObjectToString[#1], ObjectToString[#3],volumetricFlaskString]
+					]
+				]&,
+				{myModelStockSolutions,aboveFillToVolumeMaximumErrors,prepVolumes,stockSolutionModelPackets}
+			];
 			{Volume}
 		),
 		{}
@@ -5218,7 +5790,7 @@ resolveStockSolutionOptions[myModelStockSolutions:{ObjectP[stockSolutionModelTyp
 
 			(* create a test for the non-passing inputs *)
 			failingModelTests = If[Length[failingModels] > 0,
-				Test["The requested volumes of " <> ObjectToString[failingModels] <> ", if a volumetric fill-to-volume solution, is less than or equal to the maximum volume of the largest volumetric flask:",
+				Test["The requested volumes of " <> ObjectToString[failingModels] <> ", if a volumetric fill-to-volume solution, is less than or equal to the maximum volume of the largest volumetric flask that aligns with the stock solution model's LightSensitive and IncompatibleMaterials requirements:",
 					False,
 					True
 				],
@@ -5227,7 +5799,7 @@ resolveStockSolutionOptions[myModelStockSolutions:{ObjectP[stockSolutionModelTyp
 
 			(* create a test for the passing inputs *)
 			passingModelTests = If[Length[passingModels] > 0,
-				Test["The requested volumes of " <> ObjectToString[failingModels] <> ", if a volumetric fill-to-volume solution, is less than or equal to the maximum volume of the largest volumetric flask:",
+				Test["The requested volumes of " <> ObjectToString[failingModels] <> ", if a volumetric fill-to-volume solution, is less than or equal to the maximum volume of the largest volumetric flask that aligns with the stock solution model's LightSensitive and IncompatibleMaterials requirements:",
 					True,
 					True
 				],
@@ -5289,7 +5861,7 @@ resolveStockSolutionOptions[myModelStockSolutions:{ObjectP[stockSolutionModelTyp
 			(* Automatic means we prepared the formula volume *)
 			{prepVolume,volumeOption}/.{Automatic->formulaVolume}
 		],
-		{prepVolumes,expandedVolumeOption,formulaVolumes}
+		{prepVolumes,sanitizedExpandedVolumeOption,formulaVolumes}
 	];
 
 	(* LightSensitive value resolves based on the LightSensitive field of the model *)
@@ -5299,25 +5871,12 @@ resolveStockSolutionOptions[myModelStockSolutions:{ObjectP[stockSolutionModelTyp
 	(* it is absolutely necessary that we return _some_ container here and not $Failed *)
 	(* this means that if we can't find a container that matches what we need, just pick something else; yes it's wrong but we will have thrown other error messages anyway on this front and at least if we do this the rest of the function doesn't trainwreck *)
 	resolvedPrepContainers = MapThread[
-		Function[
-			{ssModelPacket,prepVolume,lightSensitive,ftvMethod,containerOut},
-			If[MatchQ[ftvMethod, Volumetric],
-				Module[{sortedVolumetricFlaskPackets},
-
-					(* Sort our flasks from smallest to largest since we're going to FirstCase later to get the smallest flask that can hold our volume. *)
-					sortedVolumetricFlaskPackets = SortBy[Flatten[volumetricFlaskPackets], Lookup[#, MaxVolume]&];
-
-					(* get the volumetric flask we want; if there is nothing big enough, just pick the biggest one we found*)
-					Lookup[FirstCase[sortedVolumetricFlaskPackets, KeyValuePattern[{MaxVolume -> GreaterEqualP[N[prepVolume]]}], Last[sortedVolumetricFlaskPackets]], Object]
-				],
-				Switch[prepVolume,
-					GreaterP[$MaxStockSolutionSolventVolume], PreferredContainer[ssModelPacket, $MaxStockSolutionSolventVolume, LightSensitive -> lightSensitive, Type->Vessel],
-					LessP[$MinStockSolutionComponentVolume], PreferredContainer[ssModelPacket, $MinStockSolutionComponentVolume, LightSensitive -> lightSensitive, Type->Vessel],
-					_, stockSolutionPrepContainer[ssModelPacket, prepVolume, containerOut, lightSensitive, fastAssoc]
-				]
-			]
-		],
-		{stockSolutionModelPackets, preResolvedPreparationVolumes, resolvedLightSensitive, resolvedFillToVolumeMethods, Lookup[roundedExpandedOptions, ContainerOut]}
+		resolveStockSolutionPrepContainer[##, fastAssoc]&,
+		{
+			stockSolutionModelPackets, preResolvedPreparationVolumes,
+			resolvedLightSensitive, resolvedAutoclaveBooleans, resolvedFillToVolumeMethods,
+			Lookup[roundedExpandedOptions, ContainerOut], compatibleVolumetricFlasksForSSModel
+		}
 	];
 
 	(* Identify pre-downloaded packets of the prep containers *)
@@ -5363,7 +5922,7 @@ resolveStockSolutionOptions[myModelStockSolutions:{ObjectP[stockSolutionModelTyp
 		PostAutoclaveIncubator, PostAutoclaveIncubationTime, PostAutoclaveIncubationTemperature,
 		pH, MinpH, MaxpH, pHingAcid, pHingBase,
 		FilterType, FilterMaterial, FilterSize, FilterInstrument, FilterModel, FilterSyringe, FilterHousing,
-		PlatingInstrument, HeatSensitiveReagents
+		(* PlatingInstrument, *) HeatSensitiveReagents
 	};
 
 	(* make lists in the form {prepOptionName->singleValue..} for EACH of the stock solution model inputs *)
@@ -5695,66 +6254,69 @@ resolveStockSolutionOptions[myModelStockSolutions:{ObjectP[stockSolutionModelTyp
 		Message[Error::IncompletelySpecifiedpHingOptions]
 	];
 
-	(* --- Resolve Autoclave Options --- *)
-	(* Note: We have to resolve the autoclave options before we can resolve the ContainerOut option. *)
-	(* Expand the Autoclave option if it is not already. *)
-	expandedAutoclaveBooleans=If[!MatchQ[Lookup[combinedOptions,Autoclave],{_List..}],
-		ConstantArray[Lookup[combinedOptions,Autoclave], Length[myModelStockSolutions]],
-		Lookup[combinedOptions,Autoclave]
-	];
-
-	(* Expand the AutoclaveProgram option if it is not already. *)
-	expandedAutoclavePrograms=If[!MatchQ[Lookup[combinedOptions,AutoclaveProgram],{_List..}],
-		ConstantArray[Lookup[combinedOptions,AutoclaveProgram], Length[myModelStockSolutions]],
-		Lookup[combinedOptions,AutoclaveProgram]
-	];
-
-	(* Set the Autoclave boolean to True if AutoclaveProgram is set. *)
-	resolvedAutoclaveBooleans=MapThread[
-		Function[{primitives, autoclaveBoolean,autoclaveProgram,stockSolutionModelPacket},
-			Which[
-
-				(* Has the user set Autoclave? Take it *)
-				MatchQ[autoclaveBoolean, Except[Automatic]],
-				autoclaveBoolean,
-
-				(* If we're using primitives, it's false *)
-				MatchQ[primitives, Except[Null]],
-				False,
-
-				(* If we have an autoclave program, it's true *)
-				MatchQ[autoclaveProgram, AutoclaveProgramP],
-				True,
-
-				MatchQ[Lookup[stockSolutionModelPacket, Autoclave], True],
-				True,
-
-				(* If we're doing media, this should be true *)
-				MatchQ[Lookup[stockSolutionModelPacket, Type], Model[Sample, Media]],
-				True,
-
-				True,
-				False
-			]
-		],
-		{resolvedPrimitives, expandedAutoclaveBooleans, expandedAutoclavePrograms, stockSolutionModelPackets}
-	];
-
-	(* Set the AutoclaveProgram to Liquid if Autoclave->True. *)
-	resolvedAutoclavePrograms=MapThread[
-		Function[{autoclaveBoolean,autoclaveProgram,stockSolutionModelPacket},
-			If[MatchQ[autoclaveProgram, Automatic],
-				If[MatchQ[autoclaveBoolean, True],
-					If[MatchQ[Lookup[stockSolutionModelPacket, AutoclaveProgram], AutoclaveProgramP],
-						Lookup[stockSolutionModelPacket, AutoclaveProgram],
-						Liquid
+	(* conflict check of mix rate -- if specified mix rate is smaller than the safe mix rate of resolved container *)
+	mixRateNotSafe = If[Not[fastTrack],
+		MapThread[
+			Function[{resolvedMixBool, mixRate, mixType, containerPackets, container},
+				If[resolvedMixBool && MatchQ[mixRate, Except[Automatic|Null]] && MatchQ[mixType, Stir],
+					Module[{safeMixRate},
+						(* get the safe mix rate of container model. *)
+						safeMixRate = Lookup[fetchPacketFromCache[container, containerPackets], MaxOverheadMixRate];
+						(* safeMixRate is very unlikely to be Null since resolvedPrepContainer is from PreferredContainer[]. Give this NullQ check just in case *)
+						If[(!NullQ[safeMixRate])&&(safeMixRate < mixRate),
+							True,
+							False
+						]
 					],
-					Null
-				],
-				autoclaveProgram
-			]
+					False
+				]
+			],
+			{resolvedMixBools, Lookup[roundedExpandedOptions, MixRate], Lookup[roundedExpandedOptions, MixType], resolvedPrepContainerPackets, resolvedPrepContainers}
 		],
-		{resolvedAutoclaveBooleans, expandedAutoclavePrograms, stockSolutionModelPackets}
+		ConstantArray[False, Length[myModelStockSolutions]]
+	];
+	(* generate the tests for if the specified mix rate is not safe, and throw the messages if necessary *)
+	{mixRateNotSafeTests, mixRateNotSafeOptions} = If[Not[fastTrack],
+		Module[{failingInputs, passingInputs, failingInputTest, passingInputTest, failingMixRates, badOptions},
+
+			(* get the inputs that have volumes too low to pH *)
+			failingInputs = PickList[myModelStockSolutions, mixRateNotSafe];
+
+			(* get the failing pH prep volume *)
+			failingMixRates = PickList[Lookup[roundedExpandedOptions, MixRate], mixRateNotSafe];
+
+			(* get the inputs whose pH volumes are fine *)
+			passingInputs = PickList[myModelStockSolutions, mixRateNotSafe, False];
+
+			(* create a test for the non-passing inputs *)
+			failingInputTest = If[Length[failingInputs] > 0 && gatherTests,
+				Test["If mix rate of " <> ObjectToString[failingInputs] <> " is specified, the requested mix rate should not exceed the safe maximum mix rate of resolved container.",
+					True,
+					False
+				],
+				Nothing
+			];
+
+			(* create a test for the passing inputs *)
+			passingInputTest = If[Length[passingInputs] > 0 && gatherTests,
+				Test["If mix rate of " <> ObjectToString[failingInputs] <> " is specified, the requested mix rate should not exceed the safe maximum mix rate of resolved container.",
+					True,
+					True
+				],
+				Nothing
+			];
+
+			(* throw an error if we need to do so and are throwing messages *)
+			badOptions = If[Length[failingInputs] > 0 && messages,
+				Message[Error::SpecifedMixRateNotSafe, failingMixRates];
+				{MixRate},
+				{}
+			];
+
+			(* Return our created tests. *)
+			{{passingInputTest, failingInputTest}, badOptions}
+		],
+		{{}, {}}
 	];
 
 	(* --- Resolve the Mix and Incubate options with our helper function --- *)
@@ -6481,53 +7043,112 @@ resolveStockSolutionOptions[myModelStockSolutions:{ObjectP[stockSolutionModelTyp
 	];
 
 	(* get the models and volumes and light sensitivity that correspond with automatic ContainersOut *)
-	automaticContainerOutSSModels = PickList[stockSolutionModelPackets, expandedContainerOutWithPacketsWithAutomatics, Automatic];
-	automaticContainerOutVolumes = PickList[resolvedVolumes, expandedContainerOutWithPacketsWithAutomatics, Automatic];
-	automaticContainerOutLightSensitive = PickList[resolvedLightSensitive, expandedContainerOutWithPacketsWithAutomatics, Automatic];
 	automaticContainerOutAutoclaveBooleans = PickList[resolvedAutoclaveBooleans, expandedContainerOutWithPacketsWithAutomatics, Automatic];
 	automaticContainerOutpHBooleans = PickList[resolvedAdjustpHBools, expandedContainerOutWithPacketsWithAutomatics, Automatic];
 
 	(* resolve the ContainerOut the following way: *)
 	(* Use PreferredContainer no matter what *)
-	resolvedAutomaticContainerOut = MapThread[
-		Function[{modelPacket, volume, lightSensitive, autoclaveBoolean, pHBoolean},
-			Module[{volumeToHold, maxTemperature, potentialContainer},
-				(* The preferred container can hold 4/3 (inverse of 3/4) of the volume of the stock solution if autoclaving. *)
-				(* The preferred container can hold 1.075 of the volume of the stock solution if pHing to allow room for acid/base addition *)
-				volumeToHold = Which[
-					MatchQ[autoclaveBoolean, True], N[volume * (4/3)],
-					TrueQ[pHBoolean], N[volume * 1.075],
-					True, volume
-				];
+	{resolvedContainerOut,containerOutIncompatibleMaterialQ} = Transpose[
+		MapThread[
+			Function[{modelPacket, volume, lightSensitive, autoclaveBoolean, pHBoolean, contOutPacket},
+				If[MatchQ[contOutPacket,Automatic],
+					(* Resolve Automatic ContainerOut *)
+					Module[{volumeToHold, maxTemperature, potentialContainer},
+						(* The preferred container can hold 4/3 (inverse of 3/4) of the volume of the stock solution if autoclaving. *)
+						(* The preferred container can hold 1.075 of the volume of the stock solution if pHing to allow room for acid/base addition *)
+						volumeToHold = Which[
+							MatchQ[autoclaveBoolean, True], N[volume * (4/3)],
+							TrueQ[pHBoolean], N[volume * 1.075],
+							True, volume
+						];
 
-				(* If we are autoclaving, we need to reach a MaxTemperature of 120 Celsius. *)
-				maxTemperature = If[MatchQ[autoclaveBoolean, True],
-					120 Celsius,
-					Automatic
-				];
+						(* If we are autoclaving, we need to reach a MaxTemperature of 120 Celsius. *)
+						maxTemperature = If[MatchQ[autoclaveBoolean, True],
+							120 Celsius,
+							Automatic
+						];
 
-				(* Note: There is also a requirement that the container must be under 0.5 meters in length to fit in the autoclave. *)
-				(* But, none of our supported containers are over this length right now. *)
-				(* note that if we don't find any container, just quiet that message; if we got this far into the function and are getting that error message, we will have already caught it and don't want the redundancy *)
-				potentialContainer = FirstOrDefault[ToList[
-					Quiet[PreferredContainer[modelPacket, volumeToHold, LightSensitive -> lightSensitive, Type->Vessel, MaxTemperature -> maxTemperature, All->True], PreferredContainer::ContainerNotFound]
-				]] /. {$Failed -> Null};
+						(* Note: There is also a requirement that the container must be under 0.5 meters in length to fit in the autoclave. *)
+						(* But, none of our supported containers are over this length right now. *)
+						(* note that if we don't find any container, just quiet that message; if we got this far into the function and are getting that error message, we will have already caught it and don't want the redundancy *)
+						(* PreferredContainer overload of model packet already considers the IncompatibleMaterials *)
+						potentialContainer = FirstOrDefault[ToList[
+							Quiet[PreferredContainer[modelPacket, volumeToHold, LightSensitive -> lightSensitive, Type->Vessel, MaxTemperature -> maxTemperature, All->True], PreferredContainer::ContainerNotFound]
+						]] /. {$Failed -> Null};
 
-				potentialContainer
-			]
-		],
-		{automaticContainerOutSSModels, automaticContainerOutVolumes, automaticContainerOutLightSensitive, automaticContainerOutAutoclaveBooleans, automaticContainerOutpHBooleans}
+						(* Resolved Container is compatible *)
+						{Download[potentialContainer,Object],False}
+					],
+					(* Check incompatible materials if provided with a ContainerOut *)
+					Module[
+						{incompatibleMaterials,containerOutMaterials,incompatibleQ},
+						(* Get the sample model's IncompatibleMaterials *)
+						incompatibleMaterials=Flatten[{Lookup[modelPacket, IncompatibleMaterials]}]/.{None->Nothing};
+						(* Get the specified containerOut's materials *)
+						containerOutMaterials=Lookup[contOutPacket,ContainerMaterials];
+						(* If the IncompatibleMaterials overlaps with ContainerMaterials, return a True incompatible boolean *)
+						incompatibleQ=If[
+							IntersectingQ[incompatibleMaterials,containerOutMaterials],
+							True,
+							False
+						];
+						{Lookup[contOutPacket,Object],incompatibleQ}
+					]
+				]
+			],
+			{stockSolutionModelPackets, resolvedVolumes, resolvedLightSensitive, resolvedAutoclaveBooleans, resolvedAdjustpHBools, expandedContainerOutWithPacketsWithAutomatics}
+		]
 	];
 
-	(* get the Automatic positions of the specified ContainerOut *)
-	containerOutAutomaticPositions = Position[expandedContainerOutWithPacketsWithAutomatics, Automatic];
-
-	(* make the position replace rules that ReplacePart will use *)
-	containerOutReplaceRules = MapThread[#1 -> #2&, {containerOutAutomaticPositions, resolvedAutomaticContainerOut}];
-
-	(* use ReplacePart to get the resolved ContainerOut *)
-	resolvedContainerOut = Download[ReplacePart[expandedContainerOutWithPacketsWithAutomatics, containerOutReplaceRules], Object];
 	expandedContainerOutWithPackets = fetchPacketFromFastAssoc[#, fastAssoc]& /@ resolvedContainerOut;
+
+
+	(* generate the tests for whether the ContainerOut is incompatible with the stock solution model *)
+	{incompatibleContainerOutTest, incompatibleContainerOutOptions} = If[Not[fastTrack],
+		Module[{failingContainersOut, failingStockSolutionModels, passingContainersOut, passingStockSolutionModels, failingInputTest, passingInputTest, badOptions},
+
+			(* get the ContainersOut that are incompatible *)
+			failingContainersOut = Lookup[PickList[expandedContainerOutWithPackets, containerOutIncompatibleMaterialQ], Object, {}];
+
+			failingStockSolutionModels = Lookup[PickList[stockSolutionModelPackets, containerOutIncompatibleMaterialQ], Object, {}];
+
+			(* get the inputs whose ContainerOut options are fine *)
+			passingContainersOut = Lookup[Cases[PickList[expandedContainerOutWithPackets, containerOutIncompatibleMaterialQ, False], PacketP[Model[Container]]], Object, {}];
+
+			passingStockSolutionModels = Lookup[PickList[stockSolutionModelPackets, containerOutIncompatibleMaterialQ, False], Object, {}];
+
+			(* create a test for the non-passing inputs *)
+			failingInputTest = If[Length[failingContainersOut] > 0 && gatherTests,
+				Test["Specified containers in the ContainerOut option " <> ObjectToString[failingContainersOut] <> " are chemically compatible with the requested stock solution model " <> ObjectToString[failingStockSolutionModels] <> ".",
+					True,
+					False
+				],
+				Nothing
+			];
+
+			(* create a test for the passing inputs *)
+			passingInputTest = If[Length[passingContainersOut] > 0 && gatherTests,
+				Test["Specified containers in the ContainerOut option " <> ObjectToString[passingContainersOut] <> " are chemically compatible with the requested stock solution model " <> ObjectToString[passingStockSolutionModels] <> ".",
+					True,
+					True
+				],
+				Nothing
+			];
+
+			(* throw an error if we need to do so and are throwing messages *)
+			badOptions = If[Length[failingContainersOut] > 0 && messages,
+				(
+					Message[Error::IncompatibleStockSolutionContainerOut, failingStockSolutionModels, failingContainersOut];
+					{ContainerOut}
+				),
+				{}
+			];
+
+			(* Return our created tests. *)
+			{{passingInputTest, failingInputTest}, badOptions}
+		],
+		{{}, {}}
+	];
 
 	(* check if the ContainerOut is deprecated *)
 	containerOutDeprecated = Map[
@@ -6713,13 +7334,13 @@ resolveStockSolutionOptions[myModelStockSolutions:{ObjectP[stockSolutionModelTyp
 		NullQ[#1]&&MatchQ[#2,LessEqualP[$MaxStockSolutionComponentVolume]]&,
 		{resolvedContainerOut,resolvedVolumes}
 	];
-	
+
 	(* Generate the tests for if ContainerOut is too small *)
 	{containerOutFailedTests,containerOutFailedOptions}=Module[{failingInputs,requiredVolumes,failingVolumes,passingInputs,passingVolumes,failingInputTest,passingInputTest},
-		
+
 		(* Get the ContainersOut that are Null and the corresponding stock solutions *)
 		failingInputs=PickList[myModelStockSolutions,containerOutFailed];
-		
+
 		(* The preferred container can hold 4/3 (inverse of 3/4) of the volume of the stock solution if autoclaving or 1.075 of the volume of the stock solution if pHing to allow room for acid/base addition *)
 		requiredVolumes=If[
 			SameLengthQ[resolvedVolumes,automaticContainerOutAutoclaveBooleans,automaticContainerOutpHBooleans],
@@ -6735,14 +7356,14 @@ resolveStockSolutionOptions[myModelStockSolutions:{ObjectP[stockSolutionModelTyp
 			],
 			resolvedVolumes
 		];
-		
+
 		(* Get the ContainersOut that are Null and the corresponding volumes *)
 		failingVolumes=PickList[requiredVolumes,containerOutFailed];
-		
+
 		(* Get the inputs whose ContainerOut is fine *)
 		passingInputs=UnsortedComplement[myModelStockSolutions,failingInputs];
 		passingVolumes=UnsortedComplement[requiredVolumes,failingVolumes];
-		
+
 		(* Create a test for the non-passing inputs *)
 		failingInputTest=If[
 			Length[failingInputs]>0&&gatherTests,
@@ -6752,7 +7373,7 @@ resolveStockSolutionOptions[myModelStockSolutions:{ObjectP[stockSolutionModelTyp
 			],
 			Nothing
 		];
-		
+
 		(* Create a test for the passing inputs *)
 		passingInputTest=If[Length[passingInputs]>0&&gatherTests,
 			Test[StringJoin["A container can be found to prepare ",ObjectToString[passingInputs]," with the required volume of ",ToString[UnitForm[passingVolumes,Brackets->False]],". The container cannot be more than 75% full for autoclaved stock solutions and 93% full for solutions whose pH needs to be adjusted."],
@@ -6761,13 +7382,13 @@ resolveStockSolutionOptions[myModelStockSolutions:{ObjectP[stockSolutionModelTyp
 			],
 			Nothing
 		];
-		
+
 		(* Throw an error if we need to do so and are throwing messages *)
 		If[
 			Length[failingInputs]>0&&messages,
 			Message[Error::ContainerOutCannotBeFound,failingInputs,failingVolumes]
 		];
-		
+
 		(* Return our created tests *)
 		If[
 			Length[failingInputs]>0,
@@ -6801,7 +7422,7 @@ resolveStockSolutionOptions[myModelStockSolutions:{ObjectP[stockSolutionModelTyp
 
 	(* Resolve our order of operations based on if our prep stages are toggled. *)
 	resolvedOrderOfOperations=MapThread[
-		Function[{primitives, singleOrderOfOperations, resolvedIncubateBool, resolvedMixBool, resolvedFilterBool, adjustpH, solventPacket, stockSolutionModelPacket, resolvedAutoclaveBool},
+		Function[{primitives, singleOrderOfOperations, resolvedIncubateBool, resolvedMixBool, resolvedFilterBool, adjustpH, solventPacket, stockSolutionModelPacket, resolvedAutoclaveBool, resolvedPostAutoclaveIncubateBool},
 			If[MatchQ[singleOrderOfOperations, Automatic],
 				Which[
 					(* If primitives is specified, turn this option off. *)
@@ -6841,7 +7462,7 @@ resolveStockSolutionOptions[myModelStockSolutions:{ObjectP[stockSolutionModelTyp
 									Nothing
 								],
 
-								If[MatchQ[resolvedPostAutoclaveIncubateBools, True],
+								If[MatchQ[resolvedPostAutoclaveIncubateBool, True],
 									{FixedHeatSensitiveReagentAddition,PostAutoclaveIncubation},
 									Nothing
 								]
@@ -6858,6 +7479,17 @@ resolveStockSolutionOptions[myModelStockSolutions:{ObjectP[stockSolutionModelTyp
 
 	(* Resolve Post Processing Options *)
 	resolvedPostProcessingOptions = resolvePostProcessingOptions[combinedOptions];
+
+	(* Resolve MaxNumberOfOverfillingRepreparations *)
+	resolvedMaxNumberOfOverfillingRepreparations = If[!MatchQ[Lookup[combinedOptions, MaxNumberOfOverfillingRepreparations],Automatic],
+		(* Respect user input OR if we are doing re-preparation already, we have this option *)
+		Lookup[combinedOptions, MaxNumberOfOverfillingRepreparations],
+		(* If we have FillToVolume, set to 3; Otherwise Null *)
+		If[MemberQ[resolvedFillToVolumeMethods,Except[Null]],
+			3,
+			Null
+		]
+	];
 
 	(* Resolve Email option if Automatic; this is a Hidden option; don't send emails if subprotocol; hard-resolve *)
 	resolvedEmail = Which[
@@ -6900,6 +7532,7 @@ resolveStockSolutionOptions[myModelStockSolutions:{ObjectP[stockSolutionModelTyp
 			resolvedFilterOptions,
 			PreFiltrationImage -> resolvedPreFiltrationImage,
 			resolvedPostProcessingOptions,
+			MaxNumberOfOverfillingRepreparations -> resolvedMaxNumberOfOverfillingRepreparations,
 			Email -> resolvedEmail,
 			FillToVolumeMethod->resolvedFillToVolumeMethods,
 			(* note that this isn't _really_ an option, but I am passing it around like it is an option because we need this in the resource packets function (but don't want users to tinker with it) *)
@@ -6952,10 +7585,12 @@ resolveStockSolutionOptions[myModelStockSolutions:{ObjectP[stockSolutionModelTyp
 		filtrationVolumeTooLowOptions,
 		preFiltrationOptionFailure,
 		deprecatedContainerOutOptions,
+		incompatibleContainerOutOptions,
 		containerOutTooSmallOptions,
 		containerOutTooLowMaxTemperatureOptions,
 		incompletelySpecifiedpHingOptions,
-		containerOutFailedOptions
+		containerOutFailedOptions,
+		mixRateNotSafeOptions
 	]];
 
 	(* throw the InvalidOption error if necessary *)
@@ -6968,7 +7603,8 @@ resolveStockSolutionOptions[myModelStockSolutions:{ObjectP[stockSolutionModelTyp
 		deprecatedInvalidInputs,
 		prepFormulaInvalidInputs,
 		prepTypeInvalidInputs,
-		tooManySamplesInputs
+		tooManySamplesInputs,
+		InvalidModelFormulaForFillToVolumeInputs
 	]];
 
 	(* throw the InvalidInputs error if necessary *)
@@ -7021,11 +7657,15 @@ resolveStockSolutionOptions[myModelStockSolutions:{ObjectP[stockSolutionModelTyp
 			filterResolvingTests,
 			preFiltrationTest,
 			deprecatedContainerOutTest,
+			incompatibleContainerOutTest,
 			containerOutTooSmallTests,
 			containerOutTooLowMaxTemperatureTests,
 			tooManySamplesTest,
 			incompletelySpecifiedpHingTests,
-			containerOutFailedTests
+			containerOutFailedTests,
+			validFormulaForFillToVolumeTests,
+			volumeTooLowForAutoclaveTests,
+			mixRateNotSafeTests
 		}],
 		Null
 	];
@@ -7035,15 +7675,148 @@ resolveStockSolutionOptions[myModelStockSolutions:{ObjectP[stockSolutionModelTyp
 
 ];
 
+DefineOptions[
+	resolveStockSolutionPrepContainer,
+	Options :> {
+		{PreferredContainers -> {}, ObjectP[{Object[Container], Model[Container]}] | {ObjectP[{Object[Container], Model[Container]}]...}, "Indicates the preferred containers if any."}
+	}
+];
+
+(* extract a helper that resolves the prep container so resolver, resource packet, and USS all calls the same *)
+resolveStockSolutionPrepContainer[
+	(* if we are calling this helper in USS we would not have a model packet yet, so we just pass a list of option rules *)
+	ssModelPacketOrOptionLookup:PacketP[Model[Sample]] | {___Rule},
+	prepVolume:VolumeP,
+	lightSensitive:(BooleanP|Null),
+	autoclaveBool:(BooleanP|Null),
+	ftvMethod_,
+	containerOut:ObjectP[Model[Container]] | Automatic | Null,
+	validVolumetricFlaskPackets_,
+	fastCache_,
+	ops: OptionsPattern[]
+] := Module[{safeOps, preferredContainers},
+
+	safeOps = SafeOptions[resolveStockSolutionPrepContainer, ToList[ops]];
+	preferredContainers = Lookup[safeOps, PreferredContainers];
+
+	If[MatchQ[ftvMethod, Volumetric],
+		Module[{sortedVolumetricFlaskPackets, defaultMaxVolumeVolumetricFlask},
+
+			(* Sort our flasks from smallest to largest since we're going to FirstCase later to get the smallest flask that can hold our volume. *)
+			(* We also want to prefer non-opaque volumetric flasks if there are any available - Opaque->True should be put later in the list (sort will do False-Null-True, matching what we need *)
+			sortedVolumetricFlaskPackets = SortBy[validVolumetricFlaskPackets, {Lookup[#, MaxVolume]&, Lookup[#, Opaque]&}];
+
+			(* If there is nothing big enough, just pick the biggest one. we have thrown an error earlier for this case. Here we prefer non-opaque volumetric flask *)
+			defaultMaxVolumeVolumetricFlask = Last[SortBy[validVolumetricFlaskPackets, {Lookup[#, MaxVolume]&, !Lookup[#, Opaque]&}]];
+
+			(* get the volumetric flask we want *)
+			Lookup[FirstCase[sortedVolumetricFlaskPackets, KeyValuePattern[{MaxVolume -> GreaterEqualP[N[prepVolume]]}], defaultMaxVolumeVolumetricFlask], Object]
+		],
+		Switch[prepVolume,
+			GreaterP[$MaxStockSolutionSolventVolume],
+				If[MatchQ[ssModelPacketOrOptionLookup, PacketP[]],
+					(* pass the model packet if we have one *)
+					PreferredContainer[
+						ssModelPacketOrOptionLookup,
+						$MaxStockSolutionSolventVolume,
+						LightSensitive -> lightSensitive,
+						MaxTemperature -> If[TrueQ[autoclaveBool], 121Celsius, Automatic],
+						Type -> Vessel
+					],
+					(* otherwise we have a list of resolved options *)
+					PreferredContainer[
+						$MaxStockSolutionSolventVolume,
+						preferredContainers,
+						LightSensitive -> lightSensitive,
+						MaxTemperature -> If[TrueQ[autoclaveBool], 121Celsius, Automatic],
+						Type -> Vessel,
+						All -> True,
+						IncompatibleMaterials -> Lookup[ssModelPacketOrOptionLookup, IncompatibleMaterials, Automatic]
+					]
+				],
+			LessP[$MinStockSolutionComponentVolume],
+				If[MatchQ[ssModelPacketOrOptionLookup, PacketP[]],
+					(* pass the model packet if we have one *)
+					PreferredContainer[
+						ssModelPacketOrOptionLookup,
+						$MinStockSolutionComponentVolume,
+						LightSensitive -> lightSensitive,
+						MaxTemperature -> If[TrueQ[autoclaveBool], 121Celsius, Automatic],
+						Type -> Vessel
+					],
+					(* otherwise we have a list of resolved options *)
+					PreferredContainer[
+						$MinStockSolutionComponentVolume,
+						preferredContainers,
+						LightSensitive -> lightSensitive,
+						MaxTemperature -> If[TrueQ[autoclaveBool], 121Celsius, Automatic],
+						Type -> Vessel,
+						All -> True,
+						IncompatibleMaterials -> Lookup[ssModelPacketOrOptionLookup, IncompatibleMaterials, Automatic]
+					]
+				],
+			_,
+				stockSolutionPrepContainer[ssModelPacketOrOptionLookup, prepVolume, containerOut, lightSensitive, autoclaveBool, fastCache]
+		]
+	]
+];
+
 
 (* stockSolutionPrepContainer: Determines the container the stock solution should actually be prepared in
 	- This only applies to non-volumetric cases
 	- cache must contain packets for all preferred containers and containers out
 *)
-stockSolutionPrepContainer[ssModelPacket:PacketP[Model[Sample]], prepVolume:VolumeP, containerOut:ObjectP[Model[Container]]|Automatic|Null, lightSensitive:(BooleanP|Null), cache_]:=Module[
-	{preferredContainer,possibleContainers,inRangeContainers},
 
-	preferredContainer=PreferredContainer[ssModelPacket, prepVolume, LightSensitive -> TrueQ[lightSensitive], Type->Vessel];
+DefineOptions[
+	stockSolutionPrepContainer,
+	Options :> {
+		{PreferredContainers -> {}, {ObjectP[{Object[Container], Model[Container]}]...}, "Indicates the preferred containers if any."}
+	}
+];
+
+stockSolutionPrepContainer[
+	(* if we are calling this helper in USS we would not have a model packet yet, so we just pass a list of option rules *)
+	ssModelPacketOrOptionLookup:PacketP[Model[Sample]] | {___Rule},
+	prepVolume:VolumeP,
+	containerOut:ObjectP[Model[Container]]|Automatic|Null,
+	lightSensitive:(BooleanP|Null),
+	autoclave:(BooleanP|Null),
+	fastCache_,
+	ops:OptionsPattern[]
+]:=Module[
+	{safeOps, preferredContainers, requiredVolume,preferredContainer,possibleContainers,inRangeContainers},
+
+	safeOps = SafeOptions[stockSolutionPrepContainer, ToList[ops]];
+	preferredContainers = Lookup[safeOps, PreferredContainers];
+
+	(* If we're autoclaving, we need the container out to not be more than 3/4 full. Technically, the prep container might not *)
+	(* be the same as the container out, but in most cases where we would autoclave (e.g. media), they will likely wind up being *)
+	(* the same regardless. In order to prepare for that eventuality, we'll use 4/3 the prep volume if we're autoclaving here. *)
+	requiredVolume = If[TrueQ[autoclave],
+		4/3*prepVolume,
+		prepVolume
+	];
+
+	preferredContainer = If[MatchQ[ssModelPacketOrOptionLookup, PacketP[]],
+		(* pass the model packet if we have one *)
+		PreferredContainer[
+			ssModelPacketOrOptionLookup,
+			requiredVolume,
+			LightSensitive -> TrueQ[lightSensitive],
+			MaxTemperature -> If[TrueQ[autoclave], 121Celsius, Automatic],
+			Type -> Vessel
+		],
+		(* otherwise we have a list of resolved options *)
+		PreferredContainer[
+			requiredVolume,
+			preferredContainers,
+			LightSensitive -> TrueQ[lightSensitive],
+			MaxTemperature -> If[TrueQ[autoclave], 121Celsius, Automatic],
+			Type -> Vessel,
+			All -> True,
+			IncompatibleMaterials -> Lookup[ssModelPacketOrOptionLookup, IncompatibleMaterials, Automatic]
+		]
+	];
 
 	If[MatchQ[containerOut,Automatic|Null],
 		Return[preferredContainer]
@@ -7052,13 +7825,32 @@ stockSolutionPrepContainer[ssModelPacket:PacketP[Model[Sample]], prepVolume:Volu
 	(* - We have a requested ContainerOut, see if we can prepare our solution in it - *)
 
 	(* Get all possible containers *)
-	possibleContainers=PreferredContainer[ssModelPacket, All, LightSensitive -> TrueQ[lightSensitive], Type->Vessel];
+	possibleContainers= If[MatchQ[ssModelPacketOrOptionLookup, PacketP[]],
+		(* pass the model packet if we have one *)
+		PreferredContainer[
+			ssModelPacketOrOptionLookup,
+			All,
+			LightSensitive -> TrueQ[lightSensitive],
+			MaxTemperature -> If[TrueQ[autoclave], 121Celsius, Automatic],
+			Type -> Vessel
+		],
+		(* otherwise we have a list of resolved options *)
+		PreferredContainer[
+			All,
+			preferredContainers,
+			LightSensitive -> TrueQ[lightSensitive],
+			MaxTemperature -> If[TrueQ[autoclave], 121Celsius, Automatic],
+			Type -> Vessel,
+			All -> True,
+			IncompatibleMaterials -> Lookup[ssModelPacketOrOptionLookup, IncompatibleMaterials, Automatic]
+		]
+	];
 
 	(* Get containers which can hold our volume *)
-	inRangeContainers=Select[possibleContainers,RangeQ[prepVolume,Lookup[fetchPacketFromFastAssoc[#, cache], {MinVolume, MaxVolume}]]&];
+	inRangeContainers=Select[possibleContainers,RangeQ[requiredVolume,Lookup[fetchPacketFromFastAssoc[#, fastCache], {MinVolume, MaxVolume}]]&];
 
 	(* If we can prepare in our ContainerOut, do so to save an unnecessary transfer *)
-	If[MemberQ[inRangeContainers,Lookup[fetchPacketFromFastAssoc[containerOut, cache], Object]],
+	If[MemberQ[inRangeContainers,Lookup[fetchPacketFromFastAssoc[containerOut, fastCache], Object]],
 		Download[containerOut,Object],
 		preferredContainer
 	]
@@ -7264,7 +8056,7 @@ resolveMixIncubateStockSolutionOptions[
 	(* if Mix -> True, Incubate -> True, Mixer is specified, and Incubator is Automatic, then resolve to the Mixer; otherwise just stick with what we have *)
 	preResolvedIncubators = MapThread[
 		Function[{mix, incubate, mixer, incubator},
-			If[mix && incubate && MatchQ[mixer, ObjectP[]], MatchQ[incubator, Automatic],
+			If[mix && incubate && MatchQ[mixer, ObjectP[]] && MatchQ[incubator, Automatic],
 				mixer,
 				incubator
 			]
@@ -7281,7 +8073,7 @@ resolveMixIncubateStockSolutionOptions[
 			mixAndIncubateInstMismatchQ = MapThread[
 				Function[{mix, incubate, mixer, incubator},
 					If[mix && incubate && MatchQ[mixer, ObjectP[]] && MatchQ[incubator, ObjectP[]],
-						SameObjectQ[mixer, incubator],
+						!SameObjectQ[mixer, incubator],
 						False
 					]
 				],
@@ -7648,7 +8440,6 @@ resolveMixIncubateStockSolutionOptions[
 				Instrument -> Which[
 					MatchQ[Lookup[options, Instrument], ObjectP[]|Null], Lookup[options, Instrument],
 					MatchQ[Lookup[options, Incubator], ObjectP[]|Null], Lookup[options, Incubator],
-					MatchQ[container, ObjectP[Model[Container,Vessel,VolumetricFlask]]], Automatic,
 					passModelValueQ && Not[NullQ[maybeMixer]], maybeMixer,
 					True, Automatic
 				],
@@ -7657,7 +8448,6 @@ resolveMixIncubateStockSolutionOptions[
 				Time -> Which[
 					TimeQ[mixTime] && mixBool, mixTime,
 					TimeQ[incubationTime] && incubateBool, incubationTime,
-					MatchQ[container, ObjectP[Model[Container,Vessel,VolumetricFlask]]], Automatic,
 					MatchQ[mixTime, Automatic] && Not[mixBool] && Not[incubateBool], Null,
 					MatchQ[mixTime, Automatic] && MatchQ[Lookup[options, Type], Pipette|Invert], Automatic,
 					MatchQ[mixTime, Automatic] && mixBool && TimeQ[Lookup[model, MixTime]], Lookup[model, MixTime],
@@ -7666,7 +8456,6 @@ resolveMixIncubateStockSolutionOptions[
 				],
 				MaxTime -> Which[
 					TimeQ[Lookup[options, MaxTime]], Lookup[options, MaxTime],
-					MatchQ[container, ObjectP[Model[Container,Vessel,VolumetricFlask]]], Automatic,
 					MatchQ[Lookup[options, MaxTime], Automatic] && Not[mixBool] && Not[incubateBool], Null,
 					MatchQ[Lookup[options, MaxTime], Automatic] && MatchQ[Lookup[options, Type], Pipette|Invert], Automatic,
 					MatchQ[Lookup[options, MaxTime], Automatic] && mixBool && TimeQ[Lookup[model, maxMixTimeOption]], Lookup[model, maxMixTimeOption],
@@ -7675,19 +8464,16 @@ resolveMixIncubateStockSolutionOptions[
 				(* if passModelValueQ is True and the mix rate is not specified, then pass whatever the model's value is *)
 				MixRate -> Which[
 					MatchQ[Lookup[options, MixRate], RPMP|Null], Lookup[options, MixRate],
-					MatchQ[container, ObjectP[Model[Container,Vessel,VolumetricFlask]]], Automatic,
 					passModelValueQ && Not[NullQ[maybeMixRate]], maybeMixRate,
 					True, Automatic
 				],
 				NumberOfMixes -> Which[
-					MatchQ[container, ObjectP[Model[Container,Vessel,VolumetricFlask]]], Automatic,
 					MatchQ[Lookup[options, NumberOfMixes], Automatic] && Not[mixBool], Null,
 					MatchQ[Lookup[options, NumberOfMixes], GreaterP[0, 1]|Null], Lookup[options, NumberOfMixes],
 					MatchQ[numMixes, GreaterP[0, 1]], numMixes,
 					True, Automatic
 				],
 				MaxNumberOfMixes -> Which[
-					MatchQ[container, ObjectP[Model[Container,Vessel,VolumetricFlask]]], Automatic,
 					MatchQ[Lookup[options, MaxNumberOfMixes], Automatic] && Not[mixBool], Null,
 					MatchQ[Lookup[options, MaxNumberOfMixes], GreaterP[0, 1]|Null], Lookup[options, MaxNumberOfMixes],
 					MatchQ[maxNumMixes, GreaterP[0, 1]], maxNumMixes,
@@ -7825,7 +8611,7 @@ DefineOptions[resolveStockSolutionOptionsFormula,
 
 
 (* this function is only called in the Formula overload of UploadStockSolution and ExperimentStockSolution *)
-(* resolves the following options: {StockSolutionName, Synonyms, LightSensitive, Expires, ShelfLife, UnsealedShelfLife, DefaultStorageCondition, TransportChilled, TransportWarmed, Density, ExtinctionCoefficients, Ventilated, Flammable, Acid, Base, Fuming, IncompatibleMaterials} *)
+(* resolves the following options: {StockSolutionName, Synonyms, LightSensitive, Expires, DiscardThreshold, ShelfLife, UnsealedShelfLife, DefaultStorageCondition,TransportTemperature, Density, ExtinctionCoefficients, Ventilated, Flammable, Acid, Base, Fuming, IncompatibleMaterials} *)
 resolveStockSolutionOptionsFormula[
 	myModelFormulaSpecs:{{{MassP|VolumeP|GreaterP[0,1.]|Null,ObjectP[{Model[Sample],Object[Sample],Model[Molecule]}]}..}..},
 	mySolvents:{(ObjectP[{Model[Sample]}]|Null)..},
@@ -7837,9 +8623,9 @@ resolveStockSolutionOptionsFormula[
 		componentsAndSolvents, componentAndSolventDownloadTuples, unitOpsStorageConditions, componentDownloadTuples, solventDownloadTupleOrNull,
 		allComponentPackets, allComponentSCPackets, allSolventPacketsOrNulls, allSolventSCPacketsOrNulls,
 		allComponentAndSolventPackets, allComponentAndSolventSCPackets, allComponentModels, specifiedNames, namesAlreadyInUse,
-		namesAlreadyInUseTest, specifiedSynonymses, resolvedSynonyms, resolvedExpires, resolvedDefaultStorageCondition,
+		namesAlreadyInUseTest, specifiedSynonymses, resolvedSynonyms, resolvedExpires, resolvedDiscardThreshold, resolvedDefaultStorageCondition,
 		acid, base, acidBaseTests, resolvedLightSensitive, formulaOnlyResolvedOptions, cache, resultRule, testsRule, allComponentModelPackets,
-		volumeOptionUnusedWarnings, specifiedTransportWarmed, resolvedTransportChilled, transportWarmedTests,
+		volumeOptionUnusedWarnings, specifiedTransportTemperature, resolvedTransportTemperature, transportTemperatureTests,
 		duplicateComponentsErrors, deprecatedComponentsErrors, solventNotLiquidErrors, componentStateUnknownWarnings,
 		componentStateInvalidErrors, componentAmountOutOfRangeErrors, componentRequiresTabletCountErrors,
 		componentAmountInvalidErrors, formulaVolumeTooLargeErrors, duplicatedComponentInvalidInputs,
@@ -7849,15 +8635,16 @@ resolveStockSolutionOptionsFormula[
 		componentRequiresTabletCountInvalidInputs, componentRequiresTabletCountTest, formulaVolumeTooLargeInvalidOptions,
 		formulaVolumeTooLargeTest, namesAlreadyInUseOptions, synonymsNoNames, synonymsNoNamesOptions, synonymsNoNamesTest,
 		duplicateFreeNames, duplicateNameOptions, duplicateNameTest, providedShelfLives, providedUnsealedShelfLives,
-		shelfLivesSetIncorrectly, unsealedShelfLifeLonger, shelfLifeSet, shelfLivesSetIncorrectlyOptions, shelfLivesSetIncorrectlyTest,
+		shelfLivesSetIncorrectly, unsealedShelfLifeLonger, shelfLifeSetToNull, shelfLivesSetIncorrectlyOptions, shelfLivesSetIncorrectlyTest,
 		unsealedLongerWarning, shelfLifeError, shelfLivesSetProperlyOptions, allComponentShelfLives, componentShelfLives, shelfLifeToUse, allComponentUnsealedShelfLives,
 		componentUnsealedShelfLives, unsealedShelfLifeToUse, specifiedStorageConditions, allComponentDefaultStorageConditions,
-		potentialStorageConditionSymbols, specifiedTransportChilled, warmedAndChilledQ, warmedAndChilledOptions,
+		potentialStorageConditionSymbols,
 		acidAndBaseQ, acidAndBaseOptions, specifiedLightSensitive, formulaVolumes, volumeOptionDifferentQ,
 		resolvedIncompatibleMaterials, allTests, invalidInputs, invalidOptions, volumeOption, actualVolume,preResolvedComposition,resolvedVentilated, resolvedFlammable, resolvedFuming,multipleMultipleExpandedOptions,multipleMultipleOptionLengths,lengthToExpandTo,expandedMultipleMultipleOptions, preResolvedSafetyPacket, formulaSpecsWithPackets,
 		preparableQ, volumeInvalidFillToVolume, volumeInvalidFillToVolumeInvalidOptions, volumeInvalidFillToVolumeTest,
 		orderOfOperationsTest,invalidOrderOfOperationOptions,validOrderOfOperations, resolvedUltrasonicIncompatible,
-		requiredOrderOfOperations},
+		requiredOrderOfOperations, fillToVolumeMethods
+		},
 
 	(* need to expand the combined options right here because sometimes they will not be expanded already (namely, when UploadStockSolution calls this) *)
 	(* calling FastTrack -> True is fine here because if we got here already we're already fine *)
@@ -7875,6 +8662,7 @@ resolveStockSolutionOptionsFormula[
 	(* also get the Cache option *)
 	{cache, fastTrack} = Lookup[combinedOptions, {Cache, FastTrack}];
 	preparableQ = Lookup[combinedOptions, Preparable, True] /. {Automatic -> True};
+	fillToVolumeMethods=Lookup[combinedOptions,FillToVolumeMethod];
 
 	(* are we working based on a formula/Template or based on UnitOperations?  *)
 	unitOperationsQ = MatchQ[#, {SamplePreparationP..}]&/@myUnitOperations;
@@ -7995,7 +8783,7 @@ resolveStockSolutionOptionsFormula[
 		componentAmountInvalidErrors,
 		(* note that this is just a pair of theoretical and final volume rather than anything with the components *)
 		formulaVolumeTooLargeErrors,
-		(* indicates if the FillToVolume is in RangeP[$MinStockSolutionSolventVolume,$MaxStockSolutionComponentVolume] if we are doing FillToVolume *)
+		(* indicates if the FillToVolume is in RangeP[$MinStockSolutionUltrasonicSolventVolume,$MaxStockSolutionComponentVolume] if we are doing FillToVolume *)
 		volumeInvalidFillToVolume
 	} = If[fastTrack || Not[preparableQ],
 		(* if on the fast track or making a non-preparable formula, just skip all of this error checking *)
@@ -8004,7 +8792,7 @@ resolveStockSolutionOptionsFormula[
 			Length[myModelFormulaSpecs]
 		]],
 		Transpose[MapThread[
-			Function[{componentModels, componentPackets, solventPacketOrNull, componentAmounts, finalVolume, unitOpsQ},
+			Function[{componentModels, componentPackets, solventPacketOrNull, componentAmounts, finalVolume, unitOpsQ, fillToVolumeMethod},
 				Module[
 					{duplicatedComponentObjs, deprecatedComponentModels, solventNotLiquid, componentStates,
 						componentIsTablet, stateUnknown, componentStateUnknown, stateInvalid, componentStateInvalid,
@@ -8071,7 +8859,7 @@ resolveStockSolutionOptionsFormula[
 					componentAmountInRangeInvalidBools = MapThread[
 						Function[{componentAmount, fixedAliquotComponentBool},
 							Which[
-								(* if we're using nit operations, we dont care about amounts - its for ExperimentMSP to handle *)
+								(* if we're using nit operations, we don't care about amounts - its for ExperimentMSP to handle *)
 								unitOpsQ, False,
 								(* fixed aliquots are an exception and are always okay even if technically too small *)
 								fixedAliquotComponentBool, False,
@@ -8120,7 +8908,7 @@ resolveStockSolutionOptionsFormula[
 
 					(* get the prerequisites for even doing this check *)
 					prereqsForComponentVolumesTooLargeBool = And[
-						!unitOpsQ, (* just to make sure we dont deal with this if using unit ops, but pretty sure it doesnt mater because the amounts are Null *)
+						!unitOpsQ, (* just to make sure we don't deal with this if using unit ops, but pretty sure it doesnt mater because the amounts are Null *)
 						MatchQ[duplicatedComponentObjs, {}],
 						VolumeQ[finalVolume],
 						Not[NullQ[solventPacketOrNull]],
@@ -8132,13 +8920,27 @@ resolveStockSolutionOptionsFormula[
 					theoreticalFormulaVolume = Total[Cases[componentAmounts, VolumeP]];
 
 					(* if the theoretical formula volume is greater than the fill to volume volume, then get that pair; otherwise make it {} *)
-					formulaVolumeTooLarge = If[prereqsForComponentVolumesTooLargeBool && theoreticalFormulaVolume > finalVolume,
+					formulaVolumeTooLarge = If[prereqsForComponentVolumesTooLargeBool && theoreticalFormulaVolume >= finalVolume,
 						{theoreticalFormulaVolume, finalVolume},
 						{}
 					];
+					
 
-					(* the FillToVolume solvent is within RangeP[$MinStockSolutionSolventVolume,$MaxStockSolutionComponentVolume] *)
-					volumeInvalidFillToVolume = If[MatchQ[solventPacketOrNull, ObjectP[]] && Not[MatchQ[finalVolume, RangeP[$MinStockSolutionSolventVolume,$MaxStockSolutionComponentVolume]]],
+					(* the FillToVolume solvent is within RangeP[$MinStockSolutionUltrasonicSolventVolume,$MaxStockSolutionComponentVolume] *)
+					volumeInvalidFillToVolume = If[And[
+						MatchQ[solventPacketOrNull, ObjectP[]],
+						Or[
+							(*we use a lower limit for the volumetric method because we have 2mL voluemtric flasks*)
+							And[
+								MatchQ[fillToVolumeMethod,Volumetric],
+								Not[MatchQ[finalVolume, RangeP[$MinStockSolutionSolventVolume,$MaxStockSolutionComponentVolume]]]
+							],
+							And[
+								MatchQ[fillToVolumeMethod,Ultrasonic|Automatic],
+								Not[MatchQ[finalVolume, RangeP[$MinStockSolutionUltrasonicSolventVolume,$MaxStockSolutionComponentVolume]]]
+							]
+						]
+					],
 						finalVolume,
 						{}
 					];
@@ -8160,7 +8962,7 @@ resolveStockSolutionOptionsFormula[
 				]
 
 			],
-			{allComponentModels, allComponentPackets, allSolventPacketsOrNulls, allComponentAmounts, myFinalVolumes, unitOperationsQ}
+			{allComponentModels, allComponentPackets, allSolventPacketsOrNulls, allComponentAmounts, myFinalVolumes, unitOperationsQ, fillToVolumeMethods}
 		]]
 	];
 
@@ -8412,7 +9214,7 @@ resolveStockSolutionOptionsFormula[
 	(* note that it isn't _really the Volume option that is the problem here; it is the Volume input, but that makes the message text weird so we're not doing that here *)
 	formulaVolumeTooLargeInvalidOptions = If[Not[MatchQ[Flatten[formulaVolumeTooLargeErrors], {}]] && messages,
 		(
-			Message[Error::FormulaVolumeTooLarge, Flatten[formulaVolumeTooLargeErrors[[All, All, 1]]], Flatten[formulaVolumeTooLargeErrors[[All, All, 2]]]];
+			Message[Error::FormulaVolumeTooLarge, Flatten[formulaVolumeTooLargeErrors[[All, 1]]], Flatten[formulaVolumeTooLargeErrors[[All, 2]]]];
 			{Volume}
 		),
 		{}
@@ -8422,12 +9224,11 @@ resolveStockSolutionOptionsFormula[
 	formulaVolumeTooLargeTest = If[gatherTests,
 		Module[{failingTheoreticalVolume, failingSpecifiedVolume, test},
 
-			(* get the inputs that fail this test *)
-			failingTheoreticalVolume = Flatten[formulaVolumeTooLargeErrors[[All, All, 1]]];
-			failingSpecifiedVolume = Flatten[formulaVolumeTooLargeErrors[[All, All, 2]]];
-
 			(* duplicate component test *)
-			test = If[Length[failingTheoreticalVolume] > 0,
+			test = If[Length[Flatten[formulaVolumeTooLargeErrors]] > 0,
+				(* get the inputs that fail this test *)
+				failingTheoreticalVolume = Flatten[formulaVolumeTooLargeErrors[[All, 1]]];
+				failingSpecifiedVolume = Flatten[formulaVolumeTooLargeErrors[[All, 2]]];
 				Test["The provided volume(s) " <> ObjectToString[failingSpecifiedVolume] <> " are greater than or equal to the sum of the liquid component(s) " <> ObjectToString[failingTheoreticalVolume] <>  " for all inputs:",
 					False,
 					True
@@ -8441,10 +9242,10 @@ resolveStockSolutionOptionsFormula[
 		Null
 	];
 
-	(* throw an error if the solvent volume is not in RangeP[$MinStockSolutionSolventVolume, $MaxStockSolutionComponentVolume] *)
+	(* throw an error if the solvent volume is not in RangeP[$MinStockSolutionUltrasonicSolventVolume, $MaxStockSolutionComponentVolume] *)
 	volumeInvalidFillToVolumeInvalidOptions = If[Not[MatchQ[Flatten[volumeInvalidFillToVolume], {}]] && messages,
 		(
-			Message[Error::BelowFillToVolumeMinimum, "the input(s)", Flatten[volumeInvalidFillToVolume], $MinStockSolutionSolventVolume];
+			Message[Error::BelowFillToVolumeMinimum, "the input(s)", Flatten[volumeInvalidFillToVolume], $MinStockSolutionUltrasonicSolventVolume];
 			{Volume}
 		),
 		{}
@@ -8456,11 +9257,11 @@ resolveStockSolutionOptionsFormula[
 
 			(* duplicate component test *)
 			test = If[Length[Flatten[volumeInvalidFillToVolume]] > 0,
-				Test["The provided solvent volume(s) " <> ObjectToString[Flatten[volumeInvalidFillToVolume]] <> " within the allowed range of fill-to-volume solvents, " <> ObjectToString[$MinStockSolutionSolventVolume] <>  " to " <> ObjectToString[$MaxStockSolutionSolventVolume] <> " for all inputs:",
+				Test["The provided solvent volume(s) " <> ObjectToString[Flatten[volumeInvalidFillToVolume]] <> " within the allowed range of fill-to-volume solvents, " <> ObjectToString[$MinStockSolutionUltrasonicSolventVolume] <>  " to " <> ObjectToString[$MaxStockSolutionSolventVolume] <> " for all inputs:",
 					False,
 					True
 				],
-				Test["The provided solvent volume(s) are within the allowed range of fill-to-volume solvents, " <> ObjectToString[$MinStockSolutionSolventVolume] <>  " to " <> ObjectToString[$MaxStockSolutionSolventVolume] <> " for all inputs:",
+				Test["The provided solvent volume(s) are within the allowed range of fill-to-volume solvents, " <> ObjectToString[$MinStockSolutionUltrasonicSolventVolume] <>  " to " <> ObjectToString[$MaxStockSolutionSolventVolume] <> " for all inputs:",
 					True,
 					True
 				]
@@ -8599,6 +9400,9 @@ resolveStockSolutionOptionsFormula[
 	(* Automatic defaults based on component shelf lives; make sure we don't have conflict of Expires->False but ShelfLife/UnsealedShelfLife set explicitly *)
 	resolvedExpires = Lookup[combinedOptions, Expires] /. {Automatic -> True};
 
+	(* Automatic defaults to 5 Percent if we don't have anything yet *)
+	resolvedDiscardThreshold = Lookup[combinedOptions, DiscardThreshold] /. {Automatic -> 5 Percent};
+
 	(* assign the initially-provided ShelfLife/UnsealedShelfLife options *)
 	{providedShelfLives, providedUnsealedShelfLives} = Lookup[combinedOptions, {ShelfLife, UnsealedShelfLife}];
 
@@ -8606,7 +9410,7 @@ resolveStockSolutionOptionsFormula[
 	{
 		shelfLivesSetIncorrectly,
 		unsealedShelfLifeLonger,
-		shelfLifeSet
+		shelfLifeSetToNull
 	} = Transpose[MapThread[
 		Function[{expires, shelfLife, unsealedShelfLife},
 			{
@@ -8614,8 +9418,8 @@ resolveStockSolutionOptionsFormula[
 				MatchQ[expires, False] && (TimeQ[shelfLife] || TimeQ[unsealedShelfLife]),
 				(* if both unsealed shelf life and shelf life are set but unsealed is longer, then this is True *)
 				TimeQ[shelfLife] && TimeQ[unsealedShelfLife] && unsealedShelfLife > shelfLife,
-				(* If the unsealed shelf life is set, shelf life must also be set *)
-				(!TimeQ[shelfLife] && TimeQ[unsealedShelfLife])
+				(* Both ShelfLife and UnsealedShelfLife must be set if the stock solution expires *)
+				MatchQ[expires, True] && (NullQ[shelfLife] || NullQ[unsealedShelfLife])
 			}
 		],
 		{resolvedExpires, providedShelfLives, providedUnsealedShelfLives}
@@ -8654,7 +9458,7 @@ resolveStockSolutionOptionsFormula[
 	];
 	
 	(* throw a warning if unsealed shelf life is set but shelf life is not *)
-	shelfLivesSetProperlyOptions = If[Not[fastTrack] && MemberQ[shelfLifeSet, True] && messages,
+	shelfLivesSetProperlyOptions = If[Not[fastTrack] && MemberQ[shelfLifeSetToNull, True] && messages,
 		(
 			Message[Error::ShelfLifeNotSpecified];
 			{ShelfLife, UnsealedShelfLife}
@@ -8664,8 +9468,8 @@ resolveStockSolutionOptionsFormula[
 
 	(* make a test for the above check *)
 	shelfLifeError = If[gatherTests,
-		Test["If ShelfLife is provided, UnsealedShelfLife is also specified:",
-			MemberQ[shelfLifeSet, True],
+		Test["If Expires is True, both ShelfLife and UnsealedShelfLife cannot be Null:",
+			MemberQ[shelfLifeSetToNull, True],
 			False
 		],
 		Null
@@ -8711,8 +9515,12 @@ resolveStockSolutionOptionsFormula[
 	(* resolve the unsealed shelf life to use based on whether it expires or not and what the shelf life is *)
 	unsealedShelfLifeToUse = MapThread[
 		Function[{expires, providedValue, componentValue, resolvedShelfLife},
-			If[expires && TimeQ[componentValue],
-				providedValue /. {Automatic -> Min[resolvedShelfLife, componentValue]},
+			Which[
+				expires && TimeQ[componentValue],
+				providedValue /. {Automatic -> Min[DeleteCases[{resolvedShelfLife, componentValue},Null]]},
+				expires && TimeQ[resolvedShelfLife],
+				providedValue /. {Automatic -> resolvedShelfLife},
+				True,
 				providedValue /. {Automatic -> Null}
 			]
 		],
@@ -8747,46 +9555,22 @@ resolveStockSolutionOptionsFormula[
 		{specifiedStorageConditions, potentialStorageConditionSymbols}
 	];
 
-	(* pull out the specified TransportWarmed option *)
-	specifiedTransportWarmed = Lookup[combinedOptions, TransportWarmed];
-	specifiedTransportChilled = Lookup[combinedOptions, TransportChilled];
+	(* pull out the specified TransportTemperature option *)
+	specifiedTransportTemperature = Lookup[combinedOptions, TransportTemperature];
 
-	(* Automatic resolves based on the resolvedDefaultStorageCondition and TransportWarmed options *)
-	resolvedTransportChilled = MapThread[
-		Function[{warmed, chilled, storageCondition},
+	(* Automatic resolves based on the resolvedDefaultStorageCondition and TransportTemperature options *)
+	resolvedTransportTemperature = MapThread[
+		Function[{transportTemp, storageCondition},
 			Which[
-				MatchQ[chilled,Except[Automatic]], chilled,
-				TemperatureQ[warmed], False,
-				MatchQ[storageCondition, Refrigerator | Freezer | DeepFreezer | CryogenicStorage], True,
-				MatchQ[storageCondition, AmbientStorage], False,
-				True, False
+				MatchQ[transportTemp,Except[Automatic]], transportTemp,
+				MatchQ[storageCondition, Refrigerator], 4 Celsius,
+				MatchQ[storageCondition,Freezer], -20 Celsius,
+				MatchQ[storageCondition, DeepFreezer | CryogenicStorage], -80 Celsius,
+				MatchQ[storageCondition, AmbientStorage], Null,
+				True, Null
 			]
 		],
-		{specifiedTransportWarmed, specifiedTransportChilled, resolvedDefaultStorageCondition}
-	];
-
-	(* get a boolean for whether we have both warmed and chilled at the same time *)
-	warmedAndChilledQ = MapThread[
-		TemperatureQ[#1] && TrueQ[#2]&,
-		{specifiedTransportWarmed, resolvedTransportChilled}
-	];
-
-	(* throw a message if we have both TransportWarmed and TransportChilled at the same time *)
-	warmedAndChilledOptions = If[Not[fastTrack] && MemberQ[warmedAndChilledQ, True] && messages,
-		(
-			Message[Error::TransportWarmedChilledConflict];
-			{TransportWarmed, TransportChilled}
-		),
-		{}
-	];
-
-	(* make a test for the above case *)
-	transportWarmedTests = If[gatherTests,
-		Test["TransportWarmed and TransportChilled are not both set:",
-			MemberQ[warmedAndChilledQ, True],
-			False
-		],
-		Null
+		{specifiedTransportTemperature, resolvedDefaultStorageCondition}
 	];
 
 	(* pull out the specified LightSensitive option *)
@@ -8856,7 +9640,7 @@ resolveStockSolutionOptionsFormula[
 	(* Use flattenFormula in USS: a helper function which simulates Transfer and output Composition and safety info packet *)
 	(* we quiet the download message to avoid it when calling UploadSamlpeTransfer with a no-model sample *)
 	{preResolvedComposition,preResolvedSafetyPacket}=Transpose@MapThread[
-		(* dont use flattenFormula this if you are using unit ops.. *)
+		(* don't use flattenFormula this if you are using unit ops.. *)
 		If[!#4,
 			Quiet[
 				flattenFormula[
@@ -8870,17 +9654,18 @@ resolveStockSolutionOptionsFormula[
 			Module[
 				{
 					simulatedSamplePackets, labelOfInterest,simulatedContainer,simulatedSampleComposition,sanitizedSimulatedSampleComposition,
-					allEHSFields,simulatedSamples,safetyPacket
+					allEHSFields,simulatedSamples,safetyPacket, updatedSimulation
 				},
 				(* so this is very unfortunate, because at this point we've already simulated the sample, but we're going to do it again to get the composition and safety *)
 				(*simulate*)
-				simulatedSamplePackets =ExperimentManualSamplePreparation[#5, Output -> Simulation, Simulation->Null, Cache->cache];
+				simulatedSamplePackets =ExperimentManualSamplePreparation[#5, Output -> Simulation, Simulation->Null, Cache->If[!MatchQ[cache, Missing[___]],cache,{Null}]];
 				(*get the first label container unit operation,it should be the very first*)
 				labelOfInterest = First[Cases[#5, _LabelContainer]][Label];
 				(*figure out what is the container that was simulated for it and whats in it*)
 				simulatedContainer =Lookup[Lookup[First[simulatedSamplePackets], Labels],labelOfInterest];
+				updatedSimulation = stockSolutionCreateDummySamples[simulatedContainer, simulatedSamplePackets];
 				(*get the sample in that container and its volume*)
-				simulatedSampleComposition =  Download[simulatedContainer, Contents[[1, 2]][Composition],Simulation -> simulatedSamplePackets];
+				simulatedSampleComposition =  Download[simulatedContainer, Contents[[1, 2]][Composition],Simulation -> updatedSimulation];
 				(* make sure we're not dealing with links *)
 				sanitizedSimulatedSampleComposition = {#[[1]], Download[#[[2]], Object]}& /@ simulatedSampleComposition;
 
@@ -8888,8 +9673,8 @@ resolveStockSolutionOptionsFormula[
 				allEHSFields=Cases[ToExpression/@Options[ExternalUpload`Private`ObjectSampleHealthAndSafetyOptions][[All,1]],Except[StorageCondition]];
 
 				(* safety packet *)
-				simulatedSamples = Download[simulatedContainer, Contents[[1, 2]],Simulation -> simulatedSamplePackets];
-				safetyPacket = KeyValueMap[#1->#2&,Download[Download[simulatedSamples,Object], Evaluate[Packet[Sequence@@allEHSFields]],Simulation -> simulatedSamplePackets]/. {link_Link :> Download[link, Object]}];
+				simulatedSamples = Download[simulatedContainer, Contents[[1, 2]],Simulation -> updatedSimulation];
+				safetyPacket = KeyValueMap[#1->#2&,Download[Download[simulatedSamples,Object], Evaluate[Packet[Sequence@@allEHSFields]],Simulation -> updatedSimulation]/. {link_Link :> Download[link, Object]}];
 
 				(* return values *)
 				{sanitizedSimulatedSampleComposition,{safetyPacket}}
@@ -9191,13 +9976,13 @@ resolveStockSolutionOptionsFormula[
 		Synonyms -> resolvedSynonyms,
 		LightSensitive -> resolvedLightSensitive,
 		Expires -> resolvedExpires,
+		DiscardThreshold -> resolvedDiscardThreshold,
 		ShelfLife -> shelfLifeToUse,
 		UnsealedShelfLife -> unsealedShelfLifeToUse,
 		DefaultStorageCondition -> resolvedDefaultStorageCondition,
 		Acid -> acid,
 		Base -> base,
-		TransportChilled -> resolvedTransportChilled,
-		TransportWarmed -> specifiedTransportWarmed,
+		TransportTemperature -> resolvedTransportTemperature,
 		Density -> (Lookup[combinedOptions, Density] /. {Automatic -> Null}),
 		ExtinctionCoefficients -> Lookup[combinedOptions, ExtinctionCoefficients],
 		Ventilated -> resolvedVentilated,
@@ -9249,7 +10034,6 @@ resolveStockSolutionOptionsFormula[
 		duplicateNameOptions,
 		shelfLivesSetIncorrectlyOptions,
 		shelfLivesSetProperlyOptions,
-		warmedAndChilledOptions,
 		acidAndBaseOptions,
 		invalidOrderOfOperationOptions
 	}]];
@@ -9283,7 +10067,6 @@ resolveStockSolutionOptionsFormula[
 		shelfLivesSetIncorrectlyTest,
 		unsealedLongerWarning,
 		shelfLifeError,
-		transportWarmedTests,
 		acidBaseTests,
 		volumeOptionUnusedWarnings,
 		orderOfOperationsTest
@@ -9329,7 +10112,7 @@ stockSolutionResourcePackets[
 	myResolvedOptions:{_Rule..},
 	myUnresolvedOptions:{_Rule...}
 ]:=Module[
-	{expandedResolvedOptions,existingModelStockSolutions,newStockSolutionChangePackets,newStockSolutionFormulaModels,containersOut,
+	{expandedResolvedOptions,existingModelStockSolutions,newStockSolutionChangePackets,newStockSolutionFormulaModels,containersOut,volumetricFlasks,
 		existingSolutionDownloadTuples,formulaModelDownloadTuples,containerOutDownloadTuples,preferredContainerPacketLists,preferredContainerPackets,uniqueExistingSolutionPackets,
 		uniqueFormulaComponentPackets,containerOutPackets,stockSolutionModelPackets,rentContainerBools,resolvedMixBools,resolvedpHs,
 		resolvedFilterBools,preparatoryContainerResources,finalContainerResources,mixOrIncubateBools,
@@ -9344,8 +10127,9 @@ stockSolutionResourcePackets[
 		formulasWithUnits, effectiveStockSolutionVolume, prepVolumeScalingFactor, resolvedTemperatures,
 		mixParametersNew, allAmounts, samplesInResources, numReplicates, numReplicatesNoNull, formulaSpecsNoLinks,
 		nominalpHs, minpHs, maxpHs, pHTols, pHVolumeMultipler, pHVolumes, dosingTime, combiningTime, allResourceBlobs, fulfillable, frqTests, previewRule,
-		optionsRule, testsRule, resultRule, outputSpecification, output, gatherTests, messages,volumetricFlaskPackets,
+		optionsRule, testsRule, resultRule, outputSpecification, output, gatherTests, messages,volumetricFlaskPackets,compatibleVolumetricFlasksForSSModel,
 		resolvedAutoclaveBools, resolvedAutoclavePrograms, autoclaveSamples,autoclaveSampleContainerOut,autoclavePrograms,
+		resolvedLightSensitive, resolvedIncompatibleMaterials,
 		autoclaveSamplesWithArea,batchedAutoclaveSamples,autoclaveBatchLengths, fixedAliquotTotalAmounts,
 		newRequestedVolumes,requestedVolumes, preparatoryVolumes,containerOutMaxVolumes,volumeAboveContainerOutMaxQ,resolvedAdjustpHBools,
 		gellingAgentsResources,gellingAgents,mediaPhases,stirBarResource, heatSensitiveReagents, postAutoclaveMixedSolutionPackets,
@@ -9390,7 +10174,7 @@ stockSolutionResourcePackets[
 
 	(* also we're going to need to check if we have any fixed-aliquot compoments; gotta snag the formula models for the new stock solution change packets;
 	 	just get a flast list, we'll use our "make a big packet pile" trick *)
-	(* need to exempt UnitOps based stock solutions that dont have formulae *)
+	(* need to exempt UnitOps based stock solutions that don't have formulae *)
 	newStockSolutionFormulaModels=Flatten[Map[
 		If[MatchQ[Lookup[#,Replace[Formula]], Except[{}]],
 			Lookup[#,Replace[Formula]][[All,2]],
@@ -9401,23 +10185,34 @@ stockSolutionResourcePackets[
 	(* similarly, we may have resolved ContainerOut options via PreferredContainer that we don't have packets for; might need to check if they're volume calibrated, so also want to download from these *)
 	containersOut=Lookup[expandedResolvedOptions,ContainerOut];
 
+	(* get the FillToVolumeMethod option *)
+	fillToVolumeMethods=Lookup[expandedResolvedOptions,FillToVolumeMethod];
+
+	volumetricFlasks=If[MemberQ[fillToVolumeMethods,Volumetric],
+		Search[Model[Container, Vessel, VolumetricFlask], Deprecated != True && MaxVolume!=Null && DeveloperObject != True],
+		{}
+	];
+
+
 	(* set up a download call for these two things we need to get due to being given object references via Search that we couldn't know in advance;
 	 	gotta Quiet because only Model[Sample] has FixedAliquot *)
-	{existingSolutionDownloadTuples,formulaModelDownloadTuples,containerOutDownloadTuples,preferredContainerPacketLists}=Quiet[Download[
+	{existingSolutionDownloadTuples,formulaModelDownloadTuples,containerOutDownloadTuples,preferredContainerPacketLists,volumetricFlaskPackets}=Quiet[Download[
 		{
 			existingModelStockSolutions,
 			Flatten[{noModelFormulaObjs, newStockSolutionFormulaModels}],
 			containersOut,
-			PreferredContainer[All]
+			PreferredContainer[All],
+			volumetricFlasks
 		},
 		{
 			{
-				Packet[Formula,FillToVolumeSolvent,TotalVolume,LightSensitive,PreferredContainers,State,Sterile, UnitOperations, PreparationType],
+				Packet[Formula,FillToVolumeSolvent,TotalVolume,LightSensitive,PreferredContainers,State,Sterile, UnitOperations, PreparationType, IncompatibleMaterials],
 				Packet[Formula[[All,2]][{SingleUse, FixedAmounts, Resuspension}]]
 			},
 			{Packet[SingleUse, FixedAmounts, Resuspension]},
-			{Packet[VolumeCalibrations, Dimensions,MaxVolume]},
-			{Packet[MinVolume, MaxVolume]}
+			{Packet[VolumeCalibrations, Dimensions, MaxVolume, ContainerMaterials]},
+			{Packet[MinVolume, MaxVolume, ContainerMaterials]},
+			{Packet[Object, MaxVolume, ContainerMaterials, Opaque]}
 		},
 		Date -> Now
 	],{Download::FieldDoesntExist}];
@@ -9514,27 +10309,44 @@ stockSolutionResourcePackets[
 	mixOrIncubateBools = MapThread[#1 || #2&, {resolvedMixBools, resolvedIncubateBools}];
 	postAutoclaveMixOrIncubateBools = MapThread[#1 || #2&, {resolvedPostAutoclaveMixBools, resolvedPostAutoclaveIncubateBools}];
 
-	(* get the FillToVolumeMethod option *)
-	fillToVolumeMethods=Lookup[expandedResolvedOptions,FillToVolumeMethod];
-
-	(* most time we probably won't need this, so putting this download here, only if we're dealing with a volumetric *)
-	volumetricFlaskPackets=If[MemberQ[fillToVolumeMethods,Volumetric],
-		Module[{volumetricFlasks},
-			volumetricFlasks=Search[Model[Container, Vessel, VolumetricFlask], Deprecated != True && MaxVolume!=Null && DeveloperObject != True];
-			(* Sort our flasks from smallest to largest since we're going to FirstCase later to get the smallest flask that can hold our volume. *)
-			SortBy[
-				Download[volumetricFlasks,Packet[Object,MaxVolume], Date -> Now],
-				Lookup[#,MaxVolume]&
+	(* For each stock solution model, figure out the compatible volumetric flasks to prepare for FTV resolution, considering the light sensitive requirement and incompatible materials *)
+	(* Use the value from model packet if we have an existing model, or from resolved options if we have formula input *)
+	(* Note that we have to use model packet for model input since pseudoResolvedFormulaOnlyOptions Nulls out these options *)
+	resolvedLightSensitive=MapThread[
+		If[NullQ[#1],#2,Lookup[#1,LightSensitive]]&,
+		{
+			stockSolutionModelPackets,
+			Lookup[expandedResolvedOptions,LightSensitive]
+		}
+	];
+	resolvedIncompatibleMaterials=MapThread[
+		If[NullQ[#1],#2,Lookup[#1,IncompatibleMaterials]]&,
+		{
+			stockSolutionModelPackets,
+			Lookup[expandedResolvedOptions,IncompatibleMaterials]
+		}
+	];
+	compatibleVolumetricFlasksForSSModel=MapThread[
+		Function[
+			{lightSensitive,incompatibleMaterials},
+			If[TrueQ[lightSensitive],
+				(* When the stock solution is light sensitive, require Opaque->True and no incompatible materials *)
+				Cases[Flatten@volumetricFlaskPackets,KeyValuePattern[{Opaque->True,ContainerMaterials->Except[{___,Alternatives@@incompatibleMaterials,___}]}]],
+				(* Otherwise just require no incompatible materials *)
+				Cases[Flatten@volumetricFlaskPackets,KeyValuePattern[{ContainerMaterials->Except[{___,Alternatives@@incompatibleMaterials,___}]}]]
 			]
 		],
-		{}
+		{resolvedLightSensitive,resolvedIncompatibleMaterials}
 	];
 
 
 	(* determine the containers we want to do preparation of components in, and make resources for both these and ContainersOut *)
+	(* this is the same logic as resolver *)
 	{preparatoryContainerResources,finalContainerResources}=Transpose@MapThread[
 		Function[
-			{stockSolutionModelPacket,containerOutPacket,prepVolume,finalVolume,filterBool,rentContainerBool,fillToVolumeMethod,adjpHBool,orderOfOps,prepareInResuspensionContainerQ,lightSensitive},
+			{stockSolutionModelPacket, containerOutPacket, prepVolume, finalVolume,
+				filterBool, autoclaveBool, rentContainerBool, fillToVolumeMethod, adjpHBool, orderOfOps,
+				prepareInResuspensionContainerQ, lightSensitive, validVolumetricFlaskPackets},
 
 			Module[{prepVolumeAdjusted,potentialPrepContainers,prepContainer},
 
@@ -9552,7 +10364,7 @@ stockSolutionResourcePackets[
 				];
 
 				(* Get the container used to prepare our stock solution, in non Volumetric case *)
-				prepContainer=stockSolutionPrepContainer[stockSolutionModelPacket, prepVolumeAdjusted, containerOutPacket, lightSensitive, fastAssoc];
+				prepContainer=stockSolutionPrepContainer[stockSolutionModelPacket, prepVolumeAdjusted, containerOutPacket, lightSensitive, autoclaveBool, fastAssoc];
 
 				Which[
 					(* if we are preparing in the original container of a fixed amounts components, just set PreparatoryContainers and ContainersOut to Null at this point. They will be populated at compile time when the fixed amounts samples are picked *)
@@ -9609,7 +10421,7 @@ stockSolutionResourcePackets[
 						]
 					],
 					(* make different resources for the prep and final container; pass rent property; Rent the prep container IF THE CONTAINER IS REUSABLE (we'll discard it);
-						this is cheating a bit since we're assuming that PreferredContainer returns resuable things above 50mL
+						this is cheating a bit since we're assuming that PreferredContainer returns reusable things above 50mL
 						 DO NOT RENT if we're making more volume in Engine; keep that prep sample around *)
 					{
 						Flatten[
@@ -9617,14 +10429,24 @@ stockSolutionResourcePackets[
 								(* a volumetric flask*)
 								(* NOTE that doing the Table[blah, numReplicatesNoNull] is important because Table iterates multiple times and the Unique[] will be different each time. *)
 								(* DO NOT CHANGE THIS TO ConstantArray *)
-								Table[
-									Resource[
-										(* find a volumetric flask of the right size *)
-										Sample->Lookup[FirstCase[volumetricFlaskPackets,KeyValuePattern[{MaxVolume->GreaterEqualP[N[prepVolumeAdjusted]]}]],Object],
-										Rent->True,
-										Name->ToString[Unique[]]
-									],
-									numReplicatesNoNull
+								Module[
+									{sortedVolumetricFlaskPackets},
+									(* Sort our flasks from smallest to largest since we're going to FirstCase later to get the smallest flask that can hold our volume. *)
+									(* The list validVolumetricFlaskPackets already considered light sensitive requirement and incompatible materials *)
+									(* We also want to prefer non-opaque volumetric flasks if there are any available - Opaque->True should be put later in the list (sort will do False-Null-True, matching what we need *)
+									sortedVolumetricFlaskPackets = SortBy[validVolumetricFlaskPackets, {Lookup[#, MaxVolume]&, Lookup[#,Opaque]&}];
+									Table[
+										Resource[
+											(* find a volumetric flask of the right size *)
+											Sample->Lookup[
+												SelectFirst[sortedVolumetricFlaskPackets, Lookup[#, MaxVolume] >= N[prepVolumeAdjusted] &],
+												Object
+											],
+											Rent->True,
+											Name->ToString[Unique[]]
+										],
+										numReplicatesNoNull
+									]
 								],
 								(* ELSE: normal preparatory container resource*)
 								(* NOTE that doing the Table[blah, numReplicatesNoNull] is important because Table iterates multiple times and the Unique[] will be different each time. *)
@@ -9676,12 +10498,15 @@ stockSolutionResourcePackets[
 			containerOutPackets,
 			myPreparationVolumes,
 			Lookup[expandedResolvedOptions,Volume],
-			resolvedFilterBools,rentContainerBools,
+			resolvedFilterBools,
+			resolvedAutoclaveBools,
+			rentContainerBools,
 			fillToVolumeMethods,
 			resolvedAdjustpHBools,
 			Lookup[myResolvedOptions,OrderOfOperations],
 			Lookup[myResolvedOptions,PrepareInResuspensionContainer],
-			Lookup[expandedResolvedOptions,LightSensitive]
+			Lookup[expandedResolvedOptions,LightSensitive],
+			compatibleVolumetricFlasksForSSModel
 		}
 	];
 
@@ -10140,8 +10965,8 @@ stockSolutionResourcePackets[
 	]];
 
 	(* make resources _only_ for the Samples in SamplesIn (not the Models), and avoid it if you're using unitOperations (samplesIn will be empty) because MSP will take care of it all *)
-	(* the reason for this is complicated, but the crux of it is that StockSolution doesn't make its own resources for components; SampleManipulation does.  Thus, we don't want to double-count *)
-	(* we _need_ to double count for specified samples, though, becuase in those cases SampleManipulation will otherwise _not_ make a resource for the specified sample because RequireResources doesn't make resources for sample objects if it's in a Subprotocol *)
+	(* the reason for this is complicated, but the crux of it is that StockSolution doesn't make its own resources for components; SP sub does eventually.  Thus, we don't want to double-count *)
+	(* we _need_ to double count for specified samples, though, because in those cases SP will otherwise _not_ make a resource for the specified sample because RequireResources doesn't make resources for sample objects if it's in a Subprotocol *)
 	samplesInResources = If[Length[mySamplesIn]>0,
 		MapThread[
 			If[MatchQ[#1, ObjectP[Model[Sample]]],
@@ -10189,7 +11014,7 @@ stockSolutionResourcePackets[
 	gellingAgents = Lookup[expandedResolvedOptions,GellingAgents];
 
 	gellingAgentsResources=
-		If[NullQ[gellingAgents] || MatchQ[gellingAgents,{None}],
+		If[NullQ[gellingAgents] || MatchQ[gellingAgents,ListableP[None]],
 			Null,
 			MapThread[
 				Function[
@@ -10223,6 +11048,7 @@ stockSolutionResourcePackets[
 		Type->Object[Protocol, StockSolution],
 		UnresolvedOptions -> myUnresolvedOptions,
 		ResolvedOptions -> resolvedOptionsForProtocol,
+		MaxNumberOfOverfillingRepreparations -> Lookup[myResolvedOptions, MaxNumberOfOverfillingRepreparations],
 		(* UploadProtocol should probably handle this *)
 		Template -> If[MatchQ[Lookup[myResolvedOptions, Template], FieldReferenceP[]],
 			Link[Most[Lookup[myResolvedOptions, Template]], ProtocolsTemplated],
@@ -10296,10 +11122,10 @@ stockSolutionResourcePackets[
 
 		(* put Operator option in last index? Cam's not sure how it works so leaving Null... *)
 		Replace[Checkpoints]->{
-			{"Picking Resources",15 Minute,"Samples required to execute this protocol are gathered from storage.",Link[Resource[Operator -> Model[User, Emerald, Operator, "Trainee"], Time -> 15*Minute]]},
-			{"Dosing",dosingTime,"The component materials are measured out.",Link[Resource[Operator -> Model[User, Emerald, Operator, "Trainee"], Time -> dosingTime]]},
-			{"Combining",combiningTime,"The components are mixed, incubated, pH-titrated, and filtered.",Link[Resource[Operator -> Model[User, Emerald, Operator, "Trainee"], Time -> combiningTime]]},
-			{"Returning Materials",10 Minute,"Samples are returned to storage.",Link[Resource[Operator -> Model[User, Emerald, Operator, "Trainee"], Time -> 10*Minute]]}
+			{"Picking Resources",15 Minute,"Samples required to execute this protocol are gathered from storage.",Link[Resource[Operator -> $BaselineOperator, Time -> 15*Minute]]},
+			{"Dosing",dosingTime,"The component materials are measured out.",Link[Resource[Operator -> $BaselineOperator, Time -> dosingTime]]},
+			{"Combining",combiningTime,"The components are mixed, incubated, pH-titrated, and filtered.",Link[Resource[Operator -> $BaselineOperator, Time -> combiningTime]]},
+			{"Returning Materials",10 Minute,"Samples are returned to storage.",Link[Resource[Operator -> $BaselineOperator, Time -> 10*Minute]]}
 		},
 
 		(* populate NumberOfReplicates*)
@@ -10323,7 +11149,7 @@ stockSolutionResourcePackets[
 	(* generate the options output rule *)
 	optionsRule = Options -> Which[
 		MemberQ[output, Options] && !NullQ[mediaPhases],
-			KeyDrop[CollapseIndexMatchedOptions[ExperimentStockSolution, myResolvedOptions, Messages -> False], Cache],
+			Normal[KeyDrop[CollapseIndexMatchedOptions[ExperimentStockSolution, myResolvedOptions, Messages -> False], Cache],Association],
 		MemberQ[output, Options],
 			resolvedOptionsForProtocol,
 		True,
@@ -10830,4 +11656,29 @@ ExperimentStockSolutionPreview[
 
 	(* add back in explicitly just the Preview Output option for passing to core function to get just preview *)
 	ExperimentStockSolution[myUnitOperations,Append[listedOptions,Output->Preview]]
+];
+
+(* helper function: stockSolutionCreateDummySamples *)
+(* Purpose of this one is we need to do a work-around for CCD. In CCD user has to add UOs one by one and so when they add the first LabelSample UO, they have to calculate and verify *)
+(* However, that will break because there's no transfer into that labeled container, thus there's no Contents in this simulatedContainer *)
+(* Use the helper below to make a dummy sample *)
+stockSolutionCreateDummySamples[mySimulatedContainer:ObjectP[Object[Container]], mySimulatedPackets_]:= Module[{samplePacket, maxVolume, contents, emptyContainerQ, volumeToUse, currentProtocol},
+
+	(*get the sample in that container and its volume*)
+	{contents, maxVolume, currentProtocol} =  Download[mySimulatedContainer, {Contents, Model[MaxVolume], CurrentProtocol[Object]},Simulation -> mySimulatedPackets];
+
+	(* Here we need to do a work-around for CCD. In CCD user has to add UOs one by one and so when they add the first LabelSample UO, they have to calculate and verify *)
+	(* However, that will break because there's transfer into that labeled container, thus there's no Contents in this simulatedContainer *)
+	emptyContainerQ = MatchQ[$ECLApplication, CommandCenter] && MatchQ[contents, {}];
+
+	If[!emptyContainerQ,
+		Return[mySimulatedPackets]
+	];
+
+	volumeToUse = If[NullQ[maxVolume], Null, 0.01 * maxVolume];
+
+	samplePacket = UploadSample[Model[Sample, "id:8qZ1VWNmdLBD"], {"A1", mySimulatedContainer}, Simulation -> mySimulatedPackets, InitialAmount -> volumeToUse, UpdatedBy -> currentProtocol, Upload -> False];
+
+	UpdateSimulation[mySimulatedPackets, Simulation[samplePacket]]
+
 ];

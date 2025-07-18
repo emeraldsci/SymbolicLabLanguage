@@ -16,7 +16,7 @@ DefineObjectType[Object[Bill], {
 			Class -> Link,
 			Pattern :> _Link,
 			Relation -> Model[Pricing],
-			Description -> "The column join that best connects a column to this guard column.",
+			Description -> "The model information of a client pricing scheme for a billing cycle. This includes information on account details as well as pricing structure information that determines how prices are set for different categories of services, including but not limited to data and material usage and storage, software access, instrument usage, operator labor etc.",
 			Category -> "Organizational Information",
 			Abstract -> True,
 			AdminWriteOnly -> True
@@ -142,6 +142,7 @@ DefineObjectType[Object[Bill], {
 			Category -> "Pricing Information",
 			AdminWriteOnly -> True
 		},
+		(*)
 		IncludedConstellationStorage -> {
 			Format -> Single,
 			Class -> Real,
@@ -151,6 +152,7 @@ DefineObjectType[Object[Bill], {
 			Category -> "Pricing Information",
 			AdminWriteOnly -> True
 		},
+		*)
 		NumberOfThreads -> {
 			Format -> Single,
 			Class -> Integer,
@@ -182,40 +184,49 @@ DefineObjectType[Object[Bill], {
 		MaterialPurchases -> {
 			Format -> Multiple,
 			Headers -> {
-				(*1*)"Date Purchased",
-				(*2*)"Materials",
-				(*3*)"Protocol/Transaction",
-				(*4*)"Notebook",
+				(*1*)"Notebook",
+				(*2*)"Protocol",
+				(*3*)"Site",
+				(*4*)"Material Name",
 				(*5*)"Amount",
-				(*6*)"Price Per Unit",
-				(*7*)"Total Cost"
+				(*6*)"Value Rate",
+				(*7*)"Value",
+				(*8*)"Charge Rate",
+				(*9*)"Charge"
 			},
 			Class -> {
-				(*1*)Expression,
+				(*1*)Link,
 				(*2*)Link,
 				(*3*)Link,
-				(*4*)Link,
+				(*4*)String,
 				(*5*)VariableUnit,
 				(*6*)VariableUnit,
-				(*7*)Real
+				(*7*)Real,
+				(*8*)VariableUnit,
+				(*9*)Real
 			},
 			Pattern :> {
-				(*1*)_?DateObjectQ,
+				(*1*)_Link,
 				(*2*)_Link,
 				(*3*)_Link,
-				(*4*)_Link,
+				(*4*)_String,
 				(*5*)GreaterEqualP[0 * Milliliter] | GreaterEqualP[0 * Gram] | GreaterEqualP[0 * Unit] | GreaterEqualP[0],
+				(*6*)GreaterEqualP[0 * USD / Milliliter] | GreaterEqualP[0 * USD / Gram] | GreaterEqualP[0 * USD / Unit] | GreaterEqualP[0 * USD],
+				(*7*)GreaterEqualP[0 * USD],
 				(*6*)GreaterEqualP[0 * USD / Milliliter] | GreaterEqualP[0 * USD / Gram] | GreaterEqualP[0 * USD / Unit] | GreaterEqualP[0 * USD],
 				(*7*)GreaterEqualP[0 * USD]
 			},
 			Relation -> {
-				(*1*)Null,
-				(*2*)Object[Sample] | Object[Container] | Object[Item] | Model[Sample] | Model[Container] | Model[Item] | Object[Product],
-				(*3*)Object[Protocol] | Object[Transaction],
-				(*4*)Object[LaboratoryNotebook],
+				(*1*)Object[LaboratoryNotebook],
+				(*2*)Object[Protocol] | Object[Transaction]| Object[Qualification] | Object[Maintenance],
+				(*3*)Object[Container, Site],
+				(*4*)Null,
 				(*5*)Null,
 				(*6*)Null,
-				(*7*)Null
+				(*7*)Null,
+				(*8*)Null,
+				(*9*)Null
+
 			},
 			Units -> {
 				(*1*)None,
@@ -224,9 +235,11 @@ DefineObjectType[Object[Bill], {
 				(*4*)None,
 				(*5*)None,
 				(*6*)None,
-				(*7*)USD
+				(*7*)USD,
+				(*8*)None,
+				(*9*)USD
 			},
-			Description -> "History of experiments performed for this billing cycle.",
+			Description -> "The pricing details for materials purchased and charged for this account for this billing cycle.",
 			Category -> "Pricing Information",
 			AdminWriteOnly -> True
 		},
@@ -236,16 +249,18 @@ DefineObjectType[Object[Bill], {
 			Class -> Real,
 			Pattern :> GreaterEqualP[0 * USD],
 			Units -> USD,
-			Description -> "The amount charged by the ECL for each protocol run in the facility.",
+			(*TODO do we want to be more specific in the description - eg specify how value is set depending on PlanType or AccountType?*)
+			Description -> "The amount charged by the ECL for each protocol run in the facility as determined by the PlanType or AccountType.",
 			Category -> "Pricing Information",
 			AdminWriteOnly -> True
 		},
+		(*TODO do we want to be more specific in the description - eg specify how value is set depending on AccountType?*)
 		PricePerPriorityExperiment -> {
 			Format -> Single,
 			Class -> Real,
 			Pattern :> GreaterEqualP[0 * USD],
 			Units -> USD,
-			Description -> "The amount charged by the ECL for each priority protocol run in the facility that exceed IncludedPriorityProtocols.",
+			Description -> "The amount charged by the ECL for each priority protocol run in the facility that exceed IncludedPriorityProtocols as determined by AccountType.",
 			Category -> "Pricing Information",
 			AdminWriteOnly -> True
 		},
@@ -264,7 +279,7 @@ DefineObjectType[Object[Bill], {
 			Pattern :> {_Link, _?DateObjectQ, _Link, BooleanP, GreaterEqualP[0 * USD], GreaterEqualP[0 * USD]},
 			Units -> {None, None, None, None, USD, USD},
 			Relation -> {Object[Protocol], Null, Object[User], Null, Null, Null},
-			Description -> "History of experiments performed for this billing cycle.",
+			Description -> "The pricing details of charges on experiments performed for this account for this billing cycle.",
 			Category -> "Pricing Information",
 			AdminWriteOnly -> True
 		},
@@ -289,49 +304,78 @@ DefineObjectType[Object[Bill], {
 			Category -> "Pricing Information",
 			AdminWriteOnly -> True
 		},
+		OperatorModelPrice -> {
+			Format -> Multiple,
+			Headers -> {"Operator Model", "Price per hour"},
+			Class -> {Link, Real},
+			Pattern :> {_Link, GreaterEqualP[0 * USD / Hour]},
+			Units -> {None, USD / Hour},
+			Relation -> {
+				Model[User,Emerald,Operator],
+				Null
+			},
+			Description -> "The amount charged by the ECL for operator time per hour based on the Operator Model.",
+			Category -> "Pricing Information",
+			AdminWriteOnly->True
+		},
 		OperatorTimeCharges -> {
 			Format -> Multiple,
 			Headers -> {
 				(*1*)"Date Completed",
-				(*2*)"Protocol",
-				(*3*)"Operator Model",
+				(*2*)"Notebook",
+				(*3*)"Protocol",
+				(*4*)"Operator Model",
 				(*5*)"Operator Time",
-				(*6*)"Discounted Time",
-				(*7*)"Charge"
+				(*6*)"Value Rate",
+				(*7*)"Value",
+				(*8*)"Charge Rate",
+				(*9*)"Charge"
 			},
 			Class -> {
 				(*1*)Expression,
 				(*2*)Link,
-				(*3*)String,
+				(*3*)Link,
+				(*4*)String,
 				(*5*)Real,
 				(*6*)Real,
-				(*7*)Real
+				(*7*)Real,
+				(*8*)Real,
+				(*9*)Real
 			},
 			Pattern :> {
 				(*1*)_?DateObjectQ,
 				(*2*)_Link,
-				(*3*)_String,
+				(*3*)_Link,
+				(*4*)_String,
 				(*5*)GreaterEqualP[0 * Hour],
-				(*6*)GreaterEqualP[0 * Hour],
-				(*7*)GreaterEqualP[0 * USD]
+				(*6*)GreaterEqualP[0 * USD/Hour],
+				(*7*)GreaterEqualP[0 * USD],
+				(*8*)GreaterEqualP[0 * USD/Hour],
+				(*9*)GreaterEqualP[0 * USD]
 			},
 			Relation -> {
 				(*1*)Null,
-				(*2*)Object[Protocol],
-				(*3*)Null,
+				(*2*)Object[LaboratoryNotebook],
+				(*3*)Object[Protocol],
+				(*4*)Null,
 				(*5*)Null,
 				(*6*)Null,
-				(*7*)Null
+				(*7*)Null,
+				(*8*)Null,
+				(*9*)Null
 			},
 			Units -> {
 				(*1*)None,
 				(*2*)None,
 				(*3*)None,
+				(*4*)None,
 				(*5*)Hour,
-				(*6*)Hour,
-				(*7*)USD
+				(*6*)USD/Hour,
+				(*7*)USD,
+				(*8*)USD/Hour,
+				(*9*)USD
 			},
-			Description -> "History of operator performing experiments for this account for this billing cycle.",
+			Description -> "The pricing details of operator labor charges for performing experiments for this account for this billing cycle.",
 			Category -> "Pricing Information",
 			AdminWriteOnly -> True
 		},
@@ -359,50 +403,70 @@ DefineObjectType[Object[Bill], {
 			Format -> Multiple,
 			Headers -> {
 				(*1*)"Date Completed",
-				(*2*)"Protocol",
-				(*3*)"Instrument",
-				(*4*)"Instrument Tier",
-				(*5*)"Instrument Time",
-				(*6*)"Discounted Time",
-				(*7*)"Charge"
+				(*2*)"Site",
+				(*3*)"Notebook",
+				(*4*)"Protocol",
+				(*5*)"Instrument Model",
+				(*6*)"Instrument Tier",
+				(*7*)"Instrument Time",
+				(*8*)"Value Rate",
+				(*9*)"Value",
+				(*10*)"Charge Rate",
+				(*11*)"Charge"
 			},
 			Class -> {
 				(*1*)Expression,
 				(*2*)Link,
 				(*3*)Link,
-				(*4*)Integer,
-				(*5*)Real,
-				(*6*)Real,
-				(*7*)Real
+				(*4*)Link,
+				(*5*)Link,
+				(*6*)Integer,
+				(*7*)Real,
+				(*8*)Real,
+				(*9*)Real,
+				(*10*)Real,
+				(*11*)Real
 			},
 			Pattern :> {
 				(*1*)_?DateObjectQ,
 				(*2*)_Link,
 				(*3*)_Link,
-				(*4*)GreaterEqualP[1, 1],
-				(*5*)GreaterEqualP[0 * Hour],
-				(*6*)GreaterEqualP[0 * Hour],
-				(*7*)GreaterEqualP[0 * USD]
+				(*4*)_Link,
+				(*5*)_Link,
+				(*6*)GreaterEqualP[1, 1],
+				(*7*)GreaterEqualP[0 * Hour],
+				(*8*)GreaterEqualP[0 * USD/Hour],
+				(*9*)GreaterEqualP[0 * USD],
+				(*10*)GreaterEqualP[0 * USD/Hour],
+				(*11*)GreaterEqualP[0 * USD]
 			},
 			Relation -> {
 				(*1*)Null,
-				(*2*)Object[Protocol],
-				(*3*)Object[Instrument],
-				(*4*)Null,
-				(*5*)Null,
+				(*2*)Object[Container, Site],
+				(*3*)Object[LaboratoryNotebook],
+				(*4*)Object[Protocol],
+				(*5*)Model[Instrument],
 				(*6*)Null,
-				(*7*)Null
+				(*7*)Null,
+				(*8*)Null,
+				(*9*)Null,
+				(*10*)Null,
+				(*11*)Null
 			},
 			Units -> {
 				(*1*)None,
 				(*2*)None,
 				(*3*)None,
 				(*4*)None,
-				(*5*)Hour,
-				(*6*)Hour,
-				(*7*)USD
+				(*5*)None,
+				(*6*)None,
+				(*7*)Hour,
+				(*8*)USD/Hour,
+				(*9*)USD,
+				(*10*)USD/Hour,
+				(*11*)USD
 			},
-			Description -> "History of instruments performing experiments for this account for this billing cycle.",
+			Description -> "The pricing details of charges on instrument usage in performing experiments for this account for this billing cycle.",
 			Category -> "Pricing Information",
 			AdminWriteOnly -> True
 		},
@@ -414,6 +478,15 @@ DefineObjectType[Object[Bill], {
 			Description -> "The number of free occasions to clean items (e.g. dishwash glassware) not subject to cleaning fees.",
 			Category -> "Pricing Information",
 			AdminWriteOnly -> True
+		},
+		IncludedCleaningFees -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterEqualP[0 * USD],
+			Units -> USD,
+			Description -> "The price of free cleaning (e.g. dishwash glassware) not subject to fees.",
+			Category -> "Pricing Information",
+			AdminWriteOnly->True
 		},
 		CleanUpPricing -> {
 			Format -> Multiple,
@@ -428,46 +501,56 @@ DefineObjectType[Object[Bill], {
 		CleanUpCharges -> {
 			Format -> Multiple,
 			Headers -> {
-				(*2*)"Date Cleaned",
-				(*1*)"Material Cleaned",
-				(*3*)"Associated Protocol/Maintenance",
-				(*4*)"Cleaning Type",
-				(*5*)"Price",
-				(*6*)"Charge"
+				(*1*)"Date Cleaned",
+				(*2*)"Site",
+				(*3*)"Notebook",
+				(*4*)"Protocol",
+				(*5*)"Material",
+				(*6*)"Cleaning Category",
+				(*7*)"Value",
+				(*8*)"Charge"
 			},
 			Class -> {
 				(*1*)Expression,
 				(*2*)Link,
 				(*3*)Link,
-				(*4*)Expression,
-				(*5*)Real,
-				(*6*)Real
+				(*4*)Link,
+				(*5*)Link,
+				(*6*)Expression,
+				(*7*)Real,
+				(*8*)Real
 			},
 			Pattern :> {
 				(*1*)_?DateObjectQ,
 				(*2*)_Link,
 				(*3*)_Link,
-				(*4*)CleaningP,
-				(*5*)GreaterEqualP[0 * USD],
-				(*6*)GreaterEqualP[0 * USD]
+				(*4*)_Link,
+				(*5*)_Link,
+				(*6*)CleaningP,
+				(*7*)GreaterEqualP[0 * USD],
+				(*8*)GreaterEqualP[0 * USD]
 			},
 			Relation -> {
 				(*1*)Null,
-				(*2*)Object[Sample] | Object[Container] | Object[Item],
-				(*3*)Object[Protocol] | Object[Maintenance],
-				(*4*)Null,
-				(*5*)Null,
-				(*6*)Null
+				(*2*)Object[Container, Site],
+				(*3*)Object[LaboratoryNotebook],
+				(*4*)Object[Protocol] | Object[Maintenance]| Object[Qualification],
+				(*5*)Object[Sample] | Object[Container] | Object[Item]|Object[Part]|Object[Plumbing]| Object[Wiring]|Object[Product],
+				(*6*)Null,
+				(*7*)Null,
+				(*8*)Null
 			},
 			Units -> {
 				(*1*)None,
 				(*2*)None,
 				(*3*)None,
 				(*4*)None,
-				(*5*)USD,
-				(*6*)USD
+				(*5*)None,
+				(*6*)None,
+				(*7*)USD,
+				(*8*)USD
 			},
-			Description -> "History of clean ups for this account for this billing cycle.",
+			Description -> "The pricing details of charges on clean ups performed for this account for this billing cycle.",
 			Category -> "Pricing Information",
 			AdminWriteOnly -> True
 		},
@@ -501,51 +584,71 @@ DefineObjectType[Object[Bill], {
 		StockingCharges -> {
 			Format -> Multiple,
 			Headers -> {
-				(*2*)"Material Stocked",
-				(*3*)"Volume",
-				(*4*)"Stocking Protocol/Maintenance",
-				(*5*)"Storage Condition",
-				(*6*)"Price",
-				(*7*)"Discount",
-				(*8*)"Charge"
+				(*1*)"Notebook",
+				(*2*)"Protocol",
+				(*3*)"Site",
+				(*4*)"Material",
+				(*5*)"Material Purchased",
+				(*6*)"Storage Condition",
+				(*7*)"Volume",
+				(*8*)"Value Rate",
+				(*9*)"Value",
+				(*10*)"Charge Rate",
+				(*11*)"Charge"
 			},
 			Class -> {
+				(*1*)Link,
 				(*2*)Link,
-				(*3*)VariableUnit,
+				(*3*)Link,
 				(*4*)Link,
-				(*5*)Link,
-				(*6*)Real,
-				(*7*)Real,
-				(*8*)Real
+				(*5*)String,
+				(*6*)String,
+				(*7*)VariableUnit,
+				(*8*)Real,
+				(*9*)Real,
+				(*10*)Real,
+				(*11*)Real
 			},
 			Pattern :> {
+				(*1*)_Link,
 				(*2*)_Link,
-				(*3*)GreaterEqualP[0 * Centimeter^3] | GreaterEqualP[0 * Gram] | GreaterEqualP[0 * Liter],
+				(*3*)_Link,
 				(*4*)_Link,
-				(*5*)_Link,
-				(*6*)GreaterEqualP[0 * USD],
-				(*7*)GreaterEqualP[0 * USD],
-				(*8*)GreaterEqualP[0 * USD]
+				(*5*)_String,
+				(*6*)_String,
+				(*7*)GreaterEqualP[0 * Centimeter^3] | GreaterEqualP[0 * Gram] | GreaterEqualP[0 * Liter],
+				(*8*)GreaterEqualP[0 * USD/(Centimeter^3)],
+				(*9*)GreaterEqualP[0 USD],
+				(*10*)GreaterEqualP[0 * USD/(Centimeter^3)],
+				(*11*)GreaterEqualP[0 USD]
 			},
 			Relation -> {
-				(*2*)Object[Sample] | Object[Container] | Object[Item],
-				(*3*)Null,
-				(*4*)Object[Protocol] | Object[Maintenance] | Object[Transaction],
-				(*5*)Model[StorageCondition],
+				(*1*)Object[LaboratoryNotebook],
+				(*2*)Object[Protocol] | Object[Maintenance] | Object[Transaction],
+				(*3*)Object[Container, Site],
+				(*4*)Object[Sample] | Object[Container] | Object[Item],
+				(*5*)Null,
 				(*6*)Null,
 				(*7*)Null,
-				(*8*)Null
+				(*8*)Null,
+				(*9*)Null,
+				(*10*)Null,
+				(*11*)Null
 			},
 			Units -> {
+				(*1*)None,
 				(*2*)None,
 				(*3*)None,
 				(*4*)None,
 				(*5*)None,
-				(*6*)USD,
-				(*7*)USD,
-				(*8*)USD
+				(*6*)None,
+				(*7*)None,
+				(*8*)USD/(Centimeter^3),
+				(*9*)USD,
+				(*10*)USD/(Centimeter^3),
+				(*11*)USD
 			},
-			Description -> "History of stocking materials for this account for this billing cycle.",
+			Description -> "The pricing details of charges on storage of materials owned or purchased by the team for this account for this billing cycle.",
 			Category -> "Pricing Information",
 			AdminWriteOnly -> True
 		},
@@ -569,44 +672,65 @@ DefineObjectType[Object[Bill], {
 			Category -> "Pricing Information",
 			AdminWriteOnly -> True
 		},
+
 		WasteDisposalCharges -> {
 			Format -> Multiple,
 			Headers -> {
-				(*1*)"Date Disposed",
-				(*3*)"Associated Protocol",
+				(*1*)"Notebook",
+				(*2*)"Associated Protocol",
+				(*3*)"Site",
 				(*4*)"Waste Type",
-				(*5*)"Price",
-				(*6*)"Charge"
+				(*5*)"Weight",
+				(*6*)"Value Rate",
+				(*7*)"Value",
+				(*8*)"Charge Rate",
+				(*9*)"Charge"
 			},
 			Class -> {
-				(*1*)Expression,
+				(*1*)Link,
+				(*2*)Link,
 				(*3*)Link,
 				(*4*)Expression,
 				(*5*)Real,
-				(*6*)Real
+				(*6*)Real,
+				(*7*)Real,
+				(*8*)Real,
+				(*9*)Real
 			},
 			Pattern :> {
-				(*1*)_?DateObjectQ,
+				(*1*)_Link,
+				(*2*)_Link,
 				(*3*)_Link,
 				(*4*)WasteTypeP,
-				(*5*)GreaterEqualP[0 * USD],
-				(*6*)GreaterEqualP[0 * USD]
+				(*5*)GreaterEqualP[0 * Kilogram],
+				(*6*)GreaterEqualP[0 * USD/Kilogram],
+				(*7*)GreaterEqualP[0 * USD],
+				(*8*)GreaterEqualP[0 * USD/Kilogram],
+				(*9*)GreaterEqualP[0 * USD]
 			},
 			Relation -> {
-				(*1*)Null,
-				(*3*)Object[Protocol] | Object[Maintenance],
+				(*1*)Object[LaboratoryNotebook],
+				(*2*)Object[Protocol]|Object[Maintenance]|Object[Qualification],
+				(*3*)Object[Container, Site],
 				(*4*)Null,
 				(*5*)Null,
-				(*6*)Null
+				(*6*)Null,
+				(*7*)Null,
+				(*8*)Null,
+				(*9*)Null
 			},
 			Units -> {
 				None,
 				None,
 				None,
+				None,
+				Kilogram,
+				0 * USD / Kilogram,
 				USD,
+				0 * USD / Kilogram,
 				USD
 			},
-			Description -> "History of waste disposal for this account for this billing cycle.",
+			Description -> "The pricing details of charges on disposal of generated waste in the course of performing experiments for this account for this billing cycle.",
 			Category -> "Pricing Information",
 			AdminWriteOnly -> True
 		},
@@ -619,6 +743,15 @@ DefineObjectType[Object[Bill], {
 			Description -> "The amount of storage not subject to fees for this billing cycle.",
 			Category -> "Pricing Information",
 			AdminWriteOnly -> True
+		},
+		IncludedStorageFees -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterEqualP[0 * USD],
+			Units -> USD,
+			Description -> "The price of free storage not subject to fees.",
+			Category -> "Pricing Information",
+			AdminWriteOnly->True
 		},
 		StoragePricing -> {
 			Format -> Multiple,
@@ -635,58 +768,73 @@ DefineObjectType[Object[Bill], {
 			Format -> Multiple,
 			Headers -> {
 				(*1*)"Date Last Used",
-				(*2*)"Material",
-				(*3*)"Origin",
-				(*4*)"Storage Condition",
-				(*5*)"Capacity Taken",
-				(*6*)"Time in storage",
-				(*7*)"Price",
-				(*8*)"Discount",
-				(*9*)"Charge"
+				(*2*)"Notebook",
+				(*3*)"Site",
+				(*4*)"Protocol",
+				(*5*)"Material",
+				(*6*)"Storage Condition",
+				(*7*)"Capacity",
+				(*8*)"Time in storage",
+				(*9*)"Value Rate",
+				(*10*)"Value",
+				(*11*)"Charge Rate",
+				(*12*)"Charge"
 			},
 			Class -> {
 				(*1*)Expression,
 				(*2*)Link,
 				(*3*)Link,
-				(*4*)String,
-				(*5*)Real,
-				(*6*)Real,
+				(*4*)Link,
+				(*5*)Link,
+				(*6*)String,
 				(*7*)Real,
 				(*8*)Real,
-				(*9*)Real
+				(*9*)Real,
+				(*10*)Real,
+				(*11*)Real,
+				(*12*)Real
 			},
 			Pattern :> {
 				(*1*)_?DateObjectQ,
 				(*2*)_Link,
 				(*3*)_Link,
-				(*4*)_String,
-				(*5*)GreaterEqualP[0 * Centimeter^3],
-				(*6*)GreaterEqualP[0 * Hour],
-				(*7*)GreaterEqualP[0 * USD],
-				(*8*)GreaterEqualP[0 * USD],
-				(*9*)GreaterEqualP[0 * USD]
+				(*4*)_Link,
+				(*5*)_Link,
+				(*6*)_String,
+				(*7*)GreaterEqualP[0 * Centimeter^3],
+				(*8*)GreaterEqualP[0 * Hour],
+				(*9*)GreaterEqualP[0 * USD/Month],
+				(*10*)GreaterEqualP[0 * USD],
+				(*11*)GreaterEqualP[0 * USD/Month],
+				(*12*)GreaterEqualP[0 * USD]
 			},
 			Relation -> {
 				(*1*)Null,
-				(*2*)Object[Sample] | Object[Container] | Object[Item],
-				(*3*)Object[Protocol] | Object[Maintenance] | Object[Transaction],
-				(*4*)Null,
-				(*5*)Null,
+				(*2*)Object[LaboratoryNotebook],
+				(*3*)Object[Container, Site],
+				(*4*)Object[Protocol] | Object[Maintenance] | Object[Transaction] | Object[Qualification],
+				(*5*)Object[Sample] | Object[Container] | Object[Item] |Object[Part]|Object[Plumbing]| Object[Wiring],
 				(*6*)Null,
 				(*7*)Null,
 				(*8*)Null,
-				(*9*)Null
+				(*9*)Null,
+				(*10*)Null,
+				(*11*)Null,
+				(*12*)Null
 			},
 			Units -> {
 				(*1*)None,
 				(*2*)None,
 				(*3*)None,
 				(*4*)None,
-				(*5*)Centimeter^3,
-				(*6*)Hour,
-				(*7*)USD,
-				(*8*)USD,
-				(*9*)USD
+				(*5*)None,
+				(*6*)None,
+				(*7*)Centimeter^3,
+				(*8*)Hour,
+				(*9*)USD/Month,
+				(*10*)USD,
+				(*11*)USD/Month,
+				(*11*)USD
 			},
 			Description -> "Current storage summary for this account for this billing cycle.",
 			Category -> "Pricing Information",
@@ -706,48 +854,63 @@ DefineObjectType[Object[Bill], {
 			Format -> Multiple,
 			Headers -> {
 				(*1*)"Date of Shipment",
-				(*2*)"Shipment",
-				(*3*)"Shipment Weight",
-				(*4*)"Price",
-				(*5*)"Tax",
-				(*6*)"Discount",
-				(*7*)"Charge"
+				(*2*)"Notebook",
+				(*3*)"Shipment",
+				(*4*)"Shipping Type",
+				(*5*)"Supplier",
+				(*6*)"Destination",
+				(*7*)"Shipping Speed",
+				(*8*)"Shipment Weight",
+				(*9*)"Value",
+				(*10*)"Charge"
 			},
 			Class -> {
 				(*1*)Expression,
 				(*2*)Link,
-				(*3*)Real,
-				(*4*)Real,
-				(*5*)Real,
-				(*6*)Real,
-				(*7*)Real
+				(*3*)Link,
+				(*4*)String,
+				(*5*)Link,
+				(*6*)Link,
+				(*7*)Expression,
+				(*8*)Real,
+				(*9*)Real,
+				(*10*)Real
 			},
 			Pattern :> {
 				(*1*)_?DateObjectQ,
 				(*2*)_Link,
-				(*3*)GreaterEqualP[0 * Kilo * Gram],
-				(*4*)GreaterEqualP[0 * USD],
-				(*5*)GreaterEqualP[0 * USD],
-				(*6*)GreaterEqualP[0 * USD],
-				(*7*)GreaterEqualP[0 * USD]
+				(*3*)_Link,
+				(*4*)_String,
+				(*5*)_Link,
+				(*6*)_Link,
+				(*7*)ShippingSpeedP,
+				(*8*)GreaterEqualP[0 * Kilo * Gram],
+				(*9*)GreaterEqualP[0 * USD],
+				(*10*)GreaterEqualP[0 * USD]
 			},
 			Relation -> {
 				(*1*)Null,
-				(*2*)Object[Transaction],
-				(*3*)Null,
+				(*2*)Object[LaboratoryNotebook],
+				(*3*)Object[Transaction],
 				(*4*)Null,
-				(*5*)Null,
-				(*6*)Null,
-				(*7*)Null
+				(*5*)Object[Container]|Object[Company],
+				(*6*)Object[Container],
+				(*7*)Null,
+				(*8*)Null,
+				(*9*)Null,
+				(*10*)Null
 			},
 			Units -> {
 				(*1*)None,
 				(*2*)None,
-				(*3*)Kilo * Gram,
-				(*4*)USD,
-				(*5*)USD,
-				(*6*)USD,
-				(*7*)USD
+				(*3*)None,
+				(*4*)None,
+				(*5*)None,
+				(*6*)None,
+				(*7*)None,
+				(*8*)Kilo * Gram,
+				(*9*)USD,
+				(*10*)USD
 			},
 			Description -> "Current shipment summary for this account for this billing cycle.",
 			Category -> "Pricing Information",

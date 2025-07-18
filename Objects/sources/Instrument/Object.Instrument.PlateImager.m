@@ -102,6 +102,13 @@ DefineObjectType[Object[Instrument, PlateImager], {
 			Description -> "The minimum amount of time between each imaging that allows for the both movement of the camera arm to the next positions and camera focusing.",
 			Category -> "Instrument Specifications",
 			Developer->True
+		},
+		COMPort -> {
+			Format -> Single,
+			Class -> String,
+			Pattern :> _String,
+			Description -> "The serial port number that the instrument is connected to on the Instrument PC.",
+			Category -> "Instrument Specifications"
 		}
 	}
 }];

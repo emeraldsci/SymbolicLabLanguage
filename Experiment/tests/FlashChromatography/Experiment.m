@@ -27,8 +27,8 @@ DefineTests[
 			Variables:>{options}
 		],
 		Example[{Basic,"PreparatoryUnitOperations can be used to create the ExperimentFlashChromatography call used for QualificationFlashChromatography:"},
-			Module[{result,options,simulation,tests},
-				{result,options,simulation,tests}=ExperimentFlashChromatography[
+			Module[{result,options,simulation},
+				{result,options,simulation}=ExperimentFlashChromatography[
 					"Qualification Sample",
 					PreparatoryUnitOperations->Download[
 						Model[Qualification,FlashChromatography,"CombiFlash Rf 200 Qualification"],
@@ -39,29 +39,25 @@ DefineTests[
 					SamplesInStorageCondition->Disposal,
 					SamplesOutStorageCondition->Disposal,
 					Instrument->Object[Instrument,FlashChromatography,"Instrument for ExperimentFlashChromatography Testing"<>$SessionUUID],
-					Output->{Result,Options,Simulation,Tests}
+					Output->{Result,Options,Simulation}
 				];
 				{
 					Download[result,{LoadingType,LoadingAmount,Column}],
 					Lookup[options,{LoadingType,LoadingAmount,Column}],
-					Download["Qualification Sample"/.Lookup[simulation[[1]],Labels],{Volume,Composition},Simulation->simulation],
-					tests
+					Download["Qualification Sample"/.Lookup[simulation[[1]],Labels],{Volume,Composition},Simulation->simulation]
 				}
 			],
 			{
-				{{Liquid},{1. Milliliter},{ObjectP[Model[Item,Column]]}},
-				{Liquid,1 Milliliter,ObjectP[Model[Item,Column]]},
+				{{Liquid}, {1. Milliliter}, {ObjectP[Model[Item, Column]]}},
+				{Liquid, 1 Milliliter, ObjectP[Model[Item, Column]]},
 				{
 					4250.8` Microliter,
-					{
-						{19.04489016236867` VolumePercent,ObjectP[Model[Molecule,"Hexane"]]},
-						{76.17956064947468` VolumePercent,ObjectP[Model[Molecule,"Ethyl acetate"]]},
-						{53.13271443580146` Millimolar,ObjectP[Model[Molecule,"Phenacetin"]]},
-						{180.29811760265713` Millimolar,ObjectP[Model[Molecule,"N-Benzylbenzamide"]]}
-					}
-				},
-				{_EmeraldTest..}
+					{{CompositionP | Null, _Link | Null, _} ..}}
 			}
+		],
+		Example[{Basic,"Takes a model as input:"},
+			ExperimentFlashChromatography[Model[Sample, "Milli-Q water"]],
+			ObjectP[Object[Protocol,FlashChromatography]]
 		],
 
 		(* FlashChromatography option tests *)
@@ -604,7 +600,7 @@ DefineTests[
 			EquivalenceFunction->Equal,
 			Variables:>{options}
 		],
-		Example[{Options,PreSampleEquilibration,"PreSampleEquilibrium defaults to 3 times the column's VoidVolume divided by the FlowRate:"},
+		Example[{Options,PreSampleEquilibration,"PreSampleEquilibrium defaults to 6 times the column's VoidVolume divided by the FlowRate:"},
 			options=ExperimentFlashChromatography[
 				{
 					Object[Sample,"Sample 1 for ExperimentFlashChromatography Testing"<>$SessionUUID],
@@ -625,9 +621,9 @@ DefineTests[
 			];
 			Lookup[options,PreSampleEquilibration],
 			{
-				2.52 Minute,
-				1.68 Minute,
-				3.36 Minute
+				5.04 Minute,
+				3.36 Minute,
+				6.72 Minute
 			},
 			EquivalenceFunction->Equal,
 			Variables:>{options}
@@ -1950,61 +1946,30 @@ DefineTests[
 			{"transfer destination sample 1","Container"},
 			Variables:>{options}
 		],
-		Example[{Options,PreparatoryPrimitives,"Specify prepared samples for separation using PreparatoryPrimitives:"},
-			options=ExperimentFlashChromatography[
-				"Container",
-				PreparatoryPrimitives->{
-					Define[
-						Name->"Container",
-						Container->Model[Container,Vessel,"50mL Tube"]
-					],
-					Transfer[
-						Source->Model[Sample,"Milli-Q water"],
-						Amount->35 Milliliter,
-						Destination->"Container"
-					]
-				},
-				Output->Options
+		Example[{Options, {PreparedModelContainer, PreparedModelAmount}, "Specify the container in which an input Model[Sample] should be prepared:"},
+			options = ExperimentFlashChromatography[
+				{Model[Sample, "Milli-Q water"], Model[Sample, "Milli-Q water"]},
+				PreparedModelContainer -> Model[Container, Plate, "id:L8kPEjkmLbvW"],
+				PreparedModelAmount -> 1 Milliliter,
+				Output -> Options
 			];
-			Lookup[options,PreparatoryPrimitives],
+			prepUOs = Lookup[options, PreparatoryUnitOperations];
 			{
-				Define[
-					<|
-						Name->"Container",
-						Container->ObjectReferenceP[Model[Container,Vessel,"50mL Tube"]]
-					|>
-				],
-				Transfer[
-					<|
-						Source->ObjectReferenceP[Model[Sample,"Milli-Q water"]],
-						Amount->Quantity[35,"Milliliters"],
-						Destination->"Container"
-					|>
-				]
+				prepUOs[[-1, 1]][Sample],
+				prepUOs[[-1, 1]][Container],
+				prepUOs[[-1, 1]][Amount],
+				prepUOs[[-1, 1]][Well],
+				prepUOs[[-1, 1]][ContainerLabel]
 			},
-			Variables:>{options}
+			{
+				{ObjectP[Model[Sample, "id:8qZ1VWNmdLBD"]]..},
+				{ObjectP[Model[Container, Plate, "id:L8kPEjkmLbvW"]]..},
+				{EqualP[1 Milliliter]..},
+				{"A1", "B1"},
+				{_String, _String}
+			},
+			Variables :> {options, prepUOs}
 		],
-		Example[{Options,PreparatoryPrimitives,"If samples are specified for preparation using PreparatoryPrimitives, SampleContainerLabel resolves to the label from PreparatoryPrimitives and SampleLabel resolves to a default label:"},
-			options=ExperimentFlashChromatography[
-				"Container",
-				PreparatoryPrimitives->{
-					Define[
-						Name->"Container",
-						Container->Model[Container,Vessel,"50mL Tube"]
-					],
-					Transfer[
-						Source->Model[Sample,"Milli-Q water"],
-						Amount->35 Milliliter,
-						Destination->"Container"
-					]
-				},
-				Output->Options
-			];
-			Lookup[options,{SampleLabel,SampleContainerLabel}],
-			{String_,"Container"},
-			Variables:>{options}
-		],
-
 		(* Incubate option tests *)
 
 		Example[{Options,Incubate,"Indicates if the SamplesIn should be incubated at a fixed temperature prior to starting the experiment or aliquoting. Incubate->True indicates that all SamplesIn should be incubated. Sample Preparation occurs in the order of Incubation, Centrifugation, Filtration, and then Aliquoting (if specified):"},
@@ -2379,7 +2344,7 @@ DefineTests[
 		Example[{Options,AliquotContainer,"The desired type of container that should be used to prepare and house the aliquot samples, with indices indicating grouping of samples in the same plates, if desired:"},
 			options=ExperimentFlashChromatography[Object[Sample,"Sample 1 for ExperimentFlashChromatography Testing"<>$SessionUUID],AliquotContainer->Model[Container,Plate,"In Situ-1 Crystallization Plate"],Output->Options];
 			Lookup[options,AliquotContainer],
-			{1,ObjectP[Model[Container,Plate,"In Situ-1 Crystallization Plate"]]},
+			{{1, ObjectP[Model[Container, Plate, "In Situ-1 Crystallization Plate"]]}},
 			Variables:>{options}
 		],
 		Example[{Options,DestinationWell,"The desired position in the corresponding AliquotContainer in which the aliquot samples will be placed:"},
@@ -2390,7 +2355,7 @@ DefineTests[
 				Output->Options
 			];
 			Lookup[options,DestinationWell],
-			"A2",
+			{"A2"},
 			Variables:>{options}
 		],
 
@@ -2839,7 +2804,7 @@ DefineTests[
 				{12 Minute},
 				{7 Minute},
 				{7 Minute},
-				{8.68 Minute}
+				{10.36 Minute}
 			},
 			EquivalenceFunction->Equal,
 			Variables:>{protocol}
@@ -2973,7 +2938,82 @@ DefineTests[
 		],
 
 		(* Message tests *)
-
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a sample that does not exist (name form):"},
+			ExperimentFlashChromatography[Object[Sample, "Nonexistent sample"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a container that does not exist (name form):"},
+			ExperimentFlashChromatography[Object[Container, Vessel, "Nonexistent container"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a sample that does not exist (ID form):"},
+			ExperimentFlashChromatography[Object[Sample, "id:12345678"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a container that does not exist (ID form):"},
+			ExperimentFlashChromatography[Object[Container, Vessel, "id:12345678"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Do NOT throw a message if we have a simulated sample but a simulation is specified that indicates that it is simulated:"},
+			Module[
+				{containerPackets, containerID, sampleID, samplePackets, simulationToPassIn},
+				containerPackets = UploadSample[
+					Model[Container,Vessel,"50mL Tube"],
+					{"Work Surface", Object[Container, Bench, "The Bench of Testing"]},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True
+				];
+				simulationToPassIn = Simulation[containerPackets];
+				containerID = Lookup[First[containerPackets], Object];
+				samplePackets = UploadSample[
+					Model[Sample,"Milli-Q water"],
+					{"A1", containerID},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True,
+					Simulation -> simulationToPassIn,
+					InitialAmount -> 25 Milliliter
+				];
+				sampleID = Lookup[First[samplePackets], Object];
+				simulationToPassIn = UpdateSimulation[simulationToPassIn, Simulation[samplePackets]];
+				
+				ExperimentFlashChromatography[sampleID, Simulation -> simulationToPassIn, Output -> Options]
+			],
+			{__Rule}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Do NOT throw a message if we have a simulated container but a simulation is specified that indicates that it is simulated:"},
+			Module[
+				{containerPackets, containerID, sampleID, samplePackets, simulationToPassIn},
+				containerPackets = UploadSample[
+					Model[Container,Vessel,"50mL Tube"],
+					{"Work Surface", Object[Container, Bench, "The Bench of Testing"]},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True
+				];
+				simulationToPassIn = Simulation[containerPackets];
+				containerID = Lookup[First[containerPackets], Object];
+				samplePackets = UploadSample[
+					Model[Sample,"Milli-Q water"],
+					{"A1", containerID},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True,
+					Simulation -> simulationToPassIn,
+					InitialAmount -> 25 Milliliter
+				];
+				sampleID = Lookup[First[samplePackets], Object];
+				simulationToPassIn = UpdateSimulation[simulationToPassIn, Simulation[samplePackets]];
+				
+				ExperimentFlashChromatography[containerID, Simulation -> simulationToPassIn, Output -> Options]
+			],
+			{__Rule}
+		],
 		Example[{Messages,"DiscardedSamples","Throw an error and return $Failed if the input sample is discarded:"},
 			ExperimentFlashChromatography[Object[Sample,"Discarded Sample for ExperimentFlashChromatography Testing"<>$SessionUUID]],
 			$Failed,
@@ -4298,8 +4338,8 @@ DefineTests[
 			Upload[<|
 				Object->Object[Sample,"Sample 1 for ExperimentFlashChromatography Testing"<>$SessionUUID],
 				Replace[Composition]->{
-					{100 VolumePercent,Link[Model[Molecule,"Water"]]},
-					{5 Millimolar,Link[Model[Molecule,"Uracil"]]}
+					{100 VolumePercent,Link[Model[Molecule,"Water"]],Now},
+					{5 Millimolar,Link[Model[Molecule,"Uracil"]],Now}
 				}
 			|>];
 
@@ -4309,7 +4349,7 @@ DefineTests[
 					StorageCaps->True,
 					Name->"Column Model with Low Flow Rate for ExperimentFlashChromatography Testing"<>$SessionUUID,
 					SeparationMode->NormalPhase,
-					Reusability->False,
+					Reusable->False,
 					MaxNumberOfUses->1,
 					PackingMaterial->Silica,
 					FunctionalGroup->Null,
@@ -4351,7 +4391,7 @@ DefineTests[
 					StorageCaps->True,
 					Name->"Very Long Column Model for ExperimentFlashChromatography Testing"<>$SessionUUID,
 					SeparationMode->NormalPhase,
-					Reusability->False,
+					Reusable->False,
 					MaxNumberOfUses->1,
 					PackingMaterial->Silica,
 					FunctionalGroup->Null,
@@ -4392,7 +4432,7 @@ DefineTests[
 					Type->Model[Container,ExtractionCartridge],
 					Name->"Cartridge Model with Null PackingType for ExperimentFlashChromatography Testing"<>$SessionUUID,
 					SeparationMode->Null,
-					Reusability->False,
+					Reusable->False,
 					MaxNumberOfUses->1,
 					PackingMaterial->Null,
 					PackingType->Null,
@@ -4450,7 +4490,7 @@ DefineTests[
 					Type->Model[Container,ExtractionCartridge],
 					Name->"Cartridge Model with Low Flow Rate for ExperimentFlashChromatography Testing"<>$SessionUUID,
 					SeparationMode->Null,
-					Reusability->False,
+					Reusable->False,
 					MaxNumberOfUses->1,
 					PackingMaterial->Null,
 					PackingType->HandPacked,
@@ -4508,7 +4548,7 @@ DefineTests[
 					Type->Model[Container,ExtractionCartridge],
 					Name->"Cartridge Model with High Flow Rate for ExperimentFlashChromatography Testing"<>$SessionUUID,
 					SeparationMode->Null,
-					Reusability->False,
+					Reusable->False,
 					MaxNumberOfUses->1,
 					PackingMaterial->Null,
 					PackingType->HandPacked,
@@ -4570,7 +4610,7 @@ DefineTests[
 					Type->Model[Container,ExtractionCartridge],
 					Name->"Cartridge Model with 6g MaxBedWeight for ExperimentFlashChromatography Testing"<>$SessionUUID,
 					SeparationMode->NormalPhase,
-					Reusability->False,
+					Reusable->False,
 					MaxNumberOfUses->1,
 					PackingMaterial->Silica,
 					PackingType->Prepacked,
@@ -5054,7 +5094,7 @@ DefineTests[
 				voidVolume[[2]]*3/flowRate[[2]]
 			},
 			{
-				{5.0 Minute,1.68 Minute},
+				{5.0 Minute,3.36 Minute},
 				{16.8 Milliliter,16.8 Milliliter},
 				{30.0 Milliliter/Minute,30.0 Milliliter/Minute},
 				1.68 Minute

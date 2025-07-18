@@ -308,7 +308,13 @@ errorToOptionMap[Model[Molecule]]:={
 	"Error::MeltingBoilingPoint"->{MeltingPoint, BoilingPoint},
 	"Error::FluorescenceFields"->{FluorescenceExcitationMaximums,FluorescenceEmissionMaximums},
 	"Error::AffinityLabelsDoNotConformToPattern"->{AffinityLabels},
-	"Error::DetectionLabelsDoNotConformToPattern"->{DetectionLabels}
+	"Error::DetectionLabelsDoNotConformToPattern"->{DetectionLabels},
+	"Error::MoleculeExists"->{InChI, InChIKey, CAS, IUPAC, PubChemID},
+	"Error::InvalidMSDSURL"->{MSDSFile},
+	"Error::InvalidStructureFileURL"->{StructureFile},
+	"Error::InvalidStructureImageFileURL"->{StructureImageFile},
+	"Error::InvalidStructureLocalFile"->{StructureFile},
+	"Error::InvalidStructureImageLocalFile"->{StructureImageFile}
 };
 
 

@@ -158,6 +158,10 @@ AnalyzeMassSpectrumDeconvolution::IsotopicPeaksRange = "Min IsotopicPeaks value 
 (* Response *)
 AnalyzeMassSpectrumDeconvolution::FatalError = "Something went wrong internally. This may be due to network connectivity issues, so re-try the function call after waiting a couple of minutes.";
 
+Authors[AnalyzeMassSpectrumDeconvolution]:={"scicomp"};
+Authors[AnalyzeMassSpectrumDeconvolutionPreview]:={"scicomp"};
+Authors[AnalyzeMassSpectrumDeconvolutionOptions]:={"scicomp"};
+Authors[ValidAnalyzeMassSpectrumDeconvolutionQ]:={"scicomp"};
 
 (* ::Section:: *)
 (* Analysis Function Source Code *)
@@ -1126,7 +1130,7 @@ downloadDataForPreview[inputs_List] := Module[
   dataUnitless = QuantityMagnitude[data];
 
   (* Find the maximum intensity in the data set, and then select a fixed number of neighboring points. *)
-  intensityData = Map[Transpose[#][[-1]]&, dataUnitless]; (* Use -1, so we dont need to check 2xN vs 3xN data. *)
+  intensityData = Map[Transpose[#][[-1]]&, dataUnitless]; (* Use -1, so we don't need to check 2xN vs 3xN data. *)
   maxPeakIndicies = Map[Ordering[#][[-1]]&, intensityData];
   dataSubset = MapThread[partAroundIndex[#1, #2, $numPointsForPreview]&, {dataUnitless, maxPeakIndicies}];
 

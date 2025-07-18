@@ -38,6 +38,15 @@ DefineTests[ExperimentPCR,
 			],
 			ObjectP[Object[Protocol,PCR]]
 		],
+		Example[{Basic,"Accepts multiple sample objects with Null pair of primers specified:"},
+			ExperimentPCR[{
+				Object[Sample,"ExperimentPCR test sample 1" <> $SessionUUID],
+				Object[Sample,"ExperimentPCR test sample 2" <> $SessionUUID]
+			},
+				{{{Null,Null}}}
+			],
+			ObjectP[Object[Protocol,PCR]]
+		],
 		Example[{Basic,"Accepts a sample object with multiple specified pairs of primer objects:"},
 			ExperimentPCR[
 				Object[Sample,"ExperimentPCR test sample 1"<>$SessionUUID],
@@ -81,25 +90,38 @@ DefineTests[ExperimentPCR,
 			],
 			ObjectP[Object[Protocol,PCR]]
 		],
-		Example[{Basic,"Accepts a prepared assay plate without plate seal:"},
+		Example[{Options, PreparedPlate,"Accepts a prepared assay plate without plate seal:"},
 			protocol=ExperimentPCR[
 				Object[Sample,"ExperimentPCR test sample in prepared plate"<>$SessionUUID],
-				MasterMix->Null,
-				Buffer->Null
+				PreparedPlate -> True
+			];
+			{
+				MemberQ[protocol[RequiredResources][[All,2]],AssayPlate],
+				MemberQ[protocol[RequiredResources][[All,2]],PlateSeal],
+				Download[protocol, PreparedPlate]
+			},
+			{False,True, True},
+			Variables:>{protocol}
+		],
+		Example[{Options, PreparedPlate,"Accepts a prepared assay plate with plate seal:"},
+			protocol=ExperimentPCR[
+				Object[Sample,"ExperimentPCR test sample in prepared plate with cover"<>$SessionUUID],
+				PreparedPlate -> True
 			];
 			{MemberQ[protocol[RequiredResources][[All,2]],AssayPlate],MemberQ[protocol[RequiredResources][[All,2]],PlateSeal]},
 			{False,True},
 			Variables:>{protocol}
 		],
-		Example[{Basic,"Accepts a prepared assay plate with plate seal:"},
-			protocol=ExperimentPCR[
-				Object[Sample,"ExperimentPCR test sample in prepared plate with cover"<>$SessionUUID],
-				MasterMix->Null,
-				Buffer->Null
+		Example[{Options, PreparedPlate, "If PreparedPlate is set to True, then MasterMix and Buffer are set to Null, and SampleVolume is set to 0 Microliter:"},
+			options = ExperimentPCR[
+				Object[Sample, "ExperimentPCR test sample in prepared plate with cover" <> $SessionUUID],
+				PreparedPlate -> True,
+				Output -> Options,
+				OptionsResolverOnly -> True
 			];
-			{MemberQ[protocol[RequiredResources][[All,2]],AssayPlate],MemberQ[protocol[RequiredResources][[All,2]],PlateSeal]},
-			{False,True},
-			Variables:>{protocol}
+			Lookup[options, {MasterMix, Buffer, SampleVolume}],
+			{Null, Null, EqualP[0 Microliter]},
+			Variables :> {options}
 		],
 		Example[{Basic, "Test Robotic version on a single sample object:"},
 			ExperimentPCR[
@@ -220,6 +242,154 @@ DefineTests[ExperimentPCR,
 		],
 
 		(*===Error messages tests===*)
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a sample that does not exist (name form):"},
+			ExperimentPCR[Object[Sample, "Nonexistent sample"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a container that does not exist (name form):"},
+			ExperimentPCR[Object[Container, Vessel, "Nonexistent container"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a sample that does not exist (ID form):"},
+			ExperimentPCR[Object[Sample, "id:12345678"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a container that does not exist (ID form):"},
+			ExperimentPCR[Object[Container, Vessel, "id:12345678"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Do NOT throw a message if we have a simulated sample but a simulation is specified that indicates that it is simulated:"},
+			Module[{containerPackets, containerID, sampleID, samplePackets, simulationToPassIn},
+				containerPackets = UploadSample[
+					Model[Container,Vessel,"50mL Tube"],
+					{"Work Surface", Object[Container, Bench, "The Bench of Testing"]},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True
+				];
+				simulationToPassIn = Simulation[containerPackets];
+				containerID = Lookup[First[containerPackets], Object];
+				samplePackets = UploadSample[
+					Model[Sample, "Milli-Q water"],
+					{"A1", containerID},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True,
+					Simulation -> simulationToPassIn,
+					InitialAmount -> 25 Milliliter
+				];
+				sampleID = Lookup[First[samplePackets], Object];
+				simulationToPassIn = UpdateSimulation[simulationToPassIn, Simulation[samplePackets]];
+
+				ExperimentPCR[sampleID, Simulation -> simulationToPassIn, Output -> Options]
+			],
+			{__Rule}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Do NOT throw a message if we have a simulated container but a simulation is specified that indicates that it is simulated:"},
+			Module[{containerPackets, containerID, sampleID, samplePackets, simulationToPassIn},
+				containerPackets = UploadSample[
+					Model[Container,Vessel,"50mL Tube"],
+					{"Work Surface", Object[Container, Bench, "The Bench of Testing"]},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True
+				];
+				simulationToPassIn = Simulation[containerPackets];
+				containerID = Lookup[First[containerPackets], Object];
+				samplePackets = UploadSample[
+					Model[Sample, "Milli-Q water"],
+					{"A1", containerID},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True,
+					Simulation -> simulationToPassIn,
+					InitialAmount -> 25 Milliliter
+				];
+				sampleID = Lookup[First[samplePackets], Object];
+				simulationToPassIn = UpdateSimulation[simulationToPassIn, Simulation[samplePackets]];
+
+				ExperimentPCR[containerID, Simulation -> simulationToPassIn, Output -> Options]
+			],
+			{__Rule}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a primer pair sample that does not exist (name form):"},
+			ExperimentPCR[Object[Sample,"ExperimentPCR test sample 1"<>$SessionUUID], {{Object[Sample, "ExperimentPCR test primer sample 1 forward" <> $SessionUUID], Object[Sample, "Nonexistent sample"]}}],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a primer pair container that does not exist (name form):"},
+			ExperimentPCR[Object[Sample,"ExperimentPCR test sample 1"<>$SessionUUID], {{Object[Sample, "ExperimentPCR test primer sample 1 forward" <> $SessionUUID], Object[Container, Vessel, "Nonexistent container"]}}],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a primer pair sample that does not exist (ID form):"},
+			ExperimentPCR[Object[Sample,"ExperimentPCR test sample 1"<>$SessionUUID], {{Object[Sample, "ExperimentPCR test primer sample 1 forward" <> $SessionUUID], Object[Sample, "id:12345678"]}}],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a primer pair container that does not exist (ID form):"},
+			ExperimentPCR[Object[Sample,"ExperimentPCR test sample 1"<>$SessionUUID], {{Object[Sample, "ExperimentPCR test primer sample 1 forward" <> $SessionUUID], Object[Container, Vessel, "id:12345678"]}}],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Do NOT throw a message if we have a simulated primer pair sample but a simulation is specified that indicates that it is simulated:"},
+			Module[{containerPackets, containerID, sampleID, samplePackets, simulationToPassIn},
+				containerPackets = UploadSample[
+					Model[Container,Vessel,"50mL Tube"],
+					{"Work Surface", Object[Container, Bench, "The Bench of Testing"]},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True
+				];
+				simulationToPassIn = Simulation[containerPackets];
+				containerID = Lookup[First[containerPackets], Object];
+				samplePackets = UploadSample[
+					Model[Sample, "Milli-Q water"],
+					{"A1", containerID},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True,
+					Simulation -> simulationToPassIn,
+					InitialAmount -> 25 Milliliter
+				];
+				sampleID = Lookup[First[samplePackets], Object];
+				simulationToPassIn = UpdateSimulation[simulationToPassIn, Simulation[samplePackets]];
+
+				ExperimentPCR[Object[Sample,"ExperimentPCR test sample 1"<>$SessionUUID], {{Object[Sample, "ExperimentPCR test primer sample 1 forward" <> $SessionUUID], sampleID}}, Simulation -> simulationToPassIn, Output -> Options]
+			],
+			{__Rule}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Do NOT throw a message if we have a simulated primer pair container but a simulation is specified that indicates that it is simulated:"},
+			Module[{containerPackets, containerID, sampleID, samplePackets, simulationToPassIn},
+				containerPackets = UploadSample[
+					Model[Container,Vessel,"50mL Tube"],
+					{"Work Surface", Object[Container, Bench, "The Bench of Testing"]},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True
+				];
+				simulationToPassIn = Simulation[containerPackets];
+				containerID = Lookup[First[containerPackets], Object];
+				samplePackets = UploadSample[
+					Model[Sample, "Milli-Q water"],
+					{"A1", containerID},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True,
+					Simulation -> simulationToPassIn,
+					InitialAmount -> 25 Milliliter
+				];
+				sampleID = Lookup[First[samplePackets], Object];
+				simulationToPassIn = UpdateSimulation[simulationToPassIn, Simulation[samplePackets]];
+
+				ExperimentPCR[Object[Sample,"ExperimentPCR test sample 1"<>$SessionUUID], {{Object[Sample, "ExperimentPCR test primer sample 1 forward" <> $SessionUUID], containerID}}, Simulation -> simulationToPassIn, Output -> Options]
+			],
+			{__Rule}
+		],
 		Example[{Messages,"DiscardedSamples","The sample cannot have a Status of Discarded:"},
 			ExperimentPCR[
 				Object[Sample,"ExperimentPCR test discarded sample"<>$SessionUUID]
@@ -442,33 +612,7 @@ DefineTests[ExperimentPCR,
 			Manual,
 			Variables:>{options}
 		],
-		Example[{Options,PreparatoryPrimitives,"Use the PreparatoryPrimitives option to prepare samples from models before the experiment is run:"},
-			protocol=ExperimentPCR[
-				"ExperimentPCR PreparatoryPrimitives test vessel 1",
-				PreparatoryPrimitives->{
-					Define[Name->"ExperimentPCR PreparatoryPrimitives test vessel 1",Container->Model[Container,Vessel,"2mL Tube"]],
-					Transfer[Source->Model[Sample,"Milli-Q water"],Destination->"ExperimentPCR PreparatoryPrimitives test vessel 1",Amount->2 Microliter]
-				}
-			];
-			Download[protocol,PreparatoryPrimitives],
-			{SampleManipulationP..},
-			Variables:>{protocol}
-		],
-		Example[{Options,PreparatoryPrimitives,"Use the PreparatoryPrimitives option to prepare primer samples from models before the experiment is run:"},
-			protocol=ExperimentPCR[
-				Object[Sample,"ExperimentPCR test sample 1"<>$SessionUUID],
-				{{"ExperimentPCR PreparatoryPrimitives test vessel 1","ExperimentPCR PreparatoryPrimitives test vessel 2"}},
-				PreparatoryPrimitives->{
-					Define[Name->"ExperimentPCR PreparatoryPrimitives test vessel 1",Container->Model[Container,Vessel,"2mL Tube"]],
-					Define[Name->"ExperimentPCR PreparatoryPrimitives test vessel 2",Container->Model[Container,Vessel,"2mL Tube"]],
-					Aliquot[Source->Model[Sample,"Milli-Q water"],Destinations->{"ExperimentPCR PreparatoryPrimitives test vessel 1","ExperimentPCR PreparatoryPrimitives test vessel 2"},Amounts->{1,1} Microliter]
-				}
-			];
-			Download[protocol,PreparatoryPrimitives],
-			{SampleManipulationP..},
-			Variables:>{protocol}
-		],
-		Example[{Options,PreparatoryUnitOperations,"Use the PreparatoryPrimitives option to prepare samples from models before the experiment is run:"},
+		Example[{Options,PreparatoryUnitOperations,"Use the PreparatoryUnitOperations option to prepare samples from models before the experiment is run:"},
 			protocol=ExperimentPCR[
 				"ExperimentPCR PreparatoryUnitOperations test vessel 1",
 				PreparatoryUnitOperations->{
@@ -500,6 +644,82 @@ DefineTests[ExperimentPCR,
 			Download[protocol,PreparatoryUnitOperations],
 			{SamplePreparationP..},
 			Variables:>{protocol}
+		],
+		Example[{Options, {PreparedModelContainer, PreparedModelAmount}, "Specify the container in which an input Model[Sample] should be prepared for only primer pair samples:"},
+			options = ExperimentPCR[
+				Object[Sample,"ExperimentPCR test sample 1"<>$SessionUUID],
+				{{Model[Sample, "Milli-Q water"], Model[Sample, "Milli-Q water"]}},
+				PreparedModelContainer -> Model[Container, Plate, "id:01G6nvkKrrYm"],
+				PreparedModelAmount -> 1 Microliter,
+				Output -> Options
+			];
+			prepUOs = Lookup[options, PreparatoryUnitOperations];
+			{
+				prepUOs[[-1, 1]][Sample],
+				prepUOs[[-1, 1]][Container],
+				prepUOs[[-1, 1]][Amount],
+				prepUOs[[-1, 1]][Well],
+				prepUOs[[-1, 1]][ContainerLabel]
+			},
+			{
+				{ObjectP[Model[Sample, "id:8qZ1VWNmdLBD"]]..},
+				{ObjectP[Model[Container, Plate, "id:01G6nvkKrrYm"]]..},
+				{EqualP[1 Microliter]..},
+				{"A1", "B1"},
+				{_String, _String}
+			},
+			Variables :> {options, prepUOs}
+		],
+		Example[{Options, {PreparedModelContainer, PreparedModelAmount}, "Specify the container in which an input Model[Sample] should be prepared for both input sample and primer pair samples:"},
+			options = ExperimentPCR[
+				Model[Sample, "DNA, Single-Stranded from Salmon Testes"],
+				{{Model[Sample, "Milli-Q water"], Model[Sample, "Milli-Q water"]}},
+				PreparedModelContainer -> Model[Container, Plate, "id:01G6nvkKrrYm"],
+				PreparedModelAmount -> 1 Microliter,
+				Output -> Options
+			];
+			prepUOs = Lookup[options, PreparatoryUnitOperations];
+			{
+				prepUOs[[-1, 1]][Sample],
+				prepUOs[[-1, 1]][Container],
+				prepUOs[[-1, 1]][Amount],
+				prepUOs[[-1, 1]][Well],
+				prepUOs[[-1, 1]][ContainerLabel]
+			},
+			{
+				{ObjectP[Model[Sample, "DNA, Single-Stranded from Salmon Testes"]], ObjectP[Model[Sample, "id:8qZ1VWNmdLBD"]], ObjectP[Model[Sample, "id:8qZ1VWNmdLBD"]]},
+				{ObjectP[Model[Container, Plate, "id:01G6nvkKrrYm"]]..},
+				{EqualP[1 Microliter]..},
+				{"A1", "B1", "C1"},
+				{_String..}
+			},
+			Variables :> {options, prepUOs}
+		],
+		(* index matching here being wonky means the listy version of this test is actually rather different from the above version of this test *)
+		Example[{Options, {PreparedModelContainer, PreparedModelAmount}, "Specify the container in which an input Model[Sample] should be prepared, this time when a list is specified for the prepared model options:"},
+			options = ExperimentPCR[
+				{Object[Sample,"ExperimentPCR test sample 1"<>$SessionUUID]},
+				{{{Model[Sample, "Milli-Q water"], Model[Sample, "Milli-Q water"]}}},
+				PreparedModelContainer -> {Model[Container, Plate, "id:01G6nvkKrrYm"]},
+				PreparedModelAmount -> {1 Microliter},
+				Output -> Options
+			];
+			prepUOs = Lookup[options, PreparatoryUnitOperations];
+			{
+				prepUOs[[-1, 1]][Sample],
+				prepUOs[[-1, 1]][Container],
+				prepUOs[[-1, 1]][Amount],
+				prepUOs[[-1, 1]][Well],
+				prepUOs[[-1, 1]][ContainerLabel]
+			},
+			{
+				{ObjectP[Model[Sample, "id:8qZ1VWNmdLBD"]]..},
+				{ObjectP[Model[Container, Plate, "id:01G6nvkKrrYm"]]..},
+				{EqualP[1 Microliter]..},
+				{"A1", "B1"},
+				{_String, _String}
+			},
+			Variables :> {options, prepUOs}
 		],
 		Example[{Options,WorkCell,"WorkCell will be Null if Preparation is Manual:"},
 			options=ExperimentPCR[
@@ -2068,33 +2288,36 @@ DefineTests[ExperimentPCR,
 		Example[{Options,AliquotContainer,"The desired type of container that should be used to prepare and house the aliquot samples, with indices indicating grouping of samples in the same plates, if desired:"},
 			options=ExperimentPCR[Object[Sample,"ExperimentPCR test sample 1"<>$SessionUUID],AliquotContainer->Model[Container,Vessel,"2mL Tube"],Output->Options];
 			Lookup[options,AliquotContainer],
-			{1,ObjectP[Model[Container,Vessel,"2mL Tube"]]},
+			{{1, ObjectP[Model[Container, Vessel, "2mL Tube"]]}},
 			Variables:>{options}
 		],
 		Example[{Options,DestinationWell,"Indicates the desired position in the corresponding AliquotContainer in which the aliquot samples will be placed:"},
 			options=ExperimentPCR[Object[Sample,"ExperimentPCR test sample 1"<>$SessionUUID],DestinationWell->"A1",Output->Options];
 			Lookup[options,DestinationWell],
-			"A1",
+			{"A1"},
 			Variables:>{options}
 		],
 
 		(*Post-processing options tests*)
-		Example[{Options,MeasureWeight,"Set the MeasureWeight option:"},
+		Example[{Options,MeasureWeight,"Set the MeasureWeight option to True will trigger a warning because we expect the samples for post processing will be Sterile->True:"},
 			options=ExperimentPCR[Object[Sample,"ExperimentPCR test sample 1"<>$SessionUUID],MeasureWeight->True,Output->Options];
 			Lookup[options,MeasureWeight],
 			True,
+			Messages:> {Warning::PostProcessingSterileSamples},
 			Variables:>{options}
 		],
-		Example[{Options,MeasureVolume,"Set the MeasureVolume option:"},
+		Example[{Options,MeasureVolume,"Set the MeasureVolume option to True will trigger a warning because we expect the samples for post processing will be Sterile->True:"},
 			options=ExperimentPCR[Object[Sample,"ExperimentPCR test sample 1"<>$SessionUUID],MeasureVolume->True,Output->Options];
 			Lookup[options,MeasureVolume],
 			True,
+			Messages:> {Warning::PostProcessingSterileSamples},
 			Variables:>{options}
 		],
-		Example[{Options,ImageSample,"Set the ImageSample option:"},
+		Example[{Options,ImageSample,"Set the ImageSample option to True will trigger a warning because we expect the samples for post processing will be Sterile->True:"},
 			options=ExperimentPCR[Object[Sample,"ExperimentPCR test sample 1"<>$SessionUUID],ImageSample->True,Output->Options];
 			Lookup[options,ImageSample],
 			True,
+			Messages:> {Warning::PostProcessingSterileSamples},
 			Variables:>{options}
 		]
 	},
@@ -2265,22 +2488,22 @@ DefineTests[ExperimentPCR,
 				(*Make some test sample models*)
 				UploadSampleModel[
 					{
-						"ExperimentPCR test DNA sample"<>$SessionUUID,
-						"ExperimentPCR test DNA sample (Deprecated)"<>$SessionUUID
+						"ExperimentPCR test DNA sample" <> $SessionUUID,
+						"ExperimentPCR test DNA sample (Deprecated)" <> $SessionUUID
 					},
-					Composition->
-         {
-					 {{10 Micromolar,Model[Molecule,Oligomer,"ExperimentPCR test DNA molecule"<>$SessionUUID]},{100 VolumePercent,Model[Molecule,"Water"]}},
-					 {{10 Micromolar,Model[Molecule,Oligomer,"ExperimentPCR test DNA molecule"<>$SessionUUID]},{100 VolumePercent,Model[Molecule,"Water"]}}
-				 },
-					IncompatibleMaterials->{{None},{None}},
-					Expires->{True,True},
-					ShelfLife->{2 Year,2 Year},
-					UnsealedShelfLife->{90 Day,90 Day},
-					DefaultStorageCondition->{Model[StorageCondition,"Refrigerator"],Model[StorageCondition,"Refrigerator"]},
-					MSDSRequired->{False,False},
-					BiosafetyLevel->{"BSL-1","BSL-1"},
-					State->{Liquid,Liquid}
+					Composition ->
+						{
+							{{10 Micromolar, Model[Molecule, Oligomer, "ExperimentPCR test DNA molecule" <> $SessionUUID]}, {100 VolumePercent, Model[Molecule, "Water"]}},
+							{{10 Micromolar, Model[Molecule, Oligomer, "ExperimentPCR test DNA molecule" <> $SessionUUID]}, {100 VolumePercent, Model[Molecule, "Water"]}}
+						},
+					IncompatibleMaterials -> {{None}, {None}},
+					Expires -> {True, True},
+					ShelfLife -> {2 Year, 2 Year},
+					UnsealedShelfLife -> {90 Day, 90 Day},
+					DefaultStorageCondition -> {Model[StorageCondition, "Refrigerator"], Model[StorageCondition, "Refrigerator"]},
+					MSDSRequired -> {False, False},
+					BiosafetyLevel -> {"BSL-1", "BSL-1"},
+					State -> {Liquid, Liquid}
 				];
 
 				(*Make a deprecated test sample model*)
@@ -2294,51 +2517,50 @@ DefineTests[ExperimentPCR,
 				(*Make some test sample objects in the test container objects*)
 				UploadSample[
 					Join[
-						ConstantArray[Model[Sample,"ExperimentPCR test DNA sample"<>$SessionUUID],9],
-						ConstantArray[Model[Sample,"ExperimentPCR test DNA sample (Deprecated)"<>$SessionUUID],3],
-						ConstantArray[Model[Sample,"ExperimentPCR test DNA sample"<>$SessionUUID],2]
-						],
+						ConstantArray[Model[Sample, "ExperimentPCR test DNA sample" <> $SessionUUID], 9],
+						ConstantArray[Model[Sample, "ExperimentPCR test DNA sample (Deprecated)" <> $SessionUUID], 3],
+						ConstantArray[Model[Sample, "ExperimentPCR test DNA sample" <> $SessionUUID], 2]
+					],
 					{
-						{"A1",Object[Container,Plate,"ExperimentPCR test 96-well PCR plate 1"<>$SessionUUID]},
-						{"A1",Object[Container,Plate,"ExperimentPCR test 96-well PCR plate 2"<>$SessionUUID]},
-						{"A2",Object[Container,Plate,"ExperimentPCR test 96-well PCR plate 2"<>$SessionUUID]},
-						{"A3",Object[Container,Plate,"ExperimentPCR test 96-well PCR plate 2"<>$SessionUUID]},
-						{"A4",Object[Container,Plate,"ExperimentPCR test 96-well PCR plate 2"<>$SessionUUID]},
-						{"A5",Object[Container,Plate,"ExperimentPCR test 96-well PCR plate 2"<>$SessionUUID]},
+						{"A1", Object[Container, Plate, "ExperimentPCR test 96-well PCR plate 1" <> $SessionUUID]},
+						{"A1", Object[Container, Plate, "ExperimentPCR test 96-well PCR plate 2" <> $SessionUUID]},
+						{"A2", Object[Container, Plate, "ExperimentPCR test 96-well PCR plate 2" <> $SessionUUID]},
+						{"A3", Object[Container, Plate, "ExperimentPCR test 96-well PCR plate 2" <> $SessionUUID]},
+						{"A4", Object[Container, Plate, "ExperimentPCR test 96-well PCR plate 2" <> $SessionUUID]},
+						{"A5", Object[Container, Plate, "ExperimentPCR test 96-well PCR plate 2" <> $SessionUUID]},
 
-						{"A1",Object[Container,Plate,"ExperimentPCR test 96-well PCR plate 2"<>$SessionUUID]},
-						{"A2",Object[Container,Plate,"ExperimentPCR test 96-well PCR plate 2"<>$SessionUUID]},
-						{"A3",Object[Container,Plate,"ExperimentPCR test 96-well PCR plate 2"<>$SessionUUID]},
+						{"C1", Object[Container, Plate, "ExperimentPCR test 96-well PCR plate 2" <> $SessionUUID]},
+						{"C2", Object[Container, Plate, "ExperimentPCR test 96-well PCR plate 2" <> $SessionUUID]},
+						{"C3", Object[Container, Plate, "ExperimentPCR test 96-well PCR plate 2" <> $SessionUUID]},
 
-						{"B1",Object[Container,Plate,"ExperimentPCR test 96-well PCR plate 2"<>$SessionUUID]},
-						{"B2",Object[Container,Plate,"ExperimentPCR test 96-well PCR plate 2"<>$SessionUUID]},
-						{"B3",Object[Container,Plate,"ExperimentPCR test 96-well PCR plate 2"<>$SessionUUID]},
+						{"B1", Object[Container, Plate, "ExperimentPCR test 96-well PCR plate 2" <> $SessionUUID]},
+						{"B2", Object[Container, Plate, "ExperimentPCR test 96-well PCR plate 2" <> $SessionUUID]},
+						{"B3", Object[Container, Plate, "ExperimentPCR test 96-well PCR plate 2" <> $SessionUUID]},
 
-						{"A1",Object[Container,Vessel,"ExperimentPCR test 2mL tube"<>$SessionUUID]},
-						{"A1",Object[Container,Vessel,"ExperimentPCR test 50mL tube"<>$SessionUUID]}
+						{"A1", Object[Container, Vessel, "ExperimentPCR test 2mL tube" <> $SessionUUID]},
+						{"A1", Object[Container, Vessel, "ExperimentPCR test 50mL tube" <> $SessionUUID]}
 					},
-					Name->
-         {
-					 "ExperimentPCR test sample 1"<>$SessionUUID,
-					 "ExperimentPCR test sample 2"<>$SessionUUID,
-					 "ExperimentPCR test primer sample 1 forward"<>$SessionUUID,
-					 "ExperimentPCR test primer sample 1 reverse"<>$SessionUUID,
-					 "ExperimentPCR test primer sample 2 forward"<>$SessionUUID,
-					 "ExperimentPCR test primer sample 2 reverse"<>$SessionUUID,
+					Name -> {
+						"ExperimentPCR test sample 1" <> $SessionUUID,
+						"ExperimentPCR test sample 2" <> $SessionUUID,
+						"ExperimentPCR test primer sample 1 forward" <> $SessionUUID,
+						"ExperimentPCR test primer sample 1 reverse" <> $SessionUUID,
+						"ExperimentPCR test primer sample 2 forward" <> $SessionUUID,
+						"ExperimentPCR test primer sample 2 reverse" <> $SessionUUID,
 
-					 "ExperimentPCR test discarded sample"<>$SessionUUID,
-					 "ExperimentPCR test discarded primer sample forward"<>$SessionUUID,
-					 "ExperimentPCR test discarded primer sample reverse"<>$SessionUUID,
+						"ExperimentPCR test discarded sample" <> $SessionUUID,
+						"ExperimentPCR test discarded primer sample forward" <> $SessionUUID,
+						"ExperimentPCR test discarded primer sample reverse" <> $SessionUUID,
 
-					 "ExperimentPCR test deprecated model sample"<>$SessionUUID,
-					 "ExperimentPCR test deprecated model primer sample forward"<>$SessionUUID,
-					 "ExperimentPCR test deprecated model primer sample reverse"<>$SessionUUID,
+						"ExperimentPCR test deprecated model sample" <> $SessionUUID,
+						"ExperimentPCR test deprecated model primer sample forward" <> $SessionUUID,
+						"ExperimentPCR test deprecated model primer sample reverse" <> $SessionUUID,
 
-					 "ExperimentPCR test sample in 2mL tube"<>$SessionUUID,
-					 "ExperimentPCR test sample in 50mL tube"<>$SessionUUID
-				 },
-					InitialAmount->Join[
-						ConstantArray[0.5 Milliliter,13],
+						"ExperimentPCR test sample in 2mL tube" <> $SessionUUID,
+						"ExperimentPCR test sample in 50mL tube" <> $SessionUUID
+					},
+					InitialAmount -> Join[
+						ConstantArray[0.5 Milliliter, 13],
 						{5 Milliliter}
 					]
 				];

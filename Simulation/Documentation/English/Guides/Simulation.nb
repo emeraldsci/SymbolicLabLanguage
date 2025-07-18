@@ -1,3 +1,346 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:d1891a4445a996796826ccaab2c96fed7935d8953fa3190f5ba35681cc06f1c0
-size 13761
+(* Content-type: application/vnd.wolfram.mathematica *)
+
+(*** Wolfram Notebook File ***)
+(* http://www.wolfram.com/nb *)
+
+(* CreatedBy='Mathematica 11.3' *)
+
+(*CacheID: 234*)
+(* Internal cache information:
+NotebookFileLineBreakTest
+NotebookFileLineBreakTest
+NotebookDataPosition[       158,          7]
+NotebookDataLength[     13215,        336]
+NotebookOptionsPosition[      9655,        267]
+NotebookOutlinePosition[     11082,        303]
+CellTagsIndexPosition[     11039,        300]
+WindowTitle->Simulation
+WindowFrame->Normal*)
+
+(* Beginning of Notebook Content *)
+Notebook[{
+Cell[BoxData[GridBox[{
+   {GridBox[{
+      {
+       ItemBox[Cell[BoxData[
+         RowBox[{
+          InterpretationBox[
+           StyleBox[
+            GraphicsBox[{},
+             BaselinePosition->Baseline,
+             ImageSize->{8, 0}],
+            CacheGraphics->False],
+           Spacer[8],
+           Selectable->False], Cell["EMERALD GUIDE", "PacletNameCell",
+           TextAlignment->Center,ExpressionUUID->
+           "7908e89f-b893-47ac-459a-a815c351d89e"], 
+          InterpretationBox[
+           StyleBox[
+            GraphicsBox[{},
+             BaselinePosition->Baseline,
+             ImageSize->{8, 0}],
+            CacheGraphics->False],
+           Spacer[8],
+           Selectable->False]}]],
+         TextAlignment->Center,ExpressionUUID->
+         "867f6861-a9ab-4486-7f3f-3ad8f927adfb"],
+        Background->RGBColor[
+         0.24313725490196078`, 0.27058823529411763`, 0.2980392156862745],
+        ItemSize->Full], ""}
+     },
+     GridBoxAlignment->{"Rows" -> {{Center}}},
+     GridBoxItemSize->{"Columns" -> {Full, 
+         Scaled[0.02]}, "Rows" -> {{2.5}}}], Cell[TextData[{
+     Cell[BoxData[
+      ActionMenuBox[
+       FrameBox[Cell[TextData[{
+         "Functions",
+         " ",
+         Cell[BoxData[
+          GraphicsBox[
+           {RGBColor[183/256., 197/256., 211/256.], Thickness[0.13], 
+            LineBox[{{-1.8, 0.5}, {0, 0}, {1.8, 0.5}}]},
+           AspectRatio->1,
+           ImageSize->20,
+           PlotRange->{{-3, 4}, {-1, 1}}]],ExpressionUUID->
+          "78f220b2-6300-4131-a247-c3fe33bda36f"]
+        }],ExpressionUUID->"278ca8a4-5c3c-4f6f-a0e8-5a0c58893bfb"],
+        StripOnInput->False], {"\<\"Pairing\"\>":>Documentation`HelpLookup[
+       "paclet:EmeraldSimulation/ref/Pairing"], "\<\"SimulateEnthalpy\"\>":>
+       Documentation`HelpLookup[
+       "paclet:EmeraldSimulation/ref/SimulateEnthalpy"], "\<\"SimulateEntropy\
+\"\>":>Documentation`HelpLookup[
+       "paclet:EmeraldSimulation/ref/SimulateEntropy"], \
+"\<\"SimulateEquilibriumConstant\"\>":>Documentation`HelpLookup[
+       "paclet:EmeraldSimulation/ref/SimulateEquilibriumConstant"], \
+"\<\"SimulateFolding\"\>":>Documentation`HelpLookup[
+       "paclet:EmeraldSimulation/ref/SimulateFolding"], \
+"\<\"SimulateFreeEnergy\"\>":>Documentation`HelpLookup[
+       "paclet:EmeraldSimulation/ref/SimulateFreeEnergy"], \
+"\<\"SimulateKinetics\"\>":>Documentation`HelpLookup[
+       "paclet:EmeraldSimulation/ref/SimulateKinetics"], \
+"\<\"SimulateMeltingTemperature\"\>":>Documentation`HelpLookup[
+       "paclet:EmeraldSimulation/ref/SimulateMeltingTemperature"], \
+"\<\"SimulateReactivity\"\>":>Documentation`HelpLookup[
+       "paclet:EmeraldSimulation/ref/SimulateReactivity"]},
+       LineSpacing -> {1.4, 0},
+       Appearance->None,
+       MenuAppearance->Automatic,
+       MenuStyle->"GuideFunction"]],ExpressionUUID->
+      "fa12a122-bef2-48c0-8d50-049dba61e7f7"],
+     "\[ThickSpace]\[ThickSpace]\[ThickSpace]\[ThickSpace]\[ThickSpace]\
+\[ThickSpace]",
+     Cell[BoxData[
+      ActionMenuBox[
+       FrameBox[Cell[TextData[{
+         "Related Guides",
+         " ",
+         Cell[BoxData[
+          GraphicsBox[
+           {RGBColor[183/256., 197/256., 211/256.], Thickness[0.13], 
+            LineBox[{{-1.8, 0.5}, {0, 0}, {1.8, 0.5}}]},
+           AspectRatio->1,
+           ImageSize->20,
+           PlotRange->{{-3, 4}, {-1, 1}}]],ExpressionUUID->
+          "c56dcc21-0a20-45f8-b31e-a918140c024e"]
+        }],ExpressionUUID->"deb91711-15b1-4100-b9dd-e8ab99390a50"],
+        StripOnInput->False], {},
+       LineSpacing -> {1.4, 0},
+       Appearance->None,
+       MenuAppearance->Automatic,
+       MenuStyle->"GuideFunction"]],ExpressionUUID->
+      "1929a52a-590e-4558-8c4d-498737446d00"]
+    }], "AnchorBar",ExpressionUUID->"21a7d709-fdfe-409e-8a45-fcc5e263b19e"]}
+  }]], "AnchorBarGrid",
+ CellID->1,ExpressionUUID->"b042a824-39ed-4f09-9aaa-a202ecf99650"],
+
+Cell["Simulation", "GuideTitle",
+ CellID->289393840,ExpressionUUID->"0f705152-f47d-4713-93f6-5ebdcb65e09b"],
+
+Cell["", "GuideAbstract",
+ CellID->76329921,ExpressionUUID->"1845d2e4-6721-4d1b-a549-4098bf45a681"],
+
+Cell["\t", "GuideDelimiterSubsection",
+ CellID->36748073,ExpressionUUID->"4d8996ed-ad6e-482e-baff-d46f2cdad865"],
+
+Cell["Thermodynamics", "GuideFunctionsSubsection",
+ CellID->5120986,ExpressionUUID->"973e904b-55e4-4205-888d-519a22f739eb"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["SimulateEnthalpy"]],
+    "paclet:EmeraldSimulation/ref/SimulateEnthalpy"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "7daa11b5-bccd-4678-8f7d-5b85beba4940"],
+ "\[NonBreakingSpace]",
+ StyleBox["\[MediumSpace]\[FilledVerySmallSquare]\[MediumSpace]", 
+  "InlineSeparator"],
+ " ",
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["SimulateEntropy"]],
+    "paclet:EmeraldSimulation/ref/SimulateEntropy"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "2360311d-35db-4a52-9b99-993cf7ddc73b"],
+ "\[NonBreakingSpace]",
+ StyleBox["\[MediumSpace]\[FilledVerySmallSquare]\[MediumSpace]", 
+  "InlineSeparator"],
+ " ",
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["SimulateFreeEnergy"]],
+    "paclet:EmeraldSimulation/ref/SimulateFreeEnergy"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "ff8dd25a-7439-4780-9217-0ae28c94751f"],
+ "\[NonBreakingSpace]",
+ StyleBox["\[MediumSpace]\[FilledVerySmallSquare]\[MediumSpace]", 
+  "InlineSeparator"],
+ " ",
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["SimulateEquilibriumConstant"]],
+    "paclet:EmeraldSimulation/ref/SimulateEquilibriumConstant"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "5d5aec6e-acb2-4936-861b-c35576a834ef"]
+}], "InlineGuideFunctionListing",
+ CellID->332016077,ExpressionUUID->"b0f7dc86-6fa0-4c8d-b58c-8b72debb4a4d"],
+
+Cell["\t", "GuideDelimiterSubsection",
+ CellID->785530923,ExpressionUUID->"16b06cc8-78c1-4018-93fc-4ccb4b4c4cae"],
+
+Cell["Kinetics", "GuideFunctionsSubsection",
+ CellID->117462,ExpressionUUID->"acbbf407-1890-4a7e-88e6-3413a2d7b829"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["SimulateMeltingTemperature"]],
+    "paclet:EmeraldSimulation/ref/SimulateMeltingTemperature"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "6b43a3a7-419b-4b32-9202-720d0382df13"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " "
+}], "GuideText",
+ CellID->2907217,ExpressionUUID->"20bc427b-6f1a-436e-b089-2d360cb62c54"],
+
+Cell[TextData[Cell[BoxData[
+ TemplateBox[{Cell[
+    TextData["SimulateKinetics"]],
+   "paclet:EmeraldSimulation/ref/SimulateKinetics"},
+  "RefLink",
+  BaseStyle->
+   "InlineFunctionSans"]], \
+"InlineFunctionSans",ExpressionUUID->"5dd31753-42c0-4e26-8d58-8851f5dacd16"]],\
+ "InlineGuideFunctionListing",
+ CellID->258399506,ExpressionUUID->"e1d30503-d5c6-4272-91d9-bbe34485b90a"],
+
+Cell["\t", "GuideDelimiterSubsection",
+ CellID->327629765,ExpressionUUID->"cdf9a41c-0cfc-437f-bde1-9d122ad1c257"],
+
+Cell["Nucleic Acid Interactions", "GuideFunctionsSubsection",
+ CellID->429502458,ExpressionUUID->"2bc6a6fd-889d-40e3-becd-572721d581a5"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["Pairing"]],"paclet:EmeraldSimulation/ref/Pairing"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "b74bf527-6bad-4aef-88e3-09cc5b7a809c"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " "
+}], "GuideText",
+ CellID->321248737,ExpressionUUID->"cc981c8f-04dd-422e-9f6e-c1d748874253"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["SimulateFolding"]],
+    "paclet:EmeraldSimulation/ref/SimulateFolding"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "c5a29bea-5d0b-471c-9b74-5c1c251dd9a9"],
+ "\[NonBreakingSpace]",
+ StyleBox["\[MediumSpace]\[FilledVerySmallSquare]\[MediumSpace]", 
+  "InlineSeparator"],
+ " ",
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["SimulateReactivity"]],
+    "paclet:EmeraldSimulation/ref/SimulateReactivity"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "52ee111f-1fa6-4575-9efc-aedb5eadc000"]
+}], "InlineGuideFunctionListing",
+ CellID->137719098,ExpressionUUID->"8e7b484e-bde7-4904-a7e5-d2af5d784b41"],
+
+Cell["", "SectionFooterSpacer",
+ CellID->8729974,ExpressionUUID->"02da264e-e032-4731-ac48-65c4f31706f2"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  InterpretationBox[
+   StyleBox[
+    GraphicsBox[{},
+     BaselinePosition->Baseline,
+     ImageSize->{6, 0}],
+    CacheGraphics->False],
+   Spacer[6]]],ExpressionUUID->"975807b5-389c-45c5-9483-78cbafe8432e"],
+ "Related Guides"
+}], "GuideMoreAboutSection",
+ WholeCellGroupOpener->True,
+ CellID->886194511,ExpressionUUID->"93d46f6a-e352-4622-8952-b597b3413c77"],
+
+Cell["", "SectionHeaderSpacer",
+ CellID->372712904,ExpressionUUID->"f32cdcb6-0761-4414-af20-f251bc00bcdd"],
+
+Cell["", "FooterCell",
+ CellID->230640400,ExpressionUUID->"3117cf69-afd2-4218-b2a1-839273574524"]
+},
+Saveable->False,
+ScreenStyleEnvironment->"Working",
+WindowSize->{775, 872},
+WindowMargins->{{564, Automatic}, {Automatic, 54}},
+WindowTitle->"Simulation",
+Visible->False,
+TaggingRules->{
+ "ModificationHighlight" -> False, "ColorType" -> "GuideColor", 
+  "ExampleCounter" -> 1, "NeedPlatMsgIn" -> None, "RootCaptions" -> "", 
+  "Metadata" -> {
+   "built" -> "Wed 16 May 2018 22:00:24", "context" -> "Emerald`Simulation`", 
+    "keywords" -> {
+     "SimulateEnthalpy", "SimulateEntropy", "SimulateFreeEnergy", 
+      "SimulateEquilibriumConstant", "SimulateMeltingTemperature", 
+      "SimulateKinetics", "Pairing", "SimulateFolding", "SimulateReactivity"},
+     "specialkeywords" -> {}, "tutorialcollectionlinks" -> {}, "index" -> 
+    True, "label" -> "ECL Guide", "language" -> "en", "paclet" -> 
+    "EmeraldSimulation", "status" -> "None", "summary" -> "", 
+    "synonyms" -> {}, "titlemodifier" -> "", "Windowtitle" -> "Simulation", 
+    "title" -> "Simulation", "type" -> "Guide", "uri" -> 
+    "EmeraldSimulation/guide/Simulation", "WorkflowDockedCell" -> ""}, 
+  "SearchTextTranslated" -> "", "LinkTrails" -> ""},
+FrontEndVersion->"11.3 for Microsoft Windows (64-bit) (March 6, 2018)",
+StyleDefinitions->"EmeraldReference.nb",
+CharacterEncoding -> "UTF-8"
+]
+(* End of Notebook Content *)
+
+(* Internal cache information *)
+(*CellTagsOutline
+CellTagsIndex->{}
+*)
+(*CellTagsIndex
+CellTagsIndex->{}
+*)
+(*NotebookFileOutline
+Notebook[{
+Cell[582, 21, 3890, 93, 58, "AnchorBarGrid",ExpressionUUID->"b042a824-39ed-4f09-9aaa-a202ecf99650",
+ CellID->1],
+Cell[4475, 116, 107, 1, 50, "GuideTitle",ExpressionUUID->"0f705152-f47d-4713-93f6-5ebdcb65e09b",
+ CellID->289393840],
+Cell[4585, 119, 99, 1, 31, "GuideAbstract",ExpressionUUID->"1845d2e4-6721-4d1b-a549-4098bf45a681",
+ CellID->76329921],
+Cell[4687, 122, 112, 1, 22, "GuideDelimiterSubsection",ExpressionUUID->"4d8996ed-ad6e-482e-baff-d46f2cdad865",
+ CellID->36748073],
+Cell[4802, 125, 123, 1, 36, "GuideFunctionsSubsection",ExpressionUUID->"973e904b-55e4-4205-888d-519a22f739eb",
+ CellID->5120986],
+Cell[4928, 128, 1540, 42, 25, "InlineGuideFunctionListing",ExpressionUUID->"b0f7dc86-6fa0-4c8d-b58c-8b72debb4a4d",
+ CellID->332016077],
+Cell[6471, 172, 113, 1, 22, "GuideDelimiterSubsection",ExpressionUUID->"16b06cc8-78c1-4018-93fc-4ccb4b4c4cae",
+ CellID->785530923],
+Cell[6587, 175, 116, 1, 36, "GuideFunctionsSubsection",ExpressionUUID->"acbbf407-1890-4a7e-88e6-3413a2d7b829",
+ CellID->117462],
+Cell[6706, 178, 436, 12, 31, "GuideText",ExpressionUUID->"20bc427b-6f1a-436e-b089-2d360cb62c54",
+ CellID->2907217],
+Cell[7145, 192, 377, 9, 23, "InlineGuideFunctionListing",ExpressionUUID->"e1d30503-d5c6-4272-91d9-bbe34485b90a",
+ CellID->258399506],
+Cell[7525, 203, 113, 1, 22, "GuideDelimiterSubsection",ExpressionUUID->"cdf9a41c-0cfc-437f-bde1-9d122ad1c257",
+ CellID->327629765],
+Cell[7641, 206, 136, 1, 36, "GuideFunctionsSubsection",ExpressionUUID->"2bc6a6fd-889d-40e3-becd-572721d581a5",
+ CellID->429502458],
+Cell[7780, 209, 395, 11, 31, "GuideText",ExpressionUUID->"cc981c8f-04dd-422e-9f6e-c1d748874253",
+ CellID->321248737],
+Cell[8178, 222, 762, 20, 25, "InlineGuideFunctionListing",ExpressionUUID->"8e7b484e-bde7-4904-a7e5-d2af5d784b41",
+ CellID->137719098],
+Cell[8943, 244, 104, 1, 29, "SectionFooterSpacer",ExpressionUUID->"02da264e-e032-4731-ac48-65c4f31706f2",
+ CellID->8729974],
+Cell[9050, 247, 392, 12, 72, "GuideMoreAboutSection",ExpressionUUID->"93d46f6a-e352-4622-8952-b597b3413c77",
+ CellID->886194511],
+Cell[9445, 261, 106, 1, 14, "SectionHeaderSpacer",ExpressionUUID->"f32cdcb6-0761-4414-af20-f251bc00bcdd",
+ CellID->372712904],
+Cell[9554, 264, 97, 1, 41, "FooterCell",ExpressionUUID->"3117cf69-afd2-4218-b2a1-839273574524",
+ CellID->230640400]
+}
+]
+*)
+
+(* End of internal cache information *)
+

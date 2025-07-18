@@ -19,10 +19,17 @@ DefineUsage[ValidExperimentFlashFreezeQ,
 						{
 							InputName->"Samples",
 							Description->"The samples or containers that will be flash frozen.",
-							Widget->Widget[
-								Type->Object,
-								Pattern:>ObjectP[{Object[Sample],Object[Container]}],
-								Dereference->{Object[Container]->Field[Contents[[All,2]]]}
+							Widget->Alternatives[
+								"Sample"->Widget[
+									Type->Object,
+									Pattern:>ObjectP[{Object[Sample],Object[Container]}],
+									Dereference->{Object[Container]->Field[Contents[[All,2]]]}
+								],
+								"Model Sample"->Widget[
+									Type->Object,
+									Pattern:>ObjectP[Model[Sample]],
+									ObjectTypes->{Model[Sample]}
+								]
 							],
 							Expandable->False,
 							NestedIndexMatching->False
@@ -68,10 +75,17 @@ DefineUsage[ExperimentFlashFreezePreview,
 						{
 							InputName->"Samples",
 							Description->"The samples or containers containing samples that will be flash frozen.",
-							Widget->Widget[
-								Type->Object,
-								Pattern:>ObjectP[{Object[Sample],Object[Container]}],
-								Dereference->{Object[Container]->Field[Contents[[All,2]]]}
+							Widget->Alternatives[
+								"Sample"->Widget[
+									Type->Object,
+									Pattern:>ObjectP[{Object[Sample],Object[Container]}],
+									Dereference->{Object[Container]->Field[Contents[[All,2]]]}
+								],
+								"Model Sample"->Widget[
+									Type->Object,
+									Pattern:>ObjectP[Model[Sample]],
+									ObjectTypes->{Model[Sample]}
+								]
 							],
 							Expandable->False,
 							NestedIndexMatching->False
@@ -116,10 +130,17 @@ DefineUsage[ExperimentFlashFreezeOptions,
 						{
 							InputName->"Samples",
 							Description->"The samples or containers containing the samples that will be flash frozen.",
-							Widget->Widget[
-								Type->Object,
-								Pattern:>ObjectP[{Object[Sample],Object[Container]}],
-								Dereference->{Object[Container]->Field[Contents[[All,2]]]}
+							Widget->Alternatives[
+								"Sample"->Widget[
+									Type->Object,
+									Pattern:>ObjectP[{Object[Sample],Object[Container]}],
+									Dereference->{Object[Container]->Field[Contents[[All,2]]]}
+								],
+								"Model Sample"->Widget[
+									Type->Object,
+									Pattern:>ObjectP[Model[Sample]],
+									ObjectTypes->{Model[Sample]}
+								]
 							],
 							Expandable->False,
 							NestedIndexMatching->False

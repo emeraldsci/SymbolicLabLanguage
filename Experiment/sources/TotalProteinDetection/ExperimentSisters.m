@@ -7,7 +7,7 @@ DefineOptions[ExperimentTotalProteinDetectionPreview,
 	SharedOptions:>{ExperimentTotalProteinDetection}
 ];
 
-ExperimentTotalProteinDetectionPreview[myInputs:ListableP[ObjectP[{Object[Container],Object[Sample]}]|_String],myOptions:OptionsPattern[ExperimentTotalProteinDetectionPreview]]:=Module[
+ExperimentTotalProteinDetectionPreview[myInputs:ListableP[ObjectP[{Object[Container],Object[Sample],Model[Sample]}]|_String],myOptions:OptionsPattern[ExperimentTotalProteinDetectionPreview]]:=Module[
 	{listedOptions},
 
 	listedOptions=ToList[myOptions];
@@ -31,7 +31,7 @@ DefineOptions[ExperimentTotalProteinDetectionOptions,
 	SharedOptions :> {ExperimentTotalProteinDetection}
 ];
 
-ExperimentTotalProteinDetectionOptions[myInputs:ListableP[ObjectP[{Object[Container],Object[Sample]}]|_String],myOptions:OptionsPattern[ExperimentTotalProteinDetectionOptions]]:=Module[
+ExperimentTotalProteinDetectionOptions[myInputs:ListableP[ObjectP[{Object[Container],Object[Sample],Model[Sample]}]|_String],myOptions:OptionsPattern[ExperimentTotalProteinDetectionOptions]]:=Module[
 	{listedOptions,noOutputOptions,options},
 
 	(* get the options as a list *)
@@ -62,7 +62,7 @@ DefineOptions[ValidExperimentTotalProteinDetectionQ,
 	SharedOptions:>{ExperimentTotalProteinDetection}
 ];
 
-ValidExperimentTotalProteinDetectionQ[myInputs:ListableP[ObjectP[{Object[Container],Object[Sample]}]|_String],myOptions:OptionsPattern[ValidExperimentTotalProteinDetectionQ]]:=Module[
+ValidExperimentTotalProteinDetectionQ[myInputs:ListableP[ObjectP[{Object[Container],Object[Sample],Model[Sample]}]|_String],myOptions:OptionsPattern[ValidExperimentTotalProteinDetectionQ]]:=Module[
 	{listedOptions,preparedOptions,experimentTotalProteinDetectionTests,initialTestDescription,allTests,verbose,outputFormat},
 
 	(* Get the options as a list *)

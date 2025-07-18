@@ -67,9 +67,7 @@ DefineUsage[ValidResourceQ,
 			"Resource",
 			"UploadResourceStatus"
 		},
-		Author->{
-			"george"
-		}
+		Author->{"yanzhe.zhu", "george"}
 	}
 ];
 
@@ -261,6 +259,7 @@ DefineUsage[
 		MoreInformation->{
 			"Labware that is self contained such as items and parts is always scanned directly",
 			"Autoclave bags are scanned instead of the items inside them",
+			"Aseptic bags are scanned instead of the items inside them",
 			"If a cap doesn't have a sticker (the Barcode field in its model is set to False) the container it's on is scanned instead",
 			"Stickers are never printed for samples. Their containers are scanned instead."
 		},
@@ -304,30 +303,243 @@ DefineUsage[
 	}
 ];
 
+(* use the new DefineUsage style b/c we need to expand the provided options *)
 DefineUsage[
 	ModelInstances,
 	{
-		BasicDefinitions->{
-			{"ModelInstances[resource,currentProtocol]","objects","Returns a list of objects that can be picked to satisfy 'resource'."}
+		BasicDefinitions -> {
+			{
+				Definition -> {"ModelInstances[Resource,CurrentProtocol]", "Instances"},
+				Description -> "returns a list of 'Objects' that can be picked to satisfy 'Resource'.",
+				Inputs :> {
+					{
+						InputName -> "Resource",
+						Description -> "Any resource in need of fulfillment.",
+						Widget -> Widget[
+							Type -> Object,
+							Pattern :> ObjectP[Object[Resource, Sample]]
+						]
+					},
+					{
+						InputName -> "CurrentProtocol",
+						Description -> "The protocol or subprotocol which is currently attempting to pick the objects to satisfy the provided resource.",
+						Widget -> Alternatives[
+							Widget[
+								Type -> Object,
+								Pattern :> ObjectP[ProtocolTypes[]]
+							],
+							Widget[
+								Type -> Enumeration,
+								Pattern :> Alternatives[Null]
+							]
+						]
+					}
+				},
+				Outputs :> {
+					{
+						OutputName -> "objects",
+						Description -> "The objects which the given protocol is allowed to pick to satisfy the provided resource.",
+						Pattern :> {ObjectP[]..}
+					}
+				}
+			},
+			{
+				Definition -> {"ModelInstances[Model,Amount,AllowedContainerModels,AllowedNotebooks,RootProtocol,CurrentProtocol]", "Objects"},
+				Description -> "returns a list of 'Objects' that can be picked to satisfy a list of requirements dictated by 'Model', 'Amount', 'AllowedContainerModels', 'AllowedNotebooks', 'RootProtocol', 'CurrentProtocol'.",
+				Inputs :> {
+					IndexMatching[
+						{
+							InputName -> "Model",
+							Description -> "Any model(s) in need of fulfillment.",
+							Widget -> Widget[
+								Type -> Object,
+								Pattern :> ObjectP[{Model[Sample], Model[Item]}]
+							]
+						},
+						{
+							InputName -> "Amount",
+							Description -> "The amount(s) of the sample needed to fulfill the model(s).",
+							Widget -> Widget[
+								Type -> Expression,
+								Pattern :> Null | MassP | VolumeP | NumericP | UnitsP[Unit],
+								Size -> Line
+							]
+						},
+						{
+							InputName -> "AllowedContainerModels",
+							Description -> "A list of container model(s) that the sample is in in order to fulfill the model.",
+							Widget -> Alternatives[
+								Adder[Widget[
+									Type -> Object,
+									Pattern :> ObjectP[Model[Container]]
+								]],
+								Widget[
+									Type -> Enumeration,
+									Pattern :> Alternatives[{}]
+								]
+							]
+						},
+						IndexName -> "fulfillment models"
+					],
+					{
+						InputName -> "AllowedNotebooks",
+						Description -> "The notebook(s) that the sample that belongs to in order to fulfill the model.",
+						Widget -> Alternatives[
+							Adder[
+								Widget[
+									Type -> Object,
+									Pattern :> ObjectP[Object[LaboratoryNotebook]]
+								]
+							],
+							Widget[
+								Type -> Enumeration,
+								Pattern :> Alternatives[{}]
+							]
+						]
+					},
+					{
+						InputName -> "RootProtocol",
+						Description -> "The protocol or subprotocol which is currently attempting to pick the objects to satisfy the provided resource.",
+						Widget -> Alternatives[
+							Widget[
+								Type -> Object,
+								Pattern :> ObjectP[ProtocolTypes[]]
+							],
+							Widget[
+								Type -> Enumeration,
+								Pattern :> Alternatives[Null]
+							]
+						]
+					},
+					{
+						InputName -> "CurrentProtocol",
+						Description -> "The protocol or subprotocol which is currently attempting to pick the objects to satisfy the provided model.",
+						Widget -> Alternatives[
+							Widget[
+								Type -> Object,
+								Pattern :> ObjectP[ProtocolTypes[]]
+							],
+							Widget[
+								Type -> Enumeration,
+								Pattern :> Alternatives[Null]
+							]
+						]
+					}
+				},
+				Outputs :> {
+					{
+						OutputName -> "objects",
+						Description -> "The objects which the given protocol is allowed to pick to satisfy the provided model.",
+						Pattern :> {ObjectP[]..}
+					}
+				}
+			}
 		},
-		MoreInformation->{
+		MoreInformation -> {
 			"Objects must meet a number of general criteria to be pickable - e.g. they can't be expired, restricted or discarded",
 			"Disposable containers can only be picked if they are stocked to ensure they are truly clean and content-less."
 		},
-		Input:>{
-			{"resource",ObjectP[Object[Resource,Sample]],"Any resource in need of fulfillment."},
-			{"currentProtocol",ObjectP[ProtocolTypes[]],"The protocol or subprotocol which is currently attempting to pick the objects to satisfy the provided resource."}
-		},
-		Output:>{
-			{"objects",{ObjectP[]..},"The objects which the given protocol is allowed to pick to satisfy the provided resource."}
-		},
-		SeeAlso->{
+		SeeAlso -> {
 			"WhyCantIPickThisSample",
 			"RequireResources"
 		},
-		Author->{"hayley", "mohamad.zandian"}
+		Author -> {"hayley", "mohamad.zandian"}
 	}
 ];
+
+
+DefineUsage[
+	ConsolidationInstances,
+	{
+		BasicDefinitions -> {
+			{
+				Definition -> {"ConsolidationInstances[Model,Amount,AllowedNotebooks,RootProtocol,CurrentProtocol]", "Results"},
+				Description -> "returns an information association 'Results' that can be consolidated to fulfill the 'Model' of 'Amount', along with other requirements dictated by'AllowedNotebooks', 'RootProtocol', and 'CurrentProtocol'.",
+				Inputs :> {
+					IndexMatching[
+						{
+							InputName -> "Model",
+							Description -> "Any model(s) in need of fulfillment.",
+							Widget -> Widget[
+								Type -> Object,
+								Pattern :> ObjectP[{Model[Sample], Model[Item]}]
+							]
+						},
+						{
+							InputName -> "Amount",
+							Description -> "The amount(s) of the sample needed to fulfill the model(s).",
+							Widget -> Widget[
+								Type -> Expression,
+								Pattern :> Null | MassP | VolumeP | NumericP | UnitsP[Unit],
+								Size -> Line
+							]
+						},
+						IndexName -> "fulfillment models"
+					],
+					{
+						InputName -> "AllowedNotebooks",
+						Description -> "The notebook(s) that the sample that belongs to in order to fulfill the model.",
+						Widget -> Alternatives[
+							Adder[
+								Widget[
+									Type -> Object,
+									Pattern :> ObjectP[Object[LaboratoryNotebook]]
+								]
+							],
+							Widget[
+								Type -> Enumeration,
+								Pattern :> Alternatives[{}]
+							]
+						]
+					},
+					{
+						InputName -> "RootProtocol",
+						Description -> "The protocol or subprotocol which is currently attempting to pick the objects to satisfy the provided resource.",
+						Widget -> Alternatives[
+							Widget[
+								Type -> Object,
+								Pattern :> ObjectP[ProtocolTypes[]]
+							],
+							Widget[
+								Type -> Enumeration,
+								Pattern :> Alternatives[Null]
+							]
+						]
+					},
+					{
+						InputName -> "CurrentProtocol",
+						Description -> "The protocol or subprotocol which is currently attempting to pick the objects to satisfy the provided model.",
+						Widget -> Alternatives[
+							Widget[
+								Type -> Object,
+								Pattern :> ObjectP[ProtocolTypes[]]
+							],
+							Widget[
+								Type -> Enumeration,
+								Pattern :> Alternatives[Null]
+							]
+						]
+					}
+				},
+				Outputs :> {
+					{
+						OutputName -> "Results",
+						Description -> "The association result that list objects which the given protocol is allowed to pick to satisfy the provided model.",
+						Pattern :> (AssociationMatchP[<|"PossibleSamples" -> {ObjectReferenceP[]..}, "SamplesAmounts" -> {(VolumeP | MassP)..}, "UserOwned" -> {BooleanP..}, "RequestedModel" -> ObjectReferenceP[]|>] | {})
+					}
+				}
+			}
+		},
+		MoreInformation -> {
+			"Objects must meet a number of general criteria to be pickable - e.g. they can't be expired, restricted or discarded, in a hermetic container."
+		},
+		SeeAlso -> {
+			"ModelInstances"
+		},
+		Author -> {"tyler.pabst", "eunbin.go"}
+	}
+];
+
 
 DefineUsage[
 	RootProtocol,

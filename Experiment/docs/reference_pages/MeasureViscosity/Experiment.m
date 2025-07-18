@@ -19,12 +19,20 @@ DefineUsage[ExperimentMeasureViscosity,
 						{
 							InputName -> "Samples",
 							Description -> "The sample(s) for which viscosity measurements should be taken.",
-							Widget -> Widget[
-								Type -> Object,
-								Pattern :> ObjectP[{Object[Sample],Object[Container]}],
-								Dereference -> {
-									Object[Container] -> Field[Contents[[All, 2]]]
-								}
+							Widget->Alternatives[
+								"Sample or Container"->Widget[
+									Type->Object,
+									Pattern:>ObjectP[{Object[Sample],Object[Container]}],
+									ObjectTypes->{Object[Sample],Object[Container]},
+									Dereference->{
+										Object[Container]->Field[Contents[[All,2]]]
+									}
+								],
+								"Model Sample"->Widget[
+									Type->Object,
+									Pattern:>ObjectP[Model[Sample]],
+									ObjectTypes->{Model[Sample]}
+								]
 							],
 							Expandable -> False
 						},
@@ -62,6 +70,6 @@ DefineUsage[ExperimentMeasureViscosity,
 		Tutorials->{
 			"Sample Preparation"
 		},
-		Author->{"andrey.shur", "lei.tian", "jihan.kim", "axu", "stacey.lee"}
+		Author->{"daniel.shlian", "andrey.shur", "lei.tian", "jihan.kim", "axu", "stacey.lee"}
 	}
 ];

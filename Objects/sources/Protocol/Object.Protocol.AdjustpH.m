@@ -40,7 +40,7 @@ DefineObjectType[Object[Protocol, AdjustpH], {
 			Developer -> True
 		},
 
-		(* --- Pre-Tritrated Additions --- *)
+		(* --- Pre-Titrated Additions --- *)
 		HistoricalData -> {
 			Format -> Multiple,
 			Class -> Link,
@@ -73,7 +73,7 @@ DefineObjectType[Object[Protocol, AdjustpH], {
 		FixedAdditionPrimitives -> {
 			Format -> Multiple,
 			Class -> Expression,
-			Pattern :> SampleManipulationP,
+			Pattern :> SampleManipulationP|SamplePreparationP,
 			Description -> "The set of instructions specifying the transfers of the fixed additions into the input samples.",
 			Category -> "pH Titration",
 			Developer -> True
@@ -82,7 +82,7 @@ DefineObjectType[Object[Protocol, AdjustpH], {
 			Format -> Multiple,
 			Class -> Link,
 			Pattern :> _Link,
-			Relation -> Object[Protocol,SampleManipulation],
+			Relation -> Object[Protocol,SampleManipulation]|Object[Protocol,RoboticSamplePreparation]|Object[Protocol,ManualSamplePreparation]|Object[Notebook,Script],
 			Description -> "The sample manipulations protocol used to transfer the fixed additions into the input samples.",
 			Category -> "pH Titration"
 		},
@@ -96,6 +96,35 @@ DefineObjectType[Object[Protocol, AdjustpH], {
 			Relation -> Object[Protocol,MeasurepH],
 			Description -> "The protocols containing method information for the pH measurements performed on the input samples as their pHs were adjusted.",
 			Category -> "Experimental Results"
+		},
+		TitrationMethods -> {
+			Format -> Multiple,
+			Class -> Expression,
+			Pattern :> Robotic|Manual,
+			Description -> "For each member of SamplesIn, if the transfer for pH adjustment is manual or robotic.",
+			Category->"pH Titration",
+			IndexMatching -> SamplesIn
+		},
+		TitrationInstruments -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link|None,
+			Relation -> Object[Instrument, pHTitrator]|Model[Instrument, pHTitrator],
+			Description -> "For each member of SamplesIn, the instrument for making transfer in pH adjustment.",
+			Category->"pH Titration",
+			IndexMatching -> SamplesIn
+		},
+		TitrationContainerCaps->{
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[
+				Model[Item, Cap],
+				Object[Item, Cap]
+			],
+			Description -> "For each member of SamplesIn, the cap that is used to assemble pH probe, overhead stir rod and tube of pHTitrator when TitrationMethod is set to Robotic.",
+			Category->"pH Titration",
+			IndexMatching -> SamplesIn
 		},
 		pHMeters -> {
 			Format -> Multiple,
@@ -208,6 +237,25 @@ DefineObjectType[Object[Protocol, AdjustpH], {
 			Developer->True,
 			Category->"Cleaning"
 		},
+		AcidPrimeVolume -> {
+			Format->Single,
+			Class -> Real,
+			Pattern :> GreaterEqualP[0 * Milliliter],
+			Units -> Milliliter,
+			Developer->True,
+			Description->"The prime volume of acid before titrating when using pHTitrator to AdjustpH.",
+			Category->"Cleaning"
+		},
+		BasePrimeVolume -> {
+			Format->Single,
+			Class -> Real,
+			Pattern :> GreaterEqualP[0 * Milliliter],
+			Units -> Milliliter,
+			Developer->True,
+			Description->"The prime volume of base before titrating when using pHTitrator to AdjustpH.",
+			Category->"Cleaning"
+		},
+
 
 		(* --- pH Titration --- *)
 		Titrates->{
@@ -219,6 +267,39 @@ DefineObjectType[Object[Protocol, AdjustpH], {
 			Description -> "For each member of SamplesIn, indicates if titrating acid and/or base should be added until the pH is within the bounds specified by MinpH and MaxpH or until MaxNumberOfCycles or MaxAdditionVolume is reached.",
 			Category -> "pH Titration"
 		},
+		CurrentpHTitratorResponseTime -> {
+			Format -> Single,
+			Class -> String,
+			Pattern :> _String,
+			Description -> "The most recently response timestamp from pH titrator when TitrationMethod is Robotic. The most recently response timestamp is in the format of yyyy-mm-dd hh:mm:ss.",
+			Category -> "pH Titration",
+			Developer ->True
+		},
+		CurrentResponse ->{
+			Format -> Single,
+			Class -> String,
+			Pattern :> _String,
+			Description -> "The most recently updated response from pH titrator when TitrationMethod is Robotic.",
+			Category -> "pH Titration",
+			Developer ->True
+		},
+		CurrentpHMeterResponseTime -> {
+			Format -> Single,
+			Class -> String,
+			Pattern :> _String,
+			Description -> "The most recently response timestamp from SevenExcellence when TitrationMethod is Robotic. The most recently response timestamp is in the format of yyyy-mm-ddThh:mm:ss.",
+			Category -> "pH Titration",
+			Developer ->True
+		},
+		LastReadingFail->{
+			Format -> Single,
+			Class -> Boolean,
+			Pattern :> BooleanP,
+			Description -> "If we fail to receive a response from SevenExcellence within the allowed maximum amount of time to wait when TitrationMethod is Robotic.",
+			Category -> "pH Titration",
+			Developer ->True
+		},
+
 		CurrentTitrationVolume -> { (*TODO: to be replaced by CurrentTitrationAmount *)
 			Format -> Single,
 			Class -> Real,
@@ -231,7 +312,7 @@ DefineObjectType[Object[Protocol, AdjustpH], {
 		CurrentTitrationAmount -> {
 			Format -> Single,
 			Class -> VariableUnit,
-			Pattern :> Alternatives[GreaterEqualP[0 * Liter],GreaterEqualP[0 * MilliGram]],
+			Pattern :> Alternatives[GreaterEqualP[0 * Liter],GreaterEqualP[0 * Milligram]],
 			Description -> "The most recently updated titration amount.",
 			Category -> "pH Titration",
 			Developer ->True
@@ -316,14 +397,6 @@ DefineObjectType[Object[Protocol, AdjustpH], {
 			Category -> "pH Titration",
 			Developer -> True
 		},
-		TitrationPrimitives -> {
-			Format -> Multiple,
-			Class -> Expression,
-			Pattern :> SampleManipulationP,
-			Description -> "The set of instructions specifying the series of transfers which add the titrating acid and bases into the input samples as needed. This excludes fixed addition transfers.",
-			Category -> "pH Titration",
-			Developer -> True
-		},
 		TitrationManipulations -> {
 			Format -> Multiple,
 			Class -> Link,
@@ -336,6 +409,26 @@ DefineObjectType[Object[Protocol, AdjustpH], {
 			],
 			Description -> "The protocol used to transfer titrating acid and bases into the input samples as needed. This excludes fixed addition transfers.",
 			Category -> "pH Titration"
+		},
+		TitratingSolutionPlacements -> {
+			Format -> Multiple,
+			Class -> {Link, Link, String},
+			Pattern :> {_Link, _Link, LocationPositionP},
+			Relation -> {Object[Container], Object[Instrument], Null},
+			Description -> "A list of placements used to move Titrating solution to acid and base container slot of the pHTitrator when TitrationMethod is Robotic.",
+			Headers -> {"Object to Place", "Destination Object","Destination Position"},
+			Category -> "Injector Cleaning",
+			Developer -> True
+		},
+		CleaningSolutionPlacements -> {
+			Format -> Multiple,
+			Class -> {Link, Link, String},
+			Pattern :> {_Link, _Link, LocationPositionP},
+			Relation -> {Object[Container], Object[Instrument], Null},
+			Description -> "A list of placements used to move cleaning solution to acid and base container slot of the pHTitrator when TitrationMethod is Robotic.",
+			Headers -> {"Object to Place", "Destination Object","Destination Position"},
+			Category -> "Injector Cleaning",
+			Developer -> True
 		},
 
 		(* --- Mixing --- *)
@@ -389,7 +482,7 @@ DefineObjectType[Object[Protocol, AdjustpH], {
 			Pattern :> GreaterP[0*Minute],
 			Units -> Minute,
 			IndexMatching -> SamplesIn,
-			Description -> "For each member of SamplesIn, the duration of time for which the samples will be mixed.",
+			Description -> "For each member of SamplesIn, the duration of time for which the samples will be mixed between acid/base additions.",
 			Category -> "Mixing"
 		},
 		MaxpHMixTimes -> {
@@ -523,14 +616,14 @@ DefineObjectType[Object[Protocol, AdjustpH], {
 		MaxAcidAmountsPerCycle -> {
 			Format -> Multiple,
 			Class -> VariableUnit,
-			Pattern :> Alternatives[GreaterEqualP[0 * Liter],GreaterEqualP[0 * MilliGram]],
+			Pattern :> Alternatives[GreaterEqualP[0 * Liter],GreaterEqualP[0 * Milligram]],
 			Description -> "The largest amount of TitrationAcid that can be added to in each titration cycle.",
 			Category -> "pHing Limits"
 		},
 		MaxBaseAmountsPerCycle -> {
 			Format -> Multiple,
 			Class -> VariableUnit,
-			Pattern :> Alternatives[GreaterEqualP[0 * Liter],GreaterEqualP[0 * MilliGram]],
+			Pattern :> Alternatives[GreaterEqualP[0 * Liter],GreaterEqualP[0 * Milligram]],
 			Description -> "The largest amount of TitrationBase that can be added to in each titration cycle.",
 			Category -> "pHing Limits"
 		},
@@ -539,7 +632,7 @@ DefineObjectType[Object[Protocol, AdjustpH], {
 		StoragePrimitives -> {
 			Format -> Multiple,
 			Class -> Expression,
-			Pattern :> SampleManipulationP,
+			Pattern :> SampleManipulationP|SamplePreparationP,
 			Description -> "For each member of SamplesIn, the set of instructions specifying the transfers used to transfer the pH adjusted sample into its final container.",
 			IndexMatching -> SamplesIn,
 			Category -> "Sample Storage",
@@ -549,7 +642,7 @@ DefineObjectType[Object[Protocol, AdjustpH], {
 			Format -> Single,
 			Class -> Link,
 			Pattern :> _Link,
-			Relation -> Object[Protocol,SampleManipulation],
+			Relation -> Object[Protocol,SampleManipulation]|Object[Protocol,ManualSamplePreparation],
 			Description -> "The sample manipulation protocol used to transfer the pH adjusted sample into its final container.",
 			Category -> "pH Titration"
 		},
@@ -578,6 +671,254 @@ DefineObjectType[Object[Protocol, AdjustpH], {
 			Pattern :> BooleanP,
 			Description ->  "Indicates if instruments are released and moved back to the previous location after ExperimentAdjustpH.",
 			Category -> "General",
+			Developer -> True
+		},
+		CalibrationData -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[Calibration,pH][Protocol],
+			Description -> "Any primary data generated by this protocol.",
+			Category -> "Experimental Results"
+		},
+		(* --- Batching --- *)
+		BatchLengths->{
+			Format->Multiple,
+			Class->Integer,
+			Pattern:>GreaterP[0],
+			Description->"Parameters describing the length of each batch.",
+			Category->"Batching",
+			Developer->True
+		},
+		BatchingParameters->{
+			Format->Multiple,
+			Class->{
+				TitrationMethod -> Expression,
+				FixedAddition -> Expression,
+				ProbeType -> Expression,
+				AcquisitionTime->Real,
+				TemperatureCorrection->Expression,
+				pHAliquot->Boolean,
+				pHAliquotVolume->Real,
+				Titrate->Boolean,
+				MixWhileTitrating->Boolean,
+				pHMixType->Expression,
+				MixUntilDissolved->Boolean,
+				pHMixTime->Real,
+				MaxpHMixTime->Real,
+				pHMixDutyCycle->Real,
+				pHMixRate->Real,
+				NumberOfpHMixes->Integer,
+				MaxNumberOfpHMixes->Integer,
+				pHMixVolume->Real,
+				pHMixTemperature->Expression,
+				MaxpHMixTemperature->Expression,
+				pHHomogenizingAmplitude->Real,
+				MinpH->Real,
+				MaxpH->Real,
+				MaxAdditionVolume->Real,
+				MaxAcidAmountPerCycle -> VariableUnit,
+				MaxBaseAmountPerCycle -> VariableUnit,
+				MaxNumberOfCycles->Integer,
+				pHMeter->Link,
+				Probe->Link,
+				NominalpH->Real,
+				TransferDestinationRack->Link,
+				TitratingAcid->Link,
+				TitratingBase->Link,
+				pHMixInstrument->Link,
+				pHMixImpeller->Link,
+				TitrationInstrument -> Link,
+				TitrationContainerCap -> Link
+			},
+			Pattern:>{
+				TitrationMethod -> Robotic|Manual,
+				FixedAddition -> {{GreaterP[0 Milliliter] | GreaterP[0 Gram]| GreaterP[0], ObjectP[{Model[Sample], Object[Sample]}]}..},
+				ProbeType -> pHProbeTypeP,
+				AcquisitionTime->GreaterEqualP[0Second],
+				TemperatureCorrection->TemperatureCorrectionP,
+				pHAliquot->BooleanP,
+				pHAliquotVolume->GreaterEqualP[0 * Liter],
+				Titrate->BooleanP,
+				MixWhileTitrating->BooleanP,
+				pHMixType->MixTypeP,
+				MixUntilDissolved->BooleanP,
+				pHMixTime->GreaterP[0*Minute],
+				MaxpHMixTime->GreaterP[0*Minute],
+				pHMixDutyCycle->GreaterP[0*Minute],
+				pHMixRate->GreaterP[0*RPM],
+				NumberOfpHMixes->GreaterEqualP[0, 1],
+				MaxNumberOfpHMixes->GreaterEqualP[0, 1],
+				pHMixVolume->GreaterP[0*Milliliter],
+				pHMixTemperature->Alternatives[Ambient,GreaterP[0*Celsius]],
+				MaxpHMixTemperature->Alternatives[Ambient,GreaterP[0*Celsius]],
+				pHHomogenizingAmplitude->RangeP[0*Percent, 100*Percent],
+				MinpH->RangeP[0, 14],
+				MaxpH->RangeP[0, 14],
+				MaxAdditionVolume->GreaterP[0*Milliliter],
+				MaxAcidAmountPerCycle -> Alternatives[GreaterEqualP[0 * Liter],GreaterEqualP[0 * Milligram]],
+				MaxBaseAmountPerCycle -> Alternatives[GreaterEqualP[0 * Liter],GreaterEqualP[0 * Milligram]],
+				MaxNumberOfCycles->GreaterEqualP[0, 1],
+				pHMeter->_Link,
+				Probe->_Link,
+				NominalpH->RangeP[0, 14],
+				TransferDestinationRack->_Link,
+				TitratingAcid->_Link,
+				TitratingBase->_Link,
+				pHMixInstrument->_Link,
+				pHMixImpeller->_Link,
+				TitrationInstrument -> _Link,
+				TitrationContainerCap -> _Link
+			},
+			Relation->{
+				TitrationMethod -> Null,
+				FixedAddition -> Null,
+				ProbeType -> Null,
+				AcquisitionTime->Null,
+				TemperatureCorrection->Null,
+				pHAliquot->Null,
+				pHAliquotVolume->Null,
+				Titrate->Null,
+				MixWhileTitrating->Null,
+				pHMixType->Null,
+				MixUntilDissolved->Null,
+				pHMixTime->Null,
+				MaxpHMixTime->Null,
+				pHMixDutyCycle->Null,
+				pHMixRate->Null,
+				NumberOfpHMixes->Null,
+				MaxNumberOfpHMixes->Null,
+				pHMixVolume->Null,
+				pHMixTemperature->Null,
+				MaxpHMixTemperature->Null,
+				pHHomogenizingAmplitude->Null,
+				MinpH->Null,
+				MaxpH->Null,
+				MaxAdditionVolume->Null,
+				MaxAcidAmountPerCycle -> Null,
+				MaxBaseAmountPerCycle -> Null,
+				MaxNumberOfCycles->Null,
+				pHMeter->Alternatives[Object[Instrument, pHMeter],Model[Instrument, pHMeter]],
+				Probe->Alternatives[Object[Part, pHProbe],Model[Part, pHProbe]],
+				NominalpH->Null,
+				TransferDestinationRack->Alternatives[Object[Container], Model[Container]],
+				TitratingAcid->Alternatives[Model[Sample], Object[Sample]],
+				TitratingBase->Alternatives[Model[Sample], Object[Sample]],
+				pHMixInstrument->Object[Instrument]|Model[Instrument],
+				pHMixImpeller->Alternatives[Model[Part,StirrerShaft],Object[Part,StirrerShaft]],
+				TitrationInstrument -> Alternatives[Object[Instrument, pHTitrator],Model[Instrument, pHTitrator]],
+				TitrationContainerCap -> Alternatives[Object[Item, Cap],Model[Item, Cap]]
+			},
+			Units -> {
+				TitrationMethod -> None,
+				FixedAddition -> None,
+				ProbeType -> None,
+				AcquisitionTime->Second,
+				TemperatureCorrection->None,
+				pHAliquot->None,
+				pHAliquotVolume->Liter,
+				Titrate->None,
+				MixWhileTitrating->None,
+				pHMixType->None,
+				MixUntilDissolved->None,
+				pHMixTime->Minute,
+				MaxpHMixTime->Minute,
+				pHMixDutyCycle->Minute,
+				pHMixRate->RPM,
+				NumberOfpHMixes->None,
+				MaxNumberOfpHMixes->None,
+				pHMixVolume->Milliliter,
+				pHMixTemperature->None,
+				MaxpHMixTemperature->None,
+				pHHomogenizingAmplitude->Percent,
+				MinpH->None,
+				MaxpH->None,
+				MaxAdditionVolume->Milliliter,
+				MaxAcidAmountPerCycle -> None,
+				MaxBaseAmountPerCycle -> None,
+				MaxNumberOfCycles->None,
+				pHMeter->None,
+				Probe->None,
+				NominalpH->None,
+				TransferDestinationRack->None,
+				TitratingAcid->None,
+				TitratingBase->None,
+				pHMixInstrument->None,
+				pHMixImpeller->None,
+				TitrationInstrument -> None,
+				TitrationContainerCap -> None
+			},
+			Developer->True,
+			Description->"The named multiple version of the existing fields, in order to batch over titration method in engine.",
+			Category->"Batching"
+		},
+		ManualTitrationIndices->{
+			Format->Multiple,
+			Class->Integer,
+			Pattern:>_?IntegerQ,
+			Description->"The indices of each sample which uses ManualTitration, as they relate to SamplesIn.",
+			Category->"Batching",
+			Developer->True
+		},
+		RoboticTitrationIndices->{
+			Format->Multiple,
+			Class->Integer,
+			Pattern:>_?IntegerQ,
+			Description->"The indices of each sample which uses RoboticTitration with default acid and base to adjust pH, as they relate to SamplesIn.",
+			Category->"Batching",
+			Developer->True
+		},
+		BatchedSamples -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[Sample],
+			Units -> None,
+			Description -> "The list of samples that will be adjusted pH with the same titration method.",
+			Category -> "Batching",
+			Developer -> True
+		},
+		BatchedFixedAdditions -> {
+			Format -> Multiple,
+			Class -> Expression,
+			Pattern :> {{GreaterP[0 Milliliter] | GreaterP[0 Gram]| GreaterP[0], ObjectP[{Model[Sample], Object[Sample]}]}..},
+			Description -> "The corresponding preparatory additions made before titration reordered with the same titration method.",
+			Category -> "Batching",
+			Developer -> True
+		},
+		DataFilePaths -> {
+			Format -> Multiple,
+			Class -> String,
+			Pattern :> FilePathP,
+			Description -> "The batched file path of the SentData.txt and ReceivedData.txt to communicate with SevenExcellence when TitrationMethod is Robotic, in order to batch over titration method in engine.",
+			Category -> "General",
+			Developer -> True
+		},
+		MethodFilePath -> {
+			Format -> Single,
+			Class -> String,
+			Pattern :> FilePathP,
+			Description -> "The folder name of ML600ToSLL.txt and SLLToML600.txt to communicate with pH Titrator when TitrationMethod is Robotic.",
+			Category -> "General",
+			Developer -> True
+		},
+		RetryState -> {
+			Format -> Single,
+			Class -> Boolean,
+			Pattern :> BooleanP,
+			Description -> "Indicates if the current pH measurement needs to be re-done.",
+			Category -> "General",
+			Developer -> True
+		},
+		InvalidpHLog -> {
+			Format->Multiple,
+			Class->{Date, Real, Link, Link},
+			Pattern:>{_?DateObjectQ, NumericP, _Link, _Link},
+			Relation->{Null, Null, Object[Sample], Object[Protocol]},
+			Units->{None, None, None, None},
+			Description->"A record of the rejected pH measurements.",
+			Category->"Physical Properties",
+			Headers->{"Date", "Rejected pH", "Sample", "Responsible protocol"},
 			Developer -> True
 		}
 	}

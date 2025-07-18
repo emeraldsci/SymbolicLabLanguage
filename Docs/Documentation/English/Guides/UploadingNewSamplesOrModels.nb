@@ -1,3 +1,1262 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:fe36e0ff6ddf159e212439b8595cc8b6b82b0389168e1e0abd705689ca3a310c
-size 53773
+(* Content-type: application/vnd.wolfram.mathematica *)
+
+(*** Wolfram Notebook File ***)
+(* http://www.wolfram.com/nb *)
+
+(* CreatedBy='Mathematica 12.0' *)
+
+(*CacheID: 234*)
+(* Internal cache information:
+NotebookFileLineBreakTest
+NotebookFileLineBreakTest
+NotebookDataPosition[       158,          7]
+NotebookDataLength[     52311,       1252]
+NotebookOptionsPosition[     40275,       1044]
+NotebookOutlinePosition[     43037,       1101]
+CellTagsIndexPosition[     42994,       1098]
+WindowTitle->UploadingNewSamplesOrModels
+WindowFrame->Normal*)
+
+(* Beginning of Notebook Content *)
+Notebook[{
+Cell[BoxData[GridBox[{
+   {GridBox[{
+      {
+       ItemBox[Cell[BoxData[
+         RowBox[{
+          InterpretationBox[
+           StyleBox[
+            GraphicsBox[{},
+             BaselinePosition->Baseline,
+             ImageSize->{8, 0}],
+            CacheGraphics->False],
+           Spacer[8],
+           Selectable->False], Cell["EMERALD GUIDE", "PacletNameCell",
+           TextAlignment->Center,ExpressionUUID->
+           "7908e89f-b893-47ac-459a-a815c351d89e"], 
+          InterpretationBox[
+           StyleBox[
+            GraphicsBox[{},
+             BaselinePosition->Baseline,
+             ImageSize->{8, 0}],
+            CacheGraphics->False],
+           Spacer[8],
+           Selectable->False]}]],
+         TextAlignment->Center,ExpressionUUID->
+         "867f6861-a9ab-4486-7f3f-3ad8f927adfb"],
+        Background->RGBColor[
+         0.24313725490196078`, 0.27058823529411763`, 0.2980392156862745],
+        ItemSize->Full], ""}
+     },
+     GridBoxAlignment->{"Rows" -> {{Center}}},
+     GridBoxItemSize->{"Columns" -> {Full, 
+         Scaled[0.02]}, "Rows" -> {{2.5}}}], Cell[TextData[{
+     Cell[BoxData[
+      ActionMenuBox[
+       FrameBox[Cell[TextData[{
+         "Functions",
+         " ",
+         Cell[BoxData[
+          GraphicsBox[
+           {RGBColor[183/256., 197/256., 211/256.], Thickness[0.13], 
+            LineBox[{{-1.8, 0.5}, {0, 0}, {1.8, 0.5}}]},
+           AspectRatio->1,
+           ImageSize->20,
+           PlotRange->{{-3, 4}, {-1, 1}}]],ExpressionUUID->
+          "5114a271-2c37-46fb-b156-fa4800604689"]
+        }],ExpressionUUID->"ad5d278a-d5e8-44f2-a333-eb3997609168"],
+        StripOnInput->False], {"\<\"DefineAnalytes\"\>":>
+       Documentation`HelpLookup[
+       "paclet:ExternalUpload/ref/DefineAnalytes"], \
+"\<\"DefineComposition\"\>":>Documentation`HelpLookup[
+       "paclet:ExternalUpload/ref/DefineComposition"], \
+"\<\"DefineEHSInformation\"\>":>Documentation`HelpLookup[
+       "paclet:ExternalUpload/ref/DefineEHSInformation"], \
+"\<\"DefineSolvent\"\>":>Documentation`HelpLookup[
+       "paclet:ExternalUpload/ref/DefineSolvent"], "\<\"DefineTags\"\>":>
+       Documentation`HelpLookup[
+       "paclet:ExternalUpload/ref/DefineTags"], "\<\"UploadAntibody\"\>":>
+       Documentation`HelpLookup[
+       "paclet:ExternalUpload/ref/UploadAntibody"], "\<\"UploadArrayCard\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Experiment/ref/UploadArrayCard"], \
+"\<\"UploadArrayCardOptions\"\>":>Documentation`HelpLookup[
+       "paclet:Experiment/ref/UploadArrayCardOptions"], \
+"\<\"UploadBacterialCell\"\>":>Documentation`HelpLookup[
+       "paclet:ExternalUpload/ref/UploadBacterialCell"], \
+"\<\"UploadCapillaryELISACartridge\"\>":>Documentation`HelpLookup[
+       "paclet:Experiment/ref/UploadCapillaryELISACartridge"], \
+"\<\"UploadCapillaryELISACartridgePreview\"\>":>Documentation`HelpLookup[
+       "paclet:Experiment/ref/UploadCapillaryELISACartridgePreview"], \
+"\<\"UploadCarbohydrate\"\>":>Documentation`HelpLookup[
+       "paclet:ExternalUpload/ref/UploadCarbohydrate"], \
+"\<\"UploadColumn\"\>":>Documentation`HelpLookup[
+       "paclet:ExternalUpload/ref/UploadColumn"], \
+"\<\"UploadColumnOptions\"\>":>Documentation`HelpLookup[
+       "paclet:ExternalUpload/ref/UploadColumnOptions"], \
+"\<\"UploadCompanyServiceOptions\"\>":>Documentation`HelpLookup[
+       "paclet:ExternalUpload/ref/UploadCompanyServiceOptions"], \
+"\<\"UploadFractionCollectionMethod\"\>":>Documentation`HelpLookup[
+       "paclet:ExternalUpload/ref/UploadFractionCollectionMethod"], \
+"\<\"UploadFractionCollectionMethodOptions\"\>":>Documentation`HelpLookup[
+       "paclet:ExternalUpload/ref/UploadFractionCollectionMethodOptions"], \
+"\<\"UploadGradientMethod\"\>":>Documentation`HelpLookup[
+       "paclet:ExternalUpload/ref/UploadGradientMethod"], \
+"\<\"UploadGradientMethodOptions\"\>":>Documentation`HelpLookup[
+       "paclet:ExternalUpload/ref/UploadGradientMethodOptions"], \
+"\<\"UploadInventory\"\>":>Documentation`HelpLookup[
+       "paclet:ExternalUpload/ref/UploadInventory"], \
+"\<\"UploadInventoryOptions\"\>":>Documentation`HelpLookup[
+       "paclet:ExternalUpload/ref/UploadInventoryOptions"], \
+"\<\"UploadMammalianCell\"\>":>Documentation`HelpLookup[
+       "paclet:ExternalUpload/ref/UploadMammalianCell"], \
+"\<\"UploadModification\"\>":>Documentation`HelpLookup[
+       "paclet:Physics/ref/UploadModification"], "\<\"UploadMolecule\"\>":>
+       Documentation`HelpLookup[
+       "paclet:ExternalUpload/ref/UploadMolecule"], \
+"\<\"UploadMoleculeOptions\"\>":>Documentation`HelpLookup[
+       "paclet:ExternalUpload/ref/UploadMoleculeOptions"], \
+"\<\"UploadName\"\>":>Documentation`HelpLookup[
+       "paclet:ExternalUpload/ref/UploadName"], "\<\"UploadNameOptions\"\>":>
+       Documentation`HelpLookup[
+       "paclet:ExternalUpload/ref/UploadNameOptions"], \
+"\<\"UploadOligomer\"\>":>Documentation`HelpLookup[
+       "paclet:ExternalUpload/ref/UploadOligomer"], \
+"\<\"UploadPipettingMethod\"\>":>Documentation`HelpLookup[
+       "paclet:ExternalUpload/ref/UploadPipettingMethod"], \
+"\<\"UploadPipettingMethodModelOptions\"\>":>Documentation`HelpLookup[
+       "paclet:ExternalUpload/ref/UploadPipettingMethodModelOptions"], \
+"\<\"UploadProduct\"\>":>Documentation`HelpLookup[
+       "paclet:ExternalUpload/ref/UploadProduct"], "\<\"UploadProtein\"\>":>
+       Documentation`HelpLookup[
+       "paclet:ExternalUpload/ref/UploadProtein"], \
+"\<\"UploadReferenceElectrodeModel\"\>":>Documentation`HelpLookup[
+       "paclet:Experiment/ref/UploadReferenceElectrodeModel"], \
+"\<\"UploadReferenceElectrodeModelOptions\"\>":>Documentation`HelpLookup[
+       "paclet:Experiment/ref/UploadReferenceElectrodeModelOptions"], \
+"\<\"UploadResin\"\>":>Documentation`HelpLookup[
+       "paclet:ExternalUpload/ref/UploadResin"], "\<\"UploadSampleModel\"\>":>
+       Documentation`HelpLookup[
+       "paclet:ExternalUpload/ref/UploadSampleModel"], \
+"\<\"UploadStockSolution\"\>":>Documentation`HelpLookup[
+       "paclet:Experiment/ref/UploadStockSolution"], \
+"\<\"UploadStockSolutionOptions\"\>":>Documentation`HelpLookup[
+       "paclet:Experiment/ref/UploadStockSolutionOptions"], \
+"\<\"UploadTransportConditionOptions\"\>":>Documentation`HelpLookup[
+       "paclet:ExternalUpload/ref/UploadTransportConditionOptions"], \
+"\<\"UploadVirus\"\>":>Documentation`HelpLookup[
+       "paclet:ExternalUpload/ref/UploadVirus"], \
+"\<\"ValidUploadCapillaryELISACartridgeQ\"\>":>Documentation`HelpLookup[
+       "paclet:Experiment/ref/ValidUploadCapillaryELISACartridgeQ"], \
+"\<\"ValidUploadChemicalModelQ\"\>":>Documentation`HelpLookup[
+       "paclet:ExternalUpload/ref/ValidUploadChemicalModelQ"], \
+"\<\"ValidUploadColumnQ\"\>":>Documentation`HelpLookup[
+       "paclet:ExternalUpload/ref/ValidUploadColumnQ"], \
+"\<\"ValidUploadFractionCollectionMethodQ\"\>":>Documentation`HelpLookup[
+       "paclet:ExternalUpload/ref/ValidUploadFractionCollectionMethodQ"], "\<\
+\"ValidUploadGradientMethodQ\"\>":>Documentation`HelpLookup[
+       "paclet:ExternalUpload/ref/ValidUploadGradientMethodQ"], \
+"\<\"ValidUploadMoleculeQ\"\>":>Documentation`HelpLookup[
+       "paclet:ExternalUpload/ref/ValidUploadMoleculeQ"], \
+"\<\"ValidUploadNameQ\"\>":>Documentation`HelpLookup[
+       "paclet:ExternalUpload/ref/ValidUploadNameQ"], \
+"\<\"ValidUploadPipettingMethodModelQ\"\>":>Documentation`HelpLookup[
+       "paclet:ExternalUpload/ref/ValidUploadPipettingMethodModelQ"], \
+"\<\"ValidUploadReferenceElectrodeModelQ\"\>":>Documentation`HelpLookup[
+       "paclet:Experiment/ref/ValidUploadReferenceElectrodeModelQ"], \
+"\<\"ValidUploadStockSolutionQ\"\>":>Documentation`HelpLookup[
+       "paclet:Experiment/ref/ValidUploadStockSolutionQ"]},
+       LineSpacing -> {1.4, 0},
+       Appearance->None,
+       MenuAppearance->Automatic,
+       MenuStyle->"GuideFunction"]],ExpressionUUID->
+      "e4d65aac-82f8-4e8c-b083-b853290c2ae6"],
+     "\[ThickSpace]\[ThickSpace]\[ThickSpace]\[ThickSpace]\[ThickSpace]\
+\[ThickSpace]",
+     Cell[BoxData[
+      ActionMenuBox[
+       FrameBox[Cell[TextData[{
+         "Related Guides",
+         " ",
+         Cell[BoxData[
+          GraphicsBox[
+           {RGBColor[183/256., 197/256., 211/256.], Thickness[0.13], 
+            LineBox[{{-1.8, 0.5}, {0, 0}, {1.8, 0.5}}]},
+           AspectRatio->1,
+           ImageSize->20,
+           PlotRange->{{-3, 4}, {-1, 1}}]],ExpressionUUID->
+          "c9a987cb-78b6-48fb-9ff1-aa51af98011c"]
+        }],ExpressionUUID->"edc9548b-3ac9-490d-abaa-c46952ea00c4"],
+        StripOnInput->False], {"\<\"LocationTracking\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Docs/guide/LocationTracking"], "\<\"SampleShipments\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Docs/guide/SampleShipments"], "\<\"SampleStorage\"\>":>
+       Documentation`HelpLookup["paclet:Docs/guide/SampleStorage"]},
+       LineSpacing -> {1.4, 0},
+       Appearance->None,
+       MenuAppearance->Automatic,
+       MenuStyle->"GuideFunction"]],ExpressionUUID->
+      "08ce3585-5bf3-4715-a82d-e38e935eab41"]
+    }], "AnchorBar",ExpressionUUID->"a1b8c6b7-72b7-4c44-af72-74110304f980"]}
+  }]], "AnchorBarGrid",
+ CellID->1,ExpressionUUID->"281b6017-fa7c-4406-832b-39d01190556c"],
+
+Cell["Uploading New Samples Or Models", "GuideTitle",
+ CellID->359454750,ExpressionUUID->"9580f4ca-c5b7-47a7-9562-39aa02bf9d1c"],
+
+Cell["\<\
+Collection of function for uploading new models or objects into constellation.\
+\>", "GuideAbstract",
+ CellID->140765751,ExpressionUUID->"6acfe502-9aca-4a19-9535-f1163a45bed5"],
+
+Cell["\t", "GuideDelimiterSubsection",
+ CellID->203685045,ExpressionUUID->"005e1fed-e68f-42ff-9957-66a55b3575b6"],
+
+Cell["Uploading Identity Models", "GuideFunctionsSubsection",
+ CellID->69871790,ExpressionUUID->"93dabb65-a324-4bee-a91c-cb988e2f0082"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["UploadOligomer"]],"paclet:ExternalUpload/ref/UploadOligomer"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "aab8af0f-9c8e-46a3-8f77-a1bd24b76bcf"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Creates a Constellation object containing the given information about an \
+oligomer."
+}], "GuideText",
+ CellID->780927314,ExpressionUUID->"4e57bca4-5eda-4f76-8012-b261c009ab1e"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["UploadBacterialCell"]],
+    "paclet:ExternalUpload/ref/UploadBacterialCell"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "52d27799-4da4-4d7c-b1b4-43568da34a9a"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Creates a Constellation object containing the given information about a \
+bacterial strain."
+}], "GuideText",
+ CellID->26366162,ExpressionUUID->"9f8e0d8b-84d0-4061-bcc7-9191f1135c99"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["UploadVirus"]],"paclet:ExternalUpload/ref/UploadVirus"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "e6dfa5d3-cc99-4a2f-8099-b05804c03527"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Creates a Constellation object containing the given information about a \
+virus."
+}], "GuideText",
+ CellID->580063743,ExpressionUUID->"28d1acab-f7be-429b-968d-40be6d3e9e34"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["UploadCapillaryELISACartridge"]],
+    "paclet:Experiment/ref/UploadCapillaryELISACartridge"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "8d93b469-d7c8-4458-8d6b-28752641bc77"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Creates a new pre-loaded CapillaryELISACartridgeModel with given analytes."
+}], "GuideText",
+ CellID->664131567,ExpressionUUID->"a62c4cea-e784-40ef-afba-e9d5ce03b6c9"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["UploadProtein"]],"paclet:ExternalUpload/ref/UploadProtein"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "6555ba43-2f5f-408d-98c3-2320cb21d082"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Creates or updates a protein model that contains information given about \
+the specified protein."
+}], "GuideText",
+ CellID->123843843,ExpressionUUID->"8f607dcc-3af6-4590-b408-944ec205a324"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["UploadReferenceElectrodeModel"]],
+    "paclet:Experiment/ref/UploadReferenceElectrodeModel"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "41c08ad1-df08-4e2c-906a-87a74bd58ff9"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Creates and uploads a new reference electrode model that contains \
+information about the material, working limits and storage conditions."
+}], "GuideText",
+ CellID->335398090,ExpressionUUID->"d92d9bf4-309f-4b62-8853-75b45864fc08"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["UploadMolecule"]],"paclet:ExternalUpload/ref/UploadMolecule"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "3a029fda-8415-44e0-a0e9-3feb9591a3a2"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Creates and uploads a molecule model based on the input information of \
+molecule name, atomic structure, PubChemID or other identifiers."
+}], "GuideText",
+ CellID->27668993,ExpressionUUID->"b2001952-28c3-4898-bc81-66e67c948eb7"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["UploadArrayCard"]],"paclet:Experiment/ref/UploadArrayCard"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "d49ffb1e-213d-44ff-b912-5bd1822c0f82"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Creates a Constellation database object for a microfluidic array card used \
+for quantitative polymerase chain reaction."
+}], "GuideText",
+ CellID->30377857,ExpressionUUID->"a29e8719-453e-4d8d-90a4-2d6656b59e97"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["UploadStockSolution"]],
+    "paclet:Experiment/ref/UploadStockSolution"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "0d02613f-b21c-49cf-a098-98f304a771b7"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Creates and uploads a new stock solution model that is prepared by \
+combining all samples specified in the input components."
+}], "GuideText",
+ CellID->651003004,ExpressionUUID->"20a1a9bf-b5ac-4bfa-bc57-47b108689949"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["UploadSampleModel"]],
+    "paclet:ExternalUpload/ref/UploadSampleModel"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "5a287314-ada3-4ee2-960e-e51f322e0b39"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Creates and uploads a sample model based on the input information of \
+molecular composition, storage condition and environmental and health and \
+safety data."
+}], "GuideText",
+ CellID->61172575,ExpressionUUID->"2ff52fde-bc92-4fe6-a525-71b3121216b7"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["UploadMammalianCell"]],
+    "paclet:ExternalUpload/ref/UploadMammalianCell"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "c68f0b7b-0aba-48e4-a256-a31a11b2e396"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Creates and uploads a model that contains the information about the \
+mammalian source of the primary cells or cell line."
+}], "GuideText",
+ CellID->708197208,ExpressionUUID->"f912101d-6ad1-49e5-91e0-2e3442805860"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["UploadName"]],"paclet:ExternalUpload/ref/UploadName"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "261228a9-bc43-45ad-8d67-fc38ef6fe9ac"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Updates the input object with the specified name and returns the named \
+object."
+}], "GuideText",
+ CellID->105824623,ExpressionUUID->"aecb6d27-813b-4c39-b8d1-9544c7d062bc"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["UploadAntibody"]],"paclet:ExternalUpload/ref/UploadAntibody"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "8701b8f6-b032-4f20-b243-b4a594e2e153"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Creates and uploads a protein molecule model that contains the information \
+about the input antibody."
+}], "GuideText",
+ CellID->102667380,ExpressionUUID->"90454b27-c2b0-47d4-97f5-6f52f9b2b9a0"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["UploadResin"]],"paclet:ExternalUpload/ref/UploadResin"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "7253e162-d4bf-4546-9c71-104b24c32b75"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Creates and uploads a model that contains the information about the \
+characteristics of the input resin."
+}], "GuideText",
+ CellID->5459415,ExpressionUUID->"a5f3272c-c2c1-4fd0-85d5-3cb2797fd516"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["UploadArrayCard"]],"paclet:Experiment/ref/UploadArrayCard"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "aa256347-dafd-4a70-8415-77599b6f45a7"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Creates a Constellation database object for a microfluidic array card used \
+for quantitative polymerase chain reaction."
+}], "GuideText",
+ CellID->581042596,ExpressionUUID->"5aacb1c0-ab17-4151-bdb9-b8edcba1d654"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["UploadCarbohydrate"]],
+    "paclet:ExternalUpload/ref/UploadCarbohydrate"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "9aaaa307-5bf5-4262-94de-2b987a68fbb4"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Creates and uploads a carbohydrate model that contains the information \
+abut the input carbohydrate."
+}], "GuideText",
+ CellID->372568406,ExpressionUUID->"686078d2-5874-4cfe-98c0-ab42687a2249"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["UploadColumn"]],"paclet:ExternalUpload/ref/UploadColumn"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "0f8994f7-4494-4554-ba90-62bf5cb64f72"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Creates and uploads a column model that contains information about the \
+input column."
+}], "GuideText",
+ CellID->88216117,ExpressionUUID->"f3ddad1c-7099-41ad-8afc-5057462b8baa"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["UploadInventory"]],"paclet:ExternalUpload/ref/UploadInventory"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "1ac196ee-2da3-458e-ab92-2377b880203c"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Returns an inventory object according to the input specifications to keep \
+the specified prodcut in stock."
+}], "GuideText",
+ CellID->66211680,ExpressionUUID->"c89c3a79-a925-4e30-b43e-72a745aeced3"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["UploadProduct"]],"paclet:ExternalUpload/ref/UploadProduct"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "0d162125-ade7-49b4-ba22-1b9a5b0fd09b"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Returns a product object that contains the product information parsed from \
+the input product URL."
+}], "GuideText",
+ CellID->32009509,ExpressionUUID->"914fcef9-bfc0-48d0-bc6e-720640b9d80f"],
+
+Cell["\t", "GuideDelimiterSubsection",
+ CellID->820998968,ExpressionUUID->"8c98c795-9c61-4b2b-a6d9-9150fca1f91f"],
+
+Cell["Uploading Physical Parameters", "GuideFunctionsSubsection",
+ CellID->15470949,ExpressionUUID->"8bd8acc4-2fc4-40e4-ad9e-1b23dd5a696a"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["UploadModification"]],"paclet:Physics/ref/UploadModification"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "2ce7ec23-b60f-480d-a824-ef6de536c6d3"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Creates a new Constellation object referring to a specified chemical \
+modification."
+}], "GuideText",
+ CellID->21523760,ExpressionUUID->"f5ff863f-381f-45cb-9a6a-90e38df55b56"],
+
+Cell["\t", "GuideDelimiterSubsection",
+ CellID->47713497,ExpressionUUID->"61a242ba-9265-4bba-bec6-9d65c475ec59"],
+
+Cell["Uploading Sample Properties", "GuideFunctionsSubsection",
+ CellID->609537902,ExpressionUUID->"aa68e794-f127-4a9f-acde-8934d08760eb"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["DefineAnalytes"]],"paclet:ExternalUpload/ref/DefineAnalytes"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "7b5b9de1-3ced-4b96-a29a-18d08e5a80e9"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Defines the substances of interest in a mixture consisting of multiple \
+chemicals."
+}], "GuideText",
+ CellID->39361556,ExpressionUUID->"cee2865a-9fd5-4571-98d4-cdc3fc5eb218"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["DefineComposition"]],
+    "paclet:ExternalUpload/ref/DefineComposition"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "e4a1d052-5ce6-4abd-a92c-bae03c70d561"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Updates an existing sample model with the given chemical composition."
+}], "GuideText",
+ CellID->321792435,ExpressionUUID->"451306fc-e5e2-46c3-b4cc-96fc395dec0e"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["DefineEHSInformation"]],
+    "paclet:ExternalUpload/ref/DefineEHSInformation"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "e66aa2cc-7998-4cab-974b-e577859284a5"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Updates an existing sample model with environmental as well as health and \
+safety information."
+}], "GuideText",
+ CellID->419944904,ExpressionUUID->"f9e32edc-7ca2-42af-8fae-3c4e32b690d5"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["DefineSolvent"]],"paclet:ExternalUpload/ref/DefineSolvent"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "b6221fcf-48e5-467b-a11e-7ce26a5f2abf"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Updates an existing sample model with its solvent information."
+}], "GuideText",
+ CellID->176477485,ExpressionUUID->"efc9445e-21a5-40a9-9c1b-3cf4655f1ec5"],
+
+Cell["\t", "GuideDelimiterSubsection",
+ CellID->293798322,ExpressionUUID->"48c9cc94-461f-49c3-a539-457887343b10"],
+
+Cell["Uploading Experiment Parameters", "GuideFunctionsSubsection",
+ CellID->55450356,ExpressionUUID->"a4608103-cd38-42fb-8ac1-01f18a811057"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["UploadFractionCollectionMethod"]],
+    "paclet:ExternalUpload/ref/UploadFractionCollectionMethod"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "8985148b-2f9c-4b6b-be3f-107083b899d7"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Returns a list of resolved options when uploading a method Object of \
+fraction collections."
+}], "GuideText",
+ CellID->492565694,ExpressionUUID->"f4714bf9-1c69-4e14-a71f-c9503470af33"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["UploadPipettingMethod"]],
+    "paclet:ExternalUpload/ref/UploadPipettingMethod"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "1096852f-20be-4236-aefa-c278387f624d"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Uploads and returns a method object that contains information on pipetting \
+parameters."
+}], "GuideText",
+ CellID->637415343,ExpressionUUID->"7cfca1aa-7df0-4f9b-9635-f4c690aa278b"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["UploadGradientMethod"]],
+    "paclet:ExternalUpload/ref/UploadGradientMethod"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "9199d5c7-7ee5-48e1-b6b2-b45a34a2af11"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Uploads a method Object that contains the information of the gradient used \
+in liquid chromatography experiments."
+}], "GuideText",
+ CellID->138224579,ExpressionUUID->"4f9f7f33-b849-49eb-ac2c-bfb2b645b135"],
+
+Cell["\t", "GuideDelimiterSubsection",
+ CellID->161232966,ExpressionUUID->"e707fb9a-f871-4143-915c-98763f4b28d7"],
+
+Cell["Uploading Sample Objects", "GuideFunctionsSubsection",
+ CellID->38816860,ExpressionUUID->"d496cd20-0291-43a4-9a48-5a9025881d9c"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["DefineTags"]],"paclet:ExternalUpload/ref/DefineTags"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "514a9540-d81e-4667-8b1f-ce5ac894d893"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Uploads informative labels to a given sample Object."
+}], "GuideText",
+ CellID->72631011,ExpressionUUID->"482edb42-6521-4968-8c17-e115977e1776"],
+
+Cell["\t", "GuideDelimiterSubsection",
+ CellID->814659913,ExpressionUUID->"4894dbd4-2ef0-4238-8884-3399b7c2df5c"],
+
+Cell["Validating", "GuideFunctionsSubsection",
+ CellID->283514021,ExpressionUUID->"19bf0ace-9801-4866-ac00-37d1f68eb72f"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["ValidUploadNameQ"]],
+    "paclet:ExternalUpload/ref/ValidUploadNameQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "b99962b0-55f5-473c-83f7-9906db50f0ad"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided objects and names and specified options are valid \
+for calling UploadName function."
+}], "GuideText",
+ CellID->136928310,ExpressionUUID->"c7dbe504-79db-4022-b91b-e83cdfe2df54"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["ValidUploadChemicalModelQ"]],
+    "paclet:ExternalUpload/ref/ValidUploadChemicalModelQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "5eeef405-ff8d-46f4-ad08-26318d1c9f93"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the validity of calling UploadMolecule on given input."
+}], "GuideText",
+ CellID->639300699,ExpressionUUID->"00efcb23-15d1-41cb-aeb0-6ac5f4edd785"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["ValidUploadColumnQ"]],
+    "paclet:ExternalUpload/ref/ValidUploadColumnQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "1397afd0-87bf-40fd-8bf3-142d1ded7adb"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the input is valid for calling UploadColumn."
+}], "GuideText",
+ CellID->245121799,ExpressionUUID->"1bcb7092-8760-4e1b-9a74-edcb3777aaa9"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["ValidUploadGradientMethodQ"]],
+    "paclet:ExternalUpload/ref/ValidUploadGradientMethodQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "29f65a4d-5fa6-4d01-8779-81d6f148605e"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the given inputs would result in a valid chromatography gradient \
+method."
+}], "GuideText",
+ CellID->111853256,ExpressionUUID->"3e85171a-fa4b-44c0-9fa3-0c998bdef3fd"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["ValidUploadMoleculeQ"]],
+    "paclet:ExternalUpload/ref/ValidUploadMoleculeQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "70dde64b-af6c-4982-9150-64436639684a"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the input if valid for calling UploadMolecule."
+}], "GuideText",
+ CellID->164766833,ExpressionUUID->"e85ed702-d981-4f3e-8449-c2b42a1d1154"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["ValidUploadStockSolutionQ"]],
+    "paclet:Experiment/ref/ValidUploadStockSolutionQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "9cfaed8e-e501-4662-878a-b562aa496d8b"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the input if valid for calling UploadStockSolution for creates a \
+new model of stock solution."
+}], "GuideText",
+ CellID->383209209,ExpressionUUID->"0c6b4b5d-efef-4587-99b6-58cde7ea72bc"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["ValidUploadReferenceElectrodeModelQ"]],
+    "paclet:Experiment/ref/ValidUploadReferenceElectrodeModelQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "69c02ea1-e21d-4dc6-aafd-76572e7c6cde"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the input is valid for calling UploadReferenceElectrodeModel."
+}], "GuideText",
+ CellID->15152273,ExpressionUUID->"fb45d897-c583-4b82-a927-2d0f6e159962"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["ValidUploadFractionCollectionMethodQ"]],
+    "paclet:ExternalUpload/ref/ValidUploadFractionCollectionMethodQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "0eaf2c6c-3610-4262-8fda-acc5e1612aaf"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the input is valid for calling UploadFractionCollectionMethod."
+}], "GuideText",
+ CellID->372051680,ExpressionUUID->"f2e241ab-265f-4667-9f1d-44c914898900"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["ValidUploadCapillaryELISACartridgeQ"]],
+    "paclet:Experiment/ref/ValidUploadCapillaryELISACartridgeQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "0971d12c-52a7-4a32-a9e4-2e87656a2e61"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the input is valid for calling UploadCapillaryELISACartridge."
+}], "GuideText",
+ CellID->395255063,ExpressionUUID->"5c1cdbc7-0fa1-4b83-8bd4-6015424d2550"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["ValidUploadPipettingMethodModelQ"]],
+    "paclet:ExternalUpload/ref/ValidUploadPipettingMethodModelQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "f19b739d-72a9-4b8f-aa33-a8bbbb4baec2"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Returns a boolean if a valid object is generated using \
+UploadingPipettingMethod."
+}], "GuideText",
+ CellID->147873246,ExpressionUUID->"aeed0191-08ae-44fe-b950-83a646b8e097"],
+
+Cell["\t", "GuideDelimiterSubsection",
+ CellID->229940394,ExpressionUUID->"2b153b2b-041a-4d91-bbcd-06f669cb8351"],
+
+Cell["Calculate Options", "GuideFunctionsSubsection",
+ CellID->79964004,ExpressionUUID->"bddeb51b-007f-4a00-8c5d-4725f9dc426c"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["UploadReferenceElectrodeModelOptions"]],
+    "paclet:Experiment/ref/UploadReferenceElectrodeModelOptions"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "fb5dc7ee-a1a6-463b-9015-75029664941d"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Calculates the options which will be sued when creating a new reference \
+electrode model."
+}], "GuideText",
+ CellID->155202901,ExpressionUUID->"21177f82-d799-47cc-a41f-70dbcafbc771"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["UploadNameOptions"]],
+    "paclet:ExternalUpload/ref/UploadNameOptions"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "04a5567e-f280-4dab-a4a4-a4f1cc62fec6"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Resolves options for calling UploadName function on input objects and \
+names."
+}], "GuideText",
+ CellID->486135649,ExpressionUUID->"ecacd1cf-1f6e-4a31-8077-22d3d1f482e8"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["UploadMoleculeOptions"]],
+    "paclet:ExternalUpload/ref/UploadMoleculeOptions"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "faec03cc-19d3-40ba-821a-974de23b6913"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Returns a list of options as they will be resolved by UploadMolecule."
+}], "GuideText",
+ CellID->117716339,ExpressionUUID->"9b4efa26-54e8-44b8-bbc2-c6d7dac586b4"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["UploadCompanyServiceOptions"]],
+    "paclet:ExternalUpload/ref/UploadCompanyServiceOptions"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "67231bf0-dcdd-4f11-99dc-000ab55e1d9c"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Returns a list of resolved options when creating a new object for a \
+company synthesizes custom-made samples as a service."
+}], "GuideText",
+ CellID->129823536,ExpressionUUID->"74e4495f-be59-4c19-b816-0763eb0a7358"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["UploadPipettingMethodModelOptions"]],
+    "paclet:ExternalUpload/ref/UploadPipettingMethodModelOptions"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "8bd85a9b-2f50-4d30-96f4-170a7df85290"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Returns a list of resolved options when uploading a method object that \
+contains information on pipetting parameters."
+}], "GuideText",
+ CellID->927265961,ExpressionUUID->"db1a8f60-67ed-4457-a7e5-9a1e9bbf6f67"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["UploadGradientMethodOptions"]],
+    "paclet:ExternalUpload/ref/UploadGradientMethodOptions"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "4780a337-5c22-48da-9391-ea88032c621c"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Returns a list of resolved options when uploading a method Object that \
+contains the information of the gradient used in liquid chromatography \
+experiments."
+}], "GuideText",
+ CellID->68425705,ExpressionUUID->"d7710b38-7619-4559-b43f-d04fe9d8edaf"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["UploadColumnOptions"]],
+    "paclet:ExternalUpload/ref/UploadColumnOptions"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "8b162866-bb04-4204-ad27-6b1d8d99ecc3"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Returns a list of resolved options when uploading a Column model."
+}], "GuideText",
+ CellID->403133488,ExpressionUUID->"b1ebce06-2983-444a-b0ad-fa3cf2b9d204"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["UploadInventoryOptions"]],
+    "paclet:ExternalUpload/ref/UploadInventoryOptions"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "7602aafd-8ae7-4bb7-a1c8-a4e45c2c930e"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Returns a list of resolved options when uploading an Inventory object to \
+keep the specified Product in stock."
+}], "GuideText",
+ CellID->145535924,ExpressionUUID->"369f9088-8df5-4390-9cda-0c8f6d240be9"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["UploadStockSolutionOptions"]],
+    "paclet:Experiment/ref/UploadStockSolutionOptions"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "7438a93c-c15b-40cd-9a40-f4a276d8e552"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Returns a list of resolved options when generating a new stock solution \
+model with the given components, solvent and total volume."
+}], "GuideText",
+ CellID->91573313,ExpressionUUID->"cfb91e1c-fe28-4ae6-b088-0af1f4fa0ab2"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["UploadTransportConditionOptions"]],
+    "paclet:ExternalUpload/ref/UploadTransportConditionOptions"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "808f8192-b924-4724-9e03-b78f4182a9fa"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Returns a list of resolved options when updating the transport conditions \
+of input samples."
+}], "GuideText",
+ CellID->268601938,ExpressionUUID->"8adfac9b-4c72-49d4-95de-5bb02f132c9d"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["UploadArrayCardOptions"]],
+    "paclet:Experiment/ref/UploadArrayCardOptions"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "3f87dd59-e612-436b-be54-e22e3f7d820c"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Returns a list of resolved options for creating a new ArrayCardModel with \
+the pre-dried PrimerPairs and Probes for a quantitative polymerase chain \
+reaction (qPCR) experiment."
+}], "GuideText",
+ CellID->1664084,ExpressionUUID->"7f819bd8-db7b-45e8-aa06-e7b2223cdf1e"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["UploadFractionCollectionMethodOptions"]],
+    "paclet:ExternalUpload/ref/UploadFractionCollectionMethodOptions"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "89781a6f-4b9c-472c-b6ec-77f2e78d34e7"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Returns a list o resolved options when uploading a fraction collection \
+methond for a given object."
+}], "GuideText",
+ CellID->906820206,ExpressionUUID->"1a43aeae-7769-48f7-ae95-580d4b762412"],
+
+Cell["\t", "GuideDelimiterSubsection",
+ CellID->66600836,ExpressionUUID->"86ab27cd-cd9b-487c-aa78-03cb95cd1013"],
+
+Cell["Preview", "GuideFunctionsSubsection",
+ CellID->150635079,ExpressionUUID->"e5bcb634-4b83-42d1-8d20-0d2c47d1ab34"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["UploadCapillaryELISACartridgePreview"]],
+    "paclet:Experiment/ref/UploadCapillaryELISACartridgePreview"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "65a4e5c3-01d0-4d65-8587-0ee54d77cb38"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Returns a graphical preview for UploadCapillaryELISACartridge call with \
+specified analytes, cartridge type and species."
+}], "GuideText",
+ CellID->313127551,ExpressionUUID->"05904b82-b78c-4434-84f7-067ac3d84eaf"],
+
+Cell["", "SectionFooterSpacer",
+ CellID->57159772,ExpressionUUID->"d81cbbd4-2da6-4d07-9dbe-169c5922a32a"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  InterpretationBox[
+   StyleBox[
+    GraphicsBox[{},
+     BaselinePosition->Baseline,
+     ImageSize->{6, 0}],
+    CacheGraphics->False],
+   Spacer[6]]],ExpressionUUID->"494a3784-1220-4055-abe2-076999f41fbb"],
+ "Related Guides"
+}], "GuideMoreAboutSection",
+ WholeCellGroupOpener->True,
+ CellID->261620036,ExpressionUUID->"7361393c-20c8-4576-b2d1-8f6948be121f"],
+
+Cell["", "SectionHeaderSpacer",
+ CellID->232457214,ExpressionUUID->"3666b38e-79f5-4826-ac9e-35c7fc9b6e5e"],
+
+Cell[BoxData[
+ TemplateBox[{Cell[
+    TextData["SampleStorage"]],"paclet:Docs/guide/SampleStorage"},
+  "RefLink",
+  BaseStyle->"GuideMoreAboutSub"]], "GuideMoreAboutSub",
+ CellID->172340400,ExpressionUUID->"5c90b3f8-04c8-4ddc-a49d-7b2c9c10fa63"],
+
+Cell[BoxData[
+ TemplateBox[{Cell[
+    TextData["SampleShipments"]],"paclet:Docs/guide/SampleShipments"},
+  "RefLink",
+  BaseStyle->"GuideMoreAboutSub"]], "GuideMoreAboutSub",
+ CellID->105723053,ExpressionUUID->"6990a536-4363-44ad-9f78-2349d97449db"],
+
+Cell[BoxData[
+ TemplateBox[{Cell[
+    TextData["LocationTracking"]],"paclet:Docs/guide/LocationTracking"},
+  "RefLink",
+  BaseStyle->"GuideMoreAboutSub"]], "GuideMoreAboutSub",
+ CellID->525963189,ExpressionUUID->"f3eca3d0-95a0-456f-8bdc-9c9d537008ee"],
+
+Cell["", "FooterCell",
+ CellID->249509055,ExpressionUUID->"970adc08-9766-4f1c-a9f1-8d18ea90d432"]
+},
+Saveable->False,
+ScreenStyleEnvironment->"Working",
+WindowSize->{775, 872},
+WindowMargins->{{564, Automatic}, {Automatic, 54}},
+WindowTitle->"UploadingNewSamplesOrModels",
+Visible->False,
+TaggingRules->{
+ "ModificationHighlight" -> False, "ColorType" -> "GuideColor", 
+  "ExampleCounter" -> 1, "NeedPlatMsgIn" -> None, "RootCaptions" -> "", 
+  "Metadata" -> {
+   "built" -> "Mon 14 Nov 2022 18:45:23", "context" -> "Docs`", 
+    "keywords" -> {
+     "UploadOligomer", "UploadBacterialCell", "UploadVirus", 
+      "UploadCapillaryELISACartridge", "UploadProtein", 
+      "UploadReferenceElectrodeModel", "UploadMolecule", "UploadArrayCard", 
+      "UploadStockSolution", "UploadSampleModel", "UploadMammalianCell", 
+      "UploadName", "UploadAntibody", "UploadResin", "UploadCarbohydrate", 
+      "UploadColumn", "UploadInventory", "UploadProduct", 
+      "UploadModification", "DefineAnalytes", "DefineComposition", 
+      "DefineEHSInformation", "DefineSolvent", 
+      "UploadFractionCollectionMethod", "UploadPipettingMethod", 
+      "UploadGradientMethod", "DefineTags", "ValidUploadNameQ", 
+      "ValidUploadChemicalModelQ", "ValidUploadColumnQ", 
+      "ValidUploadGradientMethodQ", "ValidUploadMoleculeQ", 
+      "ValidUploadStockSolutionQ", "ValidUploadReferenceElectrodeModelQ", 
+      "ValidUploadFractionCollectionMethodQ", 
+      "ValidUploadCapillaryELISACartridgeQ", 
+      "ValidUploadPipettingMethodModelQ", 
+      "UploadReferenceElectrodeModelOptions", "UploadNameOptions", 
+      "UploadMoleculeOptions", "UploadCompanyServiceOptions", 
+      "UploadPipettingMethodModelOptions", "UploadGradientMethodOptions", 
+      "UploadColumnOptions", "UploadInventoryOptions", 
+      "UploadStockSolutionOptions", "UploadTransportConditionOptions", 
+      "UploadArrayCardOptions", "UploadFractionCollectionMethodOptions", 
+      "UploadCapillaryELISACartridgePreview"}, "specialkeywords" -> {}, 
+    "tutorialcollectionlinks" -> {}, "index" -> True, "label" -> "ECL Guide", 
+    "language" -> "en", "paclet" -> "Docs", "status" -> "None", "summary" -> 
+    "Collection of function for uploading new models or objects into \
+constellation.", "synonyms" -> {}, "titlemodifier" -> "", "Windowtitle" -> 
+    "UploadingNewSamplesOrModels", "title" -> "UploadingNewSamplesOrModels", 
+    "type" -> "Guide", "uri" -> "Docs/guide/UploadingNewSamplesOrModels", 
+    "WorkflowDockedCell" -> ""}, "SearchTextTranslated" -> "", "LinkTrails" -> 
+  ""},
+FrontEndVersion->"12.0 for Microsoft Windows (64-bit) (September 6, 2019)",
+StyleDefinitions->"EmeraldReference.nb",
+CharacterEncoding -> "UTF-8"
+]
+(* End of Notebook Content *)
+
+(* Internal cache information *)
+(*CellTagsOutline
+CellTagsIndex->{}
+*)
+(*CellTagsIndex
+CellTagsIndex->{}
+*)
+(*NotebookFileOutline
+Notebook[{
+Cell[599, 21, 9198, 181, 56, "AnchorBarGrid",ExpressionUUID->"281b6017-fa7c-4406-832b-39d01190556c",
+ CellID->1],
+Cell[9800, 204, 128, 1, 50, "GuideTitle",ExpressionUUID->"9580f4ca-c5b7-47a7-9562-39aa02bf9d1c",
+ CellID->359454750],
+Cell[9931, 207, 186, 3, 31, "GuideAbstract",ExpressionUUID->"6acfe502-9aca-4a19-9535-f1163a45bed5",
+ CellID->140765751],
+Cell[10120, 212, 113, 1, 22, "GuideDelimiterSubsection",ExpressionUUID->"005e1fed-e68f-42ff-9957-66a55b3575b6",
+ CellID->203685045],
+Cell[10236, 215, 135, 1, 36, "GuideFunctionsSubsection",ExpressionUUID->"93dabb65-a324-4bee-a91c-cb988e2f0082",
+ CellID->69871790],
+Cell[10374, 218, 490, 12, 32, "GuideText",ExpressionUUID->"4e57bca4-5eda-4f76-8012-b261c009ab1e",
+ CellID->780927314],
+Cell[10867, 232, 511, 13, 59, "GuideText",ExpressionUUID->"9f8e0d8b-84d0-4061-bcc7-9191f1135c99",
+ CellID->26366162],
+Cell[11381, 247, 480, 12, 38, "GuideText",ExpressionUUID->"28d1acab-f7be-429b-968d-40be6d3e9e34",
+ CellID->580063743],
+Cell[11864, 261, 511, 12, 59, "GuideText",ExpressionUUID->"a62c4cea-e784-40ef-afba-e9d5ce03b6c9",
+ CellID->664131567],
+Cell[12378, 275, 501, 12, 59, "GuideText",ExpressionUUID->"8f607dcc-3af6-4590-b408-944ec205a324",
+ CellID->123843843],
+Cell[12882, 289, 575, 13, 59, "GuideText",ExpressionUUID->"d92d9bf4-309f-4b62-8853-75b45864fc08",
+ CellID->335398090],
+Cell[13460, 304, 542, 12, 59, "GuideText",ExpressionUUID->"b2001952-28c3-4898-bc81-66e67c948eb7",
+ CellID->27668993],
+Cell[14005, 318, 523, 12, 59, "GuideText",ExpressionUUID->"a29e8719-453e-4d8d-90a4-2d6656b59e97",
+ CellID->30377857],
+Cell[14531, 332, 542, 13, 59, "GuideText",ExpressionUUID->"20a1a9bf-b5ac-4bfa-bc57-47b108689949",
+ CellID->651003004],
+Cell[15076, 347, 575, 14, 59, "GuideText",ExpressionUUID->"2ff52fde-bc92-4fe6-a525-71b3121216b7",
+ CellID->61172575],
+Cell[15654, 363, 542, 13, 59, "GuideText",ExpressionUUID->"f912101d-6ad1-49e5-91e0-2e3442805860",
+ CellID->708197208],
+Cell[16199, 378, 478, 12, 38, "GuideText",ExpressionUUID->"aecb6d27-813b-4c39-b8d1-9544c7d062bc",
+ CellID->105824623],
+Cell[16680, 392, 508, 12, 59, "GuideText",ExpressionUUID->"90454b27-c2b0-47d4-97f5-6f52f9b2b9a0",
+ CellID->102667380],
+Cell[17191, 406, 503, 12, 59, "GuideText",ExpressionUUID->"a5f3272c-c2c1-4fd0-85d5-3cb2797fd516",
+ CellID->5459415],
+Cell[17697, 420, 524, 12, 59, "GuideText",ExpressionUUID->"5aacb1c0-ab17-4151-bdb9-b8edcba1d654",
+ CellID->581042596],
+Cell[18224, 434, 520, 13, 59, "GuideText",ExpressionUUID->"686078d2-5874-4cfe-98c0-ab42687a2249",
+ CellID->372568406],
+Cell[18747, 449, 487, 12, 59, "GuideText",ExpressionUUID->"f3ddad1c-7099-41ad-8afc-5057462b8baa",
+ CellID->88216117],
+Cell[19237, 463, 514, 12, 59, "GuideText",ExpressionUUID->"c89c3a79-a925-4e30-b43e-72a745aeced3",
+ CellID->66211680],
+Cell[19754, 477, 502, 12, 59, "GuideText",ExpressionUUID->"914fcef9-bfc0-48d0-bc6e-720640b9d80f",
+ CellID->32009509],
+Cell[20259, 491, 113, 1, 22, "GuideDelimiterSubsection",ExpressionUUID->"8c98c795-9c61-4b2b-a6d9-9150fca1f91f",
+ CellID->820998968],
+Cell[20375, 494, 139, 1, 36, "GuideFunctionsSubsection",ExpressionUUID->"8bd8acc4-2fc4-40e4-ad9e-1b23dd5a696a",
+ CellID->15470949],
+Cell[20517, 497, 490, 12, 53, "GuideText",ExpressionUUID->"f5ff863f-381f-45cb-9a6a-90e38df55b56",
+ CellID->21523760],
+Cell[21010, 511, 112, 1, 22, "GuideDelimiterSubsection",ExpressionUUID->"61a242ba-9265-4bba-bec6-9d65c475ec59",
+ CellID->47713497],
+Cell[21125, 514, 138, 1, 36, "GuideFunctionsSubsection",ExpressionUUID->"aa68e794-f127-4a9f-acde-8934d08760eb",
+ CellID->609537902],
+Cell[21266, 517, 488, 12, 32, "GuideText",ExpressionUUID->"cee2865a-9fd5-4571-98d4-cdc3fc5eb218",
+ CellID->39361556],
+Cell[21757, 531, 486, 12, 38, "GuideText",ExpressionUUID->"451306fc-e5e2-46c3-b4cc-96fc395dec0e",
+ CellID->321792435],
+Cell[22246, 545, 518, 13, 59, "GuideText",ExpressionUUID->"f9e32edc-7ca2-42af-8fae-3c4e32b690d5",
+ CellID->419944904],
+Cell[22767, 560, 466, 11, 38, "GuideText",ExpressionUUID->"efc9445e-21a5-40a9-9c1b-3cf4655f1ec5",
+ CellID->176477485],
+Cell[23236, 573, 113, 1, 22, "GuideDelimiterSubsection",ExpressionUUID->"48c9cc94-461f-49c3-a539-457887343b10",
+ CellID->293798322],
+Cell[23352, 576, 141, 1, 36, "GuideFunctionsSubsection",ExpressionUUID->"a4608103-cd38-42fb-8ac1-01f18a811057",
+ CellID->55450356],
+Cell[23496, 579, 535, 13, 53, "GuideText",ExpressionUUID->"f4714bf9-1c69-4e14-a71f-c9503470af33",
+ CellID->492565694],
+Cell[24034, 594, 513, 13, 59, "GuideText",ExpressionUUID->"7cfca1aa-7df0-4f9b-9635-f4c690aa278b",
+ CellID->637415343],
+Cell[24550, 609, 537, 13, 59, "GuideText",ExpressionUUID->"4f9f7f33-b849-49eb-ac2c-bfb2b645b135",
+ CellID->138224579],
+Cell[25090, 624, 113, 1, 22, "GuideDelimiterSubsection",ExpressionUUID->"e707fb9a-f871-4143-915c-98763f4b28d7",
+ CellID->161232966],
+Cell[25206, 627, 134, 1, 36, "GuideFunctionsSubsection",ExpressionUUID->"d496cd20-0291-43a4-9a48-5a9025881d9c",
+ CellID->38816860],
+Cell[25343, 630, 449, 11, 32, "GuideText",ExpressionUUID->"482edb42-6521-4968-8c17-e115977e1776",
+ CellID->72631011],
+Cell[25795, 643, 113, 1, 22, "GuideDelimiterSubsection",ExpressionUUID->"4894dbd4-2ef0-4238-8884-3399b7c2df5c",
+ CellID->814659913],
+Cell[25911, 646, 121, 1, 36, "GuideFunctionsSubsection",ExpressionUUID->"19bf0ace-9801-4866-ac00-37d1f68eb72f",
+ CellID->283514021],
+Cell[26035, 649, 522, 13, 53, "GuideText",ExpressionUUID->"c7dbe504-79db-4022-b91b-e83cdfe2df54",
+ CellID->136928310],
+Cell[26560, 664, 497, 12, 38, "GuideText",ExpressionUUID->"00efcb23-15d1-41cb-aeb0-6ac5f4edd785",
+ CellID->639300699],
+Cell[27060, 678, 473, 12, 38, "GuideText",ExpressionUUID->"1bcb7092-8760-4e1b-9a74-edcb3777aaa9",
+ CellID->245121799],
+Cell[27536, 692, 519, 13, 59, "GuideText",ExpressionUUID->"3e85171a-fa4b-44c0-9fa3-0c998bdef3fd",
+ CellID->111853256],
+Cell[28058, 707, 479, 12, 38, "GuideText",ExpressionUUID->"e85ed702-d981-4f3e-8449-c2b42a1d1154",
+ CellID->164766833],
+Cell[28540, 721, 534, 13, 59, "GuideText",ExpressionUUID->"0c6b4b5d-efef-4587-99b6-58cde7ea72bc",
+ CellID->383209209],
+Cell[29077, 736, 519, 12, 59, "GuideText",ExpressionUUID->"fb45d897-c583-4b82-a927-2d0f6e159962",
+ CellID->15152273],
+Cell[29599, 750, 527, 12, 59, "GuideText",ExpressionUUID->"f2e241ab-265f-4667-9f1d-44c914898900",
+ CellID->372051680],
+Cell[30129, 764, 520, 12, 59, "GuideText",ExpressionUUID->"5c1cdbc7-0fa1-4b83-8bd4-6015424d2550",
+ CellID->395255063],
+Cell[30652, 778, 529, 13, 59, "GuideText",ExpressionUUID->"aeed0191-08ae-44fe-b950-83a646b8e097",
+ CellID->147873246],
+Cell[31184, 793, 113, 1, 22, "GuideDelimiterSubsection",ExpressionUUID->"2b153b2b-041a-4d91-bbcd-06f669cb8351",
+ CellID->229940394],
+Cell[31300, 796, 127, 1, 36, "GuideFunctionsSubsection",ExpressionUUID->"bddeb51b-007f-4a00-8c5d-4725f9dc426c",
+ CellID->79964004],
+Cell[31430, 799, 541, 13, 53, "GuideText",ExpressionUUID->"21177f82-d799-47cc-a41f-70dbcafbc771",
+ CellID->155202901],
+Cell[31974, 814, 495, 13, 38, "GuideText",ExpressionUUID->"ecacd1cf-1f6e-4a31-8077-22d3d1f482e8",
+ CellID->486135649],
+Cell[32472, 829, 494, 12, 38, "GuideText",ExpressionUUID->"9b4efa26-54e8-44b8-bbc2-c6d7dac586b4",
+ CellID->117716339],
+Cell[32969, 843, 560, 13, 59, "GuideText",ExpressionUUID->"74e4495f-be59-4c19-b816-0763eb0a7358",
+ CellID->129823536],
+Cell[33532, 858, 567, 13, 59, "GuideText",ExpressionUUID->"db1a8f60-67ed-4457-a7e5-9a1e9bbf6f67",
+ CellID->927265961],
+Cell[34102, 873, 594, 14, 59, "GuideText",ExpressionUUID->"d7710b38-7619-4559-b43f-d04fe9d8edaf",
+ CellID->68425705],
+Cell[34699, 889, 486, 12, 38, "GuideText",ExpressionUUID->"b1ebce06-2983-444a-b0ad-fa3cf2b9d204",
+ CellID->403133488],
+Cell[35188, 903, 538, 13, 59, "GuideText",ExpressionUUID->"369f9088-8df5-4390-9cda-0c8f6d240be9",
+ CellID->145535924],
+Cell[35729, 918, 562, 13, 59, "GuideText",ExpressionUUID->"cfb91e1c-fe28-4ae6-b088-0af1f4fa0ab2",
+ CellID->91573313],
+Cell[36294, 933, 538, 13, 59, "GuideText",ExpressionUUID->"8adfac9b-4c72-49d4-95de-5bb02f132c9d",
+ CellID->268601938],
+Cell[36835, 948, 599, 14, 59, "GuideText",ExpressionUUID->"7f819bd8-db7b-45e8-aa06-e7b2223cdf1e",
+ CellID->1664084],
+Cell[37437, 964, 557, 13, 59, "GuideText",ExpressionUUID->"1a43aeae-7769-48f7-ae95-580d4b762412",
+ CellID->906820206],
+Cell[37997, 979, 112, 1, 22, "GuideDelimiterSubsection",ExpressionUUID->"86ab27cd-cd9b-487c-aa78-03cb95cd1013",
+ CellID->66600836],
+Cell[38112, 982, 118, 1, 36, "GuideFunctionsSubsection",ExpressionUUID->"e5bcb634-4b83-42d1-8d20-0d2c47d1ab34",
+ CellID->150635079],
+Cell[38233, 985, 572, 13, 53, "GuideText",ExpressionUUID->"05904b82-b78c-4434-84f7-067ac3d84eaf",
+ CellID->313127551],
+Cell[38808, 1000, 105, 1, 29, "SectionFooterSpacer",ExpressionUUID->"d81cbbd4-2da6-4d07-9dbe-169c5922a32a",
+ CellID->57159772],
+Cell[38916, 1003, 392, 12, 72, "GuideMoreAboutSection",ExpressionUUID->"7361393c-20c8-4576-b2d1-8f6948be121f",
+ CellID->261620036],
+Cell[39311, 1017, 106, 1, 14, "SectionHeaderSpacer",ExpressionUUID->"3666b38e-79f5-4826-ac9e-35c7fc9b6e5e",
+ CellID->232457214],
+Cell[39420, 1020, 245, 5, 24, "GuideMoreAboutSub",ExpressionUUID->"5c90b3f8-04c8-4ddc-a49d-7b2c9c10fa63",
+ CellID->172340400],
+Cell[39668, 1027, 249, 5, 24, "GuideMoreAboutSub",ExpressionUUID->"6990a536-4363-44ad-9f78-2349d97449db",
+ CellID->105723053],
+Cell[39920, 1034, 251, 5, 24, "GuideMoreAboutSub",ExpressionUUID->"f3eca3d0-95a0-456f-8bdc-9c9d537008ee",
+ CellID->525963189],
+Cell[40174, 1041, 97, 1, 41, "FooterCell",ExpressionUUID->"970adc08-9766-4f1c-a9f1-8d18ea90d432",
+ CellID->249509055]
+}
+]
+*)
+
+(* End of internal cache information *)
+

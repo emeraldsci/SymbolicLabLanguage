@@ -1,3 +1,1023 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:99de931514b94d59ff6da7b8960a49eaa450372fda4898240b6fd480dc0a65f1
-size 41574
+(* Content-type: application/vnd.wolfram.mathematica *)
+
+(*** Wolfram Notebook File ***)
+(* http://www.wolfram.com/nb *)
+
+(* CreatedBy='Mathematica 12.3' *)
+
+(*CacheID: 234*)
+(* Internal cache information:
+NotebookFileLineBreakTest
+NotebookFileLineBreakTest
+NotebookDataPosition[       158,          7]
+NotebookDataLength[     41374,       1013]
+NotebookOptionsPosition[     31080,        836]
+NotebookOutlinePosition[     33416,        886]
+CellTagsIndexPosition[     33373,        883]
+WindowTitle->CalculatingAnalysisOptions
+WindowFrame->Normal*)
+
+(* Beginning of Notebook Content *)
+Notebook[{
+Cell[BoxData[GridBox[{
+   {GridBox[{
+      {
+       ItemBox[Cell[BoxData[
+         RowBox[{
+          InterpretationBox[
+           StyleBox[
+            GraphicsBox[{},
+             BaselinePosition->Baseline,
+             ImageSize->{8, 0}],
+            CacheGraphics->False],
+           Spacer[8],
+           Selectable->False], Cell["EMERALD GUIDE", "PacletNameCell",
+           TextAlignment->Center,ExpressionUUID->
+           "7908e89f-b893-47ac-459a-a815c351d89e"], 
+          InterpretationBox[
+           StyleBox[
+            GraphicsBox[{},
+             BaselinePosition->Baseline,
+             ImageSize->{8, 0}],
+            CacheGraphics->False],
+           Spacer[8],
+           Selectable->False]}]],
+         TextAlignment->Center,ExpressionUUID->
+         "867f6861-a9ab-4486-7f3f-3ad8f927adfb"],
+        Background->RGBColor[
+         0.24313725490196078`, 0.27058823529411763`, 0.2980392156862745],
+        ItemSize->Full], ""}
+     },
+     GridBoxAlignment->{"Rows" -> {{Center}}},
+     GridBoxItemSize->{"Columns" -> {Full, 
+         Scaled[0.02]}, "Rows" -> {{2.5}}}], Cell[TextData[{
+     Cell[BoxData[
+      ActionMenuBox[
+       FrameBox[Cell[TextData[{
+         "Functions",
+         " ",
+         Cell[BoxData[
+          GraphicsBox[
+           {RGBColor[183/256., 197/256., 211/256.], Thickness[0.13], 
+            LineBox[{{-1.8, 0.5}, {0, 0}, {1.8, 0.5}}]},
+           AspectRatio->1,
+           ImageSize->20,
+           PlotRange->{{-3, 4}, {-1, 1}}]],ExpressionUUID->
+          "91c7bb68-e65c-483d-a4e4-9626c1987365"]
+        }],ExpressionUUID->"271a1207-5fb8-4580-bc37-d94279ae1f1b"],
+        StripOnInput->
+         False], {"\<\"AnalyzeAbsorbanceQuantificationOptions\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Analysis/ref/AnalyzeAbsorbanceQuantificationOptions"], \
+"\<\"AnalyzeBindingKineticsOptions\"\>":>Documentation`HelpLookup[
+       "paclet:Analysis/ref/AnalyzeBindingKineticsOptions"], \
+"\<\"AnalyzeBindingQuantitationOptions\"\>":>Documentation`HelpLookup[
+       "paclet:Analysis/ref/AnalyzeBindingQuantitationOptions"], \
+"\<\"AnalyzeBubbleRadiusOptions\"\>":>Documentation`HelpLookup[
+       "paclet:Analysis/ref/AnalyzeBubbleRadiusOptions"], \
+"\<\"AnalyzeCellCountOptions\"\>":>Documentation`HelpLookup[
+       "paclet:Analysis/ref/AnalyzeCellCountOptions"], \
+"\<\"AnalyzeClustersOptions\"\>":>Documentation`HelpLookup[
+       "paclet:Analysis/ref/AnalyzeClustersOptions"], \
+"\<\"AnalyzeCompositionOptions\"\>":>Documentation`HelpLookup[
+       "paclet:Analysis/ref/AnalyzeCompositionOptions"], \
+"\<\"AnalyzeCopyNumberOptions\"\>":>Documentation`HelpLookup[
+       "paclet:Analysis/ref/AnalyzeCopyNumberOptions"], \
+"\<\"AnalyzeCriticalMicelleConcentrationOptions\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Analysis/ref/AnalyzeCriticalMicelleConcentrationOptions"], "\<\
+\"AnalyzeDNASequencingOptions\"\>":>Documentation`HelpLookup[
+       "paclet:Analysis/ref/AnalyzeDNASequencingOptions"], \
+"\<\"AnalyzeDynamicLightScatteringLoadingOptions\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Analysis/ref/AnalyzeDynamicLightScatteringLoadingOptions"], \
+"\<\"AnalyzeDynamicLightScatteringOptions\"\>":>Documentation`HelpLookup[
+       "paclet:Analysis/ref/AnalyzeDynamicLightScatteringOptions"], \
+"\<\"AnalyzeEpitopeBinningOptions\"\>":>Documentation`HelpLookup[
+       "paclet:Analysis/ref/AnalyzeEpitopeBinningOptions"], \
+"\<\"AnalyzeFitOptions\"\>":>Documentation`HelpLookup[
+       "paclet:Analysis/ref/AnalyzeFitOptions"], "\<\"AnalyzeFractionsOptions\
+\"\>":>Documentation`HelpLookup[
+       "paclet:Analysis/ref/AnalyzeFractionsOptions"], \
+"\<\"AnalyzeKineticsOptions\"\>":>Documentation`HelpLookup[
+       "paclet:Analysis/ref/AnalyzeKineticsOptions"], \
+"\<\"AnalyzeLadderOptions\"\>":>Documentation`HelpLookup[
+       "paclet:Analysis/ref/AnalyzeLadderOptions"], \
+"\<\"AnalyzeMeltingPointOptions\"\>":>Documentation`HelpLookup[
+       "paclet:Analysis/ref/AnalyzeMeltingPointOptions"], \
+"\<\"AnalyzeMicroscopeOverlayOptions\"\>":>Documentation`HelpLookup[
+       "paclet:Analysis/ref/AnalyzeMicroscopeOverlayOptions"], \
+"\<\"AnalyzeParallelLineOptions\"\>":>Documentation`HelpLookup[
+       "paclet:Analysis/ref/AnalyzeParallelLineOptions"], \
+"\<\"AnalyzePeaksOptions\"\>":>Documentation`HelpLookup[
+       "paclet:Analysis/ref/AnalyzePeaksOptions"], \
+"\<\"AnalyzeQuantificationCycleOptions\"\>":>Documentation`HelpLookup[
+       "paclet:Analysis/ref/AnalyzeQuantificationCycleOptions"], \
+"\<\"AnalyzeSmoothingOptions\"\>":>Documentation`HelpLookup[
+       "paclet:Analysis/ref/AnalyzeSmoothingOptions"], \
+"\<\"AnalyzeStandardCurveOptions\"\>":>Documentation`HelpLookup[
+       "paclet:Analysis/ref/AnalyzeStandardCurveOptions"], \
+"\<\"AnalyzeThermodynamicsOptions\"\>":>Documentation`HelpLookup[
+       "paclet:Analysis/ref/AnalyzeThermodynamicsOptions"], \
+"\<\"AnalyzeTotalProteinQuantificationOptions\"\>":>Documentation`HelpLookup[
+       "paclet:Analysis/ref/AnalyzeTotalProteinQuantificationOptions"]},
+       LineSpacing -> {1.4, 0},
+       Appearance->None,
+       MenuAppearance->Automatic,
+       MenuStyle->"GuideFunction"]],ExpressionUUID->
+      "1abdb100-36ec-43e6-b07e-54665476629e"],
+     "\[ThickSpace]\[ThickSpace]\[ThickSpace]\[ThickSpace]\[ThickSpace]\
+\[ThickSpace]",
+     Cell[BoxData[
+      ActionMenuBox[
+       FrameBox[Cell[TextData[{
+         "Related Guides",
+         " ",
+         Cell[BoxData[
+          GraphicsBox[
+           {RGBColor[183/256., 197/256., 211/256.], Thickness[0.13], 
+            LineBox[{{-1.8, 0.5}, {0, 0}, {1.8, 0.5}}]},
+           AspectRatio->1,
+           ImageSize->20,
+           PlotRange->{{-3, 4}, {-1, 1}}]],ExpressionUUID->
+          "c039e255-b4fe-4a55-bc4e-6528d37b0426"]
+        }],ExpressionUUID->"de15ecf9-d7e5-423f-b9a5-9f34eebd0cb6"],
+        StripOnInput->False], {"\<\"AnalysisBySubjectMatter\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Docs/guide/AnalysisBySubjectMatter"], \
+"\<\"AnalyticalAndPhysicalChemistry\"\>":>Documentation`HelpLookup[
+       "paclet:Docs/guide/AnalyticalAndPhysicalChemistry"], \
+"\<\"ImageAnalysis\"\>":>Documentation`HelpLookup[
+       "paclet:Docs/guide/ImageAnalysis"], "\<\"NumericAnalysis\"\>":>
+       Documentation`HelpLookup["paclet:Docs/guide/NumericAnalysis"]},
+       LineSpacing -> {1.4, 0},
+       Appearance->None,
+       MenuAppearance->Automatic,
+       MenuStyle->"GuideFunction"]],ExpressionUUID->
+      "7786b954-8810-4dc6-9b77-1a1a42394ee8"]
+    }], "AnchorBar",ExpressionUUID->"29c055d4-ecc9-4636-b0d6-639c1cc201a1"]}
+  }]], "AnchorBarGrid",
+ CellID->1,ExpressionUUID->"00411dc1-6def-4e8e-b946-df37e61b931a"],
+
+Cell["Calculating Analysis Options", "GuideTitle",
+ CellID->1531579333,ExpressionUUID->"10206f3d-2bde-4699-9dc6-79d281d6697e"],
+
+Cell["\<\
+Collection of functions that resolves options for analysis functions \
+organized by the subject matter they may be relevant to.\
+\>", "GuideAbstract",
+ CellID->1514856789,ExpressionUUID->"61c28171-7bd7-4edc-80d1-3f72baefe301"],
+
+Cell["\t", "GuideDelimiterSubsection",
+ CellID->1779417538,ExpressionUUID->"03694e05-e7c6-430f-8553-3191418b8ec8"],
+
+Cell["Chromatography", "GuideFunctionsSubsection",
+ CellID->813293044,ExpressionUUID->"309fac2b-bb14-441c-bd0e-73e817a937a6"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["AnalyzePeaksOptions"]], 
+    "paclet:Analysis/ref/AnalyzePeaksOptions"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "0f9be824-bc53-4a3f-9fc5-63986fd4422b"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Returns resolved options for calling AnalyzePeaks function to pick Peaks \
+from protocol or data object."
+}], "GuideText",
+ CellID->282777353,ExpressionUUID->"c15eaab1-7bda-4e4c-a23a-78e06a8ca226"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["AnalyzeCompositionOptions"]], 
+    "paclet:Analysis/ref/AnalyzeCompositionOptions"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "c4b40f6a-7fa9-4429-b29f-0d5d5a5cb400"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Resolves options for analysis of chemical composition of chromatogram \
+peaks in HPLC protocol."
+}], "GuideText",
+ CellID->257661060,ExpressionUUID->"5720af59-8d8f-47fe-9173-6ab266567f00"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["AnalyzeFractionsOptions"]], 
+    "paclet:Analysis/ref/AnalyzeFractionsOptions"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "8efcb5b1-e165-4474-96d5-ed472e7c9667"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Returns resolved options for the analysis of fractions when it is called \
+on input protocol or data."
+}], "GuideText",
+ CellID->1182403068,ExpressionUUID->"4737f155-53d8-4ae2-98e7-8c9cb47828b7"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["AnalyzeLadderOptions"]], 
+    "paclet:Analysis/ref/AnalyzeLadderOptions"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "75a50d22-f30c-4644-b708-25b0fc387634"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Returns resolved options for fitting the standard curve function to \
+molecular size for peaks or a given data object."
+}], "GuideText",
+ CellID->1982178185,ExpressionUUID->"a4a82a3e-3365-4915-9898-2562bbd952f6"],
+
+Cell["\t", "GuideDelimiterSubsection",
+ CellID->554939384,ExpressionUUID->"52d40d39-5819-4637-af87-c783dd43c544"],
+
+Cell["Spectroscopy", "GuideFunctionsSubsection",
+ CellID->344747967,ExpressionUUID->"4c192e0c-ed01-4aac-8c3e-fc7417c896c4"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["AnalyzePeaksOptions"]], 
+    "paclet:Analysis/ref/AnalyzePeaksOptions"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "360e0890-36a2-4a48-9468-90f29d61153b"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Returns resolved options for calling AnalyzePeaks function to pick Peaks \
+from protocol or data object."
+}], "GuideText",
+ CellID->268201763,ExpressionUUID->"3fd71499-8e5d-4664-a38a-dba1949d2b22"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["AnalyzeAbsorbanceQuantificationOptions"]], 
+    "paclet:Analysis/ref/AnalyzeAbsorbanceQuantificationOptions"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "8d45959f-c209-4317-8f94-046ace7e1a6e"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Returns resolved options for calling AnalyzeAbsorbanceQuantification \
+function on quantification protocols."
+}], "GuideText",
+ CellID->98855688,ExpressionUUID->"6a7d77de-c0f9-48a3-9e10-ab431438fb5a"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["AnalyzeTotalProteinQuantificationOptions"]], 
+    "paclet:Analysis/ref/AnalyzeTotalProteinQuantificationOptions"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "64746ed0-e723-4215-b4f3-1d0c4b9f6b0c"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Returns resolved options for calling AnalyzeTotalProteinQuantification \
+function to calculate total protein calculation based on total protein \
+quantification assay data."
+}], "GuideText",
+ CellID->1462689085,ExpressionUUID->"4ed2508f-2e42-4dc0-b1cc-67acb17f3e03"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["AnalyzeDynamicLightScatteringOptions"]], 
+    "paclet:Analysis/ref/AnalyzeDynamicLightScatteringOptions"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "bd92e532-dd5e-49c0-b9fe-54bff1a48302"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Returns resolved options for calling AnalyzeDynamicLightScattering \
+function to calculate key parameters from input protocol or data object."
+}], "GuideText",
+ CellID->1170144386,ExpressionUUID->"8591bc90-fde3-4344-9ee3-8de5e8495870"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["AnalyzeDynamicLightScatteringLoadingOptions"]], 
+    "paclet:Analysis/ref/AnalyzeDynamicLightScatteringLoadingOptions"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "1d4f3abd-9ff5-4e2f-b553-d4909526bdfd"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Returns resolved options for calling AnalyzeDynamicLightScatteringLoading \
+function to perform threshold analysis of correlation curve data on dynamic \
+light scattering data."
+}], "GuideText",
+ CellID->2108939923,ExpressionUUID->"b9d82d99-ef3d-4de0-bf22-a7f60612a688"],
+
+Cell["\t", "GuideDelimiterSubsection",
+ CellID->735692126,ExpressionUUID->"fdbc2298-d8f7-404c-a7b5-9bb3dc2b2a24"],
+
+Cell["PCR", "GuideFunctionsSubsection",
+ CellID->1714205903,ExpressionUUID->"4997d249-983d-4fbf-8ed2-f9251f1ab5c9"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["AnalyzeQuantificationCycleOptions"]], 
+    "paclet:Analysis/ref/AnalyzeQuantificationCycleOptions"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "2bf9f98f-b801-4027-9cab-6bbf291335ba"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Resolves options for calculating the quantification cycle of each \
+applicable amplification curve for specified provided quantitative polymerase \
+chain reaction (qPCR) protocol or data object."
+}], "GuideText",
+ CellID->18003569,ExpressionUUID->"40026b3d-fab3-43b0-919d-ac918e73c12e"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["AnalyzeCopyNumberOptions"]], 
+    "paclet:Analysis/ref/AnalyzeCopyNumberOptions"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "7af99cea-d54f-4087-b727-39a8356f0430"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Returns resolved options to calculate the copy number for each \
+quantification cycle based on the standard curve of quantification cycle vs \
+Log10 copy number."
+}], "GuideText",
+ CellID->1938273603,ExpressionUUID->"72cdef42-2d52-4068-991a-6521253f6471"],
+
+Cell["\t", "GuideDelimiterSubsection",
+ CellID->1385004278,ExpressionUUID->"3013228f-05c2-4184-8251-78959317e084"],
+
+Cell["Bioassays", "GuideFunctionsSubsection",
+ CellID->1191650513,ExpressionUUID->"32c1fa73-78d3-4089-b2c0-9db2bf1779d5"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["AnalyzeBindingKineticsOptions"]], 
+    "paclet:Analysis/ref/AnalyzeBindingKineticsOptions"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "a5b39166-4139-45b4-9784-cc1f8ba5faca"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Returns resolved options for calling AnalyzeBindingKinetics function to \
+solve the kinetic association and dissociation rates."
+}], "GuideText",
+ CellID->637680069,ExpressionUUID->"732050d9-2090-4917-a00e-866b041ac090"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["AnalyzeBindingQuantitationOptions"]], 
+    "paclet:Analysis/ref/AnalyzeBindingQuantitationOptions"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "300a2db3-3028-4641-b1f7-9903e22ba6fd"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Returns resolved options for calling AnalyzeBindingQuantitation function \
+to determine the concentration of the analyte."
+}], "GuideText",
+ CellID->1545521153,ExpressionUUID->"48cbbcaa-f500-4cd6-ad80-80dc6c3ea671"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["AnalyzeEpitopeBinningOptions"]], 
+    "paclet:Analysis/ref/AnalyzeEpitopeBinningOptions"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "eb7649aa-8e3c-48a6-83f2-2c87c5900c2e"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Returns resolved options for the classification of antibodies by their \
+interaction with a given antigen from biolayer interferometry data."
+}], "GuideText",
+ CellID->1759308006,ExpressionUUID->"ca68b087-c004-4ed3-96a1-a9bde56c882d"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["AnalyzeDNASequencingOptions"]], 
+    "paclet:Analysis/ref/AnalyzeDNASequencingOptions"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "d725f556-2fbb-4acd-a80f-be6d070de178"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Returns the resolved options for a DNA sequencing experiment when run on a \
+set of sequencing data."
+}], "GuideText",
+ CellID->2134804946,ExpressionUUID->"763062c7-9b96-4030-8bc6-6e9be58fb48a"],
+
+Cell["\t", "GuideDelimiterSubsection",
+ CellID->1657436993,ExpressionUUID->"991dc147-10f5-41d0-a58a-e43e528e2151"],
+
+Cell["Microscopy", "GuideFunctionsSubsection",
+ CellID->1533156114,ExpressionUUID->"0cb3ec90-07bc-449e-8c15-675277370703"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["AnalyzeMicroscopeOverlayOptions"]], 
+    "paclet:Analysis/ref/AnalyzeMicroscopeOverlayOptions"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "7dcadbbb-127e-4787-bba3-a4c30c9218e3"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Returns resolved options for AnalyzeMicroscopeOverlay when called on \
+microscopy data objects."
+}], "GuideText",
+ CellID->98527645,ExpressionUUID->"5b682710-b75a-4d6a-8b0b-c3215b9e34b7"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["AnalyzeCellCountOptions"]], 
+    "paclet:Analysis/ref/AnalyzeCellCountOptions"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "3494b73d-4160-470e-ab56-2a357a2445a1"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Returns resolved options for AnalyzeCellCount when it called on \
+Microscopic Data or images."
+}], "GuideText",
+ CellID->244237678,ExpressionUUID->"0f907976-6c6c-4bac-848b-78dda466a851"],
+
+Cell["\t", "GuideDelimiterSubsection",
+ CellID->1061404729,ExpressionUUID->"1f24d707-bd90-41cb-bef2-b85b93ede65b"],
+
+Cell["Quantification", "GuideFunctionsSubsection",
+ CellID->2030108321,ExpressionUUID->"c089d198-baff-4ba3-b047-ddefc8067259"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["AnalyzeAbsorbanceQuantificationOptions"]], 
+    "paclet:Analysis/ref/AnalyzeAbsorbanceQuantificationOptions"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "99b35fa8-1cba-4e0f-b524-3aec39666189"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Returns resolved options for calling AnalyzeAbsorbanceQuantification \
+function to calculate concentration of an analyte using Beer's Law."
+}], "GuideText",
+ CellID->810367511,ExpressionUUID->"98b17cdd-e575-435b-b9eb-1827442aa118"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["AnalyzeTotalProteinQuantificationOptions"]], 
+    "paclet:Analysis/ref/AnalyzeTotalProteinQuantificationOptions"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "4527fd88-366d-42fe-af54-614affc027c6"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Returns resolved options for AnalyzeTotalProteinQuantification when it is \
+called on input protocol."
+}], "GuideText",
+ CellID->505468103,ExpressionUUID->"d40a008c-9969-4bd9-ba46-36eba8f81779"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["AnalyzeCopyNumberOptions"]], 
+    "paclet:Analysis/ref/AnalyzeCopyNumberOptions"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "3d336d2b-bb61-4c87-840f-fc74f138dfcb"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Returns resolved options for calling AnalyzeCopyNumber function to \
+calculate the estimated copy number of a given gene sequence based on qPCR \
+data or Qualification Cycle Analysis."
+}], "GuideText",
+ CellID->2104583236,ExpressionUUID->"844af7c1-c580-4752-91b8-7ee2e8bd49a7"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["AnalyzeQuantificationCycleOptions"]], 
+    "paclet:Analysis/ref/AnalyzeQuantificationCycleOptions"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "a737ec34-51c4-454d-909c-e124c27be163"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Returns resolved options for calling AnalyzeQuantificationCycle function \
+to calculate the Quantification Cycle (Cq) which is the inflection point in \
+the amplification curve of qPCR data."
+}], "GuideText",
+ CellID->527297715,ExpressionUUID->"cad3a3ac-6b79-4504-9646-485b14f6dd1c"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["AnalyzePeaksOptions"]], 
+    "paclet:Analysis/ref/AnalyzePeaksOptions"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "a5d964e7-f828-4739-8b27-9ffc663b6547"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Returns resolved options for calling AnalyzePeaks function to pick Peaks \
+from protocol or data object."
+}], "GuideText",
+ CellID->1775168483,ExpressionUUID->"ca34e50d-edf5-477b-885f-cb55aa997f99"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["AnalyzeBindingQuantitationOptions"]], 
+    "paclet:Analysis/ref/AnalyzeBindingQuantitationOptions"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "61b2da7f-f7f1-4ab8-9f3e-e55e324a3b23"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Returns resolved options for calling AnalyzeBindingQuantitation function \
+to determine the concentration of the analyte."
+}], "GuideText",
+ CellID->266386010,ExpressionUUID->"df8695fc-cc87-4d75-9040-88e240a668be"],
+
+Cell["\t", "GuideDelimiterSubsection",
+ CellID->1793749722,ExpressionUUID->"0a7dc4c1-8c86-46fd-b86d-e687f3a95e53"],
+
+Cell["Thermodynamics", "GuideFunctionsSubsection",
+ CellID->1176141068,ExpressionUUID->"9a1d841f-4ff7-4503-8c39-f6837c9cb770"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["AnalyzeThermodynamicsOptions"]], 
+    "paclet:Analysis/ref/AnalyzeThermodynamicsOptions"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "7a77cdb2-d476-4acb-9fb1-cb792af928a5"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Resolves options to call AnalyzeThermodynamics function based on the input."
+}], "GuideText",
+ CellID->1963442888,ExpressionUUID->"057e3aaa-a013-4cbe-b2a7-b6f5e6cad7fd"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["AnalyzeParallelLineOptions"]], 
+    "paclet:Analysis/ref/AnalyzeParallelLineOptions"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "7888e8eb-fb82-4bc1-a61c-b58e47675103"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Resolves options to call AnalyzeParallelLine function which calculate the \
+relative potency ratio between EC50 values in teo dose-response fitted curves."
+}], "GuideText",
+ CellID->1350898814,ExpressionUUID->"37b269d5-20c9-4fd5-8f4a-415126f30f61"],
+
+Cell["\t", "GuideDelimiterSubsection",
+ CellID->1359250814,ExpressionUUID->"0a18f04e-6af2-49d8-bad6-3be2851b52b0"],
+
+Cell["Kinetics", "GuideFunctionsSubsection",
+ CellID->2144877759,ExpressionUUID->"b8ccbf52-89b9-4984-840e-5d58518ae5af"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["AnalyzeKineticsOptions"]], 
+    "paclet:Analysis/ref/AnalyzeKineticsOptions"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "ed01c894-eb37-434a-b180-fb296a81bac3"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Returns resolved options for solving for the kinetic rates by \
+AnalyzeKinetics."
+}], "GuideText",
+ CellID->1299996971,ExpressionUUID->"34c68636-2d00-457b-a127-7bc8408dea53"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["AnalyzeBindingKineticsOptions"]], 
+    "paclet:Analysis/ref/AnalyzeBindingKineticsOptions"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "ef3cf47f-9f43-4aab-a892-f82600316301"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Returns resolved options for calling AnalyzeBindingKinetics function to \
+solve the kinetic association and dissociation rates."
+}], "GuideText",
+ CellID->550467019,ExpressionUUID->"d11f74ac-7c9c-4e66-b601-7ddcdc48263d"],
+
+Cell["\t", "GuideDelimiterSubsection",
+ CellID->339637057,ExpressionUUID->"c6bb4acd-43e5-44d8-8d6b-9b0b8bc7794b"],
+
+Cell["Analytical And Physical Chemistry", "GuideFunctionsSubsection",
+ CellID->268483273,ExpressionUUID->"a4642f9b-2811-424f-b4ea-7852a81271cf"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["AnalyzeMeltingPointOptions"]], 
+    "paclet:Analysis/ref/AnalyzeMeltingPointOptions"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "28c813e7-d919-4d2f-880f-f51b1e04a119"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Returns resolved options for calculating the melting temperature from \
+melting curves by AnalyzeMeltingPoint."
+}], "GuideText",
+ CellID->535226964,ExpressionUUID->"50dac23c-19bf-4cbc-9271-f24f54ba6ef8"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["AnalyzeCriticalMicelleConcentrationOptions"]], 
+    "paclet:Analysis/ref/AnalyzeCriticalMicelleConcentrationOptions"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "9620045e-f380-4e3d-b8a5-219a89d15f1f"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Resolves options to call AnalyzeCriticalMicelleConcentration based on the \
+input data or protocol."
+}], "GuideText",
+ CellID->1898070312,ExpressionUUID->"1219fdcf-2520-42e3-979c-d5cacf928223"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["AnalyzeBubbleRadiusOptions"]], 
+    "paclet:Analysis/ref/AnalyzeBubbleRadiusOptions"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "2dfa4aaf-d466-4cda-b467-8ed79434832d"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Returns resolved options for analyzing the bubble radius in the video \
+obtained while performing dynamic foam analysis."
+}], "GuideText",
+ CellID->2145641246,ExpressionUUID->"d0007e72-8db4-416e-b414-b3503162d698"],
+
+Cell["\t", "GuideDelimiterSubsection",
+ CellID->1247021098,ExpressionUUID->"38637682-6cfe-4c0b-bc7e-1e5baa39b5bb"],
+
+Cell["Numeric Analysis", "GuideFunctionsSubsection",
+ CellID->1390683013,ExpressionUUID->"d469f26a-308f-4e38-847f-a180902edcc5"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["AnalyzeFitOptions"]], "paclet:Analysis/ref/AnalyzeFitOptions"},
+   
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "4d2568fc-87bd-4605-a3d8-9f9ccae3cf66"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Resolves options to call AnalyzeFit function to fit on input data, with \
+all automatic options resolved to fix values."
+}], "GuideText",
+ CellID->2144869190,ExpressionUUID->"7fd335d9-2684-475f-a1f1-f581d014dfd1"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["AnalyzeSmoothingOptions"]], 
+    "paclet:Analysis/ref/AnalyzeSmoothingOptions"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "ca9075d8-4ae8-425b-8510-b9ff37a260de"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Returns resolved options for AnalyzeSmoothing when it is called on input \
+data."
+}], "GuideText",
+ CellID->1155977788,ExpressionUUID->"a2358cbf-0ccc-4bda-b790-049cfb5c1889"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["AnalyzeStandardCurveOptions"]], 
+    "paclet:Analysis/ref/AnalyzeStandardCurveOptions"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "ec88649b-9a67-4b8c-b8a0-397503dffc17"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Returns resolved options for AnalyzeStandardCurve when it is called on \
+input data and standard data."
+}], "GuideText",
+ CellID->234128507,ExpressionUUID->"014dd684-0be4-4a8a-a692-9cf15538c89b"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["AnalyzeClustersOptions"]], 
+    "paclet:Analysis/ref/AnalyzeClustersOptions"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "771972ec-5762-46ca-aad3-36b01bad08f2"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Returns resolved options for partitioning the data points into distinct \
+similarity groups."
+}], "GuideText",
+ CellID->807775845,ExpressionUUID->"74be97d7-527d-45db-9c5d-d931b2e73edf"],
+
+Cell["", "SectionFooterSpacer",
+ CellID->2044494228,ExpressionUUID->"1debac72-a7fc-4017-869f-8f3f73dbd0c1"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  InterpretationBox[
+   StyleBox[
+    GraphicsBox[{},
+     BaselinePosition->Baseline,
+     ImageSize->{6, 0}],
+    CacheGraphics->False],
+   Spacer[6]]],ExpressionUUID->"d59d4cf1-a356-4555-a597-aa69408c4573"],
+ "Related Guides"
+}], "GuideMoreAboutSection",
+ WholeCellGroupOpener->True,
+ CellID->2076137996,ExpressionUUID->"c8a9c9db-4d27-4893-b0c6-4e022d880504"],
+
+Cell["", "SectionHeaderSpacer",
+ CellID->1337002316,ExpressionUUID->"d4993b77-8cb7-4956-b24b-925e9112449e"],
+
+Cell[BoxData[
+ TemplateBox[{
+   Cell[
+    TextData["AnalysisBySubjectMatter"]], 
+   "paclet:Docs/guide/AnalysisBySubjectMatter"},
+  "RefLink",
+  BaseStyle->"GuideMoreAboutSub"]], "GuideMoreAboutSub",
+ CellID->1876526451,ExpressionUUID->"a8200bb5-0db8-4b7f-aeb2-2c20cd98d4e0"],
+
+Cell[BoxData[
+ TemplateBox[{
+   Cell[
+    TextData["NumericAnalysis"]], "paclet:Docs/guide/NumericAnalysis"},
+  "RefLink",
+  BaseStyle->"GuideMoreAboutSub"]], "GuideMoreAboutSub",
+ CellID->835222115,ExpressionUUID->"889c39c2-92fe-4bab-a9e5-934d9bf2f378"],
+
+Cell[BoxData[
+ TemplateBox[{
+   Cell[
+    TextData["AnalyticalAndPhysicalChemistry"]], 
+   "paclet:Docs/guide/AnalyticalAndPhysicalChemistry"},
+  "RefLink",
+  BaseStyle->"GuideMoreAboutSub"]], "GuideMoreAboutSub",
+ CellID->1624970013,ExpressionUUID->"33ecd461-471f-448e-b233-bf3c3c97c2b1"],
+
+Cell[BoxData[
+ TemplateBox[{
+   Cell[
+    TextData["ImageAnalysis"]], "paclet:Docs/guide/ImageAnalysis"},
+  "RefLink",
+  BaseStyle->"GuideMoreAboutSub"]], "GuideMoreAboutSub",
+ CellID->1321469592,ExpressionUUID->"2ccf67f7-5b4e-4c87-8074-165722f94216"],
+
+Cell["", "FooterCell",
+ CellID->663555470,ExpressionUUID->"0a9e47f0-3784-4631-9292-2e18d597cc58"]
+},
+Saveable->False,
+ScreenStyleEnvironment->"Working",
+WindowSize->{808, 911},
+WindowMargins->{{460, Automatic}, {Automatic, 70}},
+WindowTitle->"CalculatingAnalysisOptions",
+Visible->False,
+TaggingRules->{
+ "ModificationHighlight" -> False, "ColorType" -> "GuideColor", 
+  "ExampleCounter" -> 1, "NeedPlatMsgIn" -> None, "RootCaptions" -> "", 
+  "Metadata" -> {
+   "built" -> "Tue 15 Nov 2022 15:03:00", "context" -> "Docs`", 
+    "keywords" -> {
+     "AnalyzePeaksOptions", "AnalyzeCompositionOptions", 
+      "AnalyzeFractionsOptions", "AnalyzeLadderOptions", 
+      "AnalyzeAbsorbanceQuantificationOptions", 
+      "AnalyzeTotalProteinQuantificationOptions", 
+      "AnalyzeDynamicLightScatteringOptions", 
+      "AnalyzeDynamicLightScatteringLoadingOptions", 
+      "AnalyzeQuantificationCycleOptions", "AnalyzeCopyNumberOptions", 
+      "AnalyzeBindingKineticsOptions", "AnalyzeBindingQuantitationOptions", 
+      "AnalyzeEpitopeBinningOptions", "AnalyzeDNASequencingOptions", 
+      "AnalyzeMicroscopeOverlayOptions", "AnalyzeCellCountOptions", 
+      "AnalyzeThermodynamicsOptions", "AnalyzeParallelLineOptions", 
+      "AnalyzeKineticsOptions", "AnalyzeMeltingPointOptions", 
+      "AnalyzeCriticalMicelleConcentrationOptions", 
+      "AnalyzeBubbleRadiusOptions", "AnalyzeFitOptions", 
+      "AnalyzeSmoothingOptions", "AnalyzeStandardCurveOptions", 
+      "AnalyzeClustersOptions"}, "specialkeywords" -> {}, 
+    "tutorialcollectionlinks" -> {}, "index" -> True, "label" -> "ECL Guide", 
+    "language" -> "en", "paclet" -> "Docs", "status" -> "None", "summary" -> 
+    "Collection of functions that resolves options for analysis functions \
+organized by the subject matter they may be relevant to.", "synonyms" -> {}, 
+    "titlemodifier" -> "", "Windowtitle" -> "CalculatingAnalysisOptions", 
+    "title" -> "CalculatingAnalysisOptions", "type" -> "Guide", "uri" -> 
+    "Docs/guide/CalculatingAnalysisOptions", "WorkflowDockedCell" -> ""}, 
+  "SearchTextTranslated" -> "", "LinkTrails" -> ""},
+FrontEndVersion->"12.3 for Mac OS X ARM (64-bit) (September 30, 2021)",
+StyleDefinitions->"EmeraldReference.nb",
+ExpressionUUID->"a33d8cfc-ff53-435c-a4ea-3cf381d6e413"
+]
+(* End of Notebook Content *)
+
+(* Internal cache information *)
+(*CellTagsOutline
+CellTagsIndex->{}
+*)
+(*CellTagsIndex
+CellTagsIndex->{}
+*)
+(*NotebookFileOutline
+Notebook[{
+Cell[598, 21, 6651, 138, 58, "AnchorBarGrid",ExpressionUUID->"00411dc1-6def-4e8e-b946-df37e61b931a",
+ CellID->1],
+Cell[7252, 161, 126, 1, 45, "GuideTitle",ExpressionUUID->"10206f3d-2bde-4699-9dc6-79d281d6697e",
+ CellID->1531579333],
+Cell[7381, 164, 236, 4, 50, "GuideAbstract",ExpressionUUID->"61c28171-7bd7-4edc-80d1-3f72baefe301",
+ CellID->1514856789],
+Cell[7620, 170, 114, 1, 24, "GuideDelimiterSubsection",ExpressionUUID->"03694e05-e7c6-430f-8553-3191418b8ec8",
+ CellID->1779417538],
+Cell[7737, 173, 125, 1, 34, "GuideFunctionsSubsection",ExpressionUUID->"309fac2b-bb14-441c-bd0e-73e817a937a6",
+ CellID->813293044],
+Cell[7865, 176, 525, 14, 51, "GuideText",ExpressionUUID->"c15eaab1-7bda-4e4c-a23a-78e06a8ca226",
+ CellID->282777353],
+Cell[8393, 192, 528, 14, 57, "GuideText",ExpressionUUID->"5720af59-8d8f-47fe-9173-6ab266567f00",
+ CellID->257661060],
+Cell[8924, 208, 531, 14, 57, "GuideText",ExpressionUUID->"4737f155-53d8-4ae2-98e7-8c9cb47828b7",
+ CellID->1182403068],
+Cell[9458, 224, 542, 14, 57, "GuideText",ExpressionUUID->"a4a82a3e-3365-4915-9898-2562bbd952f6",
+ CellID->1982178185],
+Cell[10003, 240, 113, 1, 24, "GuideDelimiterSubsection",ExpressionUUID->"52d40d39-5819-4637-af87-c783dd43c544",
+ CellID->554939384],
+Cell[10119, 243, 123, 1, 34, "GuideFunctionsSubsection",ExpressionUUID->"4c192e0c-ed01-4aac-8c3e-fc7417c896c4",
+ CellID->344747967],
+Cell[10245, 246, 525, 14, 51, "GuideText",ExpressionUUID->"3fd71499-8e5d-4664-a38a-dba1949d2b22",
+ CellID->268201763],
+Cell[10773, 262, 566, 14, 57, "GuideText",ExpressionUUID->"6a7d77de-c0f9-48a3-9e10-ab431438fb5a",
+ CellID->98855688],
+Cell[11342, 278, 636, 15, 77, "GuideText",ExpressionUUID->"4ed2508f-2e42-4dc0-b1cc-67acb17f3e03",
+ CellID->1462689085],
+Cell[11981, 295, 597, 14, 57, "GuideText",ExpressionUUID->"8591bc90-fde3-4344-9ee3-8de5e8495870",
+ CellID->1170144386],
+Cell[12581, 311, 646, 15, 77, "GuideText",ExpressionUUID->"b9d82d99-ef3d-4de0-bf22-a7f60612a688",
+ CellID->2108939923],
+Cell[13230, 328, 113, 1, 24, "GuideDelimiterSubsection",ExpressionUUID->"fdbc2298-d8f7-404c-a7b5-9bb3dc2b2a24",
+ CellID->735692126],
+Cell[13346, 331, 115, 1, 34, "GuideFunctionsSubsection",ExpressionUUID->"4997d249-983d-4fbf-8ed2-f9251f1ab5c9",
+ CellID->1714205903],
+Cell[13464, 334, 642, 15, 71, "GuideText",ExpressionUUID->"40026b3d-fab3-43b0-919d-ac918e73c12e",
+ CellID->18003569],
+Cell[14109, 351, 593, 15, 57, "GuideText",ExpressionUUID->"72cdef42-2d52-4068-991a-6521253f6471",
+ CellID->1938273603],
+Cell[14705, 368, 114, 1, 24, "GuideDelimiterSubsection",ExpressionUUID->"3013228f-05c2-4184-8251-78959317e084",
+ CellID->1385004278],
+Cell[14822, 371, 121, 1, 34, "GuideFunctionsSubsection",ExpressionUUID->"32c1fa73-78d3-4089-b2c0-9db2bf1779d5",
+ CellID->1191650513],
+Cell[14946, 374, 568, 14, 51, "GuideText",ExpressionUUID->"732050d9-2090-4917-a00e-866b041ac090",
+ CellID->637680069],
+Cell[15517, 390, 571, 14, 57, "GuideText",ExpressionUUID->"48cbbcaa-f500-4cd6-ad80-80dc6c3ea671",
+ CellID->1545521153],
+Cell[16091, 406, 580, 14, 57, "GuideText",ExpressionUUID->"ca68b087-c004-4ed3-96a1-a9bde56c882d",
+ CellID->1759308006],
+Cell[16674, 422, 538, 14, 57, "GuideText",ExpressionUUID->"763062c7-9b96-4030-8bc6-6e9be58fb48a",
+ CellID->2134804946],
+Cell[17215, 438, 114, 1, 24, "GuideDelimiterSubsection",ExpressionUUID->"991dc147-10f5-41d0-a58a-e43e528e2151",
+ CellID->1657436993],
+Cell[17332, 441, 122, 1, 34, "GuideFunctionsSubsection",ExpressionUUID->"0cb3ec90-07bc-449e-8c15-675277370703",
+ CellID->1533156114],
+Cell[17457, 444, 539, 14, 51, "GuideText",ExpressionUUID->"5b682710-b75a-4d6a-8b0b-c3215b9e34b7",
+ CellID->98527645],
+Cell[17999, 460, 522, 14, 57, "GuideText",ExpressionUUID->"0f907976-6c6c-4bac-848b-78dda466a851",
+ CellID->244237678],
+Cell[18524, 476, 114, 1, 24, "GuideDelimiterSubsection",ExpressionUUID->"1f24d707-bd90-41cb-bef2-b85b93ede65b",
+ CellID->1061404729],
+Cell[18641, 479, 126, 1, 34, "GuideFunctionsSubsection",ExpressionUUID->"c089d198-baff-4ba3-b047-ddefc8067259",
+ CellID->2030108321],
+Cell[18770, 482, 597, 14, 51, "GuideText",ExpressionUUID->"98b17cdd-e575-435b-b9eb-1827442aa118",
+ CellID->810367511],
+Cell[19370, 498, 564, 14, 57, "GuideText",ExpressionUUID->"d40a008c-9969-4bd9-ba46-36eba8f81779",
+ CellID->505468103],
+Cell[19937, 514, 615, 15, 77, "GuideText",ExpressionUUID->"844af7c1-c580-4752-91b8-7ee2e8bd49a7",
+ CellID->2104583236],
+Cell[20555, 531, 639, 15, 77, "GuideText",ExpressionUUID->"cad3a3ac-6b79-4504-9646-485b14f6dd1c",
+ CellID->527297715],
+Cell[21197, 548, 526, 14, 57, "GuideText",ExpressionUUID->"ca34e50d-edf5-477b-885f-cb55aa997f99",
+ CellID->1775168483],
+Cell[21726, 564, 570, 14, 57, "GuideText",ExpressionUUID->"df8695fc-cc87-4d75-9040-88e240a668be",
+ CellID->266386010],
+Cell[22299, 580, 114, 1, 24, "GuideDelimiterSubsection",ExpressionUUID->"0a7dc4c1-8c86-46fd-b86d-e687f3a95e53",
+ CellID->1793749722],
+Cell[22416, 583, 126, 1, 34, "GuideFunctionsSubsection",ExpressionUUID->"9a1d841f-4ff7-4503-8c39-f6837c9cb770",
+ CellID->1176141068],
+Cell[22545, 586, 515, 13, 51, "GuideText",ExpressionUUID->"057e3aaa-a013-4cbe-b2a7-b6f5e6cad7fd",
+ CellID->1963442888],
+Cell[23063, 601, 590, 14, 57, "GuideText",ExpressionUUID->"37b269d5-20c9-4fd5-8f4a-415126f30f61",
+ CellID->1350898814],
+Cell[23656, 617, 114, 1, 24, "GuideDelimiterSubsection",ExpressionUUID->"0a18f04e-6af2-49d8-bad6-3be2851b52b0",
+ CellID->1359250814],
+Cell[23773, 620, 120, 1, 34, "GuideFunctionsSubsection",ExpressionUUID->"b8ccbf52-89b9-4984-840e-5d58518ae5af",
+ CellID->2144877759],
+Cell[23896, 623, 508, 14, 31, "GuideText",ExpressionUUID->"34c68636-2d00-457b-a127-7bc8408dea53",
+ CellID->1299996971],
+Cell[24407, 639, 568, 14, 57, "GuideText",ExpressionUUID->"d11f74ac-7c9c-4e66-b601-7ddcdc48263d",
+ CellID->550467019],
+Cell[24978, 655, 113, 1, 24, "GuideDelimiterSubsection",ExpressionUUID->"c6bb4acd-43e5-44d8-8d6b-9b0b8bc7794b",
+ CellID->339637057],
+Cell[25094, 658, 144, 1, 34, "GuideFunctionsSubsection",ExpressionUUID->"a4642f9b-2811-424f-b4ea-7852a81271cf",
+ CellID->268483273],
+Cell[25241, 661, 545, 14, 51, "GuideText",ExpressionUUID->"50dac23c-19bf-4cbc-9271-f24f54ba6ef8",
+ CellID->535226964],
+Cell[25789, 677, 567, 14, 57, "GuideText",ExpressionUUID->"1219fdcf-2520-42e3-979c-d5cacf928223",
+ CellID->1898070312],
+Cell[26359, 693, 556, 14, 57, "GuideText",ExpressionUUID->"d0007e72-8db4-416e-b414-b3503162d698",
+ CellID->2145641246],
+Cell[26918, 709, 114, 1, 24, "GuideDelimiterSubsection",ExpressionUUID->"38637682-6cfe-4c0b-bc7e-1e5baa39b5bb",
+ CellID->1247021098],
+Cell[27035, 712, 128, 1, 34, "GuideFunctionsSubsection",ExpressionUUID->"d469f26a-308f-4e38-847f-a180902edcc5",
+ CellID->1390683013],
+Cell[27166, 715, 536, 14, 51, "GuideText",ExpressionUUID->"7fd335d9-2684-475f-a1f1-f581d014dfd1",
+ CellID->2144869190],
+Cell[27705, 731, 510, 14, 57, "GuideText",ExpressionUUID->"a2358cbf-0ccc-4bda-b790-049cfb5c1889",
+ CellID->1155977788],
+Cell[28218, 747, 539, 14, 57, "GuideText",ExpressionUUID->"014dd684-0be4-4a8a-a692-9cf15538c89b",
+ CellID->234128507],
+Cell[28760, 763, 519, 14, 57, "GuideText",ExpressionUUID->"74be97d7-527d-45db-9c5d-d931b2e73edf",
+ CellID->807775845],
+Cell[29282, 779, 107, 1, 29, "SectionFooterSpacer",ExpressionUUID->"1debac72-a7fc-4017-869f-8f3f73dbd0c1",
+ CellID->2044494228],
+Cell[29392, 782, 393, 12, 73, "GuideMoreAboutSection",ExpressionUUID->"c8a9c9db-4d27-4893-b0c6-4e022d880504",
+ CellID->2076137996],
+Cell[29788, 796, 107, 1, 14, "SectionHeaderSpacer",ExpressionUUID->"d4993b77-8cb7-4956-b24b-925e9112449e",
+ CellID->1337002316],
+Cell[29898, 799, 275, 7, 24, "GuideMoreAboutSub",ExpressionUUID->"a8200bb5-0db8-4b7f-aeb2-2c20cd98d4e0",
+ CellID->1876526451],
+Cell[30176, 808, 254, 6, 24, "GuideMoreAboutSub",ExpressionUUID->"889c39c2-92fe-4bab-a9e5-934d9bf2f378",
+ CellID->835222115],
+Cell[30433, 816, 289, 7, 24, "GuideMoreAboutSub",ExpressionUUID->"33ecd461-471f-448e-b233-bf3c3c97c2b1",
+ CellID->1624970013],
+Cell[30725, 825, 251, 6, 24, "GuideMoreAboutSub",ExpressionUUID->"2ccf67f7-5b4e-4c87-8074-165722f94216",
+ CellID->1321469592],
+Cell[30979, 833, 97, 1, 40, "FooterCell",ExpressionUUID->"0a9e47f0-3784-4631-9292-2e18d597cc58",
+ CellID->663555470]
+}
+]
+*)
+
+(* End of internal cache information *)
+

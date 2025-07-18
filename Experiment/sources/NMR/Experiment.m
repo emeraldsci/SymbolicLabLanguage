@@ -129,7 +129,7 @@ DefineOptions[ExperimentNMR,
 				Category -> "Data Acquisition",
 				Widget -> Widget[
 					Type -> Quantity,
-					Pattern :> RangeP[0.1 Second, 30 Second],
+					Pattern :> RangeP[0.1 Second, 120 Second],
 					Units :> {1, {Second, {Second, Millisecond}}}
 				]
 			},
@@ -166,8 +166,8 @@ DefineOptions[ExperimentNMR,
 				AllowNull -> False,
 				Category -> "Data Acquisition",
 				Widget->Span[
-					Widget[Type -> Quantity, Pattern :> RangeP[-200 PPM, 600 PPM], Units :> PPM],
-					Widget[Type -> Quantity, Pattern :> RangeP[-200 PPM, 600 PPM], Units :> PPM]
+					Widget[Type -> Quantity, Pattern :> RangeP[-300 PPM, 600 PPM], Units :> PPM],
+					Widget[Type -> Quantity, Pattern :> RangeP[-300 PPM, 600 PPM], Units :> PPM]
 				]
 			},
 			{
@@ -185,7 +185,7 @@ DefineOptions[ExperimentNMR,
 				OptionName -> TimeCourse,
 				Default -> Automatic,
 				Description -> "Indicates if multiple spectra should be collected over time.",
-				ResolutionDescription -> "Automatically set to True if TimeInterval, NumberOfTimedScans,  are specified, or False otherwise.",
+				ResolutionDescription -> "Automatically set to True if TimeInterval or NumberOfTimeIntervals is specified, or False otherwise.",
 				AllowNull -> False,
 				Category -> "Kinetic Data Acquisition",
 				Widget -> Widget[
@@ -266,7 +266,9 @@ DefineOptions[ExperimentNMR,
 			]
 		},
 		NMRSharedOptions,
-		FuntopiaSharedOptions,
+		ModelInputOptions,
+		SimulationOption,
+		NonBiologyFuntopiaSharedOptions,
 		SubprotocolDescriptionOption,
 		SamplesInStorageOption,
 		SamplesOutStorageOption
@@ -301,11 +303,11 @@ Error::No30DegFlipAngleForWaterSuppression = "The specified sample(s) `1` has Fl
 ExperimentNMR[mySamples:ListableP[ObjectP[Object[Sample]]], myOptions:OptionsPattern[ExperimentNMR]]:=Module[
 	{listedOptions, listedSamples, outputSpecification, output, gatherTests, messages, safeOptions, safeOptionTests,
 		safeOptionsNamed, mySamplesWithPreparedSamplesNamed, myOptionsWithPreparedSamplesNamed, specifiedSealedCoaxialInsert,
-		validLengths, validLengthTests, upload, confirm, fastTrack, parentProt, inheritedCache, unresolvedOptions,
+		validLengths, validLengthTests, upload, confirm, canaryBranch, fastTrack, parentProt, inheritedCache, unresolvedOptions,
 		applyTemplateOptionTests, combinedOptions, expandedCombinedOptions, resolveOptionsResult, resolvedOptions,
 		resolutionTests, resolvedOptionsNoHidden, returnEarlyQ, allDownloadValues, newCache, containerModelPreparationFields,
 		specifiedNMRTubes, finalizedPacket, resourcePacketTests, allTests, validQ, previewRule, optionsRule, testsRule, resultRule,
-		validSamplePreparationResult, mySamplesWithPreparedSamples, myOptionsWithPreparedSamples, samplePreparationCache,
+		validSamplePreparationResult, mySamplesWithPreparedSamples, myOptionsWithPreparedSamples, updatedSimulation,
 		specifiedInstrument, samplePreparationPacket,sampleModelPreparationPacket, nmrTubeRack, sealedCoaxialInsertObjects},
 
 	(* determine the requested return value from the function *)
@@ -322,21 +324,21 @@ ExperimentNMR[mySamples:ListableP[ObjectP[Object[Sample]]], myOptions:OptionsPat
 	(* Simulate our sample preparation. *)
 	validSamplePreparationResult=Check[
 		(* Simulate sample preparation. *)
-		{mySamplesWithPreparedSamplesNamed, myOptionsWithPreparedSamplesNamed, samplePreparationCache}=simulateSamplePreparationPackets[
+		{mySamplesWithPreparedSamplesNamed, myOptionsWithPreparedSamplesNamed, updatedSimulation} = simulateSamplePreparationPacketsNew[
 			ExperimentNMR,
 			listedSamples,
-			ToList[listedOptions]
+			listedOptions
 		],
 		$Failed,
-	 	{Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
+	 	{Download::ObjectDoesNotExist, Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
 	];
 
 
 	(* If we are given an invalid define name, return early. *)
 	If[MatchQ[validSamplePreparationResult,$Failed],
 		(* Return early. *)
-		(* Note: We've already thrown a message above in simulateSamplePreparationPackets. *)
-		ClearMemoization[Experiment`Private`simulateSamplePreparationPackets];Return[$Failed]
+		(* Note: We've already thrown a message above in simulateSamplePreparationPacketsNew. *)
+		Return[$Failed]
 	];
 
 	(* call SafeOptions to make sure all options match pattern *)
@@ -346,7 +348,7 @@ ExperimentNMR[mySamples:ListableP[ObjectP[Object[Sample]]], myOptions:OptionsPat
 	];
 
 	(* replace all objects referenced by Name to ID *)
-	{mySamplesWithPreparedSamples, safeOptions, myOptionsWithPreparedSamples} = sanitizeInputs[mySamplesWithPreparedSamplesNamed, safeOptionsNamed, myOptionsWithPreparedSamplesNamed];
+	{mySamplesWithPreparedSamples, safeOptions, myOptionsWithPreparedSamples} = sanitizeInputs[mySamplesWithPreparedSamplesNamed, safeOptionsNamed, myOptionsWithPreparedSamplesNamed, Simulation -> updatedSimulation];
 
 	(* If the specified options don't match their patterns or if the option lengths are invalid, return $Failed*)
 	If[MatchQ[safeOptions,$Failed],
@@ -375,7 +377,7 @@ ExperimentNMR[mySamples:ListableP[ObjectP[Object[Sample]]], myOptions:OptionsPat
 	];
 
 	(* get assorted hidden options *)
-	{upload, confirm, fastTrack, parentProt, inheritedCache} = Lookup[safeOptions, {Upload, Confirm, FastTrack, ParentProtocol, Cache}];
+	{upload, confirm, canaryBranch, fastTrack, parentProt, inheritedCache} = Lookup[safeOptions, {Upload, Confirm, CanaryBranch, FastTrack, ParentProtocol, Cache}];
 
 	(* apply the template options *)
 	(* need to specify the definition number (we are number 1 for samples at this point) *)
@@ -408,7 +410,7 @@ ExperimentNMR[mySamples:ListableP[ObjectP[Object[Sample]]], myOptions:OptionsPat
 	{specifiedInstrument, specifiedNMRTubes, specifiedSealedCoaxialInsert} = Lookup[expandedCombinedOptions, {Instrument, NMRTube, SealedCoaxialInsert}];
 
 	(* Set up the samplePreparationPacket using SamplePreparationCacheFields*)
-	samplePreparationPacket = Packet[SamplePreparationCacheFields[Object[Sample], Format->Sequence], IncompatibleMaterials, LiquidHandlerIncompatible, Tablet, TabletWeight, TransportWarmed, TransportChilled];
+	samplePreparationPacket = Packet[SamplePreparationCacheFields[Object[Sample], Format->Sequence], IncompatibleMaterials, LiquidHandlerIncompatible, Tablet, SolidUnitWeight, TransportTemperature];
 	sampleModelPreparationPacket = Packet[Model[Flatten[{Products, UsedAsSolvent, ConcentratedBufferDiluent, ConcentratedBufferDilutionFactor, BaselineStock, IncompatibleMaterials, SamplePreparationCacheFields[Model[Sample]]}]]];
 
 	(* get the SamplePreparationCacheFields for Model[Container] objects*)
@@ -447,20 +449,21 @@ ExperimentNMR[mySamples:ListableP[ObjectP[Object[Sample]]], myOptions:OptionsPat
 				Packet[Model[{Name, ResonanceFrequency, WettedMaterials, IncompatibleMaterials, Dimensions}]]
 			}
 		},
-		Cache -> Flatten[{inheritedCache,samplePreparationCache}],
+		Cache -> inheritedCache,
+		Simulation -> updatedSimulation,
 		Date -> Now
 	], {Download::NotLinkField, Download::FieldDoesntExist}];
 
 	(* make the new cache combining what we inherited and the stuff we Downloaded *)
-	newCache = Cases[FlattenCachePackets[{samplePreparationCache, inheritedCache, allDownloadValues}],PacketP[]];
+	newCache = Cases[FlattenCachePackets[{inheritedCache, allDownloadValues}],PacketP[]];
 
 	(* --- Resolve the options! --- *)
 
 	(* resolve all options; if we throw InvalidOption or InvalidInput, we're also getting $Failed and we will return early *)
 	resolveOptionsResult = Check[
 		{resolvedOptions, resolutionTests} = If[gatherTests,
-			resolveNMROptions[mySamplesWithPreparedSamples, expandedCombinedOptions, Output -> {Result, Tests}, Cache -> newCache],
-			{resolveNMROptions[mySamplesWithPreparedSamples, expandedCombinedOptions, Output -> Result, Cache -> newCache], Null}
+			resolveNMROptions[mySamplesWithPreparedSamples, expandedCombinedOptions, Output -> {Result, Tests}, Cache -> newCache, Simulation -> updatedSimulation],
+			{resolveNMROptions[mySamplesWithPreparedSamples, expandedCombinedOptions, Output -> Result, Cache -> newCache, Simulation -> updatedSimulation], Null}
 		],
 		$Failed,
 		{Error::InvalidInput, Error::InvalidOption}
@@ -493,8 +496,23 @@ ExperimentNMR[mySamples:ListableP[ObjectP[Object[Sample]]], myOptions:OptionsPat
 	(* call the nmrResourcePackets function to create the protocol packets with resources in them *)
 	(* if we're gathering tests, make sure the function spits out both the result and the tests; if we are not gathering tests, the result is enough, and the other can be Null *)
 	{finalizedPacket, resourcePacketTests} = If[gatherTests,
-		nmrResourcePackets[Download[mySamplesWithPreparedSamples, Object], unresolvedOptions, ReplaceRule[resolvedOptions, Output -> {Result, Tests}], Cache -> newCache],
-		{nmrResourcePackets[Download[mySamplesWithPreparedSamples, Object], unresolvedOptions, ReplaceRule[resolvedOptions, Output -> Result], Cache -> newCache], Null}
+		nmrResourcePackets[
+			Download[mySamplesWithPreparedSamples, Object],
+			unresolvedOptions,
+			ReplaceRule[resolvedOptions, Output -> {Result, Tests}],
+			Cache -> newCache,
+			Simulation -> updatedSimulation
+		],
+		{
+			nmrResourcePackets[
+				Download[mySamplesWithPreparedSamples, Object],
+				unresolvedOptions,
+				ReplaceRule[resolvedOptions, Output -> Result],
+				Cache -> newCache,
+				Simulation -> updatedSimulation
+			],
+			Null
+		}
 	];
 
 	(* --- Packaging the return value --- *)
@@ -534,6 +552,7 @@ ExperimentNMR[mySamples:ListableP[ObjectP[Object[Sample]]], myOptions:OptionsPat
 		UploadProtocol[
 			finalizedPacket,
 			Confirm -> confirm,
+			CanaryBranch -> canaryBranch,
 			Upload -> upload,
 			FastTrack -> fastTrack,
 			ParentProtocol -> parentProt,
@@ -542,7 +561,9 @@ ExperimentNMR[mySamples:ListableP[ObjectP[Object[Sample]]], myOptions:OptionsPat
 			HoldOrder->Lookup[safeOptions,HoldOrder],
 			QueuePosition->Lookup[safeOptions,QueuePosition],
 			ConstellationMessage->{Object[Protocol,NMR]},
-			Cache->samplePreparationCache],
+			Cache->newCache,
+			Simulation -> updatedSimulation
+		],
 		$Failed
 	];
 
@@ -551,11 +572,11 @@ ExperimentNMR[mySamples:ListableP[ObjectP[Object[Sample]]], myOptions:OptionsPat
 ];
 
 (* multiple container input *)
-ExperimentNMR[myContainers:ListableP[(ObjectP[{Object[Container],Object[Sample]}]|_String|{LocationPositionP,_String|ObjectP[Object[Container]]})], myOptions:OptionsPattern[ExperimentNMR]]:=Module[
+ExperimentNMR[myContainers:ListableP[(ObjectP[{Object[Container],Object[Sample],Model[Sample]}]|_String|{LocationPositionP,_String|ObjectP[Object[Container]]})], myOptions:OptionsPattern[ExperimentNMR]]:=Module[
 	{listedOptions, outputSpecification, output, gatherTests, safeOptions, safeOptionTests, containerToSampleResult,
-		containerToSampleTests, inputSamples, samplesOptions, aliquotResults, initialReplaceRules, testsRule, resultRule,
-		previewRule, optionsRule, validSamplePreparationResult, mySamplesWithPreparedSamples, myOptionsWithPreparedSamples,
-		samplePreparationCache, updatedCache, containerToSampleCache},
+		containerToSampleTests, validSamplePreparationResult, mySamplesWithPreparedSamples, myOptionsWithPreparedSamples,
+		updatedSimulation, containerToSampleSimulation, containerToSampleOutput,
+		samples, sampleOptions},
 
 	(* make sure we're working with a list of options *)
 	listedOptions = ToList[myOptions];
@@ -570,20 +591,20 @@ ExperimentNMR[myContainers:ListableP[(ObjectP[{Object[Container],Object[Sample]}
 	(* First, simulate our sample preparation. *)
 	validSamplePreparationResult=Check[
 		(* Simulate sample preparation. *)
-		{mySamplesWithPreparedSamples,myOptionsWithPreparedSamples,samplePreparationCache}=simulateSamplePreparationPackets[
+		{mySamplesWithPreparedSamples,myOptionsWithPreparedSamples,updatedSimulation}=simulateSamplePreparationPacketsNew[
 			ExperimentNMR,
 			ToList[myContainers],
 			ToList[myOptions]
 		],
 		$Failed,
-		{Error::MissingDefineNames,Error::InvalidInput,Error::InvalidOption}
+		{Download::ObjectDoesNotExist,Error::MissingDefineNames,Error::InvalidInput,Error::InvalidOption}
 	];
 
 	(* If we are given an invalid define name, return early. *)
 	If[MatchQ[validSamplePreparationResult,$Failed],
 		(* Return early. *)
 		(* Note: We've already thrown a message above in simulateSamplePreparationPackets. *)
-		ClearMemoization[Experiment`Private`simulateSamplePreparationPackets];Return[$Failed]
+		Return[$Failed]
 	];
 
 	(* call SafeOptions to make sure all options match pattern *)
@@ -603,55 +624,56 @@ ExperimentNMR[myContainers:ListableP[(ObjectP[{Object[Container],Object[Sample]}
 	];
 
 	(* convert the containers to samples, and also get the options index matched properly *)
-	{containerToSampleResult, containerToSampleTests} = If[gatherTests,
-		containerToSampleOptions[ExperimentNMR, mySamplesWithPreparedSamples, safeOptions, Cache->samplePreparationCache, Output -> {Result, Tests}],
-		{containerToSampleOptions[ExperimentNMR, mySamplesWithPreparedSamples, safeOptions, Cache->samplePreparationCache], Null}
-	];
+	containerToSampleResult = If[gatherTests,
+		(* We are gathering tests. This silences any messages being thrown. *)
+		{containerToSampleOutput, containerToSampleTests, containerToSampleSimulation} = containerToSampleOptions[
+			ExperimentNMR,
+			mySamplesWithPreparedSamples,
+			safeOptions,
+			Output -> {Result, Tests, Simulation},
+			Simulation -> updatedSimulation
+		];
 
-	(* If the specified containers aren't allowed *)
-	If[MatchQ[containerToSampleResult,$Failed],
-		Return[$Failed]
-	];
-
-	(* separate out the samples and the options *)
-	{inputSamples, samplesOptions, containerToSampleCache} = containerToSampleResult;
-
-	(* Update our cache with our new simulated values. *)
-	updatedCache=FlattenCachePackets[{
-		samplePreparationCache,
-		Lookup[listedOptions,Cache,{}],
-		containerToSampleCache
-	}];
-
-	(* call ExperimentNMR and get all its outputs *)
-	aliquotResults = ExperimentNMR[inputSamples, ReplaceRule[samplesOptions,Cache->updatedCache]];
-
-	(* create a list of replace rules from the mass spec call above and whatever the output specification is *)
-	initialReplaceRules = If[MatchQ[outputSpecification, _List],
-		MapThread[
-			#1 -> #2&,
-			{outputSpecification, aliquotResults}
+		(* Therefore, we have to run the tests to see if we encountered a failure. *)
+		If[RunUnitTest[<|"Tests" -> containerToSampleTests|>, OutputFormat -> SingleBoolean, Verbose -> False],
+			Null,
+			$Failed
 		],
-		{outputSpecification -> aliquotResults}
+
+		(* We are not gathering tests. Simply check for Error::InvalidInput and Error::InvalidOption. *)
+		Check[
+			{containerToSampleOutput, containerToSampleSimulation} = containerToSampleOptions[
+				ExperimentNMR,
+				mySamplesWithPreparedSamples,
+				myOptionsWithPreparedSamples,
+				Output -> {Result, Simulation},
+				Simulation -> updatedSimulation
+			],
+			$Failed,
+			{Error::EmptyContainers, Error::ContainerEmptyWells, Error::WellDoesNotExist}
+		]
 	];
 
-	(* if we are gathering tests, then prepend the safeOptionsTests and containerToSampleTests to the tests we already have *)
-	testsRule = Tests -> If[gatherTests,
-		Prepend[Lookup[initialReplaceRules, Tests], Flatten[{safeOptionTests, containerToSampleTests}]],
-		Null
-	];
 
-	(* Results rule is just always what was output in the ExperimentNMR call *)
-	resultRule = Result -> Lookup[initialReplaceRules, Result, Null];
+	(* If we were given an empty container, return early. *)
+	If[MatchQ[containerToSampleResult, $Failed],
+		(* containerToSampleOptions failed - return $Failed *)
+		outputSpecification /. {
+			Result -> $Failed,
+			Tests -> {safeOptionTests, containerToSampleTests},
+			Options -> $Failed,
+			Preview -> Null,
+			Simulation -> Null,
+			InvalidInputs -> {},
+			InvalidOptions -> {}
+		},
 
-	(* preview is always Null *)
-	previewRule = Preview -> Null;
+		(* Split up our containerToSample result into the samples and sampleOptions. *)
+		{samples, sampleOptions} = containerToSampleOutput;
 
-	(* generate the options output rule *)
-	optionsRule = Options -> Lookup[initialReplaceRules, Options, Null];
-
-	(* return the output as we desire it *)
-	outputSpecification /. {previewRule, optionsRule, resultRule, testsRule}
+		(* Call our main function with our samples and converted options. *)
+		ExperimentNMR[samples, ReplaceRule[sampleOptions, Simulation -> containerToSampleSimulation]]
+	]
 
 ];
 
@@ -661,13 +683,14 @@ ExperimentNMR[myContainers:ListableP[(ObjectP[{Object[Container],Object[Sample]}
 
 
 DefineOptions[resolveNMROptions,
-	Options :> {HelperOutputOption, CacheOption}
+	Options :> {HelperOutputOption, CacheOption, SimulationOption}
 ];
 
 resolveNMROptions[mySamples:{ObjectP[Object[Sample]]..}, myOptions:{_Rule...}, myResolutionOptions:OptionsPattern[resolveNMROptions]]:=Module[
 	{outputSpecification, output, gatherTests, messages, inheritedCache, samplePackets, resolvedRelaxationDelays,
 		sampleModelPackets, samplePrepOptions, nmrOptions, simulatedSamples, resolvedSamplePrepOptions,
-		simulatedCache, samplePrepTests, nucleus, solvent, resolvedSolventVolume, sampleTemperature,
+		samplePrepTests, nucleus, updatedSimulation, resolvedSolventVolume, sampleTemperature,
+		simulatedSamplePackets, cacheBall,
 		nmrTubes, numberOfReplicates, name, parentProtocol, fastTrack,samplePacketsToCheckIfDiscarded,
 		discardedSamplePackets, discardedInvalidInputs, discardedTest, modelPacketsToCheckIfDeprecated,
 		deprecatedModelPackets, deprecatedInvalidInputs, deprecatedTest, numSamples, tooManySamplesQ,
@@ -676,7 +699,7 @@ resolveNMROptions[mySamples:{ObjectP[Object[Sample]]..}, myOptions:{_Rule...}, m
 		resolvedSpectralDomains, nonStandardSolventWarnings, nonStandardSolventWarningTests, targetContainers,
 		resolvedAliquotOptions, aliquotTests, resolvedAssayVolume, resolvedSampleAmount, sampleAmountStateErrors,
 		resolvedAliquotAmount, simulatedVolumes, simulatedMasses, simulatedCounts, sampleAmountStateOptions,
-		sampleAmountStateTests, invalidOptions, invalidInputs, allTests, confirm, template, cache, operator, upload,
+		sampleAmountStateTests, invalidOptions, invalidInputs, allTests, confirm, canaryBranch, template, cache, operator, upload,
 		outputOption, subprotocolDescription, samplesInStorage, samplesOutStorage, email,
 		resolvedOptions, testsRule, resultRule, sampleAmountTooHighErrors, simulatedAmounts, sampleAmountTooHighOptions,
 		sampleAmountTooHighTests, unsupportedNMRTubeQ, unsupportedNMRTubeOptions, unsupportedNMRTubeTest,
@@ -698,7 +721,8 @@ resolveNMROptions[mySamples:{ObjectP[Object[Sample]]..}, myOptions:{_Rule...}, m
 		resolvedSealedCoaxialInserts, conflictingExternalStandardErrors, invalidExernalStandardErrors,conflictingExternalStandardErrorOptions,
 		conflictingExternalStandardErrorTests, invalidExernalStandardErrorOptions, invalidExernalStandardErrorTests,
 		resolvedDeuteratedSolvents, resolvedFlipAngles, flipAngleNucleusErrors, flipAngleWaterSuppressionErrors,
-		flipAngleNucleusInvalidOptions, flipAngleNucleusTests, flipAngleWaterSuppressionInvalidOptions, flipAngleWaterSuppressionTests
+		flipAngleNucleusInvalidOptions, flipAngleNucleusTests, flipAngleWaterSuppressionInvalidOptions, flipAngleWaterSuppressionTests,
+		simulation
 	},
 
 	(* --- Setup our user specified options and cache --- *)
@@ -714,6 +738,7 @@ resolveNMROptions[mySamples:{ObjectP[Object[Sample]]..}, myOptions:{_Rule...}, m
 	(* pull out the Cache option *)
 	inheritedCache = Lookup[ToList[myResolutionOptions], Cache, {}];
 	fastTrack = Lookup[ToList[myResolutionOptions], FastTrack, False];
+	simulation = Lookup[ToList[myResolutionOptions], Simulation, Simulation[]];
 
 	(* currently the instrument model is always this; in the future this will be an option and we will just pull it out there, but for now it's not useful to be an option *)
 	nmrModelPacket = FirstCase[inheritedCache, ObjectP[Model[Instrument, NMR]]];
@@ -737,13 +762,33 @@ resolveNMROptions[mySamples:{ObjectP[Object[Sample]]..}, myOptions:{_Rule...}, m
 	{samplePrepOptions, nmrOptions} = splitPrepOptions[myOptions];
 
 	(* resolve the sample prep options *)
-	{{simulatedSamples, resolvedSamplePrepOptions, simulatedCache}, samplePrepTests} = If[gatherTests,
-		resolveSamplePrepOptions[ExperimentNMR, mySamples, samplePrepOptions, Cache -> inheritedCache, Output -> {Result, Tests}],
-		{resolveSamplePrepOptions[ExperimentNMR, mySamples, samplePrepOptions, Cache -> inheritedCache, Output -> Result], {}}
+	{{simulatedSamples, resolvedSamplePrepOptions, updatedSimulation}, samplePrepTests} = If[gatherTests,
+		resolveSamplePrepOptionsNew[ExperimentNMR, mySamples, samplePrepOptions, Cache -> inheritedCache, Simulation -> simulation, Output -> {Result, Tests}],
+		{resolveSamplePrepOptionsNew[ExperimentNMR, mySamples, samplePrepOptions, Cache -> inheritedCache, Simulation -> simulation, Output -> Result], {}}
 	];
 
 	(* get the current container model of the simulated samples *)
-	simulatedContainerModelPackets = Download[simulatedSamples, Packet[Container[Model][{Object, PermanentlySealed, Footprint}]], Cache -> simulatedCache, Date -> Now];
+	(* also general simulation object information for ObjectToString *)
+	{
+		simulatedSamplePackets,
+		simulatedContainerModelPackets
+	} = Transpose[Download[
+		simulatedSamples,
+		{
+			Packet[Name, Volume, Mass, Count, State, Status, Container, Model],
+			Packet[Container[Model][{Object, PermanentlySealed, Footprint}]]
+		},
+		Cache -> inheritedCache,
+		Simulation -> updatedSimulation,
+		Date -> Now
+	]];
+
+	(* Combine the cache together *)
+	cacheBall = FlattenCachePackets[{
+		inheritedCache,
+		simulatedSamplePackets,
+		simulatedContainerModelPackets
+	}];
 
 	(* pull out the options that are defaulted *)
 	{
@@ -893,8 +938,8 @@ resolveNMROptions[mySamples:{ObjectP[Object[Sample]]..}, myOptions:{_Rule...}, m
 
 	(* call CompatibleMaterialsQ and figure out if materials are compatible *)
 	{compatibleMaterialsBool, compatibleMaterialsTests} = If[gatherTests,
-		CompatibleMaterialsQ[nmrModelPacket, simulatedSamples, Cache -> simulatedCache, Output -> {Result, Tests}],
-		{CompatibleMaterialsQ[nmrModelPacket, simulatedSamples, Cache -> simulatedCache, Messages -> messages], {}}
+		CompatibleMaterialsQ[nmrModelPacket, simulatedSamples, Cache -> cacheBall, Simulation -> updatedSimulation, Output -> {Result, Tests}],
+		{CompatibleMaterialsQ[nmrModelPacket, simulatedSamples, Cache -> cacheBall, Simulation -> updatedSimulation, Messages -> messages], {}}
 	];
 
 	(* If the materials are incompatible, then the Instrument is invalid *)
@@ -1344,7 +1389,7 @@ resolveNMROptions[mySamples:{ObjectP[Object[Sample]]..}, myOptions:{_Rule...}, m
 	(* throw a message if WaterSuppression is not None and Nucleus -> Except[1H] *)
 	waterSuppressionInvalidOptions = If[MemberQ[waterSuppressionErrors, True] && messages,
 		(
-			Message[Error::WaterSuppressionIncompatible, ObjectToString[PickList[simulatedSamples, waterSuppressionErrors], Cache -> simulatedCache]];
+			Message[Error::WaterSuppressionIncompatible, ObjectToString[PickList[simulatedSamples, waterSuppressionErrors], Cache -> inheritedCache]];
 			{WaterSuppression, Nucleus}
 		),
 		{}
@@ -1387,7 +1432,7 @@ resolveNMROptions[mySamples:{ObjectP[Object[Sample]]..}, myOptions:{_Rule...}, m
 	(* throw a message if FlipAngle is 30 Degree and Nucleus -> 19F *)
 	flipAngleNucleusInvalidOptions = If[MemberQ[flipAngleNucleusErrors, True] && messages,
 		(
-			Message[Error::No30DegFlipAngleFor19F, ObjectToString[PickList[simulatedSamples, flipAngleNucleusErrors], Cache -> simulatedCache]];
+			Message[Error::No30DegFlipAngleFor19F, ObjectToString[PickList[simulatedSamples, flipAngleNucleusErrors], Cache -> inheritedCache]];
 			{FlipAngle, Nucleus}
 		),
 		{}
@@ -1431,7 +1476,7 @@ resolveNMROptions[mySamples:{ObjectP[Object[Sample]]..}, myOptions:{_Rule...}, m
 	(* throw a message if FlipAngle is 30 Degree and WaterSuppression is set to Excitation Sculpting or WATERGATE *)
 	flipAngleWaterSuppressionInvalidOptions = If[MemberQ[flipAngleWaterSuppressionErrors, True] && messages,
 		(
-			Message[Error::No30DegFlipAngleForWaterSuppression, ObjectToString[PickList[simulatedSamples, flipAngleWaterSuppressionErrors], Cache -> simulatedCache], PickList[resolvedWaterSuppression, flipAngleWaterSuppressionErrors]];
+			Message[Error::No30DegFlipAngleForWaterSuppression, ObjectToString[PickList[simulatedSamples, flipAngleWaterSuppressionErrors], Cache -> inheritedCache], PickList[resolvedWaterSuppression, flipAngleWaterSuppressionErrors]];
 			{FlipAngle, WaterSuppression}
 		),
 		{}
@@ -1478,7 +1523,7 @@ resolveNMROptions[mySamples:{ObjectP[Object[Sample]]..}, myOptions:{_Rule...}, m
 	(* throw a message if NMRTubes is not compatible with the current sample containers *)
 	nmrTubeErrorOptions = If[MemberQ[nmrTubeErrors, True] && messages,
 		(
-			Message[Error::NMRTubesIncompatible, ObjectToString[tubeIncompatibleSamples, Cache -> simulatedCache], ObjectToString[tubeIncompatibleTubes, Cache -> simulatedCache]];
+			Message[Error::NMRTubesIncompatible, ObjectToString[tubeIncompatibleSamples, Cache -> inheritedCache], ObjectToString[tubeIncompatibleTubes, Cache -> inheritedCache]];
 			{NMRTube}
 		),
 		{}
@@ -1521,7 +1566,7 @@ resolveNMROptions[mySamples:{ObjectP[Object[Sample]]..}, myOptions:{_Rule...}, m
 	(* throw a message if some kinetic options are specified but not others *)
 	kineticOptionsRequiredTogetherErrorOptions = If[MemberQ[kineticOptionsRequiredTogetherErrors, True] && messages,
 		(
-			Message[Error::KineticOptionsRequiredTogether, ObjectToString[PickList[simulatedSamples, kineticOptionsRequiredTogetherErrors], Cache -> simulatedCache]];
+			Message[Error::KineticOptionsRequiredTogether, ObjectToString[PickList[simulatedSamples, kineticOptionsRequiredTogetherErrors], Cache -> inheritedCache]];
 			{TimeCourse, TimeInterval, NumberOfTimeIntervals, TotalTimeCourse}
 		),
 		{}
@@ -1564,7 +1609,7 @@ resolveNMROptions[mySamples:{ObjectP[Object[Sample]]..}, myOptions:{_Rule...}, m
 	(* throw a message if trying to do a kinetic run on something besides proton *)
 	kineticOptionNotProtonErrorOptions = If[MemberQ[kineticOptionNotProtonErrors, True] && messages,
 		(
-			Message[Error::KineticOptionsIncompatibleNucleus, ObjectToString[PickList[simulatedSamples, kineticOptionNotProtonErrors], Cache -> simulatedCache]];
+			Message[Error::KineticOptionsIncompatibleNucleus, ObjectToString[PickList[simulatedSamples, kineticOptionNotProtonErrors], Cache -> inheritedCache]];
 			{TimeCourse, Nucleus}
 		),
 		{}
@@ -1607,7 +1652,7 @@ resolveNMROptions[mySamples:{ObjectP[Object[Sample]]..}, myOptions:{_Rule...}, m
 	(* throw a message if the TimeInterval, NumberOfTimeIntervals, and TotalTimeCourse options don't agree with each other mathematically *)
 	kineticOptionMismatchErrorOptions = If[MemberQ[kineticOptionMismatchErrors, True] && messages,
 		(
-			Message[Error::KineticOptionMismatch, ObjectToString[PickList[simulatedSamples, kineticOptionMismatchErrors], Cache -> simulatedCache]];
+			Message[Error::KineticOptionMismatch, ObjectToString[PickList[simulatedSamples, kineticOptionMismatchErrors], Cache -> inheritedCache]];
 			{TimeCourse, Nucleus}
 		),
 		{}
@@ -1657,7 +1702,7 @@ resolveNMROptions[mySamples:{ObjectP[Object[Sample]]..}, myOptions:{_Rule...}, m
 	(* throw a message if the TimeInterval, NumberOfTimeIntervals, and TotalTimeCourse options don't agree with each other mathematically *)
 	timeIntervalTooSmallOptions = If[MemberQ[timeIntervalTooSmallErrors, True] && messages,
 		(
-			Message[Error::TimeIntervalTooSmall, ObjectToString[timeIntervalTooSmallSamples, Cache -> simulatedCache], timeIntervalTooSmallTimeIntervals, timeIntervalTooSmallSpectrumTime];
+			Message[Error::TimeIntervalTooSmall, ObjectToString[timeIntervalTooSmallSamples, Cache -> inheritedCache], timeIntervalTooSmallTimeIntervals, timeIntervalTooSmallSpectrumTime];
 			{TimeInterval, AcquisitionTime, NumberOfScans}
 		),
 		{}
@@ -1700,7 +1745,7 @@ resolveNMROptions[mySamples:{ObjectP[Object[Sample]]..}, myOptions:{_Rule...}, m
 	(* throw a message if TimeCourse is True and WaterSuppression is something besides None *)
 	waterSuppressionAndKineticErrorOptions = If[MemberQ[waterSuppressionAndKineticErrors, True] && messages,
 		(
-			Message[Error::KineticOptionsWaterSuppression, ObjectToString[PickList[simulatedSamples, waterSuppressionAndKineticErrors], Cache -> simulatedCache]];
+			Message[Error::KineticOptionsWaterSuppression, ObjectToString[PickList[simulatedSamples, waterSuppressionAndKineticErrors], Cache -> inheritedCache]];
 			{TimeCourse, WaterSuppression}
 		),
 		{}
@@ -1743,7 +1788,7 @@ resolveNMROptions[mySamples:{ObjectP[Object[Sample]]..}, myOptions:{_Rule...}, m
 	(* generate errors for conflicting external standard options *)
 	invalidExernalStandardErrorOptions = If[MemberQ[invalidExernalStandardErrors, True] && messages,
 		(
-			Message[Error::SealedNMRTubeCannotUseExternalStandards, ObjectToString[PickList[simulatedSamples, invalidExernalStandardErrors], Cache -> simulatedCache]];
+			Message[Error::SealedNMRTubeCannotUseExternalStandards, ObjectToString[PickList[simulatedSamples, invalidExernalStandardErrors], Cache -> inheritedCache]];
 			{UseExternalStandard, NMRTube}
 		),
 		{}
@@ -1774,7 +1819,7 @@ resolveNMROptions[mySamples:{ObjectP[Object[Sample]]..}, myOptions:{_Rule...}, m
 	(* generate errors for conflicting external standard options *)
 	conflictingExternalStandardErrorOptions = If[MemberQ[conflictingExternalStandardErrors, True] && messages,
 		(
-			Message[Error::ConflictingExternalStandardOptions, ObjectToString[PickList[simulatedSamples, conflictingExternalStandardErrors], Cache -> simulatedCache]];
+			Message[Error::ConflictingExternalStandardOptions, ObjectToString[PickList[simulatedSamples, conflictingExternalStandardErrors], Cache -> inheritedCache]];
 			{UseExternalStandard, SealedCoaxialInsert}
 		),
 		{}
@@ -1844,7 +1889,7 @@ resolveNMROptions[mySamples:{ObjectP[Object[Sample]]..}, myOptions:{_Rule...}, m
 	];
 
 	(* get the volumes/masses/counts of the simulated samples *)
-	{simulatedVolumes, simulatedMasses, simulatedCounts} = Transpose[Download[simulatedSamples, {Volume, Mass, Count}, Cache -> simulatedCache, Date -> Now]];
+	{simulatedVolumes, simulatedMasses, simulatedCounts} = Transpose[Lookup[simulatedSamplePackets, {Volume, Mass, Count}]];
 
 	(* we want to be aliquoting into a 2mL tube if necessary *)
 	(* we don't want to aliquot just because we need to move into a 2mL tube because who cares; only aliquot to a 2mL tube if we're already aliquoting *)
@@ -1880,8 +1925,33 @@ resolveNMROptions[mySamples:{ObjectP[Object[Sample]]..}, myOptions:{_Rule...}, m
 	(* we are cool with having solids here *)
 	{resolvedAliquotOptions, aliquotTests} = If[gatherTests,
 		(* we are cool with having solids here *)
-		resolveAliquotOptions[ExperimentNMR, Lookup[samplePackets, Object], simulatedSamples, ReplaceRule[myOptions, Flatten[{resolvedSamplePrepOptions, Aliquot -> preResolvedAliquotBool}]], Cache -> simulatedCache, RequiredAliquotContainers -> targetContainers, RequiredAliquotAmounts -> requiredAliquotAmounts, AllowSolids -> True, Output -> {Result, Tests}],
-		{resolveAliquotOptions[ExperimentNMR, Lookup[samplePackets, Object], simulatedSamples, ReplaceRule[myOptions, Flatten[{resolvedSamplePrepOptions, Aliquot -> preResolvedAliquotBool}]], Cache -> simulatedCache, RequiredAliquotContainers -> targetContainers, RequiredAliquotAmounts -> requiredAliquotAmounts, AllowSolids -> True, Output -> Result], {}}
+		resolveAliquotOptions[
+			ExperimentNMR,
+			Lookup[samplePackets, Object],
+			simulatedSamples,
+			ReplaceRule[myOptions, Flatten[{resolvedSamplePrepOptions, Aliquot -> preResolvedAliquotBool}]],
+			Cache -> cacheBall,
+			Simulation->updatedSimulation,
+			RequiredAliquotContainers -> targetContainers,
+			RequiredAliquotAmounts -> requiredAliquotAmounts,
+			AllowSolids -> True,
+			Output -> {Result, Tests}
+		],
+		{
+			resolveAliquotOptions[
+				ExperimentNMR,
+				Lookup[samplePackets, Object],
+				simulatedSamples,
+				ReplaceRule[myOptions, Flatten[{resolvedSamplePrepOptions, Aliquot -> preResolvedAliquotBool}]],
+				Cache -> cacheBall,
+				Simulation->updatedSimulation,
+				RequiredAliquotContainers -> targetContainers,
+				RequiredAliquotAmounts -> requiredAliquotAmounts,
+				AllowSolids -> True,
+				Output -> Result
+			],
+			{}
+		}
 	];
 
 	(* Resolve Post Processing Options *)
@@ -2014,7 +2084,7 @@ resolveNMROptions[mySamples:{ObjectP[Object[Sample]]..}, myOptions:{_Rule...}, m
 	(* throw an error if the state and resolved SampleAmount don't agree with each other *)
 	sampleAmountStateOptions = If[MemberQ[sampleAmountStateErrors, True] && messages,
 		(
-			Message[Error::SampleAmountStateConflict, ObjectToString[PickList[simulatedSamples, sampleAmountStateErrors], Cache -> simulatedCache], ObjectToString[PickList[resolvedSampleAmount, sampleAmountStateErrors]]];
+			Message[Error::SampleAmountStateConflict, ObjectToString[PickList[simulatedSamples, sampleAmountStateErrors], Cache -> inheritedCache], ObjectToString[PickList[resolvedSampleAmount, sampleAmountStateErrors]]];
 			{SampleAmount}
 		),
 		{}
@@ -2057,7 +2127,7 @@ resolveNMROptions[mySamples:{ObjectP[Object[Sample]]..}, myOptions:{_Rule...}, m
 	(* throw an error if the SampleAmount is too high relative to the amount in the sample *)
 	sampleAmountTooHighOptions = If[MemberQ[sampleAmountTooHighErrors, True] && messages,
 		(
-			Message[Error::SampleAmountTooHigh, ObjectToString[PickList[resolvedSampleAmount, sampleAmountTooHighErrors]], ObjectToString[PickList[simulatedAmounts, sampleAmountTooHighErrors]], ObjectToString[PickList[simulatedSamples, sampleAmountTooHighErrors], Cache -> simulatedCache]];
+			Message[Error::SampleAmountTooHigh, ObjectToString[PickList[resolvedSampleAmount, sampleAmountTooHighErrors]], ObjectToString[PickList[simulatedAmounts, sampleAmountTooHighErrors]], ObjectToString[PickList[simulatedSamples, sampleAmountTooHighErrors], Cache -> inheritedCache]];
 			{SampleAmount}
 		),
 		{}
@@ -2100,7 +2170,7 @@ resolveNMROptions[mySamples:{ObjectP[Object[Sample]]..}, myOptions:{_Rule...}, m
 	(* throw an error if SampleAmount or SolventVolume is set to Null when using an already-existing NMR tube, or set to Not-Null otherwise *)
 	sampleAmountNullOptions = If[MemberQ[sampleAmountNullErrors, True] && messages,
 		(
-			Message[Error::SampleAmountNull, ObjectToString[PickList[simulatedSamples, sampleAmountNullErrors], Cache -> simulatedCache]];
+			Message[Error::SampleAmountNull, ObjectToString[PickList[simulatedSamples, sampleAmountNullErrors], Cache -> inheritedCache]];
 			{SampleAmount, SolventVolume}
 		),
 		{}
@@ -2145,8 +2215,8 @@ resolveNMROptions[mySamples:{ObjectP[Object[Sample]]..}, myOptions:{_Rule...}, m
 
 	(* Check whether the samples are ok *)
 	{validContainerStorageConditionBool, validContainerStorageConditionTests} = If[gatherTests,
-		ValidContainerStorageConditionQ[mySamples, samplesInStorage, Output -> {Result, Tests}, Cache -> simulatedCache],
-		{ValidContainerStorageConditionQ[mySamples, samplesInStorage, Output -> Result, Cache -> simulatedCache], {}}
+		ValidContainerStorageConditionQ[mySamples, samplesInStorage, Output -> {Result, Tests}, Cache -> cacheBall, Simulation -> updatedSimulation],
+		{ValidContainerStorageConditionQ[mySamples, samplesInStorage, Output -> Result, Cache -> cacheBall, Simulation -> updatedSimulation], {}}
 	];
 	validContainerStoragConditionInvalidOptions = If[MemberQ[validContainerStorageConditionBool, False], SamplesInStorageCondition, Nothing];
 
@@ -2219,7 +2289,7 @@ resolveNMROptions[mySamples:{ObjectP[Object[Sample]]..}, myOptions:{_Rule...}, m
 	(* --- pull out all the shared options from the input options --- *)
 
 	(* get the rest directly *)
-	{confirm, template, cache, operator, upload, outputOption, subprotocolDescription, samplesOutStorage, samplePreparation} = Lookup[myOptions, {Confirm, Template, Cache, Operator, Upload, Output, SubprotocolDescription, SamplesOutStorageCondition, PreparatoryUnitOperations}];
+	{confirm, canaryBranch, template, cache, operator, upload, outputOption, subprotocolDescription, samplesOutStorage, samplePreparation} = Lookup[myOptions, {Confirm, CanaryBranch, Template, Cache, Operator, Upload, Output, SubprotocolDescription, SamplesOutStorageCondition, PreparatoryUnitOperations}];
 
 	(* get the resolved Email option; for this experiment, the default is True if it's a parent protocol, and False if it's a sub *)
 	email = Which[
@@ -2231,35 +2301,37 @@ resolveNMROptions[mySamples:{ObjectP[Object[Sample]]..}, myOptions:{_Rule...}, m
 	(* --- Do the final preparations --- *)
 
 	(* get the final resolved options (pre-collapsed; that is happening outside the function) *)
-	resolvedOptions = Flatten[{
-		NumberOfReplicates -> numberOfReplicates,
-		Nucleus -> nucleus,
-		DeuteratedSolvent -> resolvedDeuteratedSolvents,
-		SolventVolume -> resolvedSolventVolume,
-		SampleAmount -> resolvedSampleAmount,
-		SampleTemperature -> sampleTemperature,
-		NumberOfScans -> resolvedNumberOfScans,
-		NumberOfDummyScans -> resolvedNumberOfDummyScans,
-		AcquisitionTime -> resolvedAcquisitionTimes,
-		RelaxationDelay -> resolvedRelaxationDelays,
-		PulseWidth -> resolvedPulseWidths,
-		FlipAngle -> resolvedFlipAngles,
-		SpectralDomain -> resolvedSpectralDomains,
-		WaterSuppression -> resolvedWaterSuppression,
-		TimeCourse -> resolvedTimeCourse,
-		TimeInterval -> resolvedTimeInterval,
-		NumberOfTimeIntervals -> resolvedNumberOfTimeIntervals,
-		TotalTimeCourse -> resolvedTotalTimeCourse,
-		NMRTube -> nmrTubes,
-		Instrument -> instrument,
-		UseExternalStandard -> resolvedUseExternalStandards,
-		SealedCoaxialInsert -> resolvedSealedCoaxialInserts, 
-		PreparatoryUnitOperations -> samplePreparation,
-		PreparatoryPrimitives->Lookup[myOptions,PreparatoryPrimitives],
-		resolvedSamplePrepOptions,
-		resolvedAliquotOptions,
-		resolvedPostProcessingOptions,
-		Confirm -> confirm,
+	resolvedOptions = ReplaceRule[
+		myOptions,
+		Flatten[{
+			NumberOfReplicates -> numberOfReplicates,
+			Nucleus -> nucleus,
+			DeuteratedSolvent -> resolvedDeuteratedSolvents,
+			SolventVolume -> resolvedSolventVolume,
+			SampleAmount -> resolvedSampleAmount,
+			SampleTemperature -> sampleTemperature,
+			NumberOfScans -> resolvedNumberOfScans,
+			NumberOfDummyScans -> resolvedNumberOfDummyScans,
+			AcquisitionTime -> resolvedAcquisitionTimes,
+			RelaxationDelay -> resolvedRelaxationDelays,
+			PulseWidth -> resolvedPulseWidths,
+			FlipAngle -> resolvedFlipAngles,
+			SpectralDomain -> resolvedSpectralDomains,
+			WaterSuppression -> resolvedWaterSuppression,
+			TimeCourse -> resolvedTimeCourse,
+			TimeInterval -> resolvedTimeInterval,
+			NumberOfTimeIntervals -> resolvedNumberOfTimeIntervals,
+			TotalTimeCourse -> resolvedTotalTimeCourse,
+			NMRTube -> nmrTubes,
+			Instrument -> instrument,
+			UseExternalStandard -> resolvedUseExternalStandards,
+			SealedCoaxialInsert -> resolvedSealedCoaxialInserts,
+			PreparatoryUnitOperations -> samplePreparation,
+			resolvedSamplePrepOptions,
+			resolvedAliquotOptions,
+			resolvedPostProcessingOptions,
+			Confirm -> confirm,
+			CanaryBranch -> canaryBranch,
 		Name -> name,
 		Template -> template,
 		Cache -> cache,
@@ -2272,7 +2344,7 @@ resolveNMROptions[mySamples:{ObjectP[Object[Sample]]..}, myOptions:{_Rule...}, m
 		SubprotocolDescription -> subprotocolDescription,
 		SamplesInStorageCondition -> samplesInStorage,
 		SamplesOutStorageCondition -> samplesOutStorage
-	}];
+	}]];
 
 	(* generate the tests rule *)
 	testsRule = Tests -> If[gatherTests,
@@ -2298,7 +2370,7 @@ resolveNMROptions[mySamples:{ObjectP[Object[Sample]]..}, myOptions:{_Rule...}, m
 
 DefineOptions[
 	nmrResourcePackets,
-	Options :> {HelperOutputOption, CacheOption}
+	Options :> {HelperOutputOption, CacheOption, SimulationOption}
 ];
 
 
@@ -2312,12 +2384,12 @@ nmrResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myUnresolvedOptions:{_
 		expandedNumScans, expandedAcquisitionTime, expandedPulseWidth, expandedSpectralDomain, expandedWaterSuppression,
 		containersIn, protocolPacket, sharedFieldPacket, finalizedPacket, allResourceBlobs, fulfillable, frqTests,
 		previewRule, optionsRule, testsRule, resultRule, runTime, nmrTubeRackResource, aliquotQs, allDownloadValues,
-		containerModelPackets, simulatedSamples, simulatedCache, depthGaugeResource, nmrSpinnerResources, expandedContainerModelPackets,
+		containerModelPackets, simulatedSamples, depthGaugeResource, nmrSpinnerResources, expandedContainerModelPackets,
 		expandedSamplesInStorage, expandedSamplesOutStorage, containerObjs, expandedSamplesWithNumReplicates,
 		maxTubeRackHeight, needsTallTubeQ, expandedTimeCourse, expandedTimeInterval, expandedNumberOfTimeIntervals,
 		expandedTotalTimeCourse, expandedRelaxationDelay, expandedNumDummyScans, expandedUseExternalStandard,
-		expandedSealedCoaxialInsert, sealedCoaxialInsertContainerResources, tweezerResource, fumeHoodResource,
-		insertsWashWasteContainerResource, combinedFastAssoc,tubeInsertLookup, expandedFlipAngle},
+		expandedSealedCoaxialInsert, sealedCoaxialInsertContainer, tweezerResource, fumeHoodResource, simulation, updatedSimulation,
+		insertsWashWasteContainerResource, tubeInsertRemovalTime, combinedFastAssoc,tubeInsertLookup, expandedFlipAngle, externalStandardsResources, tubeReplicates},
 
 	(* expand the resolved options if they weren't expanded already *)
 	{expandedInputs, expandedResolvedOptions} = ExpandIndexMatchedInputs[ExperimentNMR, {mySamples}, myResolvedOptions];
@@ -2340,9 +2412,10 @@ nmrResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myUnresolvedOptions:{_
 
 	(*get the cache*)
 	inheritedCache = Lookup[ToList[ops], Cache, {}];
+	simulation = Lookup[ToList[ops], Simulation, Simulation[]];
 
 	(* simulate the samples after they go through all the sample prep *)
-	{simulatedSamples, simulatedCache} = simulateSamplesResourcePackets[ExperimentNMR, mySamples, myResolvedOptions, Cache -> inheritedCache];
+	{simulatedSamples, updatedSimulation} = simulateSamplesResourcePacketsNew[ExperimentNMR, mySamples, myResolvedOptions, Cache -> inheritedCache, Simulation -> simulation];
 
 	(* --- Make our one big Download call --- *)
 
@@ -2359,12 +2432,12 @@ nmrResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myUnresolvedOptions:{_
 			},
 			{Container[Object]}
 		},
-		Cache -> simulatedCache,
+		Simulation -> updatedSimulation,
 		Date -> Now
 	];
 	
 	(* Make combined fast association *)
-	combinedFastAssoc=makeFastAssocFromCache[FlattenCachePackets[{inheritedCache, simulatedCache}]];
+	combinedFastAssoc=makeFastAssocFromCache[FlattenCachePackets[{inheritedCache, allDownloadValues}]];
 	
 	(* split out the sample packets and the container models and the original objects *)
 	samplePackets = allDownloadValues[[1, All, 1]];
@@ -2435,6 +2508,20 @@ nmrResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myUnresolvedOptions:{_
 			]
 		],
 		{tubeOption, aliquotQs, expandedContainerModelPackets, Download[Lookup[expandedSimulatedSamplesWithNumReplicates, Container], Object], Lookup[expandedSimulatedSamplesWithNumReplicates, Object], tubeOption, Download[expandedSolvents /. deuteratedSymbolsToSolvents[], Object], expandedSolventVolume, expandedSampleAmount,expandedSealedCoaxialInsert}
+	];
+
+	(* now we will mark each tube's first appearance to False, and the rest of its replicates to be True *)
+	(* i.e. for a list of {a, a, b, c, c, b, d, a}, the expect output is {False, True, False, False, True, True, False, True} *)
+	tubeReplicates = Module[{resourceNames, replicatePositions, replicatePositionsSecondAppearance},
+		(* use resource Name since this is unique for each tube we create *)
+		resourceNames = #[Name]& /@ tubeResources;
+
+		(* get the position of all duplicate tubes *)
+		replicatePositions = GatherBy[Range[Length[resourceNames]], resourceNames[[#]]&];
+		replicatePositionsSecondAppearance = Flatten[Rest /@ replicatePositions];
+
+		(* do the replace to mark each tube's first appearance to False, and the rest of its replicates to be True *)
+		ReplacePart[ConstantArray[False, Length[resourceNames]], (# -> True)& /@ replicatePositionsSecondAppearance]
 	];
 
 	(* get the maximum height for the NMRTubeRack *)
@@ -2567,22 +2654,26 @@ nmrResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myUnresolvedOptions:{_
 	];
 	
 	(* For each unique nmr tube, we will give them a unique insert resources if neccessary *)
-	tubeInsertLookup=Map[
-		(#->Resource[Sample -> Model[Container, Bag, "2 x 3 Inch Plastic Bag For NMR Sealed Inserts"], Name -> ToString[CreateUUID[]], Rent -> True])&,
-		DeleteDuplicates[tubeResources]
-	];
-	
-	(* Resource for expandedSealedCoaxialInsert *)
-	sealedCoaxialInsertContainerResources=MapThread[
+	(* Resource for ExternalStandards *)
+	externalStandardsResources = MapThread[
 		If[
 			(* If user specified the Model of the insert, we hardcode the bag we use to store the insert as the container resource *)
-			MatchQ[#1,ObjectP[Model[Container, Vessel, "3mm NMR Sealed Coaxial Insert with 3-(Trimethylsilyl)propionic-2,2,3,3-d4 in Deuterium Oxide"]]],
-			Link[Lookup[tubeInsertLookup,#2]],
-			
+			MatchQ[#1,ObjectP[Model[Container, Vessel, "id:7X104vnDxX9R"]]] (* "3mm NMR Sealed Coaxial Insert with 3-(Trimethylsilyl)propionic-2,2,3,3-d4 in Deuterium Oxide" *),
+			Resource[
+				Sample -> Model[Sample, "id:J8AY5jDEbPZK"] (* "0.1% w/w Solution Of (Trimethylsilyl)propionic-2,2,3,3-d4 Acid Sodium Salt In Deuterium Oxide" *),
+				Name -> StringJoin["External Standard "<>#2[Name]],
+				Container -> Model[Container, Vessel, "id:7X104vnDxX9R"] (* "3mm NMR Sealed Coaxial Insert with 3-(Trimethylsilyl)propionic-2,2,3,3-d4 in Deuterium Oxide" *),
+				Amount -> 0.2 Milliliter,
+				ExactAmount -> False
+			],
 			Null
 		]&,
 		{expandedSealedCoaxialInsert,tubeResources}
 	];
+
+	tubeInsertLookup = {ObjectP[Model[Container, Vessel, "id:7X104vnDxX9R"]] (* "3mm NMR Sealed Coaxial Insert with 3-(Trimethylsilyl)propionic-2,2,3,3-d4 in Deuterium Oxide" *) -> Model[Container, Bag, "id:O81aEB1LOw0j"] (* "Plastic Bag For NMR Sealed Inserts" *)};
+
+	sealedCoaxialInsertContainer = expandedSealedCoaxialInsert /. tubeInsertLookup;
 	
 	(* generate the resource for tweezer, this is used to move and recover the coaxial inserts *)
 	tweezerResource=If[MemberQ[expandedUseExternalStandard,True],Link[Resource[Sample->Model[Item, Tweezer, "Straight flat tip tweezer"],Rent->True]],Null];
@@ -2593,6 +2684,12 @@ nmrResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myUnresolvedOptions:{_
 	
 	(* get the ContainersIn with no Duplicates *)
 	containersIn = DeleteDuplicates[Download[Lookup[samplePackets, Container], Object]];
+
+	(* estimate the time required to do "NMR Remove Coaxial Inserts from NMR Tubes" for checkpoints *)
+	tubeInsertRemovalTime = If[MemberQ[expandedUseExternalStandard,True],
+		1 Hour + 15 Minute * Count[expandedUseExternalStandard,True],
+		0 Minute
+	];
 
 	(* make the protocol packet including resources *)
 	protocolPacket = <|
@@ -2610,17 +2707,22 @@ nmrResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myUnresolvedOptions:{_
 		Replace[ContainersIn] -> (Link[Resource[Sample->#],Protocols]&)/@containerObjs,
 		Instrument -> Link[nmrResource],
 		Replace[NMRTubes] -> (Link[#]& /@ tubeResources),
+		Replace[NMRTubeReplicates] -> tubeReplicates,
 		Replace[NMRSpinners] -> (Link[#]& /@ nmrSpinnerResources),
 		NMRTubeRack -> Link[nmrTubeRackResource],
 		DepthGauge -> Link[depthGaugeResource],
 
 		(* populate checkpoints with reasonable time estimates *)
 		Replace[Checkpoints] -> {
-			{"Picking Resources", 10*Minute, "Samples required to execute this protocol are gathered from storage.", Link[Resource[Operator -> Model[User, Emerald, Operator, "Trainee"], Time -> 10 Minute]]},
-			{"Preparing Samples",1 Minute,"Preprocessing, such as incubation, mixing, centrifuging, and aliquoting, is performed.",Link[Resource[Operator -> Model[User, Emerald, Operator, "Trainee"], Time -> 1 Minute]]},
+			{"Preparing Samples",1 Minute,"Preprocessing, such as incubation, mixing, centrifuging, and aliquoting, is performed.",Link[Resource[Operator -> $BaselineOperator, Time -> 1 Minute]]},
+			{"Picking Resources", 10*Minute, "Samples required to execute this protocol are gathered from storage.", Link[Resource[Operator -> $BaselineOperator, Time -> 10 Minute]]},
 			(* the ReadingResonance checkpoint mirrors the runTime estimated above almost directly, padded with a little bit of overhead *)
-			{"Reading Resonance", runTime + 20*Minute, "The NMR spectra of the samples are measured.", Link[Resource[Operator -> Model[User, Emerald, Operator, "Trainee"], Time -> (runTime + 20*Minute)]]},
-			{"Sample Post-Processing",1 Hour,"Any measuring of volume, weight, or sample imaging post experiment is performed.", Link[Resource[Operator -> Model[User, Emerald, Operator, "Trainee"], Time -> 5*Minute]]}
+			{"Reading Resonance", runTime + 20*Minute, "The NMR spectra of the samples are measured.", Link[Resource[Operator -> $BaselineOperator, Time -> (runTime + 20*Minute)]]},
+			(* the ExperimentCleanUp checkpoint includes "NMR Remove Coaxial Inserts from NMR Tubes" and "NMR Unload Spinner" and Parse and some post-processing (subprotocols do not count toward this estimation). *)
+			(* Estimate 90 min for anything except "NMR Remove Coaxial Inserts from NMR Tubes" *)
+			(* "NMR Remove Coaxial Inserts from NMR Tubes" is defined in tubeInsertRemovalTime  *)
+			{"Experiment Clean Up", tubeInsertRemovalTime + 90*Minute, "Recovery of NMR samples and disposal of waste.", Link[Resource[Operator -> $BaselineOperator, Time -> (tubeInsertRemovalTime + 90*Minute)]]},
+			{"Sample Post-Processing",1 Hour,"Any measuring of volume, weight, or sample imaging post experiment is performed.", Link[Resource[Operator -> $BaselineOperator, Time -> 5*Minute]]}
 		},
 		DataCollectionTime -> runTime,
 
@@ -2637,8 +2739,8 @@ nmrResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myUnresolvedOptions:{_
 		
 		(* assorted option-controlled fields that are specific to NMR *)
 		Replace[Nuclei] -> expandedNuclei,
-		(* currently I am _not_ making resources for DeuteratedSolvents; this is mainly because the SampleManipulation sub will do this *)
-		(* also some NMR solvents are in ampuoles and SM needs to handle this anyway so punting the issue to that for now *)
+		(* currently I am _not_ making resources for DeuteratedSolvents; this is mainly because the SP sub will do this *)
+		(* also some NMR solvents are in ampuoles and SP needs to handle this anyway so punting the issue to that for now *)
 		Replace[DeuteratedSolvents] -> (Link[expandedSolvents] /. deuteratedSymbolsToSolvents[]),
 		Replace[SolventVolumes] -> expandedSolventVolume,
 		Replace[SampleAmounts] -> expandedSampleAmount,
@@ -2657,11 +2759,12 @@ nmrResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myUnresolvedOptions:{_
 		Replace[TotalTimeCourses] -> expandedTotalTimeCourse,
 		Replace[UseExternalStandards]->expandedUseExternalStandard,
 		Replace[SealedCoaxialInserts]->Link[expandedSealedCoaxialInsert],
-		Replace[SealedCoaxialInsertContainers]->sealedCoaxialInsertContainerResources
+		Replace[SealedCoaxialInsertContainers]->Link[sealedCoaxialInsertContainer],
+		Replace[ExternalStandards] -> externalStandardsResources
 	|>;
 
 	(* generate a packet with the shared fields *)
-	sharedFieldPacket = populateSamplePrepFields[mySamples, myResolvedOptions, Cache -> inheritedCache];
+	sharedFieldPacket = populateSamplePrepFields[mySamples, myResolvedOptions, Cache -> inheritedCache, Simulation -> updatedSimulation];
 
 	(* Merge the shared fields with the specific fields *)
 	finalizedPacket = Join[sharedFieldPacket, protocolPacket];
@@ -2673,8 +2776,13 @@ nmrResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myUnresolvedOptions:{_
 	(* call fulfillableResourceQ on all the resources we created *)
 	{fulfillable, frqTests} = Which[
 		MatchQ[$ECLApplication, Engine], {True, {}},
-		gatherTests, Resources`Private`fulfillableResourceQ[allResourceBlobs, Output -> {Result, Tests}, FastTrack -> Lookup[myResolvedOptions, FastTrack],Site->Lookup[myResolvedOptions,Site],Cache->inheritedCache],
-		True, {Resources`Private`fulfillableResourceQ[allResourceBlobs, FastTrack -> Lookup[myResolvedOptions, FastTrack],Site->Lookup[myResolvedOptions,Site], Messages -> messages,Cache->inheritedCache], Null}
+		gatherTests,
+			Resources`Private`fulfillableResourceQ[allResourceBlobs, Output -> {Result, Tests}, FastTrack -> Lookup[myResolvedOptions, FastTrack],Site->Lookup[myResolvedOptions,Site], Cache->inheritedCache, Simulation -> updatedSimulation],
+		True,
+			{
+				Resources`Private`fulfillableResourceQ[allResourceBlobs, FastTrack -> Lookup[myResolvedOptions, FastTrack],Site->Lookup[myResolvedOptions,Site], Messages -> messages, Cache->inheritedCache, Simulation -> updatedSimulation],
+				Null
+			}
 	];
 
 	(* generate the Preview option; that is always Null *)
@@ -2721,15 +2829,15 @@ DefineOptions[ValidExperimentNMRQ,
 (* --- Overloads --- *)
 ValidExperimentNMRQ[mySample:_String|ObjectP[Object[Sample]], myOptions:OptionsPattern[ValidExperimentNMRQ]] := ValidExperimentNMRQ[{mySample}, myOptions];
 
-ValidExperimentNMRQ[myContainer:_String|ObjectP[Object[Container]], myOptions:OptionsPattern[ValidExperimentNMRQ]] := ValidExperimentNMRQ[{myContainer}, myOptions];
+ValidExperimentNMRQ[myContainer:_String|ObjectP[{Object[Container], Model[Sample]}], myOptions:OptionsPattern[ValidExperimentNMRQ]] := ValidExperimentNMRQ[{myContainer}, myOptions];
 
-ValidExperimentNMRQ[myContainers : {(_String|ObjectP[Object[Container]])..}, myOptions : OptionsPattern[ValidExperimentNMRQ]] := Module[
+ValidExperimentNMRQ[myContainers : {(_String|ObjectP[{Object[Container], Model[Sample]}])..}, myOptions : OptionsPattern[ValidExperimentNMRQ]] := Module[
 	{listedOptions, preparedOptions, nmrTests, initialTestDescription, allTests, verbose, outputFormat},
 
 	(* get the options as a list *)
 	listedOptions = ToList[myOptions];
 
-	(* remove the Output option before passing to the core function because it doens't make sense here *)
+	(* remove the Output option before passing to the core function because it doesn't make sense here *)
 	preparedOptions = DeleteCases[listedOptions, (Output | Verbose | OutputFormat) -> _];
 
 	(* return only the tests for ExperimentNMR *)
@@ -2778,7 +2886,7 @@ ValidExperimentNMRQ[mySamples:{(_String|ObjectP[Object[Sample]])..},myOptions:Op
 	(* get the options as a list *)
 	listedOptions = ToList[myOptions];
 
-	(* remove the Output option before passing to the core function because it doens't make sense here *)
+	(* remove the Output option before passing to the core function because it doesn't make sense here *)
 	preparedOptions = DeleteCases[listedOptions, (Output | Verbose | OutputFormat) -> _];
 
 	(* return only the tests for ExperimentNMR *)
@@ -2834,15 +2942,15 @@ DefineOptions[ExperimentNMROptions,
 (* --- Overloads --- *)
 ExperimentNMROptions[mySample:ObjectP[Object[Sample]]|_String, myOptions:OptionsPattern[ExperimentNMROptions]] := ExperimentNMROptions[{mySample}, myOptions];
 
-ExperimentNMROptions[myContainer:_String|ObjectP[Object[Container]], myOptions:OptionsPattern[ExperimentNMROptions]] := ExperimentNMROptions[{myContainer}, myOptions];
+ExperimentNMROptions[myContainer:_String|ObjectP[{Object[Container], Model[Sample]}], myOptions:OptionsPattern[ExperimentNMROptions]] := ExperimentNMROptions[{myContainer}, myOptions];
 
-ExperimentNMROptions[myContainers : {(_String|ObjectP[Object[Container]])..}, myOptions : OptionsPattern[ExperimentNMROptions]] := Module[
+ExperimentNMROptions[myContainers : {(_String|ObjectP[{Object[Container], Model[Sample]}])..}, myOptions : OptionsPattern[ExperimentNMROptions]] := Module[
 	{listedOptions, noOutputOptions, options},
 
 	(* get the options as a list *)
 	listedOptions = ToList[myOptions];
 
-	(* remove the Output option before passing to the core function because it doens't make sense here *)
+	(* remove the Output option before passing to the core function because it doesn't make sense here *)
 	noOutputOptions = DeleteCases[listedOptions, Alternatives[Output -> _, OutputFormat -> _]];
 
 	(* return only the options for ExperimentNMR *)
@@ -2865,7 +2973,7 @@ ExperimentNMROptions[mySamples:{(_String|ObjectP[Object[Sample]])..},myOptions:O
 	(* get the options as a list *)
 	listedOptions=ToList[myOptions];
 
-	(* remove the Output option before passing to the core function because it doens't make sense here *)
+	(* remove the Output option before passing to the core function because it doesn't make sense here *)
 	noOutputOptions=DeleteCases[listedOptions,Alternatives[Output->_,OutputFormat->_]];
 
 	(* return only the options for ExperimentNMR *)
@@ -2890,15 +2998,15 @@ DefineOptions[ExperimentNMRPreview,
 (* --- Overloads --- *)
 ExperimentNMRPreview[mySample:_String|ObjectP[Object[Sample]], myOptions:OptionsPattern[ExperimentNMRPreview]] := ExperimentNMRPreview[{mySample}, myOptions];
 
-ExperimentNMRPreview[myContainer:_String|ObjectP[Object[Container]], myOptions:OptionsPattern[ExperimentNMRPreview]] := ExperimentNMRPreview[{myContainer}, myOptions];
+ExperimentNMRPreview[myContainer:_String|ObjectP[{Object[Container], Model[Sample]}], myOptions:OptionsPattern[ExperimentNMRPreview]] := ExperimentNMRPreview[{myContainer}, myOptions];
 
-ExperimentNMRPreview[myContainers : {(_String|ObjectP[Object[Container]])..}, myOptions : OptionsPattern[ExperimentNMRPreview]] := Module[
+ExperimentNMRPreview[myContainers : {(_String|ObjectP[{Object[Container], Model[Sample]}])..}, myOptions : OptionsPattern[ExperimentNMRPreview]] := Module[
 	{listedOptions, noOutputOptions},
 
 	(* get the options as a list *)
 	listedOptions = ToList[myOptions];
 
-	(* remove the Output option before passing to the core function because it doens't make sense here *)
+	(* remove the Output option before passing to the core function because it doesn't make sense here *)
 	noOutputOptions = DeleteCases[listedOptions, Alternatives[Output -> _]];
 
 	(* return only the preview for ExperimentNMR *)
@@ -2913,7 +3021,7 @@ ExperimentNMRPreview[mySamples:{(_String|ObjectP[Object[Sample]])..},myOptions:O
 	(* get the options as a list *)
 	listedOptions = ToList[myOptions];
 
-	(* remove the Output option before passing to the core function because it doens't make sense here *)
+	(* remove the Output option before passing to the core function because it doesn't make sense here *)
 	noOutputOptions = DeleteCases[listedOptions, Alternatives[Output -> _]];
 
 	(* return only the preview for ExperimentNMR *)

@@ -113,6 +113,8 @@ OpenThreads[myTeams : {ObjectP[Object[Team, Financing]]..}, myOptions : OptionsP
 								MatchQ[Experiment`Private`fastAssocLookup[fastAssoc, Lookup[incubateCellsProtPacket, Object], {Incubators, ProvidedStorageCondition}], {ObjectP[Model[StorageCondition]]..}]
 							]
 						], Nothing,
+						(* Do not count Qualifications and Maintenances *)
+						MatchQ[Lookup[protPacket, Type], Except[TypeP[Object[Protocol]]]], Nothing,
 						(* In all other cases, if the protocol is processing, show the thread as occupied *)
 						True, protPacket
 

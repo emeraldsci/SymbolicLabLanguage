@@ -394,19 +394,19 @@ DefineTests[
 					|>,
 					<|Object->testSample1,Status->Available,State->Liquid,
 						Replace[Analytes]->{Link[targetantigen1]},
-						Replace[Composition]->{{Null,Link[targetantigen1]}}
+						Replace[Composition]->{{Null,Link[targetantigen1],Now}}
 					|>,
 					<|Object->testSample2,Status->Available,State->Liquid,
 						Replace[Analytes]->{Link[targetantigen1]},
-						Replace[Composition]->{{Null,Link[targetantigen1]}}
+						Replace[Composition]->{{Null,Link[targetantigen1],Now}}
 					|>,
 					<|Object->testSample3,Status->Discarded,State->Liquid,
 						Replace[Analytes]->{Link[targetantigen1]},
-						Replace[Composition]->{{Null,Link[targetantigen1]}}
+						Replace[Composition]->{{Null,Link[targetantigen1],Now}}
 					|>,
 					<|Object->testSample4,Status->Available,State->Solid,
 						Replace[Analytes]->{Link[targetantigen1]},
-						Replace[Composition]->{{Null,Link[targetantigen1]}},
+						Replace[Composition]->{{Null,Link[targetantigen1],Now}},
 						Volume->Null
 					|>,
 					<|Object->testAntigenSample1,
@@ -920,19 +920,19 @@ DefineTests[
 					|>,
 					<|Object->testSample1,Status->Available,State->Liquid,
 						Replace[Analytes]->{Link[targetantigen1]},
-						Replace[Composition]->{{Null,Link[targetantigen1]}}
+						Replace[Composition]->{{Null,Link[targetantigen1],Now}}
 					|>,
 					<|Object->testSample2,Status->Available,State->Liquid,
 						Replace[Analytes]->{Link[targetantigen1]},
-						Replace[Composition]->{{Null,Link[targetantigen1]}}
+						Replace[Composition]->{{Null,Link[targetantigen1],Now}}
 					|>,
 					<|Object->testSample3,Status->Discarded,State->Liquid,
 						Replace[Analytes]->{Link[targetantigen1]},
-						Replace[Composition]->{{Null,Link[targetantigen1]}}
+						Replace[Composition]->{{Null,Link[targetantigen1],Now}}
 					|>,
 					<|Object->testSample4,Status->Available,State->Solid,
 						Replace[Analytes]->{Link[targetantigen1]},
-						Replace[Composition]->{{Null,Link[targetantigen1]}},
+						Replace[Composition]->{{Null,Link[targetantigen1],Now}},
 						Volume->Null
 					|>,
 					<|Object->testAntigenSample1,
@@ -1444,19 +1444,19 @@ DefineTests[
 					|>,
 					<|Object->testSample1,Status->Available,State->Liquid,
 						Replace[Analytes]->{Link[targetantigen1]},
-						Replace[Composition]->{{Null,Link[targetantigen1]}}
+						Replace[Composition]->{{Null,Link[targetantigen1],Now}}
 					|>,
 					<|Object->testSample2,Status->Available,State->Liquid,
 						Replace[Analytes]->{Link[targetantigen1]},
-						Replace[Composition]->{{Null,Link[targetantigen1]}}
+						Replace[Composition]->{{Null,Link[targetantigen1],Now}}
 					|>,
 					<|Object->testSample3,Status->Discarded,State->Liquid,
 						Replace[Analytes]->{Link[targetantigen1]},
-						Replace[Composition]->{{Null,Link[targetantigen1]}}
+						Replace[Composition]->{{Null,Link[targetantigen1],Now}}
 					|>,
 					<|Object->testSample4,Status->Available,State->Solid,
 						Replace[Analytes]->{Link[targetantigen1]},
-						Replace[Composition]->{{Null,Link[targetantigen1]}},
+						Replace[Composition]->{{Null,Link[targetantigen1],Now}},
 						Volume->Null
 					|>,
 					<|Object->testAntigenSample1,

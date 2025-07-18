@@ -179,7 +179,8 @@ DefineOptions[resolveLabelSamplePrimitive,
                 RangeP[0 PercentConfluency, 100 PercentConfluency],
                 GreaterP[0 Cell / Liter],
                 GreaterP[0 CFU / Liter],
-                GreaterP[0 OD600]
+                GreaterP[0 OD600],
+                GreaterP[0 Colony]
               ],
               Units -> Alternatives[
                 {1, {Molar, {Micromolar, Millimolar, Molar}}},
@@ -198,7 +199,8 @@ DefineOptions[resolveLabelSamplePrimitive,
                   {1, {CFU, {CFU}}},
                   {-1, {Milliliter, {Liter, Milliliter, Microliter}}}
                 ],
-                {1, {OD600, {OD600}}}
+                {1, {OD600, {OD600}}},
+                {1, {Colony, {Colony}}}
               ]
             ],
             Widget[Type -> Enumeration, Pattern :> Alternatives[Null]]
@@ -221,6 +223,25 @@ DefineOptions[resolveLabelSamplePrimitive,
         Widget -> Widget[
           Type -> Enumeration,
           Pattern :> BooleanP
+        ]
+      },
+      (* Option to specify the Density of the new sample *)
+      {
+        OptionName -> Density,
+        Default -> Null,
+        Description -> "Indicates the known density of the sample being labeled at room temperature. By setting upfront, this allows ECL to skip measuring the density later.",
+        AllowNull -> True,
+        Category -> "General",
+        Widget -> Widget[
+          Type -> Quantity,
+          Pattern :> GreaterP[(0 * Gram) / Milliliter],
+          Units -> CompoundUnit[
+            {1, {Gram, {Kilogram, Gram}}},
+            Alternatives[
+              {-3, {Meter, {Centimeter, Meter}}},
+              {-1, {Liter, {Milliliter, Liter}}}
+            ]
+          ]
         ]
       },
 
@@ -341,7 +362,7 @@ resolveLabelSampleMethod[myLabels:ListableP[_String|Automatic], myOptions:Option
   (* Create a list of reasons why we need Preparation->Manual. *)
   manualRequirementStrings={
     If[!MatchQ[liquidHandlerIncompatibleContainers,{}],
-      "the scontainer containers "<>ToString[ObjectToString/@liquidHandlerIncompatibleContainers]<>" are not liquid handler compatible",
+      "the sample containers "<>ToString[ObjectToString/@liquidHandlerIncompatibleContainers]<>" are not liquid handler compatible",
       Nothing
     ],
     If[MatchQ[Lookup[safeOptions, Preparation], Manual],
@@ -398,14 +419,15 @@ resolveLabelSampleWorkCell[myLabels:ListableP[_String|Automatic], myOptions:Opti
 (* for both the manual and work cell versions. There are also exceptions in the framework code for it since it doesn't generate a protocol *)
 (* object. *)
 resolveLabelSamplePrimitive[myLabels:ListableP[_String],myOptions:OptionsPattern[]]:=Module[
-  {outputSpecification, output, gatherTests, listedLabels, listedOptions, safeOps, safeOpsTests,
+  {
+    outputSpecification, output, gatherTests, listedLabels, listedOptions, safeOps, safeOpsTests,
     validLengths, validLengthTests, expandedSafeOps, sampleOption, containerOption, modelOption,
     storageConditionOption, parentProtocolOption, allSampleObjects,
     allSampleModels, allContainerObjects, allContainerModels, allObjectEHSFields, allModelEHSFields,
     storageConditionModelFields, storageConditionModelPacket, sampleObjectFields, sampleObjectPacket, sampleModelFields, sampleModelPacket,
     containerObjectFields, containerObjectPacket, containerModelFields, containerModelPacket, downloadedCacheBall, cacheBall,
     resolvedOptionsResult, resolvedOptions, resolvedOptionsTests, simulation, unitOperationPacket, resourceTests,
-    productFields
+    productFields, safeOpsNamed, updatedSimulation, sanitizedLabels
   },
 
   (* Determine the requested return value from the function *)
@@ -419,16 +441,14 @@ resolveLabelSamplePrimitive[myLabels:ListableP[_String],myOptions:OptionsPattern
   {listedLabels, listedOptions}=removeLinks[ToList[myLabels], ToList[myOptions]];
 
   (* Call SafeOptions to make sure all options match pattern *)
-  {safeOps,safeOpsTests}=If[gatherTests,
+  {safeOpsNamed,safeOpsTests}=If[gatherTests,
     SafeOptions[resolveLabelSamplePrimitive,listedOptions,AutoCorrect->False,Output->{Result,Tests}],
     {SafeOptions[resolveLabelSamplePrimitive,listedOptions,AutoCorrect->False],{}}
   ];
-
-  (* Call ValidInputLengthsQ to make sure all options are the right length *)
-  {validLengths,validLengthTests}=If[gatherTests,
-    ValidInputLengthsQ[resolveLabelSamplePrimitive,{listedLabels},safeOps,Output->{Result,Tests}],
-    {ValidInputLengthsQ[resolveLabelSamplePrimitive,{listedLabels},safeOps],Null}
-  ];
+  simulation = Lookup[safeOpsNamed, Simulation, Null];
+  (* Replace all objects referenced by Name to ID *)
+  (* note that listedLabels won't ever have objects so this is a little silly but need to assign the output to something to make it return the safeOps (which I do care about)*)
+  {sanitizedLabels, safeOps} = sanitizeInputs[listedLabels, safeOpsNamed, Simulation -> simulation];
 
   (* If the specified options don't match their patterns or if option lengths are invalid return $Failed *)
   If[MatchQ[safeOps,$Failed],
@@ -439,6 +459,12 @@ resolveLabelSamplePrimitive[myLabels:ListableP[_String],myOptions:OptionsPattern
       Preview -> Null,
       Simulation -> Null
     }]
+  ];
+
+  (* Call ValidInputLengthsQ to make sure all options are the right length *)
+  {validLengths,validLengthTests}=If[gatherTests,
+    ValidInputLengthsQ[resolveLabelSamplePrimitive,{listedLabels},safeOps,Output->{Result,Tests}],
+    {ValidInputLengthsQ[resolveLabelSamplePrimitive,{listedLabels},safeOps],Null}
   ];
 
   (* If option lengths are invalid return $Failed (or the tests up to this point) *)
@@ -473,7 +499,7 @@ resolveLabelSamplePrimitive[myLabels:ListableP[_String],myOptions:OptionsPattern
   storageConditionModelFields={Name, Flammable, Acid, Base, Pyrophoric};
   sampleObjectFields={Name, State, Density, Container, Position, Model, Status, Volume, Mass, Density, Tablet, Sequence@@allObjectEHSFields};
   sampleObjectPacket=Packet@@sampleObjectFields;
-  sampleModelFields={Name, Autoclave, Products, KitProducts, MixedBatchProducts, Density, State, Tablet, TabletWeight, Fiber, FixedAmounts, Sequence@@allModelEHSFields};
+  sampleModelFields={Name, Autoclave, Products, KitProducts, MixedBatchProducts, Density, State, Tablet, SolidUnitWeight, Fiber, FixedAmounts, Composition, Living, Sequence@@allModelEHSFields};
   sampleModelPacket=Packet@@sampleModelFields;
   containerObjectFields={Name, Status, Contents, Model};
   containerObjectPacket=Packet@@containerObjectFields;
@@ -537,17 +563,17 @@ resolveLabelSamplePrimitive[myLabels:ListableP[_String],myOptions:OptionsPattern
       (*10*){Packet[SharingTeams[Notebooks, NotebooksFinanced, ViewOnly]]}
     },
     Cache->Lookup[expandedSafeOps,Cache,{}],
-    Simulation->Lookup[expandedSafeOps, Simulation, Null],
+    Simulation->simulation,
     Date->Now
   ]}],Download::FieldDoesntExist];
 
-  cacheBall=DeleteCases[downloadedCacheBall,Null];
+  cacheBall = Experiment`Private`FlattenCachePackets[{downloadedCacheBall, Lookup[expandedSafeOps,Cache,{}]}];
 
   (* Build the resolved options *)
   resolvedOptionsResult = Check[
     {resolvedOptions,resolvedOptionsTests} = If[gatherTests,
-      resolveLabelSamplePrimitiveOptions[listedLabels,expandedSafeOps,Cache->cacheBall,Simulation->Lookup[expandedSafeOps, Simulation, Null],Output->{Result,Tests}],
-      {resolveLabelSamplePrimitiveOptions[listedLabels,expandedSafeOps,Cache->cacheBall,Simulation->Lookup[expandedSafeOps, Simulation, Null]],{}}
+      resolveLabelSamplePrimitiveOptions[listedLabels,expandedSafeOps,Cache->cacheBall,Simulation->simulation,Output->{Result,Tests}],
+      {resolveLabelSamplePrimitiveOptions[listedLabels,expandedSafeOps,Cache->cacheBall,Simulation->simulation],{}}
     ],
     $Failed,
     {Error::InvalidInput,Error::InvalidOption}
@@ -555,13 +581,13 @@ resolveLabelSamplePrimitive[myLabels:ListableP[_String],myOptions:OptionsPattern
 
   (* Build packets with resources *)
   {unitOperationPacket, resourceTests}=If[gatherTests,
-    labelSamplePrimitiveResources[listedLabels,resolvedOptions,Cache->cacheBall,Simulation->Lookup[expandedSafeOps, Simulation, Null],Output->{Result,Tests}],
-    {labelSamplePrimitiveResources[listedLabels,resolvedOptions,Cache->cacheBall,Simulation->Lookup[expandedSafeOps, Simulation, Null]],{}}
+    labelSamplePrimitiveResources[listedLabels,resolvedOptions,Cache->cacheBall,Simulation->simulation,Output->{Result,Tests}],
+    {labelSamplePrimitiveResources[listedLabels,resolvedOptions,Cache->cacheBall,Simulation->simulation],{}}
   ];
 
   (* If we were asked for a simulation, also return a simulation. *)
-  simulation = If[MemberQ[output, Simulation],
-    simulateLabelSamplePrimitive[unitOperationPacket,listedLabels,resolvedOptions,Cache->cacheBall,Simulation->Lookup[expandedSafeOps, Simulation, Null],ParentProtocol->Lookup[safeOps, ParentProtocol, Null]],
+  updatedSimulation = If[MemberQ[output, Simulation],
+    simulateLabelSamplePrimitive[unitOperationPacket,listedLabels,resolvedOptions,Cache->cacheBall,Simulation->simulation,ParentProtocol->Lookup[safeOps, ParentProtocol, Null]],
     Null
   ];
 
@@ -569,7 +595,7 @@ resolveLabelSamplePrimitive[myLabels:ListableP[_String],myOptions:OptionsPattern
   outputSpecification/.{
     Result -> unitOperationPacket,
     Options -> resolvedOptions,
-    Simulation -> simulation,
+    Simulation -> updatedSimulation,
     Tests -> Flatten[{resolvedOptionsTests, resourceTests}]
   }
 ];
@@ -588,31 +614,30 @@ Error::LabelSampleDiscarded="The given sample(s), `1`, are already discarded. On
 Error::AmountSpecifiedAsCount="The sample(s), `1`, have their amount specified as a count, `2`, but these sample(s) are not marked as Tablet->True or Fiber->True. Please only specify the amount as a count if the sample is a tablet.";
 Error::RequiredAmountAndContainer="The sample(s), `1`, are specified as Model[Sample]s. If Model[Sample]s are specified, the Amount and Container options cannot be Null. Please do not set these options to Null and let them automatically resolve.";
 Error::ConflictingSafetyAndStorageCondition="The sample(s), `1`, will have the following safety fields set, Flammable->`2`, Acid->`3`, Base->`4`, Pyrophoric->`5`, set after the specified overrides. However, the sample(s) will also have the following storage conditions set, `6`. The given safety information does not match the give storage conditions. Please ensure that if you are overriding any safety fields to also change the storage condition of the samples.";
-Error::ConflictingTransportConditions="The sample(s), `1`, will have both the TransportWarmed and TransportChilled fields set after taking into account any override options and the default values of these fields from the Model[Sample]. Please ensure that only one of these transport conditions is turned on.";
-Warning::AutomaticSampleGiven="The Sample option wasn't specified at the current LabelSample primitive. The LabelSample primitive requires a Sample to be specified (either a new Model[Sample] to transfer into the container or an existing Object[Sample] already in the container). If you wish to label an empty container, use the LabelContainer primtiive instead. The Sample option will default to Model[Sample, \"Milli-Q water\"].";
+Warning::AutomaticSampleGiven="The Sample option wasn't specified at the current LabelSample primitive. The LabelSample primitive requires a Sample to be specified (either a new Model[Sample] to transfer into the container or an existing Object[Sample] already in the container). If you wish to label an empty container, use the LabelContainer primitive instead. The Sample option will default to Model[Sample, \"Milli-Q water\"].";
 Error::ExactNullAmount="The sample(s), `1`, have the ExactAmount option set to True but the Amount option set to Null. The ExactAmount option can only be set if the Amount option is set to a mass, volume, or count. Please change the value of the Amount option.";
 Error::ExactAmountToleranceRequiredTogether="The sample(s), `1`, have conflicting Tolerance and ExactAmount options. If a sample is required to have an ExactAmount, it is required that a Tolerance is specified. Likewise, if a Tolerance is specified, ExactAmount must be set to True. Please resolve this conflict to proceed.";
 Error::UnresolvableLabeledSampleAmount="The sample(s), `1`, need to have Volume/Mass specified in the LabelSample call or later in the SamplePreparation call. Otherwise, the amount of `1` to use cannot be determined.";
 Warning::LabeledSampleAmount="The sample(s), `1`, have Amount specified (`2`).  Amount should not be specified for Object[Sample]s, only for Model[Sample]s.  The specified amount will be ignored, and the full amount of the sample(s) will be selected instead.";
 
 resolveLabelSamplePrimitiveOptions[myLabels:{_String..}, myOptions:{_Rule..}, myResolutionOptions:OptionsPattern[]]:=Module[
-  {outputSpecification, output, gatherTests, cache, simulation, parentProtocol, parentProtocolTree, roundedVolumeOptions,precisionVolumeTests,
+  {
+    outputSpecification, output, gatherTests, cache, simulation, parentProtocol, parentProtocolTree, roundedVolumeOptions,precisionVolumeTests,
     roundedOptions,precisionMassTests, mapThreadFriendlyOptions, resolvedSamples, resolvedAmounts, resolvedContainers,
-    resolvedWells, resolvedExactAmounts, resolvedSampleModelPackets, transportWarmedAndChilledInvalidSamples, transportWarmedAndChilledInvalidOptions,
-    transportWarmedAndChilledTest, storageConditionSafetyFieldsMismatchResult, storageConditionSafetyFieldsInvalidOptions,
-    storageConditionSafetyFieldsTest, requiredAmountAndContainerResult, requiredAmountAndContainerInvalidOptions, requiredAmountAndContainerTest,
-    countSampleAndAmountResult, countSampleAndAmountInvalidOptions, countSampleAndAmountTest, discardedSamples,
-    discardedSampleInvalidOptions, discardedSampleTest, noSampleCurrentlyExistsResult, noSampleCurrentlyExistsInvalidOptions,
-    noSampleCurrentlyExistsTest, objectContainerMismatchResult, objectContainerMismatchInvalidOptions, objectContainerMismatchTest,
-    amountGreaterThanContainerMaxVolumeResult, amountGreaterThanContainerMaxVolumeInvalidOptions, amountGreaterThanContainerMaxVolumeTest,
-    solidVolumeNoDensitySamplesAndVolumes, solidVolumeNoDensityInvalidOptions, solidVolumeNoDensityTest, invalidOptions,
-    sampleModelsAndWithoutResolvedContainers, availableSamples, availableSampleContainerModelList, resolvedSampleModelContainers,
-    semiResolvedContainers, amountSampleWarningTests, resolvedPreparation, containerModelPackets, preparationResult,
-    allowedPreparation, preparationTest, resolvedTolerances, toleranceExactAmountConflictSamples, toleranceExactAmountOptions,
-    toleranceExactAmountTest, invalidExactAmountSamples, invalidExactAmountOptions, exactAmountTest, standardAmountPositions,
-    standardAmounts, roundedAmounts, mergedAmounts, finalRoundOptions, unresolvableAmountSamples, unresolvableAmountOptions,
-    unresolvableAmountTest, resolvedRequiredAmounts, amountSampleWarnings, otherStorageConditionErrorsResult, otherStorageConditionInvalidOptions,
-    otherStorageConditionTest
+    resolvedWells, resolvedExactAmounts, resolvedSampleModelPackets, storageConditionSafetyFieldsMismatchResult,
+    storageConditionSafetyFieldsInvalidOptions, storageConditionSafetyFieldsTest, requiredAmountAndContainerResult,
+    requiredAmountAndContainerInvalidOptions, requiredAmountAndContainerTest, countSampleAndAmountResult, countSampleAndAmountInvalidOptions,
+    countSampleAndAmountTest, discardedSamples, discardedSampleInvalidOptions, discardedSampleTest, noSampleCurrentlyExistsResult,
+    noSampleCurrentlyExistsInvalidOptions, noSampleCurrentlyExistsTest, objectContainerMismatchResult, objectContainerMismatchInvalidOptions,
+    objectContainerMismatchTest, amountGreaterThanContainerMaxVolumeResult, amountGreaterThanContainerMaxVolumeInvalidOptions,
+    amountGreaterThanContainerMaxVolumeTest, solidVolumeNoDensitySamplesAndVolumes, solidVolumeNoDensityInvalidOptions,
+    solidVolumeNoDensityTest, invalidOptions, sampleModelsAndWithoutResolvedContainers,
+    resolvedSampleModelContainers, semiResolvedContainers, amountSampleWarningTests, resolvedPreparation,
+    preparationResult, allowedPreparation, preparationTest, resolvedTolerances, toleranceExactAmountConflictSamples,
+    toleranceExactAmountOptions, toleranceExactAmountTest, invalidExactAmountSamples, invalidExactAmountOptions, exactAmountTest,
+    standardAmountPositions, standardAmounts, roundedAmounts, mergedAmounts, finalRoundOptions, unresolvableAmountSamples,
+    unresolvableAmountOptions, unresolvableAmountTest, resolvedRequiredAmounts, amountSampleWarnings, otherStorageConditionErrorsResult,
+    otherStorageConditionInvalidOptions, otherStorageConditionTest, specifiedDensity
   },
 
   (* Determine the requested output format of this function. *)
@@ -939,9 +964,9 @@ resolveLabelSamplePrimitiveOptions[myLabels:{_String..}, myOptions:{_Rule..}, my
             If[MatchQ[resolvedPreparation, Robotic],
               If[MatchQ[Max[resolvedAmount*1.1,$MicroWaterMaximum], GreaterP[50 Milliliter]],
                 Model[Container, Plate, "200mL Polypropylene Robotic Reservoir, non-sterile"],
-                PreferredContainer[Max[resolvedAmount*1.1,$MicroWaterMaximum], LiquidHandlerCompatible->True]
+                PreferredContainer[Max[resolvedAmount*1.1,$MicroWaterMaximum], LiquidHandlerCompatible->True, Cache -> cache, Simulation -> simulation]
               ],
-              PreferredContainer[Max[resolvedAmount*1.1,$MicroWaterMaximum]]
+              PreferredContainer[Max[resolvedAmount*1.1,$MicroWaterMaximum], Cache -> cache, Simulation -> simulation]
             ],
           True,
             Automatic
@@ -978,312 +1003,37 @@ resolveLabelSamplePrimitiveOptions[myLabels:{_String..}, myOptions:{_Rule..}, my
 
   (* If we still have containers that are not resolved, do a search for Model[Sample]s of these containers. *)
   (* NOTE: Above, we resolved the container option if we had Milli-Q water. Therefore, we should never do searches for Milli-Q water. *)
+  (* also going to add the specified density if they gave it since we'll use it below *)
+  specifiedDensity = Lookup[myOptions, Density];
   sampleModelsAndWithoutResolvedContainers=Cases[
-    Transpose[{resolvedSamples, resolvedAmounts, semiResolvedContainers, resolvedSampleModelPackets, Range[Length[resolvedSamples]]}],
-    {ObjectP[Model[Sample]], _, Automatic, _, _}
+    Transpose[{resolvedSamples, resolvedAmounts, semiResolvedContainers, resolvedSampleModelPackets, Range[Length[resolvedSamples]], specifiedDensity, resolvedExactAmounts, resolvedTolerances, Lookup[mapThreadFriendlyOptions, Sterile]}],
+    {ObjectP[Model[Sample]], _, Automatic, _, _, _, _, _, _}
   ];
 
-  availableSamples=If[Length[sampleModelsAndWithoutResolvedContainers]==0,
+  (* call helper to resolve a container for any Model[Sample] in the source *)
+  resolvedSampleModelContainers = If[Length[sampleModelsAndWithoutResolvedContainers] == 0,
     {},
-    Module[{allowedNotebooks, sampleInstancesLists, searchResults, reformattedSearchResults,
-      gatheredSearchResults, indexedSearchResults},
+    resolveModelSampleContainer[
+      (* list of Model[Sample]s *)
+      sampleModelsAndWithoutResolvedContainers[[All, 1]],
+      (* the amount in volume for each Model[Sample] *)
+      sampleModelsAndWithoutResolvedContainers[[All, 2]],
+      (* parent protocol *)
+      parentProtocol,
+      (* root protocol *)
+      Last[Flatten[{parentProtocolTree}], parentProtocol],
+      (* sterile booleans *)
+      sampleModelsAndWithoutResolvedContainers[[All, 9]],
+      (* resolved method *)
+      resolvedPreparation,
 
-      (* Calculate allowed notebooks based on sharing settings *)
-      allowedNotebooks=AllowedResourcePickingNotebooks[Protocol->parentProtocol,Cache->cache];
+      Density -> sampleModelsAndWithoutResolvedContainers[[All, 6]],
+      ExactAmount -> sampleModelsAndWithoutResolvedContainers[[All, 7]],
+      Tolerance -> sampleModelsAndWithoutResolvedContainers[[All, 8]],
 
-      (* Call the same function ResourcePicking uses to determine what we can pick *)
-      sampleInstancesLists=ModelInstances[
-        (* Requested models *)
-        sampleModelsAndWithoutResolvedContainers[[All,1]],
-        (* Requested amounts *)
-        sampleModelsAndWithoutResolvedContainers[[All,2]],
-        (* Container models - we will allow anything *)
-        ConstantArray[{},Length[sampleModelsAndWithoutResolvedContainers]],
-        (* All notebooks available to the customer *)
-        allowedNotebooks,
-        (* Get the root protocol if we have one - parentProtocolTree has extra levels of lists from download to remove *)
-        (* parentProtocol will be Null if not set *)
-        Last[Flatten[{parentProtocolTree}],parentProtocol],
-        (* 'Current protocol' - we don't have one since we are the current protocol *)
-        Null
-      ];
-
-      searchResults=Map[
-        Function[sampleInstances,
-          Module[{ownedInstances},
-            (* Get all the samples owned by the user *)
-            ownedInstances = Select[sampleInstances,Lookup[#,"UserOwned"]&];
-
-            (* If user owns no samples everything is fair game, otherwise look only at their samples *)
-            If[MatchQ[ownedInstances,{}],
-              Lookup[sampleInstances,"Value",{}],
-              Lookup[ownedInstances,"Value"]
-            ]
-          ]
-        ],
-        sampleInstancesLists
-      ];
-
-      (* Gather the search results together so they group with the correct input sample *)
-      indexedSearchResults=MapIndexed[{#1, #2} &, searchResults];
-      gatheredSearchResults=GatherBy[indexedSearchResults, Mod[Last[#], Length[sampleModelsAndWithoutResolvedContainers]] &];
-      reformattedSearchResults=Map[DeleteDuplicates@DeleteCases[Flatten[#], _Integer, {1}] &, gatheredSearchResults]
+      Cache -> cache,
+      Simulation -> simulation
     ]
-  ];
-
-  {availableSampleContainerModelList, containerModelPackets}=If[Length[sampleModelsAndWithoutResolvedContainers]==0,
-    {{},{}},
-    Module[{sampleContainerResult},
-      sampleContainerResult=Download[
-        availableSamples,
-        {
-          Container[Model],
-          Packet[Container[Model][{Footprint, MaxTemperature}]]
-        }
-      ];
-
-      {
-        sampleContainerResult[[All,All,1]],
-        Flatten[sampleContainerResult[[All,All,2]]]
-      }
-    ]
-  ];
-
-  (* For these container options that haven't been resolved yet, resolve them. *)
-  (* NOTE: This logic is the same in ExperimentTransfer. If you make changes, make sure to update ExperimentTransfer's resolver *)
-  (* as well. *)
-  (* NOTE: THIS LOGIC IS ALSO DUPLICATED IN THE EXPERIMENTTRANSFER RESOLVER. MAKE SURE THEY STAY IN SYNC!!!!  *)
-  (* ALSO WATCH OUT THAT THE EXPERIMENTETRANSFER RESOLVER RETURNS {SAMPLE,CONTAINER,AMOUNT} FROM THE MAPTHREAD *)
-  resolvedSampleModelContainers=MapThread[
-    Function[{sampleModel, amount, sampleModelPacket, availableSampleContainerModels},
-      Module[{resolvedModelSampleContainer,allProductObjects,allProductPackets,nonDeprecatedProductPackets,amountAsVolume},
-
-        (* Get all potential products in case we need them to resolve source container *)
-        allProductObjects=Cases[Flatten[Lookup[sampleModelPacket, {Products, KitProducts, MixedBatchProducts}]][Object], ObjectReferenceP[Object[Product]]];
-        allProductPackets=(fetchPacketFromCache[#, cache]&)/@allProductObjects;
-
-        (* Get the first product that is not deprecated. Favor Products > KitProducts > MixedBatchProducts. *)
-        nonDeprecatedProductPackets=Cases[
-          allProductPackets,
-          KeyValuePattern[Deprecated->(False|Null)]
-        ];
-
-        amountAsVolume=Which[
-          MatchQ[amount, VolumeP],
-            amount,
-          MatchQ[amount, MassP] && MatchQ[Lookup[sampleModelPacket, Density], DensityP],
-            amount/Lookup[sampleModelPacket, Density],
-          MatchQ[amount, MassP],
-            amount/Quantity[0.997`, ("Grams")/("Milliliters")],
-          MatchQ[amount, _Integer] && MatchQ[Lookup[sampleModelPacket, TabletWeight], MassP] && MatchQ[Lookup[sampleModelPacket, Density], DensityP],
-            (amount * Lookup[sampleModelPacket, TabletWeight])/Lookup[sampleModelPacket, Density],
-          MatchQ[amount, _Integer] && MatchQ[Lookup[sampleModelPacket, TabletWeight], MassP],
-            (amount * Lookup[sampleModelPacket, TabletWeight])/Quantity[0.997`, ("Grams")/("Milliliters")],
-          (* if we got here we're in an error state anyway so just having a volume ensures we don't trainwreck *)
-          True, 1 Milliliter
-        ];
-
-        (* Resolve the container for this Model[Sample]. *)
-        resolvedModelSampleContainer=Which[
-          And[
-            MatchQ[sampleModel[Object], ObjectReferenceP[Model[Sample,"id:8qZ1VWNmdLBD"]]],
-            MatchQ[amountAsVolume*1.1, GreaterP[50 Milliliter]],
-            MatchQ[resolvedPreparation, Robotic]
-          ],
-            Model[Container, Plate, "id:54n6evLWKqbG"],
-          And[
-            MatchQ[sampleModel[Object], ObjectP[List@@WaterModelP]],
-            MatchQ[resolvedPreparation, Robotic]
-          ],
-            If[MatchQ[Max[amountAsVolume*1.1,$MicroWaterMaximum], GreaterP[50 Milliliter]],
-              Model[Container, Plate, "200mL Polypropylene Robotic Reservoir, non-sterile"],
-              PreferredContainer[Max[amountAsVolume*1.1,$MicroWaterMaximum], LiquidHandlerCompatible->True]
-            ],
-
-          (* When requesting water, we always want to get an amount large enough that we get it from the purifier *)
-          (*Engine calls ExperimentTransfer to make amounts less than $MicroWaterMaximum so if we request less than that we'll get stuck in a requesting loop *)
-          (* Note this amount calculation is duplicated in resource creation in the resource packets function *)
-          MatchQ[sampleModel[Object], ObjectP[List@@WaterModelP]],
-            PreferredContainer[Max[amountAsVolume*1.1,$MicroWaterMaximum]],
-
-          (* If the user has samples in their inventory that fulfill this model with the requested amount, then pick the most common one. *)
-          (* NOTE: If we're in the liquid handler resolver, we have to pick a container that is okay on the liquid handler. *)
-          Length[availableSampleContainerModels]>0 && !MatchQ[resolvedPreparation, Robotic],
-            FirstOrDefault[Commonest[Download[availableSampleContainerModels, Object],1]],
-          Length[availableSampleContainerModels]>0 && MatchQ[resolvedPreparation, Robotic],
-            FirstOrDefault@Commonest[
-              Append[
-                (* Get all of our container models that have a compatible footprint with the liquid handler*)
-                (Lookup[#, Object]&)/@Cases[
-                  (fetchPacketFromCache[#, containerModelPackets]&)/@availableSampleContainerModels,
-                  KeyValuePattern[{Footprint->LiquidHandlerCompatibleFootprintP}]
-                ],
-                (* Fall back on preferred container if none of them work. *)
-                If[MatchQ[Max[amountAsVolume*1.1,$MicroWaterMaximum], GreaterP[50 Milliliter]],
-                  Model[Container, Plate, "200mL Polypropylene Robotic Reservoir, non-sterile"],
-                  PreferredContainer[Max[amountAsVolume*1.1,$MicroWaterMaximum], LiquidHandlerCompatible->True]
-                ]
-              ],
-              1
-            ],
-          (* Otherwise, we'll probably have to buy some. Pull out the DefaultContainerModel from the product. *)
-          (* If we're Robotic, make sure it's in a robotic compatible container. *)
-          MatchQ[nonDeprecatedProductPackets,{PacketP[]..}] && MatchQ[resolvedPreparation, Robotic],
-            Module[{potentialProductContainerModels},
-              (* Get the default container model from the product. *)
-              potentialProductContainerModels=Map[
-                Function[{productPacket},
-                  Which[
-                    MatchQ[Lookup[productPacket, DefaultContainerModel][Object], ObjectReferenceP[Model[Container]]],
-                      Lookup[productPacket, DefaultContainerModel],
-                    MatchQ[
-                      Lookup[
-                        FirstCase[
-                          Lookup[productPacket, KitComponents],
-                          KeyValuePattern[{ProductModel->ObjectP[sampleModel], DefaultContainerModel->ObjectP[Model[Container]]}],
-                          <||>
-                        ],
-                        DefaultContainerModel
-                      ],
-                      ObjectP[Model[Container]]
-                    ],
-                      Lookup[
-                        FirstCase[
-                          Lookup[productPacket, KitComponents],
-                          KeyValuePattern[{ProductModel->ObjectP[sampleModel], DefaultContainerModel->ObjectP[Model[Container]]}]
-                        ],
-                        DefaultContainerModel
-                      ],
-                    MatchQ[
-                      Lookup[
-                        FirstCase[
-                          Lookup[productPacket, MixedBatchComponents],
-                          KeyValuePattern[{ProductModel->ObjectP[sampleModel], DefaultContainerModel->ObjectP[Model[Container]]}],
-                          <||>
-                        ],
-                        DefaultContainerModel
-                      ],
-                      ObjectP[Model[Container]]
-                    ],
-                      Lookup[
-                        FirstCase[
-                          Lookup[productPacket, MixedBatchComponents],
-                          KeyValuePattern[{ProductModel->ObjectP[sampleModel], DefaultContainerModel->ObjectP[Model[Container]]}]
-                        ],
-                        DefaultContainerModel
-                      ],
-                    True,
-                      PreferredContainer[amountAsVolume*1.1]
-                  ]
-                ],
-                nonDeprecatedProductPackets
-              ];
-
-              If[MatchQ[resolvedPreparation, Robotic],
-                FirstCase[
-                  (fetchPacketFromCache[#, cache]&) /@ potentialProductContainerModels,
-                  KeyValuePattern[{Footprint -> LiquidHandlerCompatibleFootprintP}],
-                  (* note that we do NOT need to do Max[amountAsVolume * 1.1, $MicroWaterMaximum] here because we explicitly know we are NOT dealing with Water at this point *)
-                  If[MatchQ[amountAsVolume * 1.1, GreaterP[50 Milliliter]],
-                    Model[Container, Plate, "200mL Polypropylene Robotic Reservoir, non-sterile"],
-                    PreferredContainer[amountAsVolume * 1.1, LiquidHandlerCompatible -> True]
-                  ]
-                ],
-                FirstCase[potentialProductContainerModels, ObjectP[Model[Container]]]
-              ]
-            ],
-          (* Otherwise, any container is fine. *)
-          MatchQ[nonDeprecatedProductPackets,{PacketP[]..}],
-            Module[{productPacket, potentialProductContainerModel, potentialProductContainerModelMaxVolume},
-              (* Get the default container model from the product. *)
-              productPacket=First[nonDeprecatedProductPackets];
-
-              potentialProductContainerModel = Which[
-                MatchQ[Lookup[productPacket, DefaultContainerModel][Object], ObjectReferenceP[Model[Container]]],
-                Lookup[productPacket, DefaultContainerModel],
-                MatchQ[
-                  Lookup[
-                    FirstCase[
-                      Lookup[productPacket, KitComponents],
-                      KeyValuePattern[{ProductModel->ObjectP[sampleModel], DefaultContainerModel->ObjectP[Model[Container]]}],
-                      <||>
-                    ],
-                    DefaultContainerModel
-                  ],
-                  ObjectP[Model[Container]]
-                ],
-                Lookup[
-                  FirstCase[
-                    Lookup[productPacket, KitComponents],
-                    KeyValuePattern[{ProductModel->ObjectP[sampleModel], DefaultContainerModel->ObjectP[Model[Container]]}]
-                  ],
-                  DefaultContainerModel
-                ],
-                MatchQ[
-                  Lookup[
-                    FirstCase[
-                      Lookup[productPacket, MixedBatchComponents],
-                      KeyValuePattern[{ProductModel->ObjectP[sampleModel], DefaultContainerModel->ObjectP[Model[Container]]}],
-                      <||>
-                    ],
-                    DefaultContainerModel
-                  ],
-                  ObjectP[Model[Container]]
-                ],
-                Lookup[
-                  FirstCase[
-                    Lookup[productPacket, MixedBatchComponents],
-                    KeyValuePattern[{ProductModel->ObjectP[sampleModel], DefaultContainerModel->ObjectP[Model[Container]]}]
-                  ],
-                  DefaultContainerModel
-                ],
-                True,
-                PreferredContainer[amountAsVolume*1.1]
-              ];
-
-              potentialProductContainerModelMaxVolume = Lookup[fetchPacketFromCache[potentialProductContainerModel, cacheBall], MaxVolume, Null];
-
-              (* if we don't have MaxVolume, assume it is fine since we wither used PreferredContainer or Container somehow does not have MaxVolume (unlikely) *)
-              (* or if we don't have compatible units - weight or count would not work well for our next test *)
-              Which[
-                Or[
-                  NullQ[potentialProductContainerModelMaxVolume],
-                  !CompatibleUnitQ[potentialProductContainerModelMaxVolume, amountAsVolume]
-                ], potentialProductContainerModel,
-
-                (* we need more than what single container can hold -> we will have to consolidate for Resource, but we need a different container here *)
-                potentialProductContainerModelMaxVolume<amountAsVolume, PreferredContainer[amountAsVolume*1.1],
-
-                (* other cases should take what we have resolved *)
-                True, potentialProductContainerModel
-              ]
-            ],
-          (* if out source is Model of StockSolution with PrepareInResuspensionContainer, grab the appropriate container *)
-          MatchQ[sampleModel, ObjectP[Model[Sample, StockSolution]]]&&MatchQ[Lookup[sampleModelPacket, PrepareInResuspensionContainer, Null], True],
-            Download[First@Lookup[sampleModelPacket, PreferredContainers,{}], Object],
-
-          (* Otherwise, just fall back on the preferred container. *)
-          And[
-            MatchQ[amountAsVolume*1.1, GreaterP[50 Milliliter]],
-            MatchQ[resolvedPreparation, Robotic]
-          ],
-            Model[Container, Plate, "id:54n6evLWKqbG"],
-          MatchQ[resolvedPreparation, Robotic],
-            PreferredContainer[amountAsVolume*1.1, LiquidHandlerCompatible->True],
-          True,
-            PreferredContainer[amountAsVolume*1.1]
-        ];
-
-        (* Return information. *)
-        resolvedModelSampleContainer
-      ]
-    ],
-    {
-      sampleModelsAndWithoutResolvedContainers[[All,1]],
-      sampleModelsAndWithoutResolvedContainers[[All,2]],
-      sampleModelsAndWithoutResolvedContainers[[All,4]],
-      availableSampleContainerModelList
-    }
   ];
 
   (* Put these resolved containers into the larger list. *)
@@ -1297,67 +1047,6 @@ resolveLabelSamplePrimitiveOptions[myLabels:{_String..}, myOptions:{_Rule..}, my
       ]
     ],
     {resolvedSampleModelContainers, sampleModelsAndWithoutResolvedContainers[[All,5]]}
-  ];
-
-  (* 1) TransportWarmed and TransportChilled cannot both be set. *)
-  transportWarmedAndChilledInvalidSamples=MapThread[
-    Function[{sample, mapThreadOptions, sampleModelPacket},
-      Module[{transportWarmed, transportChilled},
-        (* Figure out what the transport warmed/chilled fields will be after the overrides: *)
-        transportWarmed=If[MatchQ[Lookup[mapThreadOptions, TransportWarmed], Except[Null]],
-          Lookup[mapThreadOptions, TransportWarmed],
-          Lookup[sampleModelPacket, TransportWarmed]
-        ];
-
-        transportChilled=If[MatchQ[Lookup[mapThreadOptions, TransportChilled], Except[Null]],
-          Lookup[mapThreadOptions, TransportChilled],
-          Lookup[sampleModelPacket, TransportChilled]
-        ];
-
-        If[MatchQ[transportChilled, True] && MatchQ[transportWarmed, Except[Null]],
-          sample,
-          Nothing
-        ]
-      ]
-    ],
-    {resolvedSamples, mapThreadFriendlyOptions, resolvedSampleModelPackets}
-  ];
-
-  (* If there are invalid options and we are throwing messages, throw an error message and keep track of our invalid options for Error::InvalidOption. *)
-  transportWarmedAndChilledInvalidOptions=If[Length[transportWarmedAndChilledInvalidSamples]>0&&!gatherTests,
-    Message[Error::ConflictingTransportConditions,ObjectToString[transportWarmedAndChilledInvalidSamples,Cache->cache]];
-    {Sample},
-
-    {}
-  ];
-
-  (* If we are gathering tests, create a test with the appropriate result. *)
-  transportWarmedAndChilledTest=If[gatherTests,
-    (* We're gathering tests. Create the appropriate tests. *)
-    Module[{passingInputs,passingInputsTest,nonPassingInputsTest},
-      (* Get the inputs that pass this test. *)
-      passingInputs=Complement[resolvedSamples,transportWarmedAndChilledInvalidSamples];
-
-      (* Create a test for the passing inputs. *)
-      passingInputsTest=If[Length[passingInputs]>0,
-        Test["The sample(s) "<>ObjectToString[passingInputs,Cache->cache]<>" do not have both the TransportWarmed and TransportChilled options set:",True,True],
-        Nothing
-      ];
-
-      (* Create a test for the non-passing inputs. *)
-      nonPassingInputsTest=If[Length[transportWarmedAndChilledInvalidSamples]>0,
-        Test["The sample(s) "<>ObjectToString[transportWarmedAndChilledInvalidSamples,Cache->cache]<>" do not have both the TransportWarmed and TransportChilled options set:",True,False],
-        Nothing
-      ];
-
-      (* Return our created tests. *)
-      {
-        passingInputsTest,
-        nonPassingInputsTest
-      }
-    ],
-    (* We aren't gathering tests. No tests to create. *)
-    {}
   ];
 
   (* 4) If given a Model[Sample], amount and container can't be Null. *)
@@ -1605,7 +1294,7 @@ resolveLabelSamplePrimitiveOptions[myLabels:{_String..}, myOptions:{_Rule..}, my
     MapThread[
       Function[{sample, mapThreadOptions, sampleModelPacket,amount},
         Module[{samplePacket,sampleVolume,flammable,acid,base,pyrophoric,flammableOverride,acidOverride,
-          baseOverride,pyrophoricOverride,anyOverrides,storageConditionModel,storageConditionModelPacket},
+          baseOverride,pyrophoricOverride,anyOverrides,storageConditionModel,storageConditionModelPacket, flammableOverrideWithColdStorage},
 
           (* Get the sample packet *)
           samplePacket=Which[
@@ -1671,6 +1360,18 @@ resolveLabelSamplePrimitiveOptions[myLabels:{_String..}, myOptions:{_Rule..}, my
           (* Get the model for the storage condition *)
           storageConditionModelPacket=Replace[fetchPacketFromCache[storageConditionModel, cache],Null-><||>,{0}];
 
+          (* We want to allow Flammable AND non-Flammable samples to be stored in DeepFreezer and CryogenicStorage conditions. *)
+          (* So we'll default flammableOverride to True to match those storage conditions if that is our storage condition. *)
+          flammableOverrideWithColdStorage = If[MatchQ[Lookup[storageConditionModelPacket, Object], ObjectP[
+            {
+              Model[StorageCondition, "id:xRO9n3BVOe3z"], (* Model[StorageCondition, "Deep Freezer"] *)
+              Model[StorageCondition, "id:6V0npvmE09vG"] (* Model[StorageCondition, "Cryogenic Storage"] *)
+            }
+          ]],
+            True,
+            flammableOverride
+          ];
+
           (* Save the sample info if the computed storage condition packet does not matches our hazard variables *)
           If[
             And[
@@ -1682,7 +1383,7 @@ resolveLabelSamplePrimitiveOptions[myLabels:{_String..}, myOptions:{_Rule..}, my
                 {
                   Lookup[storageConditionModelPacket, {Flammable, Acid, Base, Pyrophoric}]/.{False->Null},
                   {flammable, acid, base, pyrophoric}/.{False->Null},
-                  {flammableOverride,acidOverride,baseOverride,pyrophoricOverride}
+                  {flammableOverrideWithColdStorage,acidOverride,baseOverride,pyrophoricOverride}
                 }
               ]
             ],
@@ -1910,7 +1611,7 @@ resolveLabelSamplePrimitiveOptions[myLabels:{_String..}, myOptions:{_Rule..}, my
 
   (* 9) The amount requested cannot be above the maximum volume of the container given. *)
   amountGreaterThanContainerMaxVolumeResult=MapThread[
-    Function[{sample, containerList, amount, sampleModelPacket},
+    Function[{sample, containerList, amount, sampleModelPacket, densityOrNull},
       (* For each of our containers, see if there's an issue. *)
       Sequence@@Map[
         Function[{container},
@@ -1927,14 +1628,18 @@ resolveLabelSamplePrimitiveOptions[myLabels:{_String..}, myOptions:{_Rule..}, my
             amountAsVolume=Which[
               MatchQ[amount, VolumeP],
                 amount,
-              MatchQ[amount, MassP] && MatchQ[Lookup[sampleModelPacket, Density], DensityP],
+              MatchQ[amount, MassP] && MatchQ[densityOrNull, DensityP],
+                amount/densityOrNull,
+               MatchQ[amount, MassP] && MatchQ[Lookup[sampleModelPacket, Density], DensityP],
                 amount/Lookup[sampleModelPacket, Density],
               MatchQ[amount, MassP],
                 amount/Quantity[0.997`, ("Grams")/("Milliliters")],
-              MatchQ[amount, _Integer] && MatchQ[Lookup[sampleModelPacket, TabletWeight], MassP] && MatchQ[Lookup[sampleModelPacket, Density], DensityP],
-                (amount * Lookup[sampleModelPacket, TabletWeight])/Lookup[sampleModelPacket, Density],
-              MatchQ[amount, _Integer] && MatchQ[Lookup[sampleModelPacket, TabletWeight], MassP],
-                (amount * Lookup[sampleModelPacket, TabletWeight])/Quantity[0.997`, ("Grams")/("Milliliters")]
+              MatchQ[amount, _Integer] && MatchQ[Lookup[sampleModelPacket, SolidUnitWeight], MassP] && MatchQ[densityOrNull, DensityP],
+                (amount * Lookup[sampleModelPacket, SolidUnitWeight])/densityOrNull,
+              MatchQ[amount, _Integer] && MatchQ[Lookup[sampleModelPacket, SolidUnitWeight], MassP] && MatchQ[Lookup[sampleModelPacket, Density], DensityP],
+                (amount * Lookup[sampleModelPacket, SolidUnitWeight])/Lookup[sampleModelPacket, Density],
+              MatchQ[amount, _Integer] && MatchQ[Lookup[sampleModelPacket, SolidUnitWeight], MassP],
+                (amount * Lookup[sampleModelPacket, SolidUnitWeight])/Quantity[0.997`, ("Grams")/("Milliliters")]
             ];
 
             If[MatchQ[amountAsVolume, GreaterP[maxVolume]]&&!MatchQ[parentProtocol,ObjectP[Object[Protocol,StockSolution]]],
@@ -1946,7 +1651,7 @@ resolveLabelSamplePrimitiveOptions[myLabels:{_String..}, myOptions:{_Rule..}, my
         ToList[containerList]
       ]
     ],
-    {resolvedSamples, resolvedContainers, resolvedAmounts, resolvedSampleModelPackets}
+    {resolvedSamples, resolvedContainers, resolvedAmounts, resolvedSampleModelPackets, specifiedDensity}
   ];
 
   (* If there are invalid options and we are throwing messages, throw an error message and keep track of our invalid options for Error::InvalidOption. *)
@@ -2148,7 +1853,7 @@ resolveLabelSamplePrimitiveOptions[myLabels:{_String..}, myOptions:{_Rule..}, my
 
 
   (* 13) The Amount must be resolvable. *)
-  (*Scenerios in which we have made a wild and likely wrong guess:*)
+  (* Scenarios in which we have made a wild and likely wrong guess:*)
   (* if the sample is a Model and the required amount is All or {} and we are resolving the Amount, we cannot possibly get it right, we just default to some amount to finish the resolver *)
   unresolvableAmountSamples=MapThread[
     Function[{sample, requiredAmount, amount},
@@ -2230,7 +1935,6 @@ resolveLabelSamplePrimitiveOptions[myLabels:{_String..}, myOptions:{_Rule..}, my
 
   (* Throw Error::InvalidOption. *)
   invalidOptions=DeleteDuplicates@Flatten@{
-    transportWarmedAndChilledInvalidOptions,
     storageConditionSafetyFieldsInvalidOptions,
     requiredAmountAndContainerInvalidOptions,
     countSampleAndAmountInvalidOptions,
@@ -2271,7 +1975,6 @@ resolveLabelSamplePrimitiveOptions[myLabels:{_String..}, myOptions:{_Rule..}, my
     Tests -> {
       precisionVolumeTests,
       precisionMassTests,
-      transportWarmedAndChilledTest,
       storageConditionSafetyFieldsTest,
       requiredAmountAndContainerTest,
       countSampleAndAmountTest,
@@ -2315,7 +2018,7 @@ labelSamplePrimitiveResources[myLabels:{_String..},myResolvedOptions:{_Rule...},
 
   (* Create all of our sample resources. *)
   sampleResources=MapThread[
-    Function[{sample, amount, container, well, exactAmount, tolerance},
+    Function[{sample, amount, container, well, exactAmount, tolerance, containerLabel},
       Which[
         MatchQ[sample, ObjectP[Object[Sample]]],
           (* for Object[Sample]s we don't need to actually reserve the volume/mass/whatever *)
@@ -2327,7 +2030,7 @@ labelSamplePrimitiveResources[myLabels:{_String..},myResolvedOptions:{_Rule...},
           Resource[
             Sample->sample,
             Amount->Which[
-              MatchQ[sample, ObjectP[List @@ WaterModelP]] && Not[VolumeQ[amount]], 1 Milliliter, (* if we have to do this then we're already in an error state and this is just to prevent the resource system from trainwrecking *)
+              MatchQ[Download[sample, Object], WaterModelP] && Not[VolumeQ[amount]], 1 Milliliter, (* if we have to do this then we're already in an error state and this is just to prevent the resource system from trainwrecking *)
               MatchQ[amount, Null], 1 Gram, (* Mass will always work, no matter the state of the sample. *)
               True, amount
             ],
@@ -2342,6 +2045,8 @@ labelSamplePrimitiveResources[myLabels:{_String..},myResolvedOptions:{_Rule...},
               PreferredContainer[amount],
               container
             ],
+            Well -> well,
+            ContainerName -> (containerLabel /. {Null -> CreateUUID[]}),
             Name->CreateUUID[]
           ],
         MatchQ[sample, {_String, ObjectP[Object[Container]]}],
@@ -2380,7 +2085,8 @@ labelSamplePrimitiveResources[myLabels:{_String..},myResolvedOptions:{_Rule...},
       Lookup[myResolvedOptions, Container],
       Lookup[myResolvedOptions, Well],
       Lookup[myResolvedOptions, ExactAmount],
-      Lookup[myResolvedOptions, Tolerance]
+      Lookup[myResolvedOptions, Tolerance],
+      Lookup[myResolvedOptions, ContainerLabel]
     }
   ];
 
@@ -2450,7 +2156,8 @@ labelSamplePrimitiveResources[myLabels:{_String..},myResolvedOptions:{_Rule...},
 
 simulateLabelSamplePrimitive[myUnitOperationPacket:PacketP[],myLabels:{_String..},myResolvedOptions:{_Rule...},myResolutionOptions:OptionsPattern[simulateLabelSamplePrimitive]]:=Module[
   {cache, mapThreadFriendlyOptions, currentSimulation, samplePackets, allEHSOptions, indexMatchedSpecifiedEHSOptions,
-    ehsChangePackets, storageConditionPacketUpdates, labelToSampleLookup, finalLabelFieldLookup},
+    ehsChangePackets, storageConditionPacketUpdates, labelToSampleLookup, finalLabelFieldLookup, specifiedDensity,
+    densityPackets},
 
   (* Lookup our cache. *)
   cache=Lookup[ToList[myResolutionOptions], Cache, {}];
@@ -2480,6 +2187,18 @@ simulateLabelSamplePrimitive[myUnitOperationPacket:PacketP[],myLabels:{_String..
 
   (* Get the simulated objects of our samples. *)
   samplePackets=Download[Lookup[myUnitOperationPacket, Object], Packet[SampleLink[Container]], Simulation->currentSimulation];
+
+  (* make sure the density gets inherited in the simulated objects *)
+  specifiedDensity = Lookup[myResolvedOptions, Density];
+  densityPackets = MapThread[
+    If[NullQ[#2],
+      Nothing,
+      <|Object -> Lookup[#1, Object], Density -> #2|>
+    ]&,
+    {samplePackets, specifiedDensity}
+  ];
+
+  currentSimulation = UpdateSimulation[currentSimulation, Simulation[densityPackets]];
 
   (* Generate EHS override change packets. *)
   (* Change the SampleModel option into the Model option to pass down to generateChangePacket. *)

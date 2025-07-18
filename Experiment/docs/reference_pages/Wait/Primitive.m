@@ -40,5 +40,5 @@ DefineUsage[resolveWaitPrimitive,
       "ExperimentRoboticSamplePreparation",
       "Experiment"
     },
-    Author -> {"waseem.vali", "malav.desai", "thomas"}
+    Author -> {"malav.desai", "waseem.vali", "thomas"}
   }];

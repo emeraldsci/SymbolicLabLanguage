@@ -31,15 +31,32 @@ DefineUsage[PlotIRSpectroscopy,
             Pattern :> _Graphics
           }
         }
+      },
+      {
+		  Definition -> {"PlotIRSpectroscopy[protocol]", "plot"},
+		  Description -> "creates a 'plot' of the IR spectroscopy data found in the Data field of 'protocol'.",
+		  Inputs :> {
+		      {
+			      InputName -> "protocol",
+			      Description -> "The protocol object containing IR spectroscopy data objects.",
+			      Widget -> Alternatives[
+				      Widget[Type -> Object, Pattern :> ObjectP[Object[Protocol, IRSpectroscopy]]]
+			      ]
+		      }
+		  },
+		  Outputs :> {
+		      {
+			      OutputName -> "plot",
+			      Description -> "The figure generated from data found in the IR spectroscopy protocol.",
+			      Pattern :> ValidGraphicsP[]
+		      }
+		  }
       }
   	},
-		SeeAlso -> {
-			"ExperimentIRSpectroscopy",
-			"AnalyzePeaks"
-		},
-		Author -> {
-			"kevin.hou",
-			"brad"
-		}
+	SeeAlso -> {
+		"ExperimentIRSpectroscopy",
+		"AnalyzePeaks"
+	},
+	Author -> {"yanzhe.zhu", "kevin.hou", "brad"}
 	}
 ];

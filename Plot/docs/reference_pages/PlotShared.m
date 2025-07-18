@@ -66,11 +66,7 @@ DefineUsage[FindPlotRange,
 		"ListLinePlot",
 		"FullPlotRange"
 	},
-	Author -> {
-		"Jonathan",
-		"Ruben",
-		"robert"
-	}
+	Author -> {"dirk.schild", "Jonathan", "Ruben", "robert"}
 }];
 
 
@@ -133,9 +129,9 @@ DefineUsage[StructureForm,
 (*Strict testing stuff*)
 
 
-Authors[emeraldListLinePlotStrict]={"kevin.hou","amir.saadat","sebastian.bernasek","thomas","brad", "jenny"};
-Authors[emeraldDateListPlotStrict]={"kevin.hou","amir.saadat","sebastian.bernasek","thomas","brad", "jenny"};
-Authors[emeraldBarChartStrict]={"kevin.hou","amir.saadat","sebastian.bernasek","thomas","brad", "jenny"};
-Authors[emeraldPieChartStrict]={"kevin.hou","amir.saadat","sebastian.bernasek","thomas","brad", "jenny"};
-Authors[emeraldHistogramStrict]={"kevin.hou","amir.saadat","sebastian.bernasek","thomas","brad", "jenny"};
-Authors[emeraldBoxWhiskerChartStrict]={"kevin.hou","amir.saadat","sebastian.bernasek","thomas","brad", "jenny"};
+Authors[emeraldListLinePlotStrict]={"scicomp", "kevin.hou","amir.saadat","sebastian.bernasek","thomas","brad", "jenny"};
+Authors[emeraldDateListPlotStrict]={"scicomp", "kevin.hou","amir.saadat","sebastian.bernasek","thomas","brad", "jenny"};
+Authors[emeraldBarChartStrict]={"scicomp", "kevin.hou","amir.saadat","sebastian.bernasek","thomas","brad", "jenny"};
+Authors[emeraldPieChartStrict]={"scicomp", "kevin.hou","amir.saadat","sebastian.bernasek","thomas","brad", "jenny"};
+Authors[emeraldHistogramStrict]={"scicomp", "kevin.hou","amir.saadat","sebastian.bernasek","thomas","brad", "jenny"};
+Authors[emeraldBoxWhiskerChartStrict]={"scicomp", "kevin.hou","amir.saadat","sebastian.bernasek","thomas","brad", "jenny"};

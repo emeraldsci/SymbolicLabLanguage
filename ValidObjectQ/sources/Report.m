@@ -182,6 +182,112 @@ validReportShippingPricesQTests[packet:PacketP[Object[Report,ShippingPrices]]]:=
 	NotNullFieldTest[packet,{Source,Shipper,ShippingSpeed,BoxModel,ShippingPrices}]
 };
 
+(* ::Subsection::Closed:: *)
+(*validReportCertificateQTests*)
+
+validReportCertificateQTests[packet:PacketP[Object[Report,Certificate]]]:= {
+	(* not null general fields*)
+	NotNullFieldTest[packet,{Document, CertificationSource}],
+
+	(*Ensure that only one object exists for each Certificate document file*)
+	UniqueFieldTest[packet,Document],
+
+	(* Ensure that the batch number is unique for the certificate *)
+	UniqueFieldTest[packet, BatchNumber],
+
+	(* If the object is an item or part then batch number is required *)
+	Test[
+		If[NotNullQ[(ItemCertified|PartCertified)],
+			NotNullQ[BatchNumber],
+			True
+		]
+	],
+
+	(** All receiving batch information fields required by the certified object's model are populated **)
+		(* Object[Item] *)
+	RequiredTogetherTest[
+		SafeEvaluate[{Download[Lookup[packet,ItemCertified],Model[ReceivingBatchInformation]]},
+			Download[Lookup[packet,ItemCertified],Model[ReceivingBatchInformation]]
+		]
+	],
+		(* Object[Part] *)
+	RequiredTogetherTest[
+		SafeEvaluate[{Download[Lookup[packet,PartCertified],Model[ReceivingBatchInformation]]},
+			Download[Lookup[packet,PartCertified],Model[ReceivingBatchInformation]]
+		]
+	]
+};
+
+(* ::Subsection::Closed:: *)
+(*validReportCertificateAnalysisQTests*)
+
+validReportCertificateAnalysisQTests[packet:PacketP[Object[Report,Certificate,Analysis]]]:={
+	(* not null general fields*)
+	NotNullFieldTest[packet,{MaterialCertified, BatchNumber}],
+
+	(* Ensure that Material Certified is unique *)
+	UniqueFieldTest[MaterialCertified],
+
+	(* Don't use Certificate of Analysis for instruments or sensors*)
+	NullFieldTest[packet,{InstrumentCertified, SensorCertified}],
+
+	(* Only one object type should be informed *)
+	UniquelyInformedTest[packet,{ItemCertified, PartCertified, MaterialCertified}],
+
+	(* If MaterialCertified is Null then DownstreamSamplesTransferred should also be Null *)
+	Test[
+		If[NullQ[Lookup[packet,MaterialCertified]],
+			NullQ[Lookup[packet,DownstreamSamplesTransferred]],
+		True
+		]
+	],
+
+	(** All receiving batch information fields required by the certified sample's model are populated **)
+	(* Object[Sample] *)
+	RequiredTogetherTest[
+		SafeEvaluate[{Download[Lookup[packet,MaterialCertified],Model[ReceivingBatchInformation]]},
+		Download[Lookup[packet,MaterialCertified],Model[ReceivingBatchInformation]]
+		]
+	]
+};
+
+(* ::Subsection::Closed:: *)
+(*validReportCertificateCalibrationQTests*)
+
+validReportCertificateCalibrationQTests[packet:PacketP[Object[Report,Certificate,Calibration]]]:={
+
+	(* ModelNumber should be populated (this field can be used for either model or part numbers). *)
+	NotNullFieldTest[ModelNumber],
+
+	(* Ensure only one object type field is populated *)
+	UniquelyInformedTest[packet,{ItemCertified, PartCertified, SensorCertified, InstrumentCertified}],
+
+	(* If an instrument was calibrated, its serial and model number should be included. *)
+	RequiredTogetherTest[packet,{InstrumentCertified, SerialNumber, ModelNumber}],
+
+	(* Either batch number or serial number should be informed. *)
+	AnyInformedTest[packet,{BatchNumber,SerialNumber}],
+
+	(** All receiving batch information fields required by the certified sample's model are populated **)
+	(* Object[Sensor] *)
+	RequiredTogetherTest[
+		SafeEvaluate[{Download[Lookup[packet,SensorCertified],Model[ReceivingBatchInformation]]},
+			Download[Lookup[packet,SensorCertified],Model[ReceivingBatchInformation]]
+		]
+	]
+};
+
+(* ::Subsection::Closed:: *)
+(*validReportCertificateInstrumentValidationQTests*)
+
+validReportCertificateInstrumentValidationQTests[packet:PacketP[Object[Report,Certificate,InstrumentValidation]]]:={
+
+	(* Only an instrument should be certified. Batch number should be Null *)
+	NullFieldTest[packet,{ItemCertified,PartCertified,BatchNumber}],
+
+	(* The Instrument's model and serial number should be populated *)
+	NotNullFieldTest[packet, {SerialNumber,ModelNumber}]
+};
 
 (* ::Subsection::Closed:: *)
 (*Test Registration *)
@@ -194,3 +300,7 @@ registerValidQTestFunction[Object[Report, Locations],validReportLocationsQTests]
 registerValidQTestFunction[Object[Report, Receipt],validReportReceiptQTests];
 registerValidQTestFunction[Object[Report, QueueTimes],validReportQueueTimesQTests];
 registerValidQTestFunction[Object[Report, ShippingPrices],validReportShippingPricesQTests];
+registerValidQTestFunction[Object[Report, Certificate,Analysis],validReportCertificateQTests];
+registerValidQTestFunction[Object[Report, Certificate,Analysis],validReportCertificateAnalysisQTests];
+registerValidQTestFunction[Object[Report, Certificate,Analysis],validReportCertificateCalibrationQTests];
+registerValidQTestFunction[Object[Report, Certificate,Analysis],validReportCertificateInstrumentValidationQTests];

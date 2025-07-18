@@ -1706,7 +1706,8 @@ DefineTests[ValidStoreSamplesQ,
                 Model[StorageCondition, "Refrigerator"],
                 Model[StorageCondition, "Ambient Storage"],
                 Model[StorageCondition, "id:N80DNj1r04jW"]
-            }
+            },
+            ExpirationDate -> Now + 6 Month
         ];
     ],
     SymbolTearDown :> {
@@ -2043,29 +2044,29 @@ DefineTests[DiscardSamples,
         ],
         Example[{Options, DiscardContainer, "Indicate that the container of a fluid sample should be thrown out:"},
             DiscardSamples[Object[Sample, "Water in Glass Bottle to Dispose for DiscardSamples tests" <> $SessionUUID], DiscardContainer -> True];
-            Download[Object[Sample, "Water in Glass Bottle to Dispose for DiscardSamples tests" <> $SessionUUID], {Container[AwaitingDisposal], Container[Reusable], Container[Model][Reusability]}],
+            Download[Object[Sample, "Water in Glass Bottle to Dispose for DiscardSamples tests" <> $SessionUUID], {Container[AwaitingDisposal], Container[Reusable], Container[Model][Reusable]}],
             {True, False, True}
         ],
         Example[{Options, DiscardContainer, "Normally, if a container is marked as reusable in its Model, discarding it will direct it to be dishwashed and restocked:"},
             DiscardSamples[Object[Container, Vessel, "250mL Glass Bottle to Dispose for DiscardSamples tests" <> $SessionUUID]];
-            Download[Object[Container, Vessel, "250mL Glass Bottle to Dispose for DiscardSamples tests" <> $SessionUUID], {AwaitingDisposal, Reusable, Model[Reusability]}],
+            Download[Object[Container, Vessel, "250mL Glass Bottle to Dispose for DiscardSamples tests" <> $SessionUUID], {AwaitingDisposal, Reusable, Model[Reusable]}],
             {True, True, True}
         ],
         Example[{Options, DiscardContainer, "Set DiscardContainer to True to indicate that a normally reusable container should no longer be considered reusable, and be thrown out instead of dishwashed:"},
             DiscardSamples[Object[Container, Vessel, "250mL Glass Bottle to Dispose for DiscardSamples tests" <> $SessionUUID], DiscardContainer -> True];
-            Download[Object[Container, Vessel, "250mL Glass Bottle to Dispose for DiscardSamples tests" <> $SessionUUID], {AwaitingDisposal, Reusable, Model[Reusability]}],
+            Download[Object[Container, Vessel, "250mL Glass Bottle to Dispose for DiscardSamples tests" <> $SessionUUID], {AwaitingDisposal, Reusable, Model[Reusable]}],
             {True, False, True}
         ],
         Example[{Options, DiscardContainer, "If a container is marked as non-reusable, discarding it will direct it to be thrown out:"},
             {
-                Download[Object[Container, Vessel, "2mL Tube to Dispose for DiscardSamples tests" <> $SessionUUID], Model[Reusability]],
+                Download[Object[Container, Vessel, "2mL Tube to Dispose for DiscardSamples tests" <> $SessionUUID], Model[Reusable]],
                 DiscardSamples[Object[Container, Vessel, "2mL Tube to Dispose for DiscardSamples tests" <> $SessionUUID]]
             },
             {False, {ObjectReferenceP[Object[Container, Vessel, "2mL Tube to Dispose for DiscardSamples tests" <> $SessionUUID]], ObjectReferenceP[Object[Sample, "Water Sample to Dispose for DiscardSamples tests" <> $SessionUUID]]}}
         ],
         Example[{Options, DiscardContainer, "Non-reusable containers must always be thrown out; DiscardContainer cannot be set to False:"},
             {
-                Download[Object[Container, Vessel, "2mL Tube to Dispose for DiscardSamples tests" <> $SessionUUID], Model[Reusability]],
+                Download[Object[Container, Vessel, "2mL Tube to Dispose for DiscardSamples tests" <> $SessionUUID], Model[Reusable]],
                 DiscardSamples[Object[Container, Vessel, "2mL Tube to Dispose for DiscardSamples tests" <> $SessionUUID], DiscardContainer -> False]
             },
             {False, $Failed},
@@ -2364,14 +2365,14 @@ DefineTests[DiscardSamplesOptions,
         ],
         Example[{Options, DiscardContainer, "Returns all options for: If a container is marked as non-reusable, discarding it will direct it to be thrown out:"},
             {
-                Download[Object[Container, Vessel, "2mL Tube to Dispose for DiscardSamplesOptions tests" <> $SessionUUID], Model[Reusability]],
+                Download[Object[Container, Vessel, "2mL Tube to Dispose for DiscardSamplesOptions tests" <> $SessionUUID], Model[Reusable]],
                 DiscardSamplesOptions[Object[Container, Vessel, "2mL Tube to Dispose for DiscardSamplesOptions tests" <> $SessionUUID], OutputFormat -> List]
             },
             {False, {DiscardContainer -> True}}
         ],
         Example[{Options, DiscardContainer, "Returns all options for: Non-reusable containers must always be thrown out; DiscardContainer cannot be set to False:"},
             {
-                Download[Object[Container, Vessel, "2mL Tube to Dispose for DiscardSamplesOptions tests" <> $SessionUUID], Model[Reusability]],
+                Download[Object[Container, Vessel, "2mL Tube to Dispose for DiscardSamplesOptions tests" <> $SessionUUID], Model[Reusable]],
                 DiscardSamplesOptions[Object[Container, Vessel, "2mL Tube to Dispose for DiscardSamplesOptions tests" <> $SessionUUID], DiscardContainer -> False, OutputFormat -> List]
             },
             {False, {DiscardContainer -> False}},
@@ -2645,14 +2646,14 @@ DefineTests[DiscardSamplesPreview,
         ],
         Example[{Options, DiscardContainer, "Returns Preview for: If a container is marked as non-reusable, discarding it will direct it to be thrown out:"},
             {
-                Download[Object[Container, Vessel, "2mL Tube to Dispose for DiscardSamplesPreview tests" <> $SessionUUID], Model[Reusability]],
+                Download[Object[Container, Vessel, "2mL Tube to Dispose for DiscardSamplesPreview tests" <> $SessionUUID], Model[Reusable]],
                 DiscardSamplesPreview[Object[Container, Vessel, "2mL Tube to Dispose for DiscardSamplesPreview tests" <> $SessionUUID]]
             },
             {False, Null}
         ],
         Example[{Options, DiscardContainer, "Returns Preview for: Non-reusable containers must always be thrown out; DiscardContainer cannot be set to False:"},
             {
-                Download[Object[Container, Vessel, "2mL Tube to Dispose for DiscardSamplesPreview tests" <> $SessionUUID], Model[Reusability]],
+                Download[Object[Container, Vessel, "2mL Tube to Dispose for DiscardSamplesPreview tests" <> $SessionUUID], Model[Reusable]],
                 DiscardSamplesPreview[Object[Container, Vessel, "2mL Tube to Dispose for DiscardSamplesPreview tests" <> $SessionUUID], DiscardContainer -> False]
             },
             {False, Null},
@@ -2924,7 +2925,7 @@ DefineTests[ValidDiscardSamplesQ,
         ],
         Example[{Options, Verbose, "Check the validity of the DiscardSamples call if Non-reusable containers are requested to be thrown out and indicate only the failing tests with the Verbose option:"},
             {
-                Download[Object[Container, Vessel, "2mL Tube to Dispose for ValidDiscardSamplesQ tests" <> $SessionUUID], Model[Reusability]],
+                Download[Object[Container, Vessel, "2mL Tube to Dispose for ValidDiscardSamplesQ tests" <> $SessionUUID], Model[Reusable]],
                 ValidDiscardSamplesQ[Object[Container, Vessel, "2mL Tube to Dispose for ValidDiscardSamplesQ tests" <> $SessionUUID], DiscardContainer -> False, Verbose -> Failures]
             },
             {False, False},
@@ -2944,14 +2945,14 @@ DefineTests[ValidDiscardSamplesQ,
         ],
         Example[{Options, DiscardContainer, "Check the validity of the DiscardSamples call to: If a container is marked as non-reusable, discarding it will direct it to be thrown out:"},
             {
-                Download[Object[Container, Vessel, "2mL Tube to Dispose for ValidDiscardSamplesQ tests" <> $SessionUUID], Model[Reusability]],
+                Download[Object[Container, Vessel, "2mL Tube to Dispose for ValidDiscardSamplesQ tests" <> $SessionUUID], Model[Reusable]],
                 ValidDiscardSamplesQ[Object[Container, Vessel, "2mL Tube to Dispose for ValidDiscardSamplesQ tests" <> $SessionUUID]]
             },
             {False, True}
         ],
         Example[{Options, DiscardContainer, "Check the validity of the DiscardSamples call if Non-reusable containers must always be thrown out; DiscardContainer cannot be set to False:"},
             {
-                Download[Object[Container, Vessel, "2mL Tube to Dispose for ValidDiscardSamplesQ tests" <> $SessionUUID], Model[Reusability]],
+                Download[Object[Container, Vessel, "2mL Tube to Dispose for ValidDiscardSamplesQ tests" <> $SessionUUID], Model[Reusable]],
                 ValidDiscardSamplesQ[Object[Container, Vessel, "2mL Tube to Dispose for ValidDiscardSamplesQ tests" <> $SessionUUID], DiscardContainer -> False]
             },
             {False, False}
@@ -3382,7 +3383,7 @@ DefineTests[CancelDiscardSamples,
                     {"A1", testContainers[[1]]},
                     {"A1", testContainers[[2]]},
                     {"A1", testContainers[[3]]},
-                    {"A1", testContainers[[3]]},
+                    {"A2", testContainers[[3]]},
                     {"A1", testContainers[[4]]}
                 },
                 Name -> {
@@ -3637,7 +3638,7 @@ DefineTests[CancelDiscardSamplesOptions,
                     {"A1", testContainers[[1]]},
                     {"A1", testContainers[[2]]},
                     {"A1", testContainers[[3]]},
-                    {"A1", testContainers[[3]]},
+                    {"A2", testContainers[[3]]},
                     {"A1", testContainers[[4]]}
                 },
                 Name -> {
@@ -3883,7 +3884,7 @@ DefineTests[CancelDiscardSamplesPreview,
                     {"A1", testContainers[[1]]},
                     {"A1", testContainers[[2]]},
                     {"A1", testContainers[[3]]},
-                    {"A1", testContainers[[3]]},
+                    {"A2", testContainers[[3]]},
                     {"A1", testContainers[[4]]}
                 },
                 Name -> {
@@ -4155,7 +4156,7 @@ DefineTests[ValidCancelDiscardSamplesQ,
                     {"A1", testContainers[[1]]},
                     {"A1", testContainers[[2]]},
                     {"A1", testContainers[[3]]},
-                    {"A1", testContainers[[3]]},
+                    {"A2", testContainers[[3]]},
                     {"A1", testContainers[[4]]}
                 },
                 Name -> {
@@ -4433,7 +4434,7 @@ DefineTests[ShipBetweenSites,
             {{LinkP[Model[Container, Box]], LinkP[Model[Container, Box]]}},
             Variables :> {transactions}
         ],
-        Example[{Additional, "Any sample containers that are too large to fit into any bag will not get a secondary container. MaintenanceShipping will give a message later:"},
+        Example[{Additional, "Any sample containers that are too large to fit into any bag cause us to throw an error and fail:"},
             transactions = ShipBetweenSites[
                 {
                     Object[Sample, "Test StockSolution Sample for ShipBetweenSites (in large container 1)" <> $SessionUUID],
@@ -4442,9 +4443,9 @@ DefineTests[ShipBetweenSites,
                 },
                 Object[Container, Site, "Test Site for ShipBetweenSites (1)" <> $SessionUUID],
                 ColdPacking -> Null
-            ];
-            Download[transactions, SecondaryContainers],
-            {{LinkP[Model[Container, Bag, "id:aXRlGn6RqLvO"]]}},
+            ],
+            $Failed,
+			Messages :> {Error::NoAvailableSecondaryContainers},
             Variables :> {transactions}
         ],
         Example[{Additional, "If any sample is too large to fit into the largest stocked box, no shipping container will be populated. MaintenanceShipping will give a message later:"},
@@ -4483,16 +4484,15 @@ DefineTests[ShipBetweenSites,
         (* -------------- *)
         (* -- Messages -- *)
         (* -------------- *)
-
-        Example[{Messages, "EmptyContainers", "If an input container is empty, give a message and return Failed:"},
-            transactions = ShipBetweenSites[
-                {Object[Container, Plate, "Test plate with no contents for ShipBetweenSites" <> $SessionUUID]},
-                Object[Container, Site, "Test Site for ShipBetweenSites (1)" <> $SessionUUID]
-            ],
-            $Failed,
-            Variables :> {transactions},
-            Messages :> {Error::EmptyContainers}
-        ],
+		Example[{Messages, "EmptyContainers", "If an input container is empty, give a message and return Failed:"},
+			transactions = ShipBetweenSites[
+				{Object[Container, Plate, "Test plate with no contents for ShipBetweenSites" <> $SessionUUID]},
+				Object[Container, Site, "Test Site for ShipBetweenSites (1)" <> $SessionUUID]
+			],
+			$Failed,
+			Variables :> {transactions},
+			Messages :> {Error::EmptyContainers}
+		],
         Example[{Messages, "ContainersIncludeAdditionalSamples", "If the sample shares a container with other samples, give a warning that the samples will be transferred to separate containers:"},
             transactions = ShipBetweenSites[
                 {Object[Sample, "Test Oligo Sample for ShipBetweenSites (1)" <> $SessionUUID]},
@@ -4583,6 +4583,35 @@ DefineTests[ShipBetweenSites,
             $Failed,
             Messages :> {Error::NotShippable}
         ],
+
+		Example[{Messages, "HazardousSamplesForShipping", "If the input is hazardous for shipping, give a message and return $Failed:"},
+			ShipBetweenSites[
+				{
+					Object[Sample, "Test Oligo Sample for ShipBetweenSites (1)" <> $SessionUUID],
+					Object[Sample, "Test Oligo Sample for ShipBetweenSites (2)" <> $SessionUUID],
+					Object[Item, Column, "Test Column Sample for ShipBetweenSites (1)" <> $SessionUUID]
+				},
+				Object[Container, Site, "Test Site for ShipBetweenSites (1)" <> $SessionUUID]
+			],
+			$Failed,
+			Messages :> {Error::HazardousSamplesForShipping},
+			SetUp :> (Upload[<|Object -> Object[Sample, "Test Oligo Sample for ShipBetweenSites (1)" <> $SessionUUID], Pyrophoric -> True|>]),
+			TearDown :> (Upload[<|Object -> Object[Sample, "Test Oligo Sample for ShipBetweenSites (1)" <> $SessionUUID], Pyrophoric -> Null|>])
+		],
+
+		Example[{Additional, "If the input is hazardous but it's less than the designated amount, do not throw an error:"},
+			ShipBetweenSites[
+				{
+					Object[Sample, "Test Oligo Sample for ShipBetweenSites (1)" <> $SessionUUID],
+					Object[Sample, "Test Oligo Sample for ShipBetweenSites (2)" <> $SessionUUID],
+					Object[Item, Column, "Test Column Sample for ShipBetweenSites (1)" <> $SessionUUID]
+				},
+				Object[Container, Site, "Test Site for ShipBetweenSites (1)" <> $SessionUUID]
+			],
+			{ObjectP[Object[Transaction, SiteToSite]], ObjectP[Object[Transaction, SiteToSite]]},
+			SetUp :> (Upload[<|Object -> Object[Sample, "Test Oligo Sample for ShipBetweenSites (1)" <> $SessionUUID], Flammable -> True|>]),
+			TearDown :> (Upload[<|Object -> Object[Sample, "Test Oligo Sample for ShipBetweenSites (1)" <> $SessionUUID], Flammable -> Null|>])
+		],
 
         (* ------------- *)
         (* -- Options -- *)
@@ -5896,7 +5925,7 @@ DefineTests[ShipBetweenSites,
                 Output -> Options
             ];
             Lookup[options, DestinationWell],
-            "A2",
+						{"A2"},
             Variables :> {options}
         ],
         Example[{Options, BufferDilutionFactor, "The dilution factor by which the concentrated buffer should be diluted by the BufferDiluent; the diluted version of the ConcentratedBuffer will then be added to any aliquot samples that require dilution, where the volume of this buffer added is the difference between the AliquotAmount and the total AssayVolume:"},
@@ -5929,7 +5958,63 @@ DefineTests[ShipBetweenSites,
             Lookup[options, ConcentratedBuffer],
             ObjectP[Model[Sample, StockSolution, "10x UV buffer"]],
             Variables :> {options}
-        ]
+        ],
+		Example[{Options, Fragile, "If Fragile field is not informed in the container model, Fragile option will auto resolve based on the container material:"},
+			options = ShipBetweenSites[
+				Object[Sample, "Test StockSolution Sample for ShipBetweenSites (1)" <> $SessionUUID],
+				Object[Container, Site, "Test Site for ShipBetweenSites (1)" <> $SessionUUID],
+				Output -> Options
+			];
+			Lookup[options, Fragile],
+			False,
+			Variables :> {options}
+		],
+		Example[{Options, Fragile, "If Fragile option is specified, it will be inherited:"},
+			options = ShipBetweenSites[
+				Object[Sample, "Test StockSolution Sample for ShipBetweenSites (1)" <> $SessionUUID],
+				Object[Container, Site, "Test Site for ShipBetweenSites (1)" <> $SessionUUID],
+				Fragile -> True,
+				Output -> Options
+			];
+			Lookup[options, Fragile],
+			True,
+			Variables :> {options}
+		],
+		Example[{Options, Fragile, "ShipToUser automatically resolves Fragile option from the sample containers:"},
+			options = ShipBetweenSites[
+				{
+					Object[Sample, "Test StockSolution Sample for ShipBetweenSites (1)" <> $SessionUUID],
+					Object[Sample, "Test Oligo Sample for ShipBetweenSites (1)" <> $SessionUUID],
+					Object[Sample, "Test Oligo Sample for ShipBetweenSites (2)" <> $SessionUUID]
+				},
+				Object[Container, Site, "Test Site for ShipBetweenSites (1)" <> $SessionUUID],
+				Output -> Options
+			];
+			Lookup[options, Fragile],
+			{False, True, True},
+			Variables :> {options}
+		],
+		Example[{Options, Fragile, "Fragile will always auto-resolve to True for columns:"},
+			options = ShipToUser[
+				Object[Item, Column, "Test Column Sample for ShipBetweenSites (1)" <> $SessionUUID],
+				Output -> Options
+			];
+			Lookup[options, Fragile],
+			True,
+			Variables :> {options}
+		],
+		Example[{Options, Fragile, "If aliquot is needed, function will resolve the Fragile option based on AliquotContainer, not original container:"},
+			options = ShipToUser[
+				Object[Sample,"Test StockSolution Sample for ShipBetweenSites (in large container 1)"<>$SessionUUID],
+				Aliquot -> True,
+				AliquotAmount -> 100 Microliter,
+				AliquotContainer -> Model[Container, Vessel, "id:o1k9jAG00e3N"],
+				Output -> Options
+			];
+			Lookup[options, Fragile],
+			False,
+			Variables :> {options}
+		]
     },
     Stubs :> {
         $Notebook = Object[LaboratoryNotebook, "Test Notebook for ShipBetweenSites" <> $SessionUUID],
@@ -6029,17 +6114,20 @@ DefineTests[ShipBetweenSites,
                         <|
                             Type -> Model[Container, Plate], Name -> "Test place model for ShipBetweenSites" <> $SessionUUID,
                             Replace[Dimensions] -> {Quantity[0.1276, "Meters"], Quantity[0.0855, "Meters"], Quantity[0.0444, "Meters"]},
-                            Replace[Positions] -> {<|Name -> "A1", Footprint -> Null, MaxWidth -> Quantity[0.00825`, "Meters"], MaxDepth -> Quantity[0.00825`, "Meters"], MaxHeight -> Quantity[0.0374`, "Meters"]|>, <|Name -> "A2", Footprint -> Null, MaxWidth -> Quantity[0.00825`, "Meters"], MaxDepth -> Quantity[0.00825`, "Meters"], MaxHeight -> Quantity[0.0374`, "Meters"]|>, <|Name -> "A3", Footprint -> Null, MaxWidth -> Quantity[0.00825`, "Meters"], MaxDepth -> Quantity[0.00825`, "Meters"], MaxHeight -> Quantity[0.0374`, "Meters"]|>, <|Name -> "B1", Footprint -> Null, MaxWidth -> Quantity[0.00825`, "Meters"], MaxDepth -> Quantity[0.00825`, "Meters"], MaxHeight -> Quantity[0.0374`, "Meters"]|>, <|Name -> "B2", Footprint -> Null, MaxWidth -> Quantity[0.00825`, "Meters"], MaxDepth -> Quantity[0.00825`, "Meters"], MaxHeight -> Quantity[0.0374`, "Meters"]|>, <|Name -> "B3", Footprint -> Null, MaxWidth -> Quantity[0.00825`, "Meters"], MaxDepth -> Quantity[0.00825`, "Meters"], MaxHeight -> Quantity[0.0374`, "Meters"]|>}
+                            Replace[Positions] -> {<|Name -> "A1", Footprint -> Null, MaxWidth -> Quantity[0.00825`, "Meters"], MaxDepth -> Quantity[0.00825`, "Meters"], MaxHeight -> Quantity[0.0374`, "Meters"]|>, <|Name -> "A2", Footprint -> Null, MaxWidth -> Quantity[0.00825`, "Meters"], MaxDepth -> Quantity[0.00825`, "Meters"], MaxHeight -> Quantity[0.0374`, "Meters"]|>, <|Name -> "A3", Footprint -> Null, MaxWidth -> Quantity[0.00825`, "Meters"], MaxDepth -> Quantity[0.00825`, "Meters"], MaxHeight -> Quantity[0.0374`, "Meters"]|>, <|Name -> "B1", Footprint -> Null, MaxWidth -> Quantity[0.00825`, "Meters"], MaxDepth -> Quantity[0.00825`, "Meters"], MaxHeight -> Quantity[0.0374`, "Meters"]|>, <|Name -> "B2", Footprint -> Null, MaxWidth -> Quantity[0.00825`, "Meters"], MaxDepth -> Quantity[0.00825`, "Meters"], MaxHeight -> Quantity[0.0374`, "Meters"]|>, <|Name -> "B3", Footprint -> Null, MaxWidth -> Quantity[0.00825`, "Meters"], MaxDepth -> Quantity[0.00825`, "Meters"], MaxHeight -> Quantity[0.0374`, "Meters"]|>},
+							Fragile -> True
                         |>,
                         <|
                             Type -> Model[Container, Vessel], Name -> "Test vessel model for ShipBetweenSites" <> $SessionUUID, MaxVolume -> 10Milliliter,
                             Replace[Dimensions] -> {Quantity[0.012, "Meters"], Quantity[0.012, "Meters"], Quantity[0.032, "Meters"]},
-                            Replace[Positions] -> {<|Name -> "A1", Footprint -> Null, MaxWidth -> Quantity[0.00825`, "Meters"], MaxDepth -> Quantity[0.00825`, "Meters"], MaxHeight -> Quantity[0.0374`, "Meters"]|>}
+                            Replace[Positions] -> {<|Name -> "A1", Footprint -> Null, MaxWidth -> Quantity[0.00825`, "Meters"], MaxDepth -> Quantity[0.00825`, "Meters"], MaxHeight -> Quantity[0.0374`, "Meters"]|>},
+							Fragile -> False
                         |>,
                         <|
                             Type -> Model[Container, Vessel], Name -> "Large container model for ShipBetweenSites" <> $SessionUUID,
                             Replace[Dimensions] -> {Quantity[203.2, "Millimeters"], Quantity[169.333, "Millimeters"], Quantity[135.467, "Millimeters"]},
-                            Replace[Positions] -> {<|Name -> "A1", Footprint -> Null, MaxWidth -> Quantity[0.00825`, "Meters"], MaxDepth -> Quantity[0.00825`, "Meters"], MaxHeight -> Quantity[0.0374`, "Meters"]|>}
+                            Replace[Positions] -> {<|Name -> "A1", Footprint -> Null, MaxWidth -> Quantity[0.00825`, "Meters"], MaxDepth -> Quantity[0.00825`, "Meters"], MaxHeight -> Quantity[0.0374`, "Meters"]|>},
+							Fragile -> Null, Replace[ContainerMaterials] -> {Glass}
                         |>,
                         <|Type -> Model[Container, Shelf], Name -> "Test shelf model for ShipBetweenSites" <> $SessionUUID, Replace[Positions] -> {<|Name -> "Slot 1", Footprint -> Open, MaxWidth -> Quantity[0.8128, "Meters"], MaxDepth -> Quantity[0.762, "Meters"], MaxHeight -> Null|>}|>,
                         <|Type -> Model[Container, Building], Name -> "Test building model for ShipBetweenSites" <> $SessionUUID, Replace[Positions] -> {<|Name -> "Slot 1", Footprint -> Open, MaxWidth -> Quantity[33.8581, "Meters"], MaxDepth -> Quantity[30.4928, "Meters"], MaxHeight -> Null|>}|>,
@@ -6053,9 +6141,9 @@ DefineTests[ShipBetweenSites,
 
                     (* sample objects to upload *)
                     Upload[Append[#, <|Site ->Link[siteObject]|>]&/@{
-                        <|Volume -> 1Milliliter, Type -> Object[Sample], Model -> Link[Model[Sample, "Test Model Oligomer for ShipBetweenSites" <> $SessionUUID], Objects], Name -> "Test Oligo Sample for ShipBetweenSites (1)" <> $SessionUUID, Replace[Composition] -> {{50 Micromolar, Link[Model[Molecule, Oligomer, "id:O81aEBZnjv6D"]]}}, StorageCondition -> Link[Model[StorageCondition, "id:N80DNj1r04jW"]]|>,
-                        <|Volume -> 1Milliliter, Type -> Object[Sample], Model -> Link[Model[Sample, "Test Model Oligomer for ShipBetweenSites" <> $SessionUUID], Objects], Name -> "Test Oligo Sample for ShipBetweenSites (2)" <> $SessionUUID, Replace[Composition] -> {{50 Micromolar, Link[Model[Molecule, Oligomer, "id:O81aEBZnjv6D"]]}}, StorageCondition -> Link[Model[StorageCondition, "id:N80DNj1r04jW"]]|>,
-                        <|Volume -> 1Milliliter, Type -> Object[Sample], Model -> Link[Model[Sample, StockSolution, "Test Model StockSolution for ShipBetweenSites" <> $SessionUUID], Objects], Name -> "Test StockSolution Sample for ShipBetweenSites (1)" <> $SessionUUID, Replace[Composition] -> {{50 Micromolar, Link[Model[Molecule, Oligomer, "id:O81aEBZnjv6D"]]}}|>,
+                        <|Volume -> 1Milliliter, Type -> Object[Sample], Model -> Link[Model[Sample, "Test Model Oligomer for ShipBetweenSites" <> $SessionUUID], Objects], Name -> "Test Oligo Sample for ShipBetweenSites (1)" <> $SessionUUID, Replace[Composition] -> {{50 Micromolar, Link[Model[Molecule, Oligomer, "id:O81aEBZnjv6D"]], Now}}, StorageCondition -> Link[Model[StorageCondition, "id:N80DNj1r04jW"]]|>,
+                        <|Volume -> 1Milliliter, Type -> Object[Sample], Model -> Link[Model[Sample, "Test Model Oligomer for ShipBetweenSites" <> $SessionUUID], Objects], Name -> "Test Oligo Sample for ShipBetweenSites (2)" <> $SessionUUID, Replace[Composition] -> {{50 Micromolar, Link[Model[Molecule, Oligomer, "id:O81aEBZnjv6D"]], Now}}, StorageCondition -> Link[Model[StorageCondition, "id:N80DNj1r04jW"]]|>,
+                        <|Volume -> 1Milliliter, Type -> Object[Sample], Model -> Link[Model[Sample, StockSolution, "Test Model StockSolution for ShipBetweenSites" <> $SessionUUID], Objects], Name -> "Test StockSolution Sample for ShipBetweenSites (1)" <> $SessionUUID, Replace[Composition] -> {{50 Micromolar, Link[Model[Molecule, Oligomer, "id:O81aEBZnjv6D"]], Now}}|>,
                         <|Volume -> 1Milliliter, Type -> Object[Sample], Model -> Link[Model[Sample, StockSolution, "Test Model StockSolution for ShipBetweenSites" <> $SessionUUID], Objects], Name -> "Test StockSolution Sample for ShipBetweenSites (2)" <> $SessionUUID, StorageCondition -> Link[Model[StorageCondition, "id:N80DNj1r04jW"]]|>,
                         <|Volume -> 1Milliliter, Type -> Object[Sample], Model -> Link[Model[Sample, StockSolution, "Test Model StockSolution for ShipBetweenSites" <> $SessionUUID], Objects], Name -> "Test StockSolution Sample for ShipBetweenSites (in large container 1)" <> $SessionUUID, Status -> Available, StorageCondition -> Link[Model[StorageCondition, "id:N80DNj1r04jW"]]|>,
                         <|Volume -> 1Milliliter, Type -> Object[Sample], Model -> Link[Model[Sample, StockSolution, "Test Model StockSolution for ShipBetweenSites" <> $SessionUUID], Objects], Name -> "Test StockSolution Sample for ShipBetweenSites (in large container 2)" <> $SessionUUID, Status -> Available, StorageCondition -> Link[Model[StorageCondition, "id:N80DNj1r04jW"]]|>,
@@ -6373,11 +6461,11 @@ DefineTests[ShipBetweenSitesOptions,
 
 								(* sample objects to upload *)
 								sampleObjectPacketsToUpload = {
-									<|Volume -> 1Milliliter,Type -> Object[Sample], Model -> Link[Model[Sample, "Test Model Oligomer for ShipBetweenSitesOptions" <> $SessionUUID], Objects], Name -> "Test Oligo Sample for ShipBetweenSitesOptions (1)" <> $SessionUUID, Replace[Composition] -> {{50 Micromolar, Link[Model[Molecule, Oligomer, "id:O81aEBZnjv6D"]]}}, StorageCondition -> Link[Model[StorageCondition, "id:N80DNj1r04jW"]]|>,
+									<|Volume -> 1Milliliter,Type -> Object[Sample], Model -> Link[Model[Sample, "Test Model Oligomer for ShipBetweenSitesOptions" <> $SessionUUID], Objects], Name -> "Test Oligo Sample for ShipBetweenSitesOptions (1)" <> $SessionUUID, Replace[Composition] -> {{50 Micromolar, Link[Model[Molecule, Oligomer, "id:O81aEBZnjv6D"]], Now}}, StorageCondition -> Link[Model[StorageCondition, "id:N80DNj1r04jW"]]|>,
 
-									<|Volume -> 1Milliliter,Type -> Object[Sample], Model -> Link[Model[Sample, "Test Model Oligomer for ShipBetweenSitesOptions" <> $SessionUUID], Objects], Name -> "Test Oligo Sample for ShipBetweenSitesOptions (2)" <> $SessionUUID, Replace[Composition] -> {{50 Micromolar, Link[Model[Molecule, Oligomer, "id:O81aEBZnjv6D"]]}}, StorageCondition -> Link[Model[StorageCondition, "id:N80DNj1r04jW"]]|>,
+									<|Volume -> 1Milliliter,Type -> Object[Sample], Model -> Link[Model[Sample, "Test Model Oligomer for ShipBetweenSitesOptions" <> $SessionUUID], Objects], Name -> "Test Oligo Sample for ShipBetweenSitesOptions (2)" <> $SessionUUID, Replace[Composition] -> {{50 Micromolar, Link[Model[Molecule, Oligomer, "id:O81aEBZnjv6D"]], Now}}, StorageCondition -> Link[Model[StorageCondition, "id:N80DNj1r04jW"]]|>,
 
-									<|Volume -> 1Milliliter,Type -> Object[Sample], Model -> Link[Model[Sample, StockSolution, "Test Model StockSolution for ShipBetweenSitesOptions" <> $SessionUUID], Objects], Name -> "Test StockSolution Sample for ShipBetweenSitesOptions (1)" <> $SessionUUID, Replace[Composition] -> {{50 Micromolar, Link[Model[Molecule, Oligomer, "id:O81aEBZnjv6D"]]}}|>,
+									<|Volume -> 1Milliliter,Type -> Object[Sample], Model -> Link[Model[Sample, StockSolution, "Test Model StockSolution for ShipBetweenSitesOptions" <> $SessionUUID], Objects], Name -> "Test StockSolution Sample for ShipBetweenSitesOptions (1)" <> $SessionUUID, Replace[Composition] -> {{50 Micromolar, Link[Model[Molecule, Oligomer, "id:O81aEBZnjv6D"]], Now}}|>,
 
 									<|Volume -> 1Milliliter,Type -> Object[Sample], Model -> Link[Model[Sample, StockSolution, "Test Model StockSolution for ShipBetweenSitesOptions" <> $SessionUUID], Objects], Name -> "Test StockSolution Sample for ShipBetweenSitesOptions (2)" <> $SessionUUID, StorageCondition -> Link[Model[StorageCondition, "id:N80DNj1r04jW"]]|>,
 
@@ -6722,9 +6810,9 @@ DefineTests[ShipBetweenSitesPreview,
 
                 (* sample objects to upload *)
                 sampleObjectPacketsToUpload = {
-                    <|Volume -> 1Milliliter, DeveloperObject -> True, Type -> Object[Sample], Model -> Link[Model[Sample, "Test Model Oligomer for ShipBetweenSitesPreview" <> $SessionUUID], Objects], Name -> "Test Oligo Sample for ShipBetweenSitesPreview (1)" <> $SessionUUID, Replace[Composition] -> {{50 Micromolar, Link[Model[Molecule, Oligomer, "id:O81aEBZnjv6D"]]}}, StorageCondition -> Link[Model[StorageCondition, "id:N80DNj1r04jW"]]|>,
-                    <|Volume -> 1Milliliter, DeveloperObject -> True, Type -> Object[Sample], Model -> Link[Model[Sample, "Test Model Oligomer for ShipBetweenSitesPreview" <> $SessionUUID], Objects], Name -> "Test Oligo Sample for ShipBetweenSitesPreview (2)" <> $SessionUUID, Replace[Composition] -> {{50 Micromolar, Link[Model[Molecule, Oligomer, "id:O81aEBZnjv6D"]]}}, StorageCondition -> Link[Model[StorageCondition, "id:N80DNj1r04jW"]]|>,
-                    <|Volume -> 1Milliliter, DeveloperObject -> True, Type -> Object[Sample], Model -> Link[Model[Sample, StockSolution, "Test Model StockSolution for ShipBetweenSitesPreview" <> $SessionUUID], Objects], Name -> "Test StockSolution Sample for ShipBetweenSitesPreview (1)" <> $SessionUUID, Replace[Composition] -> {{50 Micromolar, Link[Model[Molecule, Oligomer, "id:O81aEBZnjv6D"]]}}|>,
+                    <|Volume -> 1Milliliter, DeveloperObject -> True, Type -> Object[Sample], Model -> Link[Model[Sample, "Test Model Oligomer for ShipBetweenSitesPreview" <> $SessionUUID], Objects], Name -> "Test Oligo Sample for ShipBetweenSitesPreview (1)" <> $SessionUUID, Replace[Composition] -> {{50 Micromolar, Link[Model[Molecule, Oligomer, "id:O81aEBZnjv6D"]], Now}}, StorageCondition -> Link[Model[StorageCondition, "id:N80DNj1r04jW"]]|>,
+                    <|Volume -> 1Milliliter, DeveloperObject -> True, Type -> Object[Sample], Model -> Link[Model[Sample, "Test Model Oligomer for ShipBetweenSitesPreview" <> $SessionUUID], Objects], Name -> "Test Oligo Sample for ShipBetweenSitesPreview (2)" <> $SessionUUID, Replace[Composition] -> {{50 Micromolar, Link[Model[Molecule, Oligomer, "id:O81aEBZnjv6D"]], Now}}, StorageCondition -> Link[Model[StorageCondition, "id:N80DNj1r04jW"]]|>,
+                    <|Volume -> 1Milliliter, DeveloperObject -> True, Type -> Object[Sample], Model -> Link[Model[Sample, StockSolution, "Test Model StockSolution for ShipBetweenSitesPreview" <> $SessionUUID], Objects], Name -> "Test StockSolution Sample for ShipBetweenSitesPreview (1)" <> $SessionUUID, Replace[Composition] -> {{50 Micromolar, Link[Model[Molecule, Oligomer, "id:O81aEBZnjv6D"]], Now}}|>,
                     <|Volume -> 1Milliliter, DeveloperObject -> True, Type -> Object[Sample], Model -> Link[Model[Sample, StockSolution, "Test Model StockSolution for ShipBetweenSitesPreview" <> $SessionUUID], Objects], Name -> "Test StockSolution Sample for ShipBetweenSitesPreview (2)" <> $SessionUUID, StorageCondition -> Link[Model[StorageCondition, "id:N80DNj1r04jW"]]|>,
                     <|Volume -> 1Milliliter, DeveloperObject -> True, Type -> Object[Sample], Model -> Link[Model[Sample, StockSolution, "Test Model StockSolution for ShipBetweenSitesPreview" <> $SessionUUID], Objects], Name -> "Test StockSolution Sample for ShipBetweenSitesPreview (in large container 1)" <> $SessionUUID, Status -> Available, StorageCondition -> Link[Model[StorageCondition, "id:N80DNj1r04jW"]]|>,
                     <|Volume -> 1Milliliter, DeveloperObject -> True, Type -> Object[Sample], Model -> Link[Model[Sample, StockSolution, "Test Model StockSolution for ShipBetweenSitesPreview" <> $SessionUUID], Objects], Name -> "Test StockSolution Sample for ShipBetweenSitesPreview (in large container 2)" <> $SessionUUID, Status -> Available, StorageCondition -> Link[Model[StorageCondition, "id:N80DNj1r04jW"]]|>,
@@ -6970,9 +7058,9 @@ DefineTests[ValidShipBetweenSitesQ,
 
                 (* sample objects to upload *)
                 sampleObjectPacketsToUpload = {
-                    <|Volume -> 1Milliliter, DeveloperObject -> True, Type -> Object[Sample], Model -> Link[Model[Sample, "Test Model Oligomer for ValidShipBetweenSitesQ" <> $SessionUUID], Objects], Name -> "Test Oligo Sample for ValidShipBetweenSitesQ (1)" <> $SessionUUID, Replace[Composition] -> {{50 Micromolar, Link[Model[Molecule, Oligomer, "id:O81aEBZnjv6D"]]}}, StorageCondition -> Link[Model[StorageCondition, "id:N80DNj1r04jW"]]|>,
-                    <|Volume -> 1Milliliter, DeveloperObject -> True, Type -> Object[Sample], Model -> Link[Model[Sample, "Test Model Oligomer for ValidShipBetweenSitesQ" <> $SessionUUID], Objects], Name -> "Test Oligo Sample for ValidShipBetweenSitesQ (2)" <> $SessionUUID, Replace[Composition] -> {{50 Micromolar, Link[Model[Molecule, Oligomer, "id:O81aEBZnjv6D"]]}}, StorageCondition -> Link[Model[StorageCondition, "id:N80DNj1r04jW"]]|>,
-                    <|Volume -> 1Milliliter, DeveloperObject -> True, Type -> Object[Sample], Model -> Link[Model[Sample, StockSolution, "Test Model StockSolution for ValidShipBetweenSitesQ" <> $SessionUUID], Objects], Name -> "Test StockSolution Sample for ValidShipBetweenSitesQ (1)" <> $SessionUUID, Replace[Composition] -> {{50 Micromolar, Link[Model[Molecule, Oligomer, "id:O81aEBZnjv6D"]]}}|>,
+                    <|Volume -> 1Milliliter, DeveloperObject -> True, Type -> Object[Sample], Model -> Link[Model[Sample, "Test Model Oligomer for ValidShipBetweenSitesQ" <> $SessionUUID], Objects], Name -> "Test Oligo Sample for ValidShipBetweenSitesQ (1)" <> $SessionUUID, Replace[Composition] -> {{50 Micromolar, Link[Model[Molecule, Oligomer, "id:O81aEBZnjv6D"]], Now}}, StorageCondition -> Link[Model[StorageCondition, "id:N80DNj1r04jW"]]|>,
+                    <|Volume -> 1Milliliter, DeveloperObject -> True, Type -> Object[Sample], Model -> Link[Model[Sample, "Test Model Oligomer for ValidShipBetweenSitesQ" <> $SessionUUID], Objects], Name -> "Test Oligo Sample for ValidShipBetweenSitesQ (2)" <> $SessionUUID, Replace[Composition] -> {{50 Micromolar, Link[Model[Molecule, Oligomer, "id:O81aEBZnjv6D"]], Now}}, StorageCondition -> Link[Model[StorageCondition, "id:N80DNj1r04jW"]]|>,
+                    <|Volume -> 1Milliliter, DeveloperObject -> True, Type -> Object[Sample], Model -> Link[Model[Sample, StockSolution, "Test Model StockSolution for ValidShipBetweenSitesQ" <> $SessionUUID], Objects], Name -> "Test StockSolution Sample for ValidShipBetweenSitesQ (1)" <> $SessionUUID, Replace[Composition] -> {{50 Micromolar, Link[Model[Molecule, Oligomer, "id:O81aEBZnjv6D"]], Now}}|>,
                     <|Volume -> 1Milliliter, DeveloperObject -> True, Type -> Object[Sample], Model -> Link[Model[Sample, StockSolution, "Test Model StockSolution for ValidShipBetweenSitesQ" <> $SessionUUID], Objects], Name -> "Test StockSolution Sample for ValidShipBetweenSitesQ (2)" <> $SessionUUID, StorageCondition -> Link[Model[StorageCondition, "id:N80DNj1r04jW"]]|>,
                     <|Volume -> 1Milliliter, DeveloperObject -> True, Type -> Object[Sample], Model -> Link[Model[Sample, StockSolution, "Test Model StockSolution for ValidShipBetweenSitesQ" <> $SessionUUID], Objects], Name -> "Test StockSolution Sample for ValidShipBetweenSitesQ (in large container 1)" <> $SessionUUID, Status -> Available, StorageCondition -> Link[Model[StorageCondition, "id:N80DNj1r04jW"]]|>,
                     <|Volume -> 1Milliliter, DeveloperObject -> True, Type -> Object[Sample], Model -> Link[Model[Sample, StockSolution, "Test Model StockSolution for ValidShipBetweenSitesQ" <> $SessionUUID], Objects], Name -> "Test StockSolution Sample for ValidShipBetweenSitesQ (in large container 2)" <> $SessionUUID, Status -> Available, StorageCondition -> Link[Model[StorageCondition, "id:N80DNj1r04jW"]]|>,
@@ -7072,15 +7160,37 @@ DefineTests[shipFromECL,
 
                 Upload[{
                     (* Shipping site model *)
-                    <|Object -> siteModel, Name -> "Test Model Site for shipFromECL (1)" <> $SessionUUID, ShippingModel -> Link[Model[Maintenance, Shipping, "Maintenance shipping for ECL-2"]]|>,
+                    <|
+						Object -> siteModel,
+						Name -> "Test Model Site for shipFromECL (1)" <> $SessionUUID,
+						ShippingModel -> Link[Model[Maintenance, Shipping, "Maintenance shipping for ECL-2"]]|>,
                     (* Shipping site object *)
-                    <|Object -> siteObject, Name -> "Test Site for shipFromECL (1)" <> $SessionUUID, Model -> Link[siteModel, Objects]|>,
+                    <|
+						Object -> siteObject,
+						Name -> "Test Site for shipFromECL (1)" <> $SessionUUID,
+						Model -> Link[siteModel, Objects]
+					|>,
                     (* Financing team *)
-                    <|Object -> financingTeam, Name -> "Test Team for shipFromECL (1)" <> $SessionUUID, DefaultMailingAddress -> Link[siteObject]|>,
+                    <|
+						Object -> financingTeam,
+						Name -> "Test Team for shipFromECL (1)" <> $SessionUUID,
+						DefaultMailingAddress -> Link[siteObject],
+						DefaultExperimentSite -> Link[siteObject],
+						Replace[ExperimentSites] -> {Link[siteObject,FinancingTeams]}
+					|>,
                     (* Laboratory notebook *)
-                    <|Object -> notebook, Name -> "Test Notebook for shipFromECL" <> $SessionUUID, Replace[Financers] -> {Link[financingTeam, NotebooksFinanced]}, Replace[Editors] -> {Link[financingTeam, Notebooks]}|>,
+                    <|
+						Object -> notebook,
+						Name -> "Test Notebook for shipFromECL" <> $SessionUUID,
+						Replace[Financers] -> {Link[financingTeam, NotebooksFinanced]},
+						Replace[Editors] -> {Link[financingTeam, Notebooks]}
+					|>,
                     (*User*)
-                    <|Object -> user, Name -> "Test User for shipFromECL" <> $SessionUUID, Replace[FinancingTeams] -> {Link[financingTeam, Members]}|>
+                    <|
+						Object -> user,
+						Name -> "Test User for shipFromECL" <> $SessionUUID,
+						Replace[FinancingTeams] -> {Link[financingTeam, Members]}
+					|>
                 }];
 
             ]
@@ -7128,15 +7238,17 @@ DefineTests[ShipToUser,
             {ObjectP[Object[Transaction, ShipToUser]], ObjectP[Object[Transaction, ShipToUser]]},
             Variables :> {transactions}
         ],
-        Example[
-            {Messages, "EmptyContainers", "If an input container is empty, give a message and return Failed:"},
-            transactions = ShipToUser[
-                {Object[Container, Plate, "Test plate with no contents for ShipToUser" <> $SessionUUID]}
-            ],
-            $Failed,
-            Variables :> {transactions},
-            Messages :> {Error::EmptyContainers}
-        ],
+
+		Example[
+			{Messages, "EmptyContainers", "If an input container is empty, give a message and return Failed:"},
+			transactions = ShipToUser[
+				{Object[Container, Plate, "Test plate with no contents for ShipToUser" <> $SessionUUID]}
+			],
+			$Failed,
+			Variables :> {transactions},
+			Messages :> {Error::EmptyContainers}
+		],
+
         Example[
             {Additional, "Selects a plate seal for all plates that will be shipped:"},
             transactions = ShipToUser[
@@ -7205,14 +7317,17 @@ DefineTests[ShipToUser,
             {{LinkP[Model[Container, Box]], LinkP[Model[Container, Box]]}},
             Variables :> {transactions}
         ],
-        Example[{Additional, "Any sample containers that are too large to fit into any bag will not get a secondary container. MaintenanceShipping will give a message later:"},
-            transactions = ShipToUser[{
-                Object[Sample, "Test StockSolution Sample for ShipToUser (in large container 1)" <> $SessionUUID],
-                Object[Sample, "Test StockSolution Sample for ShipToUser (in large container 2)" <> $SessionUUID],
-                Object[Sample, "Test StockSolution Sample for ShipToUser (2)" <> $SessionUUID]},
-                ColdPacking -> Null];
-            Download[transactions, SecondaryContainers],
-            {{LinkP[Model[Container, Bag, "id:aXRlGn6RqLvO"]]}},
+		Example[{Messages, "NoAvailableSecondaryContainers", "If no secondary container is available because the thing being shipped is too big, an error is thrown:"},
+            transactions = ShipToUser[
+				{
+					Object[Sample, "Test StockSolution Sample for ShipToUser (in large container 1)" <> $SessionUUID],
+					Object[Sample, "Test StockSolution Sample for ShipToUser (in large container 2)" <> $SessionUUID],
+					Object[Sample, "Test StockSolution Sample for ShipToUser (2)" <> $SessionUUID]
+				},
+                ColdPacking -> Null
+			],
+			$Failed,
+			Messages :> {Error::NoAvailableSecondaryContainers},
             Variables :> {transactions}
         ],
         Example[{Additional, "If any sample is too large to fit into the largest stocked box, no shipping container will be populated. MaintenanceShipping will give a message later:"},
@@ -7468,7 +7583,6 @@ DefineTests[ShipToUser,
             {Messages, "NotShippable", "If the input container samples cannot realistically be shipped, give a message and return $Failed:"},
             ShipToUser[
                 {
-                    Object[Sample, "Test StockSolution Sample for ShipToUser (in large container 1)" <> $SessionUUID],
                     Object[Item, Column, "Test Column Sample for ShipToUser (1)" <> $SessionUUID],
                     Object[Container, Plate, "Test plate with contents (2 oligomer samples) for ShipToUser" <> $SessionUUID],
                     Object[Container, Shelf, "Test shelf with contents (stock solution sample) for ShipToUser (2)" <> $SessionUUID]
@@ -7477,6 +7591,35 @@ DefineTests[ShipToUser,
             $Failed,
             Messages :> {Error::NotShippable}
         ],
+
+		Example[
+			{Messages, "HazardousSamplesForShipping", "If the input is considered hazardous for shipping, give a message and return $Failed:"},
+			ShipToUser[
+				{
+					Object[Item, Column, "Test Column Sample for ShipToUser (1)" <> $SessionUUID],
+					Object[Sample, "Test Oligo Sample for ShipToUser (1)" <> $SessionUUID],
+					Object[Sample, "Test Oligo Sample for ShipToUser (2)" <> $SessionUUID]
+				}
+			],
+			$Failed,
+			Messages :> {Error::HazardousSamplesForShipping},
+			SetUp :> (Upload[<|Object -> Object[Sample, "Test Oligo Sample for ShipToUser (1)" <> $SessionUUID], Pyrophoric -> True|>]),
+			TearDown :> (Upload[<|Object -> Object[Sample, "Test Oligo Sample for ShipToUser (1)" <> $SessionUUID], Pyrophoric -> Null|>])
+		],
+
+		Example[
+			{Additional, "If the input is considered hazardous for shipping, give a message and return $Failed:"},
+			ShipToUser[
+				{
+					Object[Item, Column, "Test Column Sample for ShipToUser (1)" <> $SessionUUID],
+					Object[Sample, "Test Oligo Sample for ShipToUser (1)" <> $SessionUUID],
+					Object[Sample, "Test Oligo Sample for ShipToUser (2)" <> $SessionUUID]
+				}
+			],
+			{ObjectP[Object[Transaction, ShipToUser]], ObjectP[Object[Transaction, ShipToUser]]},
+			SetUp :> (Upload[<|Object -> Object[Sample, "Test Oligo Sample for ShipToUser (1)" <> $SessionUUID], Flammable -> True|>]),
+			TearDown :> (Upload[<|Object -> Object[Sample, "Test Oligo Sample for ShipToUser (1)" <> $SessionUUID], Flammable -> Null|>])
+		],
 
         (* Aliquoting *)
         Example[{Options, Aliquot, "If no aliquoting options are specified, Aliquot resolves to false:"},
@@ -8654,7 +8797,7 @@ DefineTests[ShipToUser,
                 Output -> Options
             ];
             Lookup[options, DestinationWell],
-            "A2",
+			{"A2"},
             Variables :> {options}
         ],
         Example[{Options, BufferDilutionFactor, "The dilution factor by which the concentrated buffer should be diluted by the BufferDiluent; the diluted version of the ConcentratedBuffer will then be added to any aliquot samples that require dilution, where the volume of this buffer added is the difference between the AliquotAmount and the total AssayVolume:"},
@@ -8683,7 +8826,59 @@ DefineTests[ShipToUser,
             Lookup[options, ConcentratedBuffer],
             ObjectP[Model[Sample, StockSolution, "10x UV buffer"]],
             Variables :> {options}
-        ]
+        ],
+		Example[{Options, Fragile, "ShipToUser automatically resolves Fragile option from the sample containers:"},
+			options = ShipToUser[
+				{
+					Object[Container, Vessel, "Test vessel with contents (stock solution sample) for ShipToUser" <> $SessionUUID],
+					Object[Container, Plate, "Test plate with contents (2 oligomer samples) for ShipToUser" <> $SessionUUID]
+				},
+				Output -> Options
+			];
+			Lookup[options, Fragile],
+			{False, True, True},
+			Variables :> {options}
+		],
+		Example[{Options, Fragile, "If Fragile option is specified, it will be inherited:"},
+			options = ShipToUser[
+				Object[Sample, "Test StockSolution Sample for ShipToUser (1)" <> $SessionUUID],
+				Fragile -> True,
+				Output -> Options
+			];
+			Lookup[options, Fragile],
+			True,
+			Variables :> {options}
+		],
+		Example[{Options, Fragile, "Fragile will always auto-resolve to True for columns:"},
+			options = ShipToUser[
+				Object[Item, Column, "Test Column Sample for ShipToUser (1)" <> $SessionUUID],
+				Output -> Options
+			];
+			Lookup[options, Fragile],
+			True,
+			Variables :> {options}
+		],
+		Example[{Options, Fragile, "If Container Model's Fragile field is Null, function will resolve the Fragile option based on ContainerMaterials:"},
+			options = ShipToUser[
+				Object[Container, Plate, "Test plate with contents (2 oligomer samples) for ShipToUser" <> $SessionUUID],
+				Output -> Options
+			];
+			Lookup[options, Fragile],
+			True,
+			Variables :> {options}
+		],
+		Example[{Options, Fragile, "If aliquot is needed, function will resolve the Fragile option based on AliquotContainer, not original container:"},
+			options = ShipToUser[
+				Object[Sample,"Test StockSolution Sample for ShipToUser (in large container 1)"<>$SessionUUID],
+				Aliquot -> True,
+				AliquotAmount -> 100 Microliter,
+				AliquotContainer -> Model[Container, Vessel, "id:o1k9jAG00e3N"],
+				Output -> Options
+			];
+			Lookup[options, Fragile],
+			False,
+			Variables :> {options}
+		]
     },
     Stubs :> {
         $Notebook = Object[LaboratoryNotebook, "Test Notebook for ShipToUser" <> $SessionUUID],
@@ -8699,7 +8894,7 @@ DefineTests[ShipToUser,
                 Object[Container, Site, "Test Site for ShipToUser (1)" <> $SessionUUID],
                 Object[LaboratoryNotebook, "Test Notebook for ShipToUser" <> $SessionUUID],
                 Object[User, "Test User for ShipToUser" <> $SessionUUID],
-                Model[Container, Plate, "Test place model for ShipToUser" <> $SessionUUID],
+                Model[Container, Plate, "Test plate model for ShipToUser" <> $SessionUUID],
                 Model[Container, Vessel, "Test vessel model for ShipToUser" <> $SessionUUID],
                 Model[Container, Vessel, "Large container model for ShipToUser" <> $SessionUUID],
                 Model[Container, Shelf, "Test shelf model for ShipToUser" <> $SessionUUID],
@@ -8825,11 +9020,11 @@ DefineTests[ShipToUser,
                         }
                     |>,
 
-                    (* Plate Model *)
+                    (* Plate Model, Fragile -> Null, but contain Fragile material *)
                     <|
                         Type -> Model[Container, Plate],
                         DeveloperObject -> True,
-                        Name -> "Test place model for ShipToUser" <> $SessionUUID,
+                        Name -> "Test plate model for ShipToUser" <> $SessionUUID,
                         Replace[Dimensions] -> {Quantity[0.1276, "Meters"], Quantity[0.0855, "Meters"], Quantity[0.0444, "Meters"]},
                         Replace[Positions] -> {
                             <|Name -> "A1", Footprint -> Null, MaxWidth -> Quantity[0.00825`, "Meters"], MaxDepth -> Quantity[0.00825`, "Meters"], MaxHeight -> Quantity[0.0374`, "Meters"]|>,
@@ -8838,10 +9033,12 @@ DefineTests[ShipToUser,
                             <|Name -> "B1", Footprint -> Null, MaxWidth -> Quantity[0.00825`, "Meters"], MaxDepth -> Quantity[0.00825`, "Meters"], MaxHeight -> Quantity[0.0374`, "Meters"]|>,
                             <|Name -> "B2", Footprint -> Null, MaxWidth -> Quantity[0.00825`, "Meters"], MaxDepth -> Quantity[0.00825`, "Meters"], MaxHeight -> Quantity[0.0374`, "Meters"]|>,
                             <|Name -> "B3", Footprint -> Null, MaxWidth -> Quantity[0.00825`, "Meters"], MaxDepth -> Quantity[0.00825`, "Meters"], MaxHeight -> Quantity[0.0374`, "Meters"]|>
-                        }
+                        },
+						Fragile -> Null,
+						Replace[ContainerMaterials] -> {Glass}
                     |>,
 
-                    (* Vessel Model 1 *)
+                    (* Vessel Model 1, Fragile -> False *)
                     <|
                         Type -> Model[Container, Vessel],
                         DeveloperObject -> True,
@@ -8849,10 +9046,11 @@ DefineTests[ShipToUser,
                         Replace[Dimensions] -> {Quantity[0.012, "Meters"], Quantity[0.012, "Meters"], Quantity[0.032, "Meters"]},
                         Replace[Positions] -> {
                             <|Name -> "A1", Footprint -> Null, MaxWidth -> Quantity[0.00825`, "Meters"], MaxDepth -> Quantity[0.00825`, "Meters"], MaxHeight -> Quantity[0.0374`, "Meters"]|>
-                        }
+                        },
+						Fragile -> False
                     |>,
 
-                    (* Vessel Model 2 (the 'large container model') *)
+                    (* Vessel Model 2 (the 'large container model'), Fragile -> True *)
                     <|
                         Type -> Model[Container, Vessel],
                         DeveloperObject -> True,
@@ -8860,7 +9058,8 @@ DefineTests[ShipToUser,
                         Replace[Dimensions] -> {Quantity[203.2, "Millimeters"], Quantity[169.333, "Millimeters"], Quantity[135.467, "Millimeters"]},
                         Replace[Positions] -> {
                             <|Name -> "A1", Footprint -> Null, MaxWidth -> Quantity[0.00825`, "Meters"], MaxDepth -> Quantity[0.00825`, "Meters"], MaxHeight -> Quantity[0.0374`, "Meters"]|>
-                        }
+                        },
+						Fragile -> True
                     |>,
 
                     (* Column Model 1 *)
@@ -8964,7 +9163,7 @@ DefineTests[ShipToUser,
                     (*9*)site2Column5
                 } = UploadSample[
                     {
-                        (*1*)Model[Container, Plate, "Test place model for ShipToUser" <> $SessionUUID](* plate1 *),
+                        (*1*)Model[Container, Plate, "Test plate model for ShipToUser" <> $SessionUUID](* plate1 *),
                         (*2*)Model[Container, Vessel, "Test vessel model for ShipToUser" <> $SessionUUID](* vessel1 *),
                         (*3*)Model[Container, Vessel, "Large container model for ShipToUser" <> $SessionUUID],
                         (*4*)Model[Container, Vessel, "Large container model for ShipToUser" <> $SessionUUID],
@@ -9125,7 +9324,7 @@ DefineTests[ShipToUser,
                         Type -> Object[Container, Plate],
                         DeveloperObject -> True,
                         Name -> "Test plate without site for ShipToUser" <> $SessionUUID,
-                        Model -> Link[Model[Container, Plate, "Test place model for ShipToUser" <> $SessionUUID], Objects],
+                        Model -> Link[Model[Container, Plate, "Test plate model for ShipToUser" <> $SessionUUID], Objects],
                         Replace[Contents] -> {{"A1", Link[Object[Sample, "Test Oligo Sample without site for ShipToUser" <> $SessionUUID], Container]}}
                     |>
                 ];
@@ -9136,7 +9335,7 @@ DefineTests[ShipToUser,
                         Type -> Object[Container, Plate],
                         DeveloperObject -> True,
                         Name -> "Test plate with no contents for ShipToUser" <> $SessionUUID,
-                        Model -> Link[Model[Container, Plate, "Test place model for ShipToUser" <> $SessionUUID], Objects]
+                        Model -> Link[Model[Container, Plate, "Test plate model for ShipToUser" <> $SessionUUID], Objects]
                     |>
                 ];
 
@@ -9156,15 +9355,15 @@ DefineTests[ShipToUser,
                 compositionUpdatePackets = {
                     <|
                         Object -> Object[Sample, "Test Oligo Sample for ShipToUser (1)" <> $SessionUUID],
-                        Replace[Composition] -> {{50 Micromolar, Link[Model[Molecule, Oligomer, "id:O81aEBZnjv6D"]]}}
+                        Replace[Composition] -> {{50 Micromolar, Link[Model[Molecule, Oligomer, "id:O81aEBZnjv6D"]], Now}}
                     |>,
                     <|
                         Object -> Object[Sample, "Test Oligo Sample for ShipToUser (2)" <> $SessionUUID],
-                        Replace[Composition] -> {{50 Micromolar, Link[Model[Molecule, Oligomer, "id:O81aEBZnjv6D"]]}}
+                        Replace[Composition] -> {{50 Micromolar, Link[Model[Molecule, Oligomer, "id:O81aEBZnjv6D"]], Now}}
                     |>,
                     <|
                         Object -> Object[Sample, "Test StockSolution Sample for ShipToUser (1)" <> $SessionUUID],
-                        Replace[Composition] -> {{50 Micromolar, Link[Model[Molecule, Oligomer, "id:O81aEBZnjv6D"]]}}
+                        Replace[Composition] -> {{50 Micromolar, Link[Model[Molecule, Oligomer, "id:O81aEBZnjv6D"]], Now}}
                     |>
                 };
 
@@ -9200,7 +9399,7 @@ DefineTests[ShipToUser,
                 Object[Container, Site, "Test Site for ShipToUser (1)" <> $SessionUUID],
                 Object[LaboratoryNotebook, "Test Notebook for ShipToUser" <> $SessionUUID],
                 Object[User, "Test User for ShipToUser" <> $SessionUUID],
-                Model[Container, Plate, "Test place model for ShipToUser" <> $SessionUUID],
+                Model[Container, Plate, "Test plate model for ShipToUser" <> $SessionUUID],
                 Model[Container, Vessel, "Test vessel model for ShipToUser" <> $SessionUUID],
                 Model[Container, Vessel, "Large container model for ShipToUser" <> $SessionUUID],
                 Model[Container, Shelf, "Test shelf model for ShipToUser" <> $SessionUUID],
@@ -9328,7 +9527,7 @@ DefineTests[ShipToUserOptions,
                 Object[Container, Site, "Test Site for ShipToUserOptions (1)" <> $SessionUUID],
                 Object[LaboratoryNotebook, "Test Notebook for ShipToUserOptions" <> $SessionUUID],
                 Object[User, "Test User for ShipToUserOptions" <> $SessionUUID],
-                Model[Container, Plate, "Test place model for ShipToUserOptions" <> $SessionUUID],
+                Model[Container, Plate, "Test plate model for ShipToUserOptions" <> $SessionUUID],
                 Model[Container, Vessel, "Test vessel model for ShipToUserOptions" <> $SessionUUID],
                 Model[Container, Vessel, "Large container model for ShipToUserOptions" <> $SessionUUID],
                 Model[Container, Shelf, "Test shelf model for ShipToUserOptions" <> $SessionUUID],
@@ -9396,7 +9595,7 @@ DefineTests[ShipToUserOptions,
 
                 (* Put together model packets to upload *)
                 modelsPacketsToUpload = {
-                    <|DeveloperObject -> True, Type -> Model[Container, Plate], Name -> "Test place model for ShipToUserOptions" <> $SessionUUID,
+                    <|DeveloperObject -> True, Type -> Model[Container, Plate], Name -> "Test plate model for ShipToUserOptions" <> $SessionUUID,
                         Replace[Dimensions] -> {Quantity[0.1276, "Meters"], Quantity[0.0855, "Meters"], Quantity[0.0444, "Meters"]},
                         Replace[Positions] -> {<|Name -> "A1", Footprint -> Null, MaxWidth -> Quantity[0.00825`, "Meters"], MaxDepth -> Quantity[0.00825`, "Meters"], MaxHeight -> Quantity[0.0374`, "Meters"]|>, <|Name -> "A2", Footprint -> Null, MaxWidth -> Quantity[0.00825`, "Meters"], MaxDepth -> Quantity[0.00825`, "Meters"], MaxHeight -> Quantity[0.0374`, "Meters"]|>, <|Name -> "A3", Footprint -> Null, MaxWidth -> Quantity[0.00825`, "Meters"], MaxDepth -> Quantity[0.00825`, "Meters"], MaxHeight -> Quantity[0.0374`, "Meters"]|>, <|Name -> "B1", Footprint -> Null, MaxWidth -> Quantity[0.00825`, "Meters"], MaxDepth -> Quantity[0.00825`, "Meters"], MaxHeight -> Quantity[0.0374`, "Meters"]|>, <|Name -> "B2", Footprint -> Null, MaxWidth -> Quantity[0.00825`, "Meters"], MaxDepth -> Quantity[0.00825`, "Meters"], MaxHeight -> Quantity[0.0374`, "Meters"]|>, <|Name -> "B3", Footprint -> Null, MaxWidth -> Quantity[0.00825`, "Meters"], MaxDepth -> Quantity[0.00825`, "Meters"], MaxHeight -> Quantity[0.0374`, "Meters"]|>}|>,
 
@@ -9429,11 +9628,11 @@ DefineTests[ShipToUserOptions,
 
                 (* sample objects to upload *)
                 sampleObjectPacketsToUpload = {
-                    <|Volume -> 1Milliliter, DeveloperObject -> True, Type -> Object[Sample], Model -> Link[Model[Sample, "Test Model Oligomer for ShipToUserOptions" <> $SessionUUID], Objects], Name -> "Test Oligo Sample for ShipToUserOptions (1)" <> $SessionUUID, Replace[Composition] -> {{50 Micromolar, Link[Model[Molecule, Oligomer, "id:O81aEBZnjv6D"]]}}, StorageCondition -> Link[Model[StorageCondition, "id:N80DNj1r04jW"]]|>,
+                    <|Volume -> 1Milliliter, DeveloperObject -> True, Type -> Object[Sample], Model -> Link[Model[Sample, "Test Model Oligomer for ShipToUserOptions" <> $SessionUUID], Objects], Name -> "Test Oligo Sample for ShipToUserOptions (1)" <> $SessionUUID, Replace[Composition] -> {{50 Micromolar, Link[Model[Molecule, Oligomer, "id:O81aEBZnjv6D"]], Now}}, StorageCondition -> Link[Model[StorageCondition, "id:N80DNj1r04jW"]]|>,
 
-                    <|Volume -> 1Milliliter, DeveloperObject -> True, Type -> Object[Sample], Model -> Link[Model[Sample, "Test Model Oligomer for ShipToUserOptions" <> $SessionUUID], Objects], Name -> "Test Oligo Sample for ShipToUserOptions (2)" <> $SessionUUID, Replace[Composition] -> {{50 Micromolar, Link[Model[Molecule, Oligomer, "id:O81aEBZnjv6D"]]}}, StorageCondition -> Link[Model[StorageCondition, "id:N80DNj1r04jW"]]|>,
+                    <|Volume -> 1Milliliter, DeveloperObject -> True, Type -> Object[Sample], Model -> Link[Model[Sample, "Test Model Oligomer for ShipToUserOptions" <> $SessionUUID], Objects], Name -> "Test Oligo Sample for ShipToUserOptions (2)" <> $SessionUUID, Replace[Composition] -> {{50 Micromolar, Link[Model[Molecule, Oligomer, "id:O81aEBZnjv6D"]], Now}}, StorageCondition -> Link[Model[StorageCondition, "id:N80DNj1r04jW"]]|>,
 
-                    <|Volume -> 1Milliliter, DeveloperObject -> True, Type -> Object[Sample], Model -> Link[Model[Sample, StockSolution, "Test Model StockSolution for ShipToUserOptions" <> $SessionUUID], Objects], Name -> "Test StockSolution Sample for ShipToUserOptions (1)" <> $SessionUUID, Replace[Composition] -> {{50 Micromolar, Link[Model[Molecule, Oligomer, "id:O81aEBZnjv6D"]]}}|>,
+                    <|Volume -> 1Milliliter, DeveloperObject -> True, Type -> Object[Sample], Model -> Link[Model[Sample, StockSolution, "Test Model StockSolution for ShipToUserOptions" <> $SessionUUID], Objects], Name -> "Test StockSolution Sample for ShipToUserOptions (1)" <> $SessionUUID, Replace[Composition] -> {{50 Micromolar, Link[Model[Molecule, Oligomer, "id:O81aEBZnjv6D"]], Now}}|>,
 
                     <|Volume -> 1Milliliter, DeveloperObject -> True, Type -> Object[Sample], Model -> Link[Model[Sample, StockSolution, "Test Model StockSolution for ShipToUserOptions" <> $SessionUUID], Objects], Name -> "Test StockSolution Sample for ShipToUserOptions (2)" <> $SessionUUID, StorageCondition -> Link[Model[StorageCondition, "id:N80DNj1r04jW"]]|>,
 
@@ -9451,7 +9650,7 @@ DefineTests[ShipToUserOptions,
 
                     <|DeveloperObject -> True, Type -> Object[Item, Column], Model -> Link[Model[Item, Column, "Test Model Column (extra large) for ShipToUserOptions" <> $SessionUUID], Objects], Name -> "Test Column Sample for ShipToUserOptions (extra large)" <> $SessionUUID, Status -> Available|>,
 
-                    <|DeveloperObject -> True, Type -> Object[Container, Plate], Name -> "Test plate with no contents for ShipToUserOptions" <> $SessionUUID, Model -> Link[Model[Container, Plate, "Test place model for ShipToUserOptions" <> $SessionUUID], Objects]|>,
+                    <|DeveloperObject -> True, Type -> Object[Container, Plate], Name -> "Test plate with no contents for ShipToUserOptions" <> $SessionUUID, Model -> Link[Model[Container, Plate, "Test plate model for ShipToUserOptions" <> $SessionUUID], Objects]|>,
 
                     <|DeveloperObject -> True, Type -> Object[Sample], Model -> Link[Model[Sample, "Test Model Oligomer for ShipToUserOptions" <> $SessionUUID], Objects], Name -> "Test Oligo Sample without site for ShipToUserOptions" <> $SessionUUID|>,
 
@@ -9463,7 +9662,7 @@ DefineTests[ShipToUserOptions,
 
                 (* container objects to upload *)
                 containerObjectPacketsToUpload = {
-                    <|DeveloperObject -> True, Type -> Object[Container, Plate], Name -> "Test plate with contents (2 oligomer samples) for ShipToUserOptions" <> $SessionUUID, Model -> Link[Model[Container, Plate, "Test place model for ShipToUserOptions" <> $SessionUUID], Objects], Replace[Contents] -> {{"A1", Link[Object[Sample, "Test Oligo Sample for ShipToUserOptions (1)" <> $SessionUUID], Container]}, {"A2", Link[Object[Sample, "Test Oligo Sample for ShipToUserOptions (2)" <> $SessionUUID], Container]}}|>,
+                    <|DeveloperObject -> True, Type -> Object[Container, Plate], Name -> "Test plate with contents (2 oligomer samples) for ShipToUserOptions" <> $SessionUUID, Model -> Link[Model[Container, Plate, "Test plate model for ShipToUserOptions" <> $SessionUUID], Objects], Replace[Contents] -> {{"A1", Link[Object[Sample, "Test Oligo Sample for ShipToUserOptions (1)" <> $SessionUUID], Container]}, {"A2", Link[Object[Sample, "Test Oligo Sample for ShipToUserOptions (2)" <> $SessionUUID], Container]}}|>,
 
                     <|DeveloperObject -> True, Type -> Object[Container, Vessel], Name -> "Test vessel with contents (stock solution sample) for ShipToUserOptions" <> $SessionUUID, Model -> Link[Model[Container, Vessel, "Test vessel model for ShipToUserOptions" <> $SessionUUID], Objects], Replace[Contents] -> {{"A1", Link[Object[Sample, "Test StockSolution Sample for ShipToUserOptions (1)" <> $SessionUUID], Container]}}|>,
 
@@ -9475,7 +9674,7 @@ DefineTests[ShipToUserOptions,
                     <|DeveloperObject -> True, Type -> Object[Container, Vessel], Name -> "Test large vessel for ShipToUserOptions (2)" <> $SessionUUID, Model -> Link[Model[Container, Vessel, "Large container model for ShipToUserOptions" <> $SessionUUID], Objects],
                         Replace[Contents] -> {{"A1", Link[Object[Sample, "Test StockSolution Sample for ShipToUserOptions (in large container 2)" <> $SessionUUID], Container]}}|>,
 
-                    <|DeveloperObject -> True, Type -> Object[Container, Plate], Name -> "Test plate without site for ShipToUserOptions" <> $SessionUUID, Model -> Link[Model[Container, Plate, "Test place model for ShipToUserOptions" <> $SessionUUID], Objects], Replace[Contents] -> {{"A1", Link[Object[Sample, "Test Oligo Sample without site for ShipToUserOptions" <> $SessionUUID], Container]}}|>,
+                    <|DeveloperObject -> True, Type -> Object[Container, Plate], Name -> "Test plate without site for ShipToUserOptions" <> $SessionUUID, Model -> Link[Model[Container, Plate, "Test plate model for ShipToUserOptions" <> $SessionUUID], Objects], Replace[Contents] -> {{"A1", Link[Object[Sample, "Test Oligo Sample without site for ShipToUserOptions" <> $SessionUUID], Container]}}|>,
 
                     <|DeveloperObject -> True, Type -> Object[Container, Vessel], Name -> "Test container without notebook (public) for ShipToUserOptions" <> $SessionUUID, Model -> Link[Model[Container, Vessel, "Test vessel model for ShipToUserOptions" <> $SessionUUID], Objects], Replace[Contents] -> {{"A1", Link[Object[Sample, "Test oligomer without notebook (public) for ShipToUserOptions" <> $SessionUUID], Container]}}, Notebook -> Null|>
 
@@ -9517,7 +9716,7 @@ DefineTests[ShipToUserOptions,
                 Object[Container, Site, "Test Site for ShipToUserOptions (1)" <> $SessionUUID],
                 Object[LaboratoryNotebook, "Test Notebook for ShipToUserOptions" <> $SessionUUID],
                 Object[User, "Test User for ShipToUserOptions" <> $SessionUUID],
-                Model[Container, Plate, "Test place model for ShipToUserOptions" <> $SessionUUID],
+                Model[Container, Plate, "Test plate model for ShipToUserOptions" <> $SessionUUID],
                 Model[Container, Vessel, "Test vessel model for ShipToUserOptions" <> $SessionUUID],
                 Model[Container, Vessel, "Large container model for ShipToUserOptions" <> $SessionUUID],
                 Model[Container, Shelf, "Test shelf model for ShipToUserOptions" <> $SessionUUID],
@@ -9626,7 +9825,7 @@ DefineTests[ShipToUserPreview,
                 Object[Container, Site, "Test Site for ShipToUserPreview (1)" <> $SessionUUID],
                 Object[LaboratoryNotebook, "Test Notebook for ShipToUserPreview" <> $SessionUUID],
                 Object[User, "Test User for ShipToUserPreview" <> $SessionUUID],
-                Model[Container, Plate, "Test place model for ShipToUserPreview" <> $SessionUUID],
+                Model[Container, Plate, "Test plate model for ShipToUserPreview" <> $SessionUUID],
                 Model[Container, Vessel, "Test vessel model for ShipToUserPreview" <> $SessionUUID],
                 Model[Container, Vessel, "Large container model for ShipToUserPreview" <> $SessionUUID],
                 Model[Container, Shelf, "Test shelf model for ShipToUserPreview" <> $SessionUUID],
@@ -9694,7 +9893,7 @@ DefineTests[ShipToUserPreview,
 
                 (* Put together model packets to upload *)
                 modelsPacketsToUpload = {
-                    <|DeveloperObject -> True, Type -> Model[Container, Plate], Name -> "Test place model for ShipToUserPreview" <> $SessionUUID,
+                    <|DeveloperObject -> True, Type -> Model[Container, Plate], Name -> "Test plate model for ShipToUserPreview" <> $SessionUUID,
                         Replace[Dimensions] -> {Quantity[0.1276, "Meters"], Quantity[0.0855, "Meters"], Quantity[0.0444, "Meters"]},
                         Replace[Positions] -> {<|Name -> "A1", Footprint -> Null, MaxWidth -> Quantity[0.00825`, "Meters"], MaxDepth -> Quantity[0.00825`, "Meters"], MaxHeight -> Quantity[0.0374`, "Meters"]|>, <|Name -> "A2", Footprint -> Null, MaxWidth -> Quantity[0.00825`, "Meters"], MaxDepth -> Quantity[0.00825`, "Meters"], MaxHeight -> Quantity[0.0374`, "Meters"]|>, <|Name -> "A3", Footprint -> Null, MaxWidth -> Quantity[0.00825`, "Meters"], MaxDepth -> Quantity[0.00825`, "Meters"], MaxHeight -> Quantity[0.0374`, "Meters"]|>, <|Name -> "B1", Footprint -> Null, MaxWidth -> Quantity[0.00825`, "Meters"], MaxDepth -> Quantity[0.00825`, "Meters"], MaxHeight -> Quantity[0.0374`, "Meters"]|>, <|Name -> "B2", Footprint -> Null, MaxWidth -> Quantity[0.00825`, "Meters"], MaxDepth -> Quantity[0.00825`, "Meters"], MaxHeight -> Quantity[0.0374`, "Meters"]|>, <|Name -> "B3", Footprint -> Null, MaxWidth -> Quantity[0.00825`, "Meters"], MaxDepth -> Quantity[0.00825`, "Meters"], MaxHeight -> Quantity[0.0374`, "Meters"]|>}|>,
 
@@ -9727,11 +9926,11 @@ DefineTests[ShipToUserPreview,
 
                 (* sample objects to upload *)
                 sampleObjectPacketsToUpload = {
-                    <|Volume -> 1Milliliter, DeveloperObject -> True, Type -> Object[Sample], Model -> Link[Model[Sample, "Test Model Oligomer for ShipToUserPreview" <> $SessionUUID], Objects], Name -> "Test Oligo Sample for ShipToUserPreview (1)" <> $SessionUUID, Replace[Composition] -> {{50 Micromolar, Link[Model[Molecule, Oligomer, "id:O81aEBZnjv6D"]]}}, StorageCondition -> Link[Model[StorageCondition, "id:N80DNj1r04jW"]]|>,
+                    <|Volume -> 1Milliliter, DeveloperObject -> True, Type -> Object[Sample], Model -> Link[Model[Sample, "Test Model Oligomer for ShipToUserPreview" <> $SessionUUID], Objects], Name -> "Test Oligo Sample for ShipToUserPreview (1)" <> $SessionUUID, Replace[Composition] -> {{50 Micromolar, Link[Model[Molecule, Oligomer, "id:O81aEBZnjv6D"]], Now}}, StorageCondition -> Link[Model[StorageCondition, "id:N80DNj1r04jW"]]|>,
 
-                    <|Volume -> 1Milliliter, DeveloperObject -> True, Type -> Object[Sample], Model -> Link[Model[Sample, "Test Model Oligomer for ShipToUserPreview" <> $SessionUUID], Objects], Name -> "Test Oligo Sample for ShipToUserPreview (2)" <> $SessionUUID, Replace[Composition] -> {{50 Micromolar, Link[Model[Molecule, Oligomer, "id:O81aEBZnjv6D"]]}}, StorageCondition -> Link[Model[StorageCondition, "id:N80DNj1r04jW"]]|>,
+                    <|Volume -> 1Milliliter, DeveloperObject -> True, Type -> Object[Sample], Model -> Link[Model[Sample, "Test Model Oligomer for ShipToUserPreview" <> $SessionUUID], Objects], Name -> "Test Oligo Sample for ShipToUserPreview (2)" <> $SessionUUID, Replace[Composition] -> {{50 Micromolar, Link[Model[Molecule, Oligomer, "id:O81aEBZnjv6D"]], Now}}, StorageCondition -> Link[Model[StorageCondition, "id:N80DNj1r04jW"]]|>,
 
-                    <|Volume -> 1Milliliter, DeveloperObject -> True, Type -> Object[Sample], Model -> Link[Model[Sample, StockSolution, "Test Model StockSolution for ShipToUserPreview" <> $SessionUUID], Objects], Name -> "Test StockSolution Sample for ShipToUserPreview (1)" <> $SessionUUID, Replace[Composition] -> {{50 Micromolar, Link[Model[Molecule, Oligomer, "id:O81aEBZnjv6D"]]}}|>,
+                    <|Volume -> 1Milliliter, DeveloperObject -> True, Type -> Object[Sample], Model -> Link[Model[Sample, StockSolution, "Test Model StockSolution for ShipToUserPreview" <> $SessionUUID], Objects], Name -> "Test StockSolution Sample for ShipToUserPreview (1)" <> $SessionUUID, Replace[Composition] -> {{50 Micromolar, Link[Model[Molecule, Oligomer, "id:O81aEBZnjv6D"]], Now}}|>,
 
                     <|Volume -> 1Milliliter, DeveloperObject -> True, Type -> Object[Sample], Model -> Link[Model[Sample, StockSolution, "Test Model StockSolution for ShipToUserPreview" <> $SessionUUID], Objects], Name -> "Test StockSolution Sample for ShipToUserPreview (2)" <> $SessionUUID, StorageCondition -> Link[Model[StorageCondition, "id:N80DNj1r04jW"]]|>,
 
@@ -9749,7 +9948,7 @@ DefineTests[ShipToUserPreview,
 
                     <|DeveloperObject -> True, Type -> Object[Item, Column], Model -> Link[Model[Item, Column, "Test Model Column (extra large) for ShipToUserPreview" <> $SessionUUID], Objects], Name -> "Test Column Sample for ShipToUserPreview (extra large)" <> $SessionUUID, Status -> Available|>,
 
-                    <|DeveloperObject -> True, Type -> Object[Container, Plate], Name -> "Test plate with no contents for ShipToUserPreview" <> $SessionUUID, Model -> Link[Model[Container, Plate, "Test place model for ShipToUserPreview" <> $SessionUUID], Objects]|>,
+                    <|DeveloperObject -> True, Type -> Object[Container, Plate], Name -> "Test plate with no contents for ShipToUserPreview" <> $SessionUUID, Model -> Link[Model[Container, Plate, "Test plate model for ShipToUserPreview" <> $SessionUUID], Objects]|>,
 
                     <|DeveloperObject -> True, Type -> Object[Sample], Model -> Link[Model[Sample, "Test Model Oligomer for ShipToUserPreview" <> $SessionUUID], Objects], Name -> "Test Oligo Sample without site for ShipToUserPreview" <> $SessionUUID|>,
 
@@ -9761,7 +9960,7 @@ DefineTests[ShipToUserPreview,
 
                 (* container objects to upload *)
                 containerObjectPacketsToUpload = {
-                    <|DeveloperObject -> True, Type -> Object[Container, Plate], Name -> "Test plate with contents (2 oligomer samples) for ShipToUserPreview" <> $SessionUUID, Model -> Link[Model[Container, Plate, "Test place model for ShipToUserPreview" <> $SessionUUID], Objects], Replace[Contents] -> {{"A1", Link[Object[Sample, "Test Oligo Sample for ShipToUserPreview (1)" <> $SessionUUID], Container]}, {"A2", Link[Object[Sample, "Test Oligo Sample for ShipToUserPreview (2)" <> $SessionUUID], Container]}}|>,
+                    <|DeveloperObject -> True, Type -> Object[Container, Plate], Name -> "Test plate with contents (2 oligomer samples) for ShipToUserPreview" <> $SessionUUID, Model -> Link[Model[Container, Plate, "Test plate model for ShipToUserPreview" <> $SessionUUID], Objects], Replace[Contents] -> {{"A1", Link[Object[Sample, "Test Oligo Sample for ShipToUserPreview (1)" <> $SessionUUID], Container]}, {"A2", Link[Object[Sample, "Test Oligo Sample for ShipToUserPreview (2)" <> $SessionUUID], Container]}}|>,
 
                     <|DeveloperObject -> True, Type -> Object[Container, Vessel], Name -> "Test vessel with contents (stock solution sample) for ShipToUserPreview" <> $SessionUUID, Model -> Link[Model[Container, Vessel, "Test vessel model for ShipToUserPreview" <> $SessionUUID], Objects], Replace[Contents] -> {{"A1", Link[Object[Sample, "Test StockSolution Sample for ShipToUserPreview (1)" <> $SessionUUID], Container]}}|>,
 
@@ -9773,7 +9972,7 @@ DefineTests[ShipToUserPreview,
                     <|DeveloperObject -> True, Type -> Object[Container, Vessel], Name -> "Test large vessel for ShipToUserPreview (2)" <> $SessionUUID, Model -> Link[Model[Container, Vessel, "Large container model for ShipToUserPreview" <> $SessionUUID], Objects],
                         Replace[Contents] -> {{"A1", Link[Object[Sample, "Test StockSolution Sample for ShipToUserPreview (in large container 2)" <> $SessionUUID], Container]}}|>,
 
-                    <|DeveloperObject -> True, Type -> Object[Container, Plate], Name -> "Test plate without site for ShipToUserPreview" <> $SessionUUID, Model -> Link[Model[Container, Plate, "Test place model for ShipToUserPreview" <> $SessionUUID], Objects], Replace[Contents] -> {{"A1", Link[Object[Sample, "Test Oligo Sample without site for ShipToUserPreview" <> $SessionUUID], Container]}}|>,
+                    <|DeveloperObject -> True, Type -> Object[Container, Plate], Name -> "Test plate without site for ShipToUserPreview" <> $SessionUUID, Model -> Link[Model[Container, Plate, "Test plate model for ShipToUserPreview" <> $SessionUUID], Objects], Replace[Contents] -> {{"A1", Link[Object[Sample, "Test Oligo Sample without site for ShipToUserPreview" <> $SessionUUID], Container]}}|>,
 
                     <|DeveloperObject -> True, Type -> Object[Container, Vessel], Name -> "Test container without notebook (public) for ShipToUserPreview" <> $SessionUUID, Model -> Link[Model[Container, Vessel, "Test vessel model for ShipToUserPreview" <> $SessionUUID], Objects], Replace[Contents] -> {{"A1", Link[Object[Sample, "Test oligomer without notebook (public) for ShipToUserPreview" <> $SessionUUID], Container]}}, Notebook -> Null|>
 
@@ -9816,7 +10015,7 @@ DefineTests[ShipToUserPreview,
                 Object[Container, Site, "Test Site for ShipToUserPreview (1)" <> $SessionUUID],
                 Object[LaboratoryNotebook, "Test Notebook for ShipToUserPreview" <> $SessionUUID],
                 Object[User, "Test User for ShipToUserPreview" <> $SessionUUID],
-                Model[Container, Plate, "Test place model for ShipToUserPreview" <> $SessionUUID],
+                Model[Container, Plate, "Test plate model for ShipToUserPreview" <> $SessionUUID],
                 Model[Container, Vessel, "Test vessel model for ShipToUserPreview" <> $SessionUUID],
                 Model[Container, Vessel, "Large container model for ShipToUserPreview" <> $SessionUUID],
                 Model[Container, Shelf, "Test shelf model for ShipToUserPreview" <> $SessionUUID],
@@ -9922,7 +10121,7 @@ DefineTests[ValidShipToUserQ,
             _EmeraldTestSummary
         ],
         Example[
-            {Options, Verbose, "Validate an ShipToECL, printing a verbose summary of tests as they are run:"},
+            {Options, Verbose, "Validate a ShipToECL, printing a verbose summary of tests as they are run:"},
             ValidShipToUserQ[
                 {
                     Object[Item, Column, "Test Column Sample for ValidShipToUserQ (1)" <> $SessionUUID],
@@ -10052,11 +10251,11 @@ DefineTests[ValidShipToUserQ,
 
                 (* sample objects to upload *)
                 sampleObjectPacketsToUpload = {
-                    <|Volume -> 1Milliliter, DeveloperObject -> True, Type -> Object[Sample], Model -> Link[Model[Sample, "Test Model Oligomer for ValidShipToUserQ" <> $SessionUUID], Objects], Name -> "Test Oligo Sample for ValidShipToUserQ (1)" <> $SessionUUID, Replace[Composition] -> {{50 Micromolar, Link[Model[Molecule, Oligomer, "id:O81aEBZnjv6D"]]}}, StorageCondition -> Link[Model[StorageCondition, "id:N80DNj1r04jW"]]|>,
+                    <|Volume -> 1Milliliter, DeveloperObject -> True, Type -> Object[Sample], Model -> Link[Model[Sample, "Test Model Oligomer for ValidShipToUserQ" <> $SessionUUID], Objects], Name -> "Test Oligo Sample for ValidShipToUserQ (1)" <> $SessionUUID, Replace[Composition] -> {{50 Micromolar, Link[Model[Molecule, Oligomer, "id:O81aEBZnjv6D"]], Now}}, StorageCondition -> Link[Model[StorageCondition, "id:N80DNj1r04jW"]]|>,
 
-                    <|Volume -> 1Milliliter, DeveloperObject -> True, Type -> Object[Sample], Model -> Link[Model[Sample, "Test Model Oligomer for ValidShipToUserQ" <> $SessionUUID], Objects], Name -> "Test Oligo Sample for ValidShipToUserQ (2)" <> $SessionUUID, Replace[Composition] -> {{50 Micromolar, Link[Model[Molecule, Oligomer, "id:O81aEBZnjv6D"]]}}, StorageCondition -> Link[Model[StorageCondition, "id:N80DNj1r04jW"]]|>,
+                    <|Volume -> 1Milliliter, DeveloperObject -> True, Type -> Object[Sample], Model -> Link[Model[Sample, "Test Model Oligomer for ValidShipToUserQ" <> $SessionUUID], Objects], Name -> "Test Oligo Sample for ValidShipToUserQ (2)" <> $SessionUUID, Replace[Composition] -> {{50 Micromolar, Link[Model[Molecule, Oligomer, "id:O81aEBZnjv6D"]], Now}}, StorageCondition -> Link[Model[StorageCondition, "id:N80DNj1r04jW"]]|>,
 
-                    <|Volume -> 1Milliliter, DeveloperObject -> True, Type -> Object[Sample], Model -> Link[Model[Sample, StockSolution, "Test Model StockSolution for ValidShipToUserQ" <> $SessionUUID], Objects], Name -> "Test StockSolution Sample for ValidShipToUserQ (1)" <> $SessionUUID, Replace[Composition] -> {{50 Micromolar, Link[Model[Molecule, Oligomer, "id:O81aEBZnjv6D"]]}}|>,
+                    <|Volume -> 1Milliliter, DeveloperObject -> True, Type -> Object[Sample], Model -> Link[Model[Sample, StockSolution, "Test Model StockSolution for ValidShipToUserQ" <> $SessionUUID], Objects], Name -> "Test StockSolution Sample for ValidShipToUserQ (1)" <> $SessionUUID, Replace[Composition] -> {{50 Micromolar, Link[Model[Molecule, Oligomer, "id:O81aEBZnjv6D"]], Now}}|>,
 
                     <|Volume -> 1Milliliter, DeveloperObject -> True, Type -> Object[Sample], Model -> Link[Model[Sample, StockSolution, "Test Model StockSolution for ValidShipToUserQ" <> $SessionUUID], Objects], Name -> "Test StockSolution Sample for ValidShipToUserQ (2)" <> $SessionUUID, StorageCondition -> Link[Model[StorageCondition, "id:N80DNj1r04jW"]]|>,
 
@@ -10193,2490 +10392,2505 @@ DefineTests[ValidShipToUserQ,
 
 DefineTests[ShipToECL,
     {
-        Example[
-            {Basic, "Generate a transaction to ship samples to ECL:"},
-            transaction = ShipToECL[{Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID], Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID], Model[Item, Column, "Test Model Column for ShipToECL" <> $SessionUUID]},
-                {"my new bottle" <> CreateUUID[], "my new plate" <> CreateUUID[], "my new column" <> CreateUUID[]},
-                ContainerModel -> {Model[Container, Vessel, "Test vessel model for ShipToECL" <> $SessionUUID], Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID], Automatic},
-                Position -> {Automatic, "B1", Automatic},
-                CoverModel -> {Model[Item, Cap, "Test cap model for ShipToECL" <> $SessionUUID], Model[Item, PlateSeal, "Test plate seal model for ShipToECL" <> $SessionUUID], Null},
-                Volume -> {2Liter, 1Milliliter, None},
-                NumberOfUses -> {None, None, 0},
-                Product -> {None, None, Object[Product, "Test product for ShipToECL (1)" <> $SessionUUID]}
-            ],
-            {ObjectP[Object[Transaction, ShipToECL]]},
-            Variables :> {transaction}
-        ],
-
-        Example[{Basic, "Update shipping info for transaction objects:"},
-            ShipToECL[
-                {Object[Transaction, ShipToECL, "Test transaction for ShipToECL (1)" <> $SessionUUID], Object[Transaction, ShipToECL, "Test transaction for ShipToECL (2)" <> $SessionUUID]},
-                TrackingNumber -> {"123456", {"654321", "9009882"}},
-                Shipper -> {Object[Company, Shipper, "Test shipper for ShipToECL" <> $SessionUUID], Object[Company, Shipper, "Test shipper for ShipToECL" <> $SessionUUID]},
-                DateShipped -> {DateObject[List[2018, 3, 30, 14, 17, 52.`], "Instant", "Gregorian", -7.`], DateObject[List[2018, 3, 30, 14, 17, 52.`], "Instant", "Gregorian", -7.`]}
-            ];
-            Download[{Object[Transaction, ShipToECL, "Test transaction for ShipToECL (1)" <> $SessionUUID], Object[Transaction, ShipToECL, "Test transaction for ShipToECL (2)" <> $SessionUUID]}, {TrackingNumbers, Shipper, DateShipped}],
-            {
-                {{"123456"},
-                    LinkP[Object[Company, Shipper, "Test shipper for ShipToECL" <> $SessionUUID], Transactions],
-                    _DateObject
-                },
-                {{"654321", "9009882"},
-                    LinkP[Object[Company, Shipper, "Test shipper for ShipToECL" <> $SessionUUID], Transactions],
-                    _DateObject
-                }
-            }
-        ],
-
-        Example[{Basic, "When given an empty list, returns an empty list:"},
-            ShipToECL[{}],
-            {}
-        ],
-
-        (* ---------------- *)
-        (* -- Additional -- *)
-        (* ---------------- *)
-
-        Example[{Additional, "Generate Transactions", "Accepts single input (1 sample in a vessel):"},
-            transaction = ShipToECL[
-                Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID],
-                "my new bottle" <> CreateUUID[],
-                ContainerModel -> Model[Container, Vessel, "Test vessel model for ShipToECL" <> $SessionUUID],
-                CoverModel -> Model[Item, Cap, "Test cap model for ShipToECL" <> $SessionUUID],
-                Volume -> 1Milliliter
-            ],
-            {ObjectP[Object[Transaction, ShipToECL]]},
-            Variables :> {transaction}
-        ],
-
-        Example[{Additional, "Generate Transactions", "Accepts single input (1 sample in a plate):"},
-            transaction = ShipToECL[
-                Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID],
-                "my new plate" <> CreateUUID[],
-                ContainerModel -> Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID],
-                CoverModel -> Model[Item, PlateSeal, "Test plate seal model for ShipToECL" <> $SessionUUID],
-                Position -> "A2",
-                Volume -> 1Milliliter
-            ],
-            {ObjectP[Object[Transaction, ShipToECL]]},
-            Variables :> {transaction}
-        ],
-
-        Example[{Additional, "Generate Transactions", "Accepts single input (item):"},
-            transaction = ShipToECL[
-                Model[Item, Consumable, "Test Model Consumable for ShipToECL" <> $SessionUUID],
-                "my new column" <> CreateUUID[],
-                Product -> Object[Product, "Test product for ShipToECL (1)" <> $SessionUUID]
-            ],
-            {ObjectP[Object[Transaction, ShipToECL]]},
-            Variables :> {transaction}
-        ],
-
-        Example[{Additional, "Generate Transactions", "Accepts semi-listed input (samples in vessels):"},
-            transaction = ShipToECL[
-                Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID],
-                {"my new bottle" <> CreateUUID[], "my new bottle 2" <> CreateUUID[]},
-                ContainerModel -> Model[Container, Vessel, "Test vessel model for ShipToECL" <> $SessionUUID],
-                CoverModel -> Model[Item, Cap, "Test cap model for ShipToECL" <> $SessionUUID],
-                Volume -> 1Milliliter
-            ],
-            {ObjectP[Object[Transaction, ShipToECL]]},
-            Variables :> {transaction}
-        ],
-
-        Example[{Additional, "Generate Transactions", "Accepts listed input (samples in vessels):"},
-            transaction = ShipToECL[
-                {Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID], Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID]},
-                {"my new bottle" <> CreateUUID[], "my new bottle 2" <> CreateUUID[]},
-                ContainerModel -> {Model[Container, Vessel, "Test vessel model for ShipToECL" <> $SessionUUID], Model[Container, Vessel, "Test vessel model for ShipToECL" <> $SessionUUID]},
-                CoverModel -> Model[Item, Cap, "Test cap model for ShipToECL" <> $SessionUUID],
-                Volume -> 1Milliliter
-            ],
-            {ObjectP[Object[Transaction, ShipToECL]]},
-            Variables :> {transaction}
-        ],
-
-        Example[{Additional, "Generate Transactions", "If the same container name and model are specified, the samples will be put into the same container:"},
-            uuid = CreateUUID[];
-            transaction = ShipToECL[
-                {Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID], Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID]},
-                {"my new plate" <> uuid, "my new plate" <> uuid},
-                ContainerModel -> {Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID], Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID]},
-                CoverModel -> Model[Item, PlateSeal, "Test plate seal model for ShipToECL" <> $SessionUUID],
-                Volume -> 1Milliliter,
-                Position -> {"A1", "A2"}
-            ];
-            Download[transaction, ReceivedSamples[Container][Name]],
-            {{"my new plate" <> uuid, "my new plate" <> uuid}},
-            Variables :> {transaction, uuid}
-        ],
-
-        Example[{Additional, "Generate Transactions", "If the different container names are specified,the samples will be put into different containers:"},
-            uuid = CreateUUID[];
-            transaction = ShipToECL[
-                {Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID], Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID]},
-                {"my new bottle" <> uuid, "my new bottle 2" <> uuid},
-                ContainerModel -> {Model[Container, Vessel, "Test vessel model for ShipToECL" <> $SessionUUID], Model[Container, Vessel, "Test vessel model for ShipToECL" <> $SessionUUID]},
-                CoverModel -> Model[Item, Cap, "Test cap model for ShipToECL" <> $SessionUUID],
-                Volume -> 1Milliliter,
-                Position -> {"A1", "A1"}
-            ];
-            Download[transaction, ReceivedSamples[Container][Name]],
-            {{"my new bottle" <> uuid, "my new bottle 2" <> uuid}},
-            Variables :> {transaction, uuid}
-        ],
-
-        Example[{Additional, "Generate Transactions", "Accepts semi-listed input:"},
-            transaction = ShipToECL[
-                Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID],
-                {"my new plate" <> CreateUUID[], "my new plate" <> CreateUUID[]},
-                ContainerModel -> Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID],
-                CoverModel -> Model[Item, PlateSeal, "Test plate seal model for ShipToECL" <> $SessionUUID],
-                Position -> {"A2", "A3"},
-                Volume -> 1Milliliter
-            ],
-            {ObjectP[Object[Transaction, ShipToECL]]},
-            Variables :> {transaction}
-        ],
-
-        Example[{Additional, "Generate Transactions", "Accepts listed input (samples in plates):"},
-            transaction = ShipToECL[
-                {Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID], Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID]},
-                {"my new plate" <> CreateUUID[], "my new plate" <> CreateUUID[]},
-                ContainerModel -> {Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID], Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID]},
-                CoverModel -> Model[Item, PlateSeal, "Test plate seal model for ShipToECL" <> $SessionUUID],
-                Position -> {"A2", "A3"},
-                Volume -> 1Milliliter
-            ],
-            {ObjectP[Object[Transaction, ShipToECL]]},
-            Variables :> {transaction}
-        ],
-
-        Example[{Additional, "Generate Transactions", "Accepts semi-listed input (items):"},
-            transaction = ShipToECL[
-                Model[Item, Consumable, "Test Model Consumable for ShipToECL" <> $SessionUUID],
-                {"my consumable 1" <> CreateUUID[], "my consumable 2" <> CreateUUID[]},
-                Product -> Object[Product, "Test product for ShipToECL (1)" <> $SessionUUID]
-            ],
-            {ObjectP[Object[Transaction, ShipToECL]]},
-            Variables :> {transaction}
-        ],
-
-        Example[{Additional, "Generate Transactions", "Accepts listed input (items):"},
-            transaction = ShipToECL[
-                {Model[Item, Consumable, "Test Model Consumable for ShipToECL" <> $SessionUUID], Model[Item, Consumable, "Test Model Consumable for ShipToECL" <> $SessionUUID]},
-                {"my consumable 1" <> CreateUUID[], "my consumable 2" <> CreateUUID[]},
-                Product -> Object[Product, "Test product for ShipToECL (1)" <> $SessionUUID]
-            ],
-            {ObjectP[Object[Transaction, ShipToECL]]},
-            Variables :> {transaction}
-        ],
-
-        Example[{Additional, "Generate Transactions", "A new sample is generated for each input:"},
-            transaction = ShipToECL[{Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID], Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID], Model[Item, Consumable, "Test Model Consumable for ShipToECL" <> $SessionUUID]},
-                {"my new plate" <> CreateUUID[], "my new bottle" <> CreateUUID[], "my new item" <> CreateUUID[]},
-                ContainerModel -> {Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID], Model[Container, Vessel, "Test vessel model for ShipToECL" <> $SessionUUID], Automatic},
-                CoverModel -> {Model[Item, PlateSeal, "Test plate seal model for ShipToECL" <> $SessionUUID], Model[Item, Cap, "Test cap model for ShipToECL" <> $SessionUUID], Null},
-                Position -> {"A1", Automatic, Automatic},
-                Volume -> {1Milliliter, 1Milliliter, None},
-                Product -> {None, None, Object[Product, "Test product for ShipToECL (1)" <> $SessionUUID]}
-            ];
-            Download[transaction, ReceivedSamples],
-            {{LinkP[Object[Sample]], LinkP[Object[Sample]], LinkP[Object[Item, Consumable]]}},
-            Variables :> {transaction}
-        ],
-
-        Example[{Additional, "Generate Transactions", "Samples have the specified positions:"},
-            uuid = CreateUUID[];
-            transaction = ShipToECL[
-                {Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID], Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID]},
-                {"my new plate" <> uuid, "my new plate" <> uuid},
-                ContainerModel -> {Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID], Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID]},
-                CoverModel -> Model[Item, PlateSeal, "Test plate seal model for ShipToECL" <> $SessionUUID],
-                Position -> {"A1", "A2"},
-                Volume -> 1Milliliter
-            ];
-            Download[transaction, ReceivedContainers[Contents]],
-            {
-                {
-                    {
-                        {"A1", LinkP[Object[Sample]]},
-                        {"A2", LinkP[Object[Sample]]}
-                    }
-                }
-            },
-            Variables :> {transaction, uuid}
-        ],
-
-        Example[{Additional, "Generate Transactions", "If position is not specified for a single-position container, the single position of the container will be used:"},
-            transaction = ShipToECL[Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID], "my new bottle" <> CreateUUID[],
-                ContainerModel -> Model[Container, Vessel, "Test vessel model for ShipToECL" <> $SessionUUID],
-                CoverModel -> Model[Item, Cap, "Test cap model for ShipToECL" <> $SessionUUID],
-                Volume -> 1Milliliter
-            ];
-            Download[transaction, ReceivedContainers[Contents]],
-            {{{{"A1", LinkP[Object[Sample]]}}}},
-            Variables :> {transaction}
-        ],
-
-        Example[{Additional, "Generate Transactions", "If the same container name and model is used for a plate, samples will be put into the same plate:"},
-            uuid = CreateUUID[];
-            transaction = ShipToECL[
-                {Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID], Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID], Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID]},
-                {"my new plate" <> uuid, "my new plate" <> uuid, "my new plate 2" <> uuid},
-                Position -> {"A1", "A2", "A3"},
-                ContainerModel -> {Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID], Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID], Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID]},
-                CoverModel -> Model[Item, PlateSeal, "Test plate seal model for ShipToECL" <> $SessionUUID],
-                Volume -> 1Milliliter
-            ];
-            Download[transaction, ReceivedSamples[Container][Name]],
-            {{"my new plate" <> uuid, "my new plate" <> uuid, "my new plate 2" <> uuid}},
-            Variables :> {transaction, uuid}
-        ],
-
-        Example[{Additional, "Generate Transactions", "If model containers are specified, new containers are made with the specified names and samples are put into the correct containers:"},
-            uuid = CreateUUID[];
-            transaction = ShipToECL[{Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID], Model[Sample, "Test Model Chemical for ShipToECL" <> $SessionUUID], Model[Sample, "Test Model Oligomer for ShipToECL" <> $SessionUUID], Model[Sample, "Test Model Cells for ShipToECL" <> $SessionUUID], Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID]},
-                {"my new bottle" <> uuid, "my new bottle 2" <> uuid, "my new plate" <> uuid, "my new plate" <> uuid, "my new plate 2" <> uuid},
-                ContainerModel -> {
-                    Model[Container, Vessel, "Test vessel model for ShipToECL" <> $SessionUUID],
-                    Model[Container, Vessel, "Test vessel model for ShipToECL" <> $SessionUUID],
-                    Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID],
-                    Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID],
-                    Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID]
-                },
-                Position -> {Automatic, Automatic, "A2", "B2", "A2"},
-                CoverModel -> {
-                    Model[Item, Cap, "Test cap model for ShipToECL" <> $SessionUUID],
-                    Model[Item, Cap, "Test cap model for ShipToECL" <> $SessionUUID],
-                    Model[Item, PlateSeal, "Test plate seal model for ShipToECL" <> $SessionUUID],
-                    Model[Item, PlateSeal, "Test plate seal model for ShipToECL" <> $SessionUUID],
-                    Model[Item, PlateSeal, "Test plate seal model for ShipToECL" <> $SessionUUID]
-                },
-                Volume -> 1 Milliliter];
-            Download[transaction, {ReceivedContainers[Model], ReceivedContainers[Name], ReceivedContainers[Contents][[All, 1]], ReceivedContainers[Contents][[All, 2]][Model]}],
-            {
-                {
-                    {
-                        LinkP[Model[Container, Vessel, "Test vessel model for ShipToECL" <> $SessionUUID]],
-                        LinkP[Model[Container, Vessel, "Test vessel model for ShipToECL" <> $SessionUUID]],
-                        LinkP[Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID]],
-                        LinkP[Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID]]
-                    },
-                    {"my new bottle" <> uuid, "my new bottle 2" <> uuid, "my new plate" <> uuid, "my new plate 2" <> uuid},
-                    {{"A1"}, {"A1"}, {"A2", "B2"}, {"A2"}},
-                    {
-                        {LinkP[Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID]]},
-                        {LinkP[Model[Sample, "Test Model Chemical for ShipToECL" <> $SessionUUID]]},
-                        {LinkP[Model[Sample, "Test Model Oligomer for ShipToECL" <> $SessionUUID]], LinkP[Model[Sample, "Test Model Cells for ShipToECL" <> $SessionUUID]]},
-                        {LinkP[Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID]]}
-                    }
-                }},
-            Variables :> {transaction, uuid}
-        ],
-
-        Example[{Additional, "Generate Transactions", "The samples and input containers get the status Transit:"},
-            uuid = CreateUUID[];
-            transaction = ShipToECL[
-                {Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID], Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID]},
-                {"my new plate" <> uuid, "my new plate" <> uuid},
-                ContainerModel -> {Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID], Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID]},
-                CoverModel -> Model[Item, PlateSeal, "Test plate seal model for ShipToECL" <> $SessionUUID],
-                Position -> {"A1", "A2"},
-                Volume -> 1Milliliter
-            ];
-            {Download[transaction, ReceivedSamples[Status]], Download[transaction, ReceivedContainers[Status]]},
-            {{{Transit, Transit}}, {{Transit}}},
-            Variables :> {transaction, uuid}
-        ],
-
-        Example[{Additional, "Generate Transactions", "The samples get the destination:"},
-            transaction = ShipToECL[
-                {Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID], Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID]},
-                {"my new plate" <> CreateUUID[], "my new plate" <> CreateUUID[]},
-                ContainerModel -> {Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID], Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID]},
-                CoverModel -> Model[Item, PlateSeal, "Test plate seal model for ShipToECL" <> $SessionUUID],
-                Position -> {"A1", "A2"},
-                Volume -> 1Milliliter
-            ];
-            {Download[transaction, ReceivedSamples[Destination]]},
-            {{{LinkP[$Site], LinkP[$Site]}}},
-            Variables :> {transaction}
-        ],
-
-        Example[{Additional, "Generate Transactions", "Items inherit the source site as their container:"},
-            transaction = ShipToECL[Model[Item, Consumable, "Test Model Consumable for ShipToECL" <> $SessionUUID], "my new item" <> CreateUUID[],
-                Product -> {Object[Product, "Test product for ShipToECL (1)" <> $SessionUUID]}
-            ];
-            Download[transaction, ReceivedSamples[Container][Object]],
-            {{Download[Object[Container, Site, "Test source site for ShipToECL" <> $SessionUUID], Object]}},
-            Variables :> {transaction}
-        ],
-
-        Example[{Additional, "Generate Transactions", "The logged in user is specified as the Creator of the Transaction object:"},
-            transaction = ShipToECL[
-                {Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID], Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID]},
-                {"my new plate" <> CreateUUID[], "my new plate" <> CreateUUID[]},
-                ContainerModel -> {Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID], Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID]},
-                CoverModel -> Model[Item, PlateSeal, "Test plate seal model for ShipToECL" <> $SessionUUID],
-                Volume -> 1Milliliter,
-                Position -> {"A1", "A2"}
-            ];
-            Download[transaction, Creator],
-            {LinkP[Object[User, "id:n0k9mG8AXZP6"]]},
-            Variables :> {transaction}
-        ],
-
-        Example[{Additional, "Generate Transactions", "The source of the new samples (and any new containers) is the transaction object created to track their shipment:"},
-            transaction = ShipToECL[
-                {Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID], Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID], Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID], Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID]},
-                {"my new bottle" <> CreateUUID[], "my new plate" <> CreateUUID[], "my new bottle 2" <> CreateUUID[], "my new plate 2" <> CreateUUID[]},
-                Position -> {Automatic, "A1", Automatic, "A2"},
-                ContainerModel -> {
-                    Model[Container, Vessel, "Test vessel model for ShipToECL" <> $SessionUUID],
-                    Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID],
-                    Model[Container, Vessel, "Test vessel model for ShipToECL" <> $SessionUUID],
-                    Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID]
-                },
-                CoverModel -> {
-                    Model[Item, Cap, "Test cap model for ShipToECL" <> $SessionUUID],
-                    Model[Item, PlateSeal, "Test plate seal model for ShipToECL" <> $SessionUUID],
-                    Model[Item, Cap, "Test cap model for ShipToECL" <> $SessionUUID],
-                    Model[Item, PlateSeal, "Test plate seal model for ShipToECL" <> $SessionUUID]
-                },
-                Volume -> 1Milliliter,
-                TrackingNumber -> {"123456", "123456", "7890", "7890"},
-                Shipper -> Object[Company, Shipper, "Test shipper for ShipToECL" <> $SessionUUID]
-            ];
-            Download[transaction, {ReceivedSamples[Source], ReceivedContainers[Source]}],
-            {
-                {{LinkP[transaction[[1]]], LinkP[transaction[[1]]]}, {LinkP[transaction[[1]]], LinkP[transaction[[1]]]}},
-                {{LinkP[transaction[[2]]], LinkP[transaction[[2]]]}, {LinkP[transaction[[2]]], LinkP[transaction[[2]]]}}
-            },
-            Variables :> {transaction}
-        ],
-
-        Example[{Additional, "Generate Transactions", "The transaction status is updated by the currently logged in user when creating a transaction:"},
-            transaction = ShipToECL[
-                {Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID], Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID]},
-                {"my new plate" <> CreateUUID[], "my new plate" <> CreateUUID[]},
-                ContainerModel -> {Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID], Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID]},
-                CoverModel -> Model[Item, PlateSeal, "Test plate seal model for ShipToECL" <> $SessionUUID],
-                Position -> {"A1", "A2"},
-                Volume -> 1Milliliter,
-                DateShipped -> DateObject[List[2018, 3, 30, 14, 17, 52.`], "Instant", "Gregorian", -7.`]
-            ];
-            Download[transaction, {StatusLog}],
-            {{{{_DateObject, Shipped, LinkP[Object[User, "id:n0k9mG8AXZP6"]]}}}},
-            Variables :> {transaction}
-        ],
-
-        Example[{Additional, "Update Transactions", "The transaction status is updated by the currently logged in user when updating a transaction without a DateShipped:"},
-            ShipToECL[
-                {Object[Transaction, ShipToECL, "Test transaction for ShipToECL (1)" <> $SessionUUID], Object[Transaction, ShipToECL, "Test transaction for ShipToECL (2)" <> $SessionUUID]}
-            ];
-            Download[{Object[Transaction, ShipToECL, "Test transaction for ShipToECL (1)" <> $SessionUUID], Object[Transaction, ShipToECL, "Test transaction for ShipToECL (2)" <> $SessionUUID]}, {StatusLog}],
-            {{{{_?DateObjectQ, Pending, LinkP[Object[User, "id:n0k9mG8AXZP6"]]}}}, {{{_?DateObjectQ, Pending, LinkP[Object[User, "id:n0k9mG8AXZP6"]]}}}},
-            SetUp :> (
-                Upload[
-                    {
-                        <|Object -> Object[Transaction, ShipToECL, "Test transaction for ShipToECL (1)" <> $SessionUUID], Replace[StatusLog] -> {}, DateShipped -> Null|>,
-                        <|Object -> Object[Transaction, ShipToECL, "Test transaction for ShipToECL (2)" <> $SessionUUID], Replace[StatusLog] -> {}, DateShipped -> Null|>
-                    }
-                ];
-            ),
-            TearDown :> (
-                Upload[
-                    {
-                        <|Object -> Object[Transaction, ShipToECL, "Test transaction for ShipToECL (1)" <> $SessionUUID], Replace[StatusLog] -> {}|>,
-                        <|Object -> Object[Transaction, ShipToECL, "Test transaction for ShipToECL (2)" <> $SessionUUID], Replace[StatusLog] -> {}|>
-                    }
-                ]
-            )
-        ],
-
-        Example[{Additional, "Update Transactions", "The transaction status is updated by the currently logged in user when updating a transaction with a DateShipped:"},
-            ShipToECL[
-                {Object[Transaction, ShipToECL, "Test transaction for ShipToECL (1)" <> $SessionUUID], Object[Transaction, ShipToECL, "Test transaction for ShipToECL (2)" <> $SessionUUID]},
-                DateShipped -> DateObject[List[2018, 3, 30, 14, 17, 52.`], "Instant", "Gregorian", -7.`]
-            ];
-            Download[{Object[Transaction, ShipToECL, "Test transaction for ShipToECL (1)" <> $SessionUUID], Object[Transaction, ShipToECL, "Test transaction for ShipToECL (2)" <> $SessionUUID]}, {StatusLog}],
-            {{{{_DateObject, Shipped, LinkP[Object[User, "id:n0k9mG8AXZP6"]]}}}, {{{_DateObject, Shipped, LinkP[Object[User, "id:n0k9mG8AXZP6"]]}}}},
-            SetUp :> (
-                Upload[
-                    {
-                        <|Object -> Object[Transaction, ShipToECL, "Test transaction for ShipToECL (1)" <> $SessionUUID], Replace[StatusLog] -> {}|>,
-                        <|Object -> Object[Transaction, ShipToECL, "Test transaction for ShipToECL (2)" <> $SessionUUID], Replace[StatusLog] -> {}|>
-                    }
-                ];
-            ),
-            TearDown :> (
-                Upload[
-                    {
-                        <|Object -> Object[Transaction, ShipToECL, "Test transaction for ShipToECL (1)" <> $SessionUUID], Replace[StatusLog] -> {}|>,
-                        <|Object -> Object[Transaction, ShipToECL, "Test transaction for ShipToECL (2)" <> $SessionUUID], Replace[StatusLog] -> {}|>
-                    }
-                ]
-            )
-        ],
-
-        Example[{Additional, "Update Transactions", "Update shipping info for a single transaction object:"},
-            ShipToECL[
-                Object[Transaction, ShipToECL, "Test transaction for ShipToECL (1)" <> $SessionUUID],
-                TrackingNumber -> "123456",
-                Shipper -> Object[Company, Shipper, "Test shipper for ShipToECL" <> $SessionUUID],
-                DateShipped -> DateObject[List[2018, 4, 2, 14, 17, 52.`], "Instant", "Gregorian", -7.`]
-            ],
-            Object[Transaction, ShipToECL, "Test transaction for ShipToECL (1)" <> $SessionUUID][Object]
-        ],
-
-        (* ------------- *)
-        (* -- Options -- *)
-        (* ------------- *)
-
-
-        Example[{Options, ContainerModel, "ContainerModel may be specified for some inputs and not others:"},
-            transaction = ShipToECL[
-                {Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID], Model[Item, Consumable, "Test Model Consumable for ShipToECL" <> $SessionUUID]},
-                {"my new bottle" <> CreateUUID[], "my new item" <> CreateUUID[]},
-                ContainerModel -> {Model[Container, Vessel, "Test vessel model for ShipToECL" <> $SessionUUID], None},
-                CoverModel -> {Model[Item, Cap, "Test cap model for ShipToECL" <> $SessionUUID], None},
-                Volume -> {0.5 Milliliter, None},
-                Product -> {None, Object[Product, "Test product for ShipToECL (1)" <> $SessionUUID]}
-            ];
-            Download[transaction, ReceivedSamples[Container]],
-            {{LinkP[Object[Container, Vessel]], LinkP[Object[Container, Site]]}},
-            Variables :> {transaction}
-        ],
-        Example[{Options, CoverModel, "CoverModel may be specified for some inputs and not others:"},
-            transaction = ShipToECL[
-                {Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID], Model[Item, Consumable, "Test Model Consumable for ShipToECL" <> $SessionUUID]},
-                {"my new bottle" <> CreateUUID[], "my new item" <> CreateUUID[]},
-                ContainerModel -> {Model[Container, Vessel, "Test vessel model for ShipToECL" <> $SessionUUID], None},
-                CoverModel -> {Model[Item, Cap, "Test cap model for ShipToECL" <> $SessionUUID], None},
-                Volume -> {0.5 Milliliter, None},
-                Product -> {None, Object[Product, "Test product for ShipToECL (1)" <> $SessionUUID]}
-            ];
-            Download[transaction, ReceivedSamples[Container][Cover]],
-            {{LinkP[Object[Item, Cap]], Null}},
-            Variables :> {transaction}
-        ],
-        Example[{Options, CoverModel, "CoverModel will be automatically resolved to a placeholder model:"},
-            transaction = ShipToECL[
-                Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID],
-                "my new bottle" <> CreateUUID[],
-                ContainerModel -> Model[Container, Vessel, "Test vessel model for ShipToECL" <> $SessionUUID],
-                Volume -> 1 Milliliter
-            ];
-            Download[transaction,
-                {
-                    ReceivedContainers[Cover],
-                    ReceivedCovers
-                }
-            ],
-            {{
-                {LinkP[Object[Item, Cap]]},
-                {LinkP[Object[Item, Cap]]}
-            }},
-            Variables :> {transaction}
-        ],
-        Example[{Options, CoverModel, "CoverModel will correctly resolve to Null in cases where the ContainerModel is self covering:"},
-            transaction = ShipToECL[
-                {
-                    Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID],
-                    Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID],
-                    Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID]
-                },
-                {"my new bottle" <> CreateUUID[], "my new bottle 2" <> CreateUUID[], "my new bottle 3" <> CreateUUID[]},
-                ContainerModel -> {
-                    Model[Container, Vessel, "Test vessel model for ShipToECL" <> $SessionUUID],
-                    Model[Container, Vessel, "id:dORYzZn0ooaG"],
-                    Model[Container, Vessel, "id:01G6nvwRj84A"]
-                },
-                CoverModel -> {
-                    Model[Item, Cap, "Test cap model for ShipToECL" <> $SessionUUID],
-                    Automatic,
-                    Automatic
-                },
-                Position -> "A1",
-                Volume -> 1 Milliliter
-            ];
-            Download[transaction,
-                {
-                    ReceivedContainers[Cover],
-                    ReceivedCovers
-                }
-            ],
-            {{
-                {ObjectP[Object[Item, Cap]], Null, Null},
-                {ObjectP[Object[Item, Cap]]}
-            }},
-            Variables :> {transaction}
-        ],
-        Example[{Options, CoverModel, "CoverModel can be specified as Null in cases where the container is self covering:"},
-            transaction = ShipToECL[
-                {
-                    Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID],
-                    Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID],
-                    Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID]
-                },
-                {"my new bottle" <> CreateUUID[], "my new bottle 2" <> CreateUUID[], "my new bottle 3" <> CreateUUID[]},
-                ContainerModel -> {
-                    Model[Container, Vessel, "Test vessel model for ShipToECL" <> $SessionUUID],
-                    Model[Container, Vessel, "id:dORYzZn0ooaG"],
-                    Model[Container, Vessel, "id:01G6nvwRj84A"]
-                },
-                CoverModel -> {
-                    Model[Item, Cap, "Test cap model for ShipToECL" <> $SessionUUID],
-                    None,
-                    None
-                },
-                Position -> "A1",
-                Volume -> 1 Milliliter
-            ];
-            Download[transaction,
-                {
-                    ReceivedContainers[Cover],
-                    ReceivedCovers
-                }
-            ],
-            {{
-                {ObjectP[Object[Item, Cap]], Null, Null},
-                {ObjectP[Object[Item, Cap]]}
-            }},
-            Variables :> {transaction},
-            Messages :> {}
-        ],
-
-        Example[{Options, ShippedRack, "Populate ShippedRack when the shipment includes a rack to hold the other shipped items:"},
-            options = ShipToECL[
-                {
-                    Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID],
-                    Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID]
-                },
-                {"my new bottle" <> CreateUUID[], "my new bottle 2" <> CreateUUID[]},
-                ContainerModel -> {
-                    Model[Container, Vessel, "id:01G6nvwRj84A"],
-                    Model[Container, Vessel, "id:dORYzZn0ooaG"]
-                },
-                ShippedRack -> {Null, Model[Container, Rack, "Multi-Position Utility Rack"]},
-                Position -> "A1",
-                Volume -> 1 Milliliter,
-                Output -> Options
-            ];
-            Lookup[options, ShippedRack],
-            {Null, ObjectP[Model[Container, Rack]]},
-            Variables :> {options}
-        ],
-        Example[{Options, ShippedRack, "A rack object is created for every ShippedRack:"},
-            trans = ShipToECL[
-                {
-                    Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID],
-                    Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID]
-                },
-                {"my new bottle" <> CreateUUID[], "my new bottle 2" <> CreateUUID[]},
-                ContainerModel -> {
-                    Model[Container, Vessel, "id:01G6nvwRj84A"],
-                    Model[Container, Vessel, "id:dORYzZn0ooaG"]
-                },
-                ShippedRack -> {Null, Model[Container, Rack, "Multi-Position Utility Rack"]},
-                Position -> "A1",
-                Volume -> 1 Milliliter
-            ];
-            Download[Cases[trans, ObjectP[Object[Transaction, ShipToECL]]], ShippedRacks],
-            {{Null, ObjectP[Object[Container, Rack]]}},
-            Variables :> {trans}
-        ],
-
-        Example[{Options, Position, "Position may be specified for some inputs and not others:"},
-            transaction = ShipToECL[
-                {Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID], Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID]},
-                {"my new bottle" <> CreateUUID[], "my new plate 2" <> CreateUUID[]},
-                ContainerModel -> {
-                    Model[Container, Vessel, "Test vessel model for ShipToECL" <> $SessionUUID],
-                    Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID]
-                },
-                CoverModel -> {
-                    Model[Item, Cap, "Test cap model for ShipToECL" <> $SessionUUID],
-                    Model[Item, PlateSeal, "Test plate seal model for ShipToECL" <> $SessionUUID]
-                },
-                Position -> {Automatic, "A2"},
-                Volume -> 1Milliliter
-            ];
-            Download[transaction, ReceivedContainers[Contents]],
-            {{{{"A1", LinkP[Object[Sample]]}}, {{"A2", LinkP[Object[Sample]]}}}},
-            Variables :> {transaction}
-        ],
-
-        Example[{Options, Source, "If not specified, the source of the Transaction object is pulled from the site of the financer of the notebook where the function is called from:"},
-            transaction = ShipToECL[
-                {Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID], Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID]},
-                {"my new plate" <> CreateUUID[], "my new plate" <> CreateUUID[]},
-                ContainerModel -> {Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID], Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID]},
-                CoverModel -> {
-                    Model[Item, PlateSeal, "Test plate seal model for ShipToECL" <> $SessionUUID],
-                    Model[Item, PlateSeal, "Test plate seal model for ShipToECL" <> $SessionUUID]
-                },
-                Volume -> 1Milliliter,
-                Position -> {"A1", "A2"}
-            ];
-            Download[transaction, Source],
-            {LinkP[Object[Container, Site, "Test source site for ShipToECL" <> $SessionUUID]]},
-            Variables :> {transaction}
-        ],
-
-        Example[{Options, Name, "Update the name of existing transactions:"},
-            uuid = CreateUUID[];
-            Download[ShipToECL[
-                {Object[Transaction, ShipToECL, "Test transaction for ShipToECL (1)" <> $SessionUUID], Object[Transaction, ShipToECL, "Test transaction for ShipToECL (2)" <> $SessionUUID]},
-                Name -> "My transaction" <> uuid
-            ], Name],
-            {"My transaction" <> uuid <> "_1", "My transaction" <> uuid <> "_2"},
-            TearDown :> (
-                If[
-                    MatchQ[DatabaseMemberQ[{Object[Transaction, ShipToECL, "My transaction" <> uuid <> "_1"], Object[Transaction, ShipToECL, "My transaction" <> uuid <> "_2"]}], {True, True}],
-                    Upload[
-                        {
-                            <|Object -> Object[Transaction, ShipToECL, "My transaction" <> uuid <> "_1"], Name -> "Test transaction for ShipToECL (1)" <> $SessionUUID|>,
-                            <|Object -> Object[Transaction, ShipToECL, "My transaction" <> uuid <> "_2"], Name -> "Test transaction for ShipToECL (2)" <> $SessionUUID|>
-                        }
-                    ]
-                ]
-            ),
-            Variables :> {uuid}
-        ],
-
-        Example[{Options, Name, "Name the transaction being created:"},
-            uuid = CreateUUID[];
-            transaction = ShipToECL[
-                {Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID], Model[Sample, "Test Model Chemical for ShipToECL" <> $SessionUUID]},
-                {"my new plate" <> uuid, "my new plate" <> uuid},
-                ContainerModel -> {Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID], Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID]},
-                CoverModel -> {
-                    Model[Item, PlateSeal, "Test plate seal model for ShipToECL" <> $SessionUUID],
-                    Model[Item, PlateSeal, "Test plate seal model for ShipToECL" <> $SessionUUID]
-                },
-                Position -> {"A1", "A2"},
-                Volume -> 1Milliliter,
-                Name -> "My new transaction" <> uuid
-            ];
-            Download[transaction, Name],
-            {"My new transaction" <> uuid},
-            Variables :> {transaction, uuid}
-        ],
-
-        Example[{Options, Name, "If multiple transactions are generated, an index is appended to the name:"},
-            uuid = CreateUUID[];
-            transaction = ShipToECL[
-                {Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID], Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID]},
-                {"my new bottle" <> uuid, "my new plate" <> uuid},
-                ContainerModel -> {Model[Container, Vessel, "Test vessel model for ShipToECL" <> $SessionUUID], Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID]},
-                CoverModel -> {
-                    Model[Item, Cap, "Test cap model for ShipToECL" <> $SessionUUID],
-                    Model[Item, PlateSeal, "Test plate seal model for ShipToECL" <> $SessionUUID]
-                },
-                Position -> {Automatic, "A2"},
-                Name -> "My new transaction" <> uuid,
-                Volume -> 1Milliliter,
-                DateShipped -> {DateObject[List[2018, 3, 30, 14, 17, 52.`], "Instant", "Gregorian", -7.`], DateObject[List[2018, 3, 29, 14, 17, 52.`], "Instant", "Gregorian", -7.`]}
-            ];
-            Download[transaction, Name],
-            {"My new transaction" <> uuid <> "_1", "My new transaction" <> uuid <> "_2"},
-            Variables :> {transaction, uuid}
-        ],
-
-        Example[{Options, StorageCondition, "If StorageCondition is not specified, the new samples inherit the DefaultStorageCondition of the model:"},
-            transaction = ShipToECL[
-                {Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID], Model[Sample, "Test Model Chemical for ShipToECL" <> $SessionUUID]},
-                {"my new plate" <> CreateUUID[], "my new plate" <> CreateUUID[]},
-                Position -> {"A1", "A2"},
-                ContainerModel -> {Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID], Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID]},
-                CoverModel -> {
-                    Model[Item, PlateSeal, "Test plate seal model for ShipToECL" <> $SessionUUID],
-                    Model[Item, PlateSeal, "Test plate seal model for ShipToECL" <> $SessionUUID]
-                },
-                Volume -> 1Milliliter
-            ];
-            {Download[transaction, ReceivedSamples[StorageCondition]], Download[{Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID], Model[Sample, "Test Model Chemical for ShipToECL" <> $SessionUUID]}, DefaultStorageCondition]},
-            {{{ObjectP[Model[StorageCondition, "Refrigerator"]], ObjectP[Model[StorageCondition, "Ambient Storage"]]}}, {ObjectP[Model[StorageCondition, "Refrigerator"]], ObjectP[Model[StorageCondition, "Ambient Storage"]]}},
-            Variables :> {transaction}
-        ],
-
-        Example[{Options, StorageCondition, "Specify StorageCondition to be the same for all samples:"},
-            transaction = ShipToECL[
-                {Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID], Model[Sample, "Test Model Chemical for ShipToECL" <> $SessionUUID]},
-                {"my new plate" <> CreateUUID[], "my new plate" <> CreateUUID[]},
-                Position -> {"A1", "A2"},
-                ContainerModel -> {Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID], Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID]},
-                CoverModel -> {
-                    Model[Item, PlateSeal, "Test plate seal model for ShipToECL" <> $SessionUUID],
-                    Model[Item, PlateSeal, "Test plate seal model for ShipToECL" <> $SessionUUID]
-                },
-                StorageCondition -> AmbientStorage,
-                Volume -> 1Milliliter
-            ];
-            Download[transaction, ReceivedSamples[StorageCondition]],
-            {{LinkP[Model[StorageCondition, "Ambient Storage"]], LinkP[Model[StorageCondition, "Ambient Storage"]]}},
-            Variables :> {transaction}
-        ],
-
-        Example[{Options, StorageCondition, "Specify a StorageCondition for each sample:"},
-            transaction = ShipToECL[
-                {Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID], Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID]},
-                {"my new plate" <> CreateUUID[], "my new plate" <> CreateUUID[]},
-                Position -> {"A1", "A2"},
-                ContainerModel -> {Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID], Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID]},
-                CoverModel -> {
-                    Model[Item, PlateSeal, "Test plate seal model for ShipToECL" <> $SessionUUID],
-                    Model[Item, PlateSeal, "Test plate seal model for ShipToECL" <> $SessionUUID]
-                },
-                StorageCondition -> {Freezer, DeepFreezer},
-                Volume -> 1Milliliter
-            ];
-            Download[transaction, ReceivedSamples[StorageCondition]],
-            {{LinkP[Model[StorageCondition, "Freezer"]], LinkP[Model[StorageCondition, "Deep Freezer"]]}},
-            Variables :> {transaction}
-        ],
-
-        Example[{Options, StorageCondition, "Specify a StorageCondition some samples, and let other samples default from the model:"},
-            transaction = ShipToECL[
-                {Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID], Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID]},
-                {"my new plate" <> CreateUUID[], "my new plate" <> CreateUUID[]},
-                Position -> {"A1", "A2"},
-                ContainerModel -> {Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID], Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID]},
-                CoverModel -> {
-                    Model[Item, PlateSeal, "Test plate seal model for ShipToECL" <> $SessionUUID],
-                    Model[Item, PlateSeal, "Test plate seal model for ShipToECL" <> $SessionUUID]
-                },
-                StorageCondition -> {Freezer, Automatic},
-                Volume -> 1Milliliter
-            ];
-            Download[transaction, ReceivedSamples[StorageCondition]],
-            {{LinkP[Model[StorageCondition, "Freezer"]], LinkP[Model[StorageCondition, "Refrigerator"]]}},
-            Variables :> {transaction}
-        ],
-
-        Example[{Options, Destination, "Specify the destination where the samples will be sent:"},
-            transaction = ShipToECL[
-                {Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID], Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID]},
-                {"my new plate" <> CreateUUID[], "my new plate" <> CreateUUID[]},
-                Position -> {"A1", "A2"},
-                ContainerModel -> {Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID], Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID]},
-                CoverModel -> {
-                    Model[Item, PlateSeal, "Test plate seal model for ShipToECL" <> $SessionUUID],
-                    Model[Item, PlateSeal, "Test plate seal model for ShipToECL" <> $SessionUUID]
-                },
-                Destination -> Object[Container, Site, "Test destination site for ShipToECL" <> $SessionUUID],
-                Volume -> 1Milliliter
-            ];
-            Download[transaction, Destination],
-            {LinkP[Object[Container, Site, "Test destination site for ShipToECL" <> $SessionUUID]]},
-            Variables :> {transaction}
-        ],
-
-        Example[{Options, Volume, "Specify a different volume for each sample:"},
-            transaction = ShipToECL[
-                {Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID], Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID]},
-                {"my new plate" <> CreateUUID[], "my new plate" <> CreateUUID[]},
-                Position -> {"A1", "A2"},
-                CoverModel -> {
-                    Model[Item, PlateSeal, "Test plate seal model for ShipToECL" <> $SessionUUID],
-                    Model[Item, PlateSeal, "Test plate seal model for ShipToECL" <> $SessionUUID]
-                },
-                ContainerModel -> {Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID], Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID]},
-                Volume -> {0.5 Milliliter, 1 Milliliter}
-            ];
-            Download[transaction, ReceivedSamples[{Volume, VolumeLog}]],
-            {{
-                {Quantity[0.0005`, "Liters"], {{_?DateObjectQ, Quantity[0.0005`, "Liters"], LinkP[Object[User, "id:n0k9mG8AXZP6"]], InitialManufacturerVolume}}},
-                {Quantity[0.001`, "Liters"], {{_?DateObjectQ, Quantity[0.001`, "Liters"], LinkP[Object[User, "id:n0k9mG8AXZP6"]], InitialManufacturerVolume}}}
-            }},
-            Variables :> {transaction}
-        ],
-
-        Example[{Options, Volume, "Specify the same volume for all the samples:"},
-            transaction = ShipToECL[
-                {Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID], Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID]},
-                {"my new plate" <> CreateUUID[], "my new plate" <> CreateUUID[]},
-                Position -> {"A1", "A2"},
-                CoverModel -> {
-                    Model[Item, PlateSeal, "Test plate seal model for ShipToECL" <> $SessionUUID],
-                    Model[Item, PlateSeal, "Test plate seal model for ShipToECL" <> $SessionUUID]
-                },
-                ContainerModel -> {Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID], Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID]},
-                Volume -> 0.5 Milliliter
-            ];
-            Download[transaction, ReceivedSamples[{Volume, VolumeLog}]],
-            {{
-                {Quantity[0.0005`, "Liters"], {{_?DateObjectQ, Quantity[0.0005`, "Liters"], LinkP[Object[User, "id:n0k9mG8AXZP6"]], InitialManufacturerVolume}}},
-                {Quantity[0.0005`, "Liters"], {{_?DateObjectQ, Quantity[0.0005`, "Liters"], LinkP[Object[User, "id:n0k9mG8AXZP6"]], InitialManufacturerVolume}}}
-            }},
-            Variables :> {transaction}
-        ],
-
-        Example[{Options, Volume, "Specify a volume for some but not all of the samples:"},
-            transaction = ShipToECL[
-                {Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID], Model[Item, Consumable, "Test Model Consumable for ShipToECL" <> $SessionUUID]},
-                {"my new plate" <> CreateUUID[], "my new item" <> CreateUUID[]},
-                Position -> {"A1", None},
-                ContainerModel -> {Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID], None},
-                CoverModel -> {
-                    Model[Item, PlateSeal, "Test plate seal model for ShipToECL" <> $SessionUUID],
-                    None
-                },
-                Volume -> {0.5 Milliliter, None},
-                Product -> {None, Object[Product, "Test product for ShipToECL (1)" <> $SessionUUID]}
-            ];
-            Download[transaction, ReceivedSamples[{Volume, VolumeLog}]],
-            {{
-                {Quantity[0.0005`, "Liters"], {{_?DateObjectQ, Quantity[0.0005`, "Liters"], LinkP[Object[User, "id:n0k9mG8AXZP6"]], InitialManufacturerVolume}}},
-                {Null, {}}
-            }},
-            Variables :> {transaction}
-        ],
-
-        Example[{Options, Volume, "If mass is provided and density is known, the volume is calculated:"},
-            transaction = ShipToECL[Model[Sample, "Test Model Chemical with density for ShipToECL" <> $SessionUUID], "my new bottle" <> CreateUUID[],
-                ContainerModel -> Model[Container, Vessel, "Test vessel model for ShipToECL" <> $SessionUUID],
-                CoverModel -> Model[Item, Cap, "Test cap model for ShipToECL" <> $SessionUUID],
-                Mass -> 95Gram
-            ];
-            Download[transaction, ReceivedSamples[{Volume, VolumeLog, Mass, MassLog}]],
-            {{{
-                Quantity[0.1, "Liters"],
-                {{_?DateObjectQ, Quantity[0.1, "Liters"], LinkP[Object[User, "id:n0k9mG8AXZP6"]], InitialManufacturerVolume}},
-                Quantity[95., "Grams"],
-                {{_?DateObjectQ, Quantity[95., "Grams"], LinkP[Object[User, "id:n0k9mG8AXZP6"]], InitialManufacturerWeight}}
-            }}},
-            Variables :> {transaction}
-        ],
-        Example[{Options, Source, "Specify the site where the samples are being shipped from:"},
-            transaction = ShipToECL[
-                {Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID], Model[Item, Consumable, "Test Model Consumable for ShipToECL" <> $SessionUUID]},
-                {"my new bottle" <> CreateUUID[], "my new item" <> CreateUUID[]},
-                ContainerModel -> {Model[Container, Vessel, "Test vessel model for ShipToECL" <> $SessionUUID], Null},
-                CoverModel -> {Model[Item, Cap, "Test cap model for ShipToECL" <> $SessionUUID], Null},
-                Source -> Object[Container, Site, "Test secondary source site for ShipToECL" <> $SessionUUID],
-                Volume -> {1Milliliter, None},
-                Product -> {None, Object[Product, "Test product for ShipToECL (1)" <> $SessionUUID]}
-            ];
-            Download[transaction, Source],
-            {LinkP[Object[Container, Site, "Test secondary source site for ShipToECL" <> $SessionUUID]]},
-            Variables :> {transaction}
-        ],
-
-        Example[{Options, NumberOfUses, "Specify a different NumberOfUses for each sample:"},
-            transaction = ShipToECL[
-                {Model[Item, Column, "Test Model Column for ShipToECL" <> $SessionUUID], Model[Item, Column, "Test Model Column for ShipToECL" <> $SessionUUID]},
-                {"new column 1", "new column 2"},
-                NumberOfUses -> {3, 15},
-                Product -> Object[Product, "Test product for ShipToECL (1)" <> $SessionUUID
-                ]
-            ];
-            Download[transaction, ReceivedSamples[NumberOfUses]],
-            {{3, 15}},
-            Variables :> {transaction, newID1, newID2}
-        ],
-
-        Example[{Options, NumberOfUses, "Specify the same NumberOfUses for all the samples:"},
-            transaction = ShipToECL[
-                {Model[Item, Column, "Test Model Column for ShipToECL" <> $SessionUUID], Model[Item, Column, "Test Model Column for ShipToECL" <> $SessionUUID]},
-                {"new column 1", "new column 2"},
-                NumberOfUses -> 5,
-                Product -> Object[Product, "Test product for ShipToECL (1)" <> $SessionUUID]
-            ];
-            Download[transaction, ReceivedSamples[NumberOfUses]],
-            {{5, 5}},
-            Variables :> {transaction}
-        ],
-
-        Example[{Options, NumberOfUses, "Specify a NumberOfUses for some but not all of the samples:"},
-            transaction = ShipToECL[
-                {Model[Sample, "Test Model Chemical for ShipToECL" <> $SessionUUID], Model[Item, Column, "Test Model Column for ShipToECL" <> $SessionUUID]},
-                {"my new plate" <> CreateUUID[], "my new item" <> CreateUUID[]},
-                ContainerModel -> {Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID], None},
-                CoverModel -> {
-                    Model[Item, PlateSeal, "Test plate seal model for ShipToECL" <> $SessionUUID],
-                    None
-                },
-                Position -> {"A1", None},
-                NumberOfUses -> {None, 4},
-                Volume -> {1Milliliter, None},
-                Product -> {None, Object[Product, "Test product for ShipToECL (1)" <> $SessionUUID]}
-            ];
-            Quiet[Download[transaction, ReceivedSamples[NumberOfUses]], Download::FieldDoesntExist],
-            {{$Failed, 4}},
-            Variables :> {transaction}
-        ],
-        Example[{Options, Product, "Specify a different Product for each sample:"},
-            transaction = ShipToECL[
-                {Model[Sample, "Test Model Chemical for ShipToECL" <> $SessionUUID], Model[Sample, "Test Model Chemical for ShipToECL" <> $SessionUUID]},
-                {"my new plate" <> CreateUUID[], "my new plate" <> CreateUUID[]},
-                ContainerModel -> {Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID], Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID]},
-                Position -> {"A1", "A2"},
-                CoverModel -> {
-                    Model[Item, PlateSeal, "Test plate seal model for ShipToECL" <> $SessionUUID],
-                    Model[Item, PlateSeal, "Test plate seal model for ShipToECL" <> $SessionUUID]
-                },
-                Product -> {Object[Product, "Test product for ShipToECL (1)" <> $SessionUUID], Object[Product, "Test product for ShipToECL (2)" <> $SessionUUID]},
-                Volume -> 0.3Milliliter
-            ];
-            Download[transaction, ReceivedSamples[Product]],
-            {{LinkP[Object[Product, "Test product for ShipToECL (1)" <> $SessionUUID]], LinkP[Object[Product, "Test product for ShipToECL (2)" <> $SessionUUID]]}},
-            Variables :> {transaction}
-        ],
-
-        Example[{Options, Product, "Specify the same Product for all the samples:"},
-            transaction = ShipToECL[
-                {Model[Sample, "Test Model Chemical for ShipToECL" <> $SessionUUID], Model[Sample, "Test Model Chemical for ShipToECL" <> $SessionUUID]},
-                {"my new plate" <> CreateUUID[], "my new plate" <> CreateUUID[]},
-                ContainerModel -> {Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID], Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID]},
-                CoverModel -> {
-                    Model[Item, PlateSeal, "Test plate seal model for ShipToECL" <> $SessionUUID],
-                    Model[Item, PlateSeal, "Test plate seal model for ShipToECL" <> $SessionUUID]
-                },
-                Position -> {"A1", "A2"},
-                Product -> Object[Product, "Test product for ShipToECL (1)" <> $SessionUUID],
-                Volume -> 0.3Milliliter
-            ];
-            Download[transaction, ReceivedSamples[Product]],
-            {{LinkP[Object[Product, "Test product for ShipToECL (1)" <> $SessionUUID]], LinkP[Object[Product, "Test product for ShipToECL (1)" <> $SessionUUID]]}},
-            Variables :> {transaction}
-        ],
-
-        Example[{Options, Product, "Specify a Product for some but not all of the samples:"},
-            transaction = ShipToECL[
-                {Model[Item, Consumable, "Test Model Consumable for ShipToECL" <> $SessionUUID], Model[Sample, "Test Model Chemical for ShipToECL" <> $SessionUUID]},
-                {"my new item" <> CreateUUID[], "my new plate" <> CreateUUID[]},
-                ContainerModel -> {None, Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID]},
-                CoverModel -> {
-                    None,
-                    Model[Item, PlateSeal, "Test plate seal model for ShipToECL" <> $SessionUUID]
-                },
-                Position -> {None, "A2"},
-                Product -> {Object[Product, "Test product for ShipToECL (2)" <> $SessionUUID], None},
-                Volume -> {None, 0.3Milliliter}
-            ];
-            Download[transaction, ReceivedSamples[Product]],
-            {{LinkP[Object[Product, "Test product for ShipToECL (2)" <> $SessionUUID]], Null}},
-            Variables :> {transaction}
-        ],
-
-        Example[{Options, Count, "Specify a different count for each sample:"},
-            transaction = ShipToECL[
-                {Model[Sample, "Test Model Tablet for ShipToECL" <> $SessionUUID], Model[Sample, "Test Model Tablet for ShipToECL" <> $SessionUUID]},
-                {"my new bottle" <> CreateUUID[], "my new bottle 2" <> CreateUUID[]},
-                ContainerModel -> {Model[Container, Vessel, "Test vessel model for ShipToECL" <> $SessionUUID], Model[Container, Vessel, "Test vessel model for ShipToECL" <> $SessionUUID]},
-                CoverModel -> {
-                    Model[Item, Cap, "Test cap model for ShipToECL" <> $SessionUUID],
-                    Model[Item, Cap, "Test cap model for ShipToECL" <> $SessionUUID]
-                },
-                Count -> {5, 10}
-            ];
-            Download[transaction, ReceivedSamples[{Count, CountLog}]],
-            {{
-                {5, {{_?DateObjectQ, 5, LinkP[Object[User, "id:n0k9mG8AXZP6"]]}}},
-                {10, {{_?DateObjectQ, 10, LinkP[Object[User, "id:n0k9mG8AXZP6"]]}}}
-            }},
-            Variables :> {transaction}
-        ],
-
-        Example[{Options, Count, "Specify the same count for all the samples:"},
-            transaction = ShipToECL[
-                {Model[Sample, "Test Model Tablet for ShipToECL" <> $SessionUUID], Model[Sample, "Test Model Tablet for ShipToECL" <> $SessionUUID]},
-                {"my new bottle" <> CreateUUID[], "my new bottle 2" <> CreateUUID[]},
-                ContainerModel -> {Model[Container, Vessel, "Test vessel model for ShipToECL" <> $SessionUUID], Model[Container, Vessel, "Test vessel model for ShipToECL" <> $SessionUUID]},
-                CoverModel -> {
-                    Model[Item, Cap, "Test cap model for ShipToECL" <> $SessionUUID],
-                    Model[Item, Cap, "Test cap model for ShipToECL" <> $SessionUUID]
-                },
-                Count -> 20
-            ];
-            Download[transaction, ReceivedSamples[{Count, CountLog}]],
-            {{
-                {20, {{_?DateObjectQ, 20, LinkP[Object[User, "id:n0k9mG8AXZP6"]]}}},
-                {20, {{_?DateObjectQ, 20, LinkP[Object[User, "id:n0k9mG8AXZP6"]]}}}
-            }},
-            Variables :> {transaction}
-        ],
-
-        Example[{Options, Count, "Specify a count for some but not all of the samples:"},
-            transaction = ShipToECL[
-                {Model[Sample, "Test Model Tablet for ShipToECL" <> $SessionUUID], Model[Item, Consumable, "Test Model Consumable for ShipToECL" <> $SessionUUID]},
-                {"my new bottle" <> CreateUUID[], "my new item" <> CreateUUID[]},
-                ContainerModel -> {Model[Container, Vessel, "Test vessel model for ShipToECL" <> $SessionUUID], None},
-                CoverModel -> {
-                    Model[Item, Cap, "Test cap model for ShipToECL" <> $SessionUUID],
-                    None
-                },
-                Count -> {20, None},
-                Product -> {None, Object[Product, "Test product for ShipToECL (1)" <> $SessionUUID]}
-            ];
-            Download[transaction, ReceivedSamples[{Count, CountLog}]],
-            {{
-                {20, {{_?DateObjectQ, 20, LinkP[Object[User, "id:n0k9mG8AXZP6"]]}}},
-                {Null, {}}
-            }},
-            Variables :> {transaction}
-        ],
-        Example[{Options, Count, "If mass is provided and tablet weight is known, the count is calculated (rounding to the nearest whole number):"},
-            transaction = ShipToECL[
-                Model[Sample, "Test Model Tablet for ShipToECL" <> $SessionUUID],
-                "my new bottle" <> CreateUUID[],
-                ContainerModel -> Model[Container, Vessel, "Test vessel model for ShipToECL" <> $SessionUUID],
-                CoverModel -> Model[Item, Cap, "Test cap model for ShipToECL" <> $SessionUUID],
-                Mass -> 20.2Gram
-            ];
-            Download[transaction, ReceivedSamples[{Count, CountLog, Mass, MassLog}]],
-            {{{
-                20,
-                {{_?DateObjectQ, 20, LinkP[Object[User, "id:n0k9mG8AXZP6"]]}},
-                Quantity[20.2, "Grams"],
-                {{_?DateObjectQ, Quantity[20.2, "Grams"], LinkP[Object[User, "id:n0k9mG8AXZP6"]], InitialManufacturerWeight}}
-            }}},
-            Variables :> {transaction}
-        ],
-
-        Example[{Options, Mass, "Specify a different mass for each sample:"},
-            transaction = ShipToECL[
-                {Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID], Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID]},
-                {"my new plate" <> CreateUUID[], "my new plate" <> CreateUUID[]},
-                Position -> {"A1", "A2"},
-                ContainerModel -> {
-                    Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID],
-                    Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID]
-                },
-                CoverModel -> {
-                    Model[Item, PlateSeal, "Test plate seal model for ShipToECL" <> $SessionUUID],
-                    Model[Item, PlateSeal, "Test plate seal model for ShipToECL" <> $SessionUUID]
-                },
-                Mass -> {0.5 Gram, 1 Gram}];
-            Download[transaction, ReceivedSamples[{Mass, MassLog}]],
-            {{
-                {Quantity[0.5, "Grams"], {{_?DateObjectQ, Quantity[0.5, "Grams"], LinkP[Object[User, "id:n0k9mG8AXZP6"]], WeightMeasurementStatusP}}},
-                {Quantity[1., "Grams"], {{_?DateObjectQ, Quantity[1., "Grams"], LinkP[Object[User, "id:n0k9mG8AXZP6"]], WeightMeasurementStatusP}}}
-            }},
-            Variables :> {transaction}
-        ],
-
-        Example[{Options, Mass, "Specify the same mass for all the samples:"},
-            transaction = ShipToECL[
-                {Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID], Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID]},
-                {"my new plate" <> CreateUUID[], "my new plate" <> CreateUUID[]},
-                Position -> {"A1", "A2"},
-                ContainerModel -> {
-                    Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID],
-                    Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID]
-                },
-                CoverModel -> {
-                    Model[Item, PlateSeal, "Test plate seal model for ShipToECL" <> $SessionUUID],
-                    Model[Item, PlateSeal, "Test plate seal model for ShipToECL" <> $SessionUUID]
-                },
-                Mass -> 0.5 Gram];
-            Download[transaction, ReceivedSamples[{Mass, MassLog}]],
-            {{
-                {Quantity[0.5, "Grams"], {{_?DateObjectQ, Quantity[0.5, "Grams"], LinkP[Object[User, "id:n0k9mG8AXZP6"]], WeightMeasurementStatusP}}},
-                {Quantity[0.5, "Grams"], {{_?DateObjectQ, Quantity[0.5, "Grams"], LinkP[Object[User, "id:n0k9mG8AXZP6"]], WeightMeasurementStatusP}}}
-            }},
-            Variables :> {transaction}
-        ],
-
-        Example[{Options, Mass, "Specify a mass for some but not all of the samples:"},
-            transaction = ShipToECL[
-                {Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID], Model[Item, Consumable, "Test Model Consumable for ShipToECL" <> $SessionUUID]},
-                {"my new plate" <> CreateUUID[], "my new item" <> CreateUUID[]},
-                Position -> {"A1", None},
-                ContainerModel -> {Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID], None},
-                CoverModel -> {
-                    Model[Item, PlateSeal, "Test plate seal model for ShipToECL" <> $SessionUUID],
-                    None
-                },
-                Mass -> {0.5 Gram, None},
-                Product -> {None, Object[Product, "Test product for ShipToECL (1)" <> $SessionUUID]}
-            ];
-            Download[transaction, ReceivedSamples[{Mass, MassLog}]],
-            {{
-                {Quantity[0.5, "Grams"], {{_?DateObjectQ, Quantity[0.5, "Grams"], LinkP[Object[User, "id:n0k9mG8AXZP6"]], WeightMeasurementStatusP}}},
-                {Null, {}}
-            }},
-            Variables :> {transaction}
-        ],
-        Example[{Options, Mass, "If volume is provided and density is known, the mass is calculated:"},
-            transaction = ShipToECL[
-                Model[Sample, "Test Model Chemical with density for ShipToECL" <> $SessionUUID],
-                "my new bottle" <> CreateUUID[],
-                ContainerModel -> Model[Container, Vessel, "Test vessel model for ShipToECL" <> $SessionUUID],
-                CoverModel -> Model[Item, Cap, "Test cap model for ShipToECL" <> $SessionUUID],
-                Volume -> 0.1Liter
-            ];
-            Download[transaction, ReceivedSamples[{Volume, VolumeLog, Mass, MassLog}]],
-            {{{
-                Quantity[0.1, "Liters"],
-                {{_?DateObjectQ, Quantity[0.1, "Liters"], LinkP[Object[User, "id:n0k9mG8AXZP6"]], InitialManufacturerVolume}},
-                Quantity[95., "Grams"],
-                {{_?DateObjectQ, Quantity[95., "Grams"], LinkP[Object[User, "id:n0k9mG8AXZP6"]], InitialManufacturerWeight}}
-            }}},
-            Variables :> {transaction}
-        ],
-        Example[{Options, Mass, "If count is provided and tablet weight is known, the mass is calculated:"},
-            transaction = ShipToECL[
-                Model[Sample, "Test Model Tablet for ShipToECL" <> $SessionUUID],
-                "my new bottle" <> CreateUUID[],
-                ContainerModel -> Model[Container, Vessel, "Test vessel model for ShipToECL" <> $SessionUUID],
-                CoverModel -> Model[Item, Cap, "Test cap model for ShipToECL" <> $SessionUUID],
-                Count -> 20
-            ];
-            Download[transaction, ReceivedSamples[{Count, CountLog, Mass, MassLog}]],
-            {{{
-                20,
-                {{_?DateObjectQ, 20, LinkP[Object[User, "id:n0k9mG8AXZP6"]]}},
-                Quantity[20., "Grams"],
-                {{_?DateObjectQ, Quantity[20., "Grams"], LinkP[Object[User, "id:n0k9mG8AXZP6"]], InitialManufacturerWeight}}
-            }}},
-            Variables :> {transaction}
-        ],
-        Example[{Options, ExpectedDeliveryDate, "Specify an expected delivery date when updating shipping information:"},
-            ShipToECL[
-                {Object[Transaction, ShipToECL, "Test transaction for ShipToECL (1)" <> $SessionUUID], Object[Transaction, ShipToECL, "Test transaction for ShipToECL (2)" <> $SessionUUID]},
-                ExpectedDeliveryDate -> DateObject[List[2018, 4, 2, 14, 17, 52.`], "Instant", "Gregorian", -7.`]
-            ];
-            Download[{Object[Transaction, ShipToECL, "Test transaction for ShipToECL (1)" <> $SessionUUID], Object[Transaction, ShipToECL, "Test transaction for ShipToECL (2)" <> $SessionUUID]}, DateExpected],
-            {_DateObject, _DateObject}
-        ],
-
-        Example[{Options, ExpectedDeliveryDate, "Specify an expected delivery date for each object when updating shipping information:"},
-            ShipToECL[
-                {Object[Transaction, ShipToECL, "Test transaction for ShipToECL (1)" <> $SessionUUID], Object[Transaction, ShipToECL, "Test transaction for ShipToECL (2)" <> $SessionUUID]},
-                ExpectedDeliveryDate -> {DateObject[List[2018, 4, 2, 14, 17, 52.`], "Instant", "Gregorian", -7.`], DateObject[List[2018, 4, 5, 14, 17, 52.`], "Instant", "Gregorian", -7.`]
-                }
-            ];
-            Download[{Object[Transaction, ShipToECL, "Test transaction for ShipToECL (1)" <> $SessionUUID], Object[Transaction, ShipToECL, "Test transaction for ShipToECL (2)" <> $SessionUUID]}, DateExpected],
-            {_DateObject, _DateObject}
-        ],
-
-        Example[{Options, ExpectedDeliveryDate, "Specify an expected delivery date for some but not all of the objects when updating shipping information:"},
-            ShipToECL[
-                {Object[Transaction, ShipToECL, "Test transaction for ShipToECL (1)" <> $SessionUUID], Object[Transaction, ShipToECL, "Test transaction for ShipToECL (2)" <> $SessionUUID]},
-                ExpectedDeliveryDate -> {DateObject[List[2018, 4, 2, 14, 17, 52.`], "Instant", "Gregorian", -7.`], None}
-            ];
-            Download[{Object[Transaction, ShipToECL, "Test transaction for ShipToECL (1)" <> $SessionUUID], Object[Transaction, ShipToECL, "Test transaction for ShipToECL (2)" <> $SessionUUID]}, DateExpected],
-            {_DateObject, Null}
-        ],
-        Example[{Options, ExpectedDeliveryDate, "When updating shipping information, Automatic ExpectedDeliveryDate will leave the existing date expected in place, None will clear the existing date expected, and a new date expected will overwrite the old date expected:"},
-            ShipToECL[
-                {Object[Transaction, ShipToECL, "Test transaction for ShipToECL (1)" <> $SessionUUID], Object[Transaction, ShipToECL, "Test transaction for ShipToECL (2)" <> $SessionUUID], Object[Transaction, ShipToECL, "Test transaction for ShipToECL (3)" <> $SessionUUID]},
-                ExpectedDeliveryDate -> DateObject[List[2018, 4, 2, 14, 17, 52.`], "Instant", "Gregorian", -7.`]
-            ];
-            ShipToECL[
-                {Object[Transaction, ShipToECL, "Test transaction for ShipToECL (1)" <> $SessionUUID], Object[Transaction, ShipToECL, "Test transaction for ShipToECL (2)" <> $SessionUUID], Object[Transaction, ShipToECL, "Test transaction for ShipToECL (3)" <> $SessionUUID]},
-                ExpectedDeliveryDate -> {Automatic, None, DateObject[List[2018, 4, 8, 14, 17, 52.`], "Instant", "Gregorian", -7.`]}
-            ];
-            Download[{Object[Transaction, ShipToECL, "Test transaction for ShipToECL (1)" <> $SessionUUID], Object[Transaction, ShipToECL, "Test transaction for ShipToECL (2)" <> $SessionUUID], Object[Transaction, ShipToECL, "Test transaction for ShipToECL (3)" <> $SessionUUID]}, DateExpected],
-            {_DateObject, Null, _DateObject},
-            SetUp :> (
-                Upload[
-                    {
-                        <|Object -> Object[Transaction, ShipToECL, "Test transaction for ShipToECL (1)" <> $SessionUUID], DateExpected -> Null|>,
-                        <|Object -> Object[Transaction, ShipToECL, "Test transaction for ShipToECL (2)" <> $SessionUUID], DateExpected -> Null|>,
-                        <|Object -> Object[Transaction, ShipToECL, "Test transaction for ShipToECL (3)" <> $SessionUUID], DateExpected -> Null|>
-                    }
-                ];
-            ),
-            TearDown :> (
-                Upload[
-                    {
-                        <|Object -> Object[Transaction, ShipToECL, "Test transaction for ShipToECL (1)" <> $SessionUUID], DateExpected -> Null|>,
-                        <|Object -> Object[Transaction, ShipToECL, "Test transaction for ShipToECL (2)" <> $SessionUUID], DateExpected -> Null|>,
-                        <|Object -> Object[Transaction, ShipToECL, "Test transaction for ShipToECL (3)" <> $SessionUUID], DateExpected -> Null|>
-                    }
-                ]
-            )
-        ],
-        Example[{Options, Shipper, "Specify a shipper when updating shipping information:"},
-            ShipToECL[
-                {Object[Transaction, ShipToECL, "Test transaction for ShipToECL (1)" <> $SessionUUID], Object[Transaction, ShipToECL, "Test transaction for ShipToECL (2)" <> $SessionUUID]},
-                Shipper -> Object[Company, Shipper, "Test shipper for ShipToECL" <> $SessionUUID]
-            ];
-            Download[{Object[Transaction, ShipToECL, "Test transaction for ShipToECL (1)" <> $SessionUUID], Object[Transaction, ShipToECL, "Test transaction for ShipToECL (2)" <> $SessionUUID]}, Shipper],
-            {LinkP[Object[Company, Shipper, "Test shipper for ShipToECL" <> $SessionUUID], Transactions], LinkP[Object[Company, Shipper, "Test shipper for ShipToECL" <> $SessionUUID], Transactions]}
-        ],
-
-        Example[{Options, Shipper, "Specify a shipper for each object when updating shipping information:"},
-            ShipToECL[
-                {Object[Transaction, ShipToECL, "Test transaction for ShipToECL (1)" <> $SessionUUID], Object[Transaction, ShipToECL, "Test transaction for ShipToECL (2)" <> $SessionUUID]},
-                Shipper -> {Object[Company, Shipper, "Test shipper for ShipToECL" <> $SessionUUID], Object[Company, Shipper, "Test shipper for ShipToECL (2)" <> $SessionUUID]}
-            ];
-            Download[{Object[Transaction, ShipToECL, "Test transaction for ShipToECL (1)" <> $SessionUUID], Object[Transaction, ShipToECL, "Test transaction for ShipToECL (2)" <> $SessionUUID]}, Shipper],
-            {LinkP[Object[Company, Shipper, "Test shipper for ShipToECL" <> $SessionUUID], Transactions], LinkP[Object[Company, Shipper, "Test shipper for ShipToECL (2)" <> $SessionUUID], Transactions]}
-        ],
-
-        Example[{Options, Shipper, "Specify a shipper for some but not all of the objects when updating shipping information:"},
-            ShipToECL[
-                {Object[Transaction, ShipToECL, "Test transaction for ShipToECL (1)" <> $SessionUUID], Object[Transaction, ShipToECL, "Test transaction for ShipToECL (2)" <> $SessionUUID]},
-                Shipper -> {Object[Company, Shipper, "Test shipper for ShipToECL" <> $SessionUUID], None},
-                TrackingNumber -> {"12345", None}
-            ];
-            Download[{Object[Transaction, ShipToECL, "Test transaction for ShipToECL (1)" <> $SessionUUID], Object[Transaction, ShipToECL, "Test transaction for ShipToECL (2)" <> $SessionUUID]}, Shipper],
-            {LinkP[Object[Company, Shipper, "Test shipper for ShipToECL" <> $SessionUUID], Transactions], Null}
-        ],
-        Example[{Options, Shipper, "When updating shipping information, Automatic Shipper will leave the existing Shipper in place, None will clear the existing Shipper, and a new Shipper will overwrite the old Shipper:"},
-            ShipToECL[
-                {Object[Transaction, ShipToECL, "Test transaction for ShipToECL (1)" <> $SessionUUID], Object[Transaction, ShipToECL, "Test transaction for ShipToECL (2)" <> $SessionUUID], Object[Transaction, ShipToECL, "Test transaction for ShipToECL (3)" <> $SessionUUID]},
-                Shipper -> Object[Company, Shipper, "Test shipper for ShipToECL" <> $SessionUUID]
-            ];
-            ShipToECL[
-                {Object[Transaction, ShipToECL, "Test transaction for ShipToECL (1)" <> $SessionUUID], Object[Transaction, ShipToECL, "Test transaction for ShipToECL (2)" <> $SessionUUID], Object[Transaction, ShipToECL, "Test transaction for ShipToECL (3)" <> $SessionUUID]},
-                Shipper -> {Automatic, None, Object[Company, Shipper, "Test shipper for ShipToECL (2)" <> $SessionUUID]}
-            ];
-            Download[{Object[Transaction, ShipToECL, "Test transaction for ShipToECL (1)" <> $SessionUUID], Object[Transaction, ShipToECL, "Test transaction for ShipToECL (2)" <> $SessionUUID], Object[Transaction, ShipToECL, "Test transaction for ShipToECL (3)" <> $SessionUUID]}, Shipper],
-            {LinkP[Object[Company, Shipper, "Test shipper for ShipToECL" <> $SessionUUID], Transactions], Null, LinkP[Object[Company, Shipper, "Test shipper for ShipToECL (2)" <> $SessionUUID], Transactions]},
-            SetUp :> (
-                Upload[
-                    {
-                        <|Object -> Object[Transaction, ShipToECL, "Test transaction for ShipToECL (1)" <> $SessionUUID], Shipper -> Link[Object[Company, Shipper, "Test shipper for ShipToECL" <> $SessionUUID], Transactions], Replace[TrackingNumbers] -> {}, Replace[ReceivedSamples] -> {Link[Object[Sample, "Test Sample for ShipToECL (1)" <> $SessionUUID]]},
-                            Replace[ReceivedContainers] -> Null, Replace[ReceivedCovers] -> Null, Replace[TransferSamples] -> Null, Replace[TransferContainers] -> Null, Replace[EmptyContainers] -> Null,
-                            Creator -> Link[Object[User, "Test user for notebook-less test protocols"], TransactionsCreated], Destination -> Null, Source -> Null, ReceivingTolerance -> Null
-                        |>,
-                        <|Object -> Object[Transaction, ShipToECL, "Test transaction for ShipToECL (2)" <> $SessionUUID], Shipper -> Null, Replace[TrackingNumbers] -> {}, Replace[ReceivedSamples] -> {Link[Object[Sample, "Test Sample for ShipToECL (1)" <> $SessionUUID]]},
-                            Replace[ReceivedContainers] -> Null, Replace[ReceivedCovers] -> Null, Replace[TransferSamples] -> Null, Replace[TransferContainers] -> Null, Replace[EmptyContainers] -> Null,
-                            Creator -> Link[Object[User, "Test user for notebook-less test protocols"], TransactionsCreated], Destination -> Null, Source -> Null, ReceivingTolerance -> Null
-                        |>,
-                        <|Object -> Object[Transaction, ShipToECL, "Test transaction for ShipToECL (3)" <> $SessionUUID], Shipper -> Null, Replace[TrackingNumbers] -> {}, Replace[ReceivedSamples] -> {Link[Object[Sample, "Test Sample for ShipToECL (1)" <> $SessionUUID]]},
-                            Replace[ReceivedContainers] -> Null, Replace[ReceivedCovers] -> Null, Replace[TransferSamples] -> Null, Replace[TransferContainers] -> Null, Replace[EmptyContainers] -> Null,
-                            Creator -> Link[Object[User, "Test user for notebook-less test protocols"], TransactionsCreated], Destination -> Null, Source -> Null, ReceivingTolerance -> Null
-                        |>
-                    }
-                ];
-            ),
-            TearDown :> (
-                Upload[
-                    {
-                        <|Object -> Object[Transaction, ShipToECL, "Test transaction for ShipToECL (1)" <> $SessionUUID], Shipper -> Link[Object[Company, Shipper, "Test shipper for ShipToECL" <> $SessionUUID], Transactions], Replace[TrackingNumbers] -> {}, Replace[ReceivedSamples] -> {Link[Object[Sample, "Test Sample for ShipToECL (1)" <> $SessionUUID]]},
-                            Replace[ReceivedContainers] -> Null, Replace[ReceivedCovers] -> Null, Replace[TransferSamples] -> Null, Replace[TransferContainers] -> Null, Replace[EmptyContainers] -> Null,
-                            Creator -> Link[Object[User, "Test user for notebook-less test protocols"], TransactionsCreated], Destination -> Null, Source -> Null, ReceivingTolerance -> Null
-                        |>,
-                        <|Object -> Object[Transaction, ShipToECL, "Test transaction for ShipToECL (2)" <> $SessionUUID], Shipper -> Null, Replace[TrackingNumbers] -> {}, Replace[ReceivedSamples] -> {Link[Object[Sample, "Test Sample for ShipToECL (1)" <> $SessionUUID]]},
-                            Replace[ReceivedContainers] -> Null, Replace[ReceivedCovers] -> Null, Replace[TransferSamples] -> Null, Replace[TransferContainers] -> Null, Replace[EmptyContainers] -> Null,
-                            Creator -> Link[Object[User, "Test user for notebook-less test protocols"], TransactionsCreated], Destination -> Null, Source -> Null, ReceivingTolerance -> Null
-                        |>,
-                        <|Object -> Object[Transaction, ShipToECL, "Test transaction for ShipToECL (3)" <> $SessionUUID], Shipper -> Null, Replace[TrackingNumbers] -> {}, Replace[ReceivedSamples] -> {Link[Object[Sample, "Test Sample for ShipToECL (1)" <> $SessionUUID]]},
-                            Replace[ReceivedContainers] -> Null, Replace[ReceivedCovers] -> Null, Replace[TransferSamples] -> Null, Replace[TransferContainers] -> Null, Replace[EmptyContainers] -> Null,
-                            Creator -> Link[Object[User, "Test user for notebook-less test protocols"], TransactionsCreated], Destination -> Null, Source -> Null, ReceivingTolerance -> Null
-                        |>
-                    }
-                ]
-            )
-        ],
-
-        Example[{Options, TrackingNumber, "Specify a tracking number when updating shipping information. (Shipper must also be provided, or must already be populated in the transaction object):"},
-            ShipToECL[
-                {Object[Transaction, ShipToECL, "Test transaction for ShipToECL (1)" <> $SessionUUID], Object[Transaction, ShipToECL, "Test transaction for ShipToECL (2)" <> $SessionUUID]},
-                TrackingNumber -> "123456",
-                Shipper -> Object[Company, Shipper, "Test shipper for ShipToECL (2)" <> $SessionUUID]
-            ];
-            Download[{Object[Transaction, ShipToECL, "Test transaction for ShipToECL (1)" <> $SessionUUID], Object[Transaction, ShipToECL, "Test transaction for ShipToECL (2)" <> $SessionUUID]}, TrackingNumbers],
-            {{"123456"}, {"123456"}}
-        ],
-
-        Example[{Options, TrackingNumber, "Specify a tracking number for each object when updating shipping information. (Shipper must also be provided, or must already be populated in the transaction object):"},
-            ShipToECL[
-                {Object[Transaction, ShipToECL, "Test transaction for ShipToECL (1)" <> $SessionUUID], Object[Transaction, ShipToECL, "Test transaction for ShipToECL (2)" <> $SessionUUID]},
-                TrackingNumber -> {"123456", "654321"},
-                Shipper -> {Object[Company, Shipper, "Test shipper for ShipToECL" <> $SessionUUID], Object[Company, Shipper, "Test shipper for ShipToECL (2)" <> $SessionUUID]}
-            ];
-            Download[{Object[Transaction, ShipToECL, "Test transaction for ShipToECL (1)" <> $SessionUUID], Object[Transaction, ShipToECL, "Test transaction for ShipToECL (2)" <> $SessionUUID]}, TrackingNumbers],
-            {{"123456"}, {"654321"}}
-        ],
-
-        Example[{Options, TrackingNumber, "Specify a tracking number for some but not all of the objects when updating shipping information. (Shipper must also be provided, or must already be populated in the transaction object):"},
-            ShipToECL[
-                {Object[Transaction, ShipToECL, "Test transaction for ShipToECL (1)" <> $SessionUUID],
-                    Object[Transaction, ShipToECL, "Test transaction for ShipToECL (2)" <> $SessionUUID]},
-                TrackingNumber -> {"123456", None},
-                Shipper -> {Object[Company, Shipper, "Test shipper for ShipToECL" <> $SessionUUID], Automatic}
-            ];
-            Download[{Object[Transaction, ShipToECL, "Test transaction for ShipToECL (1)" <> $SessionUUID], Object[Transaction, ShipToECL, "Test transaction for ShipToECL (2)" <> $SessionUUID]}, TrackingNumbers],
-            {{"123456"}, {}}
-        ],
-        Example[{Options, TrackingNumber, "When updating shipping information, Automatic TrackingNumber will leave the existing tracking number in place, None will clear the existing tracking number, and a new tracking number will overwrite the old tracking number:"},
-            Upload[<|Object -> #, Replace[TrackingNumbers] -> {"123456"}, Shipper -> Link[Object[Company, Shipper, "Test shipper for ShipToECL (2)" <> $SessionUUID], Transactions]|>& /@
-                {Object[Transaction, ShipToECL, "Test transaction for ShipToECL (1)" <> $SessionUUID], Object[Transaction, ShipToECL, "Test transaction for ShipToECL (2)" <> $SessionUUID], Object[Transaction, ShipToECL, "Test transaction for ShipToECL (3)" <> $SessionUUID]}
-            ];
-            ShipToECL[
-                {Object[Transaction, ShipToECL, "Test transaction for ShipToECL (1)" <> $SessionUUID], Object[Transaction, ShipToECL, "Test transaction for ShipToECL (2)" <> $SessionUUID], Object[Transaction, ShipToECL, "Test transaction for ShipToECL (3)" <> $SessionUUID]},
-                TrackingNumber -> {Automatic, None, {"98765", "33457"}}
-            ];
-            Download[{Object[Transaction, ShipToECL, "Test transaction for ShipToECL (1)" <> $SessionUUID], Object[Transaction, ShipToECL, "Test transaction for ShipToECL (2)" <> $SessionUUID], Object[Transaction, ShipToECL, "Test transaction for ShipToECL (3)" <> $SessionUUID]}, TrackingNumbers],
-            {{"123456"}, {}, {"98765", "33457"}}
-        ],
-
-        Example[{Options, DateShipped, "Specify a date shipped when updating shipping information:"},
-            ShipToECL[
-                {Object[Transaction, ShipToECL, "Test transaction for ShipToECL (1)" <> $SessionUUID], Object[Transaction, ShipToECL, "Test transaction for ShipToECL (2)" <> $SessionUUID]},
-                DateShipped -> DateObject[List[2018, 3, 30, 14, 17, 52.`], "Instant", "Gregorian", -7.`]
-            ];
-            Download[{Object[Transaction, ShipToECL, "Test transaction for ShipToECL (1)" <> $SessionUUID], Object[Transaction, ShipToECL, "Test transaction for ShipToECL (2)" <> $SessionUUID]}, DateShipped],
-            {_DateObject, _DateObject}
-        ],
-
-        Example[{Options, DateShipped, "Specify a date shipped for each object when updating shipping information:"},
-            ShipToECL[
-                {Object[Transaction, ShipToECL, "Test transaction for ShipToECL (1)" <> $SessionUUID], Object[Transaction, ShipToECL, "Test transaction for ShipToECL (2)" <> $SessionUUID]},
-                DateShipped -> {DateObject[List[2018, 3, 30, 14, 17, 52.`], "Instant", "Gregorian", -7.`], DateObject[List[2018, 3, 30, 14, 17, 52.`], "Instant", "Gregorian", -7.`]}
-            ];
-            Download[{Object[Transaction, ShipToECL, "Test transaction for ShipToECL (1)" <> $SessionUUID], Object[Transaction, ShipToECL, "Test transaction for ShipToECL (2)" <> $SessionUUID]}, DateShipped],
-            {_DateObject, _DateObject}
-        ],
-
-        Example[{Options, DateShipped, "When updating shipping information, Automatic DateShipped will leave the existing date shipped in place, None will clear the existing date shipped and revert the transaction status to Pending, and a new date shipped will overwrite the old date shipped:"},
-            ShipToECL[
-                {Object[Transaction, ShipToECL, "Test transaction for ShipToECL (1)" <> $SessionUUID], Object[Transaction, ShipToECL, "Test transaction for ShipToECL (2)" <> $SessionUUID], Object[Transaction, ShipToECL, "Test transaction for ShipToECL (3)" <> $SessionUUID]},
-                DateShipped -> DateObject[List[2018, 4, 2, 14, 17, 52.`], "Instant", "Gregorian", -7.`]
-            ];
-            ShipToECL[
-                {Object[Transaction, ShipToECL, "Test transaction for ShipToECL (1)" <> $SessionUUID], Object[Transaction, ShipToECL, "Test transaction for ShipToECL (2)" <> $SessionUUID], Object[Transaction, ShipToECL, "Test transaction for ShipToECL (3)" <> $SessionUUID]},
-                DateShipped -> {Automatic, None, DateObject[List[2018, 4, 8, 14, 17, 52.`], "Instant", "Gregorian", -7.`]}
-            ];
-
-            (* check that the fields were properly updated*)
-            Download[{Object[Transaction, ShipToECL, "Test transaction for ShipToECL (1)" <> $SessionUUID], Object[Transaction, ShipToECL, "Test transaction for ShipToECL (2)" <> $SessionUUID], Object[Transaction, ShipToECL, "Test transaction for ShipToECL (3)" <> $SessionUUID]},
-                {DateShipped, Status, StatusLog}],
-            {
-                {
-                    _DateObject,
-                    Shipped,
-                    {
-                        {_DateObject, Shipped, LinkP[Object[User]]},
-                        {_?DateObjectQ, Shipped, LinkP[Object[User]]}
-                    }
-                },
-                {
-                    _DateObject,
-                    Pending,
-                    {
-                        {_DateObject, Shipped, LinkP[Object[User]]},
-                        {_?DateObjectQ, Pending, LinkP[Object[User]]}}
-                },
-                {
-                    _DateObject,
-                    Shipped,
-                    {
-                        {_DateObject, Shipped, LinkP[Object[User]]},
-                        {_DateObject, Shipped, LinkP[Object[User]]}}
-                }
-            },
-            SetUp :> (
-                Upload[
-                    {
-                        <|Object -> Object[Transaction, ShipToECL, "Test transaction for ShipToECL (1)" <> $SessionUUID], Replace[StatusLog] -> {}, Status -> Null, DateShipped -> Null|>,
-                        <|Object -> Object[Transaction, ShipToECL, "Test transaction for ShipToECL (2)" <> $SessionUUID], Replace[StatusLog] -> {}, Status -> Null, DateShipped -> Null|>,
-                        <|Object -> Object[Transaction, ShipToECL, "Test transaction for ShipToECL (3)" <> $SessionUUID], Replace[StatusLog] -> {}, Status -> Null, DateShipped -> Null|>
-                    }
-                ];
-            ),
-            TearDown :> (
-                Upload[
-                    {
-                        <|Object -> Object[Transaction, ShipToECL, "Test transaction for ShipToECL (1)" <> $SessionUUID], Replace[StatusLog] -> {}, Status -> Null, DateShipped -> Null|>,
-                        <|Object -> Object[Transaction, ShipToECL, "Test transaction for ShipToECL (2)" <> $SessionUUID], Replace[StatusLog] -> {}, Status -> Null, DateShipped -> Null|>,
-                        <|Object -> Object[Transaction, ShipToECL, "Test transaction for ShipToECL (3)" <> $SessionUUID], Replace[StatusLog] -> {}, Status -> Null, DateShipped -> Null|>
-                    }
-                ]
-            )
-        ],
-
-
-        Example[{Options, DateShipped, "Specify a date shipped when generating a transaction:"},
-            transaction = ShipToECL[
-                {Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID], Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID]},
-                {"my new bottle" <> CreateUUID[], "my new plate" <> CreateUUID[]},
-                Position -> {Automatic, "A2"},
-                ContainerModel -> {
-                    Model[Container, Vessel, "Test vessel model for ShipToECL" <> $SessionUUID],
-                    Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID]
-                },
-                CoverModel -> {
-                    Model[Item, Cap, "Test cap model for ShipToECL" <> $SessionUUID],
-                    Model[Item, PlateSeal, "Test plate seal model for ShipToECL" <> $SessionUUID]
-                },
-                Volume -> 1Milliliter,
-                DateShipped -> DateObject[List[2018, 3, 30, 14, 17, 52.`], "Instant", "Gregorian", -7.`]
-            ];
-            Download[transaction, DateShipped],
-            {_DateObject},
-            Variables :> {transaction}
-        ],
-
-        Example[{Options, DateShipped, "Specify a date shipped for each object when generating a transaction. Samples different with dates shipped are put into separate transactions:"},
-            transaction = ShipToECL[
-                {Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID], Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID]},
-                {"my new bottle" <> CreateUUID[], "my new plate" <> CreateUUID[]},
-                Position -> {Automatic, "A2"},
-                ContainerModel -> {
-                    Model[Container, Vessel, "Test vessel model for ShipToECL" <> $SessionUUID],
-                    Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID]
-                },
-                CoverModel -> {
-                    Model[Item, Cap, "Test cap model for ShipToECL" <> $SessionUUID],
-                    Model[Item, PlateSeal, "Test plate seal model for ShipToECL" <> $SessionUUID]
-                },
-                Volume -> 1Milliliter,
-                DateShipped -> {DateObject[List[2018, 3, 30, 14, 17, 52.`], "Instant", "Gregorian", -7.`], DateObject[List[2018, 3, 29, 14, 17, 52.`], "Instant", "Gregorian", -7.`]}
-            ];
-            Download[transaction, DateShipped],
-            {_DateObject, _DateObject},
-            Variables :> {transaction}
-        ],
-
-        Example[{Options, DateShipped, "Specify a date shipped for some but not all of the objects when generating a transaction. If DateShipped is specified, Status is Shipped; otherwise, Status is Pending:"},
-            transaction = ShipToECL[
-                {Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID], Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID]},
-                {"my new bottle" <> CreateUUID[], "my new plate" <> CreateUUID[]},
-                Position -> {Automatic, "A2"},
-                ContainerModel -> {
-                    Model[Container, Vessel, "Test vessel model for ShipToECL" <> $SessionUUID],
-                    Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID]
-                },
-                CoverModel -> {
-                    Model[Item, Cap, "Test cap model for ShipToECL" <> $SessionUUID],
-                    Model[Item, PlateSeal, "Test plate seal model for ShipToECL" <> $SessionUUID]
-                },
-                Volume -> 1Milliliter,
-                DateShipped -> {DateObject[List[2018, 3, 30, 14, 17, 52.`], "Instant", "Gregorian", -7.`], None}
-            ];
-            Download[transaction, {DateShipped, Status}],
-            {{_DateObject, Shipped}, {Null, Pending}},
-            Variables :> {transaction}
-        ],
-
-        Example[{Options, ExpectedDeliveryDate, "Specify an expected delivery date when generating a transaction:"},
-            transaction = ShipToECL[
-                {Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID], Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID]},
-                {"my new bottle" <> CreateUUID[], "my new plate" <> CreateUUID[]},
-                Position -> {Automatic, "A2"},
-                ContainerModel -> {
-                    Model[Container, Vessel, "Test vessel model for ShipToECL" <> $SessionUUID],
-                    Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID]
-                },
-                CoverModel -> {
-                    Model[Item, Cap, "Test cap model for ShipToECL" <> $SessionUUID],
-                    Model[Item, PlateSeal, "Test plate seal model for ShipToECL" <> $SessionUUID]
-                },
-                Volume -> 1Milliliter,
-                ExpectedDeliveryDate -> DateObject[List[2018, 3, 30, 14, 17, 52.`], "Instant", "Gregorian", -7.`]
-            ];
-            Download[transaction, DateExpected],
-            {_DateObject},
-            Variables :> {transaction}
-        ],
-
-        Example[{Options, ExpectedDeliveryDate, "Specify an expected delivery date for each object when generating a transaction. Samples with different dates shipped are put into separate transactions:"},
-            transaction = ShipToECL[
-                {Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID], Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID]},
-                {"my new bottle" <> CreateUUID[], "my new plate" <> CreateUUID[]},
-                Position -> {Automatic, "A2"},
-                ContainerModel -> {
-                    Model[Container, Vessel, "Test vessel model for ShipToECL" <> $SessionUUID],
-                    Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID]
-                },
-                CoverModel -> {
-                    Model[Item, Cap, "Test cap model for ShipToECL" <> $SessionUUID],
-                    Model[Item, PlateSeal, "Test plate seal model for ShipToECL" <> $SessionUUID]
-                },
-                Volume -> 1Milliliter,
-                ExpectedDeliveryDate -> {DateObject[List[2018, 3, 30, 14, 17, 52.`], "Instant", "Gregorian", -7.`], DateObject[List[2018, 3, 29, 14, 17, 52.`], "Instant", "Gregorian", -7.`]}
-            ];
-            Download[transaction, DateExpected],
-            {_DateObject, _DateObject},
-            Variables :> {transaction}
-        ],
-
-        Example[{Options, ExpectedDeliveryDate, "Specify an expected delivery date for some but not all of the objects when generating a transaction.:"},
-            transaction = ShipToECL[{Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID], Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID]},
-                {"my new bottle" <> CreateUUID[], "my new plate" <> CreateUUID[]},
-                Position -> {Automatic, "A2"},
-                ContainerModel -> {
-                    Model[Container, Vessel, "Test vessel model for ShipToECL" <> $SessionUUID],
-                    Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID]
-                },
-                CoverModel -> {
-                    Model[Item, Cap, "Test cap model for ShipToECL" <> $SessionUUID],
-                    Model[Item, PlateSeal, "Test plate seal model for ShipToECL" <> $SessionUUID]
-                },
-                Volume -> 1Milliliter,
-                ExpectedDeliveryDate -> {DateObject[List[2018, 3, 30, 14, 17, 52.`], "Instant", "Gregorian", -7.`], None}
-            ];
-            Download[transaction, DateExpected],
-            {_DateObject, Null},
-            Variables :> {transaction}
-        ],
-
-        Example[{Options, TrackingNumber, "Specify a tracking number when generating a transaction. (Shipper must be provided along with tracking number):"},
-            transaction = ShipToECL[{Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID], Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID]},
-                {"my new bottle" <> CreateUUID[], "my new plate" <> CreateUUID[]},
-                Position -> {Automatic, "A2"},
-                ContainerModel -> {
-                    Model[Container, Vessel, "Test vessel model for ShipToECL" <> $SessionUUID],
-                    Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID]
-                },
-                CoverModel -> {
-                    Model[Item, Cap, "Test cap model for ShipToECL" <> $SessionUUID],
-                    Model[Item, PlateSeal, "Test plate seal model for ShipToECL" <> $SessionUUID]
-                },
-                Volume -> 1Milliliter,
-                TrackingNumber -> "123456",
-                Shipper -> Object[Company, Shipper, "Test shipper for ShipToECL" <> $SessionUUID]
-            ];
-            Download[transaction, TrackingNumbers],
-            {{"123456"}},
-            Variables :> {transaction}
-        ],
-
-        Example[{Options, TrackingNumber, "Specify a tracking number for each object when generating a transaction. Samples with different dates shipped are put into separate transactions. (Shipper must be provided along with tracking number):"},
-            transaction = ShipToECL[{Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID], Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID]},
-                {"my new bottle" <> CreateUUID[], "my new plate" <> CreateUUID[]},
-                Position -> {Automatic, "A2"},
-                ContainerModel -> {
-                    Model[Container, Vessel, "Test vessel model for ShipToECL" <> $SessionUUID],
-                    Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID]
-                },
-                CoverModel -> {
-                    Model[Item, Cap, "Test cap model for ShipToECL" <> $SessionUUID],
-                    Model[Item, PlateSeal, "Test plate seal model for ShipToECL" <> $SessionUUID]
-                },
-                Volume -> 1Milliliter,
-                TrackingNumber -> {"123456", "654321"},
-                Shipper -> Object[Company, Shipper, "Test shipper for ShipToECL" <> $SessionUUID]
-            ];
-            Download[transaction, TrackingNumbers],
-            {{"123456"}, {"654321"}},
-            Variables :> {transaction}
-        ],
-
-        Example[{Options, TrackingNumber, "Specify a tracking number for some but not all of the objects when generating a transaction. (TrackingNumber and Shipper must be provided together.):"},
-            transaction = ShipToECL[{Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID], Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID]},
-                {"my new bottle" <> CreateUUID[], "my new plate" <> CreateUUID[]},
-                Position -> {Automatic, "A2"},
-                ContainerModel -> {
-                    Model[Container, Vessel, "Test vessel model for ShipToECL" <> $SessionUUID],
-                    Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID]
-                },
-                CoverModel -> {
-                    Model[Item, Cap, "Test cap model for ShipToECL" <> $SessionUUID],
-                    Model[Item, PlateSeal, "Test plate seal model for ShipToECL" <> $SessionUUID]
-                },
-                Volume -> 1Milliliter,
-                TrackingNumber -> {"123456", None},
-                Shipper -> {Object[Company, Shipper, "Test shipper for ShipToECL" <> $SessionUUID], None}
-            ];
-            Download[transaction, TrackingNumbers],
-            {{"123456"}, {}},
-            Variables :> {transaction}
-        ],
-
-        Example[{Options, Shipper, "Specify a shipper when generating a transaction. (TrackingNumber and Shipper must be provided together.):"},
-            transaction = ShipToECL[{Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID], Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID]},
-                {"my new bottle" <> CreateUUID[], "my new plate" <> CreateUUID[]},
-                Position -> {Automatic, "A2"},
-                ContainerModel -> {
-                    Model[Container, Vessel, "Test vessel model for ShipToECL" <> $SessionUUID],
-                    Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID]
-                },
-                CoverModel -> {
-                    Model[Item, Cap, "Test cap model for ShipToECL" <> $SessionUUID],
-                    Model[Item, PlateSeal, "Test plate seal model for ShipToECL" <> $SessionUUID]
-                },
-                Volume -> 1Milliliter,
-                Shipper -> Object[Company, Shipper, "Test shipper for ShipToECL" <> $SessionUUID],
-                TrackingNumber -> "123321-0"
-            ];
-            Download[transaction, Shipper],
-            {LinkP[Object[Company, Shipper, "Test shipper for ShipToECL" <> $SessionUUID], Transactions]},
-            Variables :> {transaction}
-        ],
-
-        Example[{Options, Shipper, "Specify a shipper for each object when generating a transaction. Samples with different dates shipped are put into separate transactions. (TrackingNumber and Shipper must be provided together.):"},
-            transaction = ShipToECL[{Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID], Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID]},
-                {"my new bottle" <> CreateUUID[], "my new plate" <> CreateUUID[]},
-                Position -> {Automatic, "A2"},
-                ContainerModel -> {
-                    Model[Container, Vessel, "Test vessel model for ShipToECL" <> $SessionUUID],
-                    Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID]
-                },
-                CoverModel -> {
-                    Model[Item, Cap, "Test cap model for ShipToECL" <> $SessionUUID],
-                    Model[Item, PlateSeal, "Test plate seal model for ShipToECL" <> $SessionUUID]
-                },
-                Volume -> 1Milliliter,
-                Shipper -> {Object[Company, Shipper, "Test shipper for ShipToECL" <> $SessionUUID], Object[Company, Shipper, "Test shipper for ShipToECL (2)" <> $SessionUUID]},
-                TrackingNumber -> {"1233-0421-33", "5666-009ghgt"}
-            ];
-            Download[transaction, Shipper],
-            {LinkP[Object[Company, Shipper, "Test shipper for ShipToECL" <> $SessionUUID], Transactions], LinkP[Object[Company, Shipper, "Test shipper for ShipToECL (2)" <> $SessionUUID], Transactions]},
-            Variables :> {transaction}
-        ],
-
-        Example[{Options, Shipper, "Specify a shipper for some but not all of the objects when generating a transaction. (TrackingNumber and Shipper must be provided together.):"},
-            transaction = ShipToECL[{Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID], Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID]},
-                {"my new bottle" <> CreateUUID[], "my new plate" <> CreateUUID[]},
-                Position -> {Automatic, "A2"},
-                ContainerModel -> {
-                    Model[Container, Vessel, "Test vessel model for ShipToECL" <> $SessionUUID],
-                    Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID]
-                },
-                CoverModel -> {
-                    Model[Item, Cap, "Test cap model for ShipToECL" <> $SessionUUID],
-                    Model[Item, PlateSeal, "Test plate seal model for ShipToECL" <> $SessionUUID]
-                },
-                Volume -> 1Milliliter,
-                Shipper -> {Object[Company, Shipper, "Test shipper for ShipToECL" <> $SessionUUID], None},
-                TrackingNumber -> {"56yy-09o99-pp95", None}
-            ];
-            Download[transaction, Shipper],
-            {LinkP[Object[Company, Shipper, "Test shipper for ShipToECL" <> $SessionUUID], Transactions], Null},
-            Variables :> {transaction}
-        ],
-
-        Example[{Options, ContainerOut, "Specify that all samples should be transferred to a different container upon arrival:"},
-            transaction = ShipToECL[
-                {Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID], Model[Sample, "Test Model Chemical for ShipToECL" <> $SessionUUID]},
-                {"my new bottle" <> CreateUUID[], "my new plate" <> CreateUUID[]},
-                Position -> {Automatic, "A2"},
-                ContainerModel -> {
-                    Model[Container, Vessel, "Test vessel model for ShipToECL" <> $SessionUUID],
-                    Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID]
-                },
-                CoverModel -> {
-                    Model[Item, Cap, "Test cap model for ShipToECL" <> $SessionUUID],
-                    Model[Item, PlateSeal, "Test plate seal model for ShipToECL" <> $SessionUUID]
-                },
-                Volume -> {1Milliliter, 1Milliliter},
-                ContainerOut -> Model[Container, Vessel, "50mL Tube"]
-            ];
-            Download[transaction, {TransferSamples, TransferContainers}],
-            {
-                {
-                    {
-                        LinkP[Object[Sample]],
-                        LinkP[Object[Sample]]
-                    },
-                    {
-                        LinkP[Model[Container, Vessel, "50mL Tube"]],
-                        LinkP[Model[Container, Vessel, "50mL Tube"]]
-                    }
-                }
-            },
-            Variables :> {transaction}
-        ],
-        Example[{Options, EmptyContainers, "Specify empty containers to be used for parameterization:"},
-            transaction = ShipToECL[
-                {Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID], Model[Sample, "Test Model Chemical for ShipToECL" <> $SessionUUID]},
-                {"my new bottle" <> CreateUUID[], "my new plate" <> CreateUUID[]},
-                Position -> {Automatic, "A2"},
-                ContainerModel -> {
-                    Model[Container, Vessel, "Test vessel model for ShipToECL" <> $SessionUUID],
-                    Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID]
-                },
-                CoverModel -> {
-                    Model[Item, Cap, "Test cap model for ShipToECL" <> $SessionUUID],
-                    Model[Item, PlateSeal, "Test plate seal model for ShipToECL" <> $SessionUUID]
-                },
-                Volume -> {1Milliliter, 1Milliliter},
-                EmptyContainers -> {Model[Container, Vessel, "Test vessel model for ShipToECL" <> $SessionUUID]},
-                EmptyContainerCovers -> {Model[Item, Cap, "Test cap model for ShipToECL" <> $SessionUUID]}
-            ];
-            Download[transaction, EmptyContainers[Model]],
-            {{LinkP[Model[Container, Vessel, "Test vessel model for ShipToECL" <> $SessionUUID]]}},
-            Variables :> {transaction}
-        ],
-
-        (* Note: keep EmptyContainers 2 models long, and expect 2 different objects out in EmptyContainers *)
-        Example[{Options, EmptyContainers, "If provided Model(s), Object(s) will be generated to represent the empty containers being shipped:"},
-            transaction = ShipToECL[
-                {Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID], Model[Sample, "Test Model Chemical for ShipToECL" <> $SessionUUID]},
-                {"my new bottle" <> CreateUUID[], "my new plate" <> CreateUUID[]},
-                Position -> {Automatic, "A2"},
-                ContainerModel -> {
-                    Model[Container, Vessel, "Test vessel model for ShipToECL" <> $SessionUUID],
-                    Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID]
-                },
-                CoverModel -> {
-                    Model[Item, Cap, "Test cap model for ShipToECL" <> $SessionUUID],
-                    Model[Item, PlateSeal, "Test plate seal model for ShipToECL" <> $SessionUUID]
-                },
-                Volume -> {1Milliliter, 1Milliliter},
-                EmptyContainers -> {Model[Container, Vessel, "Test ShipToECL EmptyContainer Model" <> $SessionUUID], Model[Container, Vessel, "Test ShipToECL EmptyContainer Model" <> $SessionUUID]},
-                EmptyContainerCovers -> {Model[Item, Cap, "Test cap model for ShipToECL" <> $SessionUUID], Model[Item, Cap, "Test cap model for ShipToECL" <> $SessionUUID]}
-            ];
-            Download[transaction, EmptyContainers],
-            {{LinkP[Object[Container, Vessel]], LinkP[Object[Container, Vessel]]}}, (* Length of EmptyContainers is 2 models so we expect 2 objects *)
-            Variables :> {transaction}
-        ],
-
-        Example[{Options, ContainerOut, "Specify that some samples should be transferred to a different container upon arrival:"},
-            transaction = ShipToECL[
-                {Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID], Model[Sample, "Test Model Chemical for ShipToECL" <> $SessionUUID], Model[Item, Column, "Test Model Column for ShipToECL" <> $SessionUUID]},
-                {"my new bottle" <> CreateUUID[], "my new plate" <> CreateUUID[], "my new item" <> CreateUUID[]},
-                Position -> {Automatic, "A2", None},
-                ContainerModel -> {
-                    Model[Container, Vessel, "Test vessel model for ShipToECL" <> $SessionUUID],
-                    Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID],
-                    None
-                },
-                CoverModel -> {
-                    Model[Item, Cap, "Test cap model for ShipToECL" <> $SessionUUID],
-                    Model[Item, PlateSeal, "Test plate seal model for ShipToECL" <> $SessionUUID],
-                    None
-                },
-                NumberOfUses -> {None, None, 4},
-                Volume -> {1Milliliter, 1Milliliter, None},
-                Product -> {None, None, Object[Product, "Test product for ShipToECL (1)" <> $SessionUUID]},
-                ContainerOut -> {Model[Container, Vessel, "50mL Tube"], Model[Container, Vessel, "1L Glass Bottle"], None}
-            ];
-            Download[transaction, {TransferSamples, TransferContainers}],
-            {
-                {
-                    {
-                        LinkP[Object[Sample]],
-                        LinkP[Object[Sample]]
-                    },
-                    {
-                        LinkP[Model[Container, Vessel, "50mL Tube"]],
-                        LinkP[Model[Container, Vessel, "1L Glass Bottle"]]
-                    }
-                }
-            },
-            Variables :> {transaction}
-        ],
-
-        Example[{Options, ReceivingTolerance, "Specify the allowable difference between received amount and expected amount for any ordered samples:"},
-            transaction = ShipToECL[{Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID], Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID]},
-                {"my new bottle" <> CreateUUID[], "my new plate" <> CreateUUID[]},
-                ReceivingTolerance -> 2 * Percent,
-                Position -> {Automatic, "A2"},
-                ContainerModel -> {
-                    Model[Container, Vessel, "Test vessel model for ShipToECL" <> $SessionUUID],
-                    Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID]
-                },
-                CoverModel -> {
-                    Model[Item, Cap, "Test cap model for ShipToECL" <> $SessionUUID],
-                    Model[Item, PlateSeal, "Test plate seal model for ShipToECL" <> $SessionUUID]
-                },
-                Volume -> 1Milliliter
-            ];
-            Download[transaction, ReceivingTolerance],
-            {2.` * Percent},
-            Variables :> {transaction}
-        ],
-
-        (* -------------- *)
-        (* -- Messages -- *)
-        (* -------------- *)
-
-        Example[{Messages, "CountNotRequired", "If count is provided but the sample is not a tablet, throws an error:"},
-            ShipToECL[
-                Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID],
-                "my new bottle" <> CreateUUID[],
-                ContainerModel -> Model[Container, Vessel, "Test vessel model for ShipToECL" <> $SessionUUID],
-                CoverModel -> Model[Item, Cap, "Test cap model for ShipToECL" <> $SessionUUID],
-                Count -> 20,
-                Volume -> 0.1Liter
-            ],
-            $Failed,
-            Messages :> {Error::CountNotRequired, Error::InvalidOption}
-        ],
-        Example[{Messages, "ContainerOutNotValidated", "Give a warning if it cannot be determined whether the specified container out is large enough to hold the sample:"},
-            ShipToECL[
-                Model[Sample, "Test Model Chemical for ShipToECL" <> $SessionUUID],
-                "my new bottle" <> CreateUUID[],
-                ContainerModel -> Model[Container, Vessel, "Test vessel model for ShipToECL" <> $SessionUUID],
-                CoverModel -> Model[Item, Cap, "Test cap model for ShipToECL" <> $SessionUUID],
-                Mass -> 5Gram,
-                ContainerOut -> Model[Container, Vessel, "50mL Tube"]
-            ],
-            {ObjectP[Object[Transaction, ShipToECL]]},
-            Messages :> {Warning::ContainerOutNotValidated},
-            Variables :> {transaction}
-        ],
-        Example[{Messages, "VolumeExceedsContainerOut", "If ContainerOut is too small to hold the sample volume, give a message and fail:"},
-            ShipToECL[
-                Model[Sample, "Test Model Chemical for ShipToECL" <> $SessionUUID],
-                "my new bottle" <> CreateUUID[],
-                ContainerModel -> Model[Container, Vessel, "Test vessel model for ShipToECL" <> $SessionUUID],
-                CoverModel -> Model[Item, Cap, "Test cap model for ShipToECL" <> $SessionUUID],
-                Volume -> 1Liter,
-                ContainerOut -> Model[Container, Vessel, "50mL Tube"]
-            ],
-            $Failed,
-            Messages :> {Error::VolumeExceedsContainerOut, Error::InvalidOption}
-        ],
-
-        Example[{Messages, "ContainerModelNotRequired", "If ContainerModel is specified for an item, give a message and fail:"},
-            ShipToECL[
-                Model[Item, Column, "Test Model Column for ShipToECL" <> $SessionUUID],
-                "my new item" <> CreateUUID[],
-                NumberOfUses -> 4,
-                Product -> Object[Product, "Test product for ShipToECL (1)" <> $SessionUUID],
-                ContainerModel -> Model[Container, Vessel, "50mL Tube"]
-            ],
-            $Failed,
-            Messages :> {Error::ContainerModelNotRequired, Error::InvalidOption}
-        ],
-
-        Example[{Messages, "PositionNotRequired", "If Position is specified for an item, give a message and fail:"},
-            ShipToECL[
-                Model[Item, Column, "Test Model Column for ShipToECL" <> $SessionUUID],
-                "my new item" <> CreateUUID[],
-                NumberOfUses -> 4,
-                Product -> Object[Product, "Test product for ShipToECL (1)" <> $SessionUUID],
-                Position -> "A1"
-            ],
-            $Failed,
-            Messages :> {Error::PositionNotRequired, Error::InvalidOption}
-        ],
-
-
-        Example[{Messages, "ContainerOutNotRequired", "If ContainerOut is specified for an item, give a message and fail:"},
-            ShipToECL[
-                Model[Item, Column, "Test Model Column for ShipToECL" <> $SessionUUID],
-                "my new item" <> CreateUUID[],
-                NumberOfUses -> 4,
-                Product -> Object[Product, "Test product for ShipToECL (1)" <> $SessionUUID],
-                ContainerOut -> Model[Container, Vessel, "50mL Tube"]
-            ],
-            $Failed,
-            Messages :> {Error::ContainerOutNotRequired, Error::InvalidOption}
-        ],
-
-        Example[{Messages, "NameInUse", "If a name is already in use, give a message and fail:"},
-            ShipToECL[
-                {Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID], Model[Sample, "Test Model Chemical for ShipToECL" <> $SessionUUID]},
-                {"my existing bottle for ShipToECL" <> $SessionUUID, "my new bottle" <> CreateUUID[]},
-                ContainerModel -> {
-                    Model[Container, Vessel, "Test vessel model for ShipToECL" <> $SessionUUID],
-                    Model[Container, Vessel, "Test vessel model for ShipToECL" <> $SessionUUID]
-                },
-                CoverModel -> {
-                    Model[Item, Cap, "Test cap model for ShipToECL" <> $SessionUUID],
-                    Model[Item, Cap, "Test cap model for ShipToECL" <> $SessionUUID]
-                },
-                Volume -> 1 Milliliter
-            ],
-            $Failed,
-            Messages :> {Error::NameInUse, Error::InvalidInput}
-        ],
-
-        Example[{Messages, "NameInUse", "If a name is already in use, give a message and fail:"},
-            ShipToECL[
-                Model[Item, Consumable, "Test Model Consumable for ShipToECL" <> $SessionUUID],
-                "my existing column for ShipToECL" <> $SessionUUID,
-                Product -> Object[Product, "Test product for ShipToECL (1)" <> $SessionUUID]
-            ],
-            $Failed,
-            Messages :> {Error::NameInUse, Error::InvalidInput}
-        ],
-
-        Example[{Messages, Name, "If the name is already in use, throws an error and fails:"},
-            transaction = ShipToECL[
-                {Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID], Model[Sample, "Test Model Chemical for ShipToECL" <> $SessionUUID]},
-                {"my new plate" <> CreateUUID[], "my new plate" <> CreateUUID[]},
-                ContainerModel -> Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID],
-                CoverModel -> Model[Item, PlateSeal, "Test plate seal model for ShipToECL" <> $SessionUUID],
-                Position -> {"A1", "A2"},
-                Volume -> 1Milliliter,
-                Name -> "My existing transaction for ShipToECL" <> $SessionUUID
-            ],
-            $Failed,
-            Variables :> {transaction},
-            Messages :> {Error::NonUniqueName, Error::InvalidOption}
-        ],
-        Example[{Messages, Name, "If the name is already in use, throws an error and fails:"},
-            ShipToECL[
-                {Object[Transaction, ShipToECL, "Test transaction for ShipToECL (1)" <> $SessionUUID]},
-                Name -> "My existing transaction for ShipToECL" <> $SessionUUID
-            ],
-            $Failed,
-            Messages :> {Error::NonUniqueName, Error::InvalidOption}
-        ],
-
-        Example[{Messages, "ShipToECLDuplicateName", "Gives a message and returns $Failed if any of the input names are used more than once for the same item type:"},
-            uuid = CreateUUID[];
-            ShipToECL[
-                {Model[Item, Column, "Test Model Column for ShipToECL" <> $SessionUUID], Model[Item, Column, "Test Model Column for ShipToECL" <> $SessionUUID]},
-                {"my column" <> uuid, "my column" <> uuid},
-                NumberOfUses -> {3, 15},
-                Product -> Object[Product, "Test product for ShipToECL (1)" <> $SessionUUID]
-            ],
-            $Failed,
-            Messages :> {Error::ShipToECLDuplicateName, Error::InvalidInput},
-            Variables :> {uuid}
-        ],
-        Example[
-            {Messages, "ShipToECLDuplicateName", "Gives a message and returns $Failed if any of the input names are used more than once for the same vessel model:"},
-            uuid = CreateUUID[];
-            ShipToECL[
-                {Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID], Model[Sample, "Test Model Chemical for ShipToECL" <> $SessionUUID]},
-                {"my new bottle" <> uuid, "my new bottle" <> uuid},
-                ContainerModel -> {
-                    Model[Container, Vessel, "Test vessel model for ShipToECL" <> $SessionUUID],
-                    Model[Container, Vessel, "Test vessel model for ShipToECL" <> $SessionUUID]
-                },
-                CoverModel -> {
-                    Model[Item, Cap, "Test cap model for ShipToECL" <> $SessionUUID],
-                    Model[Item, Cap, "Test cap model for ShipToECL" <> $SessionUUID]
-                },
-                Volume -> {1Milliliter, 1Milliliter}
-            ],
-            $Failed,
-            Messages :> {Error::ShipToECLDuplicateName, Error::ReusedPosition, Error::InvalidInput, Error::InvalidOption},
-            Variables :> {uuid}
-        ],
-
-        Example[{Messages, "ShipToECLDuplicateName", "Gives a message and returns $Failed if any of the input names are used more than once for different plate models:"},
-            uuid = CreateUUID[];
-            ShipToECL[
-                {Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID], Model[Sample, "Test Model Chemical for ShipToECL" <> $SessionUUID]},
-                {"my new plate" <> uuid, "my new plate" <> uuid},
-                ContainerModel -> {
-                    Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID],
-                    Model[Container, Plate, "Test plate model for ShipToECL (2)" <> $SessionUUID]
-                },
-                CoverModel -> Model[Item, PlateSeal, "Test plate seal model for ShipToECL" <> $SessionUUID],
-                Position -> {"A1", "A2"},
-                Volume -> {1Milliliter, 1Milliliter}
-            ],
-            $Failed,
-            Messages :> {Error::ShipToECLDuplicateName, Error::InvalidInput},
-            Variables :> {uuid}
-        ],
-
-        Example[{Messages, "InvalidPosition", "Errors if a position is specified that doesn't exist in the container model:"},
-            ShipToECL[
-                Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID],
-                "my new plate" <> CreateUUID[],
-                ContainerModel -> Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID],
-                CoverModel -> Model[Item, PlateSeal, "Test plate seal model for ShipToECL" <> $SessionUUID],
-                Position -> "A131",
-                Volume -> 1Milliliter
-            ],
-            $Failed,
-            Messages :> {Error::InvalidPosition, Error::InvalidOption}
-        ],
-
-        Example[{Messages, "NoNotebook", "Gives a message and returns $Failed if not called from a notebook:"},
-            ShipToECL[
-                Model[Item, Column, "Test Model Column for ShipToECL" <> $SessionUUID],
-                "my column" <> CreateUUID[],
-                NumberOfUses -> 3,
-                Product -> Object[Product, "Test product for ShipToECL (1)" <> $SessionUUID]
-            ],
-            $Failed,
-            Messages :> {Error::NoNotebook},
-            Stubs :> {$Notebook = Null}
-        ],
-
-        Example[{Messages, "NumberOfUsesNotRequired", "NumberOfUses may not be specified for non-column samples:"},
-            transaction = ShipToECL[
-                {Model[Item, Column, "Test Model Column for ShipToECL" <> $SessionUUID], Model[Sample, "Test Model Chemical for ShipToECL" <> $SessionUUID]},
-                {"my new item" <> CreateUUID[], "my new plate" <> CreateUUID[]},
-                ContainerModel -> {None, Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID]},
-                CoverModel -> {None, Model[Item, PlateSeal, "Test plate seal model for ShipToECL" <> $SessionUUID]},
-                Position -> {None, "A2"},
-                NumberOfUses -> 5,
-                Volume -> {None, 0.3Milliliter},
-                Product -> {Object[Product, "Test product for ShipToECL (1)" <> $SessionUUID], None},
-                Upload -> False
-            ],
-            $Failed,
-            Variables :> {transaction},
-            Messages :> {Error::NumberOfUsesNotRequired, Error::InvalidOption}
-        ],
-
-        Example[{Messages, "OptionRequired", "Product must be specified for {Object[Item,Column],Object[Item,Gel],Object[Sample],Object[Item,Consumable],Object[Item,Cap],Object[Item,Tips]} samples:"},
-            ShipToECL[Model[Item, Consumable, "Test Model Consumable for ShipToECL" <> $SessionUUID], "my new item" <> CreateUUID[],
-                Upload -> False
-            ],
-            $Failed,
-            Messages :> {Error::OptionRequired, Error::InvalidOption}
-        ],
-
-        Example[{Messages, "PositionRequired", "If position is not specified for a multi-position container, returns $Failed:"},
-            ShipToECL[
-                {Model[Sample, "Test Model Chemical for ShipToECL" <> $SessionUUID], Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID]},
-                {"my new plate" <> CreateUUID[], "my new plate" <> CreateUUID[]},
-                ContainerModel -> Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID],
-                CoverModel -> Model[Item, PlateSeal, "Test plate seal model for ShipToECL" <> $SessionUUID],
-                Position -> {Automatic, "A2"},
-                Volume -> 1.5 Milliliter
-            ],
-            $Failed,
-            Messages :> {Error::PositionRequired, Error::InvalidOption}
-        ],
-
-        Example[{Messages, "ContainerModelRequired", "If container model is not specified for a sample, returns $Failed:"},
-            ShipToECL[
-                Model[Sample, "Test Model Chemical for ShipToECL" <> $SessionUUID],
-                "my new sample",
-                CoverModel -> Model[Item, PlateSeal, "Test plate seal model for ShipToECL" <> $SessionUUID],
-                Position -> "A2",
-                Volume -> 1.5 Milliliter
-            ],
-            $Failed,
-            Messages :> {Error::ContainerModelRequired, Error::InvalidOption}
-        ],
-        Example[{Messages, "NoCompatibleRack", "If there is no Model[Container, Rack] in the database that can hold the ContainerModel upright based on its Footprint and dimensions, return an error:"},
-            ShipToECL[
-                {Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID]},
-                {"my new bottle" <> CreateUUID[]},
-                ContainerModel -> {Model[Container, Vessel, "id:dORYzZn0ooaG"]},
-                ShippedRack -> {Null},
-                Position -> "A1",
-                Volume -> 1 Milliliter
-            ],
-            $Failed,
-            Messages :> {Error::NoCompatibleRack, Error::InvalidOption},
-            Stubs :> {rackFootprintsAndDimensions[] := {}}
-        ],
-
-        Example[{Messages, "AmountNotRequired", "If Volume or Mass are specified for any items, a message is thrown and the amount is disregarded for those items:"},
-            ShipToECL[
-                {Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID], Model[Item, Consumable, "Test Model Consumable for ShipToECL" <> $SessionUUID]},
-                {"my new item" <> CreateUUID[], "my new plate" <> CreateUUID[]},
-                ContainerModel -> {Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID], None},
-                CoverModel -> {Model[Item, PlateSeal, "Test plate seal model for ShipToECL" <> $SessionUUID], None},
-                Position -> {"A1", None},
-                Volume -> 5 Milliliter,
-                Product -> Object[Product, "Test product for ShipToECL (1)" <> $SessionUUID]
-            ],
-            $Failed,
-            Messages :> {Error::AmountNotRequired, Error::InvalidOption}
-        ],
-
-        Example[{Messages, "ReusedPosition", "If two inputs point to the same location, return $Failed:"},
-            testuuid = CreateUUID[];
-            ShipToECL[
-                {Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID], Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID]},
-                {"my new plate" <> testuuid, "my new plate" <> testuuid},
-                Position -> {"A1", "A1"},
-                ContainerModel -> {Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID], Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID]},
-                CoverModel -> Model[Item, PlateSeal, "Test plate seal model for ShipToECL" <> $SessionUUID],
-                Volume -> 1Milliliter
-            ],
-            $Failed,
-            Messages :> {Error::ReusedPosition, Error::InvalidOption},
-            Variables :> {transaction, testuuid}
-        ],
-
-        Example[{Messages, "ReusedPosition", "Two inputs may point to the same position in different plates:"},
-            transaction = ShipToECL[
-                {Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID], Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID]},
-                {"my new plate" <> CreateUUID[], "my new plate 2" <> CreateUUID[]},
-                Position -> {"A1", "A1"},
-                ContainerModel -> {Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID], Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID]},
-                CoverModel -> Model[Item, PlateSeal, "Test plate seal model for ShipToECL" <> $SessionUUID],
-                Volume -> 1Milliliter
-            ],
-            {ObjectP[Object[Transaction, ShipToECL]]},
-            Variables :> {transaction}
-        ],
-
-        Example[{Messages, "InputLengthMismatch", "If a listed option does not match the length of the inputs, give a message and return $Failed:"},
-            ShipToECL[
-                Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID],
-                "my new plate" <> CreateUUID[],
-                Position -> "A1",
-                ContainerModel -> Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID],
-                CoverModel -> Model[Item, PlateSeal, "Test plate seal model for ShipToECL" <> $SessionUUID],
-                Volume -> {0.5 Milliliter, 0.3 Milliliter, 1 Milliliter}
-            ],
-            $Failed,
-            Messages :> {Error::InputLengthMismatch},
-            Variables :> {transaction}
-        ],
-
-        Example[{Messages, "AmountWillBeMeasured", "If mass or volume is not specified for samples, a message is given indicating that the amount will be measured upon arrival:"},
-            transaction = ShipToECL[
-                {Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID], Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID]},
-                {"my new plate" <> CreateUUID[], "my new plate" <> CreateUUID[]},
-                Position -> {"A1", "A2"},
-                ContainerModel -> {Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID], Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID]},
-                CoverModel -> Model[Item, PlateSeal, "Test plate seal model for ShipToECL" <> $SessionUUID],
-                Volume -> {None, 1Milliliter}
-            ],
-            {ObjectP[Object[Transaction, ShipToECL]]},
-            Messages :> {Warning::AmountWillBeMeasured},
-            Variables :> {transaction}
-        ],
-
-        Example[{Messages, "InputLengthMismatch", "If a listed option does not match the length of the transaction object inputs, give a message and return $Failed:"},
-            ShipToECL[
-                {Object[Transaction, ShipToECL, "Test transaction for ShipToECL (1)" <> $SessionUUID], Object[Transaction, ShipToECL, "Test transaction for ShipToECL (2)" <> $SessionUUID]},
-                ExpectedDeliveryDate -> {DateObject[List[2018, 4, 2, 14, 17, 52.`], "Instant", "Gregorian", -7.`], None, DateObject[List[2018, 4, 2, 14, 17, 52.`], "Instant", "Gregorian", -7.`]}
-            ],
-            $Failed,
-            Messages :> {Error::InputLengthMismatch}
-        ],
-
-        Example[{Messages, "InvalidDates", "If DateShipped is after ExpectedDeliveryDate when updating transactions, give a message and return $Failed:"},
-            ShipToECL[
-                {Object[Transaction, ShipToECL, "Test transaction for ShipToECL (1)" <> $SessionUUID], Object[Transaction, ShipToECL, "Test transaction for ShipToECL (2)" <> $SessionUUID]},
-
-                DateShipped -> {DateObject[List[2018, 4, 1, 14, 17, 52.`], "Instant", "Gregorian", -7.`], DateObject[List[2018, 3, 30, 14, 17, 52.`], "Instant", "Gregorian", -7.`]},
-                ExpectedDeliveryDate -> {DateObject[List[2018, 3, 30, 14, 17, 52.`], "Instant", "Gregorian", -7.`], DateObject[List[2018, 4, 1, 14, 17, 52.`], "Instant", "Gregorian", -7.`]}
-            ],
-            $Failed,
-            Messages :> {Error::InvalidDates, Error::InvalidOption}
-        ],
-
-        Example[{Messages, "InvalidDates", "If DateShipped is after ExpectedDeliveryDate when generating transactions, give a message and return $Failed:"},
-            ShipToECL[{Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID], Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID]},
-                {"my new bottle" <> CreateUUID[], "my new plate" <> CreateUUID[]},
-                Position -> {Automatic, "A2"},
-                ContainerModel -> {
-                    Model[Container, Vessel, "Test vessel model for ShipToECL" <> $SessionUUID],
-                    Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID]
-                },
-                CoverModel -> {
-                    Model[Item, Cap, "Test cap model for ShipToECL" <> $SessionUUID],
-                    Model[Item, PlateSeal, "Test plate seal model for ShipToECL" <> $SessionUUID]
-                },
-                DateShipped -> {DateObject[List[2018, 4, 1, 14, 17, 52.`], "Instant", "Gregorian", -7.`], DateObject[List[2018, 3, 30, 14, 17, 52.`], "Instant", "Gregorian", -7.`]},
-                ExpectedDeliveryDate -> {DateObject[List[2018, 3, 30, 14, 17, 52.`], "Instant", "Gregorian", -7.`], DateObject[List[2018, 4, 1, 14, 17, 52.`], "Instant", "Gregorian", -7.`]},
-                Volume -> 1 Milliliter
-            ],
-            $Failed,
-            Messages :> {Error::InvalidDates, Error::InvalidOption}
-        ],
-
-        Example[{Messages, "ContainersMayNotSpanShipments", "When generating transaction objects, if different shipping info is specified for the same container, give a message and return $Failed:"},
-            uuid = CreateUUID[];
-            ShipToECL[{Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID], Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID]},
-                {"my new plate" <> uuid, "my new plate" <> uuid},
-                Position -> {"A1", "A2"},
-                ContainerModel -> {Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID], Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID]},
-                CoverModel -> Model[Item, PlateSeal, "Test plate seal model for ShipToECL" <> $SessionUUID],
-                Volume -> 1Milliliter,
-                TrackingNumber -> {"123456", "654321"},
-                Shipper -> Object[Company, Shipper, "Test shipper for ShipToECL" <> $SessionUUID]
-            ],
-            $Failed,
-            Messages :> {Error::ContainersMayNotSpanShipments, Error::InvalidInput},
-            Variables :> {uuid}
-        ],
-
-        Example[{Messages, "ContainersMayNotSpanShipments", "When generating transaction objects, if different shipping info is specified for the same container, give a message and return $Failed:"},
-            uuid = CreateUUID[];
-            ShipToECL[
-                {Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID], Model[Sample, "Test Model Chemical for ShipToECL" <> $SessionUUID]},
-                {"my new plate" <> uuid, "my new plate" <> uuid},
-                Position -> {"B2", "A2"},
-                ContainerModel -> {Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID], Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID]},
-                CoverModel -> Model[Item, PlateSeal, "Test plate seal model for ShipToECL" <> $SessionUUID],
-                Volume -> 1Milliliter,
-                TrackingNumber -> {"123456", "654321"},
-                Shipper -> Object[Company, Shipper, "Test shipper for ShipToECL" <> $SessionUUID]
-            ],
-            $Failed,
-            Messages :> {Error::ContainersMayNotSpanShipments, Error::InvalidInput},
-            Variables :> {uuid}
-        ],
-        Example[{Messages, "TrackingNumberAndShipperRequiredTogether", "TrackingNumber and Shipper must be provided together when generating a transaction:"},
-            ShipToECL[
-                {Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID], Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID]},
-                {"my new bottle" <> CreateUUID[], "my new plate" <> CreateUUID[]},
-                Position -> {Automatic, "A2"},
-                ContainerModel -> {
-                    Model[Container, Vessel, "Test vessel model for ShipToECL" <> $SessionUUID],
-                    Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID]
-                },
-                CoverModel -> {
-                    Model[Item, Cap, "Test cap model for ShipToECL" <> $SessionUUID],
-                    Model[Item, PlateSeal, "Test plate seal model for ShipToECL" <> $SessionUUID]
-                },
-                Volume -> 1Milliliter,
-                TrackingNumber -> {"56yy-09o99-pp95", None}
-            ],
-            $Failed,
-            Messages :> {Error::TrackingNumberAndShipperRequiredTogether, Error::InvalidOption}
-        ],
-
-        Example[{Messages, "TrackingNumberAndShipperRequiredTogether", "TrackingNumber and Shipper must be provided together when updating a transaction:"},
-            ShipToECL[{Object[Transaction, ShipToECL, "Test transaction for ShipToECL (1)" <> $SessionUUID], Object[Transaction, ShipToECL, "Test transaction for ShipToECL (2)" <> $SessionUUID]},
-                TrackingNumber -> {"123456", "654321"},
-                Shipper -> {None, None}
-            ],
-            $Failed,
-            Messages :> {Error::TrackingNumberAndShipperRequiredTogether, Error::InvalidOption}
-        ],
-        Example[{Messages, "CoverModelNotRequired", "Cover cannot be specified for Item inputs:"},
-            ShipToECL[Model[Item, Consumable, "Test Model Consumable for ShipToECL" <> $SessionUUID],
-                "my test item 1",
-                CoverModel -> Model[Item, Cap, "Test cap model for ShipToECL" <> $SessionUUID],
-                Product -> Object[Product, "Test product for ShipToECL (1)" <> $SessionUUID]
-            ],
-            $Failed,
-            Messages :> {Error::CoverModelNotRequired, Error::InvalidOption}
-        ],
-        Example[{Messages, "CoverModelRequired", "Cover must be specified for all Sample inputs that are not in self covering containers:"},
-            ShipToECL[
-                {
-                    Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID],
-                    Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID],
-                    Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID]
-                },
-                {"my new bottle" <> CreateUUID[], "my new plate 1" <> CreateUUID[], "my new plate 2" <> CreateUUID[]},
-                ContainerModel -> {
-                    Model[Container, Vessel, "Test vessel model for ShipToECL" <> $SessionUUID],
-                    Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID],
-                    Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID]
-                },
-                CoverModel -> {
-                    Model[Item, Cap, "Test cap model for ShipToECL" <> $SessionUUID],
-                    Automatic,
-                    None
-                },
-                Position -> "A1",
-                Volume -> 1 Milliliter
-            ],
-            $Failed,
-            Messages :> {Error::CoverModelRequired, Error::InvalidOption}
-        ],
-        Example[{Messages, "IncompatibleCoverModel", "Cover must not be specified for all Sample inputs in self covering containers:"},
-            ShipToECL[
-                {
-                    Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID],
-                    Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID],
-                    Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID]
-                },
-                {"my new bottle" <> CreateUUID[], "my new bottle 2" <> CreateUUID[], "my new bottle 3" <> CreateUUID[]},
-                ContainerModel -> {
-                    Model[Container, Vessel, "Test vessel model for ShipToECL" <> $SessionUUID],
-                    Model[Container, Vessel, "id:dORYzZn0ooaG"],
-                    Model[Container, Vessel, "id:01G6nvwRj84A"]
-                },
-                CoverModel -> {
-                    Model[Item, Cap, "Test cap model for ShipToECL" <> $SessionUUID],
-                    Model[Item, Cap, "Test cap model for ShipToECL" <> $SessionUUID],
-                    Model[Item, Cap, "Test cap model for ShipToECL" <> $SessionUUID]
-                },
-                Position -> "A1",
-                Volume -> 1 Milliliter
-            ],
-            $Failed,
-            Messages :> {Error::IncompatibleCoverModel, Error::InvalidOption}
-        ],
-
-        Example[{Messages, "IncompatibleCoverModelType", "CoverModel and ContainerModel must be compatible with eachother:"},
-            ShipToECL[
-                {Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID]},
-                {"my new bottle" <> CreateUUID[]},
-                ContainerModel -> {Model[Container, Vessel, "Test vessel model for ShipToECL" <> $SessionUUID]},
-                CoverModel -> {Model[Item, Lid, "Test lid model for ShipToECL" <> $SessionUUID]},
-                Position -> "A1",
-                Volume -> 1 Milliliter
-            ],
-            $Failed,
-            Messages :> {Error::IncompatibleCoverModelType, Error::InvalidOption}
-        ],
-        Example[{Messages, "MissingEmptyContainerCover", "A warning is shown when EmptyContainers are provided with a matching None entry in EmptyContainerCovers:"},
-            ShipToECL[
-                {Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID]},
-                {"my new bottle" <> CreateUUID[]},
-                ContainerModel -> {Model[Container, Vessel, "Test vessel model for ShipToECL" <> $SessionUUID]},
-                CoverModel -> {Model[Item, Cap, "Test cap model for ShipToECL" <> $SessionUUID]},
-                EmptyContainers -> {Model[Container, Vessel, "Test vessel model for ShipToECL" <> $SessionUUID]},
-                EmptyContainerCovers -> {None},
-                Position -> "A1",
-                Volume -> 1 Milliliter
-            ],
-            {ObjectP[Object[Transaction, ShipToECL]]},
-            Messages :> {Warning::MissingEmptyContainerCover}
-        ],
-        Example[{Messages, "UnusedEmptyContainerCover", "Cover must not be specified for all EmptyContainers that are sealed or have built in covers:"},
-            ShipToECL[
-                {Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID]},
-                {"my new bottle" <> CreateUUID[]},
-                ContainerModel -> {Model[Container, Vessel, "id:01G6nvwRj84A"]},
-                CoverModel -> {None},
-                EmptyContainers -> {Model[Container, Vessel, "id:01G6nvwRj84A"]},
-                EmptyContainerCovers -> {Model[Item, Cap, "Test cap model for ShipToECL" <> $SessionUUID]},
-                Position -> "A1",
-                Volume -> 1 Milliliter
-            ],
-            $Failed,
-            Messages :> {Error::UnusedEmptyContainerCover, Error::InvalidOption}
-        ],
-        Example[{Messages, "IncompatibleEmptyContainerCover", "EmptyContainerCovers and EmptyContainers must be compatible with eachother:"},
-            ShipToECL[
-                {Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID]},
-                {"my new bottle" <> CreateUUID[]},
-                ContainerModel -> {Model[Container, Vessel, "Test vessel model for ShipToECL" <> $SessionUUID]},
-                CoverModel -> {Model[Item, Cap, "Test cap model for ShipToECL" <> $SessionUUID]},
-                EmptyContainers -> {Model[Container, Vessel, "Test vessel model for ShipToECL" <> $SessionUUID]},
-                EmptyContainerCovers -> {Model[Item, Lid, "Test lid model for ShipToECL" <> $SessionUUID]},
-                Position -> "A1",
-                Volume -> 1 Milliliter
-            ],
-            $Failed,
-            Messages :> {Error::IncompatibleEmptyContainerCover, Error::InvalidOption}
-        ],
-        Example[{Messages, "EmptyContainerCoverLengthMismatch", "The length of the EmptyContainers and EmptyContainerCovers must match:"},
-            ShipToECL[
-                {Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID]},
-                {"my new bottle" <> CreateUUID[]},
-                ContainerModel -> {Model[Container, Vessel, "Test vessel model for ShipToECL" <> $SessionUUID]},
-                CoverModel -> {Model[Item, Cap, "Test cap model for ShipToECL" <> $SessionUUID]},
-                EmptyContainers -> {Model[Container, Vessel, "Test vessel model for ShipToECL" <> $SessionUUID]},
-                EmptyContainerCovers -> {Model[Item, Cap, "Test cap model for ShipToECL" <> $SessionUUID], Model[Item, Cap, "Test cap model for ShipToECL" <> $SessionUUID]},
-                Position -> "A1",
-                Volume -> 1 Milliliter
-            ],
-            $Failed,
-            Messages :> {Error::EmptyContainerCoverLengthMismatch}
-        ],
-
-        Example[{Messages, "EmptyContainerAbsent", "When using an unverified container, an empty container must be sent for parameterization:"},
-            ShipToECL[
-                {
-                    Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID],
-                    Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID]
-                },
-                {"my new bottle" <> CreateUUID[], "my new plate" <> CreateUUID[]},
-                ContainerModel -> {
-                    Model[Container, Vessel, "Test ShipToECL Unverified Model" <> $SessionUUID],
-                    Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID]
-                },
-                CoverModel -> {
-                    Model[Item, Cap, "Test cap model for ShipToECL" <> $SessionUUID],
-                    Model[Item, PlateSeal, "Test plate seal model for ShipToECL" <> $SessionUUID]
-                },
-                Volume -> 1 Milliliter,
-                Position -> "A1"
-            ],
-            $Failed,
-            Messages :> {Error::EmptyContainerAbsent, Error::InvalidOption}
-        ],
-
-        (* ----------- *)
-        (* -- Tests -- *)
-        (* ----------- *)
-        Test["Object created for EmptyContainers is uploaded properly and has a Model, required for printing stickers:",
-            transaction = ShipToECL[
-                {Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID], Model[Sample, "Test Model Chemical for ShipToECL" <> $SessionUUID]},
-                {"my new bottle" <> CreateUUID[], "my new plate" <> CreateUUID[]},
-                Position -> {Automatic, "A2"},
-                ContainerModel -> {
-                    Model[Container, Vessel, "Test vessel model for ShipToECL" <> $SessionUUID],
-                    Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID]
-                },
-                CoverModel -> {
-                    Model[Item, Cap, "Test cap model for ShipToECL" <> $SessionUUID],
-                    Model[Item, PlateSeal, "Test plate seal model for ShipToECL" <> $SessionUUID]
-                },
-                Volume -> {1Milliliter, 1Milliliter},
-                EmptyContainers -> {Model[Container, Vessel, "Test ShipToECL EmptyContainer Model" <> $SessionUUID]},
-                EmptyContainerCovers -> {Model[Item, Cap, "Test cap model for ShipToECL" <> $SessionUUID]}
-            ];
-            Download[transaction, EmptyContainers[Model]],
-            {{LinkP[Model[Container, Vessel, "Test ShipToECL EmptyContainer Model" <> $SessionUUID]]}},
-            Variables :> {transaction}
-        ],
-        Test["When an empty container is included with the use of an unverified container, there are no errors:",
-            ShipToECL[
-                {
-                    Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID],
-                    Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID],
-                    Model[Item, Consumable, "Test Model Consumable for ShipToECL" <> $SessionUUID]
-                },
-                {"my new bottle" <> CreateUUID[], "my new plate" <> CreateUUID[], "my new item" <> CreateUUID[]},
-                ContainerModel -> {
-                    Model[Container, Vessel, "Test ShipToECL Unverified Model" <> $SessionUUID],
-                    Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID],
-                    None
-                },
-                CoverModel -> {
-                    Model[Item, Cap, "Test cap model for ShipToECL" <> $SessionUUID],
-                    Model[Item, PlateSeal, "Test plate seal model for ShipToECL" <> $SessionUUID],
-                    None
-                },
-                Volume -> {1 Milliliter, 1 Milliliter, None},
-                Position -> {"A1", "A1", Null},
-                Product -> {None, None, Object[Product, "Test product for ShipToECL (1)" <> $SessionUUID]},
-                EmptyContainers -> {Model[Container, Vessel, "Test ShipToECL Unverified Model" <> $SessionUUID]},
-                EmptyContainerCovers -> {Model[Item, Cap, "Test cap model for ShipToECL" <> $SessionUUID]}
-            ],
-            {ObjectP[Object[Transaction, ShipToECL]]}
-        ],
-        Test["CoverModel accepts Model[Item, Cap] for vessels and Model[Item, Lid] or Model[Item, PlateSeal] for plates:",
-            transaction = ShipToECL[
-                {
-                    Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID],
-                    Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID],
-                    Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID]
-                },
-                {"my new bottle" <> CreateUUID[], "my new plate 1" <> CreateUUID[], "my new plate 2" <> CreateUUID[]},
-                ContainerModel -> {
-                    Model[Container, Vessel, "Test vessel model for ShipToECL" <> $SessionUUID],
-                    Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID],
-                    Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID]
-                },
-                CoverModel -> {
-                    Model[Item, Cap, "Test cap model for ShipToECL" <> $SessionUUID],
-                    Model[Item, Lid, "Test lid model for ShipToECL" <> $SessionUUID],
-                    Model[Item, PlateSeal, "Test plate seal model for ShipToECL" <> $SessionUUID]
-                },
-                Position -> "A1",
-                Volume -> 0.5 Milliliter
-            ];
-            Download[transaction,
-                {
-                    ReceivedContainers[Cover],
-                    ReceivedCovers
-                }
-            ],
-            {{
-                {LinkP[Object[Item, Cap]], LinkP[Object[Item, Lid]], LinkP[Object[Item, PlateSeal]]},
-                {LinkP[Object[Item, Cap]], LinkP[Object[Item, Lid]], LinkP[Object[Item, PlateSeal]]}
-            }},
-            Variables :> {transaction}
-        ],
-        Test["NumberOfUses doesn't have to be specified for columns and will default to 0:",
-            columnShipToECL = ShipToECL[
-                Model[Item, Column, "Test Model Column for ShipToECL" <> $SessionUUID],
-                "my new item" <> CreateUUID[],
-                Product -> Object[Product, "Test product for ShipToECL (1)" <> $SessionUUID]
-            ];
-            Flatten@Download[columnShipToECL, ReceivedSamples[NumberOfUses]],
-            {0}
-        ],
-        Test["Sending empty containers for already verified models does not cause errors:",
-            ShipToECL[
-                {
-                    Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID],
-                    Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID]
-                },
-                {"my new bottle" <> CreateUUID[], "my new plate" <> CreateUUID[]},
-                ContainerModel -> {
-                    Model[Container, Vessel, "Test ShipToECL Unverified Model" <> $SessionUUID],
-                    Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID]
-                },
-                CoverModel -> {
-                    Model[Item, Cap, "Test cap model for ShipToECL" <> $SessionUUID],
-                    Model[Item, PlateSeal, "Test plate seal model for ShipToECL" <> $SessionUUID]
-                },
-                Volume -> 1 Milliliter,
-                Position -> "A1",
-                EmptyContainers -> {
-                    Model[Container, Vessel, "Test ShipToECL Unverified Model" <> $SessionUUID],
-                    Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID]
-                },
-                EmptyContainerCovers -> {
-                    Model[Item, Cap, "Test cap model for ShipToECL" <> $SessionUUID],
-                    Model[Item, PlateSeal, "Test plate seal model for ShipToECL" <> $SessionUUID]
-                }
-            ],
-            {ObjectP[Object[Transaction, ShipToECL]]}
-        ]
+		Example[
+			{Basic, "Generate a transaction to ship samples to ECL:"},
+			transaction = ShipToECL[{Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID], Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID], Model[Item, Column, "Test Model Column for ShipToECL" <> $SessionUUID]},
+				{"my new bottle" <> CreateUUID[], "my new plate" <> CreateUUID[], "my new column" <> CreateUUID[]},
+				ContainerModel -> {Model[Container, Vessel, "Test vessel model for ShipToECL" <> $SessionUUID], Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID], Automatic},
+				Position -> {Automatic, "B1", Automatic},
+				CoverModel -> {Model[Item, Cap, "Test cap model for ShipToECL" <> $SessionUUID], Model[Item, PlateSeal, "Test plate seal model for ShipToECL" <> $SessionUUID], Null},
+				Volume -> {2Liter, 1Milliliter, Null},
+				NumberOfUses -> {Null, Null, 0},
+				Product -> {Null, Null, Object[Product, "Test product for ShipToECL (1)" <> $SessionUUID]}
+			],
+			{ObjectP[Object[Transaction, ShipToECL]]},
+			Variables :> {transaction}
+		],
+
+		Example[{Basic, "Update shipping info for transaction objects:"},
+			ShipToECL[
+				{Object[Transaction, ShipToECL, "Test transaction for ShipToECL (1)" <> $SessionUUID], Object[Transaction, ShipToECL, "Test transaction for ShipToECL (2)" <> $SessionUUID]},
+				TrackingNumber -> {"123456","56789"},
+				Shipper -> {Object[Company, Shipper, "Test shipper for ShipToECL" <> $SessionUUID], Object[Company, Shipper, "Test shipper for ShipToECL" <> $SessionUUID]},
+				DateShipped -> {DateObject[List[2018, 3, 30, 14, 17, 52.`], "Instant", "Gregorian", -7.`], DateObject[List[2018, 3, 30, 14, 17, 52.`], "Instant", "Gregorian", -7.`]}
+			];
+			Download[{Object[Transaction, ShipToECL, "Test transaction for ShipToECL (1)" <> $SessionUUID], Object[Transaction, ShipToECL, "Test transaction for ShipToECL (2)" <> $SessionUUID]}, {TrackingNumbers, Shipper, DateShipped}],
+			{
+				{
+					{"123456"},
+					LinkP[Object[Company, Shipper, "Test shipper for ShipToECL" <> $SessionUUID], Transactions],
+					_DateObject
+				},
+				{
+					{"56789"},
+					LinkP[Object[Company, Shipper, "Test shipper for ShipToECL" <> $SessionUUID], Transactions],
+					_DateObject
+				}
+			}
+		],
+
+
+		Example[{Basic, "When given an empty list, returns an empty list:"},
+			ShipToECL[{}],
+			{}
+		],
+
+		(* ---------------- *)
+		(* -- Additional -- *)
+		(* ---------------- *)
+
+		Example[{Additional, "Generate Transactions", "Accepts single input (1 sample in a vessel):"},
+			transaction = ShipToECL[
+				Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID],
+				"my new bottle" <> CreateUUID[],
+				ContainerModel -> Model[Container, Vessel, "Test vessel model for ShipToECL" <> $SessionUUID],
+				CoverModel -> Model[Item, Cap, "Test cap model for ShipToECL" <> $SessionUUID],
+				Volume -> 1Milliliter
+			],
+			{ObjectP[Object[Transaction, ShipToECL]]},
+			Variables :> {transaction}
+		],
+
+		Example[{Additional, "Generate Transactions", "Accepts single input (1 sample in a plate):"},
+			transaction = ShipToECL[
+				Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID],
+				"my new plate" <> CreateUUID[],
+				ContainerModel -> Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID],
+				CoverModel -> Model[Item, PlateSeal, "Test plate seal model for ShipToECL" <> $SessionUUID],
+				Position -> "A2",
+				Volume -> 1Milliliter
+			],
+			{ObjectP[Object[Transaction, ShipToECL]]},
+			Variables :> {transaction}
+		],
+
+		Example[{Additional, "Generate Transactions", "Accepts single input (item):"},
+			transaction = ShipToECL[
+				Model[Item, Consumable, "Test Model Consumable for ShipToECL" <> $SessionUUID],
+				"my new column" <> CreateUUID[],
+				Product -> Object[Product, "Test product for ShipToECL (1)" <> $SessionUUID]
+			],
+			{ObjectP[Object[Transaction, ShipToECL]]},
+			Variables :> {transaction}
+		],
+
+		Example[{Additional, "Generate Transactions", "Accepts semi-listed input (samples in vessels):"},
+			transaction = ShipToECL[
+				Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID],
+				{"my new bottle" <> CreateUUID[], "my new bottle 2" <> CreateUUID[]},
+				ContainerModel -> Model[Container, Vessel, "Test vessel model for ShipToECL" <> $SessionUUID],
+				CoverModel -> Model[Item, Cap, "Test cap model for ShipToECL" <> $SessionUUID],
+				Volume -> 1Milliliter
+			],
+			{ObjectP[Object[Transaction, ShipToECL]]},
+			Variables :> {transaction}
+		],
+
+		Example[{Additional, "Generate Transactions", "Accepts listed input (samples in vessels):"},
+			transaction = ShipToECL[
+				{Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID], Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID]},
+				{"my new bottle" <> CreateUUID[], "my new bottle 2" <> CreateUUID[]},
+				ContainerModel -> {Model[Container, Vessel, "Test vessel model for ShipToECL" <> $SessionUUID], Model[Container, Vessel, "Test vessel model for ShipToECL" <> $SessionUUID]},
+				CoverModel -> Model[Item, Cap, "Test cap model for ShipToECL" <> $SessionUUID],
+				Volume -> 1Milliliter
+			],
+			{ObjectP[Object[Transaction, ShipToECL]]},
+			Variables :> {transaction}
+		],
+
+		Example[{Additional, "Generate Transactions", "If the same container name and model are specified, the samples will be put into the same container:"},
+			uuid = CreateUUID[];
+			transaction = ShipToECL[
+				{Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID], Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID]},
+				{"my new plate" <> uuid, "my new plate" <> uuid},
+				ContainerModel -> {Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID], Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID]},
+				CoverModel -> Model[Item, PlateSeal, "Test plate seal model for ShipToECL" <> $SessionUUID],
+				Volume -> 1Milliliter,
+				Position -> {"A1", "A2"}
+			];
+			Download[transaction, ReceivedSamples[Container][Name]],
+			{{"my new plate" <> uuid, "my new plate" <> uuid}},
+			Variables :> {transaction, uuid}
+		],
+
+		Example[{Additional, "Generate Transactions", "If the different container names are specified,the samples will be put into different containers:"},
+			uuid = CreateUUID[];
+			transaction = ShipToECL[
+				{Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID], Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID]},
+				{"my new bottle" <> uuid, "my new bottle 2" <> uuid},
+				ContainerModel -> {Model[Container, Vessel, "Test vessel model for ShipToECL" <> $SessionUUID], Model[Container, Vessel, "Test vessel model for ShipToECL" <> $SessionUUID]},
+				CoverModel -> Model[Item, Cap, "Test cap model for ShipToECL" <> $SessionUUID],
+				Volume -> 1Milliliter,
+				Position -> {"A1", "A1"}
+			];
+			Download[transaction, ReceivedSamples[Container][Name]],
+			{{"my new bottle" <> uuid, "my new bottle 2" <> uuid}},
+			Variables :> {transaction, uuid}
+		],
+
+		Example[{Additional, "Generate Transactions", "Accepts semi-listed input:"},
+			transaction = ShipToECL[
+				Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID],
+				{"my new plate" <> CreateUUID[], "my new plate" <> CreateUUID[]},
+				ContainerModel -> Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID],
+				CoverModel -> Model[Item, PlateSeal, "Test plate seal model for ShipToECL" <> $SessionUUID],
+				Position -> {"A2", "A3"},
+				Volume -> 1Milliliter
+			],
+			{ObjectP[Object[Transaction, ShipToECL]]},
+			Variables :> {transaction}
+		],
+
+		Example[{Additional, "Generate Transactions", "Accepts listed input (samples in plates):"},
+			transaction = ShipToECL[
+				{Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID], Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID]},
+				{"my new plate" <> CreateUUID[], "my new plate" <> CreateUUID[]},
+				ContainerModel -> {Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID], Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID]},
+				CoverModel -> Model[Item, PlateSeal, "Test plate seal model for ShipToECL" <> $SessionUUID],
+				Position -> {"A2", "A3"},
+				Volume -> 1Milliliter
+			],
+			{ObjectP[Object[Transaction, ShipToECL]]},
+			Variables :> {transaction}
+		],
+
+		Example[{Additional, "Generate Transactions", "Accepts semi-listed input (items):"},
+			transaction = ShipToECL[
+				Model[Item, Consumable, "Test Model Consumable for ShipToECL" <> $SessionUUID],
+				{"my consumable 1" <> CreateUUID[], "my consumable 2" <> CreateUUID[]},
+				Product -> Object[Product, "Test product for ShipToECL (1)" <> $SessionUUID]
+			],
+			{ObjectP[Object[Transaction, ShipToECL]]},
+			Variables :> {transaction}
+		],
+
+		Example[{Additional, "Generate Transactions", "Accepts listed input (items):"},
+			transaction = ShipToECL[
+				{Model[Item, Consumable, "Test Model Consumable for ShipToECL" <> $SessionUUID], Model[Item, Consumable, "Test Model Consumable for ShipToECL" <> $SessionUUID]},
+				{"my consumable 1" <> CreateUUID[], "my consumable 2" <> CreateUUID[]},
+				Product -> Object[Product, "Test product for ShipToECL (1)" <> $SessionUUID]
+			],
+			{ObjectP[Object[Transaction, ShipToECL]]},
+			Variables :> {transaction}
+		],
+
+		Example[{Additional, "Generate Transactions", "A new sample is generated for each input:"},
+			transaction = ShipToECL[{Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID], Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID], Model[Item, Consumable, "Test Model Consumable for ShipToECL" <> $SessionUUID]},
+				{"my new plate" <> CreateUUID[], "my new bottle" <> CreateUUID[], "my new item" <> CreateUUID[]},
+				ContainerModel -> {Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID], Model[Container, Vessel, "Test vessel model for ShipToECL" <> $SessionUUID], Automatic},
+				CoverModel -> {Model[Item, PlateSeal, "Test plate seal model for ShipToECL" <> $SessionUUID], Model[Item, Cap, "Test cap model for ShipToECL" <> $SessionUUID], Null},
+				Position -> {"A1", Automatic, Automatic},
+				Volume -> {1Milliliter, 1Milliliter, Null},
+				Product -> {Null, Null, Object[Product, "Test product for ShipToECL (1)" <> $SessionUUID]}
+			];
+			Download[transaction, ReceivedSamples],
+			{{LinkP[Object[Sample]], LinkP[Object[Sample]], LinkP[Object[Item, Consumable]]}},
+			Variables :> {transaction}
+		],
+
+		Example[{Additional, "Generate Transactions", "Samples have the specified positions:"},
+			uuid = CreateUUID[];
+			transaction = ShipToECL[
+				{Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID], Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID]},
+				{"my new plate" <> uuid, "my new plate" <> uuid},
+				ContainerModel -> {Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID], Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID]},
+				CoverModel -> Model[Item, PlateSeal, "Test plate seal model for ShipToECL" <> $SessionUUID],
+				Position -> {"A1", "A2"},
+				Volume -> 1Milliliter
+			];
+			Download[transaction, ReceivedContainers[Contents]],
+			{
+				{
+					{
+						{"A1", LinkP[Object[Sample]]},
+						{"A2", LinkP[Object[Sample]]}
+					}
+				}
+			},
+			Variables :> {transaction, uuid}
+		],
+
+		Example[{Additional, "Generate Transactions", "If position is not specified for a single-position container, the single position of the container will be used:"},
+			transaction = ShipToECL[Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID], "my new bottle" <> CreateUUID[],
+				ContainerModel -> Model[Container, Vessel, "Test vessel model for ShipToECL" <> $SessionUUID],
+				CoverModel -> Model[Item, Cap, "Test cap model for ShipToECL" <> $SessionUUID],
+				Volume -> 1Milliliter
+			];
+			Download[transaction, ReceivedContainers[Contents]],
+			{{{{"A1", LinkP[Object[Sample]]}}}},
+			Variables :> {transaction}
+		],
+
+		Example[{Additional, "Generate Transactions", "If the same container name and model is used for a plate, samples will be put into the same plate:"},
+			uuid = CreateUUID[];
+			transaction = ShipToECL[
+				{Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID], Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID], Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID]},
+				{"my new plate" <> uuid, "my new plate" <> uuid, "my new plate 2" <> uuid},
+				Position -> {"A1", "A2", "A3"},
+				ContainerModel -> {Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID], Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID], Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID]},
+				CoverModel -> Model[Item, PlateSeal, "Test plate seal model for ShipToECL" <> $SessionUUID],
+				Volume -> 1Milliliter
+			];
+			Download[transaction, ReceivedSamples[Container][Name]],
+			{{"my new plate" <> uuid, "my new plate" <> uuid, "my new plate 2" <> uuid}},
+			Variables :> {transaction, uuid}
+		],
+
+		Example[{Additional, "Generate Transactions", "If model containers are specified, new containers are made with the specified names and samples are put into the correct containers:"},
+			uuid = CreateUUID[];
+			transaction = ShipToECL[{Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID], Model[Sample, "Test Model Chemical for ShipToECL" <> $SessionUUID], Model[Sample, "Test Model Oligomer for ShipToECL" <> $SessionUUID], Model[Sample, "Test Model Cells for ShipToECL" <> $SessionUUID], Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID]},
+				{"my new bottle" <> uuid, "my new bottle 2" <> uuid, "my new plate" <> uuid, "my new plate" <> uuid, "my new plate 2" <> uuid},
+				ContainerModel -> {
+					Model[Container, Vessel, "Test vessel model for ShipToECL" <> $SessionUUID],
+					Model[Container, Vessel, "Test vessel model for ShipToECL" <> $SessionUUID],
+					Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID],
+					Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID],
+					Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID]
+				},
+				Position -> {Automatic, Automatic, "A2", "B2", "A2"},
+				CoverModel -> {
+					Model[Item, Cap, "Test cap model for ShipToECL" <> $SessionUUID],
+					Model[Item, Cap, "Test cap model for ShipToECL" <> $SessionUUID],
+					Model[Item, PlateSeal, "Test plate seal model for ShipToECL" <> $SessionUUID],
+					Model[Item, PlateSeal, "Test plate seal model for ShipToECL" <> $SessionUUID],
+					Model[Item, PlateSeal, "Test plate seal model for ShipToECL" <> $SessionUUID]
+				},
+				Volume -> 1 Milliliter];
+			Download[transaction, {ReceivedContainers[Model], ReceivedContainers[Name], ReceivedContainers[Contents][[All, 1]], ReceivedContainers[Contents][[All, 2]][Model]}],
+			{
+				{
+					{
+						LinkP[Model[Container, Vessel, "Test vessel model for ShipToECL" <> $SessionUUID]],
+						LinkP[Model[Container, Vessel, "Test vessel model for ShipToECL" <> $SessionUUID]],
+						LinkP[Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID]],
+						LinkP[Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID]]
+					},
+					{"my new bottle" <> uuid, "my new bottle 2" <> uuid, "my new plate" <> uuid, "my new plate 2" <> uuid},
+					{{"A1"}, {"A1"}, {"A2", "B2"}, {"A2"}},
+					{
+						{LinkP[Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID]]},
+						{LinkP[Model[Sample, "Test Model Chemical for ShipToECL" <> $SessionUUID]]},
+						{LinkP[Model[Sample, "Test Model Oligomer for ShipToECL" <> $SessionUUID]], LinkP[Model[Sample, "Test Model Cells for ShipToECL" <> $SessionUUID]]},
+						{LinkP[Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID]]}
+					}
+				}},
+			Variables :> {transaction, uuid}
+		],
+
+		Example[{Additional, "Generate Transactions", "The samples and input containers get the status Transit:"},
+			uuid = CreateUUID[];
+			transaction = ShipToECL[
+				{Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID], Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID]},
+				{"my new plate" <> uuid, "my new plate" <> uuid},
+				ContainerModel -> {Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID], Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID]},
+				CoverModel -> Model[Item, PlateSeal, "Test plate seal model for ShipToECL" <> $SessionUUID],
+				Position -> {"A1", "A2"},
+				Volume -> 1Milliliter
+			];
+			{Download[transaction, ReceivedSamples[Status]], Download[transaction, ReceivedContainers[Status]]},
+			{{{Transit, Transit}}, {{Transit}}},
+			Variables :> {transaction, uuid}
+		],
+
+		Example[{Additional, "Generate Transactions", "The samples get the destination:"},
+			transaction = ShipToECL[
+				{Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID], Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID]},
+				{"my new plate" <> CreateUUID[], "my new plate" <> CreateUUID[]},
+				ContainerModel -> {Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID], Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID]},
+				CoverModel -> Model[Item, PlateSeal, "Test plate seal model for ShipToECL" <> $SessionUUID],
+				Position -> {"A1", "A2"},
+				Volume -> 1Milliliter
+			];
+			{Download[transaction, ReceivedSamples[Destination]]},
+			{{{LinkP[$Site], LinkP[$Site]}}},
+			Variables :> {transaction}
+		],
+
+		Example[{Additional, "Generate Transactions", "Items inherit the source site as their container:"},
+			transaction = ShipToECL[Model[Item, Consumable, "Test Model Consumable for ShipToECL" <> $SessionUUID], "my new item" <> CreateUUID[],
+				Product -> {Object[Product, "Test product for ShipToECL (1)" <> $SessionUUID]}
+			];
+			Download[transaction, ReceivedSamples[Container][Object]],
+			{{Download[Object[Container, Site, "Test source site for ShipToECL" <> $SessionUUID], Object]}},
+			Variables :> {transaction}
+		],
+
+		Example[{Additional, "Generate Transactions", "The logged in user is specified as the Creator of the Transaction object:"},
+			transaction = ShipToECL[
+				{Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID], Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID]},
+				{"my new plate" <> CreateUUID[], "my new plate" <> CreateUUID[]},
+				ContainerModel -> {Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID], Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID]},
+				CoverModel -> Model[Item, PlateSeal, "Test plate seal model for ShipToECL" <> $SessionUUID],
+				Volume -> 1Milliliter,
+				Position -> {"A1", "A2"}
+			];
+			Download[transaction, Creator],
+			{LinkP[Object[User, "id:n0k9mG8AXZP6"]]},
+			Variables :> {transaction}
+		],
+
+		Example[{Additional, "Generate Transactions", "The source of the new samples (and any new containers) is the transaction object created to track their shipment:"},
+			transaction = ShipToECL[
+				{Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID], Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID], Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID], Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID]},
+				{"my new bottle" <> CreateUUID[], "my new plate" <> CreateUUID[], "my new bottle 2" <> CreateUUID[], "my new plate 2" <> CreateUUID[]},
+				Position -> {Automatic, "A1", Automatic, "A2"},
+				ContainerModel -> {
+					Model[Container, Vessel, "Test vessel model for ShipToECL" <> $SessionUUID],
+					Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID],
+					Model[Container, Vessel, "Test vessel model for ShipToECL" <> $SessionUUID],
+					Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID]
+				},
+				CoverModel -> {
+					Model[Item, Cap, "Test cap model for ShipToECL" <> $SessionUUID],
+					Model[Item, PlateSeal, "Test plate seal model for ShipToECL" <> $SessionUUID],
+					Model[Item, Cap, "Test cap model for ShipToECL" <> $SessionUUID],
+					Model[Item, PlateSeal, "Test plate seal model for ShipToECL" <> $SessionUUID]
+				},
+				Volume -> 1Milliliter,
+				TrackingNumber -> {"123456", "123456", "7890", "7890"},
+				Shipper -> Object[Company, Shipper, "Test shipper for ShipToECL" <> $SessionUUID]
+			];
+			Download[transaction, {ReceivedSamples[Source], ReceivedContainers[Source]}],
+			{
+				{{LinkP[transaction[[1]]], LinkP[transaction[[1]]]}, {LinkP[transaction[[1]]], LinkP[transaction[[1]]]}},
+				{{LinkP[transaction[[2]]], LinkP[transaction[[2]]]}, {LinkP[transaction[[2]]], LinkP[transaction[[2]]]}}
+			},
+			Variables :> {transaction}
+		],
+
+		Example[{Additional, "Generate Transactions", "The transaction status is updated by the currently logged in user when creating a transaction:"},
+			transaction = ShipToECL[
+				{Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID], Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID]},
+				{"my new plate" <> CreateUUID[], "my new plate" <> CreateUUID[]},
+				ContainerModel -> {Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID], Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID]},
+				CoverModel -> Model[Item, PlateSeal, "Test plate seal model for ShipToECL" <> $SessionUUID],
+				Position -> {"A1", "A2"},
+				Volume -> 1Milliliter,
+				DateShipped -> DateObject[List[2018, 3, 30, 14, 17, 52.`], "Instant", "Gregorian", -7.`]
+			];
+			Download[transaction, {StatusLog}],
+			{{{{_DateObject, Shipped, LinkP[Object[User, "id:n0k9mG8AXZP6"]]}}}},
+			Variables :> {transaction}
+		],
+
+		Example[{Additional, "Update Transactions", "The transaction status is updated by the currently logged in user when updating a transaction without a DateShipped:"},
+			ShipToECL[
+				{Object[Transaction, ShipToECL, "Test transaction for ShipToECL (1)" <> $SessionUUID], Object[Transaction, ShipToECL, "Test transaction for ShipToECL (2)" <> $SessionUUID]}
+			];
+			Download[{Object[Transaction, ShipToECL, "Test transaction for ShipToECL (1)" <> $SessionUUID], Object[Transaction, ShipToECL, "Test transaction for ShipToECL (2)" <> $SessionUUID]}, StatusLog],
+			{
+				{{_?DateObjectQ, Pending, LinkP[Object[User, "id:n0k9mG8AXZP6"]]}},
+				{{_?DateObjectQ, Pending, LinkP[Object[User, "id:n0k9mG8AXZP6"]]}}
+			}
+		],
+
+		Example[{Additional, "Update Transactions", "The transaction status is updated by the currently logged in user when updating a transaction with a DateShipped:"},
+			ShipToECL[
+				{Object[Transaction, ShipToECL, "Test transaction for ShipToECL (1)" <> $SessionUUID], Object[Transaction, ShipToECL, "Test transaction for ShipToECL (2)" <> $SessionUUID]},
+				DateShipped -> DateObject[List[2018, 3, 30, 14, 17, 52.`], "Instant", "Gregorian", -7.`]
+			];
+			Download[{Object[Transaction, ShipToECL, "Test transaction for ShipToECL (1)" <> $SessionUUID], Object[Transaction, ShipToECL, "Test transaction for ShipToECL (2)" <> $SessionUUID]}, {StatusLog}],
+			{{{{_DateObject, Shipped, LinkP[Object[User, "id:n0k9mG8AXZP6"]]}}}, {{{_DateObject, Shipped, LinkP[Object[User, "id:n0k9mG8AXZP6"]]}}}},
+			SetUp :> (
+				Upload[
+					{
+						<|Object -> Object[Transaction, ShipToECL, "Test transaction for ShipToECL (1)" <> $SessionUUID], Replace[StatusLog] -> {}|>,
+						<|Object -> Object[Transaction, ShipToECL, "Test transaction for ShipToECL (2)" <> $SessionUUID], Replace[StatusLog] -> {}|>
+					}
+				];
+			),
+			TearDown :> (
+				Upload[
+					{
+						<|Object -> Object[Transaction, ShipToECL, "Test transaction for ShipToECL (1)" <> $SessionUUID], Replace[StatusLog] -> {}|>,
+						<|Object -> Object[Transaction, ShipToECL, "Test transaction for ShipToECL (2)" <> $SessionUUID], Replace[StatusLog] -> {}|>
+					}
+				]
+			)
+		],
+
+		Example[{Additional, "Update Transactions", "Update shipping info for a single transaction object:"},
+			ShipToECL[
+				Object[Transaction, ShipToECL, "Test transaction for ShipToECL (1)" <> $SessionUUID],
+				TrackingNumber -> "123456",
+				Shipper -> Object[Company, Shipper, "Test shipper for ShipToECL" <> $SessionUUID],
+				DateShipped -> DateObject[List[2018, 4, 2, 14, 17, 52.`], "Instant", "Gregorian", -7.`]
+			],
+			Object[Transaction, ShipToECL, "Test transaction for ShipToECL (1)" <> $SessionUUID][Object]
+		],
+
+		(* ------------- *)
+		(* -- Options -- *)
+		(* ------------- *)
+
+
+		Example[{Options, ContainerModel, "ContainerModel may be specified for some inputs and not others:"},
+			transaction = ShipToECL[
+				{Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID], Model[Item, Consumable, "Test Model Consumable for ShipToECL" <> $SessionUUID]},
+				{"my new bottle" <> CreateUUID[], "my new item" <> CreateUUID[]},
+				ContainerModel -> {Model[Container, Vessel, "Test vessel model for ShipToECL" <> $SessionUUID], Null},
+				CoverModel -> {Model[Item, Cap, "Test cap model for ShipToECL" <> $SessionUUID], Null},
+				Volume -> {0.5 Milliliter, Null},
+				Product -> {Null, Object[Product, "Test product for ShipToECL (1)" <> $SessionUUID]}
+			];
+			Download[transaction, ReceivedSamples[Container]],
+			{{LinkP[Object[Container, Vessel]], LinkP[Object[Container, Site]]}},
+			Variables :> {transaction}
+		],
+		Example[{Options, CoverModel, "CoverModel may be specified for some inputs and not others:"},
+			transaction = ShipToECL[
+				{Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID], Model[Item, Consumable, "Test Model Consumable for ShipToECL" <> $SessionUUID]},
+				{"my new bottle" <> CreateUUID[], "my new item" <> CreateUUID[]},
+				ContainerModel -> {Model[Container, Vessel, "Test vessel model for ShipToECL" <> $SessionUUID], Null},
+				CoverModel -> {Model[Item, Cap, "Test cap model for ShipToECL" <> $SessionUUID], Null},
+				Volume -> {0.5 Milliliter, Null},
+				Product -> {Null, Object[Product, "Test product for ShipToECL (1)" <> $SessionUUID]}
+			];
+			Download[transaction, ReceivedSamples[Container][Cover]],
+			{{LinkP[Object[Item, Cap]], Null}},
+			Variables :> {transaction}
+		],
+		Example[{Options, CoverModel, "CoverModel will be automatically resolved to a placeholder model:"},
+			transaction = ShipToECL[
+				Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID],
+				"my new bottle" <> CreateUUID[],
+				ContainerModel -> Model[Container, Vessel, "Test vessel model for ShipToECL" <> $SessionUUID],
+				Volume -> 1 Milliliter
+			];
+			Download[transaction,
+				{
+					ReceivedContainers[Cover],
+					ReceivedCovers
+				}
+			],
+			{{
+				{LinkP[Object[Item, Cap]]},
+				{LinkP[Object[Item, Cap]]}
+			}},
+			Variables :> {transaction}
+		],
+		Example[{Options, CoverModel, "CoverModel will correctly resolve to Null in cases where the ContainerModel is self covering:"},
+			transaction = ShipToECL[
+				{
+					Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID],
+					Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID],
+					Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID]
+				},
+				{"my new bottle" <> CreateUUID[], "my new bottle 2" <> CreateUUID[], "my new bottle 3" <> CreateUUID[]},
+				ContainerModel -> {
+					Model[Container, Vessel, "Test vessel model for ShipToECL" <> $SessionUUID],
+					Model[Container, Vessel, "id:dORYzZn0ooaG"],
+					Model[Container, Vessel, "id:01G6nvwRj84A"]
+				},
+				CoverModel -> {
+					Model[Item, Cap, "Test cap model for ShipToECL" <> $SessionUUID],
+					Automatic,
+					Automatic
+				},
+				Position -> "A1",
+				Volume -> 1 Milliliter
+			];
+			Download[transaction,
+				{
+					ReceivedContainers[Cover],
+					ReceivedCovers
+				}
+			],
+			{{
+				{ObjectP[Object[Item, Cap]], Null, Null},
+				{ObjectP[Object[Item, Cap]]}
+			}},
+			Variables :> {transaction}
+		],
+		Example[{Options, CoverModel, "CoverModel can be specified as Null in cases where the container is self covering:"},
+			transaction = ShipToECL[
+				{
+					Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID],
+					Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID],
+					Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID]
+				},
+				{"my new bottle" <> CreateUUID[], "my new bottle 2" <> CreateUUID[], "my new bottle 3" <> CreateUUID[]},
+				ContainerModel -> {
+					Model[Container, Vessel, "Test vessel model for ShipToECL" <> $SessionUUID],
+					Model[Container, Vessel, "id:dORYzZn0ooaG"],
+					Model[Container, Vessel, "id:01G6nvwRj84A"]
+				},
+				CoverModel -> {
+					Model[Item, Cap, "Test cap model for ShipToECL" <> $SessionUUID],
+					Null,
+					Null
+				},
+				Position -> "A1",
+				Volume -> 1 Milliliter
+			];
+			Download[transaction,
+				{
+					ReceivedContainers[Cover],
+					ReceivedCovers
+				}
+			],
+			{{
+				{ObjectP[Object[Item, Cap]], Null, Null},
+				{ObjectP[Object[Item, Cap]]}
+			}},
+			Variables :> {transaction},
+			Messages :> {}
+		],
+
+		Example[{Options, ShippedRack, "Populate ShippedRack when the shipment includes a rack to hold the other shipped items:"},
+			options = ShipToECL[
+				{
+					Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID],
+					Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID]
+				},
+				{"my new bottle" <> CreateUUID[], "my new bottle 2" <> CreateUUID[]},
+				ContainerModel -> {
+					Model[Container, Vessel, "id:01G6nvwRj84A"],
+					Model[Container, Vessel, "id:dORYzZn0ooaG"]
+				},
+				ShippedRack -> {Null, Model[Container, Rack, "Multi-Position Utility Rack"]},
+				Position -> "A1",
+				Volume -> 1 Milliliter,
+				Output -> Options
+			];
+			Lookup[options, ShippedRack],
+			{Null, ObjectP[Model[Container, Rack]]},
+			Variables :> {options}
+		],
+		Example[{Options, ShippedRack, "A rack object is created for every ShippedRack:"},
+			trans = ShipToECL[
+				{
+					Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID],
+					Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID]
+				},
+				{"my new bottle" <> CreateUUID[], "my new bottle 2" <> CreateUUID[]},
+				ContainerModel -> {
+					Model[Container, Vessel, "id:01G6nvwRj84A"],
+					Model[Container, Vessel, "id:dORYzZn0ooaG"]
+				},
+				ShippedRack -> {Null, Model[Container, Rack, "Multi-Position Utility Rack"]},
+				Position -> "A1",
+				Volume -> 1 Milliliter
+			];
+			Download[Cases[trans, ObjectP[Object[Transaction, ShipToECL]]], ShippedRacks],
+			{{Null, ObjectP[Object[Container, Rack]]}},
+			Variables :> {trans}
+		],
+
+		Example[{Options, Position, "Position may be specified for some inputs and not others:"},
+			transaction = ShipToECL[
+				{Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID], Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID]},
+				{"my new bottle" <> CreateUUID[], "my new plate 2" <> CreateUUID[]},
+				ContainerModel -> {
+					Model[Container, Vessel, "Test vessel model for ShipToECL" <> $SessionUUID],
+					Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID]
+				},
+				CoverModel -> {
+					Model[Item, Cap, "Test cap model for ShipToECL" <> $SessionUUID],
+					Model[Item, PlateSeal, "Test plate seal model for ShipToECL" <> $SessionUUID]
+				},
+				Position -> {Automatic, "A2"},
+				Volume -> 1Milliliter
+			];
+			Download[transaction, ReceivedContainers[Contents]],
+			{{{{"A1", LinkP[Object[Sample]]}}, {{"A2", LinkP[Object[Sample]]}}}},
+			Variables :> {transaction}
+		],
+
+		Example[{Options, Source, "If not specified, the source of the Transaction object is pulled from the site of the financer of the notebook where the function is called from:"},
+			transaction = ShipToECL[
+				{Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID], Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID]},
+				{"my new plate" <> CreateUUID[], "my new plate" <> CreateUUID[]},
+				ContainerModel -> {Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID], Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID]},
+				CoverModel -> {
+					Model[Item, PlateSeal, "Test plate seal model for ShipToECL" <> $SessionUUID],
+					Model[Item, PlateSeal, "Test plate seal model for ShipToECL" <> $SessionUUID]
+				},
+				Volume -> 1Milliliter,
+				Position -> {"A1", "A2"}
+			];
+			Download[transaction, Source],
+			{LinkP[Object[Container, Site, "Test source site for ShipToECL" <> $SessionUUID]]},
+			Variables :> {transaction}
+		],
+
+		Example[{Options, Name, "Update the name of existing transactions:"},
+			uuid = CreateUUID[];
+			Download[ShipToECL[
+				{Object[Transaction, ShipToECL, "Test transaction for ShipToECL (1)" <> $SessionUUID], Object[Transaction, ShipToECL, "Test transaction for ShipToECL (2)" <> $SessionUUID]},
+				Name -> "My transaction" <> uuid
+			], Name],
+			{"My transaction" <> uuid <> "_1", "My transaction" <> uuid <> "_2"},
+			TearDown :> (
+				If[
+					MatchQ[DatabaseMemberQ[{Object[Transaction, ShipToECL, "My transaction" <> uuid <> "_1"], Object[Transaction, ShipToECL, "My transaction" <> uuid <> "_2"]}], {True, True}],
+					Upload[
+						{
+							<|Object -> Object[Transaction, ShipToECL, "My transaction" <> uuid <> "_1"], Name -> "Test transaction for ShipToECL (1)" <> $SessionUUID|>,
+							<|Object -> Object[Transaction, ShipToECL, "My transaction" <> uuid <> "_2"], Name -> "Test transaction for ShipToECL (2)" <> $SessionUUID|>
+						}
+					]
+				]
+			),
+			Variables :> {uuid}
+		],
+
+		Example[{Options, Name, "Name the transaction being created:"},
+			uuid = CreateUUID[];
+			transaction = ShipToECL[
+				{Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID], Model[Sample, "Test Model Chemical for ShipToECL" <> $SessionUUID]},
+				{"my new plate" <> uuid, "my new plate" <> uuid},
+				ContainerModel -> {Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID], Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID]},
+				CoverModel -> {
+					Model[Item, PlateSeal, "Test plate seal model for ShipToECL" <> $SessionUUID],
+					Model[Item, PlateSeal, "Test plate seal model for ShipToECL" <> $SessionUUID]
+				},
+				Position -> {"A1", "A2"},
+				Volume -> 1Milliliter,
+				Name -> "My new transaction" <> uuid
+			];
+			Download[transaction, Name],
+			{"My new transaction" <> uuid},
+			Variables :> {transaction, uuid}
+		],
+
+		Example[{Options, Name, "If multiple transactions are generated, an index is appended to the name:"},
+			uuid = CreateUUID[];
+			transaction = ShipToECL[
+				{Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID], Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID]},
+				{"my new bottle" <> uuid, "my new plate" <> uuid},
+				ContainerModel -> {Model[Container, Vessel, "Test vessel model for ShipToECL" <> $SessionUUID], Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID]},
+				CoverModel -> {
+					Model[Item, Cap, "Test cap model for ShipToECL" <> $SessionUUID],
+					Model[Item, PlateSeal, "Test plate seal model for ShipToECL" <> $SessionUUID]
+				},
+				Position -> {Automatic, "A2"},
+				Name -> "My new transaction" <> uuid,
+				Volume -> 1Milliliter,
+				DateShipped -> {DateObject[List[2018, 3, 30, 14, 17, 52.`], "Instant", "Gregorian", -7.`], DateObject[List[2018, 3, 29, 14, 17, 52.`], "Instant", "Gregorian", -7.`]}
+			];
+			Download[transaction, Name],
+			{"My new transaction" <> uuid <> "_1", "My new transaction" <> uuid <> "_2"},
+			Variables :> {transaction, uuid}
+		],
+
+		Example[{Options, StorageCondition, "If StorageCondition is not specified, the new samples inherit the DefaultStorageCondition of the model:"},
+			transaction = ShipToECL[
+				{Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID], Model[Sample, "Test Model Chemical for ShipToECL" <> $SessionUUID]},
+				{"my new plate" <> CreateUUID[], "my new plate" <> CreateUUID[]},
+				Position -> {"A1", "A2"},
+				ContainerModel -> {Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID], Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID]},
+				CoverModel -> {
+					Model[Item, PlateSeal, "Test plate seal model for ShipToECL" <> $SessionUUID],
+					Model[Item, PlateSeal, "Test plate seal model for ShipToECL" <> $SessionUUID]
+				},
+				Volume -> 1Milliliter
+			];
+			{Download[transaction, ReceivedSamples[StorageCondition]], Download[{Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID], Model[Sample, "Test Model Chemical for ShipToECL" <> $SessionUUID]}, DefaultStorageCondition]},
+			{{{ObjectP[Model[StorageCondition, "Refrigerator"]], ObjectP[Model[StorageCondition, "Ambient Storage"]]}}, {ObjectP[Model[StorageCondition, "Refrigerator"]], ObjectP[Model[StorageCondition, "Ambient Storage"]]}},
+			Variables :> {transaction}
+		],
+
+		Example[{Options, StorageCondition, "Specify StorageCondition to be the same for all samples:"},
+			transaction = ShipToECL[
+				{Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID], Model[Sample, "Test Model Chemical for ShipToECL" <> $SessionUUID]},
+				{"my new plate" <> CreateUUID[], "my new plate" <> CreateUUID[]},
+				Position -> {"A1", "A2"},
+				ContainerModel -> {Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID], Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID]},
+				CoverModel -> {
+					Model[Item, PlateSeal, "Test plate seal model for ShipToECL" <> $SessionUUID],
+					Model[Item, PlateSeal, "Test plate seal model for ShipToECL" <> $SessionUUID]
+				},
+				StorageCondition -> AmbientStorage,
+				Volume -> 1Milliliter
+			];
+			Download[transaction, ReceivedSamples[StorageCondition]],
+			{{LinkP[Model[StorageCondition, "Ambient Storage"]], LinkP[Model[StorageCondition, "Ambient Storage"]]}},
+			Variables :> {transaction}
+		],
+
+		Example[{Options, StorageCondition, "Specify a StorageCondition for each sample:"},
+			transaction = ShipToECL[
+				{Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID], Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID]},
+				{"my new plate" <> CreateUUID[], "my new plate" <> CreateUUID[]},
+				Position -> {"A1", "A2"},
+				ContainerModel -> {Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID], Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID]},
+				CoverModel -> {
+					Model[Item, PlateSeal, "Test plate seal model for ShipToECL" <> $SessionUUID],
+					Model[Item, PlateSeal, "Test plate seal model for ShipToECL" <> $SessionUUID]
+				},
+				StorageCondition -> {Freezer, DeepFreezer},
+				Volume -> 1Milliliter
+			];
+			Download[transaction, ReceivedSamples[StorageCondition]],
+			{{LinkP[Model[StorageCondition, "Freezer"]], LinkP[Model[StorageCondition, "Deep Freezer"]]}},
+			Variables :> {transaction}
+		],
+
+		Example[{Options, StorageCondition, "Specify a StorageCondition some samples, and let other samples default from the model:"},
+			transaction = ShipToECL[
+				{Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID], Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID]},
+				{"my new plate" <> CreateUUID[], "my new plate" <> CreateUUID[]},
+				Position -> {"A1", "A2"},
+				ContainerModel -> {Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID], Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID]},
+				CoverModel -> {
+					Model[Item, PlateSeal, "Test plate seal model for ShipToECL" <> $SessionUUID],
+					Model[Item, PlateSeal, "Test plate seal model for ShipToECL" <> $SessionUUID]
+				},
+				StorageCondition -> {Freezer, Automatic},
+				Volume -> 1Milliliter
+			];
+			Download[transaction, ReceivedSamples[StorageCondition]],
+			{{LinkP[Model[StorageCondition, "Freezer"]], LinkP[Model[StorageCondition, "Refrigerator"]]}},
+			Variables :> {transaction}
+		],
+
+		Example[{Options, Destination, "Specify the destination where the samples will be sent:"},
+			transaction = ShipToECL[
+				{Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID], Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID]},
+				{"my new plate" <> CreateUUID[], "my new plate" <> CreateUUID[]},
+				Position -> {"A1", "A2"},
+				ContainerModel -> {Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID], Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID]},
+				CoverModel -> {
+					Model[Item, PlateSeal, "Test plate seal model for ShipToECL" <> $SessionUUID],
+					Model[Item, PlateSeal, "Test plate seal model for ShipToECL" <> $SessionUUID]
+				},
+				Destination -> Object[Container, Site, "Test destination site for ShipToECL" <> $SessionUUID],
+				Volume -> 1Milliliter
+			];
+			Download[transaction, Destination],
+			{LinkP[Object[Container, Site, "Test destination site for ShipToECL" <> $SessionUUID]]},
+			Variables :> {transaction}
+		],
+
+		Example[{Options, Volume, "Specify a different volume for each sample:"},
+			transaction = ShipToECL[
+				{Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID], Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID]},
+				{"my new plate" <> CreateUUID[], "my new plate" <> CreateUUID[]},
+				Position -> {"A1", "A2"},
+				CoverModel -> {
+					Model[Item, PlateSeal, "Test plate seal model for ShipToECL" <> $SessionUUID],
+					Model[Item, PlateSeal, "Test plate seal model for ShipToECL" <> $SessionUUID]
+				},
+				ContainerModel -> {Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID], Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID]},
+				Volume -> {0.5 Milliliter, 1 Milliliter}
+			];
+			Download[transaction, ReceivedSamples[{Volume, VolumeLog}]],
+			{{
+				{Quantity[0.0005`, "Liters"], {{_?DateObjectQ, Quantity[0.0005`, "Liters"], LinkP[Object[User, "id:n0k9mG8AXZP6"]], InitialManufacturerVolume}}},
+				{Quantity[0.001`, "Liters"], {{_?DateObjectQ, Quantity[0.001`, "Liters"], LinkP[Object[User, "id:n0k9mG8AXZP6"]], InitialManufacturerVolume}}}
+			}},
+			Variables :> {transaction}
+		],
+
+		Example[{Options, Volume, "Specify the same volume for all the samples:"},
+			transaction = ShipToECL[
+				{Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID], Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID]},
+				{"my new plate" <> CreateUUID[], "my new plate" <> CreateUUID[]},
+				Position -> {"A1", "A2"},
+				CoverModel -> {
+					Model[Item, PlateSeal, "Test plate seal model for ShipToECL" <> $SessionUUID],
+					Model[Item, PlateSeal, "Test plate seal model for ShipToECL" <> $SessionUUID]
+				},
+				ContainerModel -> {Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID], Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID]},
+				Volume -> 0.5 Milliliter
+			];
+			Download[transaction, ReceivedSamples[{Volume, VolumeLog}]],
+			{{
+				{Quantity[0.0005`, "Liters"], {{_?DateObjectQ, Quantity[0.0005`, "Liters"], LinkP[Object[User, "id:n0k9mG8AXZP6"]], InitialManufacturerVolume}}},
+				{Quantity[0.0005`, "Liters"], {{_?DateObjectQ, Quantity[0.0005`, "Liters"], LinkP[Object[User, "id:n0k9mG8AXZP6"]], InitialManufacturerVolume}}}
+			}},
+			Variables :> {transaction}
+		],
+
+		Example[{Options, Volume, "Specify a volume for some but not all of the samples:"},
+			transaction = ShipToECL[
+				{Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID], Model[Item, Consumable, "Test Model Consumable for ShipToECL" <> $SessionUUID]},
+				{"my new plate" <> CreateUUID[], "my new item" <> CreateUUID[]},
+				Position -> {"A1", Null},
+				ContainerModel -> {Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID], Null},
+				CoverModel -> {
+					Model[Item, PlateSeal, "Test plate seal model for ShipToECL" <> $SessionUUID],
+					Null
+				},
+				Volume -> {0.5 Milliliter, Null},
+				Product -> {Null, Object[Product, "Test product for ShipToECL (1)" <> $SessionUUID]}
+			];
+			Download[transaction, ReceivedSamples[{Volume, VolumeLog}]],
+			{{
+				{Quantity[0.0005`, "Liters"], {{_?DateObjectQ, Quantity[0.0005`, "Liters"], LinkP[Object[User, "id:n0k9mG8AXZP6"]], InitialManufacturerVolume}}},
+				{Null, {}}
+			}},
+			Variables :> {transaction}
+		],
+
+		Example[{Options, Volume, "If mass is provided and density is known, the volume is calculated:"},
+			transaction = ShipToECL[Model[Sample, "Test Model Chemical with density for ShipToECL" <> $SessionUUID], "my new bottle" <> CreateUUID[],
+				ContainerModel -> Model[Container, Vessel, "Test vessel model for ShipToECL" <> $SessionUUID],
+				CoverModel -> Model[Item, Cap, "Test cap model for ShipToECL" <> $SessionUUID],
+				Mass -> 95Gram
+			];
+			Download[transaction, ReceivedSamples[{Volume, VolumeLog, Mass, MassLog}]],
+			{{{
+				Quantity[0.1, "Liters"],
+				{{_?DateObjectQ, Quantity[0.1, "Liters"], LinkP[Object[User, "id:n0k9mG8AXZP6"]], InitialManufacturerVolume}},
+				Quantity[95., "Grams"],
+				{{_?DateObjectQ, Quantity[95., "Grams"], LinkP[Object[User, "id:n0k9mG8AXZP6"]], InitialManufacturerWeight}}
+			}}},
+			Variables :> {transaction}
+		],
+		Example[{Options, Source, "Specify the site where the samples are being shipped from:"},
+			transaction = ShipToECL[
+				{Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID], Model[Item, Consumable, "Test Model Consumable for ShipToECL" <> $SessionUUID]},
+				{"my new bottle" <> CreateUUID[], "my new item" <> CreateUUID[]},
+				ContainerModel -> {Model[Container, Vessel, "Test vessel model for ShipToECL" <> $SessionUUID], Null},
+				CoverModel -> {Model[Item, Cap, "Test cap model for ShipToECL" <> $SessionUUID], Null},
+				Source -> Object[Container, Site, "Test secondary source site for ShipToECL" <> $SessionUUID],
+				Volume -> {1Milliliter, Null},
+				Product -> {Null, Object[Product, "Test product for ShipToECL (1)" <> $SessionUUID]}
+			];
+			Download[transaction, Source],
+			{LinkP[Object[Container, Site, "Test secondary source site for ShipToECL" <> $SessionUUID]]},
+			Variables :> {transaction}
+		],
+
+		Example[{Options, NumberOfUses, "Specify a different NumberOfUses for each sample:"},
+			transaction = ShipToECL[
+				{Model[Item, Column, "Test Model Column for ShipToECL" <> $SessionUUID], Model[Item, Column, "Test Model Column for ShipToECL" <> $SessionUUID]},
+				{"new column 1", "new column 2"},
+				NumberOfUses -> {3, 15},
+				Product -> Object[Product, "Test product for ShipToECL (1)" <> $SessionUUID
+				]
+			];
+			Download[transaction, ReceivedSamples[NumberOfUses]],
+			{{3, 15}},
+			Variables :> {transaction, newID1, newID2}
+		],
+
+		Example[{Options, NumberOfUses, "Specify the same NumberOfUses for all the samples:"},
+			transaction = ShipToECL[
+				{Model[Item, Column, "Test Model Column for ShipToECL" <> $SessionUUID], Model[Item, Column, "Test Model Column for ShipToECL" <> $SessionUUID]},
+				{"new column 1", "new column 2"},
+				NumberOfUses -> 5,
+				Product -> Object[Product, "Test product for ShipToECL (1)" <> $SessionUUID]
+			];
+			Download[transaction, ReceivedSamples[NumberOfUses]],
+			{{5, 5}},
+			Variables :> {transaction}
+		],
+
+		Example[{Options, NumberOfUses, "Specify a NumberOfUses for some but not all of the samples:"},
+			transaction = ShipToECL[
+				{Model[Sample, "Test Model Chemical for ShipToECL" <> $SessionUUID], Model[Item, Column, "Test Model Column for ShipToECL" <> $SessionUUID]},
+				{"my new plate" <> CreateUUID[], "my new item" <> CreateUUID[]},
+				ContainerModel -> {Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID], Null},
+				CoverModel -> {
+					Model[Item, PlateSeal, "Test plate seal model for ShipToECL" <> $SessionUUID],
+					Null
+				},
+				Position -> {"A1", Null},
+				NumberOfUses -> {Null, 4},
+				Volume -> {1Milliliter, Null},
+				Product -> {Null, Object[Product, "Test product for ShipToECL (1)" <> $SessionUUID]}
+			];
+			Quiet[Download[transaction, ReceivedSamples[NumberOfUses]], Download::FieldDoesntExist],
+			{{$Failed, 4}},
+			Variables :> {transaction}
+		],
+		Example[{Options, Product, "Specify a different Product for each sample:"},
+			transaction = ShipToECL[
+				{Model[Sample, "Test Model Chemical for ShipToECL" <> $SessionUUID], Model[Sample, "Test Model Chemical for ShipToECL" <> $SessionUUID]},
+				{"my new plate" <> CreateUUID[], "my new plate" <> CreateUUID[]},
+				ContainerModel -> {Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID], Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID]},
+				Position -> {"A1", "A2"},
+				CoverModel -> {
+					Model[Item, PlateSeal, "Test plate seal model for ShipToECL" <> $SessionUUID],
+					Model[Item, PlateSeal, "Test plate seal model for ShipToECL" <> $SessionUUID]
+				},
+				Product -> {Object[Product, "Test product for ShipToECL (1)" <> $SessionUUID], Object[Product, "Test product for ShipToECL (2)" <> $SessionUUID]},
+				Volume -> 0.3Milliliter
+			];
+			Download[transaction, ReceivedSamples[Product]],
+			{{LinkP[Object[Product, "Test product for ShipToECL (1)" <> $SessionUUID]], LinkP[Object[Product, "Test product for ShipToECL (2)" <> $SessionUUID]]}},
+			Variables :> {transaction}
+		],
+
+		Example[{Options, Product, "Specify the same Product for all the samples:"},
+			transaction = ShipToECL[
+				{Model[Sample, "Test Model Chemical for ShipToECL" <> $SessionUUID], Model[Sample, "Test Model Chemical for ShipToECL" <> $SessionUUID]},
+				{"my new plate" <> CreateUUID[], "my new plate" <> CreateUUID[]},
+				ContainerModel -> {Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID], Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID]},
+				CoverModel -> {
+					Model[Item, PlateSeal, "Test plate seal model for ShipToECL" <> $SessionUUID],
+					Model[Item, PlateSeal, "Test plate seal model for ShipToECL" <> $SessionUUID]
+				},
+				Position -> {"A1", "A2"},
+				Product -> Object[Product, "Test product for ShipToECL (1)" <> $SessionUUID],
+				Volume -> 0.3Milliliter
+			];
+			Download[transaction, ReceivedSamples[Product]],
+			{{LinkP[Object[Product, "Test product for ShipToECL (1)" <> $SessionUUID]], LinkP[Object[Product, "Test product for ShipToECL (1)" <> $SessionUUID]]}},
+			Variables :> {transaction}
+		],
+
+		Example[{Options, Product, "Specify a Product for some but not all of the samples:"},
+			transaction = ShipToECL[
+				{Model[Item, Consumable, "Test Model Consumable for ShipToECL" <> $SessionUUID], Model[Sample, "Test Model Chemical for ShipToECL" <> $SessionUUID]},
+				{"my new item" <> CreateUUID[], "my new plate" <> CreateUUID[]},
+				ContainerModel -> {Null, Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID]},
+				CoverModel -> {
+					Null,
+					Model[Item, PlateSeal, "Test plate seal model for ShipToECL" <> $SessionUUID]
+				},
+				Position -> {Null, "A2"},
+				Product -> {Object[Product, "Test product for ShipToECL (2)" <> $SessionUUID], Null},
+				Volume -> {Null, 0.3Milliliter}
+			];
+			Download[transaction, ReceivedSamples[Product]],
+			{{LinkP[Object[Product, "Test product for ShipToECL (2)" <> $SessionUUID]], Null}},
+			Variables :> {transaction}
+		],
+
+		Example[{Options, Count, "Specify a different count for each sample:"},
+			transaction = ShipToECL[
+				{Model[Sample, "Test Model Tablet for ShipToECL" <> $SessionUUID], Model[Sample, "Test Model Tablet for ShipToECL" <> $SessionUUID]},
+				{"my new bottle" <> CreateUUID[], "my new bottle 2" <> CreateUUID[]},
+				ContainerModel -> {Model[Container, Vessel, "Test vessel model for ShipToECL" <> $SessionUUID], Model[Container, Vessel, "Test vessel model for ShipToECL" <> $SessionUUID]},
+				CoverModel -> {
+					Model[Item, Cap, "Test cap model for ShipToECL" <> $SessionUUID],
+					Model[Item, Cap, "Test cap model for ShipToECL" <> $SessionUUID]
+				},
+				Count -> {5, 10}
+			];
+			Download[transaction, ReceivedSamples[{Count, CountLog}]],
+			{{
+				{5, {{_?DateObjectQ, 5, LinkP[Object[User, "id:n0k9mG8AXZP6"]]}}},
+				{10, {{_?DateObjectQ, 10, LinkP[Object[User, "id:n0k9mG8AXZP6"]]}}}
+			}},
+			Variables :> {transaction}
+		],
+
+		Example[{Options, Count, "Specify the same count for all the samples:"},
+			transaction = ShipToECL[
+				{Model[Sample, "Test Model Tablet for ShipToECL" <> $SessionUUID], Model[Sample, "Test Model Tablet for ShipToECL" <> $SessionUUID]},
+				{"my new bottle" <> CreateUUID[], "my new bottle 2" <> CreateUUID[]},
+				ContainerModel -> {Model[Container, Vessel, "Test vessel model for ShipToECL" <> $SessionUUID], Model[Container, Vessel, "Test vessel model for ShipToECL" <> $SessionUUID]},
+				CoverModel -> {
+					Model[Item, Cap, "Test cap model for ShipToECL" <> $SessionUUID],
+					Model[Item, Cap, "Test cap model for ShipToECL" <> $SessionUUID]
+				},
+				Count -> 20
+			];
+			Download[transaction, ReceivedSamples[{Count, CountLog}]],
+			{{
+				{20, {{_?DateObjectQ, 20, LinkP[Object[User, "id:n0k9mG8AXZP6"]]}}},
+				{20, {{_?DateObjectQ, 20, LinkP[Object[User, "id:n0k9mG8AXZP6"]]}}}
+			}},
+			Variables :> {transaction}
+		],
+
+		Example[{Options, Count, "Specify a count for some but not all of the samples:"},
+			transaction = ShipToECL[
+				{Model[Sample, "Test Model Tablet for ShipToECL" <> $SessionUUID], Model[Item, Consumable, "Test Model Consumable for ShipToECL" <> $SessionUUID]},
+				{"my new bottle" <> CreateUUID[], "my new item" <> CreateUUID[]},
+				ContainerModel -> {Model[Container, Vessel, "Test vessel model for ShipToECL" <> $SessionUUID], Null},
+				CoverModel -> {
+					Model[Item, Cap, "Test cap model for ShipToECL" <> $SessionUUID],
+					Null
+				},
+				Count -> {20, Null},
+				Product -> {Null, Object[Product, "Test product for ShipToECL (1)" <> $SessionUUID]}
+			];
+			Download[transaction, ReceivedSamples[{Count, CountLog}]],
+			{{
+				{20, {{_?DateObjectQ, 20, LinkP[Object[User, "id:n0k9mG8AXZP6"]]}}},
+				{Null, {}}
+			}},
+			Variables :> {transaction}
+		],
+		Example[{Options, Count, "If mass is provided and tablet weight is known, the count is calculated (rounding to the nearest whole number):"},
+			transaction = ShipToECL[
+				Model[Sample, "Test Model Tablet for ShipToECL" <> $SessionUUID],
+				"my new bottle" <> CreateUUID[],
+				ContainerModel -> Model[Container, Vessel, "Test vessel model for ShipToECL" <> $SessionUUID],
+				CoverModel -> Model[Item, Cap, "Test cap model for ShipToECL" <> $SessionUUID],
+				Mass -> 20.2Gram
+			];
+			Download[transaction, ReceivedSamples[{Count, CountLog, Mass, MassLog}]],
+			{{{
+				20,
+				{{_?DateObjectQ, 20, LinkP[Object[User, "id:n0k9mG8AXZP6"]]}},
+				Quantity[20.2, "Grams"],
+				{{_?DateObjectQ, Quantity[20.2, "Grams"], LinkP[Object[User, "id:n0k9mG8AXZP6"]], InitialManufacturerWeight}}
+			}}},
+			Variables :> {transaction}
+		],
+
+		Example[{Options, Mass, "Specify a different mass for each sample:"},
+			transaction = ShipToECL[
+				{Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID], Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID]},
+				{"my new plate" <> CreateUUID[], "my new plate" <> CreateUUID[]},
+				Position -> {"A1", "A2"},
+				ContainerModel -> {
+					Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID],
+					Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID]
+				},
+				CoverModel -> {
+					Model[Item, PlateSeal, "Test plate seal model for ShipToECL" <> $SessionUUID],
+					Model[Item, PlateSeal, "Test plate seal model for ShipToECL" <> $SessionUUID]
+				},
+				Mass -> {0.5 Gram, 1 Gram}];
+			Download[transaction, ReceivedSamples[{Mass, MassLog}]],
+			{{
+				{Quantity[0.5, "Grams"], {{_?DateObjectQ, Quantity[0.5, "Grams"], LinkP[Object[User, "id:n0k9mG8AXZP6"]], WeightMeasurementStatusP}}},
+				{Quantity[1., "Grams"], {{_?DateObjectQ, Quantity[1., "Grams"], LinkP[Object[User, "id:n0k9mG8AXZP6"]], WeightMeasurementStatusP}}}
+			}},
+			Variables :> {transaction}
+		],
+
+		Example[{Options, Mass, "Specify the same mass for all the samples:"},
+			transaction = ShipToECL[
+				{Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID], Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID]},
+				{"my new plate" <> CreateUUID[], "my new plate" <> CreateUUID[]},
+				Position -> {"A1", "A2"},
+				ContainerModel -> {
+					Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID],
+					Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID]
+				},
+				CoverModel -> {
+					Model[Item, PlateSeal, "Test plate seal model for ShipToECL" <> $SessionUUID],
+					Model[Item, PlateSeal, "Test plate seal model for ShipToECL" <> $SessionUUID]
+				},
+				Mass -> 0.5 Gram];
+			Download[transaction, ReceivedSamples[{Mass, MassLog}]],
+			{{
+				{Quantity[0.5, "Grams"], {{_?DateObjectQ, Quantity[0.5, "Grams"], LinkP[Object[User, "id:n0k9mG8AXZP6"]], WeightMeasurementStatusP}}},
+				{Quantity[0.5, "Grams"], {{_?DateObjectQ, Quantity[0.5, "Grams"], LinkP[Object[User, "id:n0k9mG8AXZP6"]], WeightMeasurementStatusP}}}
+			}},
+			Variables :> {transaction}
+		],
+
+		Example[{Options, Mass, "Specify a mass for some but not all of the samples:"},
+			transaction = ShipToECL[
+				{Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID], Model[Item, Consumable, "Test Model Consumable for ShipToECL" <> $SessionUUID]},
+				{"my new plate" <> CreateUUID[], "my new item" <> CreateUUID[]},
+				Position -> {"A1", Null},
+				ContainerModel -> {Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID], Null},
+				CoverModel -> {
+					Model[Item, PlateSeal, "Test plate seal model for ShipToECL" <> $SessionUUID],
+					Null
+				},
+				Mass -> {0.5 Gram, Null},
+				Product -> {Null, Object[Product, "Test product for ShipToECL (1)" <> $SessionUUID]}
+			];
+			Download[transaction, ReceivedSamples[{Mass, MassLog}]],
+			{{
+				{Quantity[0.5, "Grams"], {{_?DateObjectQ, Quantity[0.5, "Grams"], LinkP[Object[User, "id:n0k9mG8AXZP6"]], WeightMeasurementStatusP}}},
+				{Null, {}}
+			}},
+			Variables :> {transaction}
+		],
+		Example[{Options, Mass, "If volume is provided and density is known, the mass is calculated:"},
+			transaction = ShipToECL[
+				Model[Sample, "Test Model Chemical with density for ShipToECL" <> $SessionUUID],
+				"my new bottle" <> CreateUUID[],
+				ContainerModel -> Model[Container, Vessel, "Test vessel model for ShipToECL" <> $SessionUUID],
+				CoverModel -> Model[Item, Cap, "Test cap model for ShipToECL" <> $SessionUUID],
+				Volume -> 0.1Liter
+			];
+			Download[transaction, ReceivedSamples[{Volume, VolumeLog, Mass, MassLog}]],
+			{{{
+				Quantity[0.1, "Liters"],
+				{{_?DateObjectQ, Quantity[0.1, "Liters"], LinkP[Object[User, "id:n0k9mG8AXZP6"]], InitialManufacturerVolume}},
+				Quantity[95., "Grams"],
+				{{_?DateObjectQ, Quantity[95., "Grams"], LinkP[Object[User, "id:n0k9mG8AXZP6"]], InitialManufacturerWeight}}
+			}}},
+			Variables :> {transaction}
+		],
+
+		Example[{Options, Mass, "If count is provided and tablet weight is known, the mass is calculated:"},
+			transaction = ShipToECL[
+				Model[Sample, "Test Model Tablet for ShipToECL" <> $SessionUUID],
+				"my new bottle" <> CreateUUID[],
+				ContainerModel -> Model[Container, Vessel, "Test vessel model for ShipToECL" <> $SessionUUID],
+				CoverModel -> Model[Item, Cap, "Test cap model for ShipToECL" <> $SessionUUID],
+				Count -> 20
+			];
+			Download[transaction, ReceivedSamples[{Count, CountLog, Mass, MassLog}]],
+			{{{
+				20,
+				{{_?DateObjectQ, 20, LinkP[Object[User, "id:n0k9mG8AXZP6"]]}},
+				Quantity[20., "Grams"],
+				{{_?DateObjectQ, Quantity[20., "Grams"], LinkP[Object[User, "id:n0k9mG8AXZP6"]], InitialManufacturerWeight}}
+			}}},
+			Variables :> {transaction}
+		],
+		Example[{Options, ExpectedDeliveryDate, "Specify an expected delivery date when updating shipping information:"},
+			ShipToECL[
+				{Object[Transaction, ShipToECL, "Test transaction for ShipToECL (1)" <> $SessionUUID], Object[Transaction, ShipToECL, "Test transaction for ShipToECL (2)" <> $SessionUUID]},
+				DateShipped -> DateObject[List[2018, 4, 1, 14, 17, 52.`], "Instant", "Gregorian", -7.`],
+				ExpectedDeliveryDate -> DateObject[List[2018, 4, 2, 14, 17, 52.`], "Instant", "Gregorian", -7.`]
+			];
+			Download[{Object[Transaction, ShipToECL, "Test transaction for ShipToECL (1)" <> $SessionUUID], Object[Transaction, ShipToECL, "Test transaction for ShipToECL (2)" <> $SessionUUID]}, DateExpected],
+			{_DateObject, _DateObject}
+		],
+
+		Example[{Options, ExpectedDeliveryDate, "Specify an expected delivery date for each object when updating shipping information:"},
+			ShipToECL[
+				{Object[Transaction, ShipToECL, "Test transaction for ShipToECL (1)" <> $SessionUUID], Object[Transaction, ShipToECL, "Test transaction for ShipToECL (2)" <> $SessionUUID]},
+				DateShipped -> DateObject[List[2018, 4, 1, 14, 17, 52.`], "Instant", "Gregorian", -7.`],
+				ExpectedDeliveryDate -> {DateObject[List[2018, 4, 2, 14, 17, 52.`], "Instant", "Gregorian", -7.`], DateObject[List[2018, 4, 5, 14, 17, 52.`], "Instant", "Gregorian", -7.`]
+				}
+			];
+			Download[{Object[Transaction, ShipToECL, "Test transaction for ShipToECL (1)" <> $SessionUUID], Object[Transaction, ShipToECL, "Test transaction for ShipToECL (2)" <> $SessionUUID]}, DateExpected],
+			{_DateObject, _DateObject}
+		],
+
+		Example[{Options, ExpectedDeliveryDate, "Specify an expected delivery date for some but not all of the objects when updating shipping information:"},
+			ShipToECL[
+				{Object[Transaction, ShipToECL, "Test transaction for ShipToECL (1)" <> $SessionUUID], Object[Transaction, ShipToECL, "Test transaction for ShipToECL (2)" <> $SessionUUID]},
+				DateShipped -> DateObject[List[2018, 4, 1, 14, 17, 52.`], "Instant", "Gregorian", -7.`],
+				ExpectedDeliveryDate -> {DateObject[List[2018, 4, 2, 14, 17, 52.`], "Instant", "Gregorian", -7.`], Null}
+			];
+			Download[{Object[Transaction, ShipToECL, "Test transaction for ShipToECL (1)" <> $SessionUUID], Object[Transaction, ShipToECL, "Test transaction for ShipToECL (2)" <> $SessionUUID]}, DateExpected],
+			{_DateObject, Null}
+		],
+		Example[{Options, ExpectedDeliveryDate, "When updating shipping information, Automatic ExpectedDeliveryDate will leave the existing date expected in place:"},
+			ShipToECL[
+				{Object[Transaction, ShipToECL, "Test transaction for ShipToECL (1)" <> $SessionUUID], Object[Transaction, ShipToECL, "Test transaction for ShipToECL (2)" <> $SessionUUID], Object[Transaction, ShipToECL, "Test transaction for ShipToECL (3)" <> $SessionUUID]},
+				DateShipped -> DateObject[List[2018, 4, 1, 14, 17, 52.`], "Instant", "Gregorian", -7.`],
+				ExpectedDeliveryDate -> DateObject[List[2018, 4, 2, 14, 17, 52.`], "Instant", "Gregorian", -7.`]
+			];
+			ShipToECL[
+				{Object[Transaction, ShipToECL, "Test transaction for ShipToECL (1)" <> $SessionUUID], Object[Transaction, ShipToECL, "Test transaction for ShipToECL (2)" <> $SessionUUID], Object[Transaction, ShipToECL, "Test transaction for ShipToECL (3)" <> $SessionUUID]},
+				ExpectedDeliveryDate -> {Automatic, Null, DateObject[List[2018, 4, 8, 14, 17, 52.`], "Instant", "Gregorian", -7.`]}
+			];
+			Download[{Object[Transaction, ShipToECL, "Test transaction for ShipToECL (1)" <> $SessionUUID], Object[Transaction, ShipToECL, "Test transaction for ShipToECL (2)" <> $SessionUUID], Object[Transaction, ShipToECL, "Test transaction for ShipToECL (3)" <> $SessionUUID]}, DateExpected],
+			{
+				date1_,
+				date1_,
+				date2_
+			}
+		],
+		Example[{Options, Shipper, "Specify a shipper when updating shipping information:"},
+			ShipToECL[
+				{Object[Transaction, ShipToECL, "Test transaction for ShipToECL (1)" <> $SessionUUID], Object[Transaction, ShipToECL, "Test transaction for ShipToECL (2)" <> $SessionUUID]},
+				Shipper -> Object[Company, Shipper, "Test shipper for ShipToECL" <> $SessionUUID]
+			];
+			Download[{Object[Transaction, ShipToECL, "Test transaction for ShipToECL (1)" <> $SessionUUID], Object[Transaction, ShipToECL, "Test transaction for ShipToECL (2)" <> $SessionUUID]}, Shipper],
+			{LinkP[Object[Company, Shipper, "Test shipper for ShipToECL" <> $SessionUUID], Transactions], LinkP[Object[Company, Shipper, "Test shipper for ShipToECL" <> $SessionUUID], Transactions]}
+		],
+
+		Example[{Options, Shipper, "Specify a shipper for each object when updating shipping information:"},
+			ShipToECL[
+				{Object[Transaction, ShipToECL, "Test transaction for ShipToECL (1)" <> $SessionUUID], Object[Transaction, ShipToECL, "Test transaction for ShipToECL (2)" <> $SessionUUID]},
+				Shipper -> {Object[Company, Shipper, "Test shipper for ShipToECL" <> $SessionUUID], Object[Company, Shipper, "Test shipper for ShipToECL (2)" <> $SessionUUID]}
+			];
+			Download[{Object[Transaction, ShipToECL, "Test transaction for ShipToECL (1)" <> $SessionUUID], Object[Transaction, ShipToECL, "Test transaction for ShipToECL (2)" <> $SessionUUID]}, Shipper],
+			{LinkP[Object[Company, Shipper, "Test shipper for ShipToECL" <> $SessionUUID], Transactions], LinkP[Object[Company, Shipper, "Test shipper for ShipToECL (2)" <> $SessionUUID], Transactions]}
+		],
+
+		Example[{Options, Shipper, "Specify a shipper for some but not all of the objects when updating shipping information:"},
+			ShipToECL[
+				{Object[Transaction, ShipToECL, "Test transaction for ShipToECL (1)" <> $SessionUUID], Object[Transaction, ShipToECL, "Test transaction for ShipToECL (2)" <> $SessionUUID]},
+				Shipper -> {Object[Company, Shipper, "Test shipper for ShipToECL" <> $SessionUUID], Null},
+				TrackingNumber -> {"12345", Null}
+			];
+			Download[{Object[Transaction, ShipToECL, "Test transaction for ShipToECL (1)" <> $SessionUUID], Object[Transaction, ShipToECL, "Test transaction for ShipToECL (2)" <> $SessionUUID]}, Shipper],
+			{LinkP[Object[Company, Shipper, "Test shipper for ShipToECL" <> $SessionUUID], Transactions], Null}
+		],
+		Example[{Options, Shipper, "When updating shipping information, Automatic Shipper will leave the existing Shipper in place:"},
+			ShipToECL[
+				{Object[Transaction, ShipToECL, "Test transaction for ShipToECL (1)" <> $SessionUUID], Object[Transaction, ShipToECL, "Test transaction for ShipToECL (2)" <> $SessionUUID], Object[Transaction, ShipToECL, "Test transaction for ShipToECL (3)" <> $SessionUUID]},
+				Shipper -> Object[Company, Shipper, "Test shipper for ShipToECL" <> $SessionUUID]
+			];
+			ShipToECL[
+				{Object[Transaction, ShipToECL, "Test transaction for ShipToECL (1)" <> $SessionUUID], Object[Transaction, ShipToECL, "Test transaction for ShipToECL (2)" <> $SessionUUID], Object[Transaction, ShipToECL, "Test transaction for ShipToECL (3)" <> $SessionUUID]},
+				Shipper -> {Automatic, Null, Object[Company, Shipper, "Test shipper for ShipToECL (2)" <> $SessionUUID]}
+			];
+			Download[{Object[Transaction, ShipToECL, "Test transaction for ShipToECL (1)" <> $SessionUUID], Object[Transaction, ShipToECL, "Test transaction for ShipToECL (2)" <> $SessionUUID], Object[Transaction, ShipToECL, "Test transaction for ShipToECL (3)" <> $SessionUUID]}, Shipper],
+			{
+				LinkP[Object[Company, Shipper, "Test shipper for ShipToECL" <> $SessionUUID], Transactions],
+				LinkP[Object[Company, Shipper, "Test shipper for ShipToECL" <> $SessionUUID], Transactions],
+				LinkP[Object[Company, Shipper, "Test shipper for ShipToECL (2)" <> $SessionUUID], Transactions]
+			},
+			SetUp :> (
+				Upload[
+					{
+						<|Object -> Object[Transaction, ShipToECL, "Test transaction for ShipToECL (1)" <> $SessionUUID], Shipper -> Link[Object[Company, Shipper, "Test shipper for ShipToECL" <> $SessionUUID], Transactions], Replace[TrackingNumbers] -> {}, Replace[ReceivedSamples] -> {Link[Object[Sample, "Test Sample for ShipToECL (1)" <> $SessionUUID]]},
+							Replace[ReceivedContainers] -> Null, Replace[ReceivedCovers] -> Null, Replace[TransferSamples] -> Null, Replace[TransferContainers] -> Null, Replace[EmptyContainers] -> Null,
+							Creator -> Link[Object[User, "Test user for notebook-less test protocols"], TransactionsCreated], Destination -> Null, Source -> Null, ReceivingTolerance -> Null
+						|>,
+						<|Object -> Object[Transaction, ShipToECL, "Test transaction for ShipToECL (2)" <> $SessionUUID], Shipper -> Null, Replace[TrackingNumbers] -> {}, Replace[ReceivedSamples] -> {Link[Object[Sample, "Test Sample for ShipToECL (1)" <> $SessionUUID]]},
+							Replace[ReceivedContainers] -> Null, Replace[ReceivedCovers] -> Null, Replace[TransferSamples] -> Null, Replace[TransferContainers] -> Null, Replace[EmptyContainers] -> Null,
+							Creator -> Link[Object[User, "Test user for notebook-less test protocols"], TransactionsCreated], Destination -> Null, Source -> Null, ReceivingTolerance -> Null
+						|>,
+						<|Object -> Object[Transaction, ShipToECL, "Test transaction for ShipToECL (3)" <> $SessionUUID], Shipper -> Null, Replace[TrackingNumbers] -> {}, Replace[ReceivedSamples] -> {Link[Object[Sample, "Test Sample for ShipToECL (1)" <> $SessionUUID]]},
+							Replace[ReceivedContainers] -> Null, Replace[ReceivedCovers] -> Null, Replace[TransferSamples] -> Null, Replace[TransferContainers] -> Null, Replace[EmptyContainers] -> Null,
+							Creator -> Link[Object[User, "Test user for notebook-less test protocols"], TransactionsCreated], Destination -> Null, Source -> Null, ReceivingTolerance -> Null
+						|>
+					}
+				];
+			),
+			TearDown :> (
+				Upload[
+					{
+						<|Object -> Object[Transaction, ShipToECL, "Test transaction for ShipToECL (1)" <> $SessionUUID], Shipper -> Link[Object[Company, Shipper, "Test shipper for ShipToECL" <> $SessionUUID], Transactions], Replace[TrackingNumbers] -> {}, Replace[ReceivedSamples] -> {Link[Object[Sample, "Test Sample for ShipToECL (1)" <> $SessionUUID]]},
+							Replace[ReceivedContainers] -> Null, Replace[ReceivedCovers] -> Null, Replace[TransferSamples] -> Null, Replace[TransferContainers] -> Null, Replace[EmptyContainers] -> Null,
+							Creator -> Link[Object[User, "Test user for notebook-less test protocols"], TransactionsCreated], Destination -> Null, Source -> Null, ReceivingTolerance -> Null
+						|>,
+						<|Object -> Object[Transaction, ShipToECL, "Test transaction for ShipToECL (2)" <> $SessionUUID], Shipper -> Null, Replace[TrackingNumbers] -> {}, Replace[ReceivedSamples] -> {Link[Object[Sample, "Test Sample for ShipToECL (1)" <> $SessionUUID]]},
+							Replace[ReceivedContainers] -> Null, Replace[ReceivedCovers] -> Null, Replace[TransferSamples] -> Null, Replace[TransferContainers] -> Null, Replace[EmptyContainers] -> Null,
+							Creator -> Link[Object[User, "Test user for notebook-less test protocols"], TransactionsCreated], Destination -> Null, Source -> Null, ReceivingTolerance -> Null
+						|>,
+						<|Object -> Object[Transaction, ShipToECL, "Test transaction for ShipToECL (3)" <> $SessionUUID], Shipper -> Null, Replace[TrackingNumbers] -> {}, Replace[ReceivedSamples] -> {Link[Object[Sample, "Test Sample for ShipToECL (1)" <> $SessionUUID]]},
+							Replace[ReceivedContainers] -> Null, Replace[ReceivedCovers] -> Null, Replace[TransferSamples] -> Null, Replace[TransferContainers] -> Null, Replace[EmptyContainers] -> Null,
+							Creator -> Link[Object[User, "Test user for notebook-less test protocols"], TransactionsCreated], Destination -> Null, Source -> Null, ReceivingTolerance -> Null
+						|>
+					}
+				]
+			)
+		],
+
+		Example[{Options, TrackingNumber, "Specify a tracking number when updating shipping information. (Shipper must also be provided, or must already be populated in the transaction object):"},
+			ShipToECL[
+				{Object[Transaction, ShipToECL, "Test transaction for ShipToECL (1)" <> $SessionUUID], Object[Transaction, ShipToECL, "Test transaction for ShipToECL (2)" <> $SessionUUID]},
+				TrackingNumber -> "123456",
+				Shipper -> Object[Company, Shipper, "Test shipper for ShipToECL (2)" <> $SessionUUID]
+			];
+			Download[{Object[Transaction, ShipToECL, "Test transaction for ShipToECL (1)" <> $SessionUUID], Object[Transaction, ShipToECL, "Test transaction for ShipToECL (2)" <> $SessionUUID]}, TrackingNumbers],
+			{{"123456"}, {"123456"}}
+		],
+
+		Example[{Options, TrackingNumber, "Specify a tracking number for each object when updating shipping information. (Shipper must also be provided, or must already be populated in the transaction object):"},
+			ShipToECL[
+				{Object[Transaction, ShipToECL, "Test transaction for ShipToECL (1)" <> $SessionUUID], Object[Transaction, ShipToECL, "Test transaction for ShipToECL (2)" <> $SessionUUID]},
+				TrackingNumber -> {"123456", "654321"},
+				Shipper -> {Object[Company, Shipper, "Test shipper for ShipToECL" <> $SessionUUID], Object[Company, Shipper, "Test shipper for ShipToECL (2)" <> $SessionUUID]}
+			];
+			Download[{Object[Transaction, ShipToECL, "Test transaction for ShipToECL (1)" <> $SessionUUID], Object[Transaction, ShipToECL, "Test transaction for ShipToECL (2)" <> $SessionUUID]}, TrackingNumbers],
+			{{"123456"}, {"654321"}}
+		],
+
+		Example[{Options, TrackingNumber, "Specify a tracking number for some but not all of the objects when updating shipping information. (Shipper must also be provided, or must already be populated in the transaction object):"},
+			ShipToECL[
+				{Object[Transaction, ShipToECL, "Test transaction for ShipToECL (1)" <> $SessionUUID],
+					Object[Transaction, ShipToECL, "Test transaction for ShipToECL (2)" <> $SessionUUID]},
+				TrackingNumber -> {"123456", Null},
+				Shipper -> {Object[Company, Shipper, "Test shipper for ShipToECL" <> $SessionUUID], Automatic}
+			];
+			Download[{Object[Transaction, ShipToECL, "Test transaction for ShipToECL (1)" <> $SessionUUID], Object[Transaction, ShipToECL, "Test transaction for ShipToECL (2)" <> $SessionUUID]}, TrackingNumbers],
+			{{"123456"}, {}}
+		],
+		Example[{Options, TrackingNumber, "When updating shipping information, Automatic TrackingNumber will leave the existing tracking number in place:"},
+			ShipToECL[
+				{
+					Object[Transaction, ShipToECL, "Test transaction for ShipToECL (1)" <> $SessionUUID],
+					Object[Transaction, ShipToECL, "Test transaction for ShipToECL (2)" <> $SessionUUID],
+					Object[Transaction, ShipToECL, "Test transaction for ShipToECL (3)" <> $SessionUUID]
+				},
+				TrackingNumber -> {Automatic, Null, "98765"}
+			];
+			Download[{Object[Transaction, ShipToECL, "Test transaction for ShipToECL (1)" <> $SessionUUID], Object[Transaction, ShipToECL, "Test transaction for ShipToECL (2)" <> $SessionUUID], Object[Transaction, ShipToECL, "Test transaction for ShipToECL (3)" <> $SessionUUID]}, TrackingNumbers],
+			{{"123456"}, {"123456"}, {"98765"}},
+			SetUp:>Upload[
+				Map[
+					<|
+						Object -> #,
+						Replace[TrackingNumbers] -> {"123456"},
+						Shipper -> Link[Object[Company, Shipper, "Test shipper for ShipToECL (2)" <> $SessionUUID], Transactions]
+					|>&,
+					{Object[Transaction, ShipToECL, "Test transaction for ShipToECL (1)" <> $SessionUUID], Object[Transaction, ShipToECL, "Test transaction for ShipToECL (2)" <> $SessionUUID], Object[Transaction, ShipToECL, "Test transaction for ShipToECL (3)" <> $SessionUUID]}
+				]
+			]
+		],
+
+		Example[{Options, DateShipped, "Specify a date shipped when updating shipping information:"},
+			ShipToECL[
+				{Object[Transaction, ShipToECL, "Test transaction for ShipToECL (1)" <> $SessionUUID], Object[Transaction, ShipToECL, "Test transaction for ShipToECL (2)" <> $SessionUUID]},
+				DateShipped -> DateObject[List[2018, 3, 30, 14, 17, 52.`], "Instant", "Gregorian", -7.`]
+			];
+			Download[{Object[Transaction, ShipToECL, "Test transaction for ShipToECL (1)" <> $SessionUUID], Object[Transaction, ShipToECL, "Test transaction for ShipToECL (2)" <> $SessionUUID]}, DateShipped],
+			{_DateObject, _DateObject}
+		],
+
+		Example[{Options, DateShipped, "Specify a date shipped for each object when updating shipping information:"},
+			ShipToECL[
+				{Object[Transaction, ShipToECL, "Test transaction for ShipToECL (1)" <> $SessionUUID], Object[Transaction, ShipToECL, "Test transaction for ShipToECL (2)" <> $SessionUUID]},
+				DateShipped -> {DateObject[List[2018, 3, 30, 14, 17, 52.`], "Instant", "Gregorian", -7.`], DateObject[List[2018, 3, 30, 14, 17, 52.`], "Instant", "Gregorian", -7.`]}
+			];
+			Download[{Object[Transaction, ShipToECL, "Test transaction for ShipToECL (1)" <> $SessionUUID], Object[Transaction, ShipToECL, "Test transaction for ShipToECL (2)" <> $SessionUUID]}, DateShipped],
+			{_DateObject, _DateObject}
+		],
+
+		Example[{Options, DateShipped, "When updating shipping information, Automatic DateShipped will leave the existing date shipped in place:"},
+			ShipToECL[
+				{Object[Transaction, ShipToECL, "Test transaction for ShipToECL (1)" <> $SessionUUID], Object[Transaction, ShipToECL, "Test transaction for ShipToECL (2)" <> $SessionUUID], Object[Transaction, ShipToECL, "Test transaction for ShipToECL (3)" <> $SessionUUID]},
+				DateShipped -> DateObject[List[2018, 4, 2, 14, 17, 52.`], "Instant", "Gregorian", -7.`]
+			];
+			ShipToECL[
+				{Object[Transaction, ShipToECL, "Test transaction for ShipToECL (1)" <> $SessionUUID], Object[Transaction, ShipToECL, "Test transaction for ShipToECL (2)" <> $SessionUUID], Object[Transaction, ShipToECL, "Test transaction for ShipToECL (3)" <> $SessionUUID]},
+				DateShipped -> {Automatic, Null, DateObject[List[2018, 4, 8, 14, 17, 52.`], "Instant", "Gregorian", -7.`]}
+			];
+			Download[
+				{Object[Transaction, ShipToECL, "Test transaction for ShipToECL (1)" <> $SessionUUID], Object[Transaction, ShipToECL, "Test transaction for ShipToECL (2)" <> $SessionUUID], Object[Transaction, ShipToECL, "Test transaction for ShipToECL (3)" <> $SessionUUID]},
+				{DateShipped, Status}
+			],
+
+			{{_DateObject, Shipped}..}
+		],
+
+		Example[{Options, DateShipped, "Specify a date shipped when generating a transaction:"},
+			transaction = ShipToECL[
+				{Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID], Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID]},
+				{"my new bottle" <> CreateUUID[], "my new plate" <> CreateUUID[]},
+				Position -> {Automatic, "A2"},
+				ContainerModel -> {
+					Model[Container, Vessel, "Test vessel model for ShipToECL" <> $SessionUUID],
+					Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID]
+				},
+				CoverModel -> {
+					Model[Item, Cap, "Test cap model for ShipToECL" <> $SessionUUID],
+					Model[Item, PlateSeal, "Test plate seal model for ShipToECL" <> $SessionUUID]
+				},
+				Volume -> 1Milliliter,
+				DateShipped -> DateObject[List[2018, 3, 30, 14, 17, 52.`], "Instant", "Gregorian", -7.`]
+			];
+			Download[transaction, DateShipped],
+			{_DateObject},
+			Variables :> {transaction}
+		],
+
+		Example[{Options, DateShipped, "Specify a date shipped for each object when generating a transaction. Samples different with dates shipped are put into separate transactions:"},
+			transaction = ShipToECL[
+				{Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID], Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID]},
+				{"my new bottle" <> CreateUUID[], "my new plate" <> CreateUUID[]},
+				Position -> {Automatic, "A2"},
+				ContainerModel -> {
+					Model[Container, Vessel, "Test vessel model for ShipToECL" <> $SessionUUID],
+					Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID]
+				},
+				CoverModel -> {
+					Model[Item, Cap, "Test cap model for ShipToECL" <> $SessionUUID],
+					Model[Item, PlateSeal, "Test plate seal model for ShipToECL" <> $SessionUUID]
+				},
+				Volume -> 1Milliliter,
+				DateShipped -> {DateObject[List[2018, 3, 30, 14, 17, 52.`], "Instant", "Gregorian", -7.`], DateObject[List[2018, 3, 29, 14, 17, 52.`], "Instant", "Gregorian", -7.`]}
+			];
+			Download[transaction, DateShipped],
+			{_DateObject, _DateObject},
+			Variables :> {transaction}
+		],
+
+		Example[{Options, DateShipped, "Specify a date shipped for some but not all of the objects when generating a transaction. If DateShipped is specified, Status is Shipped; otherwise, Status is Pending:"},
+			transaction = ShipToECL[
+				{Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID], Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID]},
+				{"my new bottle" <> CreateUUID[], "my new plate" <> CreateUUID[]},
+				Position -> {Automatic, "A2"},
+				ContainerModel -> {
+					Model[Container, Vessel, "Test vessel model for ShipToECL" <> $SessionUUID],
+					Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID]
+				},
+				CoverModel -> {
+					Model[Item, Cap, "Test cap model for ShipToECL" <> $SessionUUID],
+					Model[Item, PlateSeal, "Test plate seal model for ShipToECL" <> $SessionUUID]
+				},
+				Volume -> 1Milliliter,
+				DateShipped -> {DateObject[List[2018, 3, 30, 14, 17, 52.`], "Instant", "Gregorian", -7.`], Null}
+			];
+			Download[transaction, {DateShipped, Status}],
+			{{_DateObject, Shipped}, {Null, Pending}},
+			Variables :> {transaction}
+		],
+
+		Example[{Options, ExpectedDeliveryDate, "Specify an expected delivery date when generating a transaction:"},
+			transaction = ShipToECL[
+				{Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID], Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID]},
+				{"my new bottle" <> CreateUUID[], "my new plate" <> CreateUUID[]},
+				Position -> {Automatic, "A2"},
+				ContainerModel -> {
+					Model[Container, Vessel, "Test vessel model for ShipToECL" <> $SessionUUID],
+					Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID]
+				},
+				CoverModel -> {
+					Model[Item, Cap, "Test cap model for ShipToECL" <> $SessionUUID],
+					Model[Item, PlateSeal, "Test plate seal model for ShipToECL" <> $SessionUUID]
+				},
+				Volume -> 1Milliliter,
+				DateShipped -> DateObject[List[2018, 3, 1, 14, 17, 52.`], "Instant", "Gregorian", -7.`],
+				ExpectedDeliveryDate -> DateObject[List[2018, 3, 30, 14, 17, 52.`], "Instant", "Gregorian", -7.`]
+			];
+			Download[transaction, DateExpected],
+			{_DateObject},
+			Variables :> {transaction}
+		],
+
+		Example[{Options, ExpectedDeliveryDate, "Specify an expected delivery date for each object when generating a transaction. Samples with different dates shipped are put into separate transactions:"},
+			transaction = ShipToECL[
+				{Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID], Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID]},
+				{"my new bottle" <> CreateUUID[], "my new plate" <> CreateUUID[]},
+				Position -> {Automatic, "A2"},
+				ContainerModel -> {
+					Model[Container, Vessel, "Test vessel model for ShipToECL" <> $SessionUUID],
+					Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID]
+				},
+				CoverModel -> {
+					Model[Item, Cap, "Test cap model for ShipToECL" <> $SessionUUID],
+					Model[Item, PlateSeal, "Test plate seal model for ShipToECL" <> $SessionUUID]
+				},
+				Volume -> 1Milliliter,
+				DateShipped -> DateObject[List[2018, 3, 1, 14, 17, 52.`], "Instant", "Gregorian", -7.`],
+				ExpectedDeliveryDate -> {DateObject[List[2018, 3, 30, 14, 17, 52.`], "Instant", "Gregorian", -7.`], DateObject[List[2018, 3, 29, 14, 17, 52.`], "Instant", "Gregorian", -7.`]}
+			];
+			Download[transaction, DateExpected],
+			{_DateObject, _DateObject},
+			Variables :> {transaction}
+		],
+
+		Example[{Options, ExpectedDeliveryDate, "Specify an expected delivery date for some but not all of the objects when generating a transaction.:"},
+			transaction = ShipToECL[{Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID], Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID]},
+				{"my new bottle" <> CreateUUID[], "my new plate" <> CreateUUID[]},
+				Position -> {Automatic, "A2"},
+				ContainerModel -> {
+					Model[Container, Vessel, "Test vessel model for ShipToECL" <> $SessionUUID],
+					Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID]
+				},
+				CoverModel -> {
+					Model[Item, Cap, "Test cap model for ShipToECL" <> $SessionUUID],
+					Model[Item, PlateSeal, "Test plate seal model for ShipToECL" <> $SessionUUID]
+				},
+				Volume -> 1Milliliter,
+				DateShipped -> DateObject[List[2018, 3, 1, 14, 17, 52.`], "Instant", "Gregorian", -7.`],
+				ExpectedDeliveryDate -> {DateObject[List[2018, 3, 30, 14, 17, 52.`], "Instant", "Gregorian", -7.`], Null}
+			];
+			Download[transaction, DateExpected],
+			{_DateObject, Null},
+			Variables :> {transaction}
+		],
+
+		Example[{Options, TrackingNumber, "Specify a tracking number when generating a transaction. (Shipper must be provided along with tracking number):"},
+			transaction = ShipToECL[{Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID], Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID]},
+				{"my new bottle" <> CreateUUID[], "my new plate" <> CreateUUID[]},
+				Position -> {Automatic, "A2"},
+				ContainerModel -> {
+					Model[Container, Vessel, "Test vessel model for ShipToECL" <> $SessionUUID],
+					Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID]
+				},
+				CoverModel -> {
+					Model[Item, Cap, "Test cap model for ShipToECL" <> $SessionUUID],
+					Model[Item, PlateSeal, "Test plate seal model for ShipToECL" <> $SessionUUID]
+				},
+				Volume -> 1Milliliter,
+				TrackingNumber -> "123456",
+				Shipper -> Object[Company, Shipper, "Test shipper for ShipToECL" <> $SessionUUID]
+			];
+			Download[transaction, TrackingNumbers],
+			{{"123456"}},
+			Variables :> {transaction}
+		],
+
+		Example[{Options, TrackingNumber, "Specify a tracking number for each object when generating a transaction. Samples with different dates shipped are put into separate transactions. (Shipper must be provided along with tracking number):"},
+			transaction = ShipToECL[{Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID], Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID]},
+				{"my new bottle" <> CreateUUID[], "my new plate" <> CreateUUID[]},
+				Position -> {Automatic, "A2"},
+				ContainerModel -> {
+					Model[Container, Vessel, "Test vessel model for ShipToECL" <> $SessionUUID],
+					Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID]
+				},
+				CoverModel -> {
+					Model[Item, Cap, "Test cap model for ShipToECL" <> $SessionUUID],
+					Model[Item, PlateSeal, "Test plate seal model for ShipToECL" <> $SessionUUID]
+				},
+				Volume -> 1Milliliter,
+				TrackingNumber -> {"123456", "654321"},
+				Shipper -> Object[Company, Shipper, "Test shipper for ShipToECL" <> $SessionUUID]
+			];
+			Download[transaction, TrackingNumbers],
+			{{"123456"}, {"654321"}},
+			Variables :> {transaction}
+		],
+
+		Example[{Options, TrackingNumber, "Specify a tracking number for some but not all of the objects when generating a transaction. (TrackingNumber and Shipper must be provided together.):"},
+			transaction = ShipToECL[{Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID], Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID]},
+				{"my new bottle" <> CreateUUID[], "my new plate" <> CreateUUID[]},
+				Position -> {Automatic, "A2"},
+				ContainerModel -> {
+					Model[Container, Vessel, "Test vessel model for ShipToECL" <> $SessionUUID],
+					Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID]
+				},
+				CoverModel -> {
+					Model[Item, Cap, "Test cap model for ShipToECL" <> $SessionUUID],
+					Model[Item, PlateSeal, "Test plate seal model for ShipToECL" <> $SessionUUID]
+				},
+				Volume -> 1Milliliter,
+				TrackingNumber -> {"123456", Null},
+				Shipper -> {Object[Company, Shipper, "Test shipper for ShipToECL" <> $SessionUUID], Null}
+			];
+			Download[transaction, TrackingNumbers],
+			{{"123456"}, {}},
+			Variables :> {transaction}
+		],
+
+		Example[{Options, Shipper, "Specify a shipper when generating a transaction. (TrackingNumber and Shipper must be provided together.):"},
+			transaction = ShipToECL[{Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID], Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID]},
+				{"my new bottle" <> CreateUUID[], "my new plate" <> CreateUUID[]},
+				Position -> {Automatic, "A2"},
+				ContainerModel -> {
+					Model[Container, Vessel, "Test vessel model for ShipToECL" <> $SessionUUID],
+					Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID]
+				},
+				CoverModel -> {
+					Model[Item, Cap, "Test cap model for ShipToECL" <> $SessionUUID],
+					Model[Item, PlateSeal, "Test plate seal model for ShipToECL" <> $SessionUUID]
+				},
+				Volume -> 1Milliliter,
+				Shipper -> Object[Company, Shipper, "Test shipper for ShipToECL" <> $SessionUUID],
+				TrackingNumber -> "123321-0"
+			];
+			Download[transaction, Shipper],
+			{LinkP[Object[Company, Shipper, "Test shipper for ShipToECL" <> $SessionUUID], Transactions]},
+			Variables :> {transaction}
+		],
+
+		Example[{Options, Shipper, "Specify a shipper for each object when generating a transaction. Samples with different dates shipped are put into separate transactions. (TrackingNumber and Shipper must be provided together.):"},
+			transaction = ShipToECL[{Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID], Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID]},
+				{"my new bottle" <> CreateUUID[], "my new plate" <> CreateUUID[]},
+				Position -> {Automatic, "A2"},
+				ContainerModel -> {
+					Model[Container, Vessel, "Test vessel model for ShipToECL" <> $SessionUUID],
+					Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID]
+				},
+				CoverModel -> {
+					Model[Item, Cap, "Test cap model for ShipToECL" <> $SessionUUID],
+					Model[Item, PlateSeal, "Test plate seal model for ShipToECL" <> $SessionUUID]
+				},
+				Volume -> 1Milliliter,
+				Shipper -> {Object[Company, Shipper, "Test shipper for ShipToECL" <> $SessionUUID], Object[Company, Shipper, "Test shipper for ShipToECL (2)" <> $SessionUUID]},
+				TrackingNumber -> {"1233-0421-33", "5666-009ghgt"}
+			];
+			Download[transaction, Shipper],
+			{LinkP[Object[Company, Shipper, "Test shipper for ShipToECL" <> $SessionUUID], Transactions], LinkP[Object[Company, Shipper, "Test shipper for ShipToECL (2)" <> $SessionUUID], Transactions]},
+			Variables :> {transaction}
+		],
+
+		Example[{Options, Shipper, "Specify a shipper for some but not all of the objects when generating a transaction. (TrackingNumber and Shipper must be provided together.):"},
+			transaction = ShipToECL[{Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID], Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID]},
+				{"my new bottle" <> CreateUUID[], "my new plate" <> CreateUUID[]},
+				Position -> {Automatic, "A2"},
+				ContainerModel -> {
+					Model[Container, Vessel, "Test vessel model for ShipToECL" <> $SessionUUID],
+					Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID]
+				},
+				CoverModel -> {
+					Model[Item, Cap, "Test cap model for ShipToECL" <> $SessionUUID],
+					Model[Item, PlateSeal, "Test plate seal model for ShipToECL" <> $SessionUUID]
+				},
+				Volume -> 1Milliliter,
+				Shipper -> {Object[Company, Shipper, "Test shipper for ShipToECL" <> $SessionUUID], Null},
+				TrackingNumber -> {"56yy-09o99-pp95", Null}
+			];
+			Download[transaction, Shipper],
+			{LinkP[Object[Company, Shipper, "Test shipper for ShipToECL" <> $SessionUUID], Transactions], Null},
+			Variables :> {transaction}
+		],
+
+		Example[{Options, ContainerOut, "Specify that all samples should be transferred to a different container upon arrival:"},
+			transaction = ShipToECL[
+				{Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID], Model[Sample, "Test Model Chemical for ShipToECL" <> $SessionUUID]},
+				{"my new bottle" <> CreateUUID[], "my new plate" <> CreateUUID[]},
+				Position -> {Automatic, "A2"},
+				ContainerModel -> {
+					Model[Container, Vessel, "Test vessel model for ShipToECL" <> $SessionUUID],
+					Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID]
+				},
+				CoverModel -> {
+					Model[Item, Cap, "Test cap model for ShipToECL" <> $SessionUUID],
+					Model[Item, PlateSeal, "Test plate seal model for ShipToECL" <> $SessionUUID]
+				},
+				Volume -> {1Milliliter, 1Milliliter},
+				ContainerOut -> Model[Container, Vessel, "50mL Tube"]
+			];
+			Download[transaction, {TransferSamples, TransferContainers}],
+			{
+				{
+					{
+						LinkP[Object[Sample]],
+						LinkP[Object[Sample]]
+					},
+					{
+						LinkP[Model[Container, Vessel, "50mL Tube"]],
+						LinkP[Model[Container, Vessel, "50mL Tube"]]
+					}
+				}
+			},
+			Variables :> {transaction}
+		],
+
+		Example[{Options, EmptyContainerSent, "Indicate if an empty container is provided for parameterization:"},
+			transaction = ShipToECL[
+				{Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID], Model[Sample, "Test Model Chemical for ShipToECL" <> $SessionUUID]},
+				{"my new bottle" <> CreateUUID[], "my new plate" <> CreateUUID[]},
+				ContainerModel -> {
+					Automatic,
+					Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID]
+				},
+				CoverModel -> {
+					Automatic,
+					Model[Item, PlateSeal, "Test plate seal model for ShipToECL" <> $SessionUUID]
+				},
+				Volume -> {1Milliliter, 1Milliliter},
+				EmptyContainerSent -> {True,False}
+			];
+			Download[transaction, EmptyContainers[Model]],
+			{{ObjectP[Model[Container,Vessel]]}},
+			Variables :> {transaction}
+		],
+
+		Example[{Options, EmptyContainerSent, "If two samples in vessels are sent assumes there are two distinct empty container models:"},
+			transaction = ShipToECL[
+				{Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID], Model[Sample, "Test Model Chemical for ShipToECL" <> $SessionUUID]},
+				{"my new bottle" <> CreateUUID[], "my new plate" <> CreateUUID[]},
+				Volume -> {1Milliliter, 1Milliliter},
+				EmptyContainerSent->True
+			];
+			Length[DeleteDuplicates[Download[transaction[[1]], EmptyContainers[Model][Object]]]],
+			2,
+			Variables :> {transaction}
+		],
+
+		Example[{Options, ContainerOut, "Specify that some samples should be transferred to a different container upon arrival:"},
+			transaction = ShipToECL[
+				{Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID], Model[Sample, "Test Model Chemical for ShipToECL" <> $SessionUUID], Model[Item, Column, "Test Model Column for ShipToECL" <> $SessionUUID]},
+				{"my new bottle" <> CreateUUID[], "my new plate" <> CreateUUID[], "my new item" <> CreateUUID[]},
+				Position -> {Automatic, "A2", Null},
+				ContainerModel -> {
+					Model[Container, Vessel, "Test vessel model for ShipToECL" <> $SessionUUID],
+					Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID],
+					Null
+				},
+				CoverModel -> {
+					Model[Item, Cap, "Test cap model for ShipToECL" <> $SessionUUID],
+					Model[Item, PlateSeal, "Test plate seal model for ShipToECL" <> $SessionUUID],
+					Null
+				},
+				NumberOfUses -> {Null, Null, 4},
+				Volume -> {1Milliliter, 1Milliliter, Null},
+				Product -> {Null, Null, Object[Product, "Test product for ShipToECL (1)" <> $SessionUUID]},
+				ContainerOut -> {Model[Container, Vessel, "50mL Tube"], Model[Container, Vessel, "1L Glass Bottle"], Null}
+			];
+			Download[transaction, {TransferSamples, TransferContainers}],
+			{
+				{
+					{
+						LinkP[Object[Sample]],
+						LinkP[Object[Sample]]
+					},
+					{
+						LinkP[Model[Container, Vessel, "50mL Tube"]],
+						LinkP[Model[Container, Vessel, "1L Glass Bottle"]]
+					}
+				}
+			},
+			Variables :> {transaction}
+		],
+
+		Example[{Options, ReceivingTolerance, "Specify the allowable difference between received amount and expected amount for any ordered samples:"},
+			transaction = ShipToECL[{Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID], Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID]},
+				{"my new bottle" <> CreateUUID[], "my new plate" <> CreateUUID[]},
+				ReceivingTolerance -> 2 * Percent,
+				Position -> {Automatic, "A2"},
+				ContainerModel -> {
+					Model[Container, Vessel, "Test vessel model for ShipToECL" <> $SessionUUID],
+					Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID]
+				},
+				CoverModel -> {
+					Model[Item, Cap, "Test cap model for ShipToECL" <> $SessionUUID],
+					Model[Item, PlateSeal, "Test plate seal model for ShipToECL" <> $SessionUUID]
+				},
+				Volume -> 1Milliliter
+			];
+			Download[transaction, ReceivingTolerance],
+			{2.` * Percent},
+			Variables :> {transaction}
+		],
+
+		(* -------------- *)
+		(* -- Messages -- *)
+		(* -------------- *)
+
+		Example[{Messages, "CountNotRequired", "If count is provided but the sample is not a tablet, throws an error:"},
+			ShipToECL[
+				Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID],
+				"my new bottle" <> CreateUUID[],
+				ContainerModel -> Model[Container, Vessel, "Test vessel model for ShipToECL" <> $SessionUUID],
+				CoverModel -> Model[Item, Cap, "Test cap model for ShipToECL" <> $SessionUUID],
+				Count -> 20,
+				Volume -> 0.1Liter
+			],
+			$Failed,
+			Messages :> {Error::CountNotRequired, Error::InvalidOption}
+		],
+		Example[{Messages, "ContainerOutNotValidated", "Give a warning if it cannot be determined whether the specified container out is large enough to hold the sample:"},
+			ShipToECL[
+				Model[Sample, "Test Model Chemical for ShipToECL" <> $SessionUUID],
+				"my new bottle" <> CreateUUID[],
+				ContainerModel -> Model[Container, Vessel, "Test vessel model for ShipToECL" <> $SessionUUID],
+				CoverModel -> Model[Item, Cap, "Test cap model for ShipToECL" <> $SessionUUID],
+				Mass -> 5 Gram,
+				ContainerOut -> Model[Container, Vessel, "50mL Tube"]
+			],
+			{ObjectP[Object[Transaction, ShipToECL]]},
+			Messages :> {Warning::ContainerOutNotValidated},
+			Variables :> {transaction}
+		],
+		Example[{Messages, "VolumeExceedsContainerOut", "If ContainerOut is too small to hold the sample volume, give a message and fail:"},
+			ShipToECL[
+				Model[Sample, "Test Model Chemical for ShipToECL" <> $SessionUUID],
+				"my new bottle" <> CreateUUID[],
+				ContainerModel -> Model[Container, Vessel, "Test vessel model for ShipToECL" <> $SessionUUID],
+				CoverModel -> Model[Item, Cap, "Test cap model for ShipToECL" <> $SessionUUID],
+				Volume -> 1Liter,
+				ContainerOut -> Model[Container, Vessel, "50mL Tube"]
+			],
+			$Failed,
+			Messages :> {Error::VolumeExceedsContainerOut, Error::InvalidOption}
+		],
+
+		Example[{Messages, "ContainerInformationNotRequired", "If ContainerModel is specified for an item, give a message and fail:"},
+			ShipToECL[
+				Model[Item, Column, "Test Model Column for ShipToECL" <> $SessionUUID],
+				"my new item" <> CreateUUID[],
+				NumberOfUses -> 4,
+				Product -> Object[Product, "Test product for ShipToECL (1)" <> $SessionUUID],
+				ContainerModel -> Model[Container, Vessel, "50mL Tube"]
+			],
+			$Failed,
+			Messages :> {Error::ContainerInformationNotRequired, Error::InvalidOption}
+		],
+
+		Example[{Messages, "PositionNotRequired", "If Position is specified for an item, give a message and fail:"},
+			ShipToECL[
+				Model[Item, Column, "Test Model Column for ShipToECL" <> $SessionUUID],
+				"my new item" <> CreateUUID[],
+				NumberOfUses -> 4,
+				Product -> Object[Product, "Test product for ShipToECL (1)" <> $SessionUUID],
+				Position -> "A1"
+			],
+			$Failed,
+			Messages :> {Error::PositionNotRequired, Error::InvalidOption}
+		],
+
+
+		Example[{Messages, "ContainerOutNotRequired", "If ContainerOut is specified for an item, give a message and fail:"},
+			ShipToECL[
+				Model[Item, Column, "Test Model Column for ShipToECL" <> $SessionUUID],
+				"my new item" <> CreateUUID[],
+				NumberOfUses -> 4,
+				Product -> Object[Product, "Test product for ShipToECL (1)" <> $SessionUUID],
+				ContainerOut -> Model[Container, Vessel, "50mL Tube"]
+			],
+			$Failed,
+			Messages :> {Error::ContainerOutNotRequired, Error::InvalidOption}
+		],
+
+		Example[{Messages, "NameInUse", "If a name is already in use, give a message and fail:"},
+			ShipToECL[
+				{Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID], Model[Sample, "Test Model Chemical for ShipToECL" <> $SessionUUID]},
+				{"my existing bottle for ShipToECL" <> $SessionUUID, "my new bottle" <> CreateUUID[]},
+				ContainerModel -> {
+					Model[Container, Vessel, "Test vessel model for ShipToECL" <> $SessionUUID],
+					Model[Container, Vessel, "Test vessel model for ShipToECL" <> $SessionUUID]
+				},
+				CoverModel -> {
+					Model[Item, Cap, "Test cap model for ShipToECL" <> $SessionUUID],
+					Model[Item, Cap, "Test cap model for ShipToECL" <> $SessionUUID]
+				},
+				Volume -> 1 Milliliter
+			],
+			$Failed,
+			Messages :> {Error::NameInUse, Error::InvalidInput}
+		],
+
+		Example[{Messages, "NameInUse", "If a name is already in use, give a message and fail:"},
+			ShipToECL[
+				Model[Item, Consumable, "Test Model Consumable for ShipToECL" <> $SessionUUID],
+				"my existing column for ShipToECL" <> $SessionUUID,
+				Product -> Object[Product, "Test product for ShipToECL (1)" <> $SessionUUID]
+			],
+			$Failed,
+			Messages :> {Error::NameInUse, Error::InvalidInput}
+		],
+
+		Example[{Messages, Name, "If the name is already in use, throws an error and fails:"},
+			ShipToECL[
+				{Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID], Model[Sample, "Test Model Chemical for ShipToECL" <> $SessionUUID]},
+				{"my new plate" <> CreateUUID[], "my new plate" <> CreateUUID[]},
+				ContainerModel -> Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID],
+				CoverModel -> Model[Item, PlateSeal, "Test plate seal model for ShipToECL" <> $SessionUUID],
+				Position -> {"A1", "A2"},
+				Volume -> 1Milliliter,
+				Name -> "My existing transaction for ShipToECL" <> $SessionUUID
+			],
+			$Failed,
+			Messages :> {Error::NonUniqueName, Error::InvalidOption}
+		],
+		Example[{Messages, Name, "If the name is already in use, throws an error and fails:"},
+			ShipToECL[
+				{Object[Transaction, ShipToECL, "Test transaction for ShipToECL (1)" <> $SessionUUID]},
+				Name -> "My existing transaction for ShipToECL" <> $SessionUUID
+			],
+			$Failed,
+			Messages :> {Error::NonUniqueName, Error::InvalidOption}
+		],
+
+		Example[{Messages, "ShipToECLDuplicateName", "Gives a message and returns $Failed if any of the input names are used more than once for the same item type:"},
+			uuid = CreateUUID[];
+			ShipToECL[
+				{Model[Item, Column, "Test Model Column for ShipToECL" <> $SessionUUID], Model[Item, Column, "Test Model Column for ShipToECL" <> $SessionUUID]},
+				{"my column" <> uuid, "my column" <> uuid},
+				NumberOfUses -> {3, 15},
+				Product -> Object[Product, "Test product for ShipToECL (1)" <> $SessionUUID]
+			],
+			$Failed,
+			Messages :> {Error::ShipToECLDuplicateName, Error::InvalidInput},
+			Variables :> {uuid}
+		],
+		Example[
+			{Messages, "ShipToECLDuplicateName", "Gives a message and returns $Failed if any of the input names are used more than once for the same vessel model:"},
+			uuid = CreateUUID[];
+			ShipToECL[
+				{Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID], Model[Sample, "Test Model Chemical for ShipToECL" <> $SessionUUID]},
+				{"my new bottle" <> uuid, "my new bottle" <> uuid},
+				ContainerModel -> {
+					Model[Container, Vessel, "Test vessel model for ShipToECL" <> $SessionUUID],
+					Model[Container, Vessel, "Test vessel model for ShipToECL" <> $SessionUUID]
+				},
+				CoverModel -> {
+					Model[Item, Cap, "Test cap model for ShipToECL" <> $SessionUUID],
+					Model[Item, Cap, "Test cap model for ShipToECL" <> $SessionUUID]
+				},
+				Volume -> {1Milliliter, 1Milliliter}
+			],
+			$Failed,
+			Messages :> {Error::ShipToECLDuplicateName, Error::InvalidInput},
+			Variables :> {uuid}
+		],
+
+		Example[{Messages, "ContainerSpecificationConflict", "Gives a message and returns $Failed if different plate models are given for the same plate according to the provided label:"},
+			uuid = CreateUUID[];
+			ShipToECL[
+				{Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID], Model[Sample, "Test Model Chemical for ShipToECL" <> $SessionUUID]},
+				{"my new plate" <> uuid, "my new plate" <> uuid},
+				ContainerModel -> {
+					Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID],
+					Model[Container, Plate, "Test plate model for ShipToECL (2)" <> $SessionUUID]
+				},
+				CoverModel -> Model[Item, PlateSeal, "Test plate seal model for ShipToECL" <> $SessionUUID],
+				Position -> {"A1", "A2"},
+				Volume -> {1Milliliter, 1Milliliter}
+			],
+			$Failed,
+			Messages :> {Error::ContainerSpecificationConflict, Error::InvalidInput},
+			Variables :> {uuid}
+		],
+
+		Example[{Messages, "InvalidPosition", "Errors if a position is specified that doesn't exist in the container model:"},
+			ShipToECL[
+				Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID],
+				"my new plate" <> CreateUUID[],
+				ContainerModel -> Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID],
+				CoverModel -> Model[Item, PlateSeal, "Test plate seal model for ShipToECL" <> $SessionUUID],
+				Position -> "A131",
+				Volume -> 1Milliliter
+			],
+			$Failed,
+			Messages :> {Error::InvalidPosition, Error::InvalidOption}
+		],
+
+		Example[{Messages, "NoNotebook", "Gives a message and returns $Failed if not called from a notebook:"},
+			ShipToECL[
+				Model[Item, Column, "Test Model Column for ShipToECL" <> $SessionUUID],
+				"my column" <> CreateUUID[],
+				NumberOfUses -> 3,
+				Product -> Object[Product, "Test product for ShipToECL (1)" <> $SessionUUID]
+			],
+			$Failed,
+			Messages :> {Error::NoNotebook},
+			Stubs :> {$Notebook = Null}
+		],
+
+		Example[{Messages, "NumberOfUsesNotRequired", "NumberOfUses may not be specified for non-column samples:"},
+			ShipToECL[
+				{Model[Item, Column, "Test Model Column for ShipToECL" <> $SessionUUID], Model[Sample, "Test Model Chemical for ShipToECL" <> $SessionUUID]},
+				{"my new item" <> CreateUUID[], "my new plate" <> CreateUUID[]},
+				ContainerModel -> {Null, Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID]},
+				CoverModel -> {Null, Model[Item, PlateSeal, "Test plate seal model for ShipToECL" <> $SessionUUID]},
+				Position -> {Null, "A2"},
+				NumberOfUses -> 5,
+				Volume -> {Null, 0.3Milliliter},
+				Product -> {Object[Product, "Test product for ShipToECL (1)" <> $SessionUUID], Null},
+				Upload -> False
+			],
+			$Failed,
+			Messages :> {Error::NumberOfUsesNotRequired, Error::InvalidOption}
+		],
+
+		Example[{Messages, "ShippingOptionRequired", "Product must be specified for {Object[Item,Column],Object[Item,Gel],Object[Sample],Object[Item,Consumable],Object[Item,Cap],Object[Item,Tips]} samples:"},
+			ShipToECL[Model[Item, Consumable, "Test Model Consumable for ShipToECL" <> $SessionUUID], "my new item" <> CreateUUID[],
+				Upload -> False
+			],
+			$Failed,
+			Messages :> {Error::ShippingOptionRequired, Error::InvalidOption}
+		],
+
+		Test["Automatically resolves Position for a plate assuming samples are filled in row by row:",
+			uuid=CreateUUID[];
+			{transaction1} = ShipToECL[
+				{Model[Sample, "Test Model Chemical for ShipToECL" <> $SessionUUID], Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID]},
+				{"my new plate" <> uuid, "my new plate" <> uuid},
+				ContainerModel -> Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID],
+				CoverModel -> Model[Item, PlateSeal, "Test plate seal model for ShipToECL" <> $SessionUUID],
+				Volume -> 1.5 Milliliter
+			];
+			Download[transaction1,ReceivedSamples[Well]],
+			{"A1","A2"},
+			Variables :> {uuid,transaction1}
+		],
+
+		Example[{Messages, "NoCompatibleRack", "If there is no Model[Container, Rack] in the database that can hold the ContainerModel upright based on its Footprint and dimensions, return an error:"},
+			ShipToECL[
+				{Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID]},
+				{"my new bottle" <> CreateUUID[]},
+				ContainerModel -> {Model[Container, Vessel, "id:dORYzZn0ooaG"]},
+				ShippedRack -> {Null},
+				Position -> "A1",
+				Volume -> 1 Milliliter
+			],
+			$Failed,
+			Messages :> {Error::NoCompatibleRack, Error::InvalidOption},
+			Stubs :> {rackFootprintsAndDimensions[] := {}}
+		],
+
+		Example[{Messages, "AmountNotRequired", "If Volume or Mass are specified for any items, a message is thrown and the amount is disregarded for those items:"},
+			ShipToECL[
+				{Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID], Model[Item, Consumable, "Test Model Consumable for ShipToECL" <> $SessionUUID]},
+				{"my new item" <> CreateUUID[], "my new plate" <> CreateUUID[]},
+				ContainerModel -> {Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID], Null},
+				CoverModel -> {Model[Item, PlateSeal, "Test plate seal model for ShipToECL" <> $SessionUUID], Null},
+				Position -> {"A1", Null},
+				Volume -> 5 Milliliter,
+				Product -> Object[Product, "Test product for ShipToECL (1)" <> $SessionUUID]
+			],
+			$Failed,
+			Messages :> {Error::AmountNotRequired, Error::InvalidOption}
+		],
+
+		Example[{Messages, "ReusedPosition", "If two inputs point to the same location, return $Failed:"},
+			testuuid = CreateUUID[];
+			ShipToECL[
+				{Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID], Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID]},
+				{"my new plate" <> testuuid, "my new plate" <> testuuid},
+				Position -> {"A1", "A1"},
+				ContainerModel -> {Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID], Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID]},
+				CoverModel -> Model[Item, PlateSeal, "Test plate seal model for ShipToECL" <> $SessionUUID],
+				Volume -> 1Milliliter
+			],
+			$Failed,
+			Messages :> {Error::ReusedPosition, Error::InvalidOption},
+			Variables :> {transaction, testuuid}
+		],
+
+		Example[{Messages, "ReusedPosition", "Two inputs may point to the same position in different plates:"},
+			transaction = ShipToECL[
+				{Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID], Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID]},
+				{"my new plate" <> CreateUUID[], "my new plate 2" <> CreateUUID[]},
+				Position -> {"A1", "A1"},
+				ContainerModel -> {Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID], Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID]},
+				CoverModel -> Model[Item, PlateSeal, "Test plate seal model for ShipToECL" <> $SessionUUID],
+				Volume -> 1Milliliter
+			],
+			{ObjectP[Object[Transaction, ShipToECL]]},
+			Variables :> {transaction}
+		],
+
+		Example[{Messages, "InputLengthMismatch", "If a listed option does not match the length of the inputs, give a message and return $Failed:"},
+			ShipToECL[
+				Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID],
+				"my new plate" <> CreateUUID[],
+				Position -> "A1",
+				ContainerModel -> Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID],
+				CoverModel -> Model[Item, PlateSeal, "Test plate seal model for ShipToECL" <> $SessionUUID],
+				Volume -> {0.5 Milliliter, 0.3 Milliliter, 1 Milliliter}
+			],
+			$Failed,
+			Messages :> {Error::InputLengthMismatch}
+		],
+
+		Example[{Messages, "AmountWillBeMeasured", "If mass or volume is not specified for samples, a message is given indicating that the amount will be measured upon arrival:"},
+			ShipToECL[
+				{Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID], Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID]},
+				{"my new plate" <> CreateUUID[], "my new plate" <> CreateUUID[]},
+				Position -> {"A1", "A2"},
+				ContainerModel -> {Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID], Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID]},
+				CoverModel -> Model[Item, PlateSeal, "Test plate seal model for ShipToECL" <> $SessionUUID],
+				Volume -> {Null, 1Milliliter}
+			],
+			{ObjectP[Object[Transaction, ShipToECL]]},
+			Messages :> {Warning::AmountWillBeMeasured}
+		],
+
+		Example[{Messages, "InputLengthMismatch", "If a listed option does not match the length of the transaction object inputs, give a message and return $Failed:"},
+			ShipToECL[
+				{Object[Transaction, ShipToECL, "Test transaction for ShipToECL (1)" <> $SessionUUID], Object[Transaction, ShipToECL, "Test transaction for ShipToECL (2)" <> $SessionUUID]},
+				ExpectedDeliveryDate -> {DateObject[List[2018, 4, 2, 14, 17, 52.`], "Instant", "Gregorian", -7.`], Null, DateObject[List[2018, 4, 2, 14, 17, 52.`], "Instant", "Gregorian", -7.`]}
+			],
+			$Failed,
+			Messages :> {Error::InputLengthMismatch}
+		],
+
+		Example[{Messages, "InvalidDates", "If DateShipped is after ExpectedDeliveryDate when updating transactions, give a message and return $Failed:"},
+			ShipToECL[
+				{Object[Transaction, ShipToECL, "Test transaction for ShipToECL (1)" <> $SessionUUID], Object[Transaction, ShipToECL, "Test transaction for ShipToECL (2)" <> $SessionUUID]},
+
+				DateShipped -> {DateObject[List[2018, 4, 1, 14, 17, 52.`], "Instant", "Gregorian", -7.`], DateObject[List[2018, 3, 30, 14, 17, 52.`], "Instant", "Gregorian", -7.`]},
+				ExpectedDeliveryDate -> {DateObject[List[2018, 3, 30, 14, 17, 52.`], "Instant", "Gregorian", -7.`], DateObject[List[2018, 4, 1, 14, 17, 52.`], "Instant", "Gregorian", -7.`]}
+			],
+			$Failed,
+			Messages :> {Error::InvalidDates, Error::InvalidOption}
+		],
+
+		Example[{Messages, "InvalidDates", "If DateShipped is after ExpectedDeliveryDate when generating transactions, give a message and return $Failed:"},
+			ShipToECL[{Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID], Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID]},
+				{"my new bottle" <> CreateUUID[], "my new plate" <> CreateUUID[]},
+				Position -> {Automatic, "A2"},
+				ContainerModel -> {
+					Model[Container, Vessel, "Test vessel model for ShipToECL" <> $SessionUUID],
+					Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID]
+				},
+				CoverModel -> {
+					Model[Item, Cap, "Test cap model for ShipToECL" <> $SessionUUID],
+					Model[Item, PlateSeal, "Test plate seal model for ShipToECL" <> $SessionUUID]
+				},
+				DateShipped -> {DateObject[List[2018, 4, 1, 14, 17, 52.`], "Instant", "Gregorian", -7.`], DateObject[List[2018, 3, 30, 14, 17, 52.`], "Instant", "Gregorian", -7.`]},
+				ExpectedDeliveryDate -> {DateObject[List[2018, 3, 30, 14, 17, 52.`], "Instant", "Gregorian", -7.`], DateObject[List[2018, 4, 1, 14, 17, 52.`], "Instant", "Gregorian", -7.`]},
+				Volume -> 1 Milliliter
+			],
+			$Failed,
+			Messages :> {Error::InvalidDates, Error::InvalidOption}
+		],
+
+		Example[{Messages, "ContainersMayNotSpanShipments", "When generating transaction objects, if different shipping info is specified for the same container, give a message and return $Failed:"},
+			uuid = CreateUUID[];
+			ShipToECL[{Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID], Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID]},
+				{"my new plate" <> uuid, "my new plate" <> uuid},
+				Position -> {"A1", "A2"},
+				ContainerModel -> {Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID], Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID]},
+				CoverModel -> Model[Item, PlateSeal, "Test plate seal model for ShipToECL" <> $SessionUUID],
+				Volume -> 1Milliliter,
+				TrackingNumber -> {"123456", "654321"},
+				Shipper -> Object[Company, Shipper, "Test shipper for ShipToECL" <> $SessionUUID]
+			],
+			$Failed,
+			Messages :> {Error::ContainersMayNotSpanShipments, Error::InvalidInput},
+			Variables :> {uuid}
+		],
+
+		Example[{Messages, "ContainersMayNotSpanShipments", "When generating transaction objects, if different shipping info is specified for the same container, give a message and return $Failed:"},
+			uuid = CreateUUID[];
+			ShipToECL[
+				{Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID], Model[Sample, "Test Model Chemical for ShipToECL" <> $SessionUUID]},
+				{"my new plate" <> uuid, "my new plate" <> uuid},
+				Position -> {"B2", "A2"},
+				ContainerModel -> {Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID], Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID]},
+				CoverModel -> Model[Item, PlateSeal, "Test plate seal model for ShipToECL" <> $SessionUUID],
+				Volume -> 1Milliliter,
+				TrackingNumber -> {"123456", "654321"},
+				Shipper -> Object[Company, Shipper, "Test shipper for ShipToECL" <> $SessionUUID]
+			],
+			$Failed,
+			Messages :> {Error::ContainersMayNotSpanShipments, Error::InvalidInput},
+			Variables :> {uuid}
+		],
+		Example[{Messages, "TrackingNumberAndShipperRequiredTogether", "TrackingNumber and Shipper must be provided together when generating a transaction:"},
+			ShipToECL[
+				{Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID], Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID]},
+				{"my new bottle" <> CreateUUID[], "my new plate" <> CreateUUID[]},
+				Position -> {Automatic, "A2"},
+				ContainerModel -> {
+					Model[Container, Vessel, "Test vessel model for ShipToECL" <> $SessionUUID],
+					Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID]
+				},
+				CoverModel -> {
+					Model[Item, Cap, "Test cap model for ShipToECL" <> $SessionUUID],
+					Model[Item, PlateSeal, "Test plate seal model for ShipToECL" <> $SessionUUID]
+				},
+				Volume -> 1Milliliter,
+				TrackingNumber -> {"56yy-09o99-pp95", Null}
+			],
+			$Failed,
+			Messages :> {Error::TrackingNumberAndShipperRequiredTogether, Error::InvalidOption}
+		],
+
+		Example[{Messages, "TrackingNumberAndShipperRequiredTogether", "TrackingNumber and Shipper must be provided together when updating a transaction:"},
+			ShipToECL[{Object[Transaction, ShipToECL, "Test transaction for ShipToECL (1)" <> $SessionUUID], Object[Transaction, ShipToECL, "Test transaction for ShipToECL (2)" <> $SessionUUID]},
+				TrackingNumber -> {"123456", "654321"}
+			],
+			$Failed,
+			Messages :> {Error::TrackingNumberAndShipperRequiredTogether, Error::InvalidOption}
+		],
+		Example[{Messages, "ContainerInformationNotRequired", "Cover cannot be specified for Item inputs:"},
+			ShipToECL[Model[Item, Consumable, "Test Model Consumable for ShipToECL" <> $SessionUUID],
+				"my test item 1",
+				CoverModel -> Model[Item, Cap, "Test cap model for ShipToECL" <> $SessionUUID],
+				Product -> Object[Product, "Test product for ShipToECL (1)" <> $SessionUUID]
+			],
+			$Failed,
+			Messages :> {Error::ContainerInformationNotRequired, Error::InvalidOption}
+		],
+		Test["No cover is made if the Cover option is explicitly set to Null:",
+			{transaction}=ShipToECL[
+				{
+					Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID],
+					Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID],
+					Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID]
+				},
+				{"my new bottle" <> CreateUUID[], "my new plate 1" <> CreateUUID[], "my new plate 2" <> CreateUUID[]},
+				ContainerModel -> {
+					Model[Container, Vessel, "Test vessel model for ShipToECL" <> $SessionUUID],
+					Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID],
+					Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID]
+				},
+				CoverModel -> {
+					Model[Item, Cap, "Test cap model for ShipToECL" <> $SessionUUID],
+					Automatic,
+					Null
+				},
+				Position -> "A1",
+				Volume -> 1 Milliliter
+			];
+			Download[transaction,ReceivedContainers[Cover]],
+			{ObjectP[],ObjectP[],Null},
+			Variables:>{transaction}
+		],
+		Example[{Messages, "IncompatibleCoverModel", "Cover must not be specified for all Sample inputs in self covering containers:"},
+			ShipToECL[
+				{
+					Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID],
+					Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID],
+					Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID]
+				},
+				{"my new bottle" <> CreateUUID[], "my new bottle 2" <> CreateUUID[], "my new bottle 3" <> CreateUUID[]},
+				ContainerModel -> {
+					Model[Container, Vessel, "Test vessel model for ShipToECL" <> $SessionUUID],
+					Model[Container, Vessel, "id:dORYzZn0ooaG"],
+					Model[Container, Vessel, "id:01G6nvwRj84A"]
+				},
+				CoverModel -> {
+					Model[Item, Cap, "Test cap model for ShipToECL" <> $SessionUUID],
+					Model[Item, Cap, "Test cap model for ShipToECL" <> $SessionUUID],
+					Model[Item, Cap, "Test cap model for ShipToECL" <> $SessionUUID]
+				},
+				Position -> "A1",
+				Volume -> 1 Milliliter
+			],
+			$Failed,
+			Messages :> {Error::IncompatibleCoverModel, Error::InvalidOption}
+		],
+
+		Example[{Messages, "IncompatibleCoverModelType", "CoverModel and ContainerModel must be compatible with eachother:"},
+			ShipToECL[
+				{Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID]},
+				{"my new bottle" <> CreateUUID[]},
+				ContainerModel -> {Model[Container, Vessel, "Test vessel model for ShipToECL" <> $SessionUUID]},
+				CoverModel -> {Model[Item, Lid, "Test lid model for ShipToECL" <> $SessionUUID]},
+				Position -> "A1",
+				Volume -> 1 Milliliter
+			],
+			$Failed,
+			Messages :> {Error::IncompatibleCoverModelType, Error::InvalidOption}
+		],
+
+		Example[{Messages, "ContainerTransferForRoboticUse", "When using a plate without a known model, an empty container is recommended for parameterization so that the plate can be used in robotic transfers without moving samples:"},
+			With[{id=CreateUUID[]},
+				ShipToECL[
+					ConstantArray[Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID],16],
+					ConstantArray["my new plate" <> id,16],
+					Volume -> 1 Milliliter
+				]
+			],
+			ListableP[ObjectP[Object[Transaction]]],
+			Messages :> {Warning::ContainerTransferForRoboticUse}
+		],
+
+		(* ----------- *)
+		(* -- Tests -- *)
+		(* ----------- *)
+		Test["CoverModel accepts Model[Item, Cap] for vessels and Model[Item, Lid] or Model[Item, PlateSeal] for plates:",
+			transaction = ShipToECL[
+				{
+					Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID],
+					Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID],
+					Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID]
+				},
+				{"my new bottle" <> CreateUUID[], "my new plate 1" <> CreateUUID[], "my new plate 2" <> CreateUUID[]},
+				ContainerModel -> {
+					Model[Container, Vessel, "Test vessel model for ShipToECL" <> $SessionUUID],
+					Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID],
+					Model[Container, Plate, "Test plate model for ShipToECL" <> $SessionUUID]
+				},
+				CoverModel -> {
+					Model[Item, Cap, "Test cap model for ShipToECL" <> $SessionUUID],
+					Model[Item, Lid, "Test lid model for ShipToECL" <> $SessionUUID],
+					Model[Item, PlateSeal, "Test plate seal model for ShipToECL" <> $SessionUUID]
+				},
+				Position -> "A1",
+				Volume -> 0.5 Milliliter
+			];
+			Download[transaction,
+				{
+					ReceivedContainers[Cover],
+					ReceivedCovers
+				}
+			],
+			{{
+				{LinkP[Object[Item, Cap]], LinkP[Object[Item, Lid]], LinkP[Object[Item, PlateSeal]]},
+				{LinkP[Object[Item, Cap]], LinkP[Object[Item, Lid]], LinkP[Object[Item, PlateSeal]]}
+			}},
+			Variables :> {transaction}
+		],
+		Test["NumberOfUses doesn't have to be specified for columns and will default to 0:",
+			columnShipToECL = ShipToECL[
+				Model[Item, Column, "Test Model Column for ShipToECL" <> $SessionUUID],
+				"my new item" <> CreateUUID[],
+				Product -> Object[Product, "Test product for ShipToECL (1)" <> $SessionUUID]
+			];
+			Flatten@Download[columnShipToECL, ReceivedSamples[NumberOfUses]],
+			{0},
+			Variables :> {columnShipToECL}
+		],
+		Example[{Messages,"EmptyContainerUnneeded","Sending empty containers for already verified models throws a warning that the empty container is not needed:"},
+			ShipToECL[
+				{
+					Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID],
+					Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID]
+				},
+				{"my new bottle" <> CreateUUID[], "my new plate" <> CreateUUID[]},
+				ContainerModel -> Model[Container, Vessel, "2mL Tube"],
+				Volume -> 1 Milliliter,
+				Position -> "A1",
+				EmptyContainerSent -> True
+			],
+			{ObjectP[Object[Transaction, ShipToECL]]},
+			Messages :> {Warning::EmptyContainerUnneeded}
+		],
+		Example[{Options,NumberOfWells,"Indicate the number of wells in the plate. This is then used to resolve the positions of the specified samples:"},
+			Lookup[
+				ShipToECL[
+					ConstantArray[Model[Sample, "Acetone, HPLC Grade"], 9],
+					"my sample container " <> CreateUUID[],
+					NumberOfWells -> 48,
+					Volume -> 1 Milliliter,
+					EmptyContainerSent -> True,
+					Output -> Options
+				],
+				Position
+			],
+			{"A1", "A2", "A3", "A4", "A5", "A6", "A7", "A8", "B1"}
+		],
+		Example[{Options,PlateFillOrder,"Indicate that the list of samples fill the plate column-by-column (as opposed to row-by-row):"},
+			Lookup[
+				ShipToECL[
+					ConstantArray[Model[Sample, "Acetone, HPLC Grade"], 9],
+					"my sample container " <> CreateUUID[],
+					NumberOfWells -> 48,
+					PlateFillOrder -> Column,
+					Volume -> 1 Milliliter,
+					EmptyContainerSent -> True,
+					Output -> Options
+				],
+				Position
+			],
+			{"A1", "B1", "C1", "D1", "E1", "F1", "A2", "B2", "C2"}
+		],
+		Example[{Options,ContainerDocumentation,"Point to a file path containing information about the sample container:"},
+			ShipToECL[
+				Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID],
+				"my sample container " <> CreateUUID[],
+				Volume -> 1 Milliliter,
+				ContainerDocumentation -> FileNameJoin[{$TemporaryDirectory,"container_doc.pdf"}]
+			],
+			{ObjectP[Object[Transaction, ShipToECL]]}
+		],
+		Example[{Options,ContainerDocumentation,"Provide a cloud file containing documentation about the container model:"},
+			ShipToECL[
+				Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID],
+				"my sample container " <> CreateUUID[],
+				Volume -> 1 Milliliter,
+				ContainerDocumentation -> Object[EmeraldCloudFile, "id:R8e1Pjp7R1o7"]
+			],
+			{ObjectP[Object[Transaction, ShipToECL]]}
+		],
+		Example[{Options,ContainerDocumentation,"Give the product URL for the container holding your samples:"},
+			ShipToECL[
+				Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID],
+				"my sample container " <> CreateUUID[],
+				Volume -> 1 Milliliter,
+				ContainerDocumentation -> "https://www.bio-rad.com/en-us/sku/HSP9601-hard-shell-96-well-pcr-plates-low-profile-thin-wall-skirted-white-clear?ID=HSP9601"
+			],
+			{ObjectP[Object[Transaction, ShipToECL]]}
+		],
+		Test[{Options,ContainerType,"Indicate that each sample is in a unique plate:"},
+			Lookup[
+				ShipToECL[
+					{
+						Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID],
+						Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID],
+						Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID]
+					},
+					{"my sample container 1 " <> CreateUUID[],"my sample container 2 " <> CreateUUID[],"my sample container 3 " <> CreateUUID[]},
+					Volume -> 1 Milliliter,
+					ContainerType -> Plate,
+					EmptyContainerSent -> True,
+					Output -> Options
+				],
+				ContainerType
+			],
+			{Plate, Plate, Plate}
+		],
+		Test[{Options,ContainerType,"The ContainerType option is resolved to Vessel when only one sample is listed as being in the shipped container and to Plate when multiple samples are specified:"},
+			Lookup[
+				ShipToECL[
+					{
+						Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID],
+						Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID],
+						Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID]
+					},
+					{"my sample container 1 " <> CreateUUID[],"my sample container 2 " <> CreateUUID[],"my sample container 2 " <> CreateUUID[]},
+					Volume -> 1 Milliliter,
+					EmptyContainerSent -> True,
+					Output -> Options
+				],
+				ContainerType
+			],
+			{Vessel, Plate, Plate}
+		],
+		Example[{Messages,"ContainerModelTypeMismatch","If ContainerModel and ContainerType are both specified they must indicate the same type of container:"},
+			ShipToECL[
+				Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID],
+				"my sample container 1 " <> CreateUUID[],
+				Volume -> 1 Milliliter,
+				ContainerModel -> Model[Container, Plate, "96-well 2mL Deep Well Plate"],
+				ContainerType -> Vessel
+			],
+			$Failed,
+			Messages:>{Error::ContainerModelTypeMismatch,Error::InvalidOption}
+		],
+		Example[{Messages,"NumberOfWellsMismatch","Print a message and returns $Failed if the NumberOfWells options conflicts with the value in the container model:"},
+			ShipToECL[
+				Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID],
+				"my sample container 1 " <> CreateUUID[],
+				Volume -> 1 Milliliter,
+				ContainerModel -> Model[Container, Plate, "96-well 2mL Deep Well Plate"],
+				NumberOfWells -> 48
+			],
+			$Failed,
+			Messages:>{Error::NumberOfWellsMismatch,Error::InvalidOption}
+		],
+		Example[{Messages,"NonstandardWellNumber","The NumberOfWells option should only be used when samples are in a plate:"},
+			ShipToECL[
+				Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID],
+				"my sample container 1 " <> CreateUUID[],
+				Volume -> 1 Milliliter,
+				NumberOfWells -> 48,
+				ContainerType -> Vessel
+			],
+			$Failed,
+			Messages:>{Error::NonstandardWellNumber,Error::InvalidOption}
+		],
+		Example[{Messages,"ContainerInformationNotRequired","None of the container options should be specified when items are being sent:"},
+			ShipToECL[
+				Model[Item, Column, "Test Model Column for ShipToECL" <> $SessionUUID],
+				"my new item" <> CreateUUID[],
+				NumberOfWells -> 1,
+				ContainerType -> Vessel,
+				Product -> Object[Product, "Test product for ShipToECL (1)" <> $SessionUUID]
+			],
+			$Failed,
+			Messages:>{Error::ContainerInformationNotRequired,Error::InvalidOption}
+		],
+		Example[{Messages,"ContainerInformationRequired","None of the container options should be set to Null when samples are being provided:"},
+			ShipToECL[
+				Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID],
+				"my sample container 1 " <> CreateUUID[],
+				Volume -> 1 Milliliter,
+				ContainerModel -> Null
+			],
+			$Failed,
+			Messages:>{Error::ContainerInformationRequired,Error::InvalidOption}
+		],
+		Example[{Messages,"PlateOptionsRequired","None of the plate-specifc options should be set to Null when a plate of samples is sent:"},
+			ShipToECL[
+				Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID],
+				"my sample container 1 " <> CreateUUID[],
+				Volume -> 1 Milliliter,
+				ContainerType -> Plate,
+				NumberOfWells -> Null
+			],
+			$Failed,
+			Messages:>{Error::PlateOptionsRequired,Error::InvalidOption}
+		],
+		Example[{Messages,"UnneededContainerDocumentation","ContainerDocumentation is intended to be used to create new container models and should not be provided when a container model is specified:"},
+			ShipToECL[
+				Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID],
+				"my sample container 1 " <> CreateUUID[],
+				Volume -> 1 Milliliter,
+				ContainerModel -> Model[Container, Vessel, "2mL Tube"],
+				ContainerDocumentation -> FileNameJoin[{$TemporaryDirectory,"container_doc.pdf"}]
+			],
+			{ObjectP[Object[Transaction, ShipToECL]]},
+			Messages:>{Warning::UnneededContainerDocumentation}
+		],
+		Example[{Messages,"ConflictingContainerDocumentation","Distinct container documentation must provided for container models with unique properties such as type or number of wells:"},
+			ShipToECL[
+				{Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID], Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID]},
+				{"my sample container 1 " <> CreateUUID[],"my sample container 2 " <> CreateUUID[]},
+				Volume -> 1 Milliliter,
+				ContainerType -> {Plate, Vessel},
+				ContainerDocumentation -> FileNameJoin[{$TemporaryDirectory,"container_doc.pdf"}]
+			],
+			$Failed,
+			Messages:>{Error::ConflictingContainerDocumentation,Error::InvalidOption}
+		],
+		Example[{Messages,"ContainerDocumentationFiles","If specifying a local file containing the container documentation, that file must exist:"},
+			ShipToECL[
+				Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID],
+				"my sample container 1 " <> CreateUUID[],
+				Volume -> 1 Milliliter,
+				ContainerDocumentation -> FileNameJoin[{$TemporaryDirectory,"non-existent-file.pdf"}]
+			],
+			$Failed,
+			Messages:>{Error::ContainerDocumentationFiles,Error::InvalidOption}
+		],
+		Test["If the volume is not specified the option will resolve to Automatic and the corresponding field will be Null:",
+			Module[{ops,transaction},
+				{ops,{transaction}}=ShipToECL[
+					Model[Sample, StockSolution, "Test Model StockSolution for ShipToECL" <> $SessionUUID],
+					"my sample container 1 " <> CreateUUID[],
+					Output -> {Options, Result}
+				];
+				{Lookup[ops,Volume],Download[transaction,ReceivedSamples[Volume]]}
+			],
+			{Automatic,{Null}},
+			Messages:>{Warning::AmountWillBeMeasured}
+		],
+		Test["Fails cleanly if given objects that don't exist:",
+			ShipToECL[
+				Model[Sample, "my ShipToECL sample that doesn't exist in the database"<>$SessionUUID],
+				"my sample container 1 " <> CreateUUID[]
+			],
+			$Failed,
+			Messages:>{Download::ObjectDoesNotExist}
+		]
     },
     SymbolSetUp :> {
         With[{toErase = Flatten[
@@ -12748,7 +12962,7 @@ DefineTests[ShipToECL,
                 <|DeveloperObject -> True, DefaultStorageCondition -> Link[Model[StorageCondition, "id:N80DNj1r04jW"]], Expires -> False, Name -> "Test Model StockSolution for ShipToECL" <> $SessionUUID, Type -> Model[Sample, StockSolution], State -> Liquid|>,
                 <|DeveloperObject -> True, DefaultStorageCondition -> Link[Model[StorageCondition, "Ambient Storage"]], Expires -> False, Name -> "Test Model Chemical for ShipToECL" <> $SessionUUID, Type -> Model[Sample], State -> Liquid|>,
                 <|DeveloperObject -> True, DefaultStorageCondition -> Link[Model[StorageCondition, "Ambient Storage"]], Expires -> False, Name -> "Test Model Chemical with density for ShipToECL" <> $SessionUUID, Type -> Model[Sample], State -> Liquid, Density -> 0.95Gram / Milliliter|>,
-                <|DeveloperObject -> True, DefaultStorageCondition -> Link[Model[StorageCondition, "Ambient Storage"]], Expires -> False, Name -> "Test Model Tablet for ShipToECL" <> $SessionUUID, Type -> Model[Sample], State -> Solid, Tablet -> True, TabletWeight -> 1Gram|>,
+                <|DeveloperObject -> True, DefaultStorageCondition -> Link[Model[StorageCondition, "Ambient Storage"]], Expires -> False, Name -> "Test Model Tablet for ShipToECL" <> $SessionUUID, Type -> Model[Sample], State -> Solid, Tablet -> True, SolidUnitWeight -> 1Gram|>,
 
                 (* Model[Item] *)
                 <|DeveloperObject -> True, DefaultStorageCondition -> Link[Model[StorageCondition, "Ambient Storage"]], Name -> "Test Model Consumable for ShipToECL" <> $SessionUUID, Type -> Model[Item, Consumable]|>,
@@ -12823,21 +13037,69 @@ DefineTests[ShipToECL,
                     Creator -> Link[Object[User, "Test user for notebook-less test protocols"], TransactionsCreated], Replace[ReceivedSamples] -> {Link[Object[Sample, "Test Sample for ShipToECL (1)" <> $SessionUUID]]}|>
             }
         ];
+
+		(* Create file for ContainerDocumentation test *)
+		DownloadCloudFile[Object[EmeraldCloudFile, "id:R8e1Pjp7R1o7"], FileNameJoin[{$TemporaryDirectory, "container_doc.pdf"}]]
     },
     SetUp :> {
         Upload[
             {
-                <|Object -> Object[Transaction, ShipToECL, "Test transaction for ShipToECL (1)" <> $SessionUUID],
-                    Creator -> Link[Object[User, "Test user for notebook-less test protocols"], TransactionsCreated], Replace[ReceivedSamples] -> {Link[Object[Sample, "Test Sample for ShipToECL (1)" <> $SessionUUID]]}, Shipper -> Link[Object[Company, Shipper, "Test shipper for ShipToECL" <> $SessionUUID], Transactions],
-                    Shipper -> Null, Replace[TrackingNumbers] -> {}, Replace[ReceivedContainers] -> Null, Replace[ReceivedCovers] -> Null, Replace[TransferSamples] -> Null, Replace[TransferContainers] -> Null, Replace[EmptyContainers] -> Null, Destination -> Null, Source -> Null, ReceivingTolerance -> Null
+                <|
+					Object -> Object[Transaction, ShipToECL, "Test transaction for ShipToECL (1)" <> $SessionUUID],
+                    Creator -> Link[Object[User, "Test user for notebook-less test protocols"], TransactionsCreated],
+					Replace[ReceivedSamples] -> {Link[Object[Sample, "Test Sample for ShipToECL (1)" <> $SessionUUID]]},
+                    Shipper -> Null,
+					Replace[TrackingNumbers] -> {},
+					Replace[ReceivedContainers] -> Null,
+					Replace[ReceivedCovers] -> Null,
+					Replace[TransferSamples] -> Null,
+					Replace[TransferContainers] -> Null,
+					Replace[EmptyContainers] -> Null,
+					Destination -> Null,
+					Source -> Null,
+					ReceivingTolerance -> Null,
+					DateExpected -> Null,
+					DateShipped -> Null,
+					Status -> Pending,
+					Replace[StatusLog] -> {}
                 |>,
-                <|Object -> Object[Transaction, ShipToECL, "Test transaction for ShipToECL (2)" <> $SessionUUID],
-                    Creator -> Link[Object[User, "Test user for notebook-less test protocols"], TransactionsCreated], Replace[ReceivedSamples] -> {Link[Object[Sample, "Test Sample for ShipToECL (1)" <> $SessionUUID]]},
-                    Shipper -> Null, Replace[TrackingNumbers] -> {}, Replace[ReceivedContainers] -> Null, Replace[ReceivedCovers] -> Null, Replace[TransferSamples] -> Null, Replace[TransferContainers] -> Null, Replace[EmptyContainers] -> Null, Destination -> Null, Source -> Null, ReceivingTolerance -> Null
+                <|
+					Object -> Object[Transaction, ShipToECL, "Test transaction for ShipToECL (2)" <> $SessionUUID],
+                    Creator -> Link[Object[User, "Test user for notebook-less test protocols"], TransactionsCreated],
+					Replace[ReceivedSamples] -> {Link[Object[Sample, "Test Sample for ShipToECL (1)" <> $SessionUUID]]},
+                    Shipper -> Null,
+					Replace[TrackingNumbers] -> {},
+					Replace[ReceivedContainers] -> Null,
+					Replace[ReceivedCovers] -> Null,
+					Replace[TransferSamples] -> Null,
+					Replace[TransferContainers] -> Null,
+					Replace[EmptyContainers] -> Null,
+					Destination -> Null,
+					Source -> Null,
+					ReceivingTolerance -> Null,
+					DateExpected -> Null,
+					DateShipped -> Null,
+					Status -> Pending,
+					Replace[StatusLog] -> {}
                 |>,
-                <|Object -> Object[Transaction, ShipToECL, "Test transaction for ShipToECL (3)" <> $SessionUUID],
-                    Creator -> Link[Object[User, "Test user for notebook-less test protocols"], TransactionsCreated], Replace[ReceivedSamples] -> {Link[Object[Sample, "Test Sample for ShipToECL (1)" <> $SessionUUID]]},
-                    Shipper -> Null, Replace[TrackingNumbers] -> {}, Replace[ReceivedContainers] -> Null, Replace[ReceivedCovers] -> Null, Replace[TransferSamples] -> Null, Replace[TransferContainers] -> Null, Replace[EmptyContainers] -> Null, Destination -> Null, Source -> Null, ReceivingTolerance -> Null
+                <|
+					Object -> Object[Transaction, ShipToECL, "Test transaction for ShipToECL (3)" <> $SessionUUID],
+                    Creator -> Link[Object[User, "Test user for notebook-less test protocols"], TransactionsCreated],
+					Replace[ReceivedSamples] -> {Link[Object[Sample, "Test Sample for ShipToECL (1)" <> $SessionUUID]]},
+                    Shipper -> Null,
+					Replace[TrackingNumbers] -> {},
+					Replace[ReceivedContainers] -> Null,
+					Replace[ReceivedCovers] -> Null,
+					Replace[TransferSamples] -> Null,
+					Replace[TransferContainers] -> Null,
+					Replace[EmptyContainers] -> Null,
+					Destination -> Null,
+					Source -> Null,
+					ReceivingTolerance -> Null,
+					DateExpected -> Null,
+					DateShipped -> Null,
+					Status -> Pending,
+					Replace[StatusLog] -> {}
                 |>
             }
         ]
@@ -12881,7 +13143,7 @@ DefineTests[ShipToECLOptions,
         ],
 
         Example[
-            {Options, OutputFormat, "Generate a resolved list of options for an ShipToECL:"},
+            {Options, OutputFormat, "Generate a resolved list of options for a ShipToECL:"},
             ShipToECLOptions[
                 Model[Sample, StockSolution, "Test Model StockSolution for ShipToECLOptions"],
                 "my new bottle (ShipToECLOptions)",
@@ -12945,7 +13207,7 @@ DefineTests[ShipToECLOptions,
         Upload[<|DeveloperObject -> True, Type -> Object[LaboratoryNotebook], Name -> "Test Notebook for ShipToECLOptions", Replace[Financers] -> {Link[Object[Team, Financing, "Test Team for ShipToECLOptions"], NotebooksFinanced]}|>];
         Upload[<|DeveloperObject -> True, DefaultStorageCondition -> Link[Model[StorageCondition, "Ambient Storage"]], Expires -> False, Name -> "Test Model Chemical for ShipToECLOptions", Type -> Model[Sample], State -> Liquid|>];
         Upload[<|DeveloperObject -> True, DefaultStorageCondition -> Link[Model[StorageCondition, "Ambient Storage"]], Expires -> False, Name -> "Test Model Chemical with density for ShipToECLOptions", Type -> Model[Sample], State -> Liquid, Density -> 0.95Gram / Milliliter|>];
-        Upload[<|DeveloperObject -> True, DefaultStorageCondition -> Link[Model[StorageCondition, "Ambient Storage"]], Expires -> False, Name -> "Test Model Tablet for ShipToECLOptions", Type -> Model[Sample], State -> Solid, Tablet -> True, TabletWeight -> 1Gram|>];
+        Upload[<|DeveloperObject -> True, DefaultStorageCondition -> Link[Model[StorageCondition, "Ambient Storage"]], Expires -> False, Name -> "Test Model Tablet for ShipToECLOptions", Type -> Model[Sample], State -> Solid, Tablet -> True, SolidUnitWeight -> 1Gram|>];
         Upload[<|DeveloperObject -> True, Type -> Object[Container, Site], Name -> "Test destination site for ShipToECLOptions", Replace[Contents] -> {{"A1", Link[Object[Container, Vessel, "Test vessel at Destination for ShipToECLOptions"], Container]}}|>];
         Upload[<|DeveloperObject -> True, Type -> Object[Transaction, ShipToECL], Name -> "Test transaction for ShipToECLOptions (1)",
             Creator -> Link[Object[User, "Test user for notebook-less test protocols"], TransactionsCreated], Replace[ReceivedSamples] -> {Link[Object[Sample, "Test Sample for ShipToECLOptions (1)"]]}, Shipper -> Link[Object[Company, Shipper, "Test shipper for ShipToECLOptions"], Transactions]|>];
@@ -13427,6 +13689,74 @@ DefineTests[DropShipSamples,
             },
             Variables :> {transactions}
         ],
+        Example[
+          {Options, Sterile, "Specify that some samples are sterile:"},
+          transactions = DropShipSamples[
+            {
+              Model[Sample, "Test model chemical (liquid) for DropShipSamples (1)"],
+              Model[Item, Column, "Test model column for DropShipSamples (1)"]
+            },
+            {"404478943", "404478943"},
+            Quantity -> {1, 1},
+            Provider -> {Object[Company, Service, "Test service provider for DropShipSamples (1)"], Object[Company, Service, "Test service provider for DropShipSamples (1)"]},
+            Volume -> {ProductDocumentation, None},
+            Sterile -> {True, False}
+          ];
+          Download[transactions,Sterile],
+          {{True,False}},
+          Variables :> {transactions}
+        ],
+        Example[
+          {Options, SealedContainer, "Indicates that samples will arrive in a sealed container:"},
+          transactions = DropShipSamples[
+            {
+              Model[Sample, "Test model chemical (liquid) for DropShipSamples (1)"],
+              Model[Item, Column, "Test model column for DropShipSamples (1)"]
+            },
+            {"404478943", "404478943"},
+            Quantity -> {1, 1},
+            Provider -> {Object[Company, Service, "Test service provider for DropShipSamples (1)"], Object[Company, Service, "Test service provider for DropShipSamples (1)"]},
+            Volume -> {ProductDocumentation, None},
+            SealedContainer -> {True, False}
+          ];
+          Download[transactions,SealedContainer],
+          {{True,False}},
+          Variables :> {transactions}
+        ],
+        Example[
+          {Options, AsepticShippingContainerType, "Describes the manner in which an aseptic product is packed and shipped by the manufacturer:"},
+          transactions = DropShipSamples[
+            {
+              Model[Sample, "Test model chemical (liquid) for DropShipSamples (1)"],
+              Model[Item, Column, "Test model column for DropShipSamples (1)"]
+            },
+            {"404478943", "404478943"},
+            Quantity -> {1, 1},
+            Provider -> {Object[Company, Service, "Test service provider for DropShipSamples (1)"], Object[Company, Service, "Test service provider for DropShipSamples (1)"]},
+            Volume -> {ProductDocumentation, None},
+            AsepticShippingContainerType -> {ResealableBulk, Null}
+          ];
+          Download[transactions,AsepticShippingContainerType],
+          {{ResealableBulk,Null}},
+          Variables :> {transactions}
+        ],
+        Example[
+          {Options, AsepticRebaggingContainerType, "Describes the manner in which an aseptic product is packed and shipped by the manufacturer:"},
+          transactions = DropShipSamples[
+            {
+              Model[Sample, "Test model chemical (liquid) for DropShipSamples (1)"],
+              Model[Item, Column, "Test model column for DropShipSamples (1)"]
+            },
+            {"404478943", "404478943"},
+            Quantity -> {1, 1},
+            Provider -> {Object[Company, Service, "Test service provider for DropShipSamples (1)"], Object[Company, Service, "Test service provider for DropShipSamples (1)"]},
+            Volume -> {ProductDocumentation, None},
+            AsepticRebaggingContainerType -> {Individual, Null}
+          ];
+          Download[transactions,AsepticRebaggingContainerType],
+          {{Individual,Null}},
+          Variables :> {transactions}
+        ],
 
         Example[
             {Messages, "ContainerOutNotValidated", "Give a warning if it cannot be determined whether the specified container out is large enough to hold the sample:"},
@@ -13458,7 +13788,7 @@ DefineTests[DropShipSamples,
 
 
         Example[
-            {Messages, "OptionNotRequired", "If ContainerOut is specified for an item, give a message and fail:"},
+            {Messages, "ShippingOptionNotRequired", "If ContainerOut is specified for an item, give a message and fail:"},
             DropShipSamples[
                 Model[Item, Column, "Test model column for DropShipSamples (1)"],
                 "1340493",
@@ -13466,16 +13796,16 @@ DefineTests[DropShipSamples,
                 Provider -> Object[Company, Service, "Test service provider for DropShipSamples (1)"],
                 ContainerOut -> Model[Container, Vessel, "50mL Tube"]],
             $Failed,
-            Messages :> {Error::OptionNotRequired, Error::InvalidOption}
+            Messages :> {Error::ShippingOptionNotRequired, Error::InvalidOption}
         ],
         Example[
-            {Messages, "OptionNotRequired", "If ContainerOut is specified for a kit product, give a message and fail:"},
+            {Messages, "ShippingOptionNotRequired", "If ContainerOut is specified for a kit product, give a message and fail:"},
             DropShipSamples[
                 Object[Product, "Fake kit product with plates"],
                 "kitProduct222222",
                 ContainerOut -> Model[Container, Vessel, "50mL Tube"]],
             $Failed,
-            Messages :> {Error::OptionNotRequired, Error::InvalidOption}
+            Messages :> {Error::ShippingOptionNotRequired, Error::InvalidOption}
         ],
         Example[
             {Messages, "CompanyRequiredForModelInputs", "Provider is required for model (i.e., non-product) inputs:"},
@@ -13766,7 +14096,7 @@ DefineTests[DropShipSamples,
                 "98763213",
                 Quantity -> {3, 1},
                 Provider -> Object[Company, Service, "Test service provider for DropShipSamples (1)"],
-                DateShipped -> {now, None},
+                DateShipped -> {now, Null},
                 Volume -> ProductDocumentation
             ];
             Download[transactions, DateShipped],
@@ -14303,7 +14633,7 @@ DefineTests[DropShipSamples,
             Messages :> {Warning::MeasurementMayRequireTransfer}
         ],
         Example[
-            {Options, Count, "If Mass is given and TabletWeight is known, Count is calculated to resolve automatics:"},
+            {Options, Count, "If Mass is given and SolidUnitWeight is known, Count is calculated to resolve automatics:"},
             transactions = DropShipSamples[
                 {
                     Model[Sample, "Test model chemical (solid) for DropShipSamples (1)"],
@@ -14320,7 +14650,7 @@ DefineTests[DropShipSamples,
             Variables :> {transactions}
         ],
         Example[
-            {Options, Mass, "If Count is given and TabletWeight is known, Mass is calculated to resolve automatics:"},
+            {Options, Mass, "If Count is given and SolidUnitWeight is known, Mass is calculated to resolve automatics:"},
             transactions = DropShipSamples[
                 {
                     Model[Sample, "Test model chemical (solid) for DropShipSamples (1)"],
@@ -14426,7 +14756,7 @@ DefineTests[DropShipSamples,
                 {UserSpecified, UserSpecified, None, None, None, None, None, None, None, None}}
         ],
         Example[
-            {Messages, "MassCountDisagree", "If Mass and Count are both given and disagree based on the TabletWeight throw an error:"},
+            {Messages, "MassCountDisagree", "If Mass and Count are both given and disagree based on the SolidUnitWeight throw an error:"},
             DropShipSamples[
                 {
                     Model[Sample, "Test model chemical (tablet) for DropShipSamples (1)"]
@@ -14898,7 +15228,7 @@ DefineTests[DropShipSamples,
             ],
 
             If[!DatabaseMemberQ[Model[Sample, "Test model chemical (tablet) for DropShipSamples (1)"]],
-                <|DeveloperObject -> True, Type -> Model[Sample], Name -> "Test model chemical (tablet) for DropShipSamples (1)", State -> Solid, Replace[Products] -> {}, Tablet -> True, TabletWeight -> 2Gram|>
+                <|DeveloperObject -> True, Type -> Model[Sample], Name -> "Test model chemical (tablet) for DropShipSamples (1)", State -> Solid, Replace[Products] -> {}, Tablet -> True, SolidUnitWeight -> 2Gram|>
             ],
 
             If[!DatabaseMemberQ[Model[Sample, "Test model chemical (solid) for DropShipSamples (3)"]],
@@ -14914,7 +15244,7 @@ DefineTests[DropShipSamples,
             ],
 
             If[!DatabaseMemberQ[Model[Sample, "Test model chemical (tablet, with product) for DropShipSamples (1)"]],
-                <|DeveloperObject -> True, Type -> Model[Sample], Name -> "Test model chemical (tablet, with product) for DropShipSamples (1)", State -> Solid, Tablet -> True, TabletWeight -> 2Gram|>
+                <|DeveloperObject -> True, Type -> Model[Sample], Name -> "Test model chemical (tablet, with product) for DropShipSamples (1)", State -> Solid, Tablet -> True, SolidUnitWeight -> 2Gram|>
             ],
 
             If[!DatabaseMemberQ[Object[Company, Shipper, "Test shipper for DropShipSamples"]],
@@ -15322,6 +15652,10 @@ DefineTests[DropShipSamplesOptions,
                 Count -> None,
                 Volume -> None,
                 ShippedRack -> None,
+                Sterile -> Null,
+                SealedContainer -> Null,
+                AsepticShippingContainerType -> Null,
+                AsepticRebaggingContainerType -> Null,
                 Name -> Null
             },
             SetUp :> {
@@ -15388,6 +15722,10 @@ DefineTests[DropShipSamplesOptions,
                 Count -> None,
                 Volume -> {ProductDocumentation, None},
                 ShippedRack -> None,
+                Sterile -> Null,
+                SealedContainer -> Null,
+                AsepticShippingContainerType -> Null,
+                AsepticRebaggingContainerType -> Null,
                 Name -> Null
             },
             SetUp :> {
@@ -16269,25 +16607,25 @@ DefineTests[OrderSamples,
         ],
 
         Example[
-            {Messages, "OptionNotRequired", "If ContainerOut is specified for an item, give a message and fail (product input):"},
+            {Messages, "ShippingOptionNotRequired", "If ContainerOut is specified for an item, give a message and fail (product input):"},
             OrderSamples[
                 Object[Product, "Waters size exclusion column, 30 mm"],
                 2,
                 ContainerOut -> Model[Container, Vessel, "50mL Tube"]],
             $Failed,
-            Messages :> {Error::OptionNotRequired, Error::InvalidOption}
+            Messages :> {Error::ShippingOptionNotRequired, Error::InvalidOption}
         ],
         Example[
-            {Messages, "OptionNotRequired", "If ContainerOut is specified for an item, give a message and fail (model input):"},
+            {Messages, "ShippingOptionNotRequired", "If ContainerOut is specified for an item, give a message and fail (model input):"},
             OrderSamples[
                 Model[Item, Column, "column model for RequestOrder unit testing"],
                 2,
                 ContainerOut -> Model[Container, Vessel, "50mL Tube"]],
             $Failed,
-            Messages :> {Error::OptionNotRequired, Error::InvalidOption}
+            Messages :> {Error::ShippingOptionNotRequired, Error::InvalidOption}
         ],
         Example[
-            {Messages, "OptionNotRequired", "If ContainerOut is specified for an item, give a message and fail (model input, internal order):"},
+            {Messages, "ShippingOptionNotRequired", "If ContainerOut is specified for an item, give a message and fail (model input, internal order):"},
             OrderSamples[
                 Model[Item, Column, "column model for RequestOrder unit testing"],
                 2,
@@ -16295,7 +16633,7 @@ DefineTests[OrderSamples,
                 InternalOrder -> True
             ],
             $Failed,
-            Messages :> {Error::OptionNotRequired, Error::InvalidOption}
+            Messages :> {Error::ShippingOptionNotRequired, Error::InvalidOption}
         ],
 
         Example[{Messages, "Deprecated", "Throws an error if any one of the products is marked as Deprecated:"},
@@ -16423,16 +16761,16 @@ DefineTests[OrderSamples,
         ],
         Test["Orders created with DependentProtocols automatically set Creator to the author of the protocol:",
             (
-                order = OrderSamples[{Object[Product, "Waters size exclusion column, 30 mm"]}, {1}, DependentProtocol -> Object[Protocol, HPLC, "Test HPLC protocol for OrderSamples DependentProtocol"]];
+                order = OrderSamples[{Object[Product, "Waters size exclusion column, 30 mm"]}, {1}, DependentProtocol -> Object[Protocol, HPLC, "Test HPLC protocol for OrderSamples DependentProtocol"<>$SessionUUID],Destination->$Site];
                 Download[order, Creator]
             ),
             {ObjectP[Object[User, "Test user for notebook-less test protocols"]]},
             SetUp :> {
-                Upload[<|Object -> Object[Protocol, HPLC, "Test HPLC protocol for OrderSamples DependentProtocol"], Author -> Link[Object[User, "Test user for notebook-less test protocols"], ProtocolsAuthored]|>]
+                Upload[<|Object -> Object[Protocol, HPLC, "Test HPLC protocol for OrderSamples DependentProtocol"<>$SessionUUID], Author -> Link[Object[User, "Test user for notebook-less test protocols"], ProtocolsAuthored]|>]
             },
             TearDown :> {
                 Module[{orders, nonDevObjOrders},
-                    Upload[<|Object -> Object[Protocol, HPLC, "Test HPLC protocol for OrderSamples DependentProtocol"], Author -> Null|>];
+                    Upload[<|Object -> Object[Protocol, HPLC, "Test HPLC protocol for OrderSamples DependentProtocol"<>$SessionUUID], Author -> Null|>];
                     orders = Flatten[Download[Object[Product, "Waters size exclusion column, 30 mm"], Orders[Object]]];
                     nonDevObjOrders = PickList[orders, Download[orders, DeveloperObject], Except[True]];
                     EraseObject[nonDevObjOrders, Verbose -> False, Force -> True]
@@ -16639,14 +16977,14 @@ DefineTests[OrderSamples,
         Example[{Options, DependentProtocol, "Specify that a protocol depends on the item being ordered to begin or continue execution:"},
             (
                 orders = Cases[
-                    OrderSamples[Object[Product, "Waters size exclusion column, 30 mm"], 1, DependentProtocol -> Object[Protocol, HPLC, "Test HPLC protocol for OrderSamples DependentProtocol"]],
+                    OrderSamples[Object[Product, "Waters size exclusion column, 30 mm"], 1, DependentProtocol -> Object[Protocol, HPLC, "Test HPLC protocol for OrderSamples DependentProtocol"<>$SessionUUID],Destination->$Site],
                     ObjectP[Object[Transaction, Order]]
                 ];
                 Download[orders, {DependentProtocols, DependentProtocols[ShippingMaterials]}]
             ),
             {
                 {
-                    {LinkP[Download[Object[Protocol, HPLC, "Test HPLC protocol for OrderSamples DependentProtocol"], Object]]},
+                    {LinkP[Download[Object[Protocol, HPLC, "Test HPLC protocol for OrderSamples DependentProtocol"<>$SessionUUID], Object]]},
                     {{{LinkP[Object[Transaction, Order]], LinkP[Download[Object[Product, "Waters size exclusion column, 30 mm"], Object]]}}}
                 }
             },
@@ -16717,6 +17055,81 @@ DefineTests[OrderSamples,
                 PacketP[Object[Protocol]]],
             {}
         ],
+		(*Start Site checking Unit Tests*)
+		Test["Test that the DependentProtocol's Site is used if the user doesn't specify one.",
+			(
+				orders = Cases[
+					OrderSamples[Object[Product, "Waters size exclusion column, 30 mm"],1, DependentProtocol -> Object[Protocol, HPLC, "Protocol with site different than $Site"<>$SessionUUID]],
+					ObjectP[Object[Transaction, Order],Destination]
+				];
+				Download[orders, Destination]
+			),
+			{
+					ObjectP[Link[Object[Container,Site,"Imaginary Site"<>$SessionUUID],Object]]
+			},
+			Variables :> {orders},
+			TearDown :> {
+				EraseObject[orders, Verbose -> False, Force -> True]
+			},
+			Stubs :> {ValidObjectQ[___] = True}
+		],
+		Test["Test that the DependentProtocol's Site is used if a Model is used instead of an Object.",
+			(
+				orders = Cases[
+					OrderSamples[Model[Sample, "Water model for OrderSamples test" <> $SessionUUID],20 Liter,
+						DependentProtocol -> Object[Protocol, HPLC, "Protocol with site different than $Site"<>$SessionUUID]],
+					ObjectP[Object[Transaction, Order],Destination]
+				];
+				Download[orders, Destination]
+			),
+			{
+				ObjectP[Link[Object[Container,Site,"Imaginary Site"<>$SessionUUID],Object]]
+			},
+			Variables :> {orders},
+			TearDown :> {
+				EraseObject[orders, Verbose -> False, Force -> True]
+			},
+			Stubs :> {ValidObjectQ[___] = True}
+		],
+		Test["Test that the user's destination is used if specified instead of the DependentProtocol's.",
+			(
+				orders = Cases[
+					OrderSamples[Object[Product, "Waters size exclusion column, 30 mm"],1,
+						DependentProtocol -> Object[Protocol, HPLC, "Protocol with site different than $Site"<>$SessionUUID],
+						Destination -> Object[Container, Site, "ECL-CMU"]
+					],
+					ObjectP[Object[Transaction, Order],Destination]
+				];
+				Download[orders, Destination]
+			),
+			{
+				ObjectP[Link[Object[Container,Site,"ECL-CMU"],Object]]
+			},
+			Variables :> {orders},
+			TearDown :> {
+				EraseObject[orders, Verbose -> False, Force -> True]
+			},
+			Stubs :> {ValidObjectQ[___] = True}
+		],
+		Test["Test that the $Site is used if no user site is specified and there is no DependentProtocol.",
+			(
+				orders = Cases[
+					OrderSamples[Object[Product, "Waters size exclusion column, 30 mm"],1
+					],
+					ObjectP[Object[Transaction, Order],Destination]
+				];
+				Download[orders, Destination]
+			),
+			{
+				ObjectP[Link[$Site],Object]
+			},
+			Variables :> {orders},
+			TearDown :> {
+				EraseObject[orders, Verbose -> False, Force -> True]
+			},
+			Stubs :> {ValidObjectQ[___] = True}
+		],
+		(*End Site checking Unit Tests*)
         Test["DependentProtocol option handles mixed protocol and None input properly:",
             (
                 orders = Cases[
@@ -16726,7 +17139,7 @@ DefineTests[OrderSamples,
                         {1, 1},
 
                         DependentProtocol -> {Object[Protocol, HPLC,
-                            "Test HPLC protocol for OrderSamples DependentProtocol"], None}
+                            "Test HPLC protocol for OrderSamples DependentProtocol"<>$SessionUUID], None}
                     ],
                     ObjectP[Object[Transaction, Order]]
                 ];
@@ -16734,7 +17147,7 @@ DefineTests[OrderSamples,
             ),
             {
                 {
-                    {LinkP[Download[Object[Protocol, HPLC, "Test HPLC protocol for OrderSamples DependentProtocol"], Object]]},
+                    {LinkP[Download[Object[Protocol, HPLC, "Test HPLC protocol for OrderSamples DependentProtocol"<>$SessionUUID], Object]]},
                     {{{LinkP[Object[Transaction, Order]], LinkP[Download[Object[Product, "Waters size exclusion column, 30 mm"], Object]]}}}
                 }
             },
@@ -16747,14 +17160,14 @@ DefineTests[OrderSamples,
             "DependentProtocol option works with Model overload:",
             (
                 orders = Cases[
-                    OrderSamples[Model[Sample, "id:vXl9j57YRBad"], 120 Gram, DependentProtocol -> Object[Protocol, HPLC, "Test HPLC protocol for OrderSamples DependentProtocol"]],
+                    OrderSamples[Model[Sample, "id:vXl9j57YRBad"], 120 Gram, DependentProtocol -> Object[Protocol, HPLC, "Test HPLC protocol for OrderSamples DependentProtocol"<>$SessionUUID]],
                     ObjectP[Object[Transaction, Order]]
                 ];
                 Download[orders, {DependentProtocols, DependentProtocols[ShippingMaterials]}]
             ),
             {
                 {
-                    {LinkP[Download[Object[Protocol, HPLC, "Test HPLC protocol for OrderSamples DependentProtocol"], Object]]},
+                    {LinkP[Download[Object[Protocol, HPLC, "Test HPLC protocol for OrderSamples DependentProtocol"<>$SessionUUID], Object]]},
                     {{{LinkP[Object[Transaction, Order]], LinkP[Download[Object[Product, "id:N80DNj1rWbEq"], Object]]}}}
                 }
             },
@@ -16967,20 +17380,45 @@ DefineTests[OrderSamples,
                 {23}
             },
             Variables :> {order}
-        ]
-        (*Test["Placing an order on a kit component AND a product forces only products to be ordered:",
-			order = OrderSamples[
-				{
-					Model[Sample, "id:dORYzZJr5xvq"]
-				},
-				{
-					1 Milliliter
-				},
-				InternalOrder->True,
-				Upload->False
-			];
-			{
-				*)(* If order's length is not 2, then multiple orders were incorrectly placed, which indicates one for Models and one for Products *)(*
+        ],
+      Test["An order for a sterile product without AsepticShippingContainerType specified will return a transaction with RequiresAsepticCertification -> True:",
+        order = OrderSamples[Object[Product, "Test sterile product without AsepticShippingContainerType for OrderSamples"<>$SessionUUID], 3];
+        Download[order, RequiresAsepticCertification],
+        {True},
+        Variables :> {order}
+      ],
+      Test["An order for a sterile product with AsepticShippingContainerType -> NonResealableBulk will return a transaction with RequiresAsepticCertification -> True:",
+        order = OrderSamples[Object[Product, "Test sterile product with AsepticShippingContainerType -> NonResealableBulk for OrderSamples"<>$SessionUUID], 3];
+        Download[order, RequiresAsepticCertification],
+        {True},
+        Variables :> {order}
+      ],
+      Test["An order for a sterile product with AsepticShippingContainerType -> Individual will return a transaction with RequiresAsepticCertification -> False:",
+        order = OrderSamples[Object[Product, "Test sterile product with AsepticShippingContainerType -> Individual for OrderSamples"<>$SessionUUID], 3];
+        Download[order, RequiresAsepticCertification],
+        {False},
+        Variables :> {order}
+      ],
+      Test["An order for a non-sterile product will return a transaction with RequiresAsepticCertification -> False:",
+        order = OrderSamples[Object[Product, "Test non-sterile product for OrderSamples"<>$SessionUUID], 3];
+        Download[order, RequiresAsepticCertification],
+        {False},
+        Variables :> {order}
+      ]
+
+      (*Test["Placing an order on a kit component AND a product forces only products to be ordered:",
+    order = OrderSamples[
+      {
+        Model[Sample, "id:dORYzZJr5xvq"]
+      },
+      {
+        1 Milliliter
+      },
+      InternalOrder->True,
+      Upload->False
+    ];
+    {
+      *)(* If order's length is not 2, then multiple orders were incorrectly placed, which indicates one for Models and one for Products *)(*
 				Length[order],
 				*)(* Make sure the correct product was ordered *)(*
 				Lookup[order[[1]],Replace[Products]],
@@ -16996,17 +17434,28 @@ DefineTests[OrderSamples,
 		]*)
     },
     SymbolSetUp :> Module[
-        {testObjects, existingObjects, allUploads, supplier, sample, sampleID, product, productID, sample2, sampleID2, product2, productID2, modelContainerID, modelContainer},
+        {
+          testObjects, existingObjects, allUploads, supplier, sampleModel, sampleModelID, product, productID, sampleModel2, sampleModelID2, product2, productID2,
+          modelContainerID, modelContainer, protocol, protocolID, imagSite, imagSiteID, testprotocol, testprotocolID, productID3, productID4, productID5, productID6,
+          product3, product4, product5, product6
+        },
 
         (*make sure we don't have test objects in the database *)
         testObjects = {
             Object[Product, "Test water product for OrderSamples test" <> $SessionUUID],
             Object[Product, "Test non SelfStanding product for OrderSamples test" <> $SessionUUID],
+            Object[Product, "Test sterile product without AsepticShippingContainerType for OrderSamples"<>$SessionUUID],
+            Object[Product, "Test sterile product with AsepticShippingContainerType -> NonResealableBulk for OrderSamples"<>$SessionUUID],
+            Object[Product, "Test sterile product with AsepticShippingContainerType -> Individual for OrderSamples"<>$SessionUUID],
+            Object[Product, "Test non-sterile product for OrderSamples"<>$SessionUUID],
             Model[Sample, "Water model for OrderSamples test" <> $SessionUUID],
             Model[Sample, "Water model for OrderSamples test 2" <> $SessionUUID],
             Model[Container, Vessel, "Non selfstanding container for OrderSamples test" <> $SessionUUID],
             Object[Company, Supplier, "Test Supplier (OrderSamples unit tests)" <> $SessionUUID],
-						Object[Inventory,Product,"Test Inventory for OrderSamples unit tests "<>$SessionUUID]
+			Object[Inventory,Product,"Test Inventory for OrderSamples unit tests "<>$SessionUUID],
+			Object[Protocol,HPLC,"Protocol with site different than $Site"<>$SessionUUID],
+			Object[Container, Site, "Imaginary Site"<>$SessionUUID],
+			Object[Protocol, HPLC, "Test HPLC protocol for OrderSamples DependentProtocol"<>$SessionUUID]
         };
         existingObjects = PickList[testObjects, DatabaseMemberQ[testObjects]];
         If[
@@ -17015,7 +17464,35 @@ DefineTests[OrderSamples,
         ];
 
         (* generate IDs for the test objects *)
-        {supplier, sampleID, sampleID2, productID, productID2, modelContainerID} = CreateID[{Object[Company, Supplier], Model[Sample], Model[Sample], Object[Product], Object[Product], Model[Container, Vessel]}];
+        {
+          supplier,
+          sampleModelID,
+          sampleModelID2,
+          productID,
+          productID2,
+          productID3,
+          productID4,
+          productID5,
+          productID6,
+          modelContainerID,
+          protocolID,
+          imagSiteID,
+          testprotocolID
+        } = CreateID[{
+          Object[Company, Supplier],
+          Model[Sample],
+          Model[Sample],
+          Object[Product],
+          Object[Product],
+          Object[Product],
+          Object[Product],
+          Object[Product],
+          Object[Product],
+          Model[Container, Vessel],
+          Object[Protocol, HPLC],
+          Object[Container, Site],
+          Object[Protocol, HPLC]
+        }];
 
         (* generate upload packets *)
         supplier = <|
@@ -17024,8 +17501,28 @@ DefineTests[OrderSamples,
             Name -> "Test Supplier (OrderSamples unit tests)" <> $SessionUUID
         |>;
 
-        sample = <|
-            Object -> sampleID, DeveloperObject -> True, Name -> "Water model for OrderSamples test" <> $SessionUUID,
+		protocol = <|
+			Object -> protocolID,
+			DeveloperObject -> True,
+			Name -> "Protocol with site different than $Site"<>$SessionUUID,
+			Site-> Link[imagSiteID]
+		|>;
+
+		testprotocol = <|
+			Object -> testprotocolID,
+			DeveloperObject -> True,
+			Name -> "Test HPLC protocol for OrderSamples DependentProtocol"<>$SessionUUID,
+			Site -> Link[$Site]
+		|>;
+
+		imagSite = <|
+			Object -> imagSiteID,
+			DeveloperObject -> True,
+			Name -> "Imaginary Site" <> $SessionUUID
+		|>;
+
+        sampleModel = <|
+            Object -> sampleModelID, DeveloperObject -> True, Name -> "Water model for OrderSamples test" <> $SessionUUID,
             Replace[Composition] -> {{100 MassPercent, Link[Model[Molecule, "Water"]]}}, UsedAsSolvent -> False, Replace[Authors] -> {Link[$PersonID]},
             State -> Liquid, Density -> 1 Gram / Milliliter, Tablet -> False,
             Expires -> True, UnsealedShelfLife -> 6 Month,
@@ -17035,20 +17532,20 @@ DefineTests[OrderSamples,
         product = <|
             Object -> productID, DeveloperObject -> True, Name -> "Test water product for OrderSamples test" <> $SessionUUID,
             Replace[Synonyms] -> {"Test water product for OrderSamples test" <> $SessionUUID}, Author -> Link[$PersonID],
-            ProductModel -> Link[sampleID, Products], Supplier -> Link[supplier, Products], Packaging -> Single, SampleType -> Bottle, NumberOfItems -> 1,
+            ProductModel -> Link[sampleModelID, Products], Supplier -> Link[supplier, Products], Packaging -> Single, SampleType -> Bottle, NumberOfItems -> 1,
             DefaultContainerModel -> Link[Model[Container, Vessel, "10mL small plastic bottle"], ProductsContained], Amount -> 5 Gram, Stocked -> True, EstimatedLeadTime -> 8 Day,
             Price -> 20.5 USD, UsageFrequency -> Low, Density -> 1 Gram / Milliliter,
             CatalogNumber -> "TestWaterProduct", CatalogDescription -> "5 Gram of the test water in a small plastic bottle"
         |>;
 
-        {modelContainer, sample2, product2} = {
+        {modelContainer, sampleModel2, product2, product3, product4, product5, product6} = {
             <|
                 Object -> modelContainerID,
                 DeveloperObject -> True,
                 Name -> "Non selfstanding container for OrderSamples test" <> $SessionUUID
             |>,
             <|
-                Object -> sampleID2, DeveloperObject -> True, Name -> "Water model for OrderSamples test 2" <> $SessionUUID,
+                Object -> sampleModelID2, DeveloperObject -> True, Name -> "Water model for OrderSamples test 2" <> $SessionUUID,
                 Replace[Composition] -> {{100 MassPercent, Link[Model[Molecule, "Water"]]}}, UsedAsSolvent -> False, Replace[Authors] -> {Link[$PersonID]},
                 State -> Liquid, Density -> 1 Gram / Milliliter, Tablet -> False, Expires -> True, UnsealedShelfLife -> 6 Month,
                 DefaultStorageCondition -> Link[Model[StorageCondition, "Ambient Storage"]], MSDSRequired -> False, Flammable -> True, DrainDisposal -> True, Replace[IncompatibleMaterials] -> {None}
@@ -17056,14 +17553,45 @@ DefineTests[OrderSamples,
             <|
                 Object -> productID2, DeveloperObject -> True, Name -> "Test non SelfStanding product for OrderSamples test" <> $SessionUUID,
                 Replace[Synonyms] -> {"Test non SelfStanding product for OrderSamples test" <> $SessionUUID}, Author -> Link[$PersonID],
-                ProductModel -> Link[sampleID2, Products], Supplier -> Link[supplier, Products], Packaging -> Single, SampleType -> Bottle,
+                ProductModel -> Link[sampleModelID2, Products], Supplier -> Link[supplier, Products], Packaging -> Single, SampleType -> Bottle,
                 NumberOfItems -> 1, DefaultContainerModel -> Link[modelContainerID, ProductsContained], Amount -> 5 Gram, Stocked -> True,
                 EstimatedLeadTime -> 8 Day, Price -> 20.5 USD, UsageFrequency -> Low, Density -> 1 Gram / Milliliter, CatalogNumber -> "TestWaterProduct", CatalogDescription -> "5 Gram of the test water in a non self standing bottle"
+            |>,
+            <|
+              Object -> productID3, DeveloperObject -> True, Name -> "Test sterile product without AsepticShippingContainerType for OrderSamples" <> $SessionUUID,
+              Replace[Synonyms] -> {"Test sterile product without AsepticShippingContainerType for OrderSamples" <> $SessionUUID}, Author -> Link[$PersonID],
+              ProductModel -> Link[sampleModelID2, Products], Supplier -> Link[supplier, Products], Packaging -> Single, SampleType -> Bottle,
+              NumberOfItems -> 1, DefaultContainerModel -> Link[modelContainerID, ProductsContained], Amount -> 5 Gram, Stocked -> True,
+              EstimatedLeadTime -> 8 Day, Price -> 20.5 USD, UsageFrequency -> Low, Density -> 1 Gram / Milliliter, CatalogNumber -> "TestWaterProduct", CatalogDescription -> "5 Gram of the test water in a non self standing bottle",
+			  Sterile -> True, SealedContainer -> True
+            |>,
+            <|
+              Object -> productID4, DeveloperObject -> True, Name -> "Test sterile product with AsepticShippingContainerType -> NonResealableBulk for OrderSamples" <> $SessionUUID,
+              Replace[Synonyms] -> {"Test sterile product with AsepticShippingContainerType -> NonResealableBulk for OrderSamples" <> $SessionUUID}, Author -> Link[$PersonID],
+              ProductModel -> Link[sampleModelID2, Products], Supplier -> Link[supplier, Products], Packaging -> Single, SampleType -> Bottle,
+              NumberOfItems -> 1, DefaultContainerModel -> Link[modelContainerID, ProductsContained], Amount -> 5 Gram, Stocked -> True,
+              EstimatedLeadTime -> 8 Day, Price -> 20.5 USD, UsageFrequency -> Low, Density -> 1 Gram / Milliliter, CatalogNumber -> "TestWaterProduct", CatalogDescription -> "5 Gram of the test water in a non self standing bottle",
+			  Sterile -> True, AsepticShippingContainerType -> NonResealableBulk, AsepticRebaggingContainerType -> Bulk
+            |>,
+            <|
+              Object -> productID5, DeveloperObject -> True, Name -> "Test sterile product with AsepticShippingContainerType -> Individual for OrderSamples" <> $SessionUUID,
+              Replace[Synonyms] -> {"Test sterile product with AsepticShippingContainerType -> Individual for OrderSamples" <> $SessionUUID}, Author -> Link[$PersonID],
+              ProductModel -> Link[sampleModelID2, Products], Supplier -> Link[supplier, Products], Packaging -> Single, SampleType -> Bottle,
+              NumberOfItems -> 1, DefaultContainerModel -> Link[modelContainerID, ProductsContained], Amount -> 5 Gram, Stocked -> True,
+              EstimatedLeadTime -> 8 Day, Price -> 20.5 USD, UsageFrequency -> Low, Density -> 1 Gram / Milliliter, CatalogNumber -> "TestWaterProduct", CatalogDescription -> "5 Gram of the test water in a non self standing bottle",
+			  Sterile -> True, AsepticShippingContainerType -> Individual
+            |>,
+            <|
+              Object -> productID6, DeveloperObject -> True, Name -> "Test non-sterile product for OrderSamples" <> $SessionUUID,
+              Replace[Synonyms] -> {"Test non-sterile product for OrderSamples" <> $SessionUUID}, Author -> Link[$PersonID],
+              ProductModel -> Link[sampleModelID2, Products], Supplier -> Link[supplier, Products], Packaging -> Single, SampleType -> Bottle,
+              NumberOfItems -> 1, DefaultContainerModel -> Link[modelContainerID, ProductsContained], Amount -> 5 Gram, Stocked -> True,
+              EstimatedLeadTime -> 8 Day, Price -> 20.5 USD, UsageFrequency -> Low, Density -> 1 Gram / Milliliter, CatalogNumber -> "TestWaterProduct", CatalogDescription -> "5 Gram of the test water in a non self standing bottle", Sterile -> False
             |>
         };
 
         (* gather all upload objects and upload them *)
-        allUploads = {supplier, modelContainer, sample, sample2, product, product2};
+        allUploads = {supplier, modelContainer, sampleModel, sampleModel2, product, product2, protocol, imagSite, testprotocol, product3, product4, product5, product6};
         Upload[allUploads];
 				
 				Upload[
@@ -17080,10 +17608,18 @@ DefineTests[OrderSamples,
         {
             Object[Product, "Test water product for OrderSamples test" <> $SessionUUID],
             Object[Product, "Test non SelfStanding product for OrderSamples test" <> $SessionUUID],
+            Object[Product, "Test sterile product without AsepticShippingContainerType for OrderSamples"<>$SessionUUID],
+            Object[Product, "Test sterile product with AsepticShippingContainerType -> NonResealableBulk for OrderSamples"<>$SessionUUID],
+            Object[Product, "Test sterile product with AsepticShippingContainerType -> Individual for OrderSamples"<>$SessionUUID],
+            Object[Product, "Test non-sterile product for OrderSamples"<>$SessionUUID],
             Model[Sample, "Water model for OrderSamples test" <> $SessionUUID],
             Model[Sample, "Water model for OrderSamples test 2" <> $SessionUUID],
             Model[Container, Vessel, "Non selfstanding container for OrderSamples test" <> $SessionUUID],
-            Object[Company, Supplier, "Test Supplier (OrderSamples unit tests)" <> $SessionUUID]
+            Object[Company, Supplier, "Test Supplier (OrderSamples unit tests)" <> $SessionUUID],
+            Object[Inventory,Product,"Test Inventory for OrderSamples unit tests "<>$SessionUUID],
+			Object[Protocol,HPLC,"Protocol with site different than $Site"<>$SessionUUID],
+			Object[Container, Site, "Imaginary Site"<>$SessionUUID],
+			Object[Protocol,HPLC,"Test HPLC protocol for OrderSamples DependentProtocol"<>$SessionUUID]
         },
         Force -> True,
         Verbose -> False

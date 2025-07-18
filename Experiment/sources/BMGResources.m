@@ -152,7 +152,7 @@ DefineOptionSet[
 			OptionName -> SamplingDistance,
 			Default -> Automatic,
 			AllowNull -> True,
-			Widget -> Widget[Type -> Quantity, Pattern :> RangeP[1 Millimeter, 6 Millimeter], Units -> Micrometer],
+			Widget -> Widget[Type -> Quantity, Pattern :> RangeP[1 Millimeter, 6 Millimeter], Units -> Millimeter],
 			Description -> "Indicates the length of the region over which sampling measurements are taken.",
 			ResolutionDescription -> "Automatically resolves to Null if SamplingPattern is set to Center otherwise resolves to 80% of the diameter of the well.",
 			Category -> "Sampling"

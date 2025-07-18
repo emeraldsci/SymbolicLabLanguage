@@ -502,7 +502,7 @@ DefineUsage[Coupling,
 			{"Coupling[couplingRules]","primitive","generates an solid phase synthesis 'primitive' that describes the reagents and conditions to be used for monomer activation via formation of a reactive esters and coupling of that monomer to the strand being synthesized."}
 		},
 		MoreInformation->{
-			"When using the Coupling primitive, the activating solution can be specified as a single Activator solution, or two seperate Preactivator and Base solutions.",
+			"When using the Coupling primitive, the activating solution can be specified as a single Activator solution, or two separate Preactivator and Base solutions.",
 			"The following keys can be used as inputs to the primitive:",
 			Grid[
 				{

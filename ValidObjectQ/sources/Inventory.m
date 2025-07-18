@@ -106,19 +106,25 @@ validInventoryProductQTests[packet:PacketP[Object[Inventory, Product]]]:={
 		True
 	],
 
-	Test["If StockingMethod -> TotalAmount, Amount field of the product to stock must match the units of ReorderThreshold:",
+	Test["If StockingMethod -> TotalAmount, Amount field of the product to stock must match the units of ReorderThreshold unless the ReorderThreshold indicates individual items are being purchased:",
 		If[MatchQ[Lookup[packet, StockingMethod], TotalAmount],
-			Or[
-				Quiet[CompatibleUnitQ[Download[FirstOrDefault[Lookup[packet, StockedInventory]], Amount], Lookup[packet, ReorderThreshold]]],
-				Quiet[CompatibleUnitQ[Download[FirstOrDefault[Lookup[packet, StockedInventory]], CountPerSample], Lookup[packet, ReorderThreshold]]],
-				With[{kitComponents = Download[FirstOrDefault[Lookup[packet, StockedInventory]], KitComponents]},
-					Quiet[CompatibleUnitQ[
-						Lookup[
-							SelectFirst[kitComponents, MatchQ[Lookup[#, ProductModel], ObjectP[Lookup[packet, ModelStocked]]]&],
-							Amount
-						],
-						Lookup[packet, ReorderThreshold]
-					]]
+			Module[{products,product,reorderThreshold,modelStocked,amount,countPerSample,kitComponents},
+
+				{products,reorderThreshold,modelStocked} = Lookup[packet, {StockedInventory,ReorderThreshold,ModelStocked}];
+				product = FirstOrDefault[products];
+
+				{amount,countPerSample,kitComponents} = Download[product, {Amount, CountPerSample,KitComponents}];
+
+				Or[
+					NullQ[amount] && MatchQ[reorderThreshold,UnitsP[Unit]],
+					Quiet[CompatibleUnitQ[amount, reorderThreshold]],
+					Quiet[CompatibleUnitQ[countPerSample, reorderThreshold]],
+					With[{kitElement = SelectFirst[kitComponents, MatchQ[Lookup[#, ProductModel], ObjectP[modelStocked]]&]},
+						Or[
+							Quiet[CompatibleUnitQ[Lookup[kitElement, Amount], reorderThreshold]],
+							NullQ[Lookup[kitElement, Amount]] && MatchQ[reorderThreshold,UnitsP[Unit]]
+						]
+					]
 				]
 			],
 			True

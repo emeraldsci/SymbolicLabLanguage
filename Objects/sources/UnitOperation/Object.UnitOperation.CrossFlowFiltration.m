@@ -202,6 +202,17 @@ DefineObjectType[
 				Description->"The amount of permeate solution to be kept after the experiment.",
 				Category->"Sample Recovery"
 			},
+			TemporaryPermeateContainerOut -> {
+				Format -> Multiple,
+				Class -> Link,
+				Pattern :> _Link,
+				Relation -> Alternatives[
+					Object[Container],
+					Model[Container]
+				],
+				Description -> "The container to immediately collect the permeate during the experiment. Contents are then transferred to PermeateContainerOut.",
+				Category -> "Sample Recovery"
+			},
 			PermeateContainerOut -> {
 				Format->Multiple,
 				Class->Link,
@@ -498,7 +509,7 @@ DefineObjectType[
 			SampleTypes -> {
 				Format -> Multiple,
 				Class -> Expression,
-				Pattern :> (FilterPrime | Sample | FilterFlush | FilterFlushRinse | FilterPrimeRinse),
+				Pattern :> CrossFlowFiltrationSampleTypeP,
 				Description -> "The type of sample run for this unit operation.",
 				Category -> "General"
 			},
@@ -508,6 +519,14 @@ DefineObjectType[
 				Pattern:>_Link,
 				Relation->Object[Protocol,MeasureVolume],
 				Description->"The MeasureVolume protocol used to measure the Retentate volume after the recipe is done.",
+				Category->"Sample Recovery"
+			},
+			PermeateMeasureVolumeProtocols->{
+				Format->Multiple,
+				Class->Link,
+				Pattern:>_Link,
+				Relation->Object[Protocol,MeasureVolume],
+				Description->"The MeasureVolume protocol used to measure the Permeate volume after the recipe is done.",
 				Category->"Sample Recovery"
 			},
 			TheoreticalPermeateVolumes->{

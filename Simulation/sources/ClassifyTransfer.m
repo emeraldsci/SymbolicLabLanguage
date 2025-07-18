@@ -75,6 +75,7 @@ ClassifyTransfer[
 (* the selective overload that parses out transfer objects and redirects them to the main overload *)
 (* once the classified transfers are returned, the original list order is re-constructed *)
 (* NOTE: this overload must be behind the primary one for MM 12.0.1 since the downvalues do not get re-ordered correctly *)
+(* NOTE: the current version of the TADM classifier only works with the AspirationPressure field which exists only in Transfer https://github.com/emeraldsci/ecl-python/tree/develop/tadm *)
 ClassifyTransfer[objects: {ObjectP[Object[UnitOperation]]..}, ops: OptionsPattern[]] := Module[
   {transferPositions, transferObjects, classifiedTransfers},
   (* find the positions of the transfer unit operations in the list *)

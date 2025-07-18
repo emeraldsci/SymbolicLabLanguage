@@ -18,6 +18,10 @@ DefineTests[PlotDifferentialScanningCalorimetry,
 			PlotDifferentialScanningCalorimetry[Download[Object[Data, DifferentialScanningCalorimetry, "id:M8n3rx0w1O4M"], MolarHeatingCurves]],
 			_?ValidGraphicsQ
 		],
+		Example[{Basic, "Plot DifferentialScanningCalorimetry data linked to a protocol object:"},
+			PlotDifferentialScanningCalorimetry[Object[Data, DifferentialScanningCalorimetry, "id:M8n3rx0w1O4M"][Protocol]],
+			SlideView[{ValidGraphicsP[] ..}]
+		],
 		Example[{Options, PrimaryData, "Use the PrimaryData option to select what field to plot:"},
 			PlotDifferentialScanningCalorimetry[Object[Data, DifferentialScanningCalorimetry, "id:M8n3rx0w1O4M"], PrimaryData -> MolarHeatingCurves],
 			_?ValidGraphicsQ

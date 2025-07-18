@@ -70,18 +70,7 @@ DefineTests[PlotCrossFlowFiltration,
 		Example[
 			{Additional,"Plot the results of an ExperimentCrossFlowFiltration using a protocol with multiple data as the input for uPulse:"},
 			PlotCrossFlowFiltration[Object[Protocol,CrossFlowFiltration,"Test uPulse Protocol Object For PlotCFF " <> $SessionUUID]],
-			{
-				TabView[
-					{
-						"ConcentrationDiafiltrationConcentration"->TabView[#->HoldPattern[Column[{_,_?ValidGraphicsQ},__]]&/@({"Weight","Pressure"})]
-					}
-				],
-				TabView[
-					{
-						"ConcentrationDiafiltrationConcentration"->TabView[#->HoldPattern[Column[{_,_?ValidGraphicsQ},__]]&/@({"Weight","Pressure"})]
-					}
-				]
-			}
+			_SlideView
 		],
 		Test[
 			"Plot the results of an ExperimentCrossFlowFiltration with missing data fields:",
@@ -126,18 +115,7 @@ DefineTests[PlotCrossFlowFiltration,
 					]
 				]
 			],
-			{
-				TabView[
-					{
-						"ConcentrationDiafiltrationConcentration"->TabView[#->HoldPattern[Column[{_,_?ValidGraphicsQ},__]]&/@({"Weight","Pressure"})]
-					}
-				],
-				TabView[
-					{
-						"ConcentrationDiafiltrationConcentration"->TabView[#->HoldPattern[Column[{_,_?ValidGraphicsQ},__]]&/@({"Weight","Pressure"})]
-					}
-				]
-			}
+			_SlideView
 		],
 		Test[
 			"Previews generate slides:",

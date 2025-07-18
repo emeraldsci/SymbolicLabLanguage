@@ -12,8 +12,8 @@ DefineUsage[PlotWestern,
 {
 	BasicDefinitions -> {
 		{
-			Definition->{"PlotWestern[western]", "spectralPlot"},
-			Description->"plots the 'western' MassSpectrum as a list line plot.",
+			Definition->{"PlotWestern[data]", "spectralPlot"},
+			Description->"plots the Western MassSpectrum 'data' as a list line plot.",
 			Inputs:>{
 				{
 					InputName->"western",
@@ -29,6 +29,26 @@ DefineUsage[PlotWestern,
 					OutputName->"spectralPlot",
 					Description->"A graphical representation of the data as a list line plot.",
 					Pattern:>ValidGraphicsP[]
+				}
+			}
+		},
+		{
+			Definition -> {"PlotWestern[protocol]", "plot"},
+			Description -> "creates a 'plot' of the Western data found in the Data field of 'protocol'.",
+			Inputs :> {
+				{
+					InputName -> "protocol",
+					Description -> "The protocol object containing Western data objects.",
+					Widget -> Alternatives[
+						Widget[Type -> Object, Pattern :> ObjectP[Object[Protocol, Western]]]
+					]
+				}
+			},
+			Outputs :> {
+				{
+					OutputName -> "plot",
+					Description -> "The figure generated from data found in the Western protocol.",
+					Pattern :> ValidGraphicsP[]
 				}
 			}
 		},

@@ -1,3 +1,1942 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:6dedf944e6921c25ba90ebac4375510509d242fee4aecd9e8debe0fa603818de
-size 69246
+(* Content-type: application/vnd.wolfram.mathematica *)
+
+(*** Wolfram Notebook File ***)
+(* http://www.wolfram.com/nb *)
+
+(* CreatedBy='Mathematica 11.1' *)
+
+(*CacheID: 234*)
+(* Internal cache information:
+NotebookFileLineBreakTest
+NotebookFileLineBreakTest
+NotebookDataPosition[       158,          7]
+NotebookDataLength[     69087,       1934]
+NotebookOptionsPosition[     56073,       1740]
+NotebookOutlinePosition[     56434,       1756]
+CellTagsIndexPosition[     56391,       1753]
+WindowFrame->Normal*)
+
+(* Beginning of Notebook Content *)
+Notebook[{
+
+Cell[CellGroupData[{
+Cell["Packager", "Title",ExpressionUUID->"4461e36b-ea03-46dd-ad49-b72117b1176e"],
+
+Cell[CellGroupData[{
+
+Cell["Working With Packages", "Section",ExpressionUUID->"ba9f8f96-621d-437e-9f8a-82e0803a1652"],
+
+Cell[CellGroupData[{
+
+Cell["Context vs Packages", "Subsection",ExpressionUUID->"648227a0-5752-4642-8478-ff297ea02efe"],
+
+Cell[TextData[{
+ "Previously, ",
+ StyleBox["Context",
+  FontSlant->"Italic"],
+ " & ",
+ StyleBox["Package",
+  FontSlant->"Italic"],
+ " were synonymous. Now, however, all functions we create will be in the ",
+ StyleBox["ECL`",
+  FontSlant->"Italic"],
+ " context and the idea of a ",
+ StyleBox["Package",
+  FontSlant->"Italic"],
+ " is a construct we have created to organize our code. So the ",
+ StyleBox["Package",
+  FontSlant->"Italic"],
+ " Options` defines all the functions for dealing with options \
+(DefineOptions, OptionDefaults, etc) and all those symbols have the \
+Mathematica ",
+ StyleBox["Context",
+  FontSlant->"Italic"],
+ " ECL`."
+}], "Text",ExpressionUUID->"0e808468-b026-468d-940d-1eb8e17b8cf3"]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell["Find the packages which defines a function", "Subsection",ExpressionUUID->"d77208d5-5b59-4482-ad54-7b08c0837c7e"],
+
+Cell[TextData[{
+ "When looking to update a function you may first need to determine which \
+package it is defined in. With ",
+ StyleBox["SLL`",
+  FontSlant->"Italic"],
+ " loaded, use the function ",
+ StyleBox["FunctionPackage",
+  FontSlant->"Italic"],
+ " to determine which package a function was defined in.\nIf the symbol has \
+no OwnValues or DownValues, this will return the first package to list the \
+symbol in its manifest. You can then use the function ",
+ StyleBox["PackageDirectory",
+  FontSlant->"Italic"],
+ " to find the folder that the package lives in. The sources files for this \
+package will then be in the sub-folder ",
+ StyleBox["sources",
+  FontSlant->"Italic"],
+ "."
+}], "Text",ExpressionUUID->"29dfd80c-0879-434a-8a22-2407b274a024"],
+
+Cell[BoxData[{
+ RowBox[{
+  RowBox[{"In", "[", "1", "]"}], " ", ":=", " ", 
+  RowBox[{"Get", "[", "\"\<SLL`\>\"", "]"}]}], "\n", 
+ RowBox[{
+  RowBox[{
+   RowBox[{"Out", "[", "1", "]"}], " ", "=", " ", "\"\<SLL`\>\""}], 
+  "\n"}], "\n", 
+ RowBox[{
+  RowBox[{"In", "[", "2", "]"}], " ", ":=", " ", 
+  RowBox[{"FunctionPackage", "[", "ExperimentHPLC", "]"}]}], "\n", 
+ RowBox[{
+  RowBox[{
+   RowBox[{"Out", "[", "2", "]"}], " ", "=", " ", 
+   "\"\<Emerald`Experiment`\>\""}], "\n"}], "\n", 
+ RowBox[{
+  RowBox[{"In", "[", "3", "]"}], " ", ":=", " ", 
+  RowBox[{
+  "PackageDirectory", "[", "\"\<Emerald`Experiment`\>\"", "]"}]}], "\n", 
+ RowBox[{
+  RowBox[{"Out", "[", "3", "]"}], " ", "=", " ", 
+  "\"\</Users/sean/Repositories/SLL/Experiment\>\""}]}], "Code",
+ CellChangeTimes->{{3.726582600142951*^9, 
+  3.726582601395391*^9}},ExpressionUUID->"ff1fefa7-23ee-4ce0-91a0-\
+0d11058d99f0"],
+
+Cell["\<\
+The folder structure of the SLL repository looks something like this:\
+\>", "Text",ExpressionUUID->"429b34cf-3514-4436-be63-6c384b6834ab"],
+
+Cell["\<\
+| - SLL
+\t| - docs
+\t| - resources
+\t| - sources
+\t\t| - SLL.m
+\t\t| - Inventory.m
+\t\t...
+\t| - tests
+\t| - manifest.json
+...\
+\>", "Code",
+ CellChangeTimes->{{3.726582611604671*^9, 
+  3.7265826123962793`*^9}},ExpressionUUID->"c7738d88-20ba-443f-a2f2-\
+81fa3049c71c"],
+
+Cell[BoxData[{
+ RowBox[{
+  RowBox[{"In", "[", "1", "]"}], " ", ":=", " ", 
+  RowBox[{"OpenSourceCode", "[", "Download", "]"}]}], "\n", 
+ RowBox[{
+  RowBox[{"Out", "[", "1", "]"}], " ", "=", " ", 
+  RowBox[{"NotebookObject", "[", "1", "]"}]}]}], "Code",
+ CellChangeTimes->{{3.72658260756526*^9, 
+  3.726582617416215*^9}},ExpressionUUID->"345c709c-fc5d-449a-8635-\
+a27f3a2e1677"],
+
+Cell[TextData[{
+ "The function ",
+ StyleBox["Download",
+  FontSlant->"Italic"],
+ " is defined in `/Users/sean/Repositories/SLL/Constellation/sources/SLL.m` \
+which is one of the source files of the ",
+ StyleBox["Constellation`",
+  FontSlant->"Italic"],
+ " package. To open this in Mathematica directly, you can use the function ",
+ StyleBox["OpenSourceCode",
+  FontSlant->"Italic"],
+ " to open the notebook for a function definition."
+}], "Text",
+ CellChangeTimes->{{3.739559151575823*^9, 
+  3.73955916458232*^9}},ExpressionUUID->"31fbc766-383f-46cf-9452-\
+45a45b6efd26"],
+
+Cell["", "Text",ExpressionUUID->"726697d3-399f-4f06-a3bb-fad59e0aeb22"]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell["Find the packages a symbol belongs to", "Subsection",ExpressionUUID->"ce313f4a-b862-47ef-b610-1a17176b51dc"],
+
+Cell[TextData[{
+ "While any given symbol will only ever have ",
+ StyleBox["one",
+  FontSlant->"Italic"],
+ " \"FunctionPackage\" (the package which defines its DownValues/OwnValues), \
+it may be listed in ",
+ StyleBox["multiple",
+  FontSlant->"Italic"],
+ " packages. For example, some fields in objects (such as ",
+ StyleBox["BindingEnthalpy",
+  FontSlant->"Italic"],
+ ") are also functions:"
+}], "Text",ExpressionUUID->"335f06b4-72d7-4616-998f-f2a56d2dfc9f"],
+
+Cell[BoxData[{
+ RowBox[{
+  RowBox[{"In", "[", "1", "]"}], " ", ":=", " ", 
+  RowBox[{"FunctionPackage", "[", "BindingEnthalpy", "]"}]}], "\n", 
+ RowBox[{
+  RowBox[{
+   RowBox[{"Out", "[", "1", "]"}], " ", "=", " ", 
+   "\"\<Emerald`Simulation`\>\""}], "\n"}], "\n", 
+ RowBox[{
+  RowBox[{"In", "[", "2", "]"}], " ", ":=", " ", 
+  RowBox[{"SymbolPackages", "[", "BindingEnthalpy", "]"}]}], "\n", 
+ RowBox[{
+  RowBox[{"Out", "[", "2", "]"}], " ", "=", " ", 
+  RowBox[{"{", 
+   RowBox[{"\"\<Emerald`Simulation`\>\"", ",", " ", "\"\<Objects`\>\""}], 
+   "}"}]}]}], "Code",
+ CellChangeTimes->{{3.726582625983321*^9, 
+  3.726582628977552*^9}},ExpressionUUID->"f2f19d3b-8d56-4193-ab1f-\
+d19ba63f9217"],
+
+Cell["", "Text",ExpressionUUID->"70672d0e-7a2b-4758-9e9b-cf1a756cfcb5"]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell["Add a function to a package", "Subsection",ExpressionUUID->"ca569500-bc96-4869-9768-68b060ee0691"],
+
+Cell[CellGroupData[{
+
+Cell["Define the public symbol", "Subsubsection",ExpressionUUID->"93dae5fb-7a13-47af-8389-061fc953e5a8"],
+
+Cell[TextData[{
+ "In the Packager framework, we must be explicit about the symbols that are \
+exported publicly from a package. These symbols are listed in the ",
+ StyleBox["manifest",
+  FontSlant->"Italic"],
+ " file for the package location in the <package directory>/manifest.json. \
+For example, the manifest for the ",
+ StyleBox["Emerald`Either`",
+  FontSlant->"Italic"],
+ " package looks like so:"
+}], "Text",ExpressionUUID->"9a1f02d6-4716-4945-a568-3dc49f11284c"],
+
+Cell["\<\
+{
+    \"package\": \"Emerald`Either`\",
+    \"context\": \"ECL`\",
+    \"description\": \"Either\",
+    \"dependencies\": [
+        \"Options`\",
+        \"Usage`\"
+    ],
+    \"sources\": [
+        \"Either.m\"
+    ],
+    \"symbols\": [
+        \"Either\",
+        \"EitherError\",
+        \"EitherErrorQ\",
+        \"EitherValue\",
+        \"EitherValueQ\",
+        \"ErrorComposition\",
+        \"ErrorFold\",
+        \"ErrorIfFalse\",
+        \"ErrorIfMessages\",
+        \"PassError\",
+        \"ToMessage\",
+        \"ToValue\"
+    ]
+}\
+\>", "Code",
+ CellChangeTimes->{{3.726582636728095*^9, 3.726582638054636*^9}, 
+   3.733066027829534*^9},ExpressionUUID->"62bd667f-5a5e-424b-91b3-\
+e93c1761ca6e"],
+
+Cell[TextData[{
+ "All the publicly exported symbols for this package are listed as strings in \
+the ",
+ StyleBox["\"symbols\"",
+  FontSlant->"Italic"],
+ " list. If we want to add a new ",
+ StyleBox["public",
+  FontSlant->"Italic"],
+ " function, we must add it's name to this list."
+}], "Text",ExpressionUUID->"8b28e379-5a4b-4547-b010-30969b76959f"]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell["Add the function definition", "Subsubsection",ExpressionUUID->"8413c903-d024-4cd0-8965-444c98ab530a"],
+
+Cell[TextData[{
+ "The implementation for all functions in a package are in the .m files in \
+the <package directory>/sources folder. These files must be listed in the ",
+ StyleBox["\"sources\"",
+  FontSlant->"Italic"],
+ " list of the package manifest. These can be nested within as many folders \
+",
+ StyleBox["inside",
+  FontSlant->"Italic"],
+ " the sources directory as desired and the path listed in the ",
+ StyleBox["\"sources\"",
+  FontSlant->"Italic"],
+ " list assumes <package directory>/sources folder as the root. For example, \
+if I created a new source file at SLL/Either/sources/MyNewFolder/MyNewFile.m \
+then the sources list in the manifest would look like the following:"
+}], "Text",ExpressionUUID->"c6fc308f-6960-4f79-8795-fee980569904"],
+
+Cell["\<\
+{
+    \"package\": \"Emerald`Either`\",
+    \"context\": \"ECL`\",
+    \"description\": \"Either\",
+    \"dependencies\": [
+        \"Options`\",
+        \"Usage`\"
+    ],
+    \"sources\": [
+        \"Either.m\",
+        \"MyNewFolder/MyNewFile.m\"
+    ],
+    \"symbols\": [
+        \"Either\",
+        \"EitherError\",
+        \"EitherErrorQ\",
+        \"EitherValue\",
+        \"EitherValueQ\",
+        \"ErrorComposition\",
+        \"ErrorFold\",
+        \"ErrorIfFalse\",
+        \"ErrorIfMessages\",
+        \"PassError\",
+        \"ToMessage\",
+        \"ToValue\"
+    ]
+}\
+\>", "Code",
+ CellChangeTimes->{{3.72658263989894*^9, 3.7265826411035223`*^9}, 
+   3.733066031174099*^9},ExpressionUUID->"06dcbc05-f00f-4c2e-8758-\
+fe3ae97b4f6c"],
+
+Cell[TextData[{
+ "This file will now be loaded when the ",
+ StyleBox["Emerald`Either`",
+  FontSlant->"Italic"],
+ " package is loaded. Add your code to the .m files as normal except do ",
+ StyleBox["not",
+  FontSlant->"Italic"],
+ " use any of `BeginPackage`, `EndPackage`, `Begin`, or `End` in the source \
+files. The framework takes care of loading all the source files in the order \
+specified in the ",
+ StyleBox["\"sources\"",
+  FontSlant->"Italic"],
+ " list inside a private context for the package."
+}], "Text",ExpressionUUID->"a6058723-d447-4afa-9b61-5929ed954373"]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell["Add Documentation", "Subsubsection",ExpressionUUID->"0f161add-6f90-4e61-92cd-aeadd39f632c"],
+
+Cell[TextData[{
+ "Usage rules for public functions no longer exists in a \"Help Files\" \
+section at the top of the source files. Now, all usage rules should be \
+defined in a .m file in the ",
+ StyleBox["docs",
+  FontSlant->"Italic"],
+ " directory which mirrors the name of the source file the function is \
+defined in. For example, the function ",
+ StyleBox["EitherError",
+  FontSlant->"Italic"],
+ " defined in the source file ",
+ StyleBox["SLL/Either/sources/Either.m",
+  FontSlant->"Italic"],
+ " should have a corresponding documentation file at ",
+ StyleBox["SLL/Either/docs/reference\\",
+  FontSlant->"Italic"],
+ "pages/Either.m",
+ StyleBox[". Inside this file the usage rules for the function should be \
+defined as normal using ",
+  FontSlant->"Italic"],
+ "DefineUsage",
+ StyleBox[". These usage rules will be loaded when appropriate by the \
+Packager framework.\n\nOnce the usage rules for a function are defined, you \
+can use the function ",
+  FontSlant->"Italic"],
+ "LoadUsage",
+ StyleBox[" to reload the usage for your package and then call ",
+  FontSlant->"Italic"],
+ "SyncDocumentation_ on your new function to generate the documentation \
+notebook."
+}], "Text",ExpressionUUID->"e744481b-4640-4fed-844c-0301d0c2f7c9"]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell["Add Tests", "Subsubsection",ExpressionUUID->"c4c61c8e-4a2f-400b-9526-2332170efac1"],
+
+Cell[TextData[{
+ "Defining tests is almost the same as before, however, the tests files \
+should be located inside the package directory inside the ",
+ StyleBox["tests",
+  FontSlant->"Italic"],
+ " sub-folder. For example, there is a test file ",
+ StyleBox["SLL/Either/tests/Either.m",
+  FontSlant->"Italic"],
+ " that contains the test files for the functions defined in ",
+ StyleBox["SLL/Either/sources/Either.m",
+  FontSlant->"Italic"],
+ "."
+}], "Text",ExpressionUUID->"31dea0ed-e25d-4d83-9be6-7528da92e5d4"]
+}, Open  ]]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell["Remove a function from a package", "Subsection",ExpressionUUID->"3bed85c9-5067-4d6d-b03c-4e07ddcde402"],
+
+Cell[TextData[{
+ "Removing a ",
+ StyleBox["public function",
+  FontSlant->"Italic"],
+ " from a package involves deleting things from a few different places.\n\n1. \
+Remove the function name from the ",
+ StyleBox["\"symbols\"",
+  FontSlant->"Italic"],
+ " list in the manifest for the package (`package directory>/manifest.json`).\
+\n2. Remove the function implementation from the source files in the \
+`<package directory>/sources` folder.\n3. Remove the tests for the function \
+from the test files in the `<package directory>/tests` folder.\n4. Remove the \
+usage rules for the function from the documentation files in the `<package \
+directory>/docs/reference_pages` folder.\n5. Remove the documentation \
+notebook `<package \
+directory>/Documentation/English/ReferencePages/Symbols/<function name>.nb`"
+}], "Text",ExpressionUUID->"2292e445-81e3-4778-b9a7-b4cc8490e990"]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell["Side-Effects on load", "Subsection",ExpressionUUID->"501c4ed8-71f8-4e29-9e47-43108c4bf5f3"],
+
+Cell[TextData[{
+ "In certain circumstances, you may need to execute some piece of code ",
+ StyleBox["every time a package is loaded",
+  FontSlant->"Italic"],
+ ". This comes up when modifying the state of Mathematica built-in functions \
+(such as MakeBoxes for summary blobs). In the Packager framework, it is \
+necessary to to be explicit about this since automatic generation of MX files \
+means the source files are not re-evaluate once the packages have been built \
+for distribution. This means that any functions in those source files which \
+have side-effects will not be re-evaluated. For example, setting the ",
+ StyleBox["$OutputSizeLimit",
+  FontSlant->"Italic"],
+ " configuration variable:"
+}], "Text",ExpressionUUID->"6e39d9c7-e8d4-49b2-b498-3532c81abc17"],
+
+Cell[BoxData[
+ RowBox[{
+  RowBox[{"$OutputSizeLimit", " ", "=", " ", "2048"}], ";"}]], "Code",
+ CellChangeTimes->{
+  3.726582649562512*^9},ExpressionUUID->"768ff913-cb44-4e74-bee3-\
+e5d0de10ad31"],
+
+Cell[TextData[{
+ "If we want this to guarantee this happens whenever the package is loaded, \
+then we can wrap the expression in the function ",
+ StyleBox["OnLoad",
+  FontSlant->"Italic"],
+ ". To do this, you must first add the ",
+ StyleBox["Packager`",
+  FontSlant->"Italic"],
+ " package to the dependencies list manifest for the package you are working \
+on. Then, in the source file do the following:"
+}], "Text",ExpressionUUID->"8405542a-2f97-4b4e-abca-107677fd5fda"],
+
+Cell[BoxData[
+ RowBox[{
+  RowBox[{"OnLoad", "[", 
+   RowBox[{"$OutputSizeLimit", " ", "=", " ", "2048"}], "]"}], ";"}]], "Code",\
+
+ CellChangeTimes->{{3.726582649562512*^9, 
+  3.726582657267652*^9}},ExpressionUUID->"4ca08f09-7235-4004-9ac2-\
+17cc6b7dc393"],
+
+Cell[TextData[{
+ "Now, whenever ",
+ StyleBox["Emerald`Core`",
+  FontSlant->"Italic"],
+ " is loaded, `$OutputSizeLimit = 2048` will be evaluated. It is important to \
+note that this is not evaluated until ",
+ StyleBox["after",
+  FontSlant->"Italic"],
+ " all the source files are loaded for that package."
+}], "Text",ExpressionUUID->"694fdb3e-5d7c-45d8-9444-58f30887fb39"]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell["Reloading Packages", "Subsection",ExpressionUUID->"be23d87b-685d-4622-bd31-e79431f05d3a"],
+
+Cell[TextData[{
+ "In the past, you may have had some success reloading only a specific \
+context without reloading all of ",
+ StyleBox["SLL`",
+  FontSlant->"Italic"],
+ ". This is convenient for iterating on function definitions, however, you \
+can never be certain you will end up in an correct state given that many \
+packages have side-effects on load. This continues to be true with the \
+Packager framework, however, there exist tools to facilitate this. You can \
+only use ",
+ StyleBox["Get",
+  FontSlant->"Italic"],
+ " to load ",
+ StyleBox["SLL`",
+  FontSlant->"Italic"],
+ ", to load specific packages in the Packager framework, you ",
+ StyleBox["must use LoadPackage",
+  FontSlant->"Italic"],
+ ". In this case, however, it will not work:"
+}], "Text",ExpressionUUID->"5e225f9c-f1f6-4ebc-ae3e-f4b6f7d71ed5"],
+
+Cell[BoxData[{
+ RowBox[{
+  RowBox[{"In", "[", "1", "]"}], " ", ":=", " ", 
+  RowBox[{"<<", "SLL`"}]}], "\n", 
+ RowBox[{
+  RowBox[{
+   RowBox[{"Out", "[", "1", "]"}], " ", "=", " ", "\"\<SLL`\>\""}], 
+  "\n"}], "\n", 
+ RowBox[{
+  RowBox[{"In", "[", "2", "]"}], " ", ":=", " ", 
+  RowBox[{"LoadPackage", "[", "\"\<Emerald`Experiment`\>\"", "]"}]}], "\n", 
+ RowBox[{
+  RowBox[{"Out", "[", "2", "]"}], " ", "=", " ", 
+  "\"\<Emerald`Experiment`\>\""}]}], "Code",
+ CellChangeTimes->{
+  3.7265826658368053`*^9},ExpressionUUID->"820ce70a-cab0-4cec-b3d9-\
+bf9ddeb514fb"],
+
+Cell[TextData[{
+ "This will not work because ",
+ StyleBox["LoadPackage",
+  FontSlant->"Italic"],
+ " does not re-load any source files if the package has already been loaded. \
+To get around this, we can use the function ",
+ StyleBox["ReloadPackage",
+  FontSlant->"Italic"],
+ ". This clears the symbols in the package and reload all the source files. \
+This is done outside of the normal load-order of all the packages so you can \
+still end up in an inconsistent state.\n\n",
+ StyleBox["Use With Caution!",
+  FontWeight->"Bold",
+  FontSlant->"Italic"]
+}], "Text",ExpressionUUID->"b49227b7-1c23-45b1-9a9c-db7b169618c6"],
+
+Cell[BoxData[{
+ RowBox[{
+  RowBox[{"In", "[", "1", "]"}], " ", ":=", " ", 
+  RowBox[{"<<", "SLL`"}]}], "\n", 
+ RowBox[{
+  RowBox[{
+   RowBox[{"Out", "[", "1", "]"}], " ", "=", " ", "\"\<SLL`\>\""}], 
+  "\n"}], "\n", 
+ RowBox[{
+  RowBox[{"In", "[", "2", "]"}], " ", ":=", " ", 
+  RowBox[{
+  "ReloadPackage", "[", "\"\<Emerald`Experiment`\>\"", "]"}]}], "\n", 
+ RowBox[{
+  RowBox[{"Out", "[", "2", "]"}], " ", "=", " ", 
+  "\"\<Emerald`Experiment`\>\""}]}], "Code",
+ CellChangeTimes->{
+  3.726582672885373*^9},ExpressionUUID->"049227da-39b4-44bf-80e9-\
+c0f242a8574c"],
+
+Cell["", "Text",ExpressionUUID->"d1b32038-add9-46b9-a719-de62747c5053"]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell["Loading Specific Packages", "Subsection",ExpressionUUID->"211f7943-d30a-4856-b094-77f845f89454"],
+
+Cell[TextData[{
+ "Since we have built a system on top of the Mathematica context/paclet \
+systems, one cannot simply use Get/Needs to load individual packages (as one \
+can for Mathematica packages). Whenever you need to load a package, use the \
+function ",
+ StyleBox["LoadPackage",
+  FontSlant->"Italic"],
+ " defined in the ",
+ StyleBox["Packager`",
+  FontSlant->"Italic"],
+ " context. The only exceptions to this are for ",
+ StyleBox["SLL`",
+  FontSlant->"Italic"],
+ ", and ",
+ StyleBox["SLL`Dev`",
+  FontSlant->"Italic"],
+ " as these have all been set up to load the necessary packages. If, however, \
+there was a specific package you were working on and you didn't want to load \
+everything (for example if you were working on the options functions in ",
+ StyleBox["Options`",
+  FontSlant->"Italic"],
+ " or something similar), you could just load that package and the framework \
+will take care of loading the necessary dependencies.\n\nIn order for \
+packages to be found, they must first be added to the ",
+ StyleBox["Package Path",
+  FontSlant->"Italic"],
+ ". To do this, use the function ",
+ StyleBox["AppendPackagePath",
+  FontSlant->"Italic"],
+ " which takes a directory as input and finds all packages defined inside \
+that directory and its sub-directories. LoadPackage will look on the ",
+ StyleBox["Package Path",
+  FontSlant->"Italic"],
+ " to try and find a package which defines ",
+ StyleBox["\"Options`\"",
+  FontSlant->"Italic"],
+ " and load all its symbols and dependencies. If it cannot find a package, it \
+will fall back to the Mathematica function ",
+ StyleBox["Needs",
+  FontSlant->"Italic"],
+ " (this way, ",
+ StyleBox["LoadPackage",
+  FontSlant->"Italic"],
+ " can be used for both Mathematica paclets and Packager packages)."
+}], "Text",ExpressionUUID->"df50e5c6-261d-4376-b3a6-4c0317404f8f"],
+
+Cell[BoxData[{
+ RowBox[{
+  RowBox[{"In", "[", "1", "]"}], " ", ":=", " ", 
+  RowBox[{
+  "AppendPackagePath", "[", "\"\</Users/emerald/Repositories/SLL\>\"", 
+   "]"}]}], "\n", 
+ RowBox[{
+  RowBox[{"Out", "[", "1", "]"}], " ", "=", " ", 
+  RowBox[{"{", 
+   RowBox[{
+   "\"\<Usage`\>\"", ",", " ", "\"\<Options`\>\"", ",", " ", 
+    "\"\<Objects`\>\""}], "}"}]}]}], "Code",
+ CellChangeTimes->{
+  3.726582685590342*^9},ExpressionUUID->"c2a870a0-1154-44ff-955a-\
+8d946a6d8e33"],
+
+Cell[TextData[{
+ "Now that the ",
+ StyleBox["\"Options`\"",
+  FontSlant->"Italic"],
+ " package is on the path, it can be loaded using ",
+ StyleBox["LoadPackage",
+  FontSlant->"Italic"],
+ ":"
+}], "Text",ExpressionUUID->"fee5a1a2-08b3-4a17-92b1-6203352e93c8"],
+
+Cell[BoxData[{
+ RowBox[{
+  RowBox[{"In", "[", "2", "]"}], " ", ":=", " ", 
+  RowBox[{"LoadPackage", "[", "\"\<Options`\>\"", "]"}]}], "\n", 
+ RowBox[{
+  RowBox[{"Out", "[", "2", "]"}], " ", "=", " ", 
+  "\"\<Options`\>\""}]}], "Code",
+ CellChangeTimes->{{3.726582700256896*^9, 
+  3.7265827011748323`*^9}},ExpressionUUID->"b781b593-4ea8-4abe-b0fd-\
+7419250c46ee"],
+
+Cell[TextData[{
+ "Now that the ",
+ StyleBox["Options`",
+  FontSlant->"Italic"],
+ " package is loaded, all symbols defined in that package can be used."
+}], "Text",ExpressionUUID->"382584ba-b4ef-4b48-a521-447cca56a909"]
+}, Open  ]]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell["Creating a New Package", "Section",ExpressionUUID->"33581a0a-179a-437a-b29f-8c5f502f3ce0"],
+
+Cell[CellGroupData[{
+
+Cell["Using NewPackage", "Subsection",ExpressionUUID->"e4c44a92-883e-4ab1-b3d3-555c76b6e1e3"],
+
+Cell[TextData[{
+ "To create a new package, one should use the function ",
+ StyleBox["NewPackage",
+  FontSlant->"Italic"],
+ " (defined in the ",
+ StyleBox["Packager`",
+  FontSlant->"Italic"],
+ " context). This will create a skeleton folder structure for your new \
+package with a given name. For example:"
+}], "Text",ExpressionUUID->"5f3de0e4-7828-4771-97c1-6c27ce2849d3"],
+
+Cell[BoxData[{
+ RowBox[{
+  RowBox[{"In", "[", "1", "]"}], " ", ":=", " ", 
+  RowBox[{"NewPackage", "[", 
+   RowBox[{
+   "\"\</Users/emerald/Repositories/SLL\>\"", ",", " ", "\"\<Songs`\>\""}], 
+   "]"}]}], "\n", 
+ RowBox[{
+  RowBox[{"Out", "[", "1", "]"}], " ", "=", " ", 
+  "\"\</Users/emerald/Repositories/SLL/Songs\>\""}]}], "Code",
+ CellChangeTimes->{
+  3.726582716466605*^9},ExpressionUUID->"07141035-c8bb-4387-89dc-\
+939f7842246d"],
+
+Cell[TextData[{
+ "This creates a new folder ",
+ StyleBox["Songs",
+  FontSlant->"Italic"],
+ " in the directory provided as the first argument. Looking at the contents \
+of the ",
+ StyleBox["Songs",
+  FontSlant->"Italic"],
+ " directory, one will see the following:"
+}], "Text",ExpressionUUID->"e05307d7-1284-432e-bac3-7c14bd098dba"],
+
+Cell["\<\
+| - Songs
+\t| - FrontEnd
+\t| - docs
+\t\t| - guides
+\t\t| - reference_pages
+\t\t| - tutorials
+\t| - manifest.json
+\t| - resources
+\t| - sources
+\t| - tests\
+\>", "Code",
+ CellChangeTimes->{{3.7265827198644*^9, 
+  3.726582721255001*^9}},ExpressionUUID->"cde4ba4a-3052-4db4-9bb7-\
+c66e173afb7d"],
+
+Cell["\<\
+The following sections will go into greater detail about each of the \
+activities associated with creating a new package.\
+\>", "Text",ExpressionUUID->"3bff4346-4671-40cf-9f3c-86ff068aabe5"]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell["Edit context & package name", "Subsection",ExpressionUUID->"6f741445-82ae-4b4a-86dc-dc46fd07b261"],
+
+Cell[TextData[{
+ "Open the ",
+ StyleBox["manifest.json",
+  FontSlant->"Italic"],
+ " file (this is where all the metadata for a package is defined). It should \
+look like the following:"
+}], "Text",ExpressionUUID->"4de462ab-c7e6-4a3c-a5b9-a61f301abca9"],
+
+Cell["\<\
+{
+    \"package\": \"Song`\",
+    \"context\": \"ECL`\",
+    \"description\": \"Insert Description Here\",
+    \"dependencies\": [],
+    \"sources\": [],
+    \"symbols\": []
+}\
+\>", "Code",
+ CellChangeTimes->{{3.7265827239438257`*^9, 
+  3.726582726711976*^9}},ExpressionUUID->"f7606988-aa79-4a95-8dfb-\
+ff9c5a1c9f6f"],
+
+Cell[TextData[{
+ "The above is a set of key/value pairs which define everything about the \
+package we are creating. First we need to decide what ",
+ StyleBox["context",
+  FontSlant->"Italic"],
+ " all the symbols in our package should be defined in. Typically, we want \
+all our symbols to exist in the ",
+ StyleBox["ECL`",
+  FontSlant->"Italic"],
+ " context (this is the default). There are only a handful of cases right now \
+where we will use a different context than SLL` for things like the ISE and \
+Neutrino but every function that will be called by a user needs to be in the ",
+ StyleBox["ECL`",
+  FontSlant->"Italic"],
+ " context. For the purposes of this exercise, lets put them in the ",
+ StyleBox["ECL`Songs`",
+  FontSlant->"Italic"],
+ " context. Edit the ",
+ StyleBox["\"context\"",
+  FontSlant->"Italic"],
+ " entry to reflect this:"
+}], "Text",ExpressionUUID->"02d2ff5b-95c8-4956-a9d1-d3f2ed0e7975"],
+
+Cell["\<\
+json
+{
+    \"package\": \"Songs`\",
+    \"context\": \"ECL`Songs`\",
+    \"description\": \"Insert Description Here\",
+    \"dependencies\": [],
+    \"sources\": [],
+    \"symbols\": []
+}
+\
+\>", "Code",ExpressionUUID->"667bfe3b-4dbd-4cff-b228-7b89a7ba146e"],
+
+Cell[TextData[{
+ "Next lets add a description to the package to give consumers of the package \
+an idea what its purpose is. Edit the ",
+ StyleBox["\"description\"",
+  FontSlant->"Italic"],
+ " entry to reflect this:"
+}], "Text",ExpressionUUID->"3bb8b6e2-27d8-4a93-a83c-1d689fe84a88"],
+
+Cell["\<\
+{
+    \"package\": \"Songs`\",
+    \"context\": \"SLL`Songs`\",
+    \"description\": \"This is where we put goofy stuff that should never be \
+seen by users or loaded normally.\",
+    \"dependencies\": [],
+    \"sources\": [],
+    \"symbols\": []
+}\
+\>", "Code",
+ CellChangeTimes->{{3.7265827293122883`*^9, 
+  3.726582731344565*^9}},ExpressionUUID->"67c47bee-9841-49e6-9a9a-\
+ed4aee9e0b05"],
+
+Cell["\<\
+We now have a functioning package that effectively loads nothing! Lets move \
+on and add some functions to our package.\
+\>", "Text",ExpressionUUID->"dc382e2d-4665-4ca8-bb92-3d1a6a109792"]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell["Defining public symbols", "Subsection",ExpressionUUID->"a10493fd-2239-404e-b005-451b39e34f53"],
+
+Cell[TextData[{
+ "We're going to add 2 functions to our package: ",
+ StyleBox["SeemsReasonableQ",
+  FontSlant->"Italic"],
+ " & ",
+ StyleBox["PumpUp",
+  FontSlant->"Italic"],
+ ". To do this, we must define these two symbols as public symbols for our \
+package. Open up the ",
+ StyleBox["manifest.json",
+  FontSlant->"Italic"],
+ " and edit the ",
+ StyleBox["\"symbols\"",
+  FontSlant->"Italic"],
+ " entry as follows to add these two functions as public symbols:"
+}], "Text",ExpressionUUID->"679ea8cd-f8d2-4837-a1bf-ef6a8c99a495"],
+
+Cell["\<\
+{
+    \"package\": \"Songs`\",
+    \"context\": \"SLL`Songs`\",
+    \"description\": \"This is where we put goofy stuff that should never be \
+seen by users or loaded normally.\",
+    \"dependencies\": [],
+    \"sources\": [],
+    \"symbols\": [
+\t\"PumpUp\",
+\t\"SeemsReasonableQ\"
+    ]
+}\
+\>", "Code",
+ CellChangeTimes->{{3.7265827327764673`*^9, 3.726582733840804*^9}, {
+  3.72658280406369*^9, 
+  3.7265828075682077`*^9}},ExpressionUUID->"3a40d4ab-516a-4087-b01c-\
+ceabb617c0d5"],
+
+Cell[TextData[{
+ "If you were now to load this package, you would see these two symbols each \
+with the context ",
+ StyleBox["ECL`Songs`",
+  FontSlant->"Italic"],
+ ".\n\nStarting from a clean launch of Mathematica, load the ",
+ StyleBox["Packager`",
+  FontSlant->"Italic"],
+ " framework:"
+}], "Text",ExpressionUUID->"83f0c975-537f-4fa2-9296-160224f8e2e7"],
+
+Cell[BoxData[{
+ RowBox[{
+  RowBox[{"In", "[", "1", "]"}], " ", ":=", " ", 
+  RowBox[{"<<", "SLL`Packager`"}]}], "\n", 
+ RowBox[{
+  RowBox[{"Out", "[", "1", "]"}], " ", "=", " ", 
+  "\"\<SLL`Packager`\>\""}]}], "Code",
+ CellChangeTimes->{
+  3.726582741404728*^9},ExpressionUUID->"222d2132-dea7-42ae-a374-\
+18a8b8481b88"],
+
+Cell[TextData[{
+ "Next add the package we just created to the ",
+ StyleBox["Package Path",
+  FontSlant->"Italic"],
+ ":"
+}], "Text",ExpressionUUID->"c09497db-1ef0-46cf-bd5b-78c4b564efdc"],
+
+Cell[BoxData[{
+ RowBox[{
+  RowBox[{"In", "[", "2", "]"}], " ", ":=", " ", 
+  RowBox[{
+  "AppendPackagePath", "[", "\"\</Users/emerald/Repositories/SLL\>\"", 
+   "]"}]}], "\n", 
+ RowBox[{
+  RowBox[{"Out", "[", "2", "]"}], " ", "=", " ", 
+  RowBox[{"{", "\"\<Songs`\>\"", "}"}]}]}], "Code",
+ CellChangeTimes->{{3.726582741404728*^9, 
+  3.7265827495259933`*^9}},ExpressionUUID->"ca812a97-021c-4d3b-9eab-\
+4dd8df1bad9c"],
+
+Cell[TextData[{
+ "Load the package ",
+ StyleBox["Songs`",
+  FontSlant->"Italic"],
+ ":"
+}], "Text",ExpressionUUID->"4c782df8-c5d4-4d18-b5c3-8d2a9089b7b4"],
+
+Cell[BoxData[{
+ RowBox[{
+  RowBox[{"In", "[", "3", "]"}], " ", ":=", " ", 
+  RowBox[{"LoadPackage", "[", "\"\<Songs`\>\"", "]"}]}], "\n", 
+ RowBox[{
+  RowBox[{"Out", "[", "3", "]"}], " ", "=", " ", "\"\<Songs`\>\""}]}], "Code",\
+
+ CellChangeTimes->{{3.726582741404728*^9, 
+  3.7265827608943233`*^9}},ExpressionUUID->"e2217b63-a6f6-4496-8906-\
+abe6bea38a43"],
+
+Cell[TextData[{
+ "Verify the context of ",
+ StyleBox["SeemsReasonableQ",
+  FontSlant->"Italic"],
+ " is ",
+ StyleBox["ECL`Songs`",
+  FontSlant->"Italic"],
+ ":"
+}], "Text",ExpressionUUID->"ff5c5d7e-30dc-4a1e-af44-83bfa51bd2ab"],
+
+Cell[BoxData[{
+ RowBox[{
+  RowBox[{"In", "[", "4", "]"}], " ", ":=", " ", 
+  RowBox[{"Context", "[", "SeemsReasonableQ", "]"}]}], "\n", 
+ RowBox[{
+  RowBox[{"Out", "[", "4", "]"}], " ", "=", " ", 
+  "\"\<ECL`Songs`\>\""}]}], "Code",
+ CellChangeTimes->{{3.726582741404728*^9, 
+  3.726582758198596*^9}},ExpressionUUID->"20397c51-099f-4318-961e-\
+3be159b17c95"],
+
+Cell[TextData[{
+ "Neither ",
+ StyleBox["SeemsReasonableQ",
+  FontSlant->"Italic"],
+ " or ",
+ StyleBox["PumpUp",
+  FontSlant->"Italic"],
+ " do anything yet as we have no source files implementing either of these \
+functions. We will add those next."
+}], "Text",ExpressionUUID->"608b9773-607e-4feb-95ad-59d267c04fcc"]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell["Adding source files", "Subsection",ExpressionUUID->"37895de7-3fc0-467b-917e-6e04e7eb4565"],
+
+Cell[TextData[{
+ "Lets add a new source file to implement ",
+ StyleBox["SeemsReasonableQ",
+  FontSlant->"Italic"],
+ ". Create a new .m file in Songs/sources/Goofy.m (this file can have any \
+name you want). Your folder structure should now look like this:"
+}], "Text",ExpressionUUID->"d4f48c80-b827-4d2a-8af1-10d79bfc0066"],
+
+Cell["\<\
+| - Songs
+\t| - FrontEnd
+\t| - docs
+\t\t| - guides
+\t\t| - reference_pages
+\t\t| - tutorials
+\t| - manifest.json
+\t| - resources
+\t| - sources
+\t\t| - Goofy.m
+\t| - tests\
+\>", "Code",
+ CellChangeTimes->{{3.7265827681173267`*^9, 
+  3.7265827691083183`*^9}},ExpressionUUID->"86108e77-228c-4b03-a079-\
+937fbb42321c"],
+
+Cell["Now open up Goofy.m and add the following implementation:", "Text",ExpressionUUID->"07e7253a-b9c0-44f9-ba0a-ad70e9ebc095"],
+
+Cell[BoxData[
+ RowBox[{
+  RowBox[{
+   RowBox[{"SeemsReasonableQ", "[", "_String", "]"}], ":=", 
+   RowBox[{"RandomChoice", "[", 
+    RowBox[{"{", 
+     RowBox[{"True", ",", "False"}], "}"}], "]"}]}], ";"}]], "Code",
+ CellChangeTimes->{
+  3.726582775599594*^9},ExpressionUUID->"7cf8d543-c3f1-4d4f-8723-\
+e61a55053321"],
+
+Cell[TextData[{
+ "Finally, open up the ",
+ StyleBox["manifest.json",
+  FontSlant->"Italic"],
+ " again and add \"Goofy.m\" to the ",
+ StyleBox["\"sources\"",
+  FontSlant->"Italic"],
+ " entry of the manifest:"
+}], "Text",ExpressionUUID->"2560cefb-d145-42de-8db4-b72aaadf3433"],
+
+Cell["\<\
+{
+    \"package\": \"Songs`\",
+    \"context\": \"ECL`Songs`\",
+    \"description\": \"This is where we put goofy stuff that should never be \
+seen by users or loaded normally.\",
+    \"dependencies\": [],
+    \"sources\": [
+    \t\"Goofy.m\"
+    ],
+    \"symbols\": [
+        \"PumpUp\",
+        \"SeemsReasonableQ\"
+    ]
+}\
+\>", "Code",
+ CellChangeTimes->{{3.72658277985459*^9, 
+  3.726582798063294*^9}},ExpressionUUID->"067682d7-43ac-42f0-880b-\
+8ff21f38c5b3"],
+
+Cell[TextData[{
+ "Now when we load the ",
+ StyleBox["Songs`",
+  FontSlant->"Italic"],
+ " package, Goofy.m will be loaded to define the implementation of ",
+ StyleBox["SeemsReasonableQ",
+  FontSlant->"Italic"],
+ " (defining the function ",
+ StyleBox["PumpUp",
+  FontSlant->"Italic"],
+ " is left as an exercise to the reader).\n\nYou can have as many source \
+files as you need and they will be loaded in the order specified in the ",
+ StyleBox["\"sources\"",
+  FontSlant->"Italic"],
+ " list (they must all be inside the ",
+ StyleBox["sources",
+  FontSlant->"Italic"],
+ " directory of the package). Even though all these source files are loaded \
+in the same context, order is still important! You cannot use a function \
+before it is defined or the symbol/expression will remain unevaluated.\n\n",
+ StyleBox["Note:",
+  FontWeight->"Bold"],
+ " one ",
+ StyleBox["should not",
+  FontSlant->"Italic"],
+ " use any of the functions ",
+ StyleBox["BeginPackage",
+  FontSlant->"Italic"],
+ ",",
+ StyleBox["EndPackage",
+  FontSlant->"Italic"],
+ ",",
+ StyleBox["Begin",
+  FontSlant->"Italic"],
+ ", or ",
+ StyleBox["End",
+  FontSlant->"Italic"],
+ " as all the manipulations of the ",
+ StyleBox["$ContextPath",
+  FontSlant->"Italic"],
+ " and ",
+ StyleBox["$Context",
+  FontSlant->"Italic"],
+ " are now done by the ",
+ StyleBox["Packager`",
+  FontSlant->"Italic"],
+ " framework based on what is specified in the manifest file."
+}], "Text",ExpressionUUID->"a7c21ecc-8433-4e8f-86db-ce964bdca29e"]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell["Adding Function Documentation", "Subsection",ExpressionUUID->"fbd81d81-9288-4c67-b503-2c526840de84"],
+
+Cell[TextData[{
+ "Documentation for functions exists in a different .m file (which can be \
+optionally loaded) from the function source file. The documentation for \
+individual functions exists in .m files inside the ",
+ StyleBox["docs/reference\\",
+  FontSlant->"Italic"],
+ "pages",
+ StyleBox[" directory. Add a new documentation file ",
+  FontSlant->"Italic"],
+ "docs/reference\\",
+ StyleBox["pages/Goofy.m",
+  FontSlant->"Italic"],
+ ", the folder structure should now look like this:"
+}], "Text",ExpressionUUID->"54937137-a4fc-432b-a5bb-aa24f3637ccc"],
+
+Cell["\<\
+| - Songs
+\t| - FrontEnd
+\t| - docs
+\t\t| - guides
+\t\t| - reference_pages
+\t\t\t| - Goofy.m
+\t\t| - tutorials
+\t| - manifest.json
+\t| - resources
+\t| - sources
+\t\t| - Goofy.m
+\t| - tests\
+\>", "Code",
+ CellChangeTimes->{{3.7265827846459827`*^9, 
+  3.726582786430057*^9}},ExpressionUUID->"d240346a-fefc-4272-85d9-\
+dc6303ead7df"],
+
+Cell[TextData[{
+ "Inside ",
+ StyleBox["docs/reference",
+  FontSlant->"Italic"],
+ "pages/Goofy.m",
+ StyleBox[" add some Usage rules for ",
+  FontSlant->"Italic"],
+ "SeemsReasonableQ_:"
+}], "Text",ExpressionUUID->"0774b57d-5690-4ed7-97ab-2278e83b94f4"],
+
+Cell[BoxData[
+ RowBox[{
+  RowBox[{"(*", " ", 
+   RowBox[{"::", "Subsubsection", "::", "Closed", "::"}], " ", "*)"}], "\n", 
+  RowBox[{"(*", "SeemsReasonableQ", "*)"}], "\n", "\n", "\n", 
+  RowBox[{"DefineUsage", "[", 
+   RowBox[{"SeemsReasonableQ", ",", "\n", 
+    RowBox[{"{", "\n", "\t", 
+     RowBox[{
+      RowBox[{"BasicDefinitions", "->", "\n", "\t\t", 
+       RowBox[{"{", "\n", "\t\t\t", 
+        RowBox[{"{", 
+         RowBox[{
+         "\"\<SeemsReasonableQ[question]\>\"", ",", "\"\<bool\>\"", ",", 
+          "\"\<returns True if the 'question' posed seems \\\"reasonable\\\".\
+\>\""}], "}"}], "\n", "\t\t", "}"}]}], ",", "\n", "\t", 
+      RowBox[{"Input", ":>", "\n", "\t\t", 
+       RowBox[{"{", "\n", "\t\t\t", 
+        RowBox[{"{", 
+         RowBox[{
+         "\"\<question\>\"", ",", "_String", ",", "\"\<Question to ask\>\""}],
+          "}"}], "\n", "\t\t", "}"}]}], ",", "\n", "\t", 
+      RowBox[{"Output", ":>", "\n", "\t", 
+       RowBox[{"{", "\n", "\t\t\t", 
+        RowBox[{"{", 
+         RowBox[{"\"\<bool\>\"", ",", " ", 
+          RowBox[{"True", "|", "False"}], ",", " ", 
+          "\"\<Boolean value representing \\\"reasonable-ness\\\" of the \
+question.\>\""}], "}"}], "\n", "\t", "}"}]}], ",", "\n", "\t", 
+      RowBox[{"SeeAlso", "->", "\n", "\t\t", 
+       RowBox[{
+       "{", "\n", "\t\t", "\"\<RandomChoice\>\"", "\n", "\t\t", "}"}]}], ",", 
+      "\n", "\t", 
+      RowBox[{"Author", "->", 
+       RowBox[{"{", "\"\<you\>\"", "}"}]}]}], "\n", "}"}]}], "]"}]}]], "Code",\
+
+ CellChangeTimes->{{3.726582823014512*^9, 
+  3.726582831356299*^9}},ExpressionUUID->"5ba0a4f5-c306-4fa0-921e-\
+5a381817030a"],
+
+Cell[TextData[{
+ "You should now be able to sync the documentation for the ",
+ StyleBox["SeemsReasonableQ",
+  FontSlant->"Italic"],
+ " function after re-loading the ",
+ StyleBox["Songs`",
+  FontSlant->"Italic"],
+ " package. This will generate a documentation notebook inside the ",
+ StyleBox["Songs/Documentation",
+  FontSlant->"Italic"],
+ " folder which will be accessible via the standard Mathematica help system."
+}], "Text",ExpressionUUID->"d2a7243b-6c63-4d14-a997-272e7d83f900"]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell["Adding Tests", "Subsection",ExpressionUUID->"bc295cc0-c6d4-4c0c-a471-dfe33f82dfcb"],
+
+Cell[TextData[{
+ "Similar to the function documentation, tests for functions should exist in \
+a separate file in the package directory. All test files should be nested \
+under the ",
+ StyleBox["tests",
+  FontSlant->"Italic"],
+ " directory. Lets add a file ",
+ StyleBox["tests/Goofy.m",
+  FontSlant->"Italic"],
+ " to hold our tests for ",
+ StyleBox["SeemsReasonableQ",
+  FontSlant->"Italic"],
+ ". The folder structure should now look like this:"
+}], "Text",ExpressionUUID->"12c9cd6d-069b-439b-bacf-ed29697f0d20"],
+
+Cell["\<\
+| - Songs
+\t| - FrontEnd
+\t| - docs
+\t\t| - guides
+\t\t| - reference_pages
+\t\t\t| - Goofy.m
+\t\t| - tutorials
+\t| - manifest.json
+\t| - resources
+\t| - sources
+\t\t| - Goofy.m
+\t| - tests
+\t\t| - Goofy.m\
+\>", "Code",
+ CellChangeTimes->{{3.7265828354030027`*^9, 
+  3.726582836899207*^9}},ExpressionUUID->"b326b68b-fa9b-4cc7-bca1-\
+45e38dc402e9"],
+
+Cell[TextData[{
+ "Open the ",
+ StyleBox["tests/Goofy.m",
+  FontSlant->"Italic"],
+ " file and add a test for ",
+ StyleBox["SeemsReasonableQ",
+  FontSlant->"Italic"],
+ ":"
+}], "Text",ExpressionUUID->"049c3cc4-2501-4339-adb9-7945506fa9e2"],
+
+Cell[BoxData[
+ RowBox[{
+  RowBox[{"(*", " ", 
+   RowBox[{"::", "Subsubsection", "::", "Closed", "::"}], " ", "*)"}], "\n", 
+  RowBox[{"(*", "SeemsReasonableQ", "*)"}], "\n", "\n", "\n", 
+  RowBox[{
+   RowBox[{"DefineTests", "[", "\n", "\t", 
+    RowBox[{"SeemsReasonableQ", ",", "\n", "\t", 
+     RowBox[{"{", "\n", "\t\t", 
+      RowBox[{"Test", "[", 
+       RowBox[{
+       "\"\<Returns a True|False response for the reasonable-ness of a \
+question string:\>\"", ",", "\n", "\t\t\t", 
+        RowBox[{
+        "SeemsReasonableQ", "[", "\"\<Delete all the objects?\>\"", "]"}], 
+        ",", "\n", "\t\t\t", 
+        RowBox[{"True", "|", "False"}]}], "\n", "\t\t", "]"}], "\n", "\t", 
+      "}"}]}], "\n", "]"}], ";"}]}]], "Code",
+ CellChangeTimes->{{3.7265828435673447`*^9, 
+  3.726582852285304*^9}},ExpressionUUID->"166a9153-ebc0-46c4-a0aa-\
+3dd570c30edc"],
+
+Cell[TextData[{
+ "If you reload the package, you should now be able to run the unit tests for \
+",
+ StyleBox["SeemsReasonableQ",
+  FontSlant->"Italic"],
+ ":"
+}], "Text",ExpressionUUID->"3a7c5dbe-00de-42eb-84c0-e3789ddec41d"],
+
+Cell["\<\
+mathematica
+In[1] := RunUnitTest[SeemsReasonableQ][Passed]
+Out[1] = True
+\
+\>", "Code",ExpressionUUID->"af33c24a-a8c9-4f1f-816e-e222ad1c4d54"],
+
+Cell["", "Text",ExpressionUUID->"1c7ebf83-316a-4ca0-801f-85ccf78d7def"]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell["Adding Dependencies", "Subsection",ExpressionUUID->"ffabd198-cfab-4cd6-bf93-8083278278ac"],
+
+Cell[TextData[{
+ "Lets assume that to implement the function ",
+ StyleBox["PumpUp",
+  FontSlant->"Italic"],
+ ", one needs access to the database. To do this, we will need to depend on \
+another package for the functions required to access the database (Download, \
+etc.). We need to make sure that this package is both loaded and all the \
+symbols defined in that package are accessible via the ",
+ StyleBox["$ContextPath",
+  FontSlant->"Italic"],
+ " while loading the source files for for the ",
+ StyleBox["Songs`",
+  FontSlant->"Italic"],
+ " package. To do this, we must list the package we are depending upon (",
+ StyleBox["Constellation`",
+  FontSlant->"Italic"],
+ " in this case) in the manifest file. Open up the ",
+ StyleBox["manifest.json",
+  FontSlant->"Italic"],
+ " file and add ",
+ StyleBox["\"Constellation`\"",
+  FontSlant->"Italic"],
+ " to the ",
+ StyleBox["\"dependencies\"",
+  FontSlant->"Italic"],
+ " section:"
+}], "Text",
+ CellChangeTimes->{{3.739559172014928*^9, 3.7395591805414963`*^9}, 
+   3.739559218881538*^9},ExpressionUUID->"5237e138-d003-44bd-85a3-\
+84e592aaa3be"],
+
+Cell["\<\
+{
+    \"package\": \"Songs`\",
+    \"context\": \"ECL`Songs`\",
+    \"description\": \"This is where we put goofy stuff that should never be \
+seen by users or loaded normally.\",
+    \"dependencies\": [
+    \t\"Constellation`\"
+    ],
+    \"sources\": [
+    \t\"Goofy.m\"
+    ],
+    \"symbols\": [
+        \"PumpUp\",
+    \t\"SeemsReasonableQ\"
+    ]
+}\
+\>", "Code",
+ CellChangeTimes->{{3.726582855645205*^9, 3.7265828576618233`*^9}, 
+   3.739559223743287*^9},ExpressionUUID->"57839044-69db-41a5-957f-\
+766269dc10ca"],
+
+Cell[TextData[{
+ "We are now free to use the functions in the ",
+ StyleBox["Constellation`",
+  FontSlant->"Italic"],
+ " package inside Goofy.m and any other source files we may add in the ",
+ StyleBox["Songs`",
+  FontSlant->"Italic"],
+ " package. All packages listed as dependencies will be loaded in the order \
+listed and will be available for all source files listed in the manifest."
+}], "Text",
+ CellChangeTimes->{{3.7395591908050065`*^9, 
+  3.739559192492921*^9}},ExpressionUUID->"a92c4bf8-f936-49b7-8a2e-\
+5cf4d6430c92"]
+}, Open  ]]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell["General Concepts", "Section",ExpressionUUID->"6676687c-b48b-46e6-ba7c-781a483fac24"],
+
+Cell[CellGroupData[{
+
+Cell["Package", "Subsection",ExpressionUUID->"69a71b49-bf1a-493c-9cc4-d3226bb3b934"],
+
+Cell[TextData[{
+ "A package in the Packager framework consists of a standard folder structure \
+containing source files (function implementations), documentation files, test \
+files, and a ",
+ StyleBox["manifest",
+  FontSlant->"Italic"],
+ " file that describes everything about the package. This manifest includes \
+information about what other packages are required to function correctly and \
+what order everything should be loaded in. Packages contain conceptually \
+related groups of functionality (in the form of Mathematica symbols) which \
+can be loaded/deployed independently."
+}], "Text",ExpressionUUID->"548fc608-e78b-46c6-893d-e93a2ffc937c"]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell["Package Manifest", "Subsection",ExpressionUUID->"c6ce7712-ec5c-4c0b-97b9-4dfebd30d81e"],
+
+Cell[TextData[{
+ "Every package has a ",
+ StyleBox["manifest",
+  FontSlant->"Italic"],
+ " file which exists at the root of each package directory. This file \
+describes all the metadata about the package that the Packager framework uses \
+to load everything correctly. The manifest declares a number of things:\n\n- \
+Package Identifier (",
+ StyleBox["Options`",
+  FontSlant->"Italic"],
+ " for example)\n- Context of symbols in the package (",
+ StyleBox["ECL`",
+  FontSlant->"Italic"],
+ " for example)\n- Package description\n- Other packages this package depends \
+on\n- All source files this package should load and the order they should be \
+loaded\n- All symbols defined by this package"
+}], "Text",ExpressionUUID->"7a28f6f2-35e0-4508-9879-ae4093e152bb"]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell["Contexts", "Subsection",ExpressionUUID->"b99eaccc-471c-409c-9cb6-12ff30022d0d"],
+
+Cell[TextData[{
+ "Every symbol in Mathematica has a ",
+ StyleBox["Context",
+  FontSlant->"Italic"],
+ " (This can be determined by evaluating the function ",
+ StyleBox["Context",
+  FontWeight->"Bold"],
+ " on a symbol):"
+}], "Text",ExpressionUUID->"ffca7f44-d5a9-44d6-b89d-35a4d91272fb"],
+
+Cell[BoxData[{
+ RowBox[{
+  RowBox[{"In", "[", "1", "]"}], " ", ":=", " ", 
+  RowBox[{"Context", "[", "Upload", "]"}]}], "\n", 
+ RowBox[{
+  RowBox[{"Out", "[", "1", "]"}], " ", "=", " ", "\"\<ECL`\>\""}]}], "Code",
+ CellChangeTimes->{
+  3.726582865161222*^9},ExpressionUUID->"fed9a980-f23d-40c2-beb5-\
+763c4398352d"],
+
+Cell[TextData[{
+ "A context is just a string of words delimited by the ` character. All the \
+symbols built into Mathematica exist in the ",
+ StyleBox["System`",
+  FontSlant->"Italic"],
+ " context and generally contexts are used to group symbols with similar \
+functionality (such as ",
+ StyleBox["QuantityArray`",
+  FontSlant->"Italic"],
+ " or ",
+ StyleBox["DocumentationSearch`",
+  FontSlant->"Italic"],
+ ").\n\nA fully qualified symbol looks like ",
+ StyleBox["Context`SymbolName",
+  FontSlant->"Italic"],
+ " (",
+ StyleBox["ECL`Upload",
+  FontSlant->"Italic"],
+ " for example). It is possible for multiple symbols to have the same short \
+name and exist in different contexts (for example the symbols ",
+ StyleBox["System`Times",
+  FontWeight->"Bold"],
+ " and ",
+ StyleBox["ECL`Times",
+  FontWeight->"Bold"],
+ " may both exist and do drastically different things).\n\nWhen Mathematica \
+evaluates any expression (either in the notebook or from loading a source \
+file), it must interpret all the short names for symbols to decide which ",
+ StyleBox["Context",
+  FontSlant->"Italic"],
+ " they belong to in order to perform the correct operations. The way \
+Mathematica does this is by using two global variables: ",
+ StyleBox["$ContextPath",
+  FontSlant->"Italic"],
+ " and ",
+ StyleBox["$Context",
+  FontSlant->"Italic"],
+ ". When searching for a symbol's context, it first looks through all the \
+contexts listed in ",
+ StyleBox["$ContextPath",
+  FontSlant->"Italic"],
+ " trying to find a symbol with the same name (using the first match it \
+finds). If no symbol is found ",
+ StyleBox["a new symbol is created with the context $Context",
+  FontSlant->"Italic"],
+ ". For example, lets assume that the ",
+ StyleBox["$ContextPath",
+  FontSlant->"Italic"],
+ " contains ",
+ StyleBox["System`",
+  FontSlant->"Italic"],
+ " and ",
+ StyleBox["ECL`",
+  FontSlant->"Italic"],
+ " and the current ",
+ StyleBox["$Context",
+  FontSlant->"Italic"],
+ " is ",
+ StyleBox["MyNewContext`",
+  FontSlant->"Italic"],
+ ". The symbol ",
+ StyleBox["Download",
+  FontSlant->"Italic"],
+ " exists in ",
+ StyleBox["ECL`",
+  FontSlant->"Italic"],
+ " so its context is returned as ",
+ StyleBox["SLL`",
+  FontSlant->"Italic"],
+ ". The symbol ",
+ StyleBox["Thingy",
+  FontSlant->"Italic"],
+ " does ",
+ StyleBox["not",
+  FontWeight->"Bold"],
+ " exist yet so it is created in the context ",
+ StyleBox["MyNewContext`",
+  FontSlant->"Italic"],
+ " at the time of evaluating ",
+ StyleBox["Context[Thingy]",
+  FontSlant->"Italic"]
+}], "Text",ExpressionUUID->"1ad6b068-af35-45fe-9e55-2f9d1bcf2a3a"],
+
+Cell[BoxData[{
+ RowBox[{
+  RowBox[{"In", "[", "1", "]"}], " ", ":=", " ", "$ContextPath"}], "\n", 
+ RowBox[{
+  RowBox[{
+   RowBox[{"Out", "[", "1", "]"}], " ", "=", " ", 
+   RowBox[{"{", 
+    RowBox[{"\"\<System`\>\"", ",", " ", "\"\<ECL`\>\""}], "}"}]}], 
+  "\n"}], "\n", 
+ RowBox[{
+  RowBox[{"In", "[", "2", "]"}], " ", ":=", " ", "$Context"}], "\n", 
+ RowBox[{
+  RowBox[{
+   RowBox[{"Out", "[", "2", "]"}], " ", "=", " ", "\"\<MyNewContext`\>\""}], 
+  "\n"}], "\n", 
+ RowBox[{
+  RowBox[{"In", "[", "3", "]"}], " ", ":=", " ", 
+  RowBox[{"Context", "[", "Download", "]"}]}], "\n", 
+ RowBox[{
+  RowBox[{
+   RowBox[{"Out", "[", "3", "]"}], " ", "=", " ", "\"\<ECL`\>\""}], 
+  "\n"}], "\n", 
+ RowBox[{
+  RowBox[{"In", "[", "4", "]"}], " ", ":=", " ", 
+  RowBox[{"Context", "[", "Thingy", "]"}]}], "\n", 
+ RowBox[{
+  RowBox[{"Out", "[", "4", "]"}], " ", "=", " ", 
+  "\"\<MyNewContext`\>\""}]}], "Code",
+ CellChangeTimes->{{3.726582865161222*^9, 
+  3.726582872618247*^9}},ExpressionUUID->"00d3bed2-07fa-46bd-94bf-\
+99571f1314c4"],
+
+Cell[TextData[{
+ "Each package we define will explicitly specify ",
+ StyleBox["one context",
+  FontSlant->"Italic"],
+ " in which all the public symbols for that package will be created. Loading \
+that package will then add the context specified by the package to the ",
+ StyleBox["$ContextPath",
+  FontSlant->"Italic"],
+ "."
+}], "Text",ExpressionUUID->"573c9948-61ea-45bb-9847-f4b73ee26362"]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell["Dependencies", "Subsection",ExpressionUUID->"a2ad8f35-22b1-4f7d-b1c8-fe37e0c32ff0"],
+
+Cell[TextData[{
+ "As with any programming environment, we must load the definitions for our \
+functions before they can be executed. The order in which these definitions \
+are loaded is important since normally one will be writing functions ",
+ StyleBox["which call other functions",
+  FontSlant->"Italic"],
+ ". In this case, the definitions for the functions which are being called \
+must be loaded ",
+ StyleBox["before",
+  FontSlant->"Italic"],
+ " the caller (otherwise behaviour may not be what one would expect). This is \
+especially important in Mathematica because the symptom of definitions being \
+loaded in the incorrect order is often ",
+ StyleBox["non-evaluation",
+  FontSlant->"Italic"],
+ ". For example, if the definition for the function ",
+ StyleBox["Download",
+  FontSlant->"Italic"],
+ " uses the function ",
+ StyleBox["ObjectP",
+  FontSlant->"Italic"],
+ ":"
+}], "Text",ExpressionUUID->"b1c59679-e219-400c-8648-9c01e42ac05f"],
+
+Cell[BoxData[{
+ RowBox[{
+  RowBox[{
+   RowBox[{"Download", "[", 
+    RowBox[{"object", ":", 
+     RowBox[{"ObjectP", "[", "]"}]}], "]"}], ":=", 
+   "\"\<Does some stuff\>\""}], ";"}], "\n", 
+ RowBox[{
+  RowBox[{
+   RowBox[{"ObjectP", "[", "]"}], ":=", 
+   RowBox[{"Object", "[", 
+    RowBox[{"__Symbol", ",", "_String"}], "]"}]}], ";"}]}], "Code",
+ CellChangeTimes->{{3.726582865161222*^9, 
+  3.7265828813004436`*^9}},ExpressionUUID->"4e809479-e323-429c-9f17-\
+e40c93a6ba3c"],
+
+Cell[TextData[{
+ "If the definition of ",
+ StyleBox["Download",
+  FontSlant->"Italic"],
+ " is loaded ",
+ StyleBox["before",
+  FontWeight->"Bold"],
+ " ",
+ StyleBox["ObjectP",
+  FontSlant->"Italic"],
+ ", then the pattern that the definition expects is going to be the ",
+ StyleBox["literal un-evaluated form of ObjectP",
+  FontSlant->"Italic"],
+ ":"
+}], "Text",
+ CellChangeTimes->{{3.726582890713978*^9, 
+  3.7265828939051237`*^9}},ExpressionUUID->"77da4669-d511-4c09-abec-\
+3634915d23ed"],
+
+Cell[BoxData[{
+ RowBox[{
+  RowBox[{"In", "[", "1", "]"}], " ", ":=", " ", 
+  RowBox[{"Object", "[", 
+   RowBox[{"Data", ",", "Example", ",", "\"\<id:aac8z\>\""}], "]"}]}], "\n", 
+ RowBox[{
+  RowBox[{
+   RowBox[{"Out", "[", "1", "]"}], " ", "=", " ", 
+   RowBox[{"Object", "[", 
+    RowBox[{"Data", ",", "Example", ",", "\"\<id:aac8z\>\""}], "]"}]}], 
+  "\n"}], "\n", 
+ RowBox[{
+  RowBox[{"In", "[", "2", "]"}], " ", ":=", " ", 
+  RowBox[{"Download", "[", 
+   RowBox[{"Unevaluated", "[", 
+    RowBox[{"ObjectP", "[", "]"}], "]"}], "]"}]}], "\n", 
+ RowBox[{
+  RowBox[{"Out", "[", "2", "]"}], " ", ":=", " ", 
+  "\"\<Does some stuff\>\""}]}], "Code",
+ CellChangeTimes->{{3.726582865161222*^9, 
+  3.726582898893551*^9}},ExpressionUUID->"cf71f09e-7281-49ea-b4e6-\
+b7eb1fcc6ae8"],
+
+Cell[TextData[{
+ "This can generally be solved without too much effort when everything is \
+contained in a single file but as soon as you move to multiple files and \
+(potentially) symbols in multiple contexts, this can become very tricky to \
+detect and fix.\n\nAnother failure mode is when a symbol from a ",
+ StyleBox["different context",
+  FontSlant->"Italic"],
+ " has not yet been loaded and cannot be found on the ",
+ StyleBox["$ContextPath",
+  FontSlant->"Italic"],
+ ". For example if you have some function being defined that calls ",
+ StyleBox["ECL`Download",
+  FontSlant->"Italic"],
+ ", you must make sure that the context ",
+ StyleBox["ECL`",
+  FontSlant->"Italic"],
+ " has been loaded and that it is on the ",
+ StyleBox["$ContextPath",
+  FontSlant->"Italic"],
+ " at the time your new function is defined. For example:"
+}], "Text",ExpressionUUID->"3236bd1f-caf4-4cd7-b21a-15255e7e2651"],
+
+Cell[BoxData[
+ RowBox[{
+  RowBox[{
+   RowBox[{"PersonName", "[", "object_", "]"}], ":=", 
+   RowBox[{"Download", "[", 
+    RowBox[{"object", ",", "Name"}], "]"}]}], ";"}]], "Code",
+ CellChangeTimes->{{3.726582865161222*^9, 
+  3.726582906613203*^9}},ExpressionUUID->"b59ce4b0-cf00-4498-bf15-\
+90ff6bdcc14d"],
+
+Cell[TextData[{
+ "If at the time of evaluating the above definition, ",
+ StyleBox["Download",
+  FontSlant->"Italic"],
+ " cannot be found on the ",
+ StyleBox["$ContextPath",
+  FontSlant->"Italic"],
+ " it will be created in ",
+ StyleBox["$Context",
+  FontSlant->"Italic"],
+ " at the time of evaluating the above definition (assume that is ",
+ StyleBox["ECL`Person`Private`",
+  FontSlant->"Italic"],
+ " for this example). When you go to evaluate ",
+ StyleBox["PersonName",
+  FontSlant->"Italic"],
+ " the symbol ",
+ StyleBox["Download",
+  FontSlant->"Italic"],
+ " referenced will be in the wrong context and you will get something like \
+the following:"
+}], "Text",ExpressionUUID->"8819ac53-9190-4e2f-a09b-8bc252d460ce"],
+
+Cell[BoxData[{
+ RowBox[{
+  RowBox[{"In", "[", "1", "]"}], " ", ":=", " ", 
+  RowBox[{"PersonName", "[", 
+   RowBox[{"Object", "[", 
+    RowBox[{
+    "User", ",", "Emerald", ",", "Developer", ",", "\"\<id:xasddf\>\""}], 
+    "]"}], "]"}]}], "\n", 
+ RowBox[{
+  RowBox[{"Out", "[", "1", "]"}], " ", "=", " ", 
+  RowBox[{"SLL`Person`Private`Download", "[", 
+   RowBox[{
+    RowBox[{"Object", "[", 
+     RowBox[{
+     "User", ",", "Emerald", ",", "Developer", ",", "\"\<id:xasddf\>\""}], 
+     "]"}], ",", " ", "Name"}], "]"}]}]}], "Code",
+ CellChangeTimes->{
+  3.726582911853675*^9},ExpressionUUID->"b9eaf73f-7b20-45c8-80ef-\
+cf007a4472c3"],
+
+Cell[TextData[{
+ "The way we mitigate these issues is by defining an explicit load order for \
+our source files and which contexts we need to be on the ",
+ StyleBox["$ContextPath",
+  FontSlant->"Italic"],
+ " while we are loading our source files (and what order they should be \
+loaded in). Packager will make sure all the source files are loaded in the \
+order defined and that all dependent packages are loaded and on the ",
+ StyleBox["$ContextPath",
+  FontSlant->"Italic"],
+ " when loading the source files for a package (this will cascade down the \
+dependency tree). For example, if the package ",
+ StyleBox["Experiment`",
+  FontSlant->"Italic"],
+ " depends on the Constellation` which depends on the options functions in ",
+ StyleBox["Options`",
+  FontSlant->"Italic"],
+ ", then packager will make sure to load ",
+ StyleBox["Options`",
+  FontSlant->"Italic"],
+ " first, before loading Constellation` and then finally loading ",
+ StyleBox["Experiment`",
+  FontSlant->"Italic"],
+ "."
+}], "Text",
+ CellChangeTimes->{{3.7395592031933584`*^9, 
+  3.7395592282600503`*^9}},ExpressionUUID->"aade76b0-f45c-494e-820b-\
+4b185b41f5df"]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell["Public Symbols", "Subsection",ExpressionUUID->"f69a7137-a8dd-412e-9862-c07f5c266e41"],
+
+Cell[TextData[{
+ "Every package has an explicit list of symbols which are \"exported\" by the \
+package (that is, they are created in the context defined by the package). \
+When you load the package, these are the new symbols (and their \
+functionality) which you will have access to. All other symbols which are \
+created during loading of a package will be created inside a ",
+ StyleBox["private",
+  FontSlant->"Italic"],
+ " context which will ",
+ StyleBox["not",
+  FontWeight->"Bold"],
+ " be loaded onto the ",
+ StyleBox["$ContextPath",
+  FontSlant->"Italic"],
+ ". In this way we can hide the implementations of the functions any given \
+package defines and not pollute the public symbol space or cause any undue \
+conflicts between symbol names.\n\nThe public symbols for a package are \
+defined in the ",
+ StyleBox["manifest",
+  FontSlant->"Italic"],
+ " file for the package."
+}], "Text",ExpressionUUID->"5d281097-15d9-4501-89f0-c17cc0ba3d76"]
+}, Open  ]]
+}, Open  ]]
+}, Open  ]]
+},
+WindowSize->{1920, 997},
+WindowMargins->{{1072, Automatic}, {386, Automatic}},
+Visible->True,
+FrontEndVersion->"11.3 for Microsoft Windows (64-bit) (March 6, 2018)",
+StyleDefinitions->"Default.nb"
+]
+(* End of Notebook Content *)
+
+(* Internal cache information *)
+(*CellTagsOutline
+CellTagsIndex->{}
+*)
+(*CellTagsIndex
+CellTagsIndex->{}
+*)
+(*NotebookFileOutline
+Notebook[{
+Cell[CellGroupData[{
+Cell[580, 22, 80, 0, 96, "Title",ExpressionUUID->"4461e36b-ea03-46dd-ad49-b72117b1176e"],
+Cell[CellGroupData[{
+Cell[685, 26, 95, 0, 67, "Section",ExpressionUUID->"ba9f8f96-621d-437e-9f8a-82e0803a1652"],
+Cell[CellGroupData[{
+Cell[805, 30, 96, 0, 53, "Subsection",ExpressionUUID->"648227a0-5752-4642-8478-ff297ea02efe"],
+Cell[904, 32, 708, 22, 56, "Text",ExpressionUUID->"0e808468-b026-468d-940d-1eb8e17b8cf3"]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[1649, 59, 119, 0, 53, "Subsection",ExpressionUUID->"d77208d5-5b59-4482-ad54-7b08c0837c7e"],
+Cell[1771, 61, 754, 18, 56, "Text",ExpressionUUID->"29dfd80c-0879-434a-8a22-2407b274a024"],
+Cell[2528, 81, 882, 24, 177, "Code",ExpressionUUID->"ff1fefa7-23ee-4ce0-91a0-0d11058d99f0"],
+Cell[3413, 107, 148, 2, 34, "Text",ExpressionUUID->"429b34cf-3514-4436-be63-6c384b6834ab"],
+Cell[3564, 111, 278, 14, 195, "Code",ExpressionUUID->"c7738d88-20ba-443f-a2f2-81fa3049c71c"],
+Cell[3845, 127, 377, 9, 69, "Code",ExpressionUUID->"345c709c-fc5d-449a-8635-a27f3a2e1677"],
+Cell[4225, 138, 571, 15, 34, "Text",ExpressionUUID->"31fbc766-383f-46cf-9452-45a45b6efd26"],
+Cell[4799, 155, 71, 0, 34, "Text",ExpressionUUID->"726697d3-399f-4f06-a3bb-fad59e0aeb22"]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[4907, 160, 114, 0, 53, "Subsection",ExpressionUUID->"ce313f4a-b862-47ef-b610-1a17176b51dc"],
+Cell[5024, 162, 458, 12, 34, "Text",ExpressionUUID->"335f06b4-72d7-4616-998f-f2a56d2dfc9f"],
+Cell[5485, 176, 693, 18, 123, "Code",ExpressionUUID->"f2f19d3b-8d56-4193-ab1f-d19ba63f9217"],
+Cell[6181, 196, 71, 0, 34, "Text",ExpressionUUID->"70672d0e-7a2b-4758-9e9b-cf1a756cfcb5"]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[6289, 201, 104, 0, 53, "Subsection",ExpressionUUID->"ca569500-bc96-4869-9768-68b060ee0691"],
+Cell[CellGroupData[{
+Cell[6418, 205, 104, 0, 44, "Subsubsection",ExpressionUUID->"93dae5fb-7a13-47af-8389-061fc953e5a8"],
+Cell[6525, 207, 469, 10, 56, "Text",ExpressionUUID->"9a1f02d6-4716-4945-a568-3dc49f11284c"],
+Cell[6997, 219, 714, 30, 451, "Code",ExpressionUUID->"62bd667f-5a5e-424b-91b3-e93c1761ca6e"],
+Cell[7714, 251, 348, 9, 34, "Text",ExpressionUUID->"8b28e379-5a4b-4547-b010-30969b76959f"]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[8099, 265, 107, 0, 44, "Subsubsection",ExpressionUUID->"8413c903-d024-4cd0-8965-444c98ab530a"],
+Cell[8209, 267, 753, 15, 56, "Text",ExpressionUUID->"c6fc308f-6960-4f79-8795-fee980569904"],
+Cell[8965, 284, 752, 31, 467, "Code",ExpressionUUID->"06dcbc05-f00f-4c2e-8758-fe3ae97b4f6c"],
+Cell[9720, 317, 571, 13, 49, "Text",ExpressionUUID->"a6058723-d447-4afa-9b61-5929ed954373"]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[10328, 335, 97, 0, 34, "Subsubsection",ExpressionUUID->"0f161add-6f90-4e61-92cd-aeadd39f632c"],
+Cell[10428, 337, 1232, 30, 106, "Text",ExpressionUUID->"e744481b-4640-4fed-844c-0301d0c2f7c9"]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[11697, 372, 89, 0, 34, "Subsubsection",ExpressionUUID->"c4c61c8e-4a2f-400b-9526-2332170efac1"],
+Cell[11789, 374, 509, 12, 30, "Text",ExpressionUUID->"31dea0ed-e25d-4d83-9be6-7528da92e5d4"]
+}, Open  ]]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[12347, 392, 109, 0, 43, "Subsection",ExpressionUUID->"3bed85c9-5067-4d6d-b03c-4e07ddcde402"],
+Cell[12459, 394, 872, 16, 144, "Text",ExpressionUUID->"2292e445-81e3-4778-b9a7-b4cc8490e990"]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[13368, 415, 97, 0, 43, "Subsection",ExpressionUUID->"501c4ed8-71f8-4e29-9e47-43108c4bf5f3"],
+Cell[13468, 417, 768, 13, 68, "Text",ExpressionUUID->"6e39d9c7-e8d4-49b2-b498-3532c81abc17"],
+Cell[14239, 432, 196, 5, 50, "Code",ExpressionUUID->"768ff913-cb44-4e74-bee3-e5d0de10ad31"],
+Cell[14438, 439, 471, 10, 49, "Text",ExpressionUUID->"8405542a-2f97-4b4e-abca-107677fd5fda"],
+Cell[14912, 451, 256, 7, 50, "Code",ExpressionUUID->"4ca08f09-7235-4004-9ac2-17cc6b7dc393"],
+Cell[15171, 460, 370, 9, 30, "Text",ExpressionUUID->"694fdb3e-5d7c-45d8-9444-58f30887fb39"]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[15578, 474, 95, 0, 43, "Subsection",ExpressionUUID->"be23d87b-685d-4622-bd31-e79431f05d3a"],
+Cell[15676, 476, 812, 19, 49, "Text",ExpressionUUID->"5e225f9c-f1f6-4ebc-ae3e-f4b6f7d71ed5"],
+Cell[16491, 497, 562, 16, 123, "Code",ExpressionUUID->"820ce70a-cab0-4cec-b3d9-bf9ddeb514fb"],
+Cell[17056, 515, 618, 14, 87, "Text",ExpressionUUID->"b49227b7-1c23-45b1-9a9c-db7b169618c6"],
+Cell[17677, 531, 565, 17, 129, "Code",ExpressionUUID->"049227da-39b4-44bf-80e9-c0f242a8574c"],
+Cell[18245, 550, 71, 0, 30, "Text",ExpressionUUID->"d1b32038-add9-46b9-a719-de62747c5053"]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[18353, 555, 102, 0, 44, "Subsection",ExpressionUUID->"211f7943-d30a-4856-b094-77f845f89454"],
+Cell[18458, 557, 1819, 44, 106, "Text",ExpressionUUID->"df50e5c6-261d-4376-b3a6-4c0317404f8f"],
+Cell[20280, 603, 473, 14, 72, "Code",ExpressionUUID->"c2a870a0-1154-44ff-955a-8d946a6d8e33"],
+Cell[20756, 619, 257, 8, 30, "Text",ExpressionUUID->"fee5a1a2-08b3-4a17-92b1-6203352e93c8"],
+Cell[21016, 629, 362, 9, 72, "Code",ExpressionUUID->"b781b593-4ea8-4abe-b0fd-7419250c46ee"],
+Cell[21381, 640, 218, 5, 30, "Text",ExpressionUUID->"382584ba-b4ef-4b48-a521-447cca56a909"]
+}, Open  ]]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[21648, 651, 96, 0, 64, "Section",ExpressionUUID->"33581a0a-179a-437a-b29f-8c5f502f3ce0"],
+Cell[CellGroupData[{
+Cell[21769, 655, 93, 0, 44, "Subsection",ExpressionUUID->"e4c44a92-883e-4ab1-b3d3-555c76b6e1e3"],
+Cell[21865, 657, 371, 9, 30, "Text",ExpressionUUID->"5f3de0e4-7828-4771-97c1-6c27ce2849d3"],
+Cell[22239, 668, 437, 12, 72, "Code",ExpressionUUID->"07141035-c8bb-4387-89dc-939f7842246d"],
+Cell[22679, 682, 330, 9, 30, "Text",ExpressionUUID->"e05307d7-1284-432e-bac3-7c14bd098dba"],
+Cell[23012, 693, 302, 14, 165, "Code",ExpressionUUID->"cde4ba4a-3052-4db4-9bb7-c66e173afb7d"],
+Cell[23317, 709, 200, 3, 30, "Text",ExpressionUUID->"3bff4346-4671-40cf-9f3c-86ff068aabe5"]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[23554, 717, 104, 0, 44, "Subsection",ExpressionUUID->"6f741445-82ae-4b4a-86dc-dc46fd07b261"],
+Cell[23661, 719, 252, 6, 30, "Text",ExpressionUUID->"4de462ab-c7e6-4a3c-a5b9-a61f301abca9"],
+Cell[23916, 727, 327, 12, 139, "Code",ExpressionUUID->"f7606988-aa79-4a95-8dfb-ff9c5a1c9f6f"],
+Cell[24246, 741, 913, 21, 49, "Text",ExpressionUUID->"02d2ff5b-95c8-4956-a9d1-d3f2ed0e7975"],
+Cell[25162, 764, 267, 11, 165, "Code",ExpressionUUID->"667bfe3b-4dbd-4cff-b228-7b89a7ba146e"],
+Cell[25432, 777, 283, 6, 30, "Text",ExpressionUUID->"3bb8b6e2-27d8-4a93-a83c-1d689fe84a88"],
+Cell[25718, 785, 400, 13, 139, "Code",ExpressionUUID->"67c47bee-9841-49e6-9a9a-ed4aee9e0b05"],
+Cell[26121, 800, 198, 3, 30, "Text",ExpressionUUID->"dc382e2d-4665-4ca8-bb92-3d1a6a109792"]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[26356, 808, 100, 0, 44, "Subsection",ExpressionUUID->"a10493fd-2239-404e-b005-451b39e34f53"],
+Cell[26459, 810, 527, 15, 30, "Text",ExpressionUUID->"679ea8cd-f8d2-4837-a1bf-ef6a8c99a495"],
+Cell[26989, 827, 492, 17, 178, "Code",ExpressionUUID->"3a40d4ab-516a-4087-b01c-ceabb617c0d5"],
+Cell[27484, 846, 355, 9, 68, "Text",ExpressionUUID->"83f0c975-537f-4fa2-9296-160224f8e2e7"],
+Cell[27842, 857, 319, 9, 72, "Code",ExpressionUUID->"222d2132-dea7-42ae-a374-18a8b8481b88"],
+Cell[28164, 868, 186, 5, 30, "Text",ExpressionUUID->"c09497db-1ef0-46cf-bd5b-78c4b564efdc"],
+Cell[28353, 875, 416, 11, 72, "Code",ExpressionUUID->"ca812a97-021c-4d3b-9eab-4dd8df1bad9c"],
+Cell[28772, 888, 153, 5, 30, "Text",ExpressionUUID->"4c782df8-c5d4-4d18-b5c3-8d2a9089b7b4"],
+Cell[28928, 895, 357, 9, 72, "Code",ExpressionUUID->"e2217b63-a6f6-4496-8906-abe6bea38a43"],
+Cell[29288, 906, 225, 8, 30, "Text",ExpressionUUID->"ff5c5d7e-30dc-4a1e-af44-83bfa51bd2ab"],
+Cell[29516, 916, 358, 9, 72, "Code",ExpressionUUID->"20397c51-099f-4318-961e-3be159b17c95"],
+Cell[29877, 927, 315, 9, 30, "Text",ExpressionUUID->"608b9773-607e-4feb-95ad-59d267c04fcc"]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[30229, 941, 96, 0, 44, "Subsection",ExpressionUUID->"37895de7-3fc0-467b-917e-6e04e7eb4565"],
+Cell[30328, 943, 323, 6, 30, "Text",ExpressionUUID->"d4f48c80-b827-4d2a-8af1-10d79bfc0066"],
+Cell[30654, 951, 324, 15, 178, "Code",ExpressionUUID->"86108e77-228c-4b03-a079-937fbb42321c"],
+Cell[30981, 968, 128, 0, 30, "Text",ExpressionUUID->"07e7253a-b9c0-44f9-ba0a-ad70e9ebc095"],
+Cell[31112, 970, 317, 9, 52, "Code",ExpressionUUID->"7cf8d543-c3f1-4d4f-8723-e61a55053321"],
+Cell[31432, 981, 274, 8, 30, "Text",ExpressionUUID->"2560cefb-d145-42de-8db4-b72aaadf3433"],
+Cell[31709, 991, 474, 18, 204, "Code",ExpressionUUID->"067682d7-43ac-42f0-880b-8ff21f38c5b3"],
+Cell[32186, 1011, 1478, 47, 106, "Text",ExpressionUUID->"a7c21ecc-8433-4e8f-86db-ce964bdca29e"]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[33701, 1063, 106, 0, 44, "Subsection",ExpressionUUID->"fbd81d81-9288-4c67-b503-2c526840de84"],
+Cell[33810, 1065, 554, 13, 30, "Text",ExpressionUUID->"54937137-a4fc-432b-a5bb-aa24f3637ccc"],
+Cell[34367, 1080, 340, 16, 191, "Code",ExpressionUUID->"d240346a-fefc-4272-85d9-dc6303ead7df"],
+Cell[34710, 1098, 250, 8, 34, "Text",ExpressionUUID->"0774b57d-5690-4ed7-97ab-2278e83b94f4"],
+Cell[34963, 1108, 1640, 38, 466, "Code",ExpressionUUID->"5ba0a4f5-c306-4fa0-921e-5a381817030a"],
+Cell[36606, 1148, 483, 11, 34, "Text",ExpressionUUID->"d2a7243b-6c63-4d14-a997-272e7d83f900"]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[37126, 1164, 89, 0, 53, "Subsection",ExpressionUUID->"bc295cc0-c6d4-4c0c-a471-dfe33f82dfcb"],
+Cell[37218, 1166, 512, 13, 34, "Text",ExpressionUUID->"12c9cd6d-069b-439b-bacf-ed29697f0d20"],
+Cell[37733, 1181, 356, 17, 243, "Code",ExpressionUUID->"b326b68b-fa9b-4cc7-bca1-45e38dc402e9"],
+Cell[38092, 1200, 236, 8, 34, "Text",ExpressionUUID->"049c3cc4-2501-4339-adb9-7945506fa9e2"],
+Cell[38331, 1210, 859, 20, 268, "Code",ExpressionUUID->"166a9153-ebc0-46c4-a0aa-3dd570c30edc"],
+Cell[39193, 1232, 224, 6, 34, "Text",ExpressionUUID->"3a7c5dbe-00de-42eb-84c0-e3789ddec41d"],
+Cell[39420, 1240, 152, 5, 99, "Code",ExpressionUUID->"af33c24a-a8c9-4f1f-816e-e222ad1c4d54"],
+Cell[39575, 1247, 71, 0, 34, "Text",ExpressionUUID->"1c7ebf83-316a-4ca0-801f-85ccf78d7def"]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[39683, 1252, 96, 0, 53, "Subsection",ExpressionUUID->"ffabd198-cfab-4cd6-bf93-8083278278ac"],
+Cell[39782, 1254, 1090, 29, 78, "Text",ExpressionUUID->"5237e138-d003-44bd-85a3-84e592aaa3be"],
+Cell[40875, 1285, 528, 20, 275, "Code",ExpressionUUID->"57839044-69db-41a5-957f-766269dc10ca"],
+Cell[41406, 1307, 527, 12, 34, "Text",ExpressionUUID->"a92c4bf8-f936-49b7-8a2e-5cf4d6430c92"]
+}, Open  ]]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[41982, 1325, 90, 0, 67, "Section",ExpressionUUID->"6676687c-b48b-46e6-ba7c-781a483fac24"],
+Cell[CellGroupData[{
+Cell[42097, 1329, 84, 0, 53, "Subsection",ExpressionUUID->"69a71b49-bf1a-493c-9cc4-d3226bb3b934"],
+Cell[42184, 1331, 652, 11, 56, "Text",ExpressionUUID->"548fc608-e78b-46c6-893d-e93a2ffc937c"]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[42873, 1347, 93, 0, 53, "Subsection",ExpressionUUID->"c6ce7712-ec5c-4c0b-97b9-4dfebd30d81e"],
+Cell[42969, 1349, 758, 16, 188, "Text",ExpressionUUID->"7a28f6f2-35e0-4508-9879-ae4093e152bb"]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[43764, 1370, 85, 0, 53, "Subsection",ExpressionUUID->"b99eaccc-471c-409c-9cb6-12ff30022d0d"],
+Cell[43852, 1372, 285, 8, 34, "Text",ExpressionUUID->"ffca7f44-d5a9-44d6-b89d-35a4d91272fb"],
+Cell[44140, 1382, 315, 8, 69, "Code",ExpressionUUID->"fed9a980-f23d-40c2-beb5-763c4398352d"],
+Cell[44458, 1392, 2559, 81, 188, "Text",ExpressionUUID->"1ad6b068-af35-45fe-9e55-2f9d1bcf2a3a"],
+Cell[47020, 1475, 1027, 30, 231, "Code",ExpressionUUID->"00d3bed2-07fa-46bd-94bf-99571f1314c4"],
+Cell[48050, 1507, 391, 9, 34, "Text",ExpressionUUID->"573c9948-61ea-45bb-9847-f4b73ee26362"]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[48478, 1521, 89, 0, 53, "Subsection",ExpressionUUID->"a2ad8f35-22b1-4f7d-b1c8-fe37e0c32ff0"],
+Cell[48570, 1523, 941, 22, 78, "Text",ExpressionUUID->"b1c59679-e219-400c-8648-9c01e42ac05f"],
+Cell[49514, 1547, 475, 14, 69, "Code",ExpressionUUID->"4e809479-e323-429c-9f17-e40c93a6ba3c"],
+Cell[49992, 1563, 487, 17, 34, "Text",ExpressionUUID->"77da4669-d511-4c09-abec-3634915d23ed"],
+Cell[50482, 1582, 773, 21, 123, "Code",ExpressionUUID->"cf71f09e-7281-49ea-b4e6-b7eb1fcc6ae8"],
+Cell[51258, 1605, 897, 20, 100, "Text",ExpressionUUID->"3236bd1f-caf4-4cd7-b21a-15255e7e2651"],
+Cell[52158, 1627, 306, 8, 50, "Code",ExpressionUUID->"b59ce4b0-cf00-4498-bf15-90ff6bdcc14d"],
+Cell[52467, 1637, 716, 21, 56, "Text",ExpressionUUID->"8819ac53-9190-4e2f-a09b-8bc252d460ce"],
+Cell[53186, 1660, 636, 18, 69, "Code",ExpressionUUID->"b9eaf73f-7b20-45c8-80ef-cf007a4472c3"],
+Cell[53825, 1680, 1129, 27, 78, "Text",ExpressionUUID->"aade76b0-f45c-494e-820b-4b185b41f5df"]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[54991, 1712, 91, 0, 53, "Subsection",ExpressionUUID->"f69a7137-a8dd-412e-9862-c07f5c266e41"],
+Cell[55085, 1714, 948, 21, 122, "Text",ExpressionUUID->"5d281097-15d9-4501-89f0-c17cc0ba3d76"]
+}, Open  ]]
+}, Open  ]]
+}, Open  ]]
+}
+]
+*)
+

@@ -75,14 +75,6 @@ DefineObjectType[Object[Protocol, RNASynthesis], {
 			Developer -> True,
 			Headers -> {"Column", "Placement"}
 		},
-		PhosphoramiditeDilutionManipulation -> {
-			Format -> Single,
-			Class -> Link,
-			Pattern :> _Link,
-			Relation -> Alternatives[Object[Protocol,SampleManipulation],Object[Protocol,ManualSamplePreparation]],
-			Description -> "The set of instructions to transfer the phosphoramidite dilution solution to the undissolved phosphoramidites.",
-			Category -> "Coupling"
-		},
 		PhosphoramiditeDilutionPrimitives->{
 			Format->Multiple,
 			Class -> Expression,
@@ -730,19 +722,11 @@ DefineObjectType[Object[Protocol, RNASynthesis], {
 			Description -> "The filters used to filter oligomers and cleavage solution from the solid support post-cleavage.",
 			Category -> "Cleavage"
 		},
-		CleavageSolutionManipulation -> {
-			Format -> Multiple,
-			Class -> Link,
-			Pattern :> _Link,
-			Relation -> Object[Protocol, SampleManipulation],
-			Description -> "The set of instructions specifying the transfers of cleavage solution to the solid support.",
-			Category -> "Cleavage"
-		},
 		FilterTransferManipulation -> {
 			Format -> Multiple,
 			Class -> Link,
 			Pattern :> _Link,
-			Relation -> Object[Protocol, SampleManipulation],
+			Relation -> Object[Protocol, SampleManipulation] | Object[Protocol, RoboticSamplePreparation] | Object[Protocol, ManualSamplePreparation] | Object[Notebook, Script],
 			Description -> "The set of instructions specifying the transfers of cleaved oligomers and cleavage solution from the solid support to a filter.",
 			Category -> "Cleavage"
 		},
@@ -750,7 +734,7 @@ DefineObjectType[Object[Protocol, RNASynthesis], {
 			Format -> Multiple,
 			Class -> Link,
 			Pattern :> _Link,
-			Relation -> Object[Protocol, SampleManipulation],
+			Relation -> Object[Protocol, SampleManipulation] | Object[Protocol, RoboticSamplePreparation] | Object[Protocol, ManualSamplePreparation] | Object[Notebook, Script],
 			Description -> "The set of instructions specifying the transfers of cleavage wash solution to the solid support.",
 			Category -> "Cleavage"
 		},
@@ -758,7 +742,7 @@ DefineObjectType[Object[Protocol, RNASynthesis], {
 			Format -> Multiple,
 			Class -> Link,
 			Pattern :> _Link,
-			Relation -> Object[Protocol, SampleManipulation],
+			Relation -> Object[Protocol, SampleManipulation] | Object[Protocol, RoboticSamplePreparation] | Object[Protocol, ManualSamplePreparation] | Object[Notebook, Script],
 			Description -> "The set of instructions specifying the transfers of cleavage wash solution from the solid support to a filter.",
 			Category -> "Cleavage"
 		},
@@ -1000,23 +984,6 @@ DefineObjectType[Object[Protocol, RNASynthesis], {
 			Category -> "Cleavage"
 		},
 
-		StorageSolventManipulation -> {
-			Format -> Multiple,
-			Class -> Link,
-			Pattern :> _Link,
-			Relation -> Object[Protocol, SampleManipulation],
-			Description -> "The set of instructions specifying the transfers of storage solution to uncleaved oligomers (still attached to the solid support).",
-			Category -> "Cleavage"
-		},
-		StorageSolventPrimitives -> {
-			Format -> Multiple,
-			Class -> Expression,
-			Pattern :> SampleManipulationP,
-			Description -> "The set of instructions specifying the transfers of storage solution to uncleaved oligomers (still attached to the solid support).",
-			Category -> "Cleavage",
-			Developer -> True
-		},
-
 		(*-- RNA Deprotection --*)
 		RNADeprotection -> {
 			Format -> Multiple,
@@ -1082,14 +1049,6 @@ DefineObjectType[Object[Protocol, RNASynthesis], {
 			Description -> "The thermal incubation protocols used to reuspend oligomers before the removal of 2-OH protective group.",
 			Category -> "RNA Deprotection"
 		},
-		RNADeprotectionResuspensionSolutionManipulations -> {
-			Format -> Multiple,
-			Class -> Link,
-			Pattern :> _Link,
-			Relation -> Object[Protocol, SampleManipulation],
-			Description -> "The set of instructions specifying the transfers of resuspension solution to oligomers.",
-			Category -> "RNA Deprotection"
-		},
 		RNADeprotectionSolutions -> {
 			Format -> Multiple,
 			Class -> Link,
@@ -1133,7 +1092,7 @@ DefineObjectType[Object[Protocol, RNASynthesis], {
 			Format -> Multiple,
 			Class -> Link,
 			Pattern :> _Link,
-			Relation -> Object[Protocol, SampleManipulation],
+			Relation -> Object[Protocol, SampleManipulation] | Object[Protocol, ManualSamplePreparation],
 			Description -> "The set of instructions specifying the transfers of 2-OH protective group removals solution to oligomer.",
 			Category -> "RNA Deprotection"
 		},
@@ -1163,7 +1122,7 @@ DefineObjectType[Object[Protocol, RNASynthesis], {
 			Format -> Multiple,
 			Class -> Link,
 			Pattern :> _Link,
-			Relation -> Object[Protocol, SampleManipulation],
+			Relation -> Object[Protocol, SampleManipulation] | Object[Protocol, ManualSamplePreparation],
 			Description -> "The set of instructions specifying the transfers of the quenching solution to the oligomer samples.",
 			Category -> "RNA Deprotection"
 		},
@@ -1171,7 +1130,7 @@ DefineObjectType[Object[Protocol, RNASynthesis], {
 			Format -> Multiple,
 			Class -> Link,
 			Pattern :> _Link,
-			Relation -> Object[Protocol, SampleManipulation],
+			Relation -> Object[Protocol, SampleManipulation] | Object[Protocol, RoboticSamplePreparation] | Object[Protocol, ManualSamplePreparation] | Object[Notebook, Script],
 			Description -> "The set of instructions specifying the resuspension of the oligonucleotides prior to deprotection.",
 			Developer -> True,
 			Category -> "RNA Deprotection"
@@ -1180,7 +1139,7 @@ DefineObjectType[Object[Protocol, RNASynthesis], {
 			Format -> Multiple,
 			Class -> Link,
 			Pattern :> _Link,
-			Relation -> Object[Protocol, SampleManipulation],
+			Relation -> Object[Protocol, SampleManipulation] | Object[Protocol, RoboticSamplePreparation] | Object[Protocol, ManualSamplePreparation] | Object[Notebook, Script],
 			Description -> "The set of instructions specifying the transfers of resuspended oligonucleotides to the container for deprotection.",
 			Developer -> True,
 			Category -> "RNA Deprotection"
@@ -1536,7 +1495,7 @@ DefineObjectType[Object[Protocol, RNASynthesis], {
 			Format -> Single,
 			Class -> Link,
 			Pattern :> _Link,
-			Relation -> Object[Protocol, SampleManipulation],
+			Relation -> Object[Protocol, SampleManipulation] | Object[Protocol, RoboticSamplePreparation] | Object[Protocol, ManualSamplePreparation] | Object[Notebook, Script],
 			Description -> "The set of instructions specifying the transfers of synthesizer wash solution to the placeholder bottles.",
 			Category -> "Qualifications & Maintenance",
 			Developer -> True
@@ -1544,7 +1503,7 @@ DefineObjectType[Object[Protocol, RNASynthesis], {
 		CleaningPrepPrimitives -> {
 			Format -> Multiple,
 			Class -> Expression,
-			Pattern :> SampleManipulationP,
+			Pattern :> SampleManipulationP | SamplePreparationP,
 			Description -> "The set of instructions specifying the transfers of synthesizer wash solution to the placeholder bottles.",
 			Category -> "Qualifications & Maintenance",
 			Developer -> True
@@ -1731,10 +1690,10 @@ DefineObjectType[Object[Protocol, RNASynthesis], {
 				Filter -> _Link,
 				Time -> GreaterP[0 * Minute],
 				Temperature -> GreaterP[0 * Kelvin],
-				CleavageSolutionPrimitive -> SampleManipulationP,
-				FilterTransferPrimitive -> SampleManipulationP,
-				ResinWashPrimitive -> SampleManipulationP,
-				FilterWashPrimitive -> SampleManipulationP
+				CleavageSolutionPrimitive -> SampleManipulationP | SamplePreparationP,
+				FilterTransferPrimitive -> SampleManipulationP | SamplePreparationP,
+				ResinWashPrimitive -> SampleManipulationP | SamplePreparationP,
+				FilterWashPrimitive -> SampleManipulationP | SamplePreparationP
 			},
 			Relation -> {
 				Strand -> Model[Sample],
@@ -1787,8 +1746,8 @@ DefineObjectType[Object[Protocol, RNASynthesis], {
 				ResuspensionSample -> _Link,
 				Time -> GreaterP[0 * Minute],
 				Temperature -> GreaterP[0 * Kelvin],
-				ResuspensionPrimitive -> ListableP[SampleManipulationP],
-				TransferPrimitive -> SampleManipulationP
+				ResuspensionPrimitive -> ListableP[SampleManipulationP | SamplePreparationP],
+				TransferPrimitive -> SampleManipulationP | SamplePreparationP
 			},
 			Relation -> {
 				Strand -> Model[Sample],
@@ -1835,8 +1794,8 @@ DefineObjectType[Object[Protocol, RNASynthesis], {
 				RNADeprotectionSample -> _Link,
 				Time -> GreaterP[0 * Minute],
 				Temperature -> GreaterP[0 * Kelvin],
-				DeprotectionSolutionPrimitive -> ListableP[SampleManipulationP],
-				QuenchingPrimitive -> SampleManipulationP
+				DeprotectionSolutionPrimitive -> ListableP[SampleManipulationP | SamplePreparationP],
+				QuenchingPrimitive -> SampleManipulationP | SamplePreparationP
 			},
 			Relation -> {
 				Strand -> Model[Sample],

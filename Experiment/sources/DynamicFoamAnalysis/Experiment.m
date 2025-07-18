@@ -376,8 +376,9 @@ DefineOptions[ExperimentDynamicFoamAnalysis,
 		(*Shared options*)
 		AnalyticalNumberOfReplicatesOption,
 		SamplesInStorageOptions,
-		FuntopiaSharedOptions,
-		SimulationOption
+		NonBiologyFuntopiaSharedOptions,
+		SimulationOption,
+		ModelInputOptions
 	}
 ];
 
@@ -449,7 +450,7 @@ ExperimentDynamicFoamAnalysis[mySamples:ListableP[ObjectP[Object[Sample]]],myOpt
 			listedOptionsNamed
 		],
 		$Failed,
-		{Error::MissingDefineNames,Error::InvalidInput,Error::InvalidOption}
+		{Download::ObjectDoesNotExist, Error::MissingDefineNames,Error::InvalidInput,Error::InvalidOption}
 	];
 
 	(* If we are given an invalid define name, return early. *)
@@ -466,13 +467,7 @@ ExperimentDynamicFoamAnalysis[mySamples:ListableP[ObjectP[Object[Sample]]],myOpt
 	];
 
 	(* replace all objects referenced by Name to ID *)
-	{mySamplesWithPreparedSamples,safeOps,myOptionsWithPreparedSamples}=sanitizeInputs[mySamplesWithPreparedSamplesNamed,safeOpsNamed,myOptionsWithPreparedSamplesNamed];
-
-	(* Call ValidInputLengthsQ to make sure all options are the right length *)
-	{validLengths,validLengthTests}=If[gatherTests,
-		ValidInputLengthsQ[ExperimentDynamicFoamAnalysis,{mySamplesWithPreparedSamples},myOptionsWithPreparedSamples,Output->{Result,Tests}],
-		{ValidInputLengthsQ[ExperimentDynamicFoamAnalysis,{mySamplesWithPreparedSamples},myOptionsWithPreparedSamples],Null}
-	];
+	{mySamplesWithPreparedSamples,safeOps,myOptionsWithPreparedSamples}=sanitizeInputs[mySamplesWithPreparedSamplesNamed, safeOpsNamed, myOptionsWithPreparedSamplesNamed, Simulation -> updatedSimulation];
 
 	(* If the specified options don't match their patterns or if option lengths are invalid return $Failed *)
 	If[MatchQ[safeOps,$Failed],
@@ -480,8 +475,15 @@ ExperimentDynamicFoamAnalysis[mySamples:ListableP[ObjectP[Object[Sample]]],myOpt
 			Result->$Failed,
 			Tests->safeOpsTests,
 			Options->$Failed,
-			Preview->Null
+			Preview->Null,
+			Simulation -> Null
 		}]
+	];
+
+	(* Call ValidInputLengthsQ to make sure all options are the right length *)
+	{validLengths,validLengthTests}=If[gatherTests,
+		ValidInputLengthsQ[ExperimentDynamicFoamAnalysis,{mySamplesWithPreparedSamples},myOptionsWithPreparedSamples,Output->{Result,Tests}],
+		{ValidInputLengthsQ[ExperimentDynamicFoamAnalysis,{mySamplesWithPreparedSamples},myOptionsWithPreparedSamples],Null}
 	];
 
 	(* If option lengths are invalid return $Failed (or the tests up to this point) *)
@@ -490,7 +492,8 @@ ExperimentDynamicFoamAnalysis[mySamples:ListableP[ObjectP[Object[Sample]]],myOpt
 			Result->$Failed,
 			Tests->Join[safeOpsTests,validLengthTests],
 			Options->$Failed,
-			Preview->Null
+			Preview->Null,
+			Simulation -> Null
 		}]
 	];
 
@@ -506,7 +509,8 @@ ExperimentDynamicFoamAnalysis[mySamples:ListableP[ObjectP[Object[Sample]]],myOpt
 			Result->$Failed,
 			Tests->Join[safeOpsTests,validLengthTests,unresolvedOptionsTests],
 			Options->$Failed,
-			Preview->Null
+			Preview->Null,
+			Simulation -> Null
 		}]
 	];
 
@@ -673,7 +677,7 @@ ExperimentDynamicFoamAnalysis[mySamples:ListableP[ObjectP[Object[Sample]]],myOpt
 	];
 
 	(* remove the hidden options and collapse the expanded options if necessary *)
-	(* need to do this at this level only because resolveAbsorbanceOptions doens't have access to listedOptions *)
+	(* need to do this at this level only because resolveAbsorbanceOptions doesn't have access to listedOptions *)
 	resolvedOptionsNoHidden = CollapseIndexMatchedOptions[
 		ExperimentDynamicFoamAnalysis,
 		RemoveHiddenOptions[ExperimentDynamicFoamAnalysis, resolvedOptions],
@@ -788,6 +792,7 @@ ExperimentDynamicFoamAnalysis[mySamples:ListableP[ObjectP[Object[Sample]]],myOpt
 			Flatten@{resourcePackets[[2]]},
 			Upload->Lookup[safeOps,Upload],
 			Confirm->Lookup[safeOps,Confirm],
+			CanaryBranch->Lookup[safeOps,CanaryBranch],
 			ParentProtocol->Lookup[safeOps,ParentProtocol],
 			Priority->Lookup[safeOps,Priority],
 			StartDate->Lookup[safeOps,StartDate],
@@ -808,7 +813,7 @@ ExperimentDynamicFoamAnalysis[mySamples:ListableP[ObjectP[Object[Sample]]],myOpt
 ];
 
 (* Note: The container overload should come after the sample overload. *)
-ExperimentDynamicFoamAnalysis[myContainers:ListableP[ObjectP[{Object[Container],Object[Sample]}]|_String|{LocationPositionP,_String|ObjectP[Object[Container]]}],myOptions:OptionsPattern[]]:=Module[
+ExperimentDynamicFoamAnalysis[myContainers:ListableP[ObjectP[{Object[Container],Object[Sample],Model[Sample]}]|_String|{LocationPositionP,_String|ObjectP[Object[Container]]}],myOptions:OptionsPattern[]]:=Module[
 	{listedContainers,listedOptionsNamed,outputSpecification,output,gatherTests,validSamplePreparationResult,mySamplesWithPreparedSamples,myOptionsWithPreparedSamples,
 		samplePreparationCache,containerToSampleResult,containerToSampleOutput,containerToSampleSimulation,samples,sampleOptions,containerToSampleTests,updatedSimulation},
 
@@ -831,7 +836,7 @@ ExperimentDynamicFoamAnalysis[myContainers:ListableP[ObjectP[{Object[Container],
 			ToList[listedOptionsNamed]
 		],
 		$Failed,
-		{Error::MissingDefineNames,Error::InvalidInput,Error::InvalidOption}
+		{Download::ObjectDoesNotExist, Error::MissingDefineNames,Error::InvalidInput,Error::InvalidOption}
 	];
 
 	(* If we are given an invalid define name, return early. *)
@@ -951,7 +956,7 @@ resolveExperimentDynamicFoamAnalysisOptions[mySamples:{ObjectP[Object[Sample]]..
 		compatibleMaterialsBool,compatibleMaterialsTests,compatibleMaterialsInvalidOption,materials,compatibilityFoamColumns,
 
 		(* misc options *)
-		emailOption,uploadOption,nameOption,confirmOption,parentProtocolOption,fastTrackOption,templateOption,samplesInStorageOption,operator,
+		emailOption,uploadOption,nameOption,confirmOption,canaryBranchOption,parentProtocolOption,fastTrackOption,templateOption,samplesInStorageOption,operator,
 		validSampleStorageConditionQ,validSampleStorageTests,invalidStorageConditionOptions,simulation,updatedSimulation,resolvedSampleLabel,resolvedSampleContainerLabel
 
 
@@ -1314,7 +1319,7 @@ resolveExperimentDynamicFoamAnalysisOptions[mySamples:{ObjectP[Object[Sample]]..
 		{}
 	];
 
-	(* 3. ImagingMethod and FoamImagingModule/CameraHeight/StructureIlluminationIntensity/FieldOfView are copacetic *)
+	(* 3. ImagingMethod and FoamImagingModule/CameraHeight/StructureIlluminationIntensity/FieldOfView are compatible *)
 	imagingMethodOnlyMismatches=MapThread[
 		Function[{detectionMethod,foamImagingModule,cameraHeight,structureIlluminationIntensity,fieldOfView,sampleObject},
 			(* FoamImagingModule/CameraHeight/StructureIlluminationIntensity/FieldOfView can only be set when DetectionMethod is Automatic or includes ImagingMethod *)
@@ -1371,7 +1376,7 @@ resolveExperimentDynamicFoamAnalysisOptions[mySamples:{ObjectP[Object[Sample]]..
 		{}
 	];
 
-	(* 4. LiquidConductivityMethod and LiquidConductivityModule are copacetic *)
+	(* 4. LiquidConductivityMethod and LiquidConductivityModule are compatible *)
 	liquidConductivityOnlyMismatches=MapThread[
 		Function[{detectionMethod,liquidConductivityModule,sampleObject},
 			(* LiquidConductivityModule can only be set when DetectionMethod is Automatic or includes LiquidConductivityMethod *)
@@ -1485,7 +1490,7 @@ resolveExperimentDynamicFoamAnalysisOptions[mySamples:{ObjectP[Object[Sample]]..
 		{}
 	];
 
-	(* 7. Stir and StirBlade, StirRate, StirOscillationPeriod are copacetic *)
+	(* 7. Stir and StirBlade, StirRate, StirOscillationPeriod are compatible *)
 	stirOnlyMismatches=MapThread[
 		Function[{agitation,stirBlade,stirRate,stirOscillationPeriod,sampleObject},
 			(* StirBlade, StirRate, StirOscillationPeriod can only be set when Agitation is Automatic or Stir *)
@@ -1542,7 +1547,7 @@ resolveExperimentDynamicFoamAnalysisOptions[mySamples:{ObjectP[Object[Sample]]..
 		{}
 	];
 
-	(* 8. Sparge and SpargeFilter, SpargeGas, SpargeFlowRate are copacetic *)
+	(* 8. Sparge and SpargeFilter, SpargeGas, SpargeFlowRate are compatible *)
 	spargeOnlyMismatches=MapThread[
 		Function[{agitation,spargeFilter,spargeGas,spargeFlowRate,sampleObject},
 			(* SpargeFilter, SpargeGas, SpargeFlowRate can only be set when Agitation is Automatic or Sparge *)
@@ -2556,9 +2561,9 @@ resolveExperimentDynamicFoamAnalysisOptions[mySamples:{ObjectP[Object[Sample]]..
 	]];
 
 	(* Pull out Miscellaneous options *)
-	{emailOption,uploadOption,nameOption,confirmOption,parentProtocolOption,fastTrackOption,templateOption,samplesInStorageOption,operator}=
+	{emailOption,uploadOption,nameOption,confirmOption,canaryBranchOption,parentProtocolOption,fastTrackOption,templateOption,samplesInStorageOption,operator}=
 		Lookup[allOptionsRounded,
-			{Email,Upload,Name,Confirm,ParentProtocol,FastTrack,Template,SamplesInStorageCondition,Operator}];
+			{Email,Upload,Name,Confirm,CanaryBranch,ParentProtocol,FastTrack,Template,SamplesInStorageCondition,Operator}];
 
 	(* check if the provided sampleStorageCondtion is valid*)
 	{validSampleStorageConditionQ,validSampleStorageTests}=If[gatherTests,
@@ -3296,6 +3301,7 @@ resolveExperimentDynamicFoamAnalysisOptions[mySamples:{ObjectP[Object[Sample]]..
 				StirOscillationPeriod->resolvedStirOscillationPeriod,
 				NumberOfWashes->resolvedNumberOfWashes,
 				Confirm->confirmOption,
+				CanaryBranch->canaryBranchOption,
 				Name->name,
 				Email->resolvedEmail,
 				ParentProtocol->parentProtocolOption,
@@ -3353,7 +3359,7 @@ dynamicFoamAnalysisResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnres
 		allResourceBlobs,fulfillable,frqTests,testsRule,resultRule,previewRule,optionsRule,wasteContainerResource,oRing1Resource,oRing2Resource,uniqueSyringeResource,uniqueNeedleResource,syringeResource,needleResource,
 		containersInResources,foamColumnExpandedResource,liquidConductivityModuleNoDuplicate,spargeFilterNoDuplicate,stirBladeNoDuplicates,
 		agitationModuleNoDuplicates,oRingSparge1,oRingSparge2,oRingStir,recirculatingPumpResource,
-		numberOfSamples,totalMeasurementTimes,simulation,samplesWithoutLinks,simulatedSamples,updatedSimulation,
+		numberOfSamples,totalMeasurementTimes,simulation,simulatedSamples,updatedSimulation,
 		numReplicates,resolvedSampleVolume,integerNumberOfReplicates,listOfExpandedSamples,samplesInLinks,resourceSamplesIn,
 		expandedSamplesWithNumReplicates,optionsWithReplicates,diodeArrayModuleIRResource,diodeArrayModuleVisibleResource,groupedBatches,batchSampleLengths,
 		rawDfaParameters,batchSampleIndexes,unitOperationIDs,unitOperationPackets,possibleFoamColumnDuplicates,newDfaParameters,groupedBatchDfaParameters,finalUnitOperationParameters,finalIndexes,finalBatchLengths,remainingAssociation,remainingIndexes,remainingLengths,
@@ -3384,11 +3390,8 @@ dynamicFoamAnalysisResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnres
 	cacheBall = FlattenCachePackets[{cache, inheritedCache}];
 	simulation=Lookup[ToList[ops],Simulation];
 
-	(* Get rid of the links in mySamples. *)
-	samplesWithoutLinks=Download[mySamples,Object];
-
 	(* Get our simulated samples (we have to figure out sample groupings here). *)
-	{simulatedSamples,updatedSimulation}=simulateSamplesResourcePacketsNew[ExperimentDynamicFoamAnalysis,samplesWithoutLinks,myResolvedOptions,Cache->inheritedCache];
+	{simulatedSamples,updatedSimulation}=simulateSamplesResourcePacketsNew[ExperimentDynamicFoamAnalysis,mySamples,myResolvedOptions,Cache->inheritedCache,Simulation -> simulation];
 
 	(* --- Make our one big Download call --- *)
 	{
@@ -3943,10 +3946,10 @@ dynamicFoamAnalysisResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnres
 
 		(*Resources*)
 		Replace[Checkpoints]->{
-			{"Preparing Samples",15 Minute,"Preprocessing, such as incubation, mixing, centrifuging, and aliquoting, is performed.",Link[Resource[Operator->Model[User,Emerald,Operator,"Trainee"],Time->30 Minute]]},
-			{"Picking Resources",15 Minute,"Samples required to execute this protocol are gathered from storage.",Link[Resource[Operator->Model[User,Emerald,Operator,"Trainee"],Time->5 Minute]]},
-			{"Dynamic Foam Analysis",instrumentTime,"Samples are placed into the instrument and then a dynamic foam analysis experiment is run.",Link[Resource[Operator->Model[User,Emerald,Operator,"Trainee"],Time->instrumentTime]]},
-			{"Returning Materials",20 Minute,"Samples are returned to storage.",Link[Resource[Operator->Model[User,Emerald,Operator,"Trainee"],Time->20*Minute]]}
+			{"Preparing Samples",15 Minute,"Preprocessing, such as incubation, mixing, centrifuging, and aliquoting, is performed.",Link[Resource[Operator->$BaselineOperator,Time->30 Minute]]},
+			{"Picking Resources",15 Minute,"Samples required to execute this protocol are gathered from storage.",Link[Resource[Operator->$BaselineOperator,Time->5 Minute]]},
+			{"Dynamic Foam Analysis",instrumentTime,"Samples are placed into the instrument and then a dynamic foam analysis experiment is run.",Link[Resource[Operator->$BaselineOperator,Time->instrumentTime]]},
+			{"Returning Materials",20 Minute,"Samples are returned to storage.",Link[Resource[Operator->$BaselineOperator,Time->20*Minute]]}
 		}
 	|>
 	];
@@ -4007,15 +4010,15 @@ DefineOptions[ExperimentDynamicFoamAnalysisPreview,
 ];
 
 
-ExperimentDynamicFoamAnalysisPreview[sampleIn:(ObjectP[{Object[Container],Object[Sample]}]|_String),myOptions:OptionsPattern[]]:=ExperimentDynamicFoamAnalysisPreview[{sampleIn},myOptions];
+ExperimentDynamicFoamAnalysisPreview[sampleIn:(ObjectP[{Object[Container],Object[Sample],Model[Sample]}]|_String),myOptions:OptionsPattern[]]:=ExperimentDynamicFoamAnalysisPreview[{sampleIn},myOptions];
 
-ExperimentDynamicFoamAnalysisPreview[samplesIn:{(ObjectP[{Object[Container],Object[Sample]}]|_String)..},myOptions:OptionsPattern[]]:=Module[
+ExperimentDynamicFoamAnalysisPreview[samplesIn:{(ObjectP[{Object[Container],Object[Sample],Model[Sample]}]|_String)..},myOptions:OptionsPattern[]]:=Module[
 	{listedOptionsNamed,noOutputOptions},
 
 	(* get the options as a list *)
 	listedOptionsNamed=ToList[myOptions];
 
-	(* remove the Output option before passing to the core function because it doens't make sense here *)
+	(* remove the Output option before passing to the core function because it doesn't make sense here *)
 	noOutputOptions=DeleteCases[listedOptionsNamed,Output->_];
 
 	(* return only the preview for ExperimentDynamicFoamAnalysis *)
@@ -4039,15 +4042,15 @@ DefineOptions[ExperimentDynamicFoamAnalysisOptions,
 	}
 ];
 
-ExperimentDynamicFoamAnalysisOptions[sampleIn:(ObjectP[{Object[Container],Object[Sample]}]|_String),myOptions:OptionsPattern[]]:=ExperimentDynamicFoamAnalysisOptions[{sampleIn},myOptions];
+ExperimentDynamicFoamAnalysisOptions[sampleIn:(ObjectP[{Object[Container],Object[Sample],Model[Sample]}]|_String),myOptions:OptionsPattern[]]:=ExperimentDynamicFoamAnalysisOptions[{sampleIn},myOptions];
 
-ExperimentDynamicFoamAnalysisOptions[samplesIn:{(ObjectP[{Object[Container],Object[Sample]}]|_String)..},myOptions:OptionsPattern[]]:=Module[
+ExperimentDynamicFoamAnalysisOptions[samplesIn:{(ObjectP[{Object[Container],Object[Sample],Model[Sample]}]|_String)..},myOptions:OptionsPattern[]]:=Module[
 	{listedOptionsNamed,noOutputOptions,options},
 
 	(* get the options as a list *)
 	listedOptionsNamed=ToList[myOptions];
 
-	(* remove the Output option before passing to the core function because it doens't make sense here *)
+	(* remove the Output option before passing to the core function because it doesn't make sense here *)
 	noOutputOptions=DeleteCases[listedOptionsNamed,Alternatives[Output->_,OutputFormat->_]];
 
 	(* return only the options for ExperimentDynamicFoamAnalysis *)
@@ -4074,7 +4077,7 @@ DefineOptions[ValidExperimentDynamicFoamAnalysisQ,
 ];
 
 
-ValidExperimentDynamicFoamAnalysisQ[myInput:ListableP[ObjectP[{Object[Container],Object[Sample]}]|_String],myOptions:OptionsPattern[ValidExperimentDynamicFoamAnalysisQ]]:=Module[
+ValidExperimentDynamicFoamAnalysisQ[myInput:ListableP[ObjectP[{Object[Container],Object[Sample],Model[Sample]}]|_String],myOptions:OptionsPattern[ValidExperimentDynamicFoamAnalysisQ]]:=Module[
 	{listedInput,listedOptionsNamed,preparedOptions,functionTests,initialTestDescription,allTests,safeOps,verbose,outputFormat,result},
 
 	listedInput=ToList[myInput];

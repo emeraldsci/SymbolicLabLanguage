@@ -2401,7 +2401,7 @@ DefineOptions[ExperimentBioLayerInterferometry,
     {
       OptionName->AssaySequencePrimitives,
       Default -> Automatic,
-      AllowNull->False,
+      AllowNull->True,
       Widget->
           Adder[
             Widget[
@@ -2638,7 +2638,22 @@ DefineOptions[ExperimentBioLayerInterferometry,
       ],
       Category -> "Assay Primitives"
     },
-    FuntopiaSharedOptions,
+    ModifyOptions[
+      ModelInputOptions,
+      PreparedModelAmount,
+      {
+        ResolutionDescription -> "Automatically set to 40 Milliliter."
+      }
+    ],
+    ModifyOptions[
+      ModelInputOptions,
+      PreparedModelContainer,
+      {
+        ResolutionDescription -> "If PreparedModelAmount is set to All and the input model has a product associated with both Amount and DefaultContainerModel populated, automatically set to the DefaultContainerModel value in the product. Otherwise, automatically set to Model[Container, Vessel, \"50mL Tube\"]."
+      }
+    ],
+    SimulationOption,
+    NonBiologyFuntopiaSharedOptions,
     SamplesInStorageOption
   }
 ];
@@ -2771,11 +2786,11 @@ Error::BLITestLoadingSolutionsStorageConditionLengthMismatch = "TestLoadingSolut
 
 ExperimentBioLayerInterferometry[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:OptionsPattern[ExperimentBioLayerInterferometry]]:=Module[
   {listedOptions, listedSamples, outputSpecification,output,gatherTests,validSamplePreparationResult,mySamplesWithPreparedSamples,myOptionsWithPreparedSamples,
-    samplePreparationCache,safeOps,safeOpsTests,validLengths,validLengthTests,
+    safeOps,safeOpsTests,validLengths,validLengthTests, updatedSimulation,
     templatedOptions,templateTests,inheritedOptions,expandedSafeOps,cacheBall,resolvedOptionsResult,
     resolvedOptions,resolvedOptionsTests,collapsedResolvedOptions,protocolObject,resourcePackets,resourcePacketTests,allDownloadValues,
     (* variables from safeOps and download *)
-    upload, confirm, fastTrack, parentProt, inheritedCache, samplePreparationPackets, sampleModelPreparationPackets, messages,
+    upload, confirm, canaryBranch, fastTrack, parentProt, inheritedCache, samplePreparationPackets, sampleModelPreparationPackets, messages,
     allObjectProbes, allModelProbes, allModelSamplesFromOptions, allObjectSamplesFromOptions, allInstrumentObjectsFromOptions, allObjectsFromOptions, allInstrumentModelsFromOptions,
     containerPreparationPackets, liquidHandlerContainers, containerModelPreparationPackets, hamiltonCompatibleContainerDownloadFields, modelPreparationPackets,
     mySamplesWithPreparedSamplesNamed,myOptionsWithPreparedSamplesNamed,safeOpsNamed
@@ -2795,20 +2810,20 @@ ExperimentBioLayerInterferometry[mySamples:ListableP[ObjectP[Object[Sample]]],my
   (* Simulate our sample preparation. *)
   validSamplePreparationResult=Check[
     (* Simulate sample preparation. *)
-    {mySamplesWithPreparedSamplesNamed,myOptionsWithPreparedSamplesNamed,samplePreparationCache}=simulateSamplePreparationPackets[
+    {mySamplesWithPreparedSamplesNamed, myOptionsWithPreparedSamplesNamed, updatedSimulation} = simulateSamplePreparationPacketsNew[
       ExperimentBioLayerInterferometry,
       listedSamples,
       listedOptions
     ],
     $Failed,
-    {Error::MissingDefineNames}
+    {Download::ObjectDoesNotExist,Error::MissingDefineNames}
   ];
 
   (* If we are given an invalid define name, return early. *)
   If[MatchQ[validSamplePreparationResult,$Failed],
     (* Return early. *)
-    (* Note: We've already thrown a message above in simulateSamplePreparationPackets. *)
-    ClearMemoization[Experiment`Private`simulateSamplePreparationPackets];Return[$Failed]
+    (* Note: We've already thrown a message above in simulateSamplePreparationPacketsNew. *)
+    Return[$Failed]
   ];
 
   (* Call SafeOptions to make sure all options match pattern *)
@@ -2817,13 +2832,7 @@ ExperimentBioLayerInterferometry[mySamples:ListableP[ObjectP[Object[Sample]]],my
     {SafeOptions[ExperimentBioLayerInterferometry,myOptionsWithPreparedSamplesNamed,AutoCorrect->False],{}}
   ];
 
-  {mySamplesWithPreparedSamples,safeOps,myOptionsWithPreparedSamples}=sanitizeInputs[mySamplesWithPreparedSamplesNamed,safeOpsNamed,myOptionsWithPreparedSamplesNamed];
-
-  (* Call ValidInputLengthsQ to make sure all options are the right length *)
-  {validLengths,validLengthTests}=If[gatherTests,
-    ValidInputLengthsQ[ExperimentBioLayerInterferometry,{mySamplesWithPreparedSamples},myOptionsWithPreparedSamples,Output->{Result,Tests}],
-    {ValidInputLengthsQ[ExperimentBioLayerInterferometry,{mySamplesWithPreparedSamples},myOptionsWithPreparedSamples],Null}
-  ];
+  {mySamplesWithPreparedSamples, safeOps, myOptionsWithPreparedSamples} = sanitizeInputs[mySamplesWithPreparedSamplesNamed, safeOpsNamed, myOptionsWithPreparedSamplesNamed, Simulation -> updatedSimulation];
 
   (* If the specified options don't match their patterns or if option lengths are invalid return $Failed *)
   If[MatchQ[safeOps,$Failed],
@@ -2834,6 +2843,14 @@ ExperimentBioLayerInterferometry[mySamples:ListableP[ObjectP[Object[Sample]]],my
       Preview -> Null
     }]
   ];
+
+  (* Call ValidInputLengthsQ to make sure all options are the right length *)
+  {validLengths,validLengthTests}=If[gatherTests,
+    ValidInputLengthsQ[ExperimentBioLayerInterferometry,{mySamplesWithPreparedSamples},myOptionsWithPreparedSamples,Output->{Result,Tests}],
+    {ValidInputLengthsQ[ExperimentBioLayerInterferometry,{mySamplesWithPreparedSamples},myOptionsWithPreparedSamples],Null}
+  ];
+
+
 
   (* If option lengths are invalid return $Failed (or the tests up to this point) *)
   If[!validLengths,
@@ -2846,7 +2863,7 @@ ExperimentBioLayerInterferometry[mySamples:ListableP[ObjectP[Object[Sample]]],my
   ];
 
   (* get assorted hidden options *)
-  {upload, confirm, fastTrack, parentProt, inheritedCache} = Lookup[safeOps, {Upload, Confirm, FastTrack, ParentProtocol, Cache}];
+  {upload, confirm, canaryBranch, fastTrack, parentProt, inheritedCache} = Lookup[safeOps, {Upload, Confirm, CanaryBranch, FastTrack, ParentProtocol, Cache}];
 
 
   (* Use any template options to get values for options not specified in myOptions *)
@@ -2906,7 +2923,7 @@ ExperimentBioLayerInterferometry[mySamples:ListableP[ObjectP[Object[Sample]]],my
   allInstrumentModelsFromOptions = Cases[allObjectsFromOptions, ObjectP[Model[Instrument,BioLayerInterferometer]]];
   (* download the object here since there will be a packet also from simulation *)
   allObjectSamplesFromOptions = DeleteCases[Download[Cases[allObjectsFromOptions, ObjectP[Object[Sample]]], Object], Alternatives@@ToList[mySamplesWithPreparedSamples[Object]]];
-  allModelSamplesFromOptions = DeleteCases[Download[Cases[allObjectsFromOptions, ObjectP[Model[Sample]]], Object], Alternatives@@ToList[Download[mySamplesWithPreparedSamples, Model[Object], Cache -> samplePreparationCache]]];
+  allModelSamplesFromOptions = DeleteCases[Download[Cases[allObjectsFromOptions, ObjectP[Model[Sample]]], Object], Alternatives@@ToList[Download[mySamplesWithPreparedSamples, Model[Object], Cache -> inheritedCache, Simulation -> updatedSimulation]]];
   allModelProbes = Cases[allObjectsFromOptions, ObjectP[Model[Item, BLIProbe]]];
   allObjectProbes = Cases[allObjectsFromOptions, ObjectP[Object[Item, BLIProbe]]];
 
@@ -2961,13 +2978,14 @@ ExperimentBioLayerInterferometry[mySamples:ListableP[ObjectP[Object[Sample]]],my
             hamiltonCompatibleContainerDownloadFields
           }*)
         },
-        Cache -> Cases[FlattenCachePackets[{inheritedCache,samplePreparationCache}], PacketP[]],
+        Cache -> Cases[inheritedCache, PacketP[]],
+        Simulation -> updatedSimulation,
         Date->Now
       ]
     ],
     Download::FieldDoesntExist];
 
-  cacheBall=Cases[FlattenCachePackets[{samplePreparationCache, inheritedCache, allDownloadValues}], PacketP[]];
+  cacheBall=Cases[FlattenCachePackets[{inheritedCache, allDownloadValues}], PacketP[]];
 
   (* -------------------------- *)
   (* --- RESOLVE THE OPTIONS ---*)
@@ -2977,7 +2995,7 @@ ExperimentBioLayerInterferometry[mySamples:ListableP[ObjectP[Object[Sample]]],my
   resolvedOptionsResult=If[gatherTests,
 
     (* We are gathering tests. This silences any messages being thrown. *)
-    {resolvedOptions,resolvedOptionsTests}=resolveExperimentBioLayerInterferometryOptions[listedSamples,expandedSafeOps,Cache->cacheBall,Output->{Result,Tests}];
+    {resolvedOptions, resolvedOptionsTests} = resolveExperimentBioLayerInterferometryOptions[listedSamples, expandedSafeOps, Cache -> cacheBall, Simulation -> updatedSimulation, Output -> {Result, Tests}];
 
     (* Therefore, we have to run the tests to see if we encountered a failure. *)
     If[RunUnitTest[<|"Tests"->resolvedOptionsTests|>,OutputFormat->SingleBoolean,Verbose->False],
@@ -2987,7 +3005,7 @@ ExperimentBioLayerInterferometry[mySamples:ListableP[ObjectP[Object[Sample]]],my
 
     (* We are not gathering tests. Simply check for Error::InvalidInput and Error::InvalidOption. *)
     Check[
-      {resolvedOptions,resolvedOptionsTests}={resolveExperimentBioLayerInterferometryOptions[listedSamples,expandedSafeOps,Cache->cacheBall],{}},
+      {resolvedOptions, resolvedOptionsTests} = {resolveExperimentBioLayerInterferometryOptions[listedSamples, expandedSafeOps, Cache -> cacheBall, Simulation -> updatedSimulation], {}},
       $Failed,
       {Error::InvalidInput,Error::InvalidOption}
     ]
@@ -3020,8 +3038,8 @@ ExperimentBioLayerInterferometry[mySamples:ListableP[ObjectP[Object[Sample]]],my
   (* ---------------------------- *)
 
   {resourcePackets,resourcePacketTests} = If[gatherTests,
-    bioLayerInterferometryResourcePackets[ToList[mySamplesWithPreparedSamples],expandedSafeOps,resolvedOptions,Cache->cacheBall,Output->{Result,Tests}],
-    {bioLayerInterferometryResourcePackets[ToList[mySamplesWithPreparedSamples],expandedSafeOps,resolvedOptions,Cache->cacheBall],{}}
+    bioLayerInterferometryResourcePackets[ToList[mySamplesWithPreparedSamples], expandedSafeOps, resolvedOptions, Cache -> cacheBall, Simulation -> updatedSimulation, Output -> {Result, Tests}],
+    {bioLayerInterferometryResourcePackets[ToList[mySamplesWithPreparedSamples], expandedSafeOps, resolvedOptions, Cache -> cacheBall, Simulation -> updatedSimulation], {}}
   ];
 
   (* If we don't have to return the Result, don't bother calling UploadProtocol[...]. *)
@@ -3040,13 +3058,15 @@ ExperimentBioLayerInterferometry[mySamples:ListableP[ObjectP[Object[Sample]]],my
       resourcePackets,
       Upload->Lookup[safeOps,Upload],
       Confirm->Lookup[safeOps,Confirm],
+      CanaryBranch->Lookup[safeOps,CanaryBranch],
       ParentProtocol->Lookup[safeOps,ParentProtocol],
       Priority->Lookup[safeOps,Priority],
       StartDate->Lookup[safeOps,StartDate],
       HoldOrder->Lookup[safeOps,HoldOrder],
       QueuePosition->Lookup[safeOps,QueuePosition],
       ConstellationMessage->Object[Protocol,BioLayerInterferometry],
-      Cache -> samplePreparationCache
+      Cache -> inheritedCache,
+      Simulation -> updatedSimulation
     ],
     $Failed
   ];
@@ -3064,9 +3084,9 @@ ExperimentBioLayerInterferometry[mySamples:ListableP[ObjectP[Object[Sample]]],my
 (* --- CONTAINER OVERLOAD --- *)
 (* -------------------------- *)
 
-ExperimentBioLayerInterferometry[myContainers:ListableP[ObjectP[{Object[Container],Object[Sample]}]|_String|{LocationPositionP,_String|ObjectP[Object[Container]]}],myOptions:OptionsPattern[]]:=Module[
-  {listedOptions,listedContainers, outputSpecification,output,gatherTests,validSamplePreparationResult,mySamplesWithPreparedSamples,sampleCache,myOptionsWithPreparedSamples,
-    samplePreparationCache,containerToSampleResult,containerToSampleOutput,updatedCache,samples,sampleOptions,containerToSampleTests},
+ExperimentBioLayerInterferometry[myContainers:ListableP[ObjectP[{Object[Container],Object[Sample], Model[Sample]}]|_String|{LocationPositionP,_String|ObjectP[Object[Container]]}],myOptions:OptionsPattern[]]:=Module[
+  {listedOptions,listedContainers, outputSpecification,output,gatherTests,validSamplePreparationResult,mySamplesWithPreparedSamples,myOptionsWithPreparedSamples,
+    containerToSampleResult,containerToSampleOutput,samples,sampleOptions,containerToSampleTests, updatedSimulation},
 
   (* Make sure we're working with a list of options *)
   {listedContainers, listedOptions}=removeLinks[ToList[myContainers], ToList[myOptions]];
@@ -3081,20 +3101,22 @@ ExperimentBioLayerInterferometry[myContainers:ListableP[ObjectP[{Object[Containe
   (* First, simulate our sample preparation. *)
   validSamplePreparationResult=Check[
     (* Simulate sample preparation. *)
-    {mySamplesWithPreparedSamples,myOptionsWithPreparedSamples,samplePreparationCache}=simulateSamplePreparationPackets[
+    {mySamplesWithPreparedSamples, myOptionsWithPreparedSamples, updatedSimulation} = simulateSamplePreparationPacketsNew[
       ExperimentBioLayerInterferometry,
       listedContainers,
-      listedOptions
+      listedOptions,
+      DefaultPreparedModelAmount -> 40 Milliliter,
+      DefaultPreparedModelContainer -> Model[Container, Vessel, "50mL Tube"]
     ],
     $Failed,
-    {Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
+    {Download::ObjectDoesNotExist,Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
   ];
 
   (* If we are given an invalid define name, return early. *)
   If[MatchQ[validSamplePreparationResult,$Failed],
     (* Return early. *)
-    (* Note: We've already thrown a message above in simulateSamplePreparationPackets. *)
-    ClearMemoization[Experiment`Private`simulateSamplePreparationPackets];Return[$Failed]
+    (* Note: We've already thrown a message above in simulateSamplePreparationPacketsNew. *)
+    Return[$Failed]
   ];
 
   (* Convert our given containers into samples and sample index-matched options. *)
@@ -3105,7 +3127,7 @@ ExperimentBioLayerInterferometry[myContainers:ListableP[ObjectP[{Object[Containe
       mySamplesWithPreparedSamples,
       myOptionsWithPreparedSamples,
       Output->{Result,Tests},
-      Cache->samplePreparationCache
+      Simulation -> updatedSimulation
     ];
 
     (* Therefore, we have to run the tests to see if we encountered a failure. *)
@@ -3121,7 +3143,7 @@ ExperimentBioLayerInterferometry[myContainers:ListableP[ObjectP[{Object[Containe
         mySamplesWithPreparedSamples,
         myOptionsWithPreparedSamples,
         Output->Result,
-        Cache->samplePreparationCache
+        Simulation -> updatedSimulation
       ],
       $Failed,
       {Error::EmptyContainers, Error::ContainerEmptyWells, Error::WellDoesNotExist}
@@ -3139,17 +3161,10 @@ ExperimentBioLayerInterferometry[myContainers:ListableP[ObjectP[{Object[Containe
     },
 
     (* Split up our containerToSample result into the samples and sampleOptions. *)
-    {samples,sampleOptions, sampleCache}=containerToSampleOutput;
-
-    (* Update our cache with our new simulated values. *)
-    (* It is important the sample preparation cache appears first in the cache ball. *)
-    updatedCache=Flatten[{
-      samplePreparationCache,
-      Lookup[sampleOptions,Cache,{}]
-    }];
+    {samples, sampleOptions} = containerToSampleOutput;
 
     (* Call our main function with our samples and converted options. *)
-    ExperimentBioLayerInterferometry[samples,ReplaceRule[sampleOptions,{Cache->Flatten[updatedCache,sampleCache]}]]
+    ExperimentBioLayerInterferometry[samples, ReplaceRule[sampleOptions, {Simulation -> updatedSimulation}]]
   ]
 ];
 
@@ -3160,16 +3175,15 @@ ExperimentBioLayerInterferometry[myContainers:ListableP[ObjectP[{Object[Containe
 
 DefineOptions[
   resolveExperimentBioLayerInterferometryOptions,
-  Options:>{HelperOutputOption,CacheOption}
+  Options :> {HelperOutputOption, CacheOption, SimulationOption}
 ];
 
 resolveExperimentBioLayerInterferometryOptions[mySamples:{ObjectP[Object[Sample]]...},myOptions:{_Rule...},myResolutionOptions:OptionsPattern[resolveExperimentBioLayerInterferometryOptions]]:=Module[
-  {outputSpecification,output,gatherTests,cache,samplePrepOptions,bliOptions,simulatedSamples,resolvedSamplePrepOptions,simulatedCache,samplePrepTests, bliOptionsAssociation,
+  {outputSpecification,output,gatherTests,simulation,samplePrepOptions,bliOptions,simulatedSamples,resolvedSamplePrepOptions,updatedSimulation,samplePrepTests, bliOptionsAssociation,
     bliTests, invalidInputs,invalidOptions,targetContainers,resolvedAliquotOptions,aliquotTests, fullBLIOptionsAssociation, resolvedOptions, mapThreadFriendlyOptions, resolvedPostProcessingOptions,
     (* download related variables *)
     inheritedCache, sampleObjectPrepFields, sampleModelPrepFields, samplePackets, sampleModelPackets, newCache, allDownloadValues,
     probePacket, allObjectPackets, allModelPackets,allModelFields, allObjectFields, allModelOptions, allObjectOptions, probeFields,
-    fastAssoc,
     (* invalid input tests *)
     discardedSamplePackets, discardedInvalidInputs, solidStateInvalidInputs,discardedTest, messages, validNameQ, nameInvalidOptions,
     validNameTest, solidSamplePackets, solidSampleTest,
@@ -3191,14 +3205,14 @@ resolveExperimentBioLayerInterferometryOptions[mySamples:{ObjectP[Object[Sample]
     competitionBaselineShakeRate, competitionTime, competitionShakeRate, competitionThresholdCriterion, preMixSolutions, preMixDiluent, developmentType, developmentBaselineTime, developmentBaselineShakeRate, developmentAssociationTime, developmentAssociationThresholdCriterion, developmentAssociationShakeRate, developmentDissociationTime, developmentDissociationThresholdCriterion,
     developmentDissociationShakeRate, detectionLimitSerialDilutions, detectionLimitDiluent, assaySequencePrimitives, resolvedPlateCover, controlWellSolution,
     (* option rounding *)
-    roundingBLITests, roundedBLIOptions, roundedBLIOptionsAssociation, unroundableBLIOptionsAssociation, roundedAssaySequencePrimitives, roundedPrimitiveValues, safeRoundedPrimitiveValues,
+    roundingBLITests, roundedAssaySequencePrimitives, roundedPrimitiveValues, safeRoundedPrimitiveValues,
     (* storage condition variables *)
     standardStorageCondition, quantitationStandardStorageCondition, quantitationEnzymeSolutionStorageCondition,
     binningAntigenStorageCondition, loadSolutionStorageCondition, testInteractionSolutionsStorageConditions,
     testLoadingSolutionsStorageConditions, resolvedQuantitationStandardStorageCondition, samplesInStorageCondition,
     validSamplesInStorageBool, validSamplesInStorageConditionBools,
     (* experiment specific helper variables *)
-    resolvedKineticsValues, resolvedQuantitationValues, resolvedEpitopeBinningValues, resolvedAssayDevelopmentValues, resolvedKineticsOptions, assayDevelopmentKeys, resolvedAssayDevelopmentOptions, resolvedEpitopeBinningOptions,
+    resolvedKineticsOptions, assayDevelopmentKeys, resolvedAssayDevelopmentOptions, resolvedEpitopeBinningOptions,
     epitopeBinningKeys, resolvedQuantitationOptions, quantitationKeys, kineticsKeys, kineticsDefaults, kineticsDefaultRelation, resolvedKineticsParameters, resolvedQuantitationParameters, resolvedEpitopeBinningParameters,
     resolvedAssayDevelopmentParameters, assayDevelopmentRules,epitopeBinningRules, quantitationRules, kineticsRules, unusedOptionValuesKinetics,
     unusedOptionValuesQuantitation, unusedOptionValuesEpitopeBinning, unusedOptionValuesAssayDevelopment,
@@ -3234,17 +3248,15 @@ resolveExperimentBioLayerInterferometryOptions[mySamples:{ObjectP[Object[Sample]
     sampleExpandedResolvedPrimitives, flattenedExpandedResolvedPrimitives,
     resolvedPrimitiveKeys, resolvedRequiredOptions, resolvedRequiredOptionValues,
     (* incomplete primitive resolution *)
-    invalidPrimitives, resolvedExpandedAssaySequencePrimitives, resolvedRepeatedSequence, preResolvedRepeatedSequence, resolvedExpandedSolutions,
+    resolvedExpandedAssaySequencePrimitives, resolvedRepeatedSequence, preResolvedRepeatedSequence, resolvedExpandedSolutions,
     (* general primitive variable *)
-    anyPrimitiveErrorBools, initialSequence, initialPrimitives, resolvedAssaySequencePrimitives, plateLayout, solutionUses, probeCount, primitiveMasterAssociation, unusedOptionValuesPrimitiveInput,
+    patternSafeAssaySequencePrimitives,anyPrimitiveErrorBools, initialSequence, initialPrimitives, resolvedAssaySequencePrimitives, plateLayout, solutionUses, probeCount, primitiveMasterAssociation, unusedOptionValuesPrimitiveInput,
     (* primitive error tracking variables and tests *)
     tooSmallQuantitationStandardSerialDilutionTransferBool, tooSmallQuantitationStandardFixedDilutionTransferBool,tooSmallQuantitationStandardFixedDilutionsBool,
     tooSmallQuantitationStandardSerialDilutionsBool, badPrimitivesFromOptions, tooLargePreMixSolutionsTests, tooLargeDetectionLimitFixedDilutionsTests, tooLargeKineticsFixedDilutionsTests, tooLargeKineticsSerialDilutionsTests,
-    tooLargeDetectionLimitSerialDilutionsTests, invalidPrimitivesIndex, missingTimes, missingShakeRates, missingSolutions, conflictingThresholdParameters,
-    missingThresholdCriteria, missingThresholdParameters, invalidSolutions, solutionKey, duplicateDilutionIDTest,primitivesMissingTime, indexMissingTime,
-    primitivesMissingSolution, indexMissingSolution, primitivesMissingShakeRate, indexMissingShakeRate,
-    primitivesWithConflictingThresholdParameter, primitivesWithMissingThresholdCriterion, indexWithMissingThresholdCriterion,
-    primitivesWithMissingThresholdParameters, primitivesWithInvalidSolutions, indexWithInvalidSolutions, solutionKeysWithInvalidSolutions,
+    tooLargeDetectionLimitSerialDilutionsTests,  duplicateDilutionIDTest,
+    primitivesWithConflictingThresholdParameter, primitivesWithMissingThresholdCriterion,
+    primitivesWithMissingThresholdParameters,
     missingTimesTests, missingShakeRatesTests, missingSolutionsTests, conflictingThresholdParameterTests, missingThresholdCriteriaTests, missingThresholdParametersTests, invalidSolutionsTests,
     primitiveHeads, allPrimitiveHeads, allSolutionSets, allBlankSets, badSolutionSets, allStepTimes, overloadedAssayStepTests, totalAssayTime, primitivesWithTooManySolutions, badSolutions,
     equilibrationTests, forbiddenRepeatedSequenceTests, tooManyDilutionsTest, badRepeatedSequence, badRepeatedSequenceTests, tooManyRequestedProbesTests, plateCapacityOverloadTests, missingSolutionKey, primitiveOverrideTests,
@@ -3306,23 +3318,24 @@ resolveExperimentBioLayerInterferometryOptions[mySamples:{ObjectP[Object[Sample]
 
   (* Fetch our cache from the parent function. *)
   inheritedCache = Lookup[ToList[myResolutionOptions], Cache, {}];
+  simulation = Lookup[ToList[myResolutionOptions], Simulation, Simulation[]];
 
   (* Separate out our BLI options from our Sample Prep options. *)
   {samplePrepOptions, bliOptions}=splitPrepOptions[myOptions];
 
   (* Resolve our sample prep options *)
-  {{simulatedSamples,resolvedSamplePrepOptions,simulatedCache},samplePrepTests}=If[gatherTests,
-    resolveSamplePrepOptions[ExperimentBioLayerInterferometry,mySamples,samplePrepOptions,Cache->inheritedCache,Output->{Result,Tests}],
-    {resolveSamplePrepOptions[ExperimentBioLayerInterferometry,mySamples,samplePrepOptions,Cache->inheritedCache,Output->Result],{}}
+  {{simulatedSamples, resolvedSamplePrepOptions, updatedSimulation}, samplePrepTests} = If[gatherTests,
+    resolveSamplePrepOptionsNew[ExperimentBioLayerInterferometry, mySamples, samplePrepOptions, Cache -> inheritedCache, Simulation -> simulation, Output -> {Result, Tests}],
+    {resolveSamplePrepOptionsNew[ExperimentBioLayerInterferometry, mySamples, samplePrepOptions, Cache -> inheritedCache, Simulation -> simulation, Output -> Result], {}}
   ];
 
   (* Convert list of rules to Association so we can Lookup, Append, Join as usual. *)
   bliOptionsAssociation = Association[bliOptions];
 
   (* Extract the packets that we need from our downloaded cache. *)
-  (* we dont know what solutions will be needed yet, is there any way to prevent two download calls here? The solutions in the options will also need a volume check *)
+  (* we don't know what solutions will be needed yet, is there any way to prevent two download calls here? The solutions in the options will also need a volume check *)
 
-  (* Remember to download from simulatedSamples, using our simulatedCache *)
+  (* Remember to download from simulatedSamples, using our updatedSimulation *)
   sampleObjectPrepFields = Packet[SamplePreparationCacheFields[Object[Sample], Format -> Sequence], IncompatibleMaterials, State, Volume];
   sampleModelPrepFields = Packet[Model[Flatten[{SamplePreparationCacheFields[Model[Sample], Format -> Sequence], State,Products, IncompatibleMaterials, UsedAsSolvent, ConcentratedBufferDiluent, ConcentratedBufferDilutionFactor, BaselineStock, Deprecated}]]];
   sampleContainerFields = Packet[Container[Flatten[{SamplePreparationCacheFields[Object[Container]], Model}]]];
@@ -3341,7 +3354,7 @@ resolveExperimentBioLayerInterferometryOptions[mySamples:{ObjectP[Object[Sample]
 
   (* grab all of the instances of objects in the options and make packets for them - make sure to exclude the cache and also any models/objects found in the input *)
   allObjectOptions = DeleteCases[DeleteDuplicates[Download[Cases[KeyDrop[bliOptionsAssociation, Cache], ObjectP[Object[Sample]], Infinity], Object]],Alternatives@@ToList[simulatedSamples]];
-  allModelOptions =  DeleteCases[DeleteDuplicates[Download[Cases[KeyDrop[bliOptionsAssociation, Cache], ObjectP[Model[Sample]], Infinity],Object]], Alternatives@@ToList[Download[simulatedSamples, Model[Object], Cache -> simulatedCache, Date ->Now]]];
+  allModelOptions =  DeleteCases[DeleteDuplicates[Download[Cases[KeyDrop[bliOptionsAssociation, Cache], ObjectP[Model[Sample]], Infinity],Object]], Alternatives@@ToList[Download[simulatedSamples, Model[Object], Cache -> inheritedCache, Simulation -> updatedSimulation, Date ->Now]]];
 
   (* also grab the fields that we will need to check *)
   allObjectFields = Packet[Object, Name, State, Container, Composition, IncompatibleMaterials];
@@ -3370,7 +3383,8 @@ resolveExperimentBioLayerInterferometryOptions[mySamples:{ObjectP[Object[Sample]
         allModelFields
       }
     },
-    Cache -> Cases[FlattenCachePackets[{inheritedCache, simulatedCache}], PacketP[]],
+    Cache -> Cases[inheritedCache, PacketP[]],
+    Simulation -> updatedSimulation,
     Date->Now
   ], Download::FieldDoesntExist];
 
@@ -3380,8 +3394,8 @@ resolveExperimentBioLayerInterferometryOptions[mySamples:{ObjectP[Object[Sample]
   sampleContainerPackets = allDownloadValues[[All, 3]];
 
   (* update cache to include the downloaded sample information and the inherited stuff *)
-  newCache = Cases[FlattenCachePackets[{allDownloadValues, probePacket, allObjectPackets, allModelPackets, simulatedCache}], PacketP[]];
-  fastAssoc = Cases[FlattenCachePackets[{inheritedCache, simulatedCache}], PacketP[]];
+  newCache = Cases[FlattenCachePackets[{allDownloadValues, probePacket, allObjectPackets, allModelPackets, inheritedCache}], PacketP[]];
+
   (* If you have Warning:: messages, do NOT throw them when MatchQ[$ECLApplication,Engine]. Warnings should NOT be surfaced in engine. *)
 
 
@@ -3469,7 +3483,7 @@ resolveExperimentBioLayerInterferometryOptions[mySamples:{ObjectP[Object[Sample]
 
   (* If there are invalid inputs and we are throwing messages, throw an error message and keep track of the invalid inputs.*)
   If[Length[discardedInvalidInputs]>0&&!gatherTests,
-    Message[Error::DiscardedSamples, ObjectToString[discardedInvalidInputs,Cache->simulatedCache]];
+    Message[Error::DiscardedSamples, ObjectToString[discardedInvalidInputs, Simulation -> updatedSimulation]];
   ];
 
   (* If we are gathering tests, create a passing and/or failing test with the appropriate result. *)
@@ -3477,12 +3491,12 @@ resolveExperimentBioLayerInterferometryOptions[mySamples:{ObjectP[Object[Sample]
     Module[{failingTest,passingTest},
       failingTest=If[MatchQ[Length[discardedInvalidInputs],0],
         Nothing,
-        Test["Our input samples "<>ObjectToString[discardedInvalidInputs,Cache->simulatedCache]<>" are not discarded:",True,False]
+        Test["Our input samples " <> ObjectToString[discardedInvalidInputs, Simulation -> updatedSimulation] <> " are not discarded:", True, False]
       ];
 
       passingTest=If[MatchQ[Length[discardedInvalidInputs], Length[mySamples]],
         Nothing,
-        Test["Our input samples "<>ObjectToString[Complement[mySamples,discardedInvalidInputs],Cache->simulatedCache]<>" are not discarded:",True,True]
+        Test["Our input samples " <> ObjectToString[Complement[mySamples, discardedInvalidInputs], Simulation -> updatedSimulation] <> " are not discarded:", True, True]
       ];
 
       {failingTest,passingTest}
@@ -3513,12 +3527,12 @@ resolveExperimentBioLayerInterferometryOptions[mySamples:{ObjectP[Object[Sample]
     Module[{failingTest, passingTest},
       failingTest = If[Length[deprecatedInvalidInputs] == 0,
         Nothing,
-        Test["Provided samples have models " <> ObjectToString[deprecatedInvalidInputs, Cache -> simulatedCache] <> " that are not deprecated:", True, False]
+        Test["Provided samples have models " <> ObjectToString[deprecatedInvalidInputs, Simulation -> updatedSimulation] <> " that are not deprecated:", True, False]
       ];
 
       passingTest = If[Length[deprecatedInvalidInputs] == Length[modelPacketsToCheckIfDeprecated],
         Nothing,
-        Test["Provided samples have models " <> ObjectToString[Download[Complement[modelPacketsToCheckIfDeprecated, deprecatedInvalidInputs], Object, Cache -> simulatedCache]] <> " that are not deprecated:", True, True]
+        Test["Provided samples have models " <> ObjectToString[Download[Complement[modelPacketsToCheckIfDeprecated, deprecatedInvalidInputs], Object, Simulation -> updatedSimulation]] <> " that are not deprecated:", True, True]
       ];
 
       {failingTest, passingTest}
@@ -3532,8 +3546,8 @@ resolveExperimentBioLayerInterferometryOptions[mySamples:{ObjectP[Object[Sample]
   (* this will throw warnings if needed *)
   {validSamplesInStorageConditionBools, validSamplesInStorageConditionTests} = Quiet[
     If[gatherTests,
-      ValidContainerStorageConditionQ[simulatedSamples, samplesInStorageCondition, Output -> {Result, Tests}, Cache ->simulatedCache],
-      {ValidContainerStorageConditionQ[simulatedSamples, samplesInStorageCondition, Output -> Result, Cache ->simulatedCache], {}}
+      ValidContainerStorageConditionQ[simulatedSamples, samplesInStorageCondition, Output -> {Result, Tests}, Cache -> newCache, Simulation -> updatedSimulation],
+      {ValidContainerStorageConditionQ[simulatedSamples, samplesInStorageCondition, Output -> Result, Cache -> newCache, Simulation -> updatedSimulation], {}}
     ],
     Download::MissingCacheField
   ];
@@ -3607,7 +3621,7 @@ resolveExperimentBioLayerInterferometryOptions[mySamples:{ObjectP[Object[Sample]
       flattenedObjectInputAssociation = MapThread[(#1->#2)&,{flatObjectInputOptionNames,flatObjectInputObjects}];
 
       (* look up the states for all the objects *)
-      objectInputObjectsState = Quiet[Download[flatObjectInputObjects, State, Cache -> newCache, Date->Now]];
+      objectInputObjectsState = Quiet[Download[flatObjectInputObjects, State, Cache -> newCache, Simulation -> updatedSimulation, Date->Now]];
 
       (* pick the elements that have state of solid *)
       PickList[flattenedObjectInputAssociation, objectInputObjectsState, Solid]
@@ -3629,7 +3643,7 @@ resolveExperimentBioLayerInterferometryOptions[mySamples:{ObjectP[Object[Sample]
         ];
 
         (* pick the solid objects *)
-        allSolidObjects = PickList[allPotentialSolidObjects, Quiet[Download[allPotentialSolidObjects, State, Cache -> newCache, Date->Now]], Solid];
+        allSolidObjects = PickList[allPotentialSolidObjects, Quiet[Download[allPotentialSolidObjects, State, Cache -> newCache, Simulation -> updatedSimulation, Date->Now]], Solid];
 
         (* if there are solid objects, return them as an association with the option name *)
         If[MatchQ[allSolidObjects, {}],
@@ -3650,7 +3664,7 @@ resolveExperimentBioLayerInterferometryOptions[mySamples:{ObjectP[Object[Sample]
         ];
 
         (* pick the solid objects *)
-        allSolidObjects = PickList[allPotentialSolidObjects, Quiet[Download[allPotentialSolidObjects, State, Cache->newCache, Date->Now]], Solid];
+        allSolidObjects = PickList[allPotentialSolidObjects, Quiet[Download[allPotentialSolidObjects, State, Cache->newCache, Simulation -> updatedSimulation, Date->Now]], Solid];
 
         (* if there are solid objects, return them as an association with the option name *)
         If[MatchQ[allSolidObjects, {}],
@@ -4005,8 +4019,8 @@ resolveExperimentBioLayerInterferometryOptions[mySamples:{ObjectP[Object[Sample]
   (* ------------------------- *)
 
   {compatibleMaterialsBool, compatibleMaterialsTests} = If[gatherTests,
-    CompatibleMaterialsQ[instrument, simulatedSamples, Cache -> simulatedCache, Output -> {Result, Tests}],
-    {CompatibleMaterialsQ[instrument, simulatedSamples, Cache -> simulatedCache, Messages -> messages], {}}
+    CompatibleMaterialsQ[instrument, simulatedSamples, Cache -> newCache, Simulation -> updatedSimulation, Output -> {Result, Tests}],
+    {CompatibleMaterialsQ[instrument, simulatedSamples, Cache -> newCache, Simulation -> updatedSimulation, Messages -> messages], {}}
   ];
 
   (* If the materials are incompatible, then the Instrument is invalid *)
@@ -4171,7 +4185,7 @@ resolveExperimentBioLayerInterferometryOptions[mySamples:{ObjectP[Object[Sample]
   (* ------------------------------- *)
 
   (* using Options[ExperimentBioLayerInterferometry] to get all the options in the form of {OptionName -> default value} *)
-  (* check if any options overridden by the primitives were informed, or if any of the options from teh wrong experiment type are specified *)
+  (* check if any options overridden by the primitives were informed, or if any of the options from the wrong experiment type are specified *)
   {
     unusedOptionValuesPrimitiveInput,
     unusedOptionValuesKinetics,
@@ -4350,7 +4364,7 @@ resolveExperimentBioLayerInterferometryOptions[mySamples:{ObjectP[Object[Sample]
     epitopeBinningValues = Lookup[fullBLIOptionsAssociation, epitopeBinningOptions]/.{{Null...}->Null, {Automatic...}->Automatic};
     assayDevelopmentValues = Lookup[fullBLIOptionsAssociation, assayDevelopmentOptions]/.{{Null...}->Null, {Automatic...}->Automatic};
 
-    
+
     (* -- DILUTIONS -- *)
     (* these are ok to specify along with primitives since they fill out the sample key *)
     (* they are not ok to specify for the wrong experiment type *)
@@ -4711,7 +4725,7 @@ resolveExperimentBioLayerInterferometryOptions[mySamples:{ObjectP[Object[Sample]
     Lookup[fullBLIOptionsAssociation, {NeutralizationSolution, NeutralizationTime, NeutralizationShakeRate}]/.{Automatic -> Null}
   ];
 
-  
+
   (* -- REGENERATE ERRORS -- *)
 
   (* if precondition is set but nothing else is, it needs to be set *)
@@ -5016,7 +5030,7 @@ resolveExperimentBioLayerInterferometryOptions[mySamples:{ObjectP[Object[Sample]
       Map[(# -> (Lookup[fullBLIOptionsAssociation, #]/.{Automatic -> Null}))&, kineticsKeys],
       Flatten[
         {
-          (* set the quantitation standard to standard (the solution). We dont have to worry that standard is informed here, that error will be thrown in primitive resolution. *)
+          (* set the quantitation standard to standard (the solution). We don't have to worry that standard is informed here, that error will be thrown in primitive resolution. *)
           QuantitationStandard -> If[MemberQ[ToList[quantitationParameters], (StandardCurve|StandardWell)],
             Lookup[fullBLIOptionsAssociation, QuantitationStandard]/.{Automatic -> standard},
             Lookup[fullBLIOptionsAssociation, QuantitationStandard]/.{Automatic -> Null}
@@ -5518,7 +5532,7 @@ resolveExperimentBioLayerInterferometryOptions[mySamples:{ObjectP[Object[Sample]
   (* --- MAP THREAD RESOLUTION OF INDEX MATCHED PARAMETERS --- *)
   (* --------------------------------------------------------- *)
 
-  (* there are things going wrong in here that need to be addressed ASAP - maybe a problem with the way teh map thread is set up? *)
+  (* there are things going wrong in here that need to be addressed ASAP - maybe a problem with the way the map thread is set up? *)
   (*MapThreadFriendlyOptions have the Key value pairs expanded to index match, such that if you call Lookup[options, optionname], it gives the Option value at the index we are interested in*)
   (* so each iteration of mapthread is looking at a list of {sample, {OptionName1 -> optionvalue1, OptionName2 -> optionvalue2...}} which is why calling Lookup on option gives the right values.*)
   mapThreadFriendlyOptions = OptionsHandling`Private`mapThreadOptions[ExperimentBioLayerInterferometry, fullBLIOptionsAssociation];
@@ -6093,7 +6107,7 @@ resolveExperimentBioLayerInterferometryOptions[mySamples:{ObjectP[Object[Sample]
 
   (* Throw message for missing kinetics dilutions *)
   If[!MatchQ[samplePacketsWithMissingKineticsDilution,{}]&&!gatherTests,
-    Message[Error::BLIMissingKineticsDilutions,ObjectToString[samplePacketsWithMissingKineticsDilution,Cache->simulatedCache]]
+    Message[Error::BLIMissingKineticsDilutions, ObjectToString[samplePacketsWithMissingKineticsDilution, Simulation -> updatedSimulation]]
   ];
   (* test for missing kinetics dilutions *)
   missingKineticsDilutionsTests=sampleTests[gatherTests,
@@ -6101,11 +6115,11 @@ resolveExperimentBioLayerInterferometryOptions[mySamples:{ObjectP[Object[Sample]
     samplePackets,
     samplePacketsWithMissingKineticsDilution,
     "KineticsSampleFixedDilutions or KineticsSampleSerialDilutions are specified or Automatic for the input sample `1`:",
-    simulatedCache];
+    updatedSimulation];
 
   (* Throw message for missing kinetics diluent *)
   If[!MatchQ[samplePacketsWithMissingKineticsDiluent,{}]&&!gatherTests,
-    Message[Error::BLIMissingKineticsDiluent,ObjectToString[samplePacketsWithMissingKineticsDiluent,Cache->simulatedCache]]
+    Message[Error::BLIMissingKineticsDiluent, ObjectToString[samplePacketsWithMissingKineticsDiluent, Simulation -> updatedSimulation]]
   ];
   (* test for missing kinetics diluent *)
   missingKineticsDiluentTests=sampleTests[gatherTests,
@@ -6113,13 +6127,13 @@ resolveExperimentBioLayerInterferometryOptions[mySamples:{ObjectP[Object[Sample]
     samplePackets,
     samplePacketsWithMissingKineticsDiluent,
     "KineticsDiluent is specified or Automatic for the input sample `1` if it is required for dilutions:",
-    simulatedCache];
+    updatedSimulation];
 
   invalidKineticsDiluentOptions = If[!MatchQ[samplePacketsWithMissingKineticsDiluent,{}],KineticsSampleDiluent];
 
   (* Throw message for conflicting kinetics dilutions - the user has specified serial and fixed dilutions. This is a warning and not an error becuase it does not prevent the assay from running *)
   If[!MatchQ[samplePacketsWithConflictingKineticsDilution,{}]&&!gatherTests,
-    Message[Error::BLIConflictingKineticsDilutions,ObjectToString[samplePacketsWithConflictingKineticsDilution,Cache->simulatedCache]]
+    Message[Error::BLIConflictingKineticsDilutions, ObjectToString[samplePacketsWithConflictingKineticsDilution, Simulation -> updatedSimulation]]
   ];
   (* test for conflicting kinetics dlutions - the user has specified serial and fixed dilutions. We deal with this by defaulting to fixed, but it merits a test *)
   conflictingKineticsDilutionsTests=sampleTests[gatherTests,
@@ -6127,7 +6141,7 @@ resolveExperimentBioLayerInterferometryOptions[mySamples:{ObjectP[Object[Sample]
     samplePackets,
     samplePacketsWithConflictingKineticsDilution,
     "Either KineticsSampleFixedDilutions and KineticsSampleSerialDilutions have been specified for `1`:",
-    simulatedCache];
+    updatedSimulation];
 
   invalidKineticsDilutionsOptions = If[Or[!MatchQ[samplePacketsWithMissingKineticsDilution,{}],!MatchQ[samplePacketsWithConflictingKineticsDilution,{}]]&&MatchQ[experimentType, Kinetics],
     {KineticsSampleSerialDilutions, KineticsSampleFixedDilutions}];
@@ -6151,26 +6165,26 @@ resolveExperimentBioLayerInterferometryOptions[mySamples:{ObjectP[Object[Sample]
 
   (* Throw message for kinetics serial and fixed dilutions with volumes below 210 microliters *)
   If[!MatchQ[samplePacketsWithInsufficientKineticsSerialDilutionsVolumes,{}]&&!gatherTests&& Not[MatchQ[$ECLApplication, Engine]],
-    Message[Warning::BLIInsufficientKineticsSerialDilutionsVolume,ObjectToString[samplePacketsWithInsufficientKineticsSerialDilutionsVolumes,Cache->simulatedCache]]
+    Message[Warning::BLIInsufficientKineticsSerialDilutionsVolume,ObjectToString[samplePacketsWithInsufficientKineticsSerialDilutionsVolumes, Simulation -> updatedSimulation]]
   ];
 
   If[!MatchQ[samplePacketsWithInsufficientKineticsFixedDilutionsVolumes,{}]&&!gatherTests&& Not[MatchQ[$ECLApplication, Engine]],
-    Message[Warning::BLIInsufficientKineticsFixedDilutionsVolume,ObjectToString[samplePacketsWithInsufficientKineticsFixedDilutionsVolumes,Cache->simulatedCache]]
+    Message[Warning::BLIInsufficientKineticsFixedDilutionsVolume, ObjectToString[samplePacketsWithInsufficientKineticsFixedDilutionsVolumes, Simulation -> updatedSimulation]]
   ];
 
   (* throw errors for insufficient transfer volume ie. requested volume < 1 microliter. It is possible that the semi-automatic resolution of serial dilutions will cause this error, but Automatic will not *)
   If[!MatchQ[samplePacketsWithInsufficientKineticsSerialTransferVolumes,{}]&&!gatherTests,
-    Message[Error::BLIInsufficientKineticsSerialDilutionsTransferVolume,ObjectToString[samplePacketsWithInsufficientKineticsSerialTransferVolumes,Cache->simulatedCache]]
+    Message[Error::BLIInsufficientKineticsSerialDilutionsTransferVolume, ObjectToString[samplePacketsWithInsufficientKineticsSerialTransferVolumes, Simulation -> updatedSimulation]]
   ];
 
   If[!MatchQ[samplePacketsWithInsufficientKineticsFixedTransferVolumes,{}]&&!gatherTests,
-    Message[Error::BLIInsufficientKineticsFixedDilutionsTransferVolume,ObjectToString[samplePacketsWithInsufficientKineticsFixedTransferVolumes,Cache->simulatedCache]]
+    Message[Error::BLIInsufficientKineticsFixedDilutionsTransferVolume, ObjectToString[samplePacketsWithInsufficientKineticsFixedTransferVolumes Simulation -> updatedSimulation]]
   ];
 
 
   (* Throw message for missing dilution for screendetection limit in AssayDevelopment *)
   If[!MatchQ[samplePacketsWithMissingDevelopmentDilution,{}]&&!gatherTests,
-    Message[Error::BLIMissingDevelopmentDilutions,ObjectToString[samplePacketsWithMissingDevelopmentDilution,Cache->simulatedCache]]
+    Message[Error::BLIMissingDevelopmentDilutions, ObjectToString[samplePacketsWithMissingDevelopmentDilution, Simulation -> updatedSimulation]]
   ];
   (* test for missing dilutions *)
   missingDevelopmentDilutionsTests=sampleTests[gatherTests,
@@ -6178,11 +6192,11 @@ resolveExperimentBioLayerInterferometryOptions[mySamples:{ObjectP[Object[Sample]
     samplePackets,
     samplePacketsWithMissingDevelopmentDilution,
     "DetectionLimitSerialDilutions or DetectionLimitFixedDilutions are specified or Automatic for `1`:",
-    simulatedCache];
+    updatedSimulation];
 
   (* Throw message for missing diluent for screendetection limit in AssayDevelopment *)
   If[!MatchQ[samplePacketsWithMissingDevelopmentDiluent,{}]&&!gatherTests,
-    Message[Error::BLIMissingDevelopmentDiluents,ObjectToString[samplePacketsWithMissingDevelopmentDiluent,Cache->simulatedCache]]
+    Message[Error::BLIMissingDevelopmentDiluents, ObjectToString[samplePacketsWithMissingDevelopmentDiluent, Simulation -> updatedSimulation]]
   ];
   (* test for missing diluent *)
   missingDevelopmentDiluentsTests=sampleTests[gatherTests,
@@ -6190,7 +6204,7 @@ resolveExperimentBioLayerInterferometryOptions[mySamples:{ObjectP[Object[Sample]
     samplePackets,
     samplePacketsWithMissingDevelopmentDiluent,
     "DetectionLimitDiluent has been specified for `1` if it is needed for dilutions:",
-    simulatedCache];
+    updatedSimulation];
 
   invalidDevelopmentDiluentOptions = If[!MatchQ[samplePacketsWithMissingDevelopmentDiluent,{}],
     DetectionLimitDiluent
@@ -6198,16 +6212,16 @@ resolveExperimentBioLayerInterferometryOptions[mySamples:{ObjectP[Object[Sample]
 
   (* Throw message for conflicting dilutions for screendetection limit in AssayDevelopment *)
   If[!MatchQ[samplePacketsWithConflictingDevelopmentDilution,{}]&&!gatherTests,
-    Message[Error::BLIConflictingDevelopmentDilutions,ObjectToString[samplePacketsWithConflictingDevelopmentDilution,Cache->simulatedCache]]
+    Message[Error::BLIConflictingDevelopmentDilutions, ObjectToString[samplePacketsWithConflictingDevelopmentDilution, Simulation -> updatedSimulation]]
   ];
-  
+
   (* test for conflictign dilutions *)
   conflictingDevelopmentDilutionsTests=sampleTests[gatherTests,
     Test,
     samplePackets,
     samplePacketsWithConflictingDevelopmentDilution,
     "Either DetectionLimitFixedDilutions or DetectionLimitSerialDilutions have been specified for `1`:",
-    simulatedCache];
+    updatedSimulation];
 
   (* if either of these are true, then the fixed and serial dilutions have a problem as a set *)
   invalidDevelopmentDilutionsOptions = If[Or[
@@ -6236,34 +6250,34 @@ resolveExperimentBioLayerInterferometryOptions[mySamples:{ObjectP[Object[Sample]
 
   (* Throw message for kinetics serial and fixed dilutions with volumes below 210 microliters *)
   If[!MatchQ[samplePacketsWithInsufficientDetectionLimitSerialDilutionsVolumes,{}]&&!gatherTests&& Not[MatchQ[$ECLApplication, Engine]],
-    Message[Warning::BLIInsufficientDevelopmentSerialDilutionsVolume,ObjectToString[samplePacketsWithInsufficientDetectionLimitSerialDilutionsVolumes,Cache->simulatedCache]]
+    Message[Warning::BLIInsufficientDevelopmentSerialDilutionsVolume, ObjectToString[samplePacketsWithInsufficientDetectionLimitSerialDilutionsVolumes, Simulation -> updatedSimulation]]
   ];
 
   If[!MatchQ[samplePacketsWithInsufficientDetectionLimitFixedDilutionsVolumes,{}]&&!gatherTests&& Not[MatchQ[$ECLApplication, Engine]],
-    Message[Warning::BLIInsufficientDevelopmentFixedDilutionsVolume,ObjectToString[samplePacketsWithInsufficientDetectionLimitFixedDilutionsVolumes,Cache->simulatedCache]]
+    Message[Warning::BLIInsufficientDevelopmentFixedDilutionsVolume, ObjectToString[samplePacketsWithInsufficientDetectionLimitFixedDilutionsVolumes, Simulation -> updatedSimulation]]
   ];
 
   (* throw errors for insufficient transfer volume ie. requested volume < 1 microliter. It is possible that the semi-automatic resolution of serial dilutions will cause this error, but Automatic will not *)
   If[!MatchQ[samplePacketsWithInsufficientDetectionLimitSerialTransferVolumes,{}]&&!gatherTests,
-    Message[Error::BLIInsufficientDevelopmentSerialDilutionsTransferVolume,ObjectToString[samplePacketsWithInsufficientDetectionLimitSerialTransferVolumes,Cache->simulatedCache]]
+    Message[Error::BLIInsufficientDevelopmentSerialDilutionsTransferVolume, ObjectToString[samplePacketsWithInsufficientDetectionLimitSerialTransferVolumes, Simulation -> updatedSimulation]]
   ];
 
   If[!MatchQ[samplePacketsWithInsufficientDetectionLimitFixedTransferVolumes,{}]&&!gatherTests,
-    Message[Error::BLIInsufficientDevelopmentFixedDilutionsTransferVolume,ObjectToString[samplePacketsWithInsufficientDetectionLimitFixedTransferVolumes,Cache->simulatedCache]]
+    Message[Error::BLIInsufficientDevelopmentFixedDilutionsTransferVolume, ObjectToString[samplePacketsWithInsufficientDetectionLimitFixedTransferVolumes, Simulation -> updatedSimulation]]
   ];
 
   (* Throw message for missing premix solutions *)
   If[!MatchQ[samplePacketsWithMissingPreMixSolution,{}]&&!gatherTests,
-    Message[Error::BLIMissingPreMixSolutions, ObjectToString[samplePacketsWithMissingPreMixSolution,Cache->simulatedCache]]
+    Message[Error::BLIMissingPreMixSolutions, ObjectToString[samplePacketsWithMissingPreMixSolution, Simulation -> updatedSimulation]]
   ];
-  
+
   (* test for missing premix solutions *)
   missingPreMixSolutionsTests=sampleTests[gatherTests,
     Test,
     samplePackets,
     samplePacketsWithMissingPreMixSolution,
     "PreMix solutions are defined for `1` if PreMix is selected in BinningType:",
-    simulatedCache];
+    updatedSimulation];
 
   invalidPreMixSolutionOptions = If[!MatchQ[samplePacketsWithMissingPreMixSolution, {}],
     PreMixSolutions
@@ -6271,7 +6285,7 @@ resolveExperimentBioLayerInterferometryOptions[mySamples:{ObjectP[Object[Sample]
 
   (* Throw message for missing premix diluent *)
   If[!MatchQ[samplePacketsWithMissingPreMixDiluent,{}]&&!gatherTests,
-    Message[Error::BLIMissingPreMixDiluent,ObjectToString[samplePacketsWithMissingPreMixDiluent,Cache->simulatedCache]]
+    Message[Error::BLIMissingPreMixDiluent, ObjectToString[samplePacketsWithMissingPreMixDiluent, Simulation -> updatedSimulation]]
   ];
   (* test for missing premix solutions *)
   missingPreMixDiluentsTests=sampleTests[gatherTests,
@@ -6279,22 +6293,22 @@ resolveExperimentBioLayerInterferometryOptions[mySamples:{ObjectP[Object[Sample]
     samplePackets,
     samplePacketsWithMissingPreMixDiluent,
     "PreMixDiluent is specified for `1` if required for PreMixSolutions:",
-    simulatedCache];
+    updatedSimulation];
 
   invalidPreMixDiluentOptions = If[!MatchQ[samplePacketsWithMissingPreMixDiluent,{}], PreMixDiluent];
 
   (* Throw message for premix solutions with excessive volume *)
   If[!MatchQ[samplePacketsWithTooLargePreMixSolution,{}]&&!gatherTests,
-    Message[Error::BLITooLargePreMixSolutions, ObjectToString[samplePacketsWithTooLargePreMixSolution, Cache->simulatedCache]]
+    Message[Error::BLITooLargePreMixSolutions, ObjectToString[samplePacketsWithTooLargePreMixSolution, Simulation -> updatedSimulation]]
   ];
-  
+
   (* test for missing premix solutions *)
   tooLargePreMixSolutionsTests=sampleTests[gatherTests,
     Test,
     samplePackets,
     samplePacketsWithTooLargePreMixSolution,
     "PreMix solutions are less than 220 Microliter for `1` if PreMix is selected in BinningType:",
-    simulatedCache];
+    updatedSimulation];
 
   invalidPreMixSolutionsOptions = If[!MatchQ[samplePacketsWithTooLargePreMixSolution, {}],
     PreMixSolutions
@@ -6302,7 +6316,7 @@ resolveExperimentBioLayerInterferometryOptions[mySamples:{ObjectP[Object[Sample]
 
   (* throw a warning if the PreMix volume is too low *)
   If[!MatchQ[samplePacketsWithInsufficientPreMixVolumes,{}]&&!gatherTests&& Not[MatchQ[$ECLApplication, Engine]],
-    Message[Warning::BLIInsufficientPreMixVolume, ObjectToString[samplePacketsWithInsufficientPreMixVolumes, Cache->simulatedCache]]
+    Message[Warning::BLIInsufficientPreMixVolume, ObjectToString[samplePacketsWithInsufficientPreMixVolumes, Simulation -> updatedSimulation]]
   ];
 
   (* test for insufficient transfer volumes dilutions *)
@@ -6314,7 +6328,7 @@ resolveExperimentBioLayerInterferometryOptions[mySamples:{ObjectP[Object[Sample]
       samplePacketsWithInsufficientDetectionLimitFixedTransferVolumes, samplePacketsWithInsufficientDetectionLimitSerialTransferVolumes
     ]],
     "All dilutions use attainable transfer volumes for input sample `1`:",
-    simulatedCache];
+    updatedSimulation];
 
   (* -- large volume tests -- *)
   (* test for large detection limit dilution volumes solutions *)
@@ -6323,7 +6337,7 @@ resolveExperimentBioLayerInterferometryOptions[mySamples:{ObjectP[Object[Sample]
     samplePackets,
     samplePacketsWithTooLargeDetectionLimitFixedDilutionVolumes,
     "DetectionLimitFixedDilutions are less than 2 Milli Liter for `1`:",
-    simulatedCache];
+    updatedSimulation];
 
   (* test for large detection limit dilution volumes solutions *)
   tooLargeDetectionLimitSerialDilutionsTests=sampleTests[gatherTests,
@@ -6331,7 +6345,7 @@ resolveExperimentBioLayerInterferometryOptions[mySamples:{ObjectP[Object[Sample]
     samplePackets,
     samplePacketsWithTooLargeDetectionLimitSerialDilutionVolumes,
     "DetectionLimitSerialDilutions are less than 2 Milli Liter for `1`:",
-    simulatedCache];
+    updatedSimulation];
 
   (* test for large kinetics dilution volumes solutions *)
   tooLargeKineticsSerialDilutionsTests=sampleTests[gatherTests,
@@ -6339,7 +6353,7 @@ resolveExperimentBioLayerInterferometryOptions[mySamples:{ObjectP[Object[Sample]
     samplePackets,
     samplePacketsWithTooLargeKineticsSerialDilutionVolumes,
     "KineticsSampleSerialDilutions are less than 2 Milli Liter for `1`:",
-    simulatedCache];
+    updatedSimulation];
 
   (* test for large kinetics dilution volumes solutions *)
   tooLargeKineticsFixedDilutionsTests=sampleTests[gatherTests,
@@ -6347,28 +6361,28 @@ resolveExperimentBioLayerInterferometryOptions[mySamples:{ObjectP[Object[Sample]
     samplePackets,
     samplePacketsWithTooLargeKineticsFixedDilutionVolumes,
     "KineticsSampleFixedDilutions are less than 2 Milli Liter for `1`:",
-    simulatedCache];
+    updatedSimulation];
 
   (* -- large volume errors -- *)
 
   (* Throw message for kinetics solutions with excessive volume *)
   If[!MatchQ[samplePacketsWithTooLargeKineticsFixedDilutionVolumes,{}]&&!gatherTests,
-    Message[Error::BLITooLargeDilutionVolume, ObjectToString[samplePacketsWithTooLargeKineticsFixedDilutionVolumes, Cache->simulatedCache]]
+    Message[Error::BLITooLargeDilutionVolume, ObjectToString[samplePacketsWithTooLargeKineticsFixedDilutionVolumes, Simulation -> updatedSimulation]]
   ];
 
   (* Throw message for kinetics solutions with excessive volume *)
   If[!MatchQ[samplePacketsWithTooLargeKineticsSerialDilutionVolumes,{}]&&!gatherTests,
-    Message[Error::BLITooLargeDilutionVolume, ObjectToString[samplePacketsWithTooLargeKineticsSerialDilutionVolumes, Cache->simulatedCache]]
+    Message[Error::BLITooLargeDilutionVolume, ObjectToString[samplePacketsWithTooLargeKineticsSerialDilutionVolumes, Simulation -> updatedSimulation]]
   ];
 
   (* Throw message for detection limit solutions with excessive volume *)
   If[!MatchQ[samplePacketsWithTooLargeDetectionLimitSerialDilutionVolumes,{}]&&!gatherTests,
-    Message[Error::BLITooLargeDilutionVolume, ObjectToString[samplePacketsWithTooLargeDetectionLimitSerialDilutionVolumes, Cache->simulatedCache]]
+    Message[Error::BLITooLargeDilutionVolume, ObjectToString[samplePacketsWithTooLargeDetectionLimitSerialDilutionVolumes, Simulation -> updatedSimulation]]
   ];
 
   (* Throw message for detection limit solutions with excessive volume *)
   If[!MatchQ[samplePacketsWithTooLargeDetectionLimitFixedDilutionVolumes,{}]&&!gatherTests,
-    Message[Error::BLITooLargeDilutionVolume, ObjectToString[samplePacketsWithTooLargeDetectionLimitFixedDilutionVolumes, Cache->simulatedCache]]
+    Message[Error::BLITooLargeDilutionVolume, ObjectToString[samplePacketsWithTooLargeDetectionLimitFixedDilutionVolumes, Simulation -> updatedSimulation]]
   ];
 
   (* -- Check the QuantitationStandardSerial/FixedDilution volumes -- *)
@@ -6378,7 +6392,7 @@ resolveExperimentBioLayerInterferometryOptions[mySamples:{ObjectP[Object[Sample]
     tooSmallQuantitationStandardSerialDilutionTransferBool
   } = Module[{safeQuantitationSerialDilutions, totalVolumes, finalVolumes, allVolumes},
 
-    (* format teh dilutions for easy use *)
+    (* format the dilutions for easy use *)
     safeQuantitationSerialDilutions = standardizedBLIDilutions[quantitationStandardSerialDilutions, Serial];
 
     (* get the actual final volume out by subtracting the next transfer volume from the sum of the previous element *)
@@ -6415,7 +6429,7 @@ resolveExperimentBioLayerInterferometryOptions[mySamples:{ObjectP[Object[Sample]
         True,
         False
       ],
-      (* the boolean for small transfer volumes - dont throw an error for zero *)
+      (* the boolean for small transfer volumes - don't throw an error for zero *)
       If[MatchQ[Min[allVolumes], LessP[1 Microliter]]&&MatchQ[Min[allVolumes], GreaterP[0 Microliter]],
         True,
         False
@@ -6430,7 +6444,7 @@ resolveExperimentBioLayerInterferometryOptions[mySamples:{ObjectP[Object[Sample]
     tooSmallQuantitationStandardFixedDilutionTransferBool
   } = Module[{safeQuantitationFixedDilutions, totalVolumes, allVolumes},
 
-    (* format teh dilutions for easy use *)
+    (* format the dilutions for easy use *)
     safeQuantitationFixedDilutions = standardizedBLIDilutions[quantitationStandardFixedDilutions, Fixed];
 
     (* extract the total volume *)
@@ -8097,7 +8111,7 @@ resolveExperimentBioLayerInterferometryOptions[mySamples:{ObjectP[Object[Sample]
       resolvedAssayPrimitivePackets = DeleteCases[Flatten[#], Null]&/@rawAssayPrimitivePackets;
 
       (*Note: there are also Nulls in the bocks themselves so they need to be removed - these Nulls will be there for each Key, for examples it Primitives -> Null, Keys -> Null also*)
-      (*Note: the only way to safely keep the keys, options, and values lists matched to the primitives is to make everythign nested one level so that {{valueslist}} can join {{valueslist},Null}*)
+      (*Note: the only way to safely keep the keys, options, and values lists matched to the primitives is to make everything nested one level so that {{valueslist}} can join {{valueslist},Null}*)
       (* extract the primitives from the packets only. Note that the Primitives key may poitn to {primitive, Null, primitive} *)
       extractedPrimitives = DeleteCases[Flatten[Lookup[#, Primitives]], Null]&/@resolvedAssayPrimitivePackets;
 
@@ -8302,7 +8316,7 @@ resolveExperimentBioLayerInterferometryOptions[mySamples:{ObjectP[Object[Sample]
 
 
       (* --- FIND THE REPEATED  SEQUENCE --- *)
-      (* get the heads from teh primitives so to simplify finding a repeated sequence*)
+      (* get the heads from the primitives so to simplify finding a repeated sequence*)
       userStepTypes = Head/@roundedAssaySequencePrimitives;
 
       (* if the repeated sequence is not Automatic, it is user defined. However, if it is not legal, we will need to define it ourselves. *)
@@ -8452,7 +8466,7 @@ resolveExperimentBioLayerInterferometryOptions[mySamples:{ObjectP[Object[Sample]
 
       (*TODO: want to make sure that we expand around solutions first, which can be implemented as priority rules in recursive expansion*)
       (* determine how many solution sets are associated with the primitive that has the most solution sets. This is the number of times the primitives sequence are repeated *)
-      (* not that if we dont need to repeat, then there will not be any lists *)
+      (* not that if we don't need to repeat, then there will not be any lists *)
       expansionLength = Max[Count[#,_List]&/@userPreExpandedSolutions];
 
       (* we really want to be counting the number of lists here, not individual elements since this is expansion, and each list is already a safe length *)
@@ -8506,7 +8520,7 @@ resolveExperimentBioLayerInterferometryOptions[mySamples:{ObjectP[Object[Sample]
       (* remove the dummy elements from above used to deal with bad dimensions. Be aware that the Null has probably been changed to something *)
       cleanUserExpandedPrimitives = DeleteCases[#,{Buffers -> _}]&/@userExpandedPrimitives;
 
-      {roundedAssaySequencePrimitives, cleanUserExpandedPrimitives, userRepeatedPrimitiveSequence, userExpandedSolutions}
+      {roundedAssaySequencePrimitives, cleanUserExpandedPrimitives, Head/@userRepeatedPrimitiveSequence, userExpandedSolutions}
     ]
   ]
   ];
@@ -8597,7 +8611,7 @@ resolveExperimentBioLayerInterferometryOptions[mySamples:{ObjectP[Object[Sample]
   (* -- check ExpandedAssaySequencePrimitives from options -- *)
   (* -------------------------------------------------------- *)
 
-  (* When both AssaySequencePrimitives and ExpandedAssaySequencePrimitives are Automatic everythign is resolved based off of the options *)
+  (* When both AssaySequencePrimitives and ExpandedAssaySequencePrimitives are Automatic everything is resolved based off of the options *)
   (*because of the restrictive input pattern, the assaySequencePrimitives are always valid - except for the solutions*)
   (* this means they can be checked just like user input ones - they will only error on solution keys *)
   (* The user input one will return errors which point to a specific Key of a primitives at a specified position, while the options defined ones will point to the options that gives the bad primitive. *)
@@ -8805,7 +8819,7 @@ resolveExperimentBioLayerInterferometryOptions[mySamples:{ObjectP[Object[Sample]
 
   (* -- bad primitives -- *)
   (*TODO: grab any primitive that has a bad value in it and surface it*)
-  (* only do this for primitives from options. If either of the primitive input fields are used, dont check this.*)
+  (* only do this for primitives from options. If either of the primitive input fields are used, don't check this.*)
   badPrimitivesFromOptions = If[
     And[
       MatchQ[Lookup[fullBLIOptionsAssociation, ExpandedAssaySequencePrimitives], Automatic],
@@ -8949,7 +8963,7 @@ resolveExperimentBioLayerInterferometryOptions[mySamples:{ObjectP[Object[Sample]
 
   (* --- error check for Null primitives --- *)
 
-  (* if expandedassayprimitives are Null, somethign else has gone horribly wrong *)
+  (* if expandedassayprimitives are Null, something else has gone horribly wrong *)
   If[MatchQ[resolvedExpandedAssaySequencePrimitives, Null]&&!gatherTests,
     Message[Error::BLIPrimitiveResolutionFailed]
   ];
@@ -8961,7 +8975,7 @@ resolveExperimentBioLayerInterferometryOptions[mySamples:{ObjectP[Object[Sample]
   (* --------------------------------------------------------------- *)
 
   (* check the validity of hte expanded primitives *)
-  (* note that the user input ones have already been checked by the pattern so we are only interested in if they have the right number of solutions and dont have a Analytes -> Samples*)
+  (* note that the user input ones have already been checked by the pattern so we are only interested in if they have the right number of solutions and don't have a Analytes -> Samples*)
   (* the finalExpandedAssaySequencePrimitives from option resolution have already been checked, and take their keys from the compressed primitives. So there is no need to check those either  *)
   {
     primitiveHeads,
@@ -9015,7 +9029,7 @@ resolveExperimentBioLayerInterferometryOptions[mySamples:{ObjectP[Object[Sample]
       Flatten[resolvedExpandedAssaySequencePrimitives]
     ],
 
-    (*dont error check the primitives, it has already been done earlier*)
+    (*don't error check the primitives, it has already been done earlier*)
     ConstantArray[{Null}, 7]
   ];
 
@@ -9129,7 +9143,7 @@ resolveExperimentBioLayerInterferometryOptions[mySamples:{ObjectP[Object[Sample]
 
   (* make the test *)
   unusedStandardStorageConditionTest = testOrNull[
-    gatherTests, 
+    gatherTests,
     "The storage condition for the Standard is only populated if Standard is specified:",
     MatchQ[unusedStandardStorageCondition, {}]
   ];
@@ -9204,7 +9218,7 @@ resolveExperimentBioLayerInterferometryOptions[mySamples:{ObjectP[Object[Sample]
     "The storage condition for the TestInteractionSolutions is only populated if TestInteractionSolutions is specified:",
     MatchQ[unusedTestInteractionSolutionsStorageConditions, {}]
   ];
-  
+
   (* throw the error *)
   If[MatchQ[unusedTestInteractionSolutionsStorageConditions, Except[{}]]&&messages,
     Message[Error::BLITestInteractionSolutionsStorageConditionMismatch]
@@ -9382,7 +9396,7 @@ resolveExperimentBioLayerInterferometryOptions[mySamples:{ObjectP[Object[Sample]
   hamiltonCompatibleContainers=bliLiquidHandlerContainers[];
 
   (* look up the containers from the cache *)
-  simulatedSampleContainers = Download[simulatedSamples, Container[Model], Cache -> newCache, Date->Now][Object];
+  simulatedSampleContainers = Download[simulatedSamples, Container[Model], Cache -> newCache, Simulation -> updatedSimulation, Date->Now][Object];
 
   (* determine the target container for each sample that is not already in an ok container *)
   targetContainers=MapThread[Function[{container,volume},
@@ -9409,7 +9423,8 @@ resolveExperimentBioLayerInterferometryOptions[mySamples:{ObjectP[Object[Sample]
 			mySamples,
 			simulatedSamples,
 			ReplaceRule[myOptions,resolvedSamplePrepOptions],
-			Cache -> simulatedCache,
+			Cache -> newCache,
+      Simulation -> updatedSimulation,
 			RequiredAliquotAmounts->requiredVolumes,
 			RequiredAliquotContainers->targetContainers,
 			Output->{Result,Tests}
@@ -9420,7 +9435,8 @@ resolveExperimentBioLayerInterferometryOptions[mySamples:{ObjectP[Object[Sample]
 				mySamples,
 				simulatedSamples,
 				ReplaceRule[myOptions,resolvedSamplePrepOptions],
-				Cache -> simulatedCache,
+				Cache -> newCache,
+        Simulation -> updatedSimulation,
 				RequiredAliquotAmounts->requiredVolumes,
 				RequiredAliquotContainers->targetContainers,
 				Output->Result
@@ -9521,7 +9537,7 @@ resolveExperimentBioLayerInterferometryOptions[mySamples:{ObjectP[Object[Sample]
 
   (* Throw Error::InvalidInput if there are invalid inputs. *)
   If[Length[invalidInputs]>0&&!gatherTests,
-    Message[Error::InvalidInput,ObjectToString[invalidInputs,Cache->simulatedCache]]
+    Message[Error::InvalidInput, ObjectToString[invalidInputs, Simulation -> updatedSimulation]]
   ];
 
   (* Throw Error::InvalidOption if there are invalid options. *)
@@ -9556,6 +9572,15 @@ resolveExperimentBioLayerInterferometryOptions[mySamples:{ObjectP[Object[Sample]
 
   (* --- RESOLVED OPTIONS --- *)
 
+  (* if the input was through ExpandedAssaySequencePrimitives we need to change the empty list to a Null *)
+  patternSafeAssaySequencePrimitives = Module[{noNullsPrimitives},
+    noNullsPrimitives = DeleteCases[Flatten[ToList[resolvedAssaySequencePrimitives]],Null];
+    If[MatchQ[noNullsPrimitives, {}],
+      Null,
+      noNullsPrimitives
+    ]
+  ];
+
   resolvedOptions = ReplaceRule[Normal[fullBLIOptionsAssociation],
     Flatten[
       {
@@ -9579,10 +9604,10 @@ resolveExperimentBioLayerInterferometryOptions[mySamples:{ObjectP[Object[Sample]
         (* general dilution options *)
         DilutionNumberOfMixes -> dilutionNumberOfMixes,
         DilutionMixRate -> dilutionMixRate,
-        RegenerationType -> regenerationType,
+        RegenerationType -> (regenerationType/.{{Null}-> Null,{None}-> None}),
 
         (* loading options *)
-        LoadingType -> loadingType,
+        LoadingType -> (loadingType/.{{Null}-> Null,{None}-> None}),
         LoadSolution -> loadSolution,
         LoadAbsoluteThreshold -> loadAbsoluteThreshold,
         LoadThresholdSlope -> loadThresholdSlope,
@@ -9591,7 +9616,7 @@ resolveExperimentBioLayerInterferometryOptions[mySamples:{ObjectP[Object[Sample]
         QuenchSolution -> quenchSolution,
 
         (* kinetics specific options *)
-        KineticsReferenceType -> kineticsReferenceType,
+        KineticsReferenceType -> (kineticsReferenceType/.{{Null}-> Null}),
         MeasureAssociationAbsoluteThreshold -> measureAssociationAbsoluteThreshold,
         MeasureAssociationThresholdSlope -> measureAssociationThresholdSlope,
         MeasureAssociationThresholdSlopeDuration -> measureAssociationThresholdSlopeDuration,
@@ -9600,7 +9625,7 @@ resolveExperimentBioLayerInterferometryOptions[mySamples:{ObjectP[Object[Sample]
         MeasureDissociationThresholdSlopeDuration -> measureDissociationThresholdSlopeDuration,
 
         (* quantitation specific options *)
-        QuantitationParameters -> ToList[quantitationParameters],
+        QuantitationParameters -> (ToList[quantitationParameters]/.{{Null}-> Null,{None}-> None}),
         AmplifiedDetectionSolution -> amplifiedDetectionSolution,
         QuantitationEnzymeSolution -> quantitationEnzymeSolution,
         QuantitationStandardSerialDilutions -> quantitationStandardSerialDilutions,
@@ -9620,7 +9645,7 @@ resolveExperimentBioLayerInterferometryOptions[mySamples:{ObjectP[Object[Sample]
 
 
         (* AssayDevelopment specific options *)
-        DevelopmentReferenceWell -> developmentReferenceWell,
+        DevelopmentReferenceWell -> (developmentReferenceWell/.{{Null}-> Null}),
         DevelopmentAssociationAbsoluteThreshold -> developmentAssociationAbsoluteThreshold,
         DevelopmentAssociationThresholdSlope -> developmentAssociationThresholdSlope,
         DevelopmentAssociationThresholdSlopeDuration -> developmentAssociationThresholdSlopeDuration,
@@ -9691,7 +9716,7 @@ resolveExperimentBioLayerInterferometryOptions[mySamples:{ObjectP[Object[Sample]
         QuantitationStandardStorageCondition -> resolvedQuantitationStandardStorageCondition,
 
         (* --- PRIMITIVES --- *)
-        AssaySequencePrimitives -> DeleteCases[Flatten[ToList[resolvedAssaySequencePrimitives]],Null],
+        AssaySequencePrimitives -> patternSafeAssaySequencePrimitives,
         ExpandedAssaySequencePrimitives -> resolvedExpandedAssaySequencePrimitives, (*note that this does not have repeats - that is intentional.*)
         RepeatedSequence -> resolvedRepeatedSequence,
 
@@ -9729,7 +9754,7 @@ DefineOptions[ExperimentBioLayerInterferometryOptions,
   SharedOptions :> {ExperimentBioLayerInterferometry}
 ];
 
-ExperimentBioLayerInterferometryOptions[myInput:ListableP[ObjectP[{Object[Sample],Object[Container]}]|_String],myOptions:OptionsPattern[ExperimentBioLayerInterferometryOptions]]:=Module[
+ExperimentBioLayerInterferometryOptions[myInput:ListableP[ObjectP[{Object[Sample],Object[Container], Model[Sample]}]|_String],myOptions:OptionsPattern[ExperimentBioLayerInterferometryOptions]]:=Module[
   {listedOptions,preparedOptions,resolvedOptions},
 
   listedOptions=ToList[myOptions];
@@ -9758,7 +9783,7 @@ DefineOptions[ExperimentBioLayerInterferometryPreview,
 ];
 
 (* preview function *)
-ExperimentBioLayerInterferometryPreview[myInput:ListableP[ObjectP[{Object[Sample],Object[Container]}]|_String],myOptions:OptionsPattern[ValidExperimentBioLayerInterferometryQ]]:=
+ExperimentBioLayerInterferometryPreview[myInput:ListableP[ObjectP[{Object[Sample],Object[Container],Model[Sample]}]|_String],myOptions:OptionsPattern[ValidExperimentBioLayerInterferometryQ]]:=
   Module[
     {listedOptions, noOutputOptions},
 
@@ -9786,7 +9811,7 @@ DefineOptions[ValidExperimentBioLayerInterferometryQ,
   SharedOptions :> {ExperimentBioLayerInterferometry}
 ];
 
-ValidExperimentBioLayerInterferometryQ[myInput:ListableP[ObjectP[{Object[Sample],Object[Container]}]|_String],myOptions:OptionsPattern[ValidExperimentBioLayerInterferometryQ]]:=Module[
+ValidExperimentBioLayerInterferometryQ[myInput:ListableP[ObjectP[{Object[Sample],Object[Container],Model[Sample]}]|_String],myOptions:OptionsPattern[ValidExperimentBioLayerInterferometryQ]]:=Module[
   {listedInput,listedOptions,preparedOptions,functionTests,initialTestDescription,allTests,safeOps,verbose,outputFormat,result},
 
   listedInput=ToList[myInput];
@@ -9842,16 +9867,17 @@ ValidExperimentBioLayerInterferometryQ[myInput:ListableP[ObjectP[{Object[Sample]
 DefineOptions[bioLayerInterferometryResourcePackets,
   Options:>{
     CacheOption,
+    SimulationOption,
     OutputOption
   }
 ];
 
 bioLayerInterferometryResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myUnresolvedOptions:{___Rule}, myResolvedOptions:{___Rule},ops:OptionsPattern[]]:=Module[
   {
-    expandedInputs, expandedResolvedOptions,resolvedOptionsNoHidden,outputSpecification,output,gatherTests,messages,inheritedCache,containerPackets,numRepeats,samplePacketFields,
+    expandedInputs, expandedResolvedOptions,resolvedOptionsNoHidden,outputSpecification,output,gatherTests,messages,inheritedCache,simulation,containerPackets,numRepeats,samplePacketFields,
     samplePackets,expandedSamplesWithNumRepeats,minimumVolume,expandedAliquotVolume,sampleVolumes,pairedSamplesInAndVolumes,sampleVolumeRules,
     sampleResourceReplaceRules,mergedPairedSamplesInAndVolumes, samplesInResources,instrument,instrumentTime,instrumentResource,protocolPacket,sharedFieldPacket,finalizedPacket,
-    allResourceBlobs,fulfillable, frqTests,testsRule,resultRule, allSolutionVolumeRules, uniqueResources, uniqueObjects,uniqueObjectResourceReplaceRules, safeNumberOfRepeats,fastAssoc,
+    allResourceBlobs,fulfillable, frqTests,testsRule,resultRule, allSolutionVolumeRules, uniqueResources, uniqueObjects,uniqueObjectResourceReplaceRules, safeNumberOfRepeats,
     (* mostly pass-through options *)
     experimentType, bioProbeType, acquisitionRate, temperature, probeRackEquilibration,
     probeRackEquilibrationTime, probeRackEquilibrationBuffer, startDelay, startDelayShake, developmentType, quantitationParameters,
@@ -9916,6 +9942,7 @@ bioLayerInterferometryResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myU
 
   (* Get the inherited cache *)
   inheritedCache = Lookup[ToList[ops],Cache];
+  simulation = Lookup[ToList[ops], Simulation];
   samplePacketFields = Packet[Object,Composition,Analytes,Sequence@@SamplePreparationCacheFields[Object[Sample]]];
 
   (* --------------------------- *)
@@ -9927,9 +9954,8 @@ bioLayerInterferometryResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myU
   liquidHandlerContainers =bliLiquidHandlerContainers[];
 
   (* flatten and extract the relevant values from the packets *)
-  {liquidHandlerContainerMaxVolumes,liquidHandlerContainerPositions} = Transpose[Download[liquidHandlerContainers, {MaxVolume, Positions}]];
+  {liquidHandlerContainerMaxVolumes,liquidHandlerContainerPositions} = Transpose[Download[liquidHandlerContainers, {MaxVolume, Positions}, Simulation -> simulation]];
   liquidHandlerContainerNumberOfWells = Length/@liquidHandlerContainerPositions;
-  fastAssoc = makeFastAssocFromCache[inheritedCache];
 
   (* Look up all of the values we are going to need, many of which are passed directly to the protocol object *)
   {
@@ -10032,11 +10058,11 @@ bioLayerInterferometryResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myU
   ];
 
 
-  (* figure out what should go in teh protocol since some optiosn get condensed here *)
+  (* figure out what should go in the protocol since some optiosn get condensed here *)
   (* also accoutn for the slight differences in namespace *)
   antigenSolutionStorageCondition = binningAntigenStorageCondition;
 
-  (* the load solution in teh protocol will be which ever of these fields is informed *)
+  (* the load solution in the protocol will be which ever of these fields is informed *)
   loadSolutions = Flatten[Cases[{loadSolution, testLoadingSolutions, testInteractionSolutions}, Except[(Null|{Null..}|{})]]];
 
   (* determine which storage condition options to look at based on the population of the solution options *)
@@ -10097,7 +10123,7 @@ bioLayerInterferometryResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myU
   (* look up the initial sequence *)
   initialSequence = Head/@First[expandedAssaySequencePrimitives];
 
-  
+
   (* get a flat list of solutions, throwing out any Nulls *)
   solutionManifest = DeleteCases[Flatten[plateLayout],Null];
 
@@ -10170,7 +10196,7 @@ bioLayerInterferometryResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myU
   (* probe rack equilibration buffer rules *)
   probeRackEquilibrationBufferVolumeRules = {probeRackEquilibrationBuffer-> probeRackEquilibrationBufferVolume};
 
-  (* Note: we need to request all of the named dilution resources because it is possible that they are intermediates, even if they dont appear in the assayPlate. The compiler is ok with this. *)
+  (* Note: we need to request all of the named dilution resources because it is possible that they are intermediates, even if they don't appear in the assayPlate. The compiler is ok with this. *)
   (* combine the dilutions together, remove Null, and get the amount of each sample needed *)
   allDilutionVolumeRules = Flatten[Join[quantitationStandardFixedDilutionsVolumeRules, quantitationStandardSerialDilutionsVolumeRules, kineticsDilutionsSerialDilutionsVolumeRules, kineticsDilutionsFixedDilutionsVolumeRules,
     detectionLimitSerialDilutionsVolumeRules, detectionLimitFixedDilutionsVolumeRules, preMixSolutionsVolumeRules,probeRackEquilibrationBufferVolumeRules]];
@@ -10306,7 +10332,7 @@ bioLayerInterferometryResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myU
     allPlates = Cases[liquidHandlerContainers, ObjectP[Model[Container, Plate]]];
 
     (* make packets to select the right plate from *)
-    allPlatePackets = Download[allPlates, Packet[WellColor, PlateColor, NumberOfWells, FlangeHeight, RecommendedFillVolume, Columns, Rows, Dimensions]];
+    allPlatePackets = Download[allPlates, Packet[WellColor, PlateColor, NumberOfWells, FlangeHeight, RecommendedFillVolume, Columns, Rows, Dimensions], Simulation -> simulation];
 
     (* find any plate models that will have the right dimensions and material properties (must be black, this is an optical method) *)
     possiblePackets = Select[
@@ -10323,7 +10349,7 @@ bioLayerInterferometryResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myU
       }]
     ];
 
-    (* lookup the objects from teh selected packets *)
+    (* lookup the objects from the selected packets *)
     possibleContainers = Lookup[possiblePackets, Object, {}];
 
     (* if for some reason we dindt find the plate, use this default *)
@@ -10350,7 +10376,7 @@ bioLayerInterferometryResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myU
   (* --- DILUTION PLATES RESOURCES --- *)
   (* --------------------------------- *)
 
-  (* we need to check if there are requested dilutions which use a volume greater than the assay plate well volume. Ideally all dilutiosn are prepared on teh assay plate. *)
+  (* we need to check if there are requested dilutions which use a volume greater than the assay plate well volume. Ideally all dilutions are prepared on the assay plate. *)
   (* for development, kinetics and epitope binning, the dilutions are index matched, adn so we need to map over them unless they are Null *)
 
   (* ------------------------------- *)
@@ -10402,7 +10428,7 @@ bioLayerInterferometryResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myU
   (* ---------------------------------- *)
   (* --- DEVELOPMENT DILUTION PLATE --- *)
   (* ---------------------------------- *)
-  
+
   (*the same for kinetics serial dilutions*)
   developmentSampleFixedDilutionsPlate = dilutionsPlateResolver[
     detectionLimitFixedDilutionsForPlateResolution,
@@ -10567,13 +10593,13 @@ bioLayerInterferometryResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myU
     Replace[RecoupSample] -> recoupSample,
     SaveAssayPlate -> saveAssayPlate,
     Replace[Checkpoints] -> {
-      {"Picking Resources", 10 Minute,"Samples required to execute this protocol are gathered from storage.", Link[Resource[Operator -> Model[User, Emerald, Operator, "Trainee"], Time -> 10 Minute]]},
-      {"Preparing Samples", 10 Minute,"Preprocessing, such as incubation, mixing, centrifuging, and aliquoting, is performed.",Link[Resource[Operator -> Model[User, Emerald, Operator, "Trainee"], Time -> 10 Minute]]},
-      {"Preparing Assay Plate", dilutionPrepTime,"The assay plate is loaded with the required solutions and dilution series.", Link[Resource[Operator -> Model[User, Emerald, Operator, "Trainee"], Time -> 10*Minute]]},
-      {"Instrument Setup", 5 Minute,"The probe rack, assay plate, and plate cover are placed inside the instrument.", Link[Resource[Operator -> Model[User, Emerald, Operator, "Trainee"], Time -> 5*Minute]]},
-      {"Acquiring Data", assayTime, "Data is acquired by the instrument.", Link[Resource[Operator -> Model[User, Emerald, Operator, "Trainee"], Time -> 10*Minute]]},
-      {"Instrument Clean Up", 10 Minute,"The instrument is returned to the original state and resources are discarded, recovered or stored as specified.", Link[Resource[Operator -> Model[User, Emerald, Operator, "Trainee"], Time -> 10*Minute]]},
-      {"Sample Post-Processing", 0 Minute,"The samples are imaged and volumes are measured.",Resource[Operator->Model[User,Emerald,Operator,"Trainee"],Time->0 Minute]}
+      {"Picking Resources", 10 Minute,"Samples required to execute this protocol are gathered from storage.", Link[Resource[Operator -> $BaselineOperator, Time -> 10 Minute]]},
+      {"Preparing Samples", 10 Minute,"Preprocessing, such as incubation, mixing, centrifuging, and aliquoting, is performed.",Link[Resource[Operator -> $BaselineOperator, Time -> 10 Minute]]},
+      {"Preparing Assay Plate", dilutionPrepTime,"The assay plate is loaded with the required solutions and dilution series.", Link[Resource[Operator -> $BaselineOperator, Time -> 10*Minute]]},
+      {"Instrument Setup", 5 Minute,"The probe rack, assay plate, and plate cover are placed inside the instrument.", Link[Resource[Operator -> $BaselineOperator, Time -> 5*Minute]]},
+      {"Acquiring Data", assayTime, "Data is acquired by the instrument.", Link[Resource[Operator -> $BaselineOperator, Time -> 10*Minute]]},
+      {"Instrument Clean Up", 10 Minute,"The instrument is returned to the original state and resources are discarded, recovered or stored as specified.", Link[Resource[Operator -> $BaselineOperator, Time -> 10*Minute]]},
+      {"Sample Post-Processing", 0 Minute,"The samples are imaged and volumes are measured.",Resource[Operator->$BaselineOperator,Time->0 Minute]}
     },
     (* fields to create rules that will add the resourced objects into the primitives and other fields *)
     Replace[ObjectsManifest] -> Download[objectsManifest, Object],
@@ -10582,7 +10608,7 @@ bioLayerInterferometryResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myU
   |>;
 
   (* generate a packet with the shared fields *)
-  sharedFieldPacket = populateSamplePrepFields[mySamples, myResolvedOptions, Cache->inheritedCache];
+  sharedFieldPacket = populateSamplePrepFields[mySamples, myResolvedOptions, Cache -> inheritedCache, Simulation -> simulation];
 
   (* Merge the shared fields with the specific fields *)
   finalizedPacket = Join[sharedFieldPacket, protocolPacket];
@@ -10594,8 +10620,8 @@ bioLayerInterferometryResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myU
   (* call fulfillableResourceQ on all the resources we created *)
   {fulfillable, frqTests} = Which[
     MatchQ[$ECLApplication, Engine], {True, {}},
-    gatherTests, Resources`Private`fulfillableResourceQ[allResourceBlobs, Output -> {Result, Tests}, FastTrack -> Lookup[myResolvedOptions, FastTrack],Site->Lookup[myResolvedOptions,Site], Cache->inheritedCache],
-    True, {Resources`Private`fulfillableResourceQ[allResourceBlobs, FastTrack -> Lookup[myResolvedOptions, FastTrack],Site->Lookup[myResolvedOptions,Site], Messages -> messages, Cache->inheritedCache], Null}
+    gatherTests, Resources`Private`fulfillableResourceQ[allResourceBlobs, Output -> {Result, Tests}, FastTrack -> Lookup[myResolvedOptions, FastTrack],Site->Lookup[myResolvedOptions,Site], Cache->inheritedCache, Simulation -> simulation],
+    True, {Resources`Private`fulfillableResourceQ[allResourceBlobs, FastTrack -> Lookup[myResolvedOptions, FastTrack],Site->Lookup[myResolvedOptions,Site], Messages -> messages, Cache->inheritedCache, Simulation -> simulation], Null}
   ];
 
   (* generate the tests rule *)
@@ -10634,9 +10660,9 @@ bioLayerInterferometryResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myU
 	Outputs:
 		out: {(_Test|_Warning)...} - Tests for the good and bad samples - if all samples fall in one category, only one test is returned *)
 
-sampleTests[testFlag:False,testHead:(Test|Warning),allSamples_,badSamples_,testDescription_,cache_]:={};
+sampleTests[testFlag:False,testHead:(Test|Warning),allSamples_,badSamples_,testDescription_,simulation_]:={};
 
-sampleTests[testFlag:True,testHead:(Test|Warning),allSamples:{PacketP[]..},badSamples:{PacketP[]...},testDescription_String,cache_]:=Module[{
+sampleTests[testFlag:True,testHead:(Test|Warning),allSamples:{PacketP[]..},badSamples:{PacketP[]...},testDescription_String,simulation_]:=Module[{
   numberOfSamples,numberOfBadSamples,allSampleObjects,badObjects,goodObjects},
 
   (* Convert packets to objects *)
@@ -10660,10 +10686,10 @@ sampleTests[testFlag:True,testHead:(Test|Warning),allSamples:{PacketP[]..},badSa
     (* Mixed samples *)
     True,
     {
-    (* Passing Test *)
-    testHead[StringTemplate[testDescription][ObjectToString[goodObjects,Cache->cache]],True,True],
-    (* Failing Test *)
-    testHead[StringTemplate[testDescription][ObjectToString[badObjects,Cache->cache]],False,True]
+      (* Passing Test *)
+      testHead[StringTemplate[testDescription][ObjectToString[goodObjects, Simulation -> simulation]], True, True],
+      (* Failing Test *)
+      testHead[StringTemplate[testDescription][ObjectToString[badObjects, Simulation -> simulation]], False, True]
     }
   ]
 ];
@@ -10819,7 +10845,7 @@ resolveProtocolReadyPrimitives[primitives : _List, reuseKey : _List, defaultBuff
       then we are reusing the probe.
       1 means the next sequence needs a new probe set,
       0 means that the probe is going to be regenerated.
-      We dont care about the last assay becasue the experiment is over *)
+      We don't care about the last assay because the experiment is over *)
 
       newProbeNeeded = If[MemberQ[Head /@ Lookup[#, Primitive], Regenerate], 0, 1 ] & /@ Most[reorderedAssignedPackets];
 
@@ -10875,7 +10901,7 @@ reuseSolutionQ[association1_, association2_, reuseSolution_] :=
       (* check if solutions match *)
       solutionMatch = MatchQ[fullSolutions1, fullSolutions2];
 
-      (* If the solutions dont match, dont bother with the rest *)
+      (* If the solutions don't match, don't bother with the rest *)
 
       sameList = If[solutionMatch,
         (* check if the two heads are elements of the same list *)
@@ -11013,7 +11039,7 @@ standardizedBLIDilutions[dilutions:_List, dilutionType:(Serial|Fixed)]:= Module[
 
 (*A helper function to determine if there needs to be another plate for dilutions, and if so, picks an plate with enough wells and volume per well*)
 (* serial dilutions wil always have a secondary dilution plate because we want the volume to be identical for each well *)
-(* note that this takes either a flat list of dilutions in teh form {transfer amount, diluent amount, name}, or Null or {} *)
+(* note that this takes either a flat list of dilutions in the form {transfer amount, diluent amount, name}, or Null or {} *)
 dilutionsPlateResolver[dilutions_, plateLayout:_List, liquidHandlerContainers:_List, liquidHandlerContainerNumberOfWells:_List, liquidHandlerContainerMaxVolumes:_List, dilutionType:(Fixed|Serial)]:=
       (* the input here is a cleaned up version of the dilutions, where Null elements have been removed if it was a list. *)
       If[MatchQ[dilutions, Alternatives[Null, {}]],
@@ -11023,7 +11049,7 @@ dilutionsPlateResolver[dilutions_, plateLayout:_List, liquidHandlerContainers:_L
 
         (* the criteria for needing a plate differ between serial and fixed dilutions *)
         If[MatchQ[dilutionType, Serial],
-          
+
           (* for serial dilutions, pick a container that will fit the max dilution volume and has the right number of wells *)
           Module[{sufficientlyLargeContainers, dilutionContainers, maxVolume},
 
@@ -11040,7 +11066,7 @@ dilutionsPlateResolver[dilutions_, plateLayout:_List, liquidHandlerContainers:_L
             Resource[Sample -> First[dilutionContainers]]
           ],
 
-          
+
           (* for fixed dilutions do a more extensive evaluation if we need the secondary dilutions plate *)
           Module[{finalVolume, safeVolumeBool, sameVolumeBool, maxVolume, noIntermediatesBool, safeForPlateBool,
             sufficientlyLargeContainers, dilutionContainers},
@@ -11084,7 +11110,7 @@ dilutionsPlateResolver[dilutions_, plateLayout:_List, liquidHandlerContainers:_L
               (* create the resource for the plate by picking the first element of the list *)
               Resource[Sample -> First[dilutionContainers]],
 
-              (* if safeForPlate is true, then we dont need a dilution plate, it can be made directly on teh assay plate *)
+              (* if safeForPlate is true, then we don't need a dilution plate, it can be made directly on the assay plate *)
               Null
             ]
           ]
@@ -11132,7 +11158,7 @@ roundBLIDilutions[unroundedDilutions_]:=Module[
 (*checkOptionsForUserInput*)
 
 (* this is a helper function to check if an option has been specified by the user by checking it against the default or automatic. *)
-(* it returns any values that are differnt form teh default *)
+(* it returns any values that are differnt form the default *)
 checkOptionsForUserInput[optionValues:_List, optionNames:_List, defaultRules:_List]:= Module[{defaultValues},
 
   (* use the rules to determine the default values *)
@@ -11153,7 +11179,7 @@ checkOptionsForUserInput[optionValues:_List, optionNames:_List, defaultRules:_Li
 
 
 (* TODO: this is a helper function that can help to fill in incomplete primitives so the user can generate primitives outside of the options resolver. *)
-(* there will be an error checking and primitives output, and it will share the BLI options so that primitives can be resolved in teh context of the options *)
+(* there will be an error checking and primitives output, and it will share the BLI options so that primitives can be resolved in the context of the options *)
 (*
 
 

@@ -32,7 +32,13 @@ DefineOptions[UploadVirus,
 				OptionName -> Molecule,
 				Default -> Null,
 				AllowNull -> True,
-				Widget -> Widget[Type -> Expression, Pattern :> MoleculeP | _?StructureQ | _?StrandQ, Size -> Line],
+				Widget -> Alternatives[
+					"Atomic Structure" -> Widget[
+						Type -> Molecule,
+						Pattern :> MoleculeP
+					],
+					"Polymer Strand/Structure" -> Widget[Type -> Expression, Pattern :> _?StructureQ | _?StrandQ, Size -> Line]
+				],
 				Description -> "The chemical structure that represents this molecule.",
 				Category -> "Organizational Information"
 			},

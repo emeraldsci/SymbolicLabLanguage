@@ -28,6 +28,26 @@ DefineUsage[PlotAgarose,
 						Pattern:>ValidGraphicsP[]
 					}
 				}
+			},
+			{
+				Definition -> {"PlotAgarose[protocol]", "plot"},
+				Description -> "creates a 'plot' of the SampleElectropherogram in the data objects found in the Data field of 'protocol'.",
+				Inputs :> {
+					{
+						InputName -> "protocol",
+						Description -> "The protocol object containing agarose gel electrophoresis data objects.",
+						Widget -> Alternatives[
+							Widget[Type -> Object, Pattern :> ObjectP[Object[Protocol, AgaroseGelElectrophoresis]]]
+						]
+					}
+				},
+				Outputs :> {
+					{
+						OutputName -> "plot",
+						Description -> "The figure generated from data found in the agarose gel electrophoresis protocol.",
+						Pattern :> ValidGraphicsP[]
+					}
+				}
 			}
 		},
 		SeeAlso -> {

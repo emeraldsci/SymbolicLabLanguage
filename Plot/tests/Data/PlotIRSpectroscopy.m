@@ -28,6 +28,11 @@ DefineTests[PlotIRSpectroscopy,
 			ValidGraphicsP[]
 		],
 		Example[
+			{Basic,"Plots infrared spectroscopy data when given an IRSpectroscopy protocol object:"},
+			PlotIRSpectroscopy[Object[Data,IRSpectroscopy,"id:aXRlGn6GGo0k"][Protocol]],
+			SlideView[{ValidGraphicsP[] ..}]
+		],
+		Example[
 			{Options,PrimaryData,"Indicate that the absorbance spectrum should be plotted on the y-axis:"},
 			PlotIRSpectroscopy[Object[Data, IRSpectroscopy, "id:aXRlGn6GGo0k"], PrimaryData -> AbsorbanceSpectrum],
 			ValidGraphicsP[],

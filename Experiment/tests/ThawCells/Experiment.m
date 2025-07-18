@@ -124,6 +124,89 @@ DefineTests[ExperimentThawCells,
         Error::ThawInstrumentContainerMismatch,
         Error::InvalidOption
       }
+    ],
+    (* ODNE tests *)
+    Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a sample that does not exist (name form):"},
+      ExperimentThawCells[Object[Sample, "Nonexistent sample"]],
+      $Failed,
+      Messages :> {Download::ObjectDoesNotExist}
+    ],
+    Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a container that does not exist (name form):"},
+      ExperimentThawCells[Object[Container, Vessel, "Nonexistent container"]],
+      $Failed,
+      Messages :> {Download::ObjectDoesNotExist}
+    ],
+    Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a sample that does not exist (ID form):"},
+      ExperimentThawCells[Object[Sample, "id:12345678"]],
+      $Failed,
+      Messages :> {Download::ObjectDoesNotExist}
+    ],
+    Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a container that does not exist (ID form):"},
+      ExperimentThawCells[Object[Container, Vessel, "id:12345678"]],
+      $Failed,
+      Messages :> {Download::ObjectDoesNotExist}
+    ],
+    Example[{Messages, "ObjectDoesNotExist", "Do NOT throw a message if we have a simulated sample but a simulation is specified that indicates that it is simulated:"},
+      Module[{containerPackets, containerID, sampleID, samplePackets, simulationToPassIn},
+        containerPackets = UploadSample[
+          Model[Container, Plate, "id:eGakld01zzLx"],
+          {"Work Surface", Object[Container, Bench, "The Bench of Testing"]},
+          Upload -> False,
+          SimulationMode -> True,
+          FastTrack -> True
+        ];
+        simulationToPassIn = Simulation[containerPackets];
+        containerID = Lookup[First[containerPackets], Object];
+        samplePackets = UploadSample[
+          Model[Sample,"Test Adherent Mammalian Model 1 for ExperimentThawCells "<>$SessionUUID],
+          {"A1", containerID},
+          Upload -> False,
+          SimulationMode -> True,
+          FastTrack -> True,
+          Simulation -> simulationToPassIn,
+          InitialAmount -> 2 Milliliter,
+          State->Liquid,
+          CellType->Mammalian,
+          Living -> True,
+          CultureAdhesion->Adherent
+        ];
+        sampleID = Lookup[First[samplePackets], Object];
+        simulationToPassIn = UpdateSimulation[simulationToPassIn, Simulation[samplePackets]];
+
+        ExperimentSpreadCells[sampleID, Simulation -> simulationToPassIn, Output -> Options]
+      ],
+      {__Rule}
+    ],
+    Example[{Messages, "ObjectDoesNotExist", "Do NOT throw a message if we have a simulated container but a simulation is specified that indicates that it is simulated:"},
+      Module[{containerPackets, containerID, sampleID, samplePackets, simulationToPassIn},
+        containerPackets = UploadSample[
+          Model[Container, Plate, "id:eGakld01zzLx"],
+          {"Work Surface", Object[Container, Bench, "The Bench of Testing"]},
+          Upload -> False,
+          SimulationMode -> True,
+          FastTrack -> True
+        ];
+        simulationToPassIn = Simulation[containerPackets];
+        containerID = Lookup[First[containerPackets], Object];
+        samplePackets = UploadSample[
+          Model[Sample,"Test Adherent Mammalian Model 1 for ExperimentThawCells "<>$SessionUUID],
+          {"A1", containerID},
+          Upload -> False,
+          SimulationMode -> True,
+          FastTrack -> True,
+          Simulation -> simulationToPassIn,
+          InitialAmount -> 2 Milliliter,
+          State->Liquid,
+          CellType->Mammalian,
+          Living -> True,
+          CultureAdhesion->Adherent
+        ];
+        sampleID = Lookup[First[samplePackets], Object];
+        simulationToPassIn = UpdateSimulation[simulationToPassIn, Simulation[samplePackets]];
+
+        ExperimentSpreadCells[containerID, Simulation -> simulationToPassIn, Output -> Options]
+      ],
+      {__Rule}
     ]
   },
   Stubs:>{

@@ -104,7 +104,7 @@ DefineObjectType[Object[Data, Appearance], {
 			Class -> Link,
 			Pattern :> _Link,
 			Relation -> Object[Data, Appearance][RulerData],
-			Description -> "A list of all sample images that use this ruler data as a scale refrence.",
+			Description -> "A list of all sample images that use this ruler data as a scale reference.",
 			Category -> "Data Processing"
 		},
 		ImageFile -> {
@@ -142,16 +142,6 @@ DefineObjectType[Object[Data, Appearance], {
 			Description -> "Returns the cropped image of the sample.",
 			Category -> "Experimental Results",
 			Abstract -> True
-		},
-
-		(* === DEPRECATED === *)
-		(* Replaced by multiple version called IlluminationDirection to match protocol *)
-		Illumination -> {
-			Format -> Single,
-			Class -> Expression,
-			Pattern :> IlluminationDirectionP,
-			Description -> "The direction from which the sample was illuminated.",
-			Category -> "General"
 		}
 	}
 }];

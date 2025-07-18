@@ -47,7 +47,18 @@ DefineUsage[ExperimentFillToVolume,
 										Type -> Object,
 										Pattern :> ObjectP[{Object[Container]}]
 									]
-								}
+								},
+								"Model Sample"->Widget[
+									Type -> Object,
+									Pattern :> ObjectP[Model[Sample]],
+									ObjectTypes -> {Model[Sample]},
+									OpenPaths -> {
+										{
+											Object[Catalog, "Root"],
+											"Materials"
+										}
+									}
+								]
 							],
 							Expandable -> False
 						},
@@ -104,14 +115,21 @@ DefineUsage[ExperimentFillToVolumeOptions,
 						{
 							InputName -> "Sample",
 							Description -> "The sample to which solvent should be added.",
-							Widget -> Widget[
-								Type -> Object,
-								Pattern :> ObjectP[{Object[Sample], Object[Container]}],
-								Dereference -> {
-									Object[Container] -> Field[Contents[[All, 2]]]
-								},
-								PreparedSample -> False,
-								PreparedContainer -> False
+							Widget -> Alternatives[
+								"Sample or Container" -> Widget[
+									Type -> Object,
+									Pattern :> ObjectP[{Object[Sample], Object[Container]}],
+									Dereference -> {
+										Object[Container] -> Field[Contents[[All, 2]]]
+									},
+									PreparedSample -> False,
+									PreparedContainer -> False
+								],
+								"Model Sample"->Widget[
+									Type -> Object,
+									Pattern :> ObjectP[Model[Sample]],
+									ObjectTypes -> {Model[Sample]}
+								]
 							],
 							Expandable -> False
 						},
@@ -168,14 +186,21 @@ DefineUsage[ValidExperimentFillToVolumeQ,
 						{
 							InputName -> "Sample",
 							Description -> "The sample to which solvent should be added.",
-							Widget -> Widget[
-								Type -> Object,
-								Pattern :> ObjectP[{Object[Sample], Object[Container]}],
-								Dereference -> {
-									Object[Container] -> Field[Contents[[All, 2]]]
-								},
-								PreparedSample -> False,
-								PreparedContainer -> False
+							Widget -> Alternatives[
+								"Sample or Container" -> Widget[
+									Type -> Object,
+									Pattern :> ObjectP[{Object[Sample], Object[Container]}],
+									Dereference -> {
+										Object[Container] -> Field[Contents[[All, 2]]]
+									},
+									PreparedSample -> False,
+									PreparedContainer -> False
+								],
+								"Model Sample"->Widget[
+									Type -> Object,
+									Pattern :> ObjectP[Model[Sample]],
+									ObjectTypes -> {Model[Sample]}
+								]
 							],
 							Expandable -> False
 						},
@@ -213,7 +238,7 @@ DefineUsage[ValidExperimentFillToVolumeQ,
 			"Transfer",
 			"FillToVolume"
 		},
-		Author -> {"kelmen.low", "harrison.gronlund", "steven", "dima"}
+		Author -> {"yanzhe.zhu", "kelmen.low", "harrison.gronlund", "steven", "dima"}
 	}
 ];
 
@@ -232,14 +257,21 @@ DefineUsage[ExperimentFillToVolumePreview,
 						{
 							InputName -> "Sample",
 							Description -> "The sample to which solvent should be added.",
-							Widget -> Widget[
-								Type -> Object,
-								Pattern :> ObjectP[{Object[Sample], Object[Container]}],
-								Dereference -> {
-									Object[Container] -> Field[Contents[[All, 2]]]
-								},
-								PreparedSample -> False,
-								PreparedContainer -> False
+							Widget -> Alternatives[
+								"Sample or Container" -> Widget[
+									Type -> Object,
+									Pattern :> ObjectP[{Object[Sample], Object[Container]}],
+									Dereference -> {
+										Object[Container] -> Field[Contents[[All, 2]]]
+									},
+									PreparedSample -> False,
+									PreparedContainer -> False
+								],
+								"Model Sample"->Widget[
+									Type -> Object,
+									Pattern :> ObjectP[Model[Sample]],
+									ObjectTypes -> {Model[Sample]}
+								]
 							],
 							Expandable -> False
 						},

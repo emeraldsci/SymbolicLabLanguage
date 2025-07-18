@@ -14,10 +14,8 @@ DefineTests[PlotDynamicFoamAnalysis,
 		Example[{Basic,"Given a DynamicFoamAnalysis data object, creates all possible plots related to the DetectionMethod:"},
 			output=PlotDynamicFoamAnalysis[
 				Object[Data,DynamicFoamAnalysis,"Example data 1 for PlotDynamicFoamAnalysis tests"<>plotDynamicFoamUUID]
-			];
-			MatchQ[output,_TabView],
-			True,
-			Variables:>{output}
+			],
+			_TabView
 		],
 
 		Example[{Basic,"Given multiple DynamicFoamAnalysis data objects, creates all possible plots related to the DetectionMethod):"},
@@ -28,6 +26,12 @@ DefineTests[PlotDynamicFoamAnalysis,
 				}
 			],
 			_SlideView
+		],
+		Example[{Basic,"Given a DynamicFoamAnalysis protocol object, creates all possible plots related to the DetectionMethod):"},
+			output=PlotDynamicFoamAnalysis[
+				Object[Protocol, DynamicFoamAnalysis, "Example protocol for PlotDynamicFoamAnalysis tests"<>plotDynamicFoamUUID]
+			],
+			_TabView
 		],
 
 		Test["Given a DynamicFoamAnalysis data object with HeightMethod and ImagingMethod data, creates all possible plots related to the DetectionMethod:",
@@ -108,7 +112,8 @@ DefineTests[PlotDynamicFoamAnalysis,
 					Object[Data,DynamicFoamAnalysis,"Example data 2 for PlotDynamicFoamAnalysis tests"],
 					Object[Data,DynamicFoamAnalysis,"Example data 3 for PlotDynamicFoamAnalysis tests"],
 					Object[Data,DynamicFoamAnalysis,"Example data 4 for PlotDynamicFoamAnalysis tests"],
-					Object[Data,DynamicFoamAnalysis,"Example data 5 for PlotDynamicFoamAnalysis tests"]
+					Object[Data,DynamicFoamAnalysis,"Example data 5 for PlotDynamicFoamAnalysis tests"],
+					Object[Protocol, DynamicFoamAnalysis, "Example protocol for PlotDynamicFoamAnalysis tests"]
 				}],
 				ObjectP[]
 			]];
@@ -118,7 +123,7 @@ DefineTests[PlotDynamicFoamAnalysis,
 		Block[{$AllowSystemsProtocols=True},
 			Module[
 				{
-					downloadProtocol,liquidSample1,liquidSample2,dataObject1,dataObject2,dataObject3,dataObject4,dataObject5
+					downloadProtocol,liquidSample1,liquidSample2,dataObject1,dataObject2,dataObject3,dataObject4,dataObject5, protocol1
 				},
 				plotDynamicFoamUUID = CreateUUID[];
 				(* Example samples *)
@@ -273,7 +278,13 @@ DefineTests[PlotDynamicFoamAnalysis,
 					Replace[MeanSquareBubbleRadius]->Lookup[downloadProtocol,MeanSquareBubbleRadius],
 					Replace[BubbleSauterMeanRadius]->Lookup[downloadProtocol,BubbleSauterMeanRadius],
 					DeveloperObject->True
-				|>]
+				|>];
+
+				protocol1 = Upload[<|
+					Type -> Object[Protocol, DynamicFoamAnalysis],
+					Name -> "Example protocol for PlotDynamicFoamAnalysis tests"<>plotDynamicFoamUUID,
+					Replace[Data] -> {Link[dataObject5, Protocol]}
+				|>];
 			]
 		]
 	),

@@ -462,6 +462,14 @@ DefineOptions[UploadColumn,
 				Description -> "The condition in which this model columns are stored when not in use by an experiment.",
 				Category -> "Storage Information",
 				Widget -> Widget[Type -> Object, Pattern :> ObjectP[Model[StorageCondition]]]
+			},
+			{
+				OptionName -> StorageBuffer,
+				Default -> Null,
+				AllowNull -> True,
+				Description -> "The preferred buffer used to keep the resin wet while the column is stored.",
+				Category -> "Storage Information",
+				Widget -> Widget[Type -> Object, Pattern :> ObjectP[{Model[Sample]}]]
 			}
 		]
 	},
@@ -542,7 +550,7 @@ resolveUploadColumnOptions[myType_, myInput:ObjectP[], myOptions_, rawOptions_]:
 	
 	(* Get the definition of this type. *)
 	fields=Association@Lookup[LookupTypeDefinition[myType], Fields];
-	
+
 	(* For each of our options, see if it exists as a field of the same name in the object. *)
 	resolvedOptions=Association@KeyValueMap[
 		Function[{fieldSymbol, fieldValue},
@@ -560,12 +568,13 @@ resolveUploadColumnOptions[myType_, myInput:ObjectP[], myOptions_, rawOptions_]:
 						
 						(* Strip off all links from our value. *)
 						formattedFieldValue=ReplaceAll[fieldValue, link_Link :> RemoveLinkID[link]];
-						
-						(* Based on the class of our field, we have to format the values differently. *)
-						Switch[Lookup[fieldDefinition, Class],
-							Computable,
+
+						(* Based on the class/format of our field, we have to format the values differently. *)
+						Switch[{Lookup[fieldDefinition, Format],Lookup[fieldDefinition, Class]},
+							{Computable,_},
 							Nothing,
-							_List,
+							(* Named Multiple *)
+							{Multiple,{_Rule..}},
 							fieldSymbol -> formattedFieldValue[[All, 2]],
 							_,
 							fieldSymbol -> formattedFieldValue

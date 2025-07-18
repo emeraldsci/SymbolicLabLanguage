@@ -23,13 +23,13 @@
 DefineOptions[ExperimentDNASynthesis,
 	Options :> {
 		NNASharedSet,
-		(* Since we don't need sample prep or aliquot options, use ProtocolOptions and PostProcessingOptions instead of FuntopiaSharedOptions *)
+		(* Since we don't need sample prep or aliquot options, use ProtocolOptions and NonBiologyPostProcessingOptions instead of NonBiologyFuntopiaSharedOptions *)
 		PriorityOption,
 		StartDateOption,
 		HoldOrderOption,
 		QueuePositionOption,
 		ProtocolOptions,
-		PostProcessingOptions,
+		NonBiologyPostProcessingOptions,
 		SamplesOutStorageOptions
 	}
 ];
@@ -69,7 +69,7 @@ ExperimentDNASynthesisOptions[myInputs : ListableP[Alternatives[ObjectP[{Model[S
 	(* get the options as a list *)
 	listedOptions = ToList[myOptions];
 
-	(* remove the Output and OutputFormat option before passing to the core function because it doens't make sense here *)
+	(* remove the Output and OutputFormat option before passing to the core function because it doesn't make sense here *)
 	noOutputOptions = DeleteCases[listedOptions, Alternatives[Output -> _, OutputFormat -> _]];
 
 	(* get only the options for ExperimentDNASynthesis *)

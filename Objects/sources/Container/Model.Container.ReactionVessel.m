@@ -19,6 +19,13 @@ DefineObjectType[Model[Container, ReactionVessel], {
 			Category -> "Inventory",
 			Developer->True
 		},
+		Skirted -> {
+			Format -> Single,
+			Class -> Expression,
+			Pattern :> BooleanP,
+			Description -> "Indicates if this container has walls that extend below the vessel's well geometry to allow the vessel to stand upright on a flat surface without use of a rack.",
+			Category -> "Container Specifications"
+		},
 		(* --- Operating Limits --- *)
 		MinPressure -> {
 			Format -> Single,

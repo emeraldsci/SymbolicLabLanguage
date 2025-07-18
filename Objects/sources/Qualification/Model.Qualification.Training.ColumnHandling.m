@@ -15,14 +15,6 @@ DefineObjectType[Model[Qualification,Training,ColumnHandling], {
       Relation -> Model[Item],
       Description -> "The device that an operator installs in a column compartment for training.",
       Category -> "General"
-    },
-    ColumnHandlingInstrument -> {
-      Format -> Single,
-      Class -> Link,
-      Pattern :> _Link,
-      Relation -> Model[Instrument],
-      Description -> "The model of instrument that an operator installs the column on.",
-      Category -> "General"
     }
   }
 }]

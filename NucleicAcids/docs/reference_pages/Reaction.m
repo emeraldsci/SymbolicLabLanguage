@@ -93,11 +93,7 @@ DefineUsage[ReactionQ, {
 		"SimulateReactivity",
 		"ReactionMechanism"
 	},
-	Author -> {
-		"alice",
-		"brad",
-		"qian"
-	}
+	Author -> {"dirk.schild", "alice", "brad", "qian"}
 }];
 
 
@@ -130,8 +126,5 @@ DefineUsage[ClassifyReaction, {
 	Tutorials -> {
 		"Reactions and Rates"
 	},
-	Author -> {
-		"alice",
-		"brad"
-	}
+	Author -> {"dirk.schild", "alice", "brad"}
 }];

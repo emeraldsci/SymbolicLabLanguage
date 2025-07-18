@@ -14,9 +14,9 @@
 (* ::Subsection::Closed:: *)
 (* PlotBetaTesting *)
 DefineTests[PlotBetaTesting,
-    {
-        Example[{Basic,"Open a notebook and creates an underlying cloud file showing the stability of the protocol:"},
-            PlotBetaTesting[ExperimentImageSample],
+	{
+		Example[{Basic,"Open a notebook and creates an underlying cloud file showing the stability of the protocol:"},
+			PlotBetaTesting[ExperimentImageSample],
 			ObjectP[Object[EmeraldCloudFile]],
 			TimeConstraint->600
 		],
@@ -145,3 +145,33 @@ DefineTests[PlotBetaTesting,
 		Upload[Join[statusPackets,devObjectPackets,namePackets]]
 	]
 ]
+
+
+(* ::Subsection::Closed:: *)
+(* PlotBetaTestingSupportRate *)
+
+DefineTests[PlotBetaTestingSupportRate,
+	{
+		Example[{Basic, "Plots the support rate for each protocol that has been run in the last year from this experiment function:"},
+			PlotBetaTestingSupportRate[ExperimentIncubateCells],
+			Legended[_DynamicModule, _],
+			Stubs :> {
+				$BetaExperimentFunctions = <|"ExperimentIncubateCells" -> {StartDate -> (Today - 1 Year)}|>
+			}
+		],
+		Example[{Options, StartDate, "Specify that only protocols created after a given date should be considered:"},
+			PlotBetaTestingSupportRate[ExperimentIncubateCells, StartDate -> (Today - 6 Month)],
+			Legended[_DynamicModule, _],
+			Stubs :> {
+				$BetaExperimentFunctions = <|"ExperimentIncubateCells" -> {StartDate -> (Today - 1 Year)}|>
+			}
+		],
+		Example[{Options, SearchCriteria, "If the experiment creates objects with a shared protocol type, provide options used to search for specific completed protocols:"},
+			PlotBetaTestingSupportRate[ExperimentImageSample, SearchCriteria->(PlateImagerInstruments[Type] == Object[Instrument, PlateImager])],
+			Legended[_DynamicModule, _],
+			Stubs :> {
+				$BetaExperimentFunctions = <|"ExperimentImageSample" -> {StartDate -> (Today - 1 Week)}|>
+			}
+		]
+	}
+];

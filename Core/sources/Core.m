@@ -613,8 +613,11 @@ DefineOptions[UnsortedIntersection,
 
 UnsortedIntersection::MismatchedHeads = "Heads `1` and `2` are not the same.";
 
+
+(* One-argument overload so this maps the behavior of MM's Intersection, have to exclude {} since this is being picked as OptionsPattern[] *)
+UnsortedIntersection[expression1_, myOptions : PatternTest[OptionsPattern[UnsortedIntersection], !MatchQ[#, _Symbol[]]&]] := expression1;
 (* By default Complement sorts to "canonical" order, which is fine for numbers or strings but tends to scramble other things like objects. This function will return the complement in the same order as the initial list. Additionally, Complement will also delete duplicates, and this function will not *)
-UnsortedIntersection[expression1_, expression2__, myOptions : OptionsPattern[UnsortedIntersection]] := Module[{safeOps, sameTest, deleteDuplicates},
+UnsortedIntersection[expression1_, expression2__, myOptions : PatternTest[OptionsPattern[UnsortedIntersection], !MatchQ[#, _Symbol[]]&]] := Module[{safeOps, sameTest, deleteDuplicates},
 
 	(* Get the safe options and look up the SameTest *)
 	safeOps = SafeOptions[UnsortedIntersection, ToList[myOptions]];
@@ -1029,6 +1032,7 @@ RescaleY[datas:{({{_?NumericQ, _?NumericQ}...} | Null)..}, {oldmin_, oldmax_}, {
 
 
 ECL`Authors[InPolygonQ]:={"brad"};
+ECL`Authors[Graphics`PolygonUtils`InPolygonQ]:={"brad"};
 
 (*make the hidden function into a core function*)
 InPolygonQ=Graphics`PolygonUtils`InPolygonQ;
@@ -1221,13 +1225,13 @@ $ObjectBuilders=<|
 
 (* CommandBuilderFunctions contains all of the functions that should show up in the command builder. *)
 (* Note: Everything needs to be a string here in order for us to export to JSON. No Symbols! (As much as it pains me to have string keys). *)
-$CommandBuilderFunctions=<|
+$CommandBuilderFunctions = <|
 	"Experiment" -> <|
 		"Sample Preparation" -> {
 			"ExperimentSamplePreparation",
 			"ExperimentStockSolution",
-			"ExperimentAliquot",
 			"ExperimentTransfer",
+			"ExperimentAliquot",
 			"ExperimentDilute",
 			"ExperimentSerialDilute",
 			"ExperimentFillToVolume",
@@ -1245,14 +1249,101 @@ $CommandBuilderFunctions=<|
 			"ExperimentFlashFreeze",
 			"ExperimentAdjustpH",
 			"ExperimentMicrowaveDigestion",
-			"ExperimentPCR"
+			"ExperimentPCR",
+			"ExperimentDesiccate",
+			"ExperimentGrind"
 		},
-		"Synthesis" -> {"ExperimentBioconjugation", "ExperimentDNASynthesis", "ExperimentRNASynthesis", "ExperimentPeptideSynthesis", "ExperimentPNASynthesis"},
-		"Separations" -> {"ExperimentSolidPhaseExtraction", "ExperimentLiquidLiquidExtraction", "ExperimentFPLC", "ExperimentHPLC", "ExperimentLCMS", "ExperimentSupercriticalFluidChromatography", "ExperimentAgaroseGelElectrophoresis", "ExperimentPAGE", "ExperimentTotalProteinDetection", "ExperimentWestern", "ExperimentGasChromatography", "ExperimentIonChromatography", "ExperimentFlashChromatography", "ExperimentCrossFlowFiltration", "ExperimentDialysis", "ExperimentMagneticBeadSeparation", "ExperimentCapillaryGelElectrophoresisSDS", "ExperimentCapillaryIsoelectricFocusing"},
-		"Spectroscopy" -> {"ExperimentNMR", "ExperimentNMR2D", "ExperimentAbsorbanceIntensity", "ExperimentAbsorbanceSpectroscopy", "ExperimentAbsorbanceKinetics", "ExperimentIRSpectroscopy", "ExperimentFluorescenceIntensity", "ExperimentFluorescenceSpectroscopy", "ExperimentFluorescenceKinetics", "ExperimentFluorescencePolarization", "ExperimentFluorescencePolarizationKinetics", "ExperimentLuminescenceIntensity", "ExperimentLuminescenceSpectroscopy", "ExperimentLuminescenceKinetics", "ExperimentRamanSpectroscopy", "ExperimentDynamicLightScattering", "ExperimentAlphaScreen", "ExperimentCircularDichroism", "ExperimentNephelometry", "ExperimentNephelometryKinetics"},
-		"Mass Spectrometry" -> {"ExperimentMassSpectrometry", "ExperimentLCMS", "ExperimentSupercriticalFluidChromatography", "ExperimentGCMS", "ExperimentICPMS"},
-		"Bioassays" -> {"ExperimentTotalProteinQuantification", "ExperimentqPCR", (*"ExperimentDigitalPCR",*) "ExperimentBioLayerInterferometry", "ExperimentUVMelting", "ExperimentDifferentialScanningCalorimetry", "ExperimentThermalShift", "ExperimentCapillaryELISA", "ExperimentELISA", "ExperimentDNASequencing", "ExperimentBioconjugation", "ExperimentImageCells"},
-		"Crystallography" -> {"ExperimentPowderXRD", "ExperimentGrowCrystal"},
+		"Synthesis" -> {
+			"ExperimentBioconjugation",
+			"ExperimentDNASynthesis",
+			"ExperimentRNASynthesis",
+			"ExperimentPeptideSynthesis",
+			"ExperimentPNASynthesis"
+		},
+		"Separations" -> {
+			"ExperimentSolidPhaseExtraction",
+			"ExperimentLiquidLiquidExtraction",
+			"ExperimentHPLC",
+			"ExperimentLCMS",
+			"ExperimentFPLC",
+			"ExperimentSupercriticalFluidChromatography",
+			"ExperimentGasChromatography",
+			"ExperimentGCMS",
+			"ExperimentIonChromatography",
+			"ExperimentFlashChromatography",
+			"ExperimentAgaroseGelElectrophoresis",
+			"ExperimentPAGE",
+			"ExperimentTotalProteinDetection",
+			"ExperimentWestern",
+			"ExperimentCrossFlowFiltration",
+			"ExperimentDialysis",
+			"ExperimentMagneticBeadSeparation",
+			"ExperimentCapillaryGelElectrophoresisSDS",
+			"ExperimentCapillaryIsoelectricFocusing"
+		},
+		"Spectroscopy" -> {
+			"ExperimentNMR",
+			"ExperimentNMR2D",
+			"ExperimentAbsorbanceIntensity",
+			"ExperimentAbsorbanceSpectroscopy",
+			"ExperimentAbsorbanceKinetics",
+			"ExperimentIRSpectroscopy",
+			"ExperimentFluorescenceIntensity",
+			"ExperimentFluorescenceSpectroscopy",
+			"ExperimentFluorescenceKinetics",
+			"ExperimentFluorescencePolarization",
+			"ExperimentFluorescencePolarizationKinetics",
+			"ExperimentLuminescenceIntensity",
+			"ExperimentLuminescenceSpectroscopy",
+			"ExperimentLuminescenceKinetics",
+			"ExperimentRamanSpectroscopy",
+			"ExperimentDynamicLightScattering",
+			"ExperimentAlphaScreen",
+			"ExperimentCircularDichroism",
+			"ExperimentNephelometry",
+			"ExperimentNephelometryKinetics"
+		},
+		"Mass Spectrometry" -> {
+			"ExperimentMassSpectrometry",
+			"ExperimentLCMS",
+			"ExperimentSupercriticalFluidChromatography",
+			"ExperimentGCMS",
+			"ExperimentICPMS"
+		},
+		"Bioassays" -> {
+			"ExperimentTotalProteinQuantification",
+			"ExperimentqPCR", (*"ExperimentDigitalPCR",*)
+			"ExperimentBioLayerInterferometry",
+			"ExperimentUVMelting",
+			"ExperimentDifferentialScanningCalorimetry",
+			"ExperimentThermalShift",
+			"ExperimentCapillaryELISA",
+			"ExperimentELISA",
+			"ExperimentDNASequencing",
+			"ExperimentBioconjugation",
+			"ExperimentImageCells",
+			"ExperimentFragmentAnalysis"
+		},
+		"Cell Culture" -> {
+			"ExperimentCellPreparation",
+			"ExperimentMedia",
+			"ExperimentPlateMedia",
+			"ExperimentInoculateLiquidMedia",
+			"ExperimentIncubateCells",
+			"ExperimentQuantifyCells",
+			"ExperimentStreakCells",
+			"ExperimentSpreadCells",
+			"ExperimentImageColonies",
+			"ExperimentQuantifyColonies",
+			"ExperimentPickColonies",
+			"ExperimentWashCells",
+			"ExperimentFreezeCells",
+			"ExperimentLyseCells"
+		},
+		"Crystallography" -> {
+			"ExperimentPowderXRD",
+			"ExperimentGrowCrystal"
+		},
 		"Property Measurement" -> {
 			"ExperimentCountLiquidParticles",
 			"ExperimentCoulterCount",
@@ -1271,25 +1362,40 @@ $CommandBuilderFunctions=<|
 			"ExperimentMeasureViscosity",
 			"ExperimentMeasureVolume",
 			"ExperimentMeasureWeight",
-			"ExperimentVisualInspection"
-		},
-		"Cell Biology" -> {
-			"ExperimentFreezeCells",
-			"ExperimentIncubateCells",
-			"ExperimentThawCells",
-			"ExperimentPickColonies",
-			"ExperimentInoculateLiquidMedia",
-			"ExperimentSpreadCells",
-			"ExperimentStreakCells"
+			"ExperimentVisualInspection",
+			"ExperimentMeasureMeltingPoint"
 		}
 	|>,
 	"Sample" -> <|
-		"Shipping Samples" -> {"OrderSamples", "ShipToUser", "ShipToECL", "ShipBetweenSites","DropShipSamples", "CancelTransaction"},
-		"Inventory Management" -> {"StoreSamples", "ClearSampleStorageSchedule", "DiscardSamples", "CancelDiscardSamples", "RestrictSamples", "UnrestrictSamples", "SampleUsage"}
+		"Shipping Samples" -> {
+			"OrderSamples",
+			"ShipToECL",
+			"DropShipSamples",
+			"ShipToUser",
+			"ShipBetweenSites",
+			"CancelTransaction"
+		},
+		"Inventory Management" -> {
+			"StoreSamples",
+			"ClearSampleStorageSchedule",
+			"DiscardSamples",
+			"CancelDiscardSamples",
+			"RestrictSamples",
+			"UnrestrictSamples",
+			"SampleUsage"
+		}
 	|>,
 	"Plot" -> <|
 		"General" -> {
 			"Inspect",
+			"PlotObject",
+			"PlotTable",
+			"PlotPeaks",
+			"PlotPeaksTable",
+			"PlotImage",
+			"PlotCloudFile",
+			"PlotDistribution",
+			"PlotWaterfall",
 			"EmeraldListLinePlot",
 			"EmeraldDateListPlot",
 			"EmeraldBarChart",
@@ -1297,19 +1403,11 @@ $CommandBuilderFunctions=<|
 			"EmeraldPieChart",
 			"EmeraldHistogram",
 			"EmeraldSmoothHistogram",
+			"EmeraldListPlot3D",
 			"EmeraldHistogram3D",
 			"EmeraldSmoothHistogram3D",
 			"EmeraldListContourPlot",
-			"EmeraldListPointPlot3D",
-			"EmeraldListPlot3D",
-			"PlotDistribution",
-			"PlotImage",
-			"PlotTable",
-			"PlotCloudFile",
-			"PlotPeaks",
-			"PlotObject",
-			"PlotWaterfall",
-			"PlotProtocolTimeline"
+			"EmeraldListPointPlot3D"
 		},
 		"Spectroscopy" -> {
 			"PlotAbsorbanceQuantification",
@@ -1354,7 +1452,8 @@ $CommandBuilderFunctions=<|
 		"Capillary Electrophoresis" -> {
 			"PlotCapillaryGelElectrophoresisSDS",
 			"PlotCapillaryIsoelectricFocusing",
-			"PlotCapillaryIsoelectricFocusingEvolution"
+			"PlotCapillaryIsoelectricFocusingEvolution",
+			"PlotFragmentAnalysis"
 		},
 		"Kinetics" -> {
 			"PlotAbsorbanceKinetics",
@@ -1368,7 +1467,8 @@ $CommandBuilderFunctions=<|
 			"PlotCellCount",
 			"PlotCellCountSummary",
 			"PlotMicroscope",
-			"PlotMicroscopeOverlay"
+			"PlotMicroscopeOverlay",
+			"PlotCrystallizationImagingLog"
 		},
 		"Nucleic Acids" -> {
 			"PlotProbeConcentration",
@@ -1388,7 +1488,8 @@ $CommandBuilderFunctions=<|
 			"PlotSensor",
 			"PlotVacuumEvaporation",
 			"PlotVolume",
-			"PlotDissolvedOxygen"
+			"PlotDissolvedOxygen",
+			"PlotCoulterCount"
 		},
 		"Surface Tension" -> {
 			"PlotSurfaceTension",
@@ -1430,9 +1531,10 @@ $CommandBuilderFunctions=<|
 	|>,
 	"Analysis" -> <|
 		"Numerics" -> {
-			"AnalyzeClusters",
-			"AnalyzeFit",
 			"AnalyzePeaks",
+			"AdvancedAnalyzePeaks",
+			"AnalyzeFit",
+			"AnalyzeClusters",
 			"AnalyzeSmoothing",
 			"AnalyzeStandardCurve",
 			"AnalyzeDownsampling",
@@ -1471,7 +1573,7 @@ $CommandBuilderFunctions=<|
 			"AnalyzeImageExposure",
 			"AnalyzeMicroscopeOverlay",
 			"AnalyzeCellCount",
-            "AnalyzeColonies"
+			"AnalyzeColonies"
 		}
 	|>,
 	"Simulation" -> <|
@@ -1482,14 +1584,64 @@ $CommandBuilderFunctions=<|
 		"Kinetics" -> {"SimulateKinetics"},
 		"MeltingCurve" -> {"SimulateMeltingCurve"},
 		"Reactivity" -> {"SimulateReactivity"},
-		"Thermodynamics" -> {"SimulateEnthalpy", "SimulateEntropy", "SimulateEquilibriumConstant", "SimulateFreeEnergy", "SimulateMeltingTemperature"}
+		"Thermodynamics" -> {
+			"SimulateEnthalpy",
+			"SimulateEntropy",
+			"SimulateEquilibriumConstant",
+			"SimulateFreeEnergy",
+			"SimulateMeltingTemperature"
+		}
 	|>,
 	"Upload" -> <|
-		"Updating Sample Properties" -> {"UploadName", "UploadTransportCondition", "DefineAnalytes", "DefineTags", "DefineComposition", "DefineSolvent", "DefineEHSInformation"},
-		"Defining Model Fulfillment" -> {"UploadSampleModel", "UploadStockSolution", "UploadArrayCard", "UploadColumn", "UploadCapillaryELISACartridge", "UploadProduct", "UploadInventory", "UploadCompanySupplier", "UploadCompanyService", "UploadReferenceElectrodeModel"},
-		"Defining Sample Components" -> {"UploadMolecule", "UploadOligomer", "UploadProtein", "UploadAntibody", "UploadCarbohydrate", "UploadVirus", "UploadMammalianCell", "UploadBacterialCell", "UploadYeastCell", "UploadTissue", "UploadLysate", "UploadSpecies", "UploadResin", "UploadSolidPhaseSupport", "UploadPolymer", "UploadMaterial", "UploadModification"},
-		"Defining Methods" -> {"UploadGradientMethod", "UploadFractionCollectionMethod", "UploadPipettingMethod"},
-		"Defining Literature References" -> {"UploadLiterature", "UploadJournal"},
+		"Updating Sample Properties" -> {
+			"UploadName",
+			"UploadTransportCondition",
+			"DefineAnalytes",
+			"DefineTags",
+			"DefineComposition",
+			"DefineSolvent",
+			"DefineEHSInformation"
+		},
+		"Defining Model Fulfillment" -> {
+			"UploadSampleModel",
+			"UploadStockSolution",
+			"UploadArrayCard",
+			"UploadColumn",
+			"UploadCapillaryELISACartridge",
+			"UploadProduct",
+			"UploadInventory",
+			"UploadCompanySupplier",
+			"UploadCompanyService",
+			"UploadReferenceElectrodeModel"
+		},
+		"Defining Sample Components" -> {
+			"UploadMolecule",
+			"UploadOligomer",
+			"UploadProtein",
+			"UploadAntibody",
+			"UploadCarbohydrate",
+			"UploadVirus",
+			"UploadMammalianCell",
+			"UploadBacterialCell",
+			"UploadYeastCell",
+			"UploadTissue",
+			"UploadLysate",
+			"UploadSpecies",
+			"UploadResin",
+			"UploadSolidPhaseSupport",
+			"UploadPolymer",
+			"UploadMaterial",
+			"UploadModification"
+		},
+		"Defining Methods" -> {
+			"UploadGradientMethod",
+			"UploadFractionCollectionMethod",
+			"UploadPipettingMethod"
+		},
+		"Defining Literature References" -> {
+			"UploadLiterature",
+			"UploadJournal"
+		},
 		"Defining Manifold Jobs" -> {"Compute"}
 	|>,
 	"Search" -> <||>
@@ -1497,14 +1649,14 @@ $CommandBuilderFunctions=<|
 
 
 (* Add your function here if you are testing it. It will only show up in the Command Builder for Object[User,Emerald,Developer] users. *)
-$CommandBuilderFunctionsDev=<|
+$CommandBuilderFunctionsDev = <|
 	"Experiment" -> <|
 		"Culinary" -> {"ECL`AppHelpers`ExperimentTacoPreparation"},
 		"Sample Preparation" -> {
 			"ExperimentSamplePreparation",
 			"ExperimentStockSolution",
-			"ExperimentAliquot",
 			"ExperimentTransfer",
+			"ExperimentAliquot",
 			"ExperimentDilute",
 			"ExperimentSerialDilute",
 			"ExperimentFillToVolume",
@@ -1522,14 +1674,101 @@ $CommandBuilderFunctionsDev=<|
 			"ExperimentFlashFreeze",
 			"ExperimentAdjustpH",
 			"ExperimentMicrowaveDigestion",
-			"ExperimentPCR"
+			"ExperimentPCR",
+			"ExperimentDesiccate",
+			"ExperimentGrind"
 		},
-		"Synthesis" -> {"ExperimentBioconjugation", "ExperimentDNASynthesis", "ExperimentRNASynthesis", "ExperimentPeptideSynthesis", "ExperimentPNASynthesis"},
-		"Separations" -> {"ExperimentSolidPhaseExtraction", "ExperimentLiquidLiquidExtraction", "ExperimentHPLC", "ExperimentFPLC", "ExperimentLCMS", "ExperimentSupercriticalFluidChromatography", "ExperimentAgaroseGelElectrophoresis", "ExperimentPAGE", "ExperimentTotalProteinDetection", "ExperimentWestern", "ExperimentGasChromatography", "ExperimentIonChromatography", "ExperimentCrossFlowFiltration", "ExperimentDialysis", "ExperimentMagneticBeadSeparation", "ExperimentCapillaryGelElectrophoresisSDS", "ExperimentCapillaryIsoelectricFocusing", "ExperimentFlashChromatography"},
-		"Spectroscopy" -> {"ExperimentNMR", "ExperimentNMR2D", "ExperimentAbsorbanceIntensity", "ExperimentAbsorbanceSpectroscopy", "ExperimentAbsorbanceKinetics", "ExperimentIRSpectroscopy", "ExperimentFluorescenceIntensity", "ExperimentFluorescenceSpectroscopy", "ExperimentFluorescenceKinetics", "ExperimentFluorescencePolarization", "ExperimentFluorescencePolarizationKinetics", "ExperimentLuminescenceIntensity", "ExperimentLuminescenceSpectroscopy", "ExperimentLuminescenceKinetics", "ExperimentRamanSpectroscopy", "ExperimentDynamicLightScattering", "ExperimentAlphaScreen", "ExperimentCircularDichroism", "ExperimentNephelometry", "ExperimentNephelometryKinetics"},
-		"Mass Spectrometry" -> {"ExperimentMassSpectrometry", "ExperimentLCMS", "ExperimentSupercriticalFluidChromatography", "ExperimentGCMS", "ExperimentICPMS"},
-		"Bioassays" -> {"ExperimentTotalProteinQuantification", "ExperimentqPCR", "ExperimentDigitalPCR", "ExperimentBioLayerInterferometry", "ExperimentUVMelting", "ExperimentDifferentialScanningCalorimetry", "ExperimentThermalShift", "ExperimentCapillaryELISA", "ExperimentELISA", "ExperimentDNASequencing", "ExperimentBioconjugation", "ExperimentImageCells"},
-		"Crystallography" -> {"ExperimentPowderXRD", "ExperimentGrowCrystal"},
+		"Synthesis" -> {
+			"ExperimentBioconjugation",
+			"ExperimentDNASynthesis",
+			"ExperimentRNASynthesis",
+			"ExperimentPeptideSynthesis",
+			"ExperimentPNASynthesis"
+		},
+		"Separations" -> {
+			"ExperimentSolidPhaseExtraction",
+			"ExperimentLiquidLiquidExtraction",
+			"ExperimentHPLC",
+			"ExperimentLCMS",
+			"ExperimentFPLC",
+			"ExperimentSupercriticalFluidChromatography",
+			"ExperimentGasChromatography",
+			"ExperimentGCMS",
+			"ExperimentIonChromatography",
+			"ExperimentFlashChromatography",
+			"ExperimentAgaroseGelElectrophoresis",
+			"ExperimentPAGE",
+			"ExperimentTotalProteinDetection",
+			"ExperimentWestern",
+			"ExperimentCrossFlowFiltration",
+			"ExperimentDialysis",
+			"ExperimentMagneticBeadSeparation",
+			"ExperimentCapillaryGelElectrophoresisSDS",
+			"ExperimentCapillaryIsoelectricFocusing"
+		},
+		"Spectroscopy" -> {
+			"ExperimentNMR",
+			"ExperimentNMR2D",
+			"ExperimentAbsorbanceIntensity",
+			"ExperimentAbsorbanceSpectroscopy",
+			"ExperimentAbsorbanceKinetics",
+			"ExperimentIRSpectroscopy",
+			"ExperimentFluorescenceIntensity",
+			"ExperimentFluorescenceSpectroscopy",
+			"ExperimentFluorescenceKinetics",
+			"ExperimentFluorescencePolarization",
+			"ExperimentFluorescencePolarizationKinetics",
+			"ExperimentLuminescenceIntensity",
+			"ExperimentLuminescenceSpectroscopy",
+			"ExperimentLuminescenceKinetics",
+			"ExperimentRamanSpectroscopy",
+			"ExperimentDynamicLightScattering",
+			"ExperimentAlphaScreen",
+			"ExperimentCircularDichroism",
+			"ExperimentNephelometry",
+			"ExperimentNephelometryKinetics"
+		},
+		"Mass Spectrometry" -> {
+			"ExperimentMassSpectrometry",
+			"ExperimentLCMS",
+			"ExperimentSupercriticalFluidChromatography",
+			"ExperimentGCMS",
+			"ExperimentICPMS"
+		},
+		"Bioassays" -> {
+			"ExperimentTotalProteinQuantification",
+			"ExperimentqPCR", (*"ExperimentDigitalPCR",*)
+			"ExperimentBioLayerInterferometry",
+			"ExperimentUVMelting",
+			"ExperimentDifferentialScanningCalorimetry",
+			"ExperimentThermalShift",
+			"ExperimentCapillaryELISA",
+			"ExperimentELISA",
+			"ExperimentDNASequencing",
+			"ExperimentBioconjugation",
+			"ExperimentImageCells",
+			"ExperimentFragmentAnalysis"
+		},
+		"Cell Culture" -> {
+			"ExperimentCellPreparation",
+			"ExperimentMedia",
+			"ExperimentPlateMedia",
+			"ExperimentInoculateLiquidMedia",
+			"ExperimentIncubateCells",
+			"ExperimentQuantifyCells",
+			"ExperimentStreakCells",
+			"ExperimentSpreadCells",
+			"ExperimentImageColonies",
+			"ExperimentQuantifyColonies",
+			"ExperimentPickColonies",
+			"ExperimentWashCells",
+			"ExperimentFreezeCells",
+			"ExperimentLyseCells"
+		},
+		"Crystallography" -> {
+			"ExperimentPowderXRD",
+			"ExperimentGrowCrystal"
+		},
 		"Property Measurement" -> {
 			"ExperimentCountLiquidParticles",
 			"ExperimentCoulterCount",
@@ -1548,23 +1787,40 @@ $CommandBuilderFunctionsDev=<|
 			"ExperimentMeasureViscosity",
 			"ExperimentMeasureVolume",
 			"ExperimentMeasureWeight",
-			"ExperimentVisualInspection"
-		},
-		"Cell Biology" -> {
-			"ExperimentFreezeCells",
-			"ExperimentIncubateCells",
-			"ExperimentThawCells",
-			"ExperimentStreakCells",
-			"ExperimentSpreadCells"
+			"ExperimentVisualInspection",
+			"ExperimentMeasureMeltingPoint"
 		}
 	|>,
 	"Sample" -> <|
-		"Shipping Samples" -> {"OrderSamples", "ShipToUser", "ShipToECL", "ShipBetweenSites","DropShipSamples", "CancelTransaction"},
-		"Inventory Management" -> {"StoreSamples", "ClearSampleStorageSchedule", "DiscardSamples", "CancelDiscardSamples", "RestrictSamples", "UnrestrictSamples", "SampleUsage"}
+		"Shipping Samples" -> {
+			"OrderSamples",
+			"ShipToECL",
+			"DropShipSamples",
+			"ShipToUser",
+			"ShipBetweenSites",
+			"CancelTransaction"
+		},
+		"Inventory Management" -> {
+			"StoreSamples",
+			"ClearSampleStorageSchedule",
+			"DiscardSamples",
+			"CancelDiscardSamples",
+			"RestrictSamples",
+			"UnrestrictSamples",
+			"SampleUsage"
+		}
 	|>,
 	"Plot" -> <|
 		"General" -> {
 			"Inspect",
+			"PlotObject",
+			"PlotTable",
+			"PlotPeaks",
+			"PlotPeaksTable",
+			"PlotImage",
+			"PlotCloudFile",
+			"PlotDistribution",
+			"PlotWaterfall",
 			"EmeraldListLinePlot",
 			"EmeraldDateListPlot",
 			"EmeraldBarChart",
@@ -1572,26 +1828,17 @@ $CommandBuilderFunctionsDev=<|
 			"EmeraldPieChart",
 			"EmeraldHistogram",
 			"EmeraldSmoothHistogram",
+			"EmeraldListPlot3D",
 			"EmeraldHistogram3D",
 			"EmeraldSmoothHistogram3D",
 			"EmeraldListContourPlot",
-			"EmeraldListPointPlot3D",
-			"EmeraldListPlot3D",
-			"PlotDistribution",
-			"PlotImage",
-			"PlotTable",
-			"PlotCloudFile",
-			"PlotPeaks",
-			"PlotObject",
-			"PlotWaterfall",
-			"PlotProtocolTimeline"
+			"EmeraldListPointPlot3D"
 		},
 		"Spectroscopy" -> {
 			"PlotAbsorbanceQuantification",
 			"PlotAbsorbanceSpectroscopy",
 			"PlotAlphaScreen",
 			"PlotCircularDichroism",
-			"PlotDynamicLightScattering",
 			"PlotFluorescenceIntensity",
 			"PlotFluorescenceSpectroscopy",
 			"PlotLuminescenceSpectroscopy",
@@ -1644,7 +1891,8 @@ $CommandBuilderFunctionsDev=<|
 			"PlotCellCount",
 			"PlotCellCountSummary",
 			"PlotMicroscope",
-			"PlotMicroscopeOverlay"
+			"PlotMicroscopeOverlay",
+			"PlotCrystallizationImagingLog"
 		},
 		"Nucleic Acids" -> {
 			"PlotProbeConcentration",
@@ -1664,8 +1912,8 @@ $CommandBuilderFunctionsDev=<|
 			"PlotSensor",
 			"PlotVacuumEvaporation",
 			"PlotVolume",
-			"PlotDissolvedOxygen"
-
+			"PlotDissolvedOxygen",
+			"PlotCoulterCount"
 		},
 		"Surface Tension" -> {
 			"PlotSurfaceTension",
@@ -1702,14 +1950,17 @@ $CommandBuilderFunctionsDev=<|
 			"PlotELISA"
 		},
 		"Cell Biology" -> {
-			"PlotFreezeCells"
+			"PlotFreezeCells",
+			"PlotColonies",
+			"PlotCellCount"
 		}
 	|>,
 	"Analysis" -> <|
 		"Numerics" -> {
-			"AnalyzeClusters",
-			"AnalyzeFit",
 			"AnalyzePeaks",
+			"AdvancedAnalyzePeaks",
+			"AnalyzeFit",
+			"AnalyzeClusters",
 			"AnalyzeSmoothing",
 			"AnalyzeStandardCurve",
 			"AnalyzeDownsampling",
@@ -1748,9 +1999,9 @@ $CommandBuilderFunctionsDev=<|
 			"AnalyzeImageExposure",
 			"AnalyzeMicroscopeOverlay",
 			"AnalyzeCellCount",
-            "AnalyzeColonies"
+			"AnalyzeColonies",
+			"AnalyzeColonyGrowth"
 		}
-
 	|>,
 	"Simulation" -> <|
 		"BiomoleculeExperiments" -> {"SimulatePeptideFragmentationSpectra"},
@@ -1760,32 +2011,69 @@ $CommandBuilderFunctionsDev=<|
 		"Kinetics" -> {"SimulateKinetics"},
 		"MeltingCurve" -> {"SimulateMeltingCurve"},
 		"Reactivity" -> {"SimulateReactivity"},
-		"Thermodynamics" -> {"SimulateEnthalpy", "SimulateEntropy", "SimulateEquilibriumConstant", "SimulateFreeEnergy", "SimulateMeltingTemperature"}
+		"Thermodynamics" -> {
+			"SimulateEnthalpy",
+			"SimulateEntropy",
+			"SimulateEquilibriumConstant",
+			"SimulateFreeEnergy",
+			"SimulateMeltingTemperature"
+		}
 	|>,
 	"Upload" -> <|
-		"Updating Sample Properties" -> {"UploadName", "UploadTransportCondition", "DefineAnalytes", "DefineTags", "DefineComposition", "DefineSolvent", "DefineEHSInformation"},
-		"Defining Model Fulfillment" -> {"UploadSampleModel", "UploadStockSolution", "UploadArrayCard", "UploadColumn", "UploadCapillaryELISACartridge", "UploadProduct", "UploadInventory", "UploadCompanySupplier", "UploadCompanyService", "UploadReferenceElectrodeModel"},
-		"Defining Sample Components" -> {"UploadMolecule", "UploadOligomer", "UploadProtein", "UploadAntibody", "UploadCarbohydrate", "UploadVirus", "UploadMammalianCell", "UploadBacterialCell", "UploadYeastCell", "UploadTissue", "UploadLysate", "UploadSpecies", "UploadResin", "UploadSolidPhaseSupport", "UploadPolymer", "UploadMaterial", "UploadModification"},
-		"Defining Methods" -> {"UploadGradientMethod", "UploadFractionCollectionMethod", "UploadPipettingMethod"},
-		"Defining Literature References" -> {"UploadLiterature", "UploadJournal"},
+		"Updating Sample Properties" -> {
+			"UploadName",
+			"UploadTransportCondition",
+			"DefineAnalytes",
+			"DefineTags",
+			"DefineComposition",
+			"DefineSolvent",
+			"DefineEHSInformation"
+		},
+		"Defining Model Fulfillment" -> {
+			"UploadSampleModel",
+			"UploadStockSolution",
+			"UploadArrayCard",
+			"UploadColumn",
+			"UploadCapillaryELISACartridge",
+			"UploadProduct",
+			"UploadInventory",
+			"UploadCompanySupplier",
+			"UploadCompanyService",
+			"UploadReferenceElectrodeModel"
+		},
+		"Defining Sample Components" -> {
+			"UploadMolecule",
+			"UploadOligomer",
+			"UploadProtein",
+			"UploadAntibody",
+			"UploadCarbohydrate",
+			"UploadVirus",
+			"UploadMammalianCell",
+			"UploadBacterialCell",
+			"UploadYeastCell",
+			"UploadTissue",
+			"UploadLysate",
+			"UploadSpecies",
+			"UploadResin",
+			"UploadSolidPhaseSupport",
+			"UploadPolymer",
+			"UploadMaterial",
+			"UploadModification"
+		},
+		"Defining Methods" -> {
+			"UploadGradientMethod",
+			"UploadFractionCollectionMethod",
+			"UploadPipettingMethod"
+		},
+		"Defining Literature References" -> {
+			"UploadLiterature",
+			"UploadJournal"
+		},
 		"Defining Manifold Jobs" -> {"Compute"}
 	|>,
 	"Search" -> <||>
 |>;
 
-(* List any experiments in beta testing or entering into beta testing here *)
-(* Follow the format: functionName -> list of options to send to PlotBetaTesting *)
-(* Typically no options are required for PlotBetaTesting - the most likely option to provide is SearchCriteria and Name
-	- SearchCriteria is used if modifying an existing function and need to specify search conditions to find only your protocols
-	- Name is often used with SearchCriteria if the exact changes are unclear (for instance if you want to indicate a specific feature added to RSP
-*)
-$BetaExperimentFunctions=<|
-	"ExperimentDesiccate" -> {},
-	"ExperimentGrind" -> {},
-	"ExperimentMeasureMeltingPoint" -> {},
-	"ExperimentCoulterCount" -> {},
-	"ExperimentHPLC" -> {SearchCriteria->(Instrument==(Model[Instrument, HPLC, "id:R8e1Pjp1md8p"]|Object[Instrument, HPLC, "id:kEJ9mqR9prEL"]))}
-|>;
 
 
 (* ::Subsubsection:: *)
@@ -1833,9 +2121,17 @@ ClearMemoization[function_]:=Module[
 	newDownValues=Cases[
 		oldDownValues,
 		_?(
-			And[
-				StringMatchQ[ToString[#], ("HoldPattern["<>ToString[function]<>"["<>context<>"Private`"~~___) | ("HoldPattern["<>ToString[function]<>"[]")],
-				!MatchQ[#[[1]], Verbatim[HoldPattern][_Symbol[Experiment`Private`ExperimentCover | Experiment`Private`ExperimentUncover, ___]]]
+			With[{lhs = #[[1]]},
+				And[
+					StringMatchQ[
+						ToString[lhs],
+						Alternatives[
+							("HoldPattern["<>ToString[function]<>"["~~___~~context<>"Private`"~~___),
+							("HoldPattern["<>ToString[function]<>"[]]")
+						]
+					],
+					!MatchQ[lhs, Verbatim[HoldPattern][_Symbol[Experiment`Private`ExperimentCover | Experiment`Private`ExperimentUncover, ___]]]
+				]
 			]
 		&)
 ];
@@ -1858,3 +2154,7 @@ ClearMemoization[]:=Module[
 
 	Map[ClearMemoization[#]&, noDups];
 ];
+
+
+(* Test function for clear memoization - ensure this definition doesn't get cleared out *)
+clearMemoizationTestFunction[Object[__,id_String]] := Echo[id];

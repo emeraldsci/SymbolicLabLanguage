@@ -606,6 +606,11 @@ DefineTests[DownloadCloudFile,
 			{FileNameJoin@{$TemporaryDirectory, "test download 2.txt"}, FileNameJoin@{$TemporaryDirectory, "test download 3.txt"}}
 		],
 
+		Example[{Basic, "Very long file name can be hashed and downloaded:"},
+			DownloadCloudFile[Object[EmeraldCloudFile, "Cloud file with very long file name"], $TemporaryDirectory],
+			FileNameJoin@{$TemporaryDirectory, "29a6bee12196d1cf.txt"}
+		],
+
 		Example[{Messages, "DestinationPath", "If the target path's directory is invalid, fail:"},
 			DownloadCloudFile[
 				Object[EmeraldCloudFile, "Test file 1 for DownloadCloudFile"],
@@ -682,6 +687,14 @@ DefineTests[DownloadCloudFile,
 			Type -> Object[EmeraldCloudFile],
 			Name -> "False cloud file"
 		|>];
+
+		Upload[<|
+			CloudFile -> EmeraldCloudFile["AmazonS3", "emeraldsci-ecl-blobstore-stage", "71bc46effed544e6ff716ed55b5bfa48.txt", "9RdZXv1GmNB6F10kDAK3bbDKuPNM6lGP7xqO"],
+			FileName -> StringJoin[Table["ExtraSuperLongTestString_", {14}]] <> ".txt",
+			FileType -> "txt",
+			Type -> Object[EmeraldCloudFile],
+			Name -> "Cloud file with very long file name"
+		|>];
 	},
 	SymbolTearDown :> {
 		EraseObject[PickList[$CreatedObjects, DatabaseMemberQ[$CreatedObjects]], Force -> True, Verbose -> False];
@@ -690,7 +703,8 @@ DefineTests[DownloadCloudFile,
 			FileNameJoin@{$TemporaryDirectory, "test download.txt"},
 			FileNameJoin@{$TemporaryDirectory, "test download 2.txt"},
 			FileNameJoin@{$TemporaryDirectory, "test download 3.txt"},
-			FileNameJoin@{$HomeDirectory, "test download 4.txt"}}},
+			FileNameJoin@{$HomeDirectory, "test download 4.txt"},
+			FileNameJoin@{$TemporaryDirectory, "29a6bee12196d1cf.txt"}}},
 			DeleteFile[PickList[files, (FileExistsQ[#] & /@ files)]]]
 	}
 ];

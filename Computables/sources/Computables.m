@@ -53,7 +53,10 @@ ladderSizes[ladderAnalyses_]:=If[ladderAnalyses=!={},
 	Null
 ];
 
-
+(* ::Subsubsection:: *)
+(*objectsInNotebook*)
+objectsInNotebook[nb : ObjectP[Object[LaboratoryNotebook]]] :=
+	(Link /@ Constellation`Private`getNotebookObjects[Download[nb, ID]]);
 
 (* ::Subsubsection:: *)
 (*peakUnits*)
@@ -912,19 +915,27 @@ latestAppearance[obj:ObjectReferenceP[{Object[Sample], Object[Container]}]]:=Mod
 (* ::Subsubsection:: *)
 (*fractionContainerReplacement*)
 
+DefineOptions[fractionContainerReplacement,
+	Options:>{
+		UploadOption
+	}
+];
 
 (* pointed to by computable field used in hplc procedure *)
-fractionContainerReplacement[object:ObjectP[Object[Protocol, HPLC]]]:=With[
+fractionContainerReplacement[object:ObjectP[Object[Protocol, HPLC]],myOptions:OptionsPattern[]]:=With[
 	{packet=Download[object]},
-	fractionContainerReplacement[packet]
+	fractionContainerReplacement[packet,myOptions]
 ];
-fractionContainerReplacement[object:ObjectP[Object[Protocol, HPLC]]]:=Module[
+fractionContainerReplacement[object:ObjectP[Object[Protocol, HPLC]],myOptions:OptionsPattern[]]:=Module[
 	{
-		autosamplerSmallRackModel,autosamplerLargeRackModel,smallRackPositions, numberOfSmallRackPositions,largeRackPositions, numberOfLargeRackPositions,
+		upload,autosamplerSmallRackModel,autosamplerLargeRackModel,smallRackPositions, numberOfSmallRackPositions,largeRackPositions, numberOfLargeRackPositions,
 		fractionContainersFull, replacementContainers, replacementContainersModel, existingContainersOut, existingContainersOutModel,
 		smallRackPositionNames, largeRackPositionNames,
 		fractionCollector, autosamplerDeckPlacements, fractionCollectorPlacements,
-		numFracContainer,instrumentTimebase, uploadPacket},
+		numFracContainer,instrumentTimebase, instrumentScale, uploadPacket
+	},
+
+	upload=Lookup[ToList[myOptions],Upload,True];
 
 	(* Agilent Small rack for 15 mL tubes *)
 	autosamplerSmallRackModel=Experiment`Private`$SmallAgilentHPLCAutosamplerRack;
@@ -942,7 +953,8 @@ fractionContainerReplacement[object:ObjectP[Object[Protocol, HPLC]]]:=Module[
 			autosamplerDeckPlacements,
 			fractionCollectorPlacements,
 			numFracContainer,
-			instrumentTimebase
+			instrumentTimebase,
+			instrumentScale
 		},
 		{smallRackPositions, numberOfSmallRackPositions},
 		{largeRackPositions, numberOfLargeRackPositions}
@@ -963,8 +975,9 @@ fractionContainerReplacement[object:ObjectP[Object[Protocol, HPLC]]]:=Module[
 				AutosamplerDeckPlacements,
 				FractionContainerPlacements,
 				NumberOfFractionContainers,
-				(* Use Timebase to tell Dionex and Agilent *)
-				Instrument[Timebase]
+				(* Use Scale to tell Dionex and Agilent SemiPreparative and Agilent Preparative *)
+				Instrument[Timebase],
+				Instrument[Scale]
 			},
 			{Positions, NumberOfPositions},
 			{Positions, NumberOfPositions}
@@ -981,7 +994,8 @@ fractionContainerReplacement[object:ObjectP[Object[Protocol, HPLC]]]:=Module[
 	smallRackPositionNames=(Name /. smallRackPositions);
 	largeRackPositionNames=(Name /. largeRackPositions);
 
-	uploadPacket=If[!NullQ[instrumentTimebase],
+	uploadPacket=Which[
+		!NullQ[instrumentTimebase],
 		(* Dionex *)
 		Module[
 			{allPositions, requiredPositions, placements},
@@ -1017,18 +1031,64 @@ fractionContainerReplacement[object:ObjectP[Object[Protocol, HPLC]]]:=Module[
 				Append[FractionContainers] -> Link[replacementContainers],
 				Replace[ReplacementFractionContainers] -> Table[
 					(* 96-well 2mL Deep Well Plate *)
-					Link[Model[Container, Plate, "96-well 2mL Deep Well Plate"]],
+					Link[First[replacementContainersModel]],
 					numFracContainer
 				]
 			]
 		],
 
-		(* Agilent *)
+		(* Agilent SemiPreparative *)
+		MatchQ[instrumentScale,SemiPreparative],
+		Module[
+			{allPositions, requiredPositions, placements},
+			allPositions=Apply[
+				List,
+				Download[
+					fractionCollector,
+					AllowedPositions
+				]
+			];
+
+			requiredPositions=allPositions[[;;Length[replacementContainers]]];
+
+			placements=MapThread[
+				Function[
+					{replacementContainer, position},
+					{
+						Link[replacementContainer],
+						Link[fractionCollector],
+						position
+					}
+				],
+				{
+					replacementContainers,
+					requiredPositions
+				}
+			];
+
+			Association[
+				Object -> object,
+				Replace[FractionContainerReplacement] -> placements,
+				Append[FractionContainerPlacements] -> placements,
+				Append[FractionContainers] -> Link[replacementContainers],
+				Replace[CurrentFractionContainers] -> Link[replacementContainers],
+				Replace[ReplacementFractionContainers] -> Table[
+					(* 96-well 2mL Deep Well Plate *)
+					Link[First[replacementContainersModel]],
+					numFracContainer
+				]
+			]
+		],
+
+		True,
+		(* Agilent Preparative *)
 		Module[
 			{fractionContainerRackModel,requiredRackNumber,requiredRacks,groupedFractionContainers,vesselPlacements},
 			(* Get the model to hold FractionContainers *)
-			fractionContainerRackModel=If[MatchQ[FirstOrDefault[replacementContainersModel],Model[Container, Vessel, "id:bq9LA0dBGGR6"]],
+			fractionContainerRackModel=If[MatchQ[FirstOrDefault[replacementContainersModel],Model[Container, Vessel, "id:bq9LA0dBGGR6"]|Model[Container, Vessel, "id:bq9LA0dBGGrd"]],
+				(* {Model[Container, Vessel, "50mL Tube"],  Model[Container, Vessel, "50mL Light Sensitive Centrifuge Tube"]} - Large *)
 				autosamplerLargeRackModel,
+				(* {Model[Container, Vessel, "15mL Tube"], Model[Container, Vessel, "15mL Light Sensitive Centrifuge Tube"]} - Small *)
 				autosamplerSmallRackModel
 			];
 			requiredRackNumber=If[MatchQ[fractionContainerRackModel,autosamplerLargeRackModel],
@@ -1038,8 +1098,10 @@ fractionContainerReplacement[object:ObjectP[Object[Protocol, HPLC]]]:=Module[
 			(* Start from the end, we have the fraction containers *)
 			requiredRacks=Take[autosamplerDeckPlacements[[All,1]],-requiredRackNumber];
 			(* Group the fraction containers *)
-			groupedFractionContainers = If[MatchQ[FirstOrDefault[replacementContainersModel],Model[Container, Vessel, "id:bq9LA0dBGGR6"]],
+			groupedFractionContainers = If[MatchQ[FirstOrDefault[replacementContainersModel],Model[Container, Vessel, "id:bq9LA0dBGGR6"]|Model[Container, Vessel, "id:bq9LA0dBGGrd"]],
+				(* {Model[Container, Vessel, "50mL Tube"],  Model[Container, Vessel, "50mL Light Sensitive Centrifuge Tube"]} - Large *)
 				PartitionRemainder[replacementContainers,numberOfLargeRackPositions],
+				(* {Model[Container, Vessel, "15mL Tube"], Model[Container, Vessel, "15mL Light Sensitive Centrifuge Tube"]} - Small *)
 				PartitionRemainder[replacementContainers,numberOfSmallRackPositions]
 			];
 			vesselPlacements=Join@@MapThread[
@@ -1064,6 +1126,8 @@ fractionContainerReplacement[object:ObjectP[Object[Protocol, HPLC]]]:=Module[
 				Object -> object,
 				Replace[FractionContainerReplacement] -> vesselPlacements,
 				Append[FractionContainerPlacements] -> vesselPlacements,
+				(* Prep Agilent shares the same autosampler and fraction collection deck. Populate this field so that we can easily pick or store the newest on-deck containers. Not necessary for semi-prep HPLC *)
+				Replace[CurrentFractionContainers] -> Link[replacementContainers],
 				Append[FractionContainers] -> Link[replacementContainers],
 				Replace[ReplacementFractionContainers] -> Table[
 					Link[First[replacementContainersModel]],
@@ -1074,7 +1138,7 @@ fractionContainerReplacement[object:ObjectP[Object[Protocol, HPLC]]]:=Module[
 
 	];
 
-	Upload[uploadPacket]
+	If[upload,Upload[uploadPacket],uploadPacket]
 
 	(* Return placements for procedure usage *)
 	(* Now that this function is called in a stand alone execute task, there's no need to return a value *)

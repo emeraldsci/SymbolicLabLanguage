@@ -295,7 +295,6 @@ DefineObjectType[Object[Protocol,Incubate],{
 			Units->RPM,
 			Pattern:>GreaterEqualP[0 RPM],
 			IndexMatching->SamplesIn,
-			Description->" frequency of rotation the mixing instrument should use to mix the samples.",
 			Description->"For each member of SamplesIn, indicates the rate at which the sample(s) should remain shaking after Time has elapsed, when mixing by shaking. This option can only be set if Preparation->Robotic.",
 			Category->"Incubation"
 		},
@@ -460,7 +459,12 @@ DefineObjectType[Object[Protocol,Incubate],{
 				RelativeHumidity->Real,
 				LightExposure->Expression,
 				LightExposureIntensity->VariableUnit,
-				TotalLightExposure->VariableUnit
+				TotalLightExposure->VariableUnit,
+				Transform->Boolean,
+				TransformHeatShockTemperature->Real,
+				TransformHeatShockTime->Real,
+				TransformPreHeatCoolingTime->Real,
+				TransformPostHeatCoolingTime->Real
 			},
 			Pattern:>{
 				Sample->ObjectP[Object[Sample]],
@@ -473,7 +477,12 @@ DefineObjectType[Object[Protocol,Incubate],{
 				RelativeHumidity->GreaterP[0 Percent],
 				LightExposure->EnvironmentalChamberLightTypeP,
 				LightExposureIntensity->GreaterEqualP[0 (Watt/(Meter^2))] | GreaterEqualP[0 (Lumen/(Meter^2))],
-				TotalLightExposure->GreaterEqualP[0 (Watt*Hour/(Meter^2))] | GreaterEqualP[0 (Lumen*Hour/(Meter^2))]
+				TotalLightExposure->GreaterEqualP[0 (Watt*Hour/(Meter^2))] | GreaterEqualP[0 (Lumen*Hour/(Meter^2))],
+				Transform->BooleanP,
+				TransformHeatShockTemperature->GreaterEqualP[0*Kelvin],
+				TransformHeatShockTime->GreaterEqualP[0*Minute],
+				TransformPreHeatCoolingTime->GreaterEqualP[0*Second],
+				TransformPostHeatCoolingTime->GreaterEqualP[0*Minute]
 			},
 			Relation->{
 				Sample->Object[Sample],
@@ -486,7 +495,12 @@ DefineObjectType[Object[Protocol,Incubate],{
 				RelativeHumidity->Null,
 				LightExposure->Null,
 				LightExposureIntensity->Null,
-				TotalLightExposure->Null
+				TotalLightExposure->Null,
+				Transform->Null,
+				TransformHeatShockTemperature->Null,
+				TransformHeatShockTime->Null,
+				TransformPreHeatCoolingTime->Null,
+				TransformPostHeatCoolingTime->Null
 			},
 			Units->{
 				Sample->None,
@@ -499,7 +513,12 @@ DefineObjectType[Object[Protocol,Incubate],{
 				RelativeHumidity->Percent,
 				LightExposure->None,
 				LightExposureIntensity->None,
-				TotalLightExposure->None
+				TotalLightExposure->None,
+				Transform->None,
+				TransformHeatShockTemperature->Celsius,
+				TransformHeatShockTime->Second,
+				TransformPreHeatCoolingTime->Minute,
+				TransformPostHeatCoolingTime->Minute
 			},
 			Description->"Specifies how samples should be incubated (without mixing) in this procedure.",
 			Category->"Incubation",
@@ -561,7 +580,7 @@ DefineObjectType[Object[Protocol,Incubate],{
 			Format->Multiple,
 			Class->Boolean,
 			Pattern:>BooleanP,
-			Description->"For the samples that are to be mixed via inversion until they are fully dissolved, booleans that indicate whether the samples were fully dissolved after mixing.",
+			Description->"For the samples that are to be mixed via inversion until they are fully dissolved (MixUntilDissolved is True), indicates if the samples were determined to have been fully dissolved by visual inspection after mixing.",
 			Category->"Incubation"
 		},
 		InvertIndices->{
@@ -627,7 +646,7 @@ DefineObjectType[Object[Protocol,Incubate],{
 			Format->Multiple,
 			Class->Boolean,
 			Pattern:>BooleanP,
-			Description->"For the samples that are to be mixed via pipette until they are fully dissolved, booleans that indicate whether the samples were fully dissolved after mixing.",
+			Description->"For the samples that are to be mixed via pipette until they are fully dissolved (MixUntilDissolved is True), indicates if the samples were determined to have been fully dissolved by visual inspection after mixing.",
 			Category->"Incubation"
 		},
 		PipetteIndices->{
@@ -673,7 +692,7 @@ DefineObjectType[Object[Protocol,Incubate],{
 				Instrument->Model[Instrument]|Object[Instrument],
 				Location->Null,
 				Rate->Null,
-				InstrumentRate->_Null,
+				InstrumentRate->Null,
 				Time->Null,
 				MaxTime->Null,
 				MixUntilDissolved->Null,
@@ -718,7 +737,7 @@ DefineObjectType[Object[Protocol,Incubate],{
 			Format->Multiple,
 			Class->Expression,
 			Pattern:>MultipleChoiceAnswerP,
-			Description->"Indicates if all components in the solution appear fully dissolved by visual inspection. This field is applicable only if MixUntilDissolved is true. This field stores booleans for all vortex runs.",
+			Description->"For the samples that are to be mixed via vortexing until they are fully dissolved (MixUntilDissolved is True), indicates if the samples were determined to have been fully dissolved by visual inspection after mixing.",
 			Category->"Incubation"
 		},
 
@@ -797,7 +816,7 @@ DefineObjectType[Object[Protocol,Incubate],{
 			Format->Multiple,
 			Class->Expression,
 			Pattern:>MultipleChoiceAnswerP,
-			Description->"Indicates if all components in the solution appear fully dissolved by visual inspection. This field is applicable only if MixUntilDissolved is true. This field stores booleans for all vortex runs.",
+			Description->"For the samples that are to be mixed via disruption until they are fully dissolved (MixUntilDissolved is True), indicates if the samples were determined to have been fully dissolved by visual inspection after mixing.",
 			Category->"Incubation"
 		},
 
@@ -872,7 +891,7 @@ DefineObjectType[Object[Protocol,Incubate],{
 			Format->Multiple,
 			Class->Expression,
 			Pattern:>MultipleChoiceAnswerP,
-			Description->"Indicates if all components in the solution appear fully dissolved by visual inspection. This field is applicable only if MixUntilDissolved is true. This field stores booleans for all nutation runs.",
+			Description->"For the samples that are to be mixed via nutation until they are fully dissolved (MixUntilDissolved is True), indicates if the samples were determined to have been fully dissolved by visual inspection after mixing.",
 			Category->"Incubation"
 		},
 
@@ -967,8 +986,28 @@ DefineObjectType[Object[Protocol,Incubate],{
 			Format->Multiple,
 			Class->Expression,
 			Pattern:>MultipleChoiceAnswerP,
-			Description->"Indicates if all components in the solution appear fully dissolved by visual inspection. This field is applicable only if MixUntilDissolved is true. This field stores booleans for all vortex runs.",
+			Description->"For the samples that are to be mixed via shaking until they are fully dissolved (MixUntilDissolved is True), indicates if the samples were determined to have been fully dissolved by visual inspection after mixing.",
 			Category->"Incubation"
+		},
+		ShakerAdapterPlacements ->{
+			Format -> Multiple,
+			Class -> {Link, Link, String},
+			Pattern :> {_Link, _Link, LocationPositionP},
+			Relation -> {Object[Container, Rack]|Model[Container, Rack]|Model[Part, ShakerAdapter]|Object[Part, ShakerAdapter], Object[Instrument, Shaker]|Model[Instrument, Shaker], Null},
+			Description -> "List of placements for placing adapters onto the Shaker instrument. Currently, this field is only populated when shaker is Incu-Shaker.",
+			Category -> "Placements",
+			Developer -> True,
+			Headers -> {"Object to Place", "Destination Object", "Destination Position"}
+		},
+		ShakerSamplePlacements ->{
+			Format -> Multiple,
+			Class -> {Link, Link, String},
+			Pattern :> {_Link, _Link, LocationPositionP},
+			Relation -> {Object[Container]|Model[Container], Object[Container, Rack]|Model[Container, Rack]|Model[Part, ShakerAdapter]|Object[Part, ShakerAdapter], Null},
+			Description -> "List of sample placements for placing sample containers onto shake adapters. Currently, this field is only populated when shaker is Genie Temp-Shaker.",
+			Category -> "Placements",
+			Developer -> True,
+			Headers -> {"Object to Place", "Destination Object", "Destination Position"}
 		},
 
 		(*-- ROLL FIELDS --*)
@@ -976,7 +1015,7 @@ DefineObjectType[Object[Protocol,Incubate],{
 			Format->Multiple,
 			Class->Real,
 			Pattern:>_?IntegerQ,
-			Description->"The indices of each sample in RollParameters, as they relate to SamplesIn.",
+			Description->"For Roll mixing with BottleRoller, indicates the indices of each sample in RollParameters, as they relate to SamplesIn; for Roll mixing with Roller, indicates the indices of each rack in RollParameters.",
 			Category->"Incubation",
 			Developer->True
 		},
@@ -992,10 +1031,13 @@ DefineObjectType[Object[Protocol,Incubate],{
 				Temperature->Real,
 				AnnealingTime->Real,
 				MixUntilDissolved->Boolean,
-				ResidualIncubation->Boolean
+				ResidualIncubation->Boolean,
+				BatchedSampleIndices -> Expression,
+				RollerRack -> Link,
+				SamplePlacements -> Expression
 			},
 			Pattern:>{
-				Sample->ObjectP[Object[Sample]],
+				Sample->ObjectP[{Object[Sample], Object[Container, Rack]}],
 				Instrument->ObjectP[{Model[Instrument],Object[Instrument]}],
 				Location->_List|_String,
 				Rate->RPMP,
@@ -1004,10 +1046,13 @@ DefineObjectType[Object[Protocol,Incubate],{
 				Temperature->TemperatureP,
 				AnnealingTime->TimeP,
 				MixUntilDissolved->BooleanP,
-				ResidualIncubation->BooleanP
+				ResidualIncubation->BooleanP,
+				BatchedSampleIndices -> (_List|Null),
+				RollerRack -> _Link,
+				SamplePlacements -> (_List|Null)
 			},
 			Relation->{
-				Sample->Object[Sample],
+				Sample->Object[Sample]|Object[Container, Rack],
 				Instrument->Model[Instrument]|Object[Instrument],
 				Location->Null,
 				Rate->Null,
@@ -1016,7 +1061,10 @@ DefineObjectType[Object[Protocol,Incubate],{
 				Temperature->Null,
 				AnnealingTime->Null,
 				MixUntilDissolved->Null,
-				ResidualIncubation->Null
+				ResidualIncubation->Null,
+				BatchedSampleIndices -> Null,
+				RollerRack -> Object[Container, Rack]|Model[Container, Rack],
+				SamplePlacements -> Null
 			},
 			Units->{
 				Sample->None,
@@ -1028,7 +1076,10 @@ DefineObjectType[Object[Protocol,Incubate],{
 				Temperature->Celsius,
 				AnnealingTime->Minute,
 				MixUntilDissolved->None,
-				ResidualIncubation->None
+				ResidualIncubation->None,
+				BatchedSampleIndices -> None,
+				RollerRack -> None,
+				SamplePlacements -> None
 			},
 			Description->"Specifies how samples should be rolled in this procedure.",
 			Category->"Incubation",
@@ -1038,7 +1089,7 @@ DefineObjectType[Object[Protocol,Incubate],{
 			Format->Multiple,
 			Class->Integer,
 			Pattern:>GreaterP[0],
-			Description->"The batch lengths that correspond to the sample groupings of RollParameters.",
+			Description->"The batch lengths that correspond to the sample or rack groupings of RollParameters.",
 			Category->"Incubation",
 			Developer->True
 		},
@@ -1046,8 +1097,28 @@ DefineObjectType[Object[Protocol,Incubate],{
 			Format->Multiple,
 			Class->Expression,
 			Pattern:>MultipleChoiceAnswerP,
-			Description->"Indicates if all components in the solution appear fully dissolved by visual inspection. This field is applicable only if MixUntilDissolved is true. This field stores booleans for all roller runs.",
+			Description->"For the samples that are to be mixed via rolling until they are fully dissolved (MixUntilDissolved is True), indicates if the samples were determined to have been fully dissolved by visual inspection after mixing.",
 			Category->"Incubation"
+		},
+		RollerRackPlacements ->{
+			Format -> Multiple,
+			Class -> {Link, Link, String},
+			Pattern :> {_Link, _Link, LocationPositionP},
+			Relation -> {Object[Container, Rack]|Model[Container, Rack], Object[Instrument, Roller]|Model[Instrument, Roller], Null},
+			Description -> "List of roller rack placements for placing tube racks onto the rolling deck of Roller instrument. This field is Null if the instrument is not Roller.",
+			Category -> "Placements",
+			Developer -> True,
+			Headers -> {"Object to Place", "Destination Object", "Destination Position"}
+		},
+		RollerSamplePlacements ->{
+			Format -> Multiple,
+			Class -> {Link, Link, String},
+			Pattern :> {_Link, _Link, LocationPositionP},
+			Relation -> {Object[Container]|Model[Container], Object[Container, Rack]|Model[Container, Rack], Null},
+			Description -> "List of roller sample placements for placing roller sample containers onto tube racks. This filed is Null if the instrument is not Roller.",
+			Category -> "Placements",
+			Developer -> True,
+			Headers -> {"Object to Place", "Destination Object", "Destination Position"}
 		},
 
 		(*-- STIR FIELDS --*)
@@ -1125,7 +1196,7 @@ DefineObjectType[Object[Protocol,Incubate],{
 			Format->Multiple,
 			Class->Expression,
 			Pattern:>MultipleChoiceAnswerP,
-			Description->"Indicates if all components in the solution appear fully dissolved by visual inspection. This field is applicable only if MixUntilDissolved is true. This field stores booleans for all stirring runs.",
+			Description->"For the samples that are to be mixed via stirring until they are fully dissolved (MixUntilDissolved is True), indicates if the samples were determined to have been fully dissolved by visual inspection after mixing.",
 			Category->"Incubation"
 		},
 
@@ -1208,7 +1279,7 @@ DefineObjectType[Object[Protocol,Incubate],{
 			Format->Multiple,
 			Class->Expression,
 			Pattern:>MultipleChoiceAnswerP,
-			Description->"For the samples that are to be mixed via sonicate until they are fully dissolved, booleans that indicate whether the samples were fully dissolved after mixing.",
+			Description->"For the samples that are to be mixed via sonication until they are fully dissolved (MixUntilDissolved is True), indicates if the samples were determined to have been fully dissolved by visual inspection after mixing.",
 			Category->"Incubation"
 		},
 		(* Note: The homogenizer is the only heating instrument (other than the incubators) that has a temperature probe on it. *)
@@ -1300,7 +1371,7 @@ DefineObjectType[Object[Protocol,Incubate],{
 			Format->Multiple,
 			Class->Expression,
 			Pattern:>MultipleChoiceAnswerP,
-			Description->"For the samples that are to be mixed via homogenization until they are fully dissolved, booleans that indicate whether the samples were fully dissolved after mixing.",
+			Description->"For the samples that are to be mixed via homogenization until they are fully dissolved (MixUntilDissolved is True), indicates if the samples were determined to have been fully dissolved by visual inspection after mixing.",
 			Category->"Incubation"
 		},
 
@@ -1343,7 +1414,7 @@ DefineObjectType[Object[Protocol,Incubate],{
 			Format->Multiple,
 			Class->Boolean,
 			Pattern:>BooleanP,
-			Description->"For the samples that are to be mixed via swirling until they are fully dissolved, booleans that indicate whether the samples were fully dissolved after mixing.",
+			Description->"For the samples that are to be mixed via swirling until they are fully dissolved (MixUntilDissolved is True), indicates if the samples were determined to have been fully dissolved by visual inspection after mixing.",
 			Category->"Incubation"
 		},
 		SwirlIndices->{
@@ -1354,6 +1425,121 @@ DefineObjectType[Object[Protocol,Incubate],{
 			Category->"Incubation",
 			Developer->True
 		},
+
+		(*-- TRANSFORM FIELDS --*)
+		Transform->{
+			Format->Multiple,
+			Class->Boolean,
+			Pattern:>BooleanP,
+			IndexMatching->SamplesIn,
+			Description->"For each member of SamplesIn, indicates if SamplesIn are heat-shocked in order to disrupt the cell membrane and allow the plasmid to be taken up and incorporated into the cell.",
+			Category->"Incubation"
+		},
+		TransformHeatShockTemperature->{
+			Format->Multiple,
+			Class->Real,
+			Pattern:>GreaterEqualP[0 Kelvin],
+			Units->Celsius,
+			IndexMatching->SamplesIn,
+			Description->"For each member of SamplesIn, the temperature at which the cells are heat-shocked in order to disrupt the cell membrane and allow the plasmid to be taken up and incorporated into the cell.",
+			Category->"Incubation"
+		},
+		TransformHeatShockTime->{
+			Format->Multiple,
+			Class->Real,
+			Pattern:>GreaterEqualP[0 Second],
+			Units->Second,
+			IndexMatching->SamplesIn,
+			Description->"For each member of SamplesIn, the length of time for which the cells are heat-shocked in order to disrupt the cell membrane and allow the plasmid to be taken up and incorporated into the cell.",
+			Category->"Incubation"
+		},
+		TransformPreHeatCoolingTime->{
+			Format->Multiple,
+			Class->Real,
+			Pattern:>GreaterEqualP[0 Second],
+			Units->Minute,
+			IndexMatching->SamplesIn,
+			Description->"For each member of SamplesIn, the length of time for which the cells are cooled prior to heat shocking.",
+			Category->"Incubation"
+		},
+		TransformPostHeatCoolingTime->{
+			Format->Multiple,
+			Class->Real,
+			Pattern:>GreaterEqualP[0 Second],
+			Units->Second,
+			IndexMatching->SamplesIn,
+			Description->"For each member of SamplesIn, the length of time for which the cells are cooled after heat shocking.",
+			Category->"Incubation"
+		},
+		TransformCooler->{
+			Format->Single,
+			Class->Link,
+			Pattern:>_Link,
+			Relation->Alternatives[
+				Object[Instrument, PortableCooler],
+				Object[Container, PortableCooler],
+				Model[Instrument, PortableCooler],
+				Model[Container, PortableCooler]
+			],
+			Description->"The cooler used to cool the cells before and after heat shocking.",
+			Category->"Incubation",
+			Developer->True
+		},
+		TransformRemainingPreHeatCoolingTime->{
+			Format->Single,
+			Class->Real,
+			Pattern:>GreaterEqualP[0 Second],
+			Units->Minute,
+			Description->"The length of time still required to cool the current sample before heat shocking after all incubation devices are set up.",
+			Category->"Incubation",
+			Developer->True
+		},
+		TransformCurrentHeatShockTime->{
+			Format->Single,
+			Class->Real,
+			Pattern:>GreaterEqualP[0 Second],
+			Units->Second,
+			Description->"For the current batch of samples, the length of time for which the cells are heat-shocked in order to disrupt the cell membrane and allow the plasmid to be taken up and incorporated into the cell.",
+			Category->"Incubation",
+			Developer->True
+		},
+		TransformCurrentPostHeatCoolingTime->{
+			Format->Single,
+			Class->Real,
+			Pattern:>GreaterEqualP[0 Second],
+			Units->Second,
+			Description->"For the current batch of samples, the length of time for which the cells are cooled after heat shocking.",
+			Category->"Incubation",
+			Developer->True
+		},
+		TransformActualHeatShockTime->{
+			Format->Single,
+			Class->Real,
+			Pattern:>GreaterEqualP[0 Second],
+			Units->Minute,
+			Description->"For the current batch of samples, the total duration of the task during which the cells were heat-shocked in order to disrupt the cell membrane and allow the plasmid to be taken up and incorporated into the cell.",
+			Category->"Incubation",
+			Developer->True
+		},
+		TransformActualPostHeatCoolingTime->{
+			Format->Single,
+			Class->Real,
+			Pattern:>GreaterEqualP[0 Second],
+			Units->Minute,
+			Description->"For the current batch of samples, the total duration of the task during which the cells were cooled after heat shocking.",
+			Category->"Incubation",
+			Developer->True
+		},
+		TransformCoolerTemperatures->{
+			Format->Multiple,
+			Class->Link,
+			Pattern:>_Link,
+			Relation->Object[Data][Protocol],
+			Description->"A field used to record the actual temperature of the cooler immediately prior to heat shocking the cells.",
+			Category->"Incubation",
+			Developer->True
+		},
+
 
 		(*-- MULTI-INSTRUMENT FIELDS --*)
 		(* Note that from here on down, all of the fields are DEVELOPER fields. The user cannot see them. The following fields deal with keeping track of where we are in our multi-instrument incubation. *)
@@ -1427,8 +1613,17 @@ DefineObjectType[Object[Protocol,Incubate],{
 			Format->Multiple,
 			Class->Link,
 			Pattern:>_Link,
-			Relation->Object[Sample],
+			Relation->Object[Sample]|Object[Container, Rack],
 			Description->"The samples that are going to be incubated during this round of multi-instrument incubation. Batched by the CurrentIncubationBatchLengths field.",
+			Category->"Incubation",
+			Developer->True
+		},
+		CurrentIncubationRackSamples->{
+			Format->Multiple,
+			Class->Link,
+			Pattern:>_Link,
+			Relation->Object[Sample],
+			Description->"If incubation is performed with Roller, indicates the samples on the current rack that finished incubation. Otherwise, this field is not used.",
 			Category->"Incubation",
 			Developer->True
 		},
@@ -1461,7 +1656,18 @@ DefineObjectType[Object[Protocol,Incubate],{
 				RelativeHumidity->Real,
 				LightExposure->Expression,
 				LightExposureIntensity->VariableUnit,
-				TotalLightExposure->VariableUnit
+				TotalLightExposure->VariableUnit,
+				Transform->Boolean,
+				TransformHeatShockTemperature->Real,
+				TransformHeatShockTime->Real,
+				TransformPreHeatCoolingTime->Real,
+				TransformPostHeatCoolingTime->Real,
+				BatchedSampleIndices -> Expression,
+				RollerRacks -> Expression,
+				SamplePlacements -> Expression,
+				SecondaryShakerAdapter -> Link,
+				TertiaryShakerAdapter -> Link,
+				QuaternaryShakerAdapter -> Link
 			},
 			Pattern:>{
 				Instrument->_Link,
@@ -1490,7 +1696,18 @@ DefineObjectType[Object[Protocol,Incubate],{
 				RelativeHumidity->GreaterP[0 Percent],
 				LightExposure->EnvironmentalChamberLightTypeP,
 				LightExposureIntensity->GreaterEqualP[0 (Watt/(Meter^2))] | GreaterEqualP[0 (Lumen/(Meter^2))],
-				TotalLightExposure->GreaterEqualP[0 (Watt*Hour/(Meter^2))] | GreaterEqualP[0 (Lumen*Hour/(Meter^2))]
+				TotalLightExposure->GreaterEqualP[0 (Watt*Hour/(Meter^2))] | GreaterEqualP[0 (Lumen*Hour/(Meter^2))],
+				Transform->BooleanP,
+				TransformHeatShockTemperature->GreaterEqualP[0*Kelvin],
+				TransformHeatShockTime->GreaterEqualP[0*Minute],
+				TransformPreHeatCoolingTime->GreaterEqualP[0*Second],
+				TransformPostHeatCoolingTime->GreaterEqualP[0*Minute],
+				BatchedSampleIndices -> (_List|Null),
+				RollerRacks -> (_List|Null),
+				SamplePlacements -> (_List|Null),
+				SecondaryShakerAdapter -> _Link,
+				TertiaryShakerAdapter -> _Link,
+				QuaternaryShakerAdapter -> _Link
 			},
 			Relation->{
 				Instrument->Model[Instrument]|Object[Instrument],
@@ -1519,7 +1736,18 @@ DefineObjectType[Object[Protocol,Incubate],{
 				RelativeHumidity->Null,
 				LightExposure->Null,
 				LightExposureIntensity->Null,
-				TotalLightExposure->Null
+				TotalLightExposure->Null,
+				Transform->Null,
+				TransformHeatShockTemperature->Null,
+				TransformHeatShockTime->Null,
+				TransformPreHeatCoolingTime->Null,
+				TransformPostHeatCoolingTime->Null,
+				BatchedSampleIndices -> Null,
+				RollerRacks -> Null,
+				SamplePlacements -> Null,
+				SecondaryShakerAdapter -> Model[Part]|Object[Part]|Model[Container,Rack]|Object[Container,Rack],
+				TertiaryShakerAdapter -> Model[Part]|Object[Part]|Model[Container,Rack]|Object[Container,Rack],
+				QuaternaryShakerAdapter -> Model[Part]|Object[Part]|Model[Container,Rack]|Object[Container,Rack]
 			},
 			Units->{
 				Instrument->None,
@@ -1548,7 +1776,18 @@ DefineObjectType[Object[Protocol,Incubate],{
 				RelativeHumidity->Percent,
 				LightExposure->None,
 				LightExposureIntensity->None,
-				TotalLightExposure->None
+				TotalLightExposure->None,
+				Transform->None,
+				TransformHeatShockTemperature->Celsius,
+				TransformHeatShockTime->Second,
+				TransformPreHeatCoolingTime->Minute,
+				TransformPostHeatCoolingTime->Minute,
+				BatchedSampleIndices -> None,
+				RollerRacks -> None,
+				SamplePlacements -> None,
+				SecondaryShakerAdapter -> None,
+				TertiaryShakerAdapter -> None,
+				QuaternaryShakerAdapter -> None
 			},
 			Description->"For each member of CurrentIncubationTypes, specifies how samples should be incubated (ex. temperatures, times, etc.) in this procedure.",
 			IndexMatching->CurrentIncubationTypes,

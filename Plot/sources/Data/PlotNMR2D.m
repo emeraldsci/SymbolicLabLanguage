@@ -61,6 +61,82 @@ DefineOptions[PlotNMR2D,
 	}
 ];
 
+Error::NoNMR2DDataToPlot = "The protocol object does not contain any associated NMR2D data.";
+Error::NMR2DProtocolDataNotPlotted = "The data objects linked to the input protocol were not able to be plotted. The data objects may be missing field values that are required for plotting. Please inspect the data objects to ensure that they contain the data to be plotted, and call PlotNMR2D or PlotObject on an individual data object to identify the missing values.";
+
+(* Protocol Overload *)
+PlotNMR2D[
+	obj: ObjectP[Object[Protocol, NMR2D]],
+	ops: OptionsPattern[PlotNMR2D]
+] := Module[{listedOptions, safeOps, output, data, previewPlot, plots, resolvedOptions, finalResult, outputPlot, outputOptions},
+
+	(* get the listed options and inputs *)
+	listedOptions = ToList[ops];
+
+	(* Check the options pattern and return a list of all options, using defaults for unspecified or invalid options *)
+	safeOps=SafeOptions[PlotNMR2D, listedOptions];
+
+	(* Requested output, either a single value or list of Alternatives[Result,Options,Preview,Tests] *)
+	output = ToList[Lookup[safeOps, Output]];
+
+	(* Download the data from the input protocol *)
+	data = Download[obj, Data];
+
+	(* Return an error if there is no data or it is not the correct data type *)
+	If[!MatchQ[data, {ObjectP[Object[Data, NMR2D]]..}],
+		Message[Error::NoNMR2DDataToPlot];
+		Return[$Failed]
+	];
+
+	(* If Preview is requested, return a plot with all of the data objects in the protocol overlaid in one plot *)
+	previewPlot = If[MemberQ[output, Preview],
+		PlotNMR2D[data, Sequence @@ ReplaceRule[listedOptions, Output -> Preview]],
+		Null
+	];
+
+	(* If either Result or Options are requested, map over the data objects. Remove anything that failed from the list of plots to be displayed*)
+	{plots, resolvedOptions} = If[MemberQ[output, (Result | Options)],
+		Transpose[
+			(PlotNMR2D[#, Sequence @@ ReplaceRule[listedOptions, Output -> {Result, Options}]]& /@ data) /. $Failed -> Nothing
+		],
+		{{}, {}}
+	];
+
+	(* If all of the data objects failed to plot, return an error *)
+	If[MatchQ[plots, (ListableP[{}] | ListableP[Null])] && MatchQ[previewPlot, (Null | $Failed)],
+		Message[Error::NMR2DProtocolDataNotPlotted];
+		Return[$Failed],
+		Nothing
+	];
+
+	(* If Result was requested, output the plots in slide view, unless there is only one plot then we can just show it not in slide view. *)
+	outputPlot = If[MemberQ[output, Result],
+		If[Length[plots] > 1,
+			SlideView[plots],
+			First[plots]
+		]
+	];
+
+	(* If Options were requested, just take the first set of options since they are the same for all plots. Make it a List first just in case there is only one option set. *)
+	outputOptions = If[MemberQ[output, Options],
+		First[ToList[resolvedOptions]]
+	];
+
+	(* Prepare our final result *)
+	finalResult = output /. {
+		Result -> outputPlot,
+		Options -> outputOptions,
+		Preview -> previewPlot,
+		Tests -> {}
+	};
+
+	(* Return the result *)
+	If[
+		Length[finalResult] == 1,
+		First[finalResult],
+		finalResult
+	]
+];
 
 (*** Primary Overload ***)
 (* PlotNMR2D[myDataObjs:plotInputP, myOptions:OptionsPattern[PlotNMR2D]]:= *)
@@ -70,7 +146,7 @@ PlotNMR2D[myDataObjs:ListableP[ObjectP[{Object[Data,NMR],Object[Data, NMR2D]}],2
 		frameTicks, frameTicksStyle, expTypes, allTooltips, contourValues, recursiveContourLines,
 		indirectNuclei, dataPackets, contourLines, coloredContourLines, valuesToLinesRules,
 		recursiveContourValues, all2DSpectra, xRanges, yRanges, plotRanges,
-		byteCounts, paredEpilogs, onePlotPerObj, dynamicPlots,
+		byteCounts, paredEpilogs, objPlots, dynamicPlots,
 		specifiedPlotLabels, expandedPlotLabels, resolvedPlotLabels,
 		mostlyResolvedOpsPerObj, resolvedOpsPerObj, combinedResolvedOps,
 		precomputedContours, recomputeContoursQ, resolvedContourOps
@@ -276,9 +352,14 @@ PlotNMR2D[myDataObjs:ListableP[ObjectP[{Object[Data,NMR],Object[Data, NMR2D]}],2
 
 	(* make all the plots; the actual graphic is in the Epilog which gets added at the end; the plot itself is Null *)
 	(* this is because using ELLP directly is prohibitively slow *)
-	onePlotPerObj = Map[
-		EmeraldListLinePlot[Null, ReplaceRule[#,{Output->Result}]]&,
-		plotOps
+	objPlots = MapThread[
+		Function[{ops, epilogs},
+			Map[
+				EmeraldListLinePlot[Null, ReplaceRule[ops,{Output->Result, Epilog -> #}]]&,
+				epilogs
+			]
+		],
+		{plotOps, paredEpilogs}
 	];
 
 	(* Get the resolved options per plot function *)
@@ -304,14 +385,14 @@ PlotNMR2D[myDataObjs:ListableP[ObjectP[{Object[Data,NMR],Object[Data, NMR2D]}],2
 
 	(* make and return the dynamic plots with sliders *)
 	dynamicPlots = MapThread[
-		Function[{plot, epilogs, contourVals},
-			If[Length[epilogs] == 1,
-				plot /. {(Epilog -> _) :> (Epilog -> epilogs[[1]])},
+		Function[{plots, contourVals},
+			If[Length[plots] == 1,
+				plots[[1]],
 				DynamicModule[{var=1},
 					Column[
 						{
-							Dynamic[plot/.{(Epilog -> _) :> (Epilog -> epilogs[[var]])}],
-							Slider[Dynamic[var], {1, Length[epilogs], 1}],
+							Dynamic[plots[[var]]],
+							Slider[Dynamic[var], {1, Length[plots], 1}],
 							Dynamic[Style["Contour Level: "<>ToString@NumberForm[Part[Reverse@contourVals,var],DigitBlock->3], Medium, FontWeight -> Bold, FontFamily -> "Arial"]]
 						},
 						Center
@@ -319,7 +400,7 @@ PlotNMR2D[myDataObjs:ListableP[ObjectP[{Object[Data,NMR],Object[Data, NMR2D]}],2
 				]
 			]
 		],
-		{onePlotPerObj, paredEpilogs, contourValues}
+		{objPlots, contourValues}
 	];
 
 	(* Format the output differently if we have a single input vs multiple inputs *)

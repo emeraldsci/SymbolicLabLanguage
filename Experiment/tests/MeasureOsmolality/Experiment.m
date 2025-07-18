@@ -43,6 +43,26 @@ DefineTests[
 			ObjectP[Object[Protocol,MeasureOsmolality]]
 		],
 		(* Messages *)
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a sample that does not exist (name form):"},
+			ExperimentMeasureOsmolality[Object[Sample, "Nonexistent sample"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a container that does not exist (name form):"},
+			ExperimentMeasureOsmolality[Object[Container, Vessel, "Nonexistent container"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a sample that does not exist (ID form):"},
+			ExperimentMeasureOsmolality[Object[Sample, "id:12345678"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a container that does not exist (ID form):"},
+			ExperimentMeasureOsmolality[Object[Container, Vessel, "id:12345678"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
 		Example[{Messages,"DiscardedSamples","If the provided sample is discarded, an error will be thrown:"},
 			ExperimentMeasureOsmolality[Object[Sample,"Test discarded Milli-Q water sample for ExperimentMeasureOsmolality "<>$SessionUUID]],
 			$Failed,
@@ -473,26 +493,6 @@ DefineTests[
 			];
 			Lookup[options,ImageSample],
 			False,
-			Variables:>{options}
-		],
-		Example[{Options,PreparatoryPrimitives,"Specify prepared samples for ExperimentMeasureOsmolality:"},
-			(* Depending on how sample prep is working, viscosity may or may not be populated. This indicate a failure of this function *)
-			options=Quiet[ExperimentMeasureOsmolality["My Container for Osmolality Measurements",
-				PreparatoryPrimitives->{
-					Define[
-						Name->"My Container for Osmolality Measurements",
-						Container->Model[Container,Vessel,"2mL Tube"]
-					],
-					Transfer[
-						Source->Model[Sample,"Milli-Q water"],
-						Amount->30 Microliter,
-						Destination->{"My Container for Osmolality Measurements","A1"}
-					]
-				},
-				Output->Options
-			],Warning::OsmolalityUnknownViscosity];
-			Lookup[options,SampleVolume],
-			10 Microliter,
 			Variables:>{options}
 		],
 		Example[{Options,PreparatoryUnitOperations,"Specify prepared samples for ExperimentMeasureOsmolality:"},
@@ -998,7 +998,7 @@ DefineTests[
 				Output->Options
 			];
 			Lookup[options,AliquotSampleLabel],
-			"Test Label for ExperimentMeasureOsmolality 1",
+			{"Test Label for ExperimentMeasureOsmolality 1"},
 			Variables:>{options}
 		],
 		Example[{Options,ConsolidateAliquots,"Indicates if identical aliquots should be prepared in the same container/position:"},
@@ -1026,7 +1026,7 @@ DefineTests[
 				Output->Options
 			];
 			Lookup[options,AliquotContainer],
-			{1,ObjectReferenceP[Model[Container,Vessel,"1mL HPLC Vial (total recovery) with Cap and PTFE/Silicone Septum"]]},
+			{{1, ObjectReferenceP[Model[Container, Vessel, "1mL HPLC Vial (total recovery) with Cap and PTFE/Silicone Septum"]]}},
 			Variables:>{options}
 		],
 		Example[{Options,SamplesInStorageCondition,"Indicates how the input samples of the experiment should be stored:"},
@@ -1075,7 +1075,7 @@ DefineTests[
 				Output->Options
 			];
 			Lookup[options,DestinationWell],
-			"A1",
+			{"A1"},
 			Variables:>{options}
 		],
 		Example[{Options,Name,"Specify the name of a protocol:"},
@@ -1096,6 +1096,42 @@ DefineTests[
 			101 Second,
 			Variables:>{options}
 		],
+		Example[{Options, {PreparedModelContainer, PreparedModelAmount}, "Specify the container in which an input Model[Sample] should be prepared:"},
+			options = ExperimentMeasureOsmolality[
+				{Model[Sample, "Milli-Q water"], Model[Sample, "Milli-Q water"]},
+				PreparedModelContainer -> Model[Container,Vessel,"2mL Tube"],
+				PreparedModelAmount -> 20 Microliter,
+				Output -> Options
+			];
+			prepUOs = Lookup[options, PreparatoryUnitOperations];
+			{
+				prepUOs[[-1, 1]][Sample],
+				prepUOs[[-1, 1]][Container],
+				prepUOs[[-1, 1]][Amount],
+				prepUOs[[-1, 1]][Well],
+				prepUOs[[-1, 1]][ContainerLabel]
+			},
+			{
+				{ObjectP[Model[Sample, "id:8qZ1VWNmdLBD"]]..},
+				{ObjectP[Model[Container, Vessel, "2mL Tube"]]..},
+				{EqualP[20 Microliter]..},
+				{"A1", "A1"},
+				{_String, _String}
+			},
+			Variables :> {options, prepUOs}
+		],
+
+		Example[{Options, PreparedModelAmount, "If using model input, the sample preparation options can also be specified:"},
+			ExperimentMeasureOsmolality[
+				Model[Sample, "Ammonium hydroxide"],
+				PreparedModelAmount -> 0.5 Milliliter,
+				Aliquot -> True,
+				Mix -> True,
+				ViscousLoading -> False
+			],
+			ObjectP[Object[Protocol, MeasureOsmolality]]
+		],
+
 		Example[{Additional,"Use the sample preparation options to prepare samples before the main experiment:"},
 			options=ExperimentMeasureOsmolality[Object[Sample,"Test Milli-Q water sample for ExperimentMeasureOsmolality "<>$SessionUUID],
 				Incubate->True,
@@ -1465,7 +1501,7 @@ DefineTests[
 				testBench,
 				testContainer1,testContainer2,testContainer3,testContainer4,testContainer5,testContainer6,
 				testContainer7,testContainer8,testContainer9,testContainer10,testContainer11,testContainer12,
-				testContainer13,testContainer14,testContainer15,
+				testContainer13,testContainer14,testContainer15, testContainer16,
 				benchPacket,containerPackets,
 
 				sampleIDs,
@@ -1503,6 +1539,7 @@ DefineTests[
 				Object[Container,Vessel,"Test 1 mL Ampoule 1 for ExperimentMeasureOsmolality "<>$SessionUUID],
 				Object[Container,Vessel,"Test 1 mL Ampoule 2 for ExperimentMeasureOsmolality "<>$SessionUUID],
 				Object[Container,Vessel,"Test 1 mL Ampoule 3 for ExperimentMeasureOsmolality "<>$SessionUUID],
+				Object[Container,Vessel,"Test 50 mL Tube 2 for ExperimentMeasureOsmolality "<>$SessionUUID],
 
 				Object[Sample,"Test Milli-Q water sample for ExperimentMeasureOsmolality "<>$SessionUUID],
 				Object[Sample,"Test discarded Milli-Q water sample for ExperimentMeasureOsmolality "<>$SessionUUID],
@@ -1554,7 +1591,8 @@ DefineTests[
 				testContainer12,
 				testContainer13,
 				testContainer14,
-				testContainer15
+				testContainer15,
+				testContainer16
 			}=containerIDs=createIDs[Object[Container,Vessel]];
 
 			{
@@ -1612,7 +1650,8 @@ DefineTests[
 					(*12*)Model[Container,Vessel,"50mL Tube"],
 					(*13*)Model[Container,Vessel,"1mL clear glass ampule"],
 					(*14*)Model[Container,Vessel,"1mL clear glass ampule"],
-					(*15*)Model[Container,Vessel,"1mL clear glass ampule"]
+					(*15*)Model[Container,Vessel,"1mL clear glass ampule"],
+					(*16*)Model[Container,Vessel,"50mL Tube"]
 				},
 				{
 					(*1*){"Bench Top Slot",testBench},
@@ -1629,7 +1668,8 @@ DefineTests[
 					(*12*){"Bench Top Slot",testBench},
 					(*13*){"Bench Top Slot",testBench},
 					(*14*){"Bench Top Slot",testBench},
-					(*15*){"Bench Top Slot",testBench}
+					(*15*){"Bench Top Slot",testBench},
+					(*16*){"Bench Top Slot",testBench}
 				},
 				ID->{
 					(*1*)testContainer1,
@@ -1646,7 +1686,8 @@ DefineTests[
 					(*12*)testContainer12,
 					(*13*)testContainer13,
 					(*14*)testContainer14,
-					(*15*)testContainer15
+					(*15*)testContainer15,
+					(*16*)testContainer16
 				}[ID],
 				Name->{
 					(*1*)"Test 2 mL Tube 1 for ExperimentMeasureOsmolality "<>$SessionUUID,
@@ -1663,7 +1704,8 @@ DefineTests[
 					(*12*)"Test 50 mL Tube 1 for ExperimentMeasureOsmolality "<>$SessionUUID,
 					(*13*)"Test 1 mL Ampoule 1 for ExperimentMeasureOsmolality "<>$SessionUUID,
 					(*14*)"Test 1 mL Ampoule 2 for ExperimentMeasureOsmolality "<>$SessionUUID,
-					(*15*)"Test 1 mL Ampoule 3 for ExperimentMeasureOsmolality "<>$SessionUUID
+					(*15*)"Test 1 mL Ampoule 3 for ExperimentMeasureOsmolality "<>$SessionUUID,
+					(*16*)"Test 50 mL Tube 2 for ExperimentMeasureOsmolality " <> $SessionUUID
 				},
 				Cache->cache,
 				Upload->False
@@ -1704,7 +1746,7 @@ DefineTests[
 					(*11*){"A1",testContainer9},
 					(*12*){"A1",testContainer10},
 					(*13*){"A1",testContainer11},
-					(*14*){"A1",testContainer12},
+					(*14*){"A1",testContainer16},
 					(*15*){"A1",testContainer13},
 					(*16*){"A1",testContainer14}
 				},
@@ -1763,7 +1805,9 @@ DefineTests[
 					(*16*)"Test 1000 mmol/kg calibrant for ExperimentMeasureOsmolality "<>$SessionUUID
 				},
 				Cache->cache,
-				Upload->False
+				Upload->False,
+				(* FastTrack -> True here because we're doing shenanigans uploading two samples to the same container (but then moving them to Null later) *)
+				FastTrack -> True
 			];
 
 			cache=Experiment`Private`FlattenCachePackets[{cache,samplePackets}];
@@ -1791,7 +1835,7 @@ DefineTests[
 				<|Object->testSampleNoViscosity,Viscosity->Null|>,
 
 				(* Sample with concentration *)
-				<|Object->testSampleWithConcentration,Replace[Composition]->{{100 VolumePercent,Link[Model[Molecule,"Water"]]},{10 Micromolar,Link[Model[Molecule,"Uracil"]]}},Viscosity->1 Milli Pascal Second|>,
+				<|Object->testSampleWithConcentration,Replace[Composition]->{{100 VolumePercent,Link[Model[Molecule,"Water"]],Now},{10 Micromolar,Link[Model[Molecule,"Uracil"]],Now}},Viscosity->1 Milli Pascal Second|>,
 
 				(* Upload viscosity to any remaining test samples *)
 				<|Object->testSample,Viscosity->1 Milli Pascal Second|>,
@@ -1858,6 +1902,7 @@ DefineTests[
 				Object[Container,Vessel,"Test 1 mL Ampoule 1 for ExperimentMeasureOsmolality "<>$SessionUUID],
 				Object[Container,Vessel,"Test 1 mL Ampoule 2 for ExperimentMeasureOsmolality "<>$SessionUUID],
 				Object[Container,Vessel,"Test 1 mL Ampoule 3 for ExperimentMeasureOsmolality "<>$SessionUUID],
+				Object[Container,Vessel,"Test 50 mL Tube 2 for ExperimentMeasureOsmolality "<>$SessionUUID],
 
 				Object[Sample,"Test Milli-Q water sample for ExperimentMeasureOsmolality "<>$SessionUUID],
 				Object[Sample,"Test discarded Milli-Q water sample for ExperimentMeasureOsmolality "<>$SessionUUID],

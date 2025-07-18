@@ -37,13 +37,25 @@ DefineTests[
 		(* Additional *)
 		(* All of the InvalidInput and InvalidOption errors *)
 		(* --- Messages that occur before the option resolver --- *)
-		Example[{Messages,"ObjectDoesNotExist","Any specified input samples or options which are Objects must exist in the database:"},
-			ExperimentPAGE[Object[Sample,"Fake nonexistent sample for ExperimentPAGE tests"]],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a sample that does not exist (name form):"},
+			ExperimentPAGE[Object[Sample, "Nonexistent sample"]],
 			$Failed,
-			Messages:>{
-				Error::ObjectDoesNotExist,
-				Error::InvalidInput
-			}
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a container that does not exist (name form):"},
+			ExperimentPAGE[Object[Container, Vessel, "Nonexistent container"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a sample that does not exist (ID form):"},
+			ExperimentPAGE[Object[Sample, "id:12345678"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a container that does not exist (ID form):"},
+			ExperimentPAGE[Object[Container, Vessel, "id:12345678"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
 		],
 		Example[{Messages,"DiscardedSamples","If the input samples are discarded, they cannot be used:"},
 			ExperimentPAGE[{Object[Sample,"40mer DNA oligomer for ExperimentPAGE tests" <> $SessionUUID],Object[Sample,"Discarded 40mer DNA oligomer for ExperimentPAGE tests" <> $SessionUUID]}],
@@ -1162,6 +1174,17 @@ DefineTests[
 				Unset[$CreatedObjects]
 			)
 		],
+		Example[{Options,CanaryBranch,"Specify the CanaryBranch on which the protocol is run:"},
+			Download[ExperimentPAGE[Object[Sample,"40mer DNA oligomer for ExperimentPAGE tests" <> $SessionUUID],CanaryBranch->"d1cacc5a-948b-4843-aa46-97406bbfc368"],CanaryBranch],
+			"d1cacc5a-948b-4843-aa46-97406bbfc368",
+			TimeConstraint->240,
+			Stubs:>{GitBranchExistsQ[___] = True, $PersonID = Object[User, Emerald, Developer, "id:n0k9mGkqa6Gr"]},
+			SetUp:>($CreatedObjects={}),
+			TearDown:>(
+				EraseObject[$CreatedObjects,Force->True,Verbose->False];
+				Unset[$CreatedObjects]
+			)
+		],
 	(* THIS TEST IS BRUTAL BUT DO NOT REMOVE IT. MAKE SURE YOUR FUNCTION DOESNT BUG ON THIS. *)
 		Example[{Additional,"Use the sample preparation options to prepare samples before the main experiment:"},
 			options=ExperimentPAGE[Object[Sample,"25 mL water sample in 50mL Tube for ExperimentPAGE tests" <> $SessionUUID],
@@ -1176,31 +1199,40 @@ DefineTests[
 			Variables :> {options},
 			TimeConstraint->240
 		],
-		(* PreparatoryUnitOperations Option *)
-		Example[{Options,PreparatoryPrimitives,"Specify prepared samples for ExperimentPAGE:"},
-			options=ExperimentPAGE["Container 1",
-				PreparatoryPrimitives-> {
-					Define[
-						Name->"Container 1",
-						Container->Model[Container,Plate,"96-well PCR Plate"]
-					],
-					Transfer[
-						Source->Object[Sample,"40mer DNA oligomer for ExperimentPAGE tests" <> $SessionUUID],
-						Amount->30*Microliter,
-						Destination->{"Container 1","A1"}
-					],
-					Transfer[
-						Source->Model[Sample, "Milli-Q water"],
-						Amount->30*Microliter,
-						Destination->{"Container 1","A2"}
-					]
-				},
-				Output->Options
+		Example[{Options, {PreparedModelContainer, PreparedModelAmount}, "Specify the container in which an input Model[Sample] should be prepared:"},
+			options = ExperimentPAGE[
+				{Model[Sample, "Milli-Q water"], Model[Sample, "Milli-Q water"]},
+				PreparedModelContainer -> Model[Container, Plate, "id:L8kPEjkmLbvW"],
+				PreparedModelAmount -> 1 Milliliter,
+				Output -> Options
 			];
-			Lookup[options,LoadingBufferVolume],
-			40*Microliter,
-			Variables :> {options}
+			prepUOs = Lookup[options, PreparatoryUnitOperations];
+			{
+				prepUOs[[-1, 1]][Sample],
+				prepUOs[[-1, 1]][Container],
+				prepUOs[[-1, 1]][Amount],
+				prepUOs[[-1, 1]][Well],
+				prepUOs[[-1, 1]][ContainerLabel]
+			},
+			{
+				{ObjectP[Model[Sample, "id:8qZ1VWNmdLBD"]]..},
+				{ObjectP[Model[Container, Plate, "id:L8kPEjkmLbvW"]]..},
+				{EqualP[1 Milliliter]..},
+				{"A1", "B1"},
+				{_String, _String}
+			},
+			Variables :> {options, prepUOs}
 		],
+		Example[{Options, PreparedModelAmount, "If using model input, the sample preparation options can also be specified:"},
+			ExperimentPAGE[
+				Model[Sample, "Ammonium hydroxide"],
+				PreparedModelAmount -> 0.5 Milliliter,
+				Aliquot -> True,
+				Mix -> True
+			],
+			ObjectP[Object[Protocol, PAGE]]
+		],
+		(* PreparatoryUnitOperations Option *)
 		Example[{Options,PreparatoryUnitOperations,"Specify prepared samples for ExperimentPAGE:"},
 			options=ExperimentPAGE["Container 1",
 				PreparatoryUnitOperations-> {
@@ -1721,7 +1753,7 @@ DefineTests[
 				Output -> Options
 			];
 			Lookup[options, AliquotContainer],
-			{1, ObjectP[Model[Container, Vessel, "2mL Tube"]]},
+			{{1, ObjectP[Model[Container, Vessel, "2mL Tube"]]}},
 			Variables :> {options}
 		],
 		Example[{Options, ImageSample, "Indicates if any samples that are modified in the course of the experiment should be freshly imaged after running the experiment:"},
@@ -1794,7 +1826,7 @@ DefineTests[
 				Output -> Options
 			];
 			Lookup[options,DestinationWell],
-			"A1",
+			{"A1"},
 			Variables :> {options}
 		]
 	(* --- Examples for the messages that are thrown after the MapThread --- *)

@@ -1,3 +1,401 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:0299d7193df949e8166ff6fab6ed25671a4d9ede0ab77611f5cc003dc373e0fb
-size 15623
+(* Content-type: application/vnd.wolfram.mathematica *)
+
+(*** Wolfram Notebook File ***)
+(* http://www.wolfram.com/nb *)
+
+(* CreatedBy='Mathematica 12.3' *)
+
+(*CacheID: 234*)
+(* Internal cache information:
+NotebookFileLineBreakTest
+NotebookFileLineBreakTest
+NotebookDataPosition[       158,          7]
+NotebookDataLength[     15423,        391]
+NotebookOptionsPosition[     11158,        311]
+NotebookOutlinePosition[     12719,        348]
+CellTagsIndexPosition[     12676,        345]
+WindowTitle->Physical Properties
+WindowFrame->Normal*)
+
+(* Beginning of Notebook Content *)
+Notebook[{
+Cell[BoxData[GridBox[{
+   {GridBox[{
+      {
+       ItemBox[Cell[BoxData[
+         RowBox[{
+          InterpretationBox[
+           StyleBox[
+            GraphicsBox[{},
+             BaselinePosition->Baseline,
+             ImageSize->{8, 0}],
+            CacheGraphics->False],
+           Spacer[8],
+           Selectable->False], Cell["EMERALD GUIDE", "PacletNameCell",
+           TextAlignment->Center,ExpressionUUID->
+           "7908e89f-b893-47ac-459a-a815c351d89e"], 
+          InterpretationBox[
+           StyleBox[
+            GraphicsBox[{},
+             BaselinePosition->Baseline,
+             ImageSize->{8, 0}],
+            CacheGraphics->False],
+           Spacer[8],
+           Selectable->False]}]],
+         TextAlignment->Center,ExpressionUUID->
+         "867f6861-a9ab-4486-7f3f-3ad8f927adfb"],
+        Background->RGBColor[
+         0.24313725490196078`, 0.27058823529411763`, 0.2980392156862745],
+        ItemSize->Full], ""}
+     },
+     GridBoxAlignment->{"Rows" -> {{Center}}},
+     GridBoxItemSize->{"Columns" -> {Full, 
+         Scaled[0.02]}, "Rows" -> {{2.5}}}], Cell[TextData[{
+     Cell[BoxData[
+      ActionMenuBox[
+       FrameBox[Cell[TextData[{
+         "Functions",
+         " ",
+         Cell[BoxData[
+          GraphicsBox[
+           {RGBColor[183/256., 197/256., 211/256.], Thickness[0.13], 
+            LineBox[{{-1.8, 0.5}, {0, 0}, {1.8, 0.5}}]},
+           AspectRatio->1,
+           ImageSize->20,
+           PlotRange->{{-3, 4}, {-1, 1}}]],ExpressionUUID->
+          "23eb13f4-ffff-480b-93c5-f2b53fb5998d"]
+        }],ExpressionUUID->"9897ec97-0b72-496e-b034-1e6ee55266d5"],
+        StripOnInput->False], {"\<\"DNAPhosphoramiditeMolecularWeights\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Physics/ref/DNAPhosphoramiditeMolecularWeights"], \
+"\<\"ExactMass\"\>":>Documentation`HelpLookup[
+       "paclet:Simulation/ref/ExactMass"], "\<\"ExtinctionCoefficient\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Simulation/ref/ExtinctionCoefficient"], \
+"\<\"Hyperchromicity260\"\>":>Documentation`HelpLookup[
+       "paclet:Simulation/ref/Hyperchromicity260"], \
+"\<\"ModifierPhosphoramiditeMolecularWeights\"\>":>Documentation`HelpLookup[
+       "paclet:Physics/ref/ModifierPhosphoramiditeMolecularWeights"], \
+"\<\"MolecularWeight\"\>":>Documentation`HelpLookup[
+       "paclet:Simulation/ref/MolecularWeight"], \
+"\<\"PNAMolecularWeights\"\>":>Documentation`HelpLookup[
+       "paclet:Physics/ref/PNAMolecularWeights"], \
+"\<\"UploadModification\"\>":>Documentation`HelpLookup[
+       "paclet:Physics/ref/UploadModification"], "\<\"ValidPolymerQ\"\>":>
+       Documentation`HelpLookup["paclet:Physics/ref/ValidPolymerQ"]},
+       LineSpacing -> {1.4, 0},
+       Appearance->None,
+       MenuAppearance->Automatic,
+       MenuStyle->"GuideFunction"]],ExpressionUUID->
+      "8088f10d-5525-4c78-8e2d-2e1b3b952eb9"],
+     "\[ThickSpace]\[ThickSpace]\[ThickSpace]\[ThickSpace]\[ThickSpace]\
+\[ThickSpace]",
+     Cell[BoxData[
+      ActionMenuBox[
+       FrameBox[Cell[TextData[{
+         "Related Guides",
+         " ",
+         Cell[BoxData[
+          GraphicsBox[
+           {RGBColor[183/256., 197/256., 211/256.], Thickness[0.13], 
+            LineBox[{{-1.8, 0.5}, {0, 0}, {1.8, 0.5}}]},
+           AspectRatio->1,
+           ImageSize->20,
+           PlotRange->{{-3, 4}, {-1, 1}}]],ExpressionUUID->
+          "f908a85c-74f0-453b-97c6-21129e4771db"]
+        }],ExpressionUUID->"56e7fd12-bc53-4bbb-a99a-c38ed9544235"],
+        StripOnInput->False], {"\<\"Oligonucleotides\"\>":>
+       Documentation`HelpLookup["paclet:Docs/guide/Oligonucleotides"]},
+       LineSpacing -> {1.4, 0},
+       Appearance->None,
+       MenuAppearance->Automatic,
+       MenuStyle->"GuideFunction"]],ExpressionUUID->
+      "3e04878f-ad88-441c-8f4c-f534eda2d452"]
+    }], "AnchorBar",ExpressionUUID->"800cdc2d-9896-4e15-9fc3-8ce8d55c4600"]}
+  }]], "AnchorBarGrid",
+ CellID->1,ExpressionUUID->"653b1505-c858-412f-b1f2-5041d7e3e306"],
+
+Cell["Physical Properties", "GuideTitle",
+ CellID->320444836,ExpressionUUID->"a0134454-fcd8-448e-ab88-576d04472d8c"],
+
+Cell["\<\
+Collection of functions for managing the physical properties of sample \
+objects.\
+\>", "GuideAbstract",
+ CellID->1974855623,ExpressionUUID->"71cb5466-e1e1-49af-b962-43dbcb613a72"],
+
+Cell["\t", "GuideDelimiterSubsection",
+ CellID->2038691376,ExpressionUUID->"3ab7bb68-cdd9-4c65-bcc1-481783100fd4"],
+
+Cell["Uploading Physical Parameters", "GuideFunctionsSubsection",
+ CellID->1184368547,ExpressionUUID->"27728867-1c46-4cc5-9be0-340ba82c648f"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["UploadModification"]], "paclet:Physics/ref/UploadModification"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "257ae33d-8a75-4424-bbe1-effee52c3df9"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Creates a new Constellation object referring to a specified chemical \
+modification."
+}], "GuideText",
+ CellID->656245386,ExpressionUUID->"02f317a3-96e2-4abd-bae9-18f1eccc134d"],
+
+Cell["\t", "GuideDelimiterSubsection",
+ CellID->40191510,ExpressionUUID->"112b2270-2944-48bd-9460-72ffc91a6db2"],
+
+Cell["Properties", "GuideFunctionsSubsection",
+ CellID->1188843412,ExpressionUUID->"56ba8738-2620-484c-8aac-3a8a5857c239"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["ExactMass"]], "paclet:Simulation/ref/ExactMass"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "8e39bd22-2179-4961-947b-17850ff3bd8d"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Computes the most probable exact mass of a given molecule."
+}], "GuideText",
+ CellID->703373796,ExpressionUUID->"eee12b37-bddf-4b0c-be3b-005e91bb72b7"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["MolecularWeight"]], "paclet:Simulation/ref/MolecularWeight"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "11e7aa2b-3252-4bf6-bd01-34aacb7e0277"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Computes the molecular weight of a molecule, oligomer, or the average \
+molecular weight of a polymer."
+}], "GuideText",
+ CellID->1853396284,ExpressionUUID->"28e3ff6e-6d91-4c16-959a-f0230fb80387"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["ExtinctionCoefficient"]], 
+    "paclet:Simulation/ref/ExtinctionCoefficient"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "8ff07ee8-d907-4865-a183-b473fda2b091"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Computes the extinction coefficient at 260 nm of the provided sequence."
+}], "GuideText",
+ CellID->781045453,ExpressionUUID->"ea81d5af-66ba-4652-bfa0-59077e6d6a15"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["Hyperchromicity260"]], 
+    "paclet:Simulation/ref/Hyperchromicity260"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "5f4919eb-fa6b-40fd-ac9a-0b773feb8b44"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Computes the hyperchromicity correction of the provided sequence."
+}], "GuideText",
+ CellID->1610878107,ExpressionUUID->"e179e00f-0914-49b3-a831-f9458407a863"],
+
+Cell["\t", "GuideDelimiterSubsection",
+ CellID->702006620,ExpressionUUID->"e7f7e490-33b9-4fc0-94e1-6a8d3e41fa53"],
+
+Cell["Parameterization", "GuideFunctionsSubsection",
+ CellID->350105722,ExpressionUUID->"35aa628d-b1db-41bb-b980-d3a59599e2d6"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["ValidPolymerQ"]], "paclet:Physics/ref/ValidPolymerQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "ba67cac7-bb33-4ec8-97e9-84c3b80a96a1"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the info contained in the provided input is of correct \
+construction."
+}], "GuideText",
+ CellID->121676874,ExpressionUUID->"d4d25b4b-8430-4fef-9a8a-7fb74222b930"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["DNAPhosphoramiditeMolecularWeights"]], 
+    "paclet:Physics/ref/DNAPhosphoramiditeMolecularWeights"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "bdd7b25e-28fe-4128-98f5-667aedbbfa65"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Returns a list of the molecular weights (in grams/mole) of the DNA \
+phosphoramidite monomer as rules."
+}], "GuideText",
+ CellID->618789374,ExpressionUUID->"08dbe3d2-5a49-4659-98ee-20560aa35a56"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["PNAMolecularWeights"]], 
+    "paclet:Physics/ref/PNAMolecularWeights"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "d39ecfcc-e19d-46f7-84bb-3d93ea245ded"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Returns a list of the molecular weights for PNA reagents."
+}], "GuideText",
+ CellID->1877190044,ExpressionUUID->"d7429b9f-db8e-4907-829a-efb5b6cd795a"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["ModifierPhosphoramiditeMolecularWeights"]], 
+    "paclet:Physics/ref/ModifierPhosphoramiditeMolecularWeights"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "296bf2ca-71e7-428b-a638-6dcd6033f36f"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Returns a list of the molecular weights (in grams/mole) of the modifier \
+phosphoramidite monomer as rules."
+}], "GuideText",
+ CellID->1250811431,ExpressionUUID->"65231cdc-bcd2-45fb-98db-ce6d83c20acf"],
+
+Cell["", "SectionFooterSpacer",
+ CellID->670300334,ExpressionUUID->"26f3d852-1483-4609-815c-80795a70b737"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  InterpretationBox[
+   StyleBox[
+    GraphicsBox[{},
+     BaselinePosition->Baseline,
+     ImageSize->{6, 0}],
+    CacheGraphics->False],
+   Spacer[6]]],ExpressionUUID->"8394057a-cedd-4873-8323-25314f5c6608"],
+ "Related Guides"
+}], "GuideMoreAboutSection",
+ WholeCellGroupOpener->True,
+ CellID->38501376,ExpressionUUID->"1fac5661-2bb1-4c02-a974-99dab5b36f53"],
+
+Cell["", "SectionHeaderSpacer",
+ CellID->700048685,ExpressionUUID->"b15fecfd-d6bd-48ec-938e-754f154c33dd"],
+
+Cell[BoxData[
+ TemplateBox[{
+   Cell[
+    TextData["Oligonucleotides"]], "paclet:Docs/guide/Oligonucleotides"},
+  "RefLink",
+  BaseStyle->"GuideMoreAboutSub"]], "GuideMoreAboutSub",
+ CellID->1802830529,ExpressionUUID->"0b26975c-4525-41a4-9d51-e75dbbcd0587"],
+
+Cell["", "FooterCell",
+ CellID->1325925380,ExpressionUUID->"5c7c3873-ccbb-48b3-ab11-932fbe28aeb2"]
+},
+Saveable->False,
+ScreenStyleEnvironment->"Working",
+WindowSize->{808, 911},
+WindowMargins->{{460, Automatic}, {Automatic, 70}},
+WindowTitle->"Physical Properties",
+Visible->False,
+TaggingRules->{
+ "ModificationHighlight" -> False, "ColorType" -> "GuideColor", 
+  "ExampleCounter" -> 1, "NeedPlatMsgIn" -> None, "RootCaptions" -> "", 
+  "Metadata" -> {
+   "built" -> "Thu 10 Nov 2022 10:48:40", "context" -> "Docs`", 
+    "keywords" -> {
+     "UploadModification", "ExactMass", "MolecularWeight", 
+      "ExtinctionCoefficient", "Hyperchromicity260", "ValidPolymerQ", 
+      "DNAPhosphoramiditeMolecularWeights", "PNAMolecularWeights", 
+      "ModifierPhosphoramiditeMolecularWeights"}, "specialkeywords" -> {}, 
+    "tutorialcollectionlinks" -> {}, "index" -> True, "label" -> "ECL Guide", 
+    "language" -> "en", "paclet" -> "Docs", "status" -> "None", "summary" -> 
+    "Collection of functions for managing the physical properties of sample \
+objects.", "synonyms" -> {}, "titlemodifier" -> "", "Windowtitle" -> 
+    "Physical Properties", "title" -> "Physical Properties", "type" -> 
+    "Guide", "uri" -> "Docs/guide/PhysicalProperties", "WorkflowDockedCell" -> 
+    ""}, "SearchTextTranslated" -> "", "LinkTrails" -> ""},
+FrontEndVersion->"12.3 for Mac OS X ARM (64-bit) (September 30, 2021)",
+StyleDefinitions->"EmeraldReference.nb",
+ExpressionUUID->"8ac4ef05-260e-4ef6-b946-aa19c4ada097"
+]
+(* End of Notebook Content *)
+
+(* Internal cache information *)
+(*CellTagsOutline
+CellTagsIndex->{}
+*)
+(*CellTagsIndex
+CellTagsIndex->{}
+*)
+(*NotebookFileOutline
+Notebook[{
+Cell[591, 21, 3972, 94, 58, "AnchorBarGrid",ExpressionUUID->"653b1505-c858-412f-b1f2-5041d7e3e306",
+ CellID->1],
+Cell[4566, 117, 116, 1, 45, "GuideTitle",ExpressionUUID->"a0134454-fcd8-448e-ab88-576d04472d8c",
+ CellID->320444836],
+Cell[4685, 120, 190, 4, 30, "GuideAbstract",ExpressionUUID->"71cb5466-e1e1-49af-b962-43dbcb613a72",
+ CellID->1974855623],
+Cell[4878, 126, 114, 1, 24, "GuideDelimiterSubsection",ExpressionUUID->"3ab7bb68-cdd9-4c65-bcc1-481783100fd4",
+ CellID->2038691376],
+Cell[4995, 129, 141, 1, 34, "GuideFunctionsSubsection",ExpressionUUID->"27728867-1c46-4cc5-9be0-340ba82c648f",
+ CellID->1184368547],
+Cell[5139, 132, 497, 13, 31, "GuideText",ExpressionUUID->"02f317a3-96e2-4abd-bae9-18f1eccc134d",
+ CellID->656245386],
+Cell[5639, 147, 112, 1, 24, "GuideDelimiterSubsection",ExpressionUUID->"112b2270-2944-48bd-9460-72ffc91a6db2",
+ CellID->40191510],
+Cell[5754, 150, 122, 1, 34, "GuideFunctionsSubsection",ExpressionUUID->"56ba8738-2620-484c-8aac-3a8a5857c239",
+ CellID->1188843412],
+Cell[5879, 153, 456, 12, 31, "GuideText",ExpressionUUID->"eee12b37-bddf-4b0c-be3b-005e91bb72b7",
+ CellID->703373796],
+Cell[6338, 167, 513, 13, 57, "GuideText",ExpressionUUID->"28e3ff6e-6d91-4c16-959a-f0230fb80387",
+ CellID->1853396284],
+Cell[6854, 182, 498, 13, 37, "GuideText",ExpressionUUID->"ea81d5af-66ba-4652-bfa0-59077e6d6a15",
+ CellID->781045453],
+Cell[7355, 197, 487, 13, 37, "GuideText",ExpressionUUID->"e179e00f-0914-49b3-a831-f9458407a863",
+ CellID->1610878107],
+Cell[7845, 212, 113, 1, 24, "GuideDelimiterSubsection",ExpressionUUID->"e7f7e490-33b9-4fc0-94e1-6a8d3e41fa53",
+ CellID->702006620],
+Cell[7961, 215, 127, 1, 34, "GuideFunctionsSubsection",ExpressionUUID->"35aa628d-b1db-41bb-b980-d3a59599e2d6",
+ CellID->350105722],
+Cell[8091, 218, 483, 13, 31, "GuideText",ExpressionUUID->"d4d25b4b-8430-4fef-9a8a-7fb74222b930",
+ CellID->121676874],
+Cell[8577, 233, 552, 14, 57, "GuideText",ExpressionUUID->"08dbe3d2-5a49-4659-98ee-20560aa35a56",
+ CellID->618789374],
+Cell[9132, 249, 478, 13, 37, "GuideText",ExpressionUUID->"d7429b9f-db8e-4907-829a-efb5b6cd795a",
+ CellID->1877190044],
+Cell[9613, 264, 568, 14, 57, "GuideText",ExpressionUUID->"65231cdc-bcd2-45fb-98db-ce6d83c20acf",
+ CellID->1250811431],
+Cell[10184, 280, 106, 1, 29, "SectionFooterSpacer",ExpressionUUID->"26f3d852-1483-4609-815c-80795a70b737",
+ CellID->670300334],
+Cell[10293, 283, 391, 12, 73, "GuideMoreAboutSection",ExpressionUUID->"1fac5661-2bb1-4c02-a974-99dab5b36f53",
+ CellID->38501376],
+Cell[10687, 297, 106, 1, 14, "SectionHeaderSpacer",ExpressionUUID->"b15fecfd-d6bd-48ec-938e-754f154c33dd",
+ CellID->700048685],
+Cell[10796, 300, 257, 6, 24, "GuideMoreAboutSub",ExpressionUUID->"0b26975c-4525-41a4-9d51-e75dbbcd0587",
+ CellID->1802830529],
+Cell[11056, 308, 98, 1, 40, "FooterCell",ExpressionUUID->"5c7c3873-ccbb-48b3-ab11-932fbe28aeb2",
+ CellID->1325925380]
+}
+]
+*)
+
+(* End of internal cache information *)
+

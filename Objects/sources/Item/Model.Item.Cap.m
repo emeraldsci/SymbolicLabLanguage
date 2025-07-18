@@ -84,7 +84,7 @@ DefineObjectType[Model[Item,Cap], {
 			Class -> Real,
 			Pattern :> PressureP,
 			Units -> PSI,
-			Description -> "Indicates the minium pressure rating for the cap.",
+			Description -> "Indicates the minimum pressure rating for the cap.",
 			Category -> "Operating Limits"
 		},
 		MaxPressure -> {
@@ -219,6 +219,38 @@ DefineObjectType[Model[Item,Cap], {
 			Description -> "Indicates if this cover model is parameterized or if it needs to be parameterized and verified by the ECLs team.",
 			Category -> "Qualifications & Maintenance",
 			Developer -> True
+		},
+		InternalDepth -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterP[0*Milli*Meter],
+			Units -> Meter Milli,
+			Description -> "The depth of pHProbe inside of the vessel when the cap is covered in AdjustpH experiments. This depth is measured as the vertical distance from the top of the container.",
+			Category -> "Dimensions & Positions"
+		},
+		InternalDiameter -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterP[0*Milli*Meter],
+			Units -> Meter Milli,
+			Description -> "The required minimum interior diameter of the vessel to fit pHProbe when the cap is covered in AdjustpH experiments.",
+			Category -> "Dimensions & Positions"
+		},
+		pHProbe -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Model[Part, pHProbe],
+			Description -> "The pH probe associated with this cap that directly immerses into samples for measurement.",
+			Category -> "Instrument Specifications"
+		},
+		Verified -> {
+			Format -> Single,
+			Class -> Boolean,
+			Pattern :> BooleanP,
+			Description -> "Indicates if the information in this model has been reviewed for accuracy by an ECL employee.",
+			Category -> "Organizational Information",
+			AdminWriteOnly->True
 		}
 	}
 }];

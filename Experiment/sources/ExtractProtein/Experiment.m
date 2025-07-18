@@ -90,7 +90,7 @@ DefineOptions[ExperimentExtractProtein,
           Type -> Enumeration,
           Pattern :> BooleanP
         ],
-        Description -> "Indicates if cell lysis is to be performed to chemically break the cell membranes (and cell wall depending on the CellType) and release the cell components including proteins. Lysis in ExtractProtein is intended to break all subcellular compartments. If subcelllur fractionation is desired, please see ExtractSubcellularProtein.",
+        Description -> "Indicates if cell lysis is to be performed to chemically break the cell membranes (and cell wall depending on the CellType) and release the cell components including proteins. Lysis in ExtractProtein is intended to break all subcellular compartments. If subcellular fractionation is desired, please see ExtractSubcellularProtein.",
         ResolutionDescription -> "If the input sample has the CellType field specified and Living->True, then Lyse is automatically set to True. Otherwise, Lyse is automatically set to False.",
         Category -> "Lysis"
       },
@@ -546,7 +546,7 @@ DefineOptions[ExperimentExtractProtein,
     RoboticPreparationOption,
     ProtocolOptions,
     SimulationOption,
-    PostProcessingOptions,
+    BiologyPostProcessingOptions,
     SubprotocolDescriptionOption,
     SamplesInStorageOptions,
     SamplesOutStorageOptions,
@@ -594,11 +594,11 @@ ExperimentExtractProtein[myContainers:ListableP[ObjectP[{Object[Container],Objec
   gatherTests=MemberQ[output,Tests];
 
   (* Remove temporal links and named objects. *)
-  {listedContainers, listedOptions} = removeLinks[ToList[myContainers], ToList[myOptions]];
+  {listedContainers, listedOptions} = {ToList[myContainers], ToList[myOptions]};
 
   (* Fetch the cache from listedOptions. *)
   cache=ToList[Lookup[listedOptions, Cache, {}]];
-  simulation=ToList[Lookup[listedOptions, Simulation, {}]];
+  simulation=Lookup[listedOptions, Simulation, Null];
 
   (* Convert our given containers into samples and sample index-matched options. *)
   containerToSampleResult=If[gatherTests,
@@ -627,7 +627,7 @@ ExperimentExtractProtein[myContainers:ListableP[ObjectP[{Object[Container],Objec
         Simulation->simulation
       ],
       $Failed,
-      {Error::EmptyContainers, Error::ContainerEmptyWells, Error::WellDoesNotExist}
+      {Download::ObjectDoesNotExist, Error::EmptyContainers, Error::ContainerEmptyWells, Error::WellDoesNotExist}
     ]
   ];
 
@@ -660,8 +660,7 @@ ExperimentExtractProtein[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:
     protocolObject, preResolvedOptions, resolvedOptionsResult, resolvedOptionsTests, resourceResult, resourcePacketTests,resourceReturnEarlyQ,
     returnEarlyQ, safeOps, safeOptions, safeOptionTests, templatedOptions, templateTests, resolvedPreparation, roboticSimulation, runTime,fullyResolvedOptions,
     inheritedSimulation, userSpecifiedObjects, objectsExistQs, objectsExistTests, validLengths, validLengthTests, simulation, listedSanitizedSamples,
-    listedSanitizedOptions,
-    expandedSafeOpsWithoutPurification, expandedSafeOpsWithoutSolventAdditions
+    listedSanitizedOptions, expandedSafeOpsWithoutSolventAdditions
   },
 
   (* Determine the requested return value from the function (Result, Options, Tests, or multiple). *)
@@ -680,15 +679,9 @@ ExperimentExtractProtein[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:
     SafeOptions[ExperimentExtractProtein,listedOptions,AutoCorrect->False,Output->{Result,Tests}],
     {SafeOptions[ExperimentExtractProtein,listedOptions,AutoCorrect->False],{}}
   ];
-
+  inheritedSimulation=Lookup[safeOptions, Simulation, Null];
   (* Call sanitize-inputs to clean any named objects (all object Names to object IDs). *)
-  {listedSanitizedSamples, safeOps, listedSanitizedOptions} = sanitizeInputs[listedSamples, safeOptions, listedOptions];
-
-  (* Call ValidInputLengthsQ to make sure all options are the right length *)
-  {validLengths,validLengthTests}=If[gatherTests,
-    ValidInputLengthsQ[ExperimentExtractProtein,{listedSanitizedSamples},listedSanitizedOptions,Output->{Result,Tests}],
-    {ValidInputLengthsQ[ExperimentExtractProtein,{listedSanitizedSamples},listedSanitizedOptions],Null}
-  ];
+  {listedSanitizedSamples, safeOps, listedSanitizedOptions} = sanitizeInputs[listedSamples, safeOptions, listedOptions, Simulation -> inheritedSimulation];
 
   (* If the specified options don't match their patterns return $Failed *)
   If[MatchQ[safeOps,$Failed],
@@ -699,6 +692,12 @@ ExperimentExtractProtein[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:
       Preview -> Null,
       Simulation -> Null
     }]
+  ];
+
+  (* Call ValidInputLengthsQ to make sure all options are the right length *)
+  {validLengths,validLengthTests}=If[gatherTests,
+    ValidInputLengthsQ[ExperimentExtractProtein,{listedSanitizedSamples},listedSanitizedOptions,Output->{Result,Tests}],
+    {ValidInputLengthsQ[ExperimentExtractProtein,{listedSanitizedSamples},listedSanitizedOptions],Null}
   ];
 
   (* If option lengths are invalid return $Failed (or the tests up to this point) *)
@@ -749,7 +748,6 @@ ExperimentExtractProtein[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:
 
   (* Fetch the cache from expandedSafeOps *)
   cache=Lookup[expandedSafeOps, Cache, {}];
-  inheritedSimulation=Lookup[expandedSafeOps, Simulation, Null];
 
   (* Disallow Upload->False and Confirm->True. *)
   (* Not making a test here because Upload is a hidden option and we don't currently make tests for hidden options. *)
@@ -758,37 +756,6 @@ ExperimentExtractProtein[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:
     Return[outputSpecification/.{
       Result -> $Failed,
       Tests -> Flatten[{safeOptionTests,validLengthTests}],
-      Options -> $Failed,
-      Preview -> Null
-    }]
-  ];
-
-  (* Make sure that all of our objects exist. *)
-  userSpecifiedObjects = DeleteDuplicates@Cases[
-    Flatten[{ToList[mySamples],ToList[myOptions]}],
-    ObjectReferenceP[]
-  ];
-
-  objectsExistQs = DatabaseMemberQ[userSpecifiedObjects, Simulation->inheritedSimulation];
-
-  (* Build tests for object existence *)
-  objectsExistTests = If[gatherTests,
-    MapThread[
-      Test[StringTemplate["Specified object `1` exists in the database:"][#1],#2,True]&,
-      {userSpecifiedObjects,objectsExistQs}
-    ],
-    {}
-  ];
-
-  (* If objects do not exist, return failure *)
-  If[!(And@@objectsExistQs),
-    If[!gatherTests,
-      Message[Error::ObjectDoesNotExist,PickList[userSpecifiedObjects,objectsExistQs,False]];
-      Message[Error::InvalidInput,PickList[userSpecifiedObjects,objectsExistQs,False]]
-    ];
-    Return[outputSpecification/.{
-      Result -> $Failed,
-      Tests -> Join[safeOptionTests,validLengthTests,templateTests,objectsExistTests],
       Options -> $Failed,
       Preview -> Null
     }]
@@ -1078,6 +1045,7 @@ ExperimentExtractProtein[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:
           Name->Lookup[safeOps,Name],
           Upload->Lookup[safeOps,Upload],
           Confirm->Lookup[safeOps,Confirm],
+          CanaryBranch->Lookup[safeOps,CanaryBranch],
           ParentProtocol->Lookup[safeOps,ParentProtocol],
           Priority->Lookup[safeOps,Priority],
           StartDate->Lookup[safeOps,StartDate],
@@ -1205,7 +1173,8 @@ preResolveProteinContainerLabel[
 preResolveContainerOutWellAndIndexedContainer[
   resolverContainersOutNoWell:ListableP[Alternatives[Automatic,Null,ObjectP[{Object[Container],Model[Container]}],{GreaterEqualP[1, 1], ObjectP[{Object[Container],Model[Container]}]}]],
   roundedOptions:(_List | _Association),
-  containerOutOptionName:ContainerOut|ExtractedCytosolicProteinContainer|ExtractedMembraneProteinContainer|ExtractedNuclearProteinContainer
+  containerOutOptionName:ContainerOut|ExtractedCytosolicProteinContainer|ExtractedMembraneProteinContainer|ExtractedNuclearProteinContainer,
+  fastCacheBall: _Association
 ]:=Module[
   {wellsFromContainersOut, uniqueContainers, containerToFilledWells, containerToWellOptions, containerToIndex},
 
@@ -1269,24 +1238,24 @@ preResolveContainerOutWellAndIndexedContainer[
   (*Determine all of the options that the well can be in this container and put into a rule list.*)
   containerToWellOptions = Map[
     Module[
-      {containerModel},
+      {containerModelPacket},
 
       (*Get the container model to look up the available wells.*)
-      containerModel =
+      containerModelPacket =
           Which[
             (*If the container without a well is just a container model, then that can be used directly.*)
             MatchQ[#, ObjectP[Model[Container]]],
-            #,
+              fetchPacketFromFastAssoc[#, fastCacheBall],
             (*If the container is an object, then the model is downloaded from the cache.*)
             MatchQ[#, ObjectP[Object[Container]]],
-            Download[#, Model],
+              fastAssocPacketLookup[fastCacheBall, #, Model],
             (*If the container is an indexed container model, then the model is the second element.*)
             True,
-            #[[2]]
+              fetchPacketFromFastAssoc[#[[2]], fastCacheBall]
           ];
 
       (*The well options are downloaded from the cache from the container model.*)
-      # -> Flatten[Transpose[AllWells[containerModel]]]
+      # -> Flatten[Transpose[AllWells[AspectRatio -> Lookup[containerModelPacket, AspectRatio], NumberOfWells -> Lookup[containerModelPacket, NumberOfWells]]]]
 
     ]&,
     uniqueContainers
@@ -2247,12 +2216,16 @@ DefineOptions[resolveExtractProteinWorkCell,
 resolveExtractProteinWorkCell[
   myContainersAndSamples:ListableP[Automatic|ObjectP[{Object[Sample], Object[Container]}]],
   myOptions:OptionsPattern[]
-]:=Module[{mySamples, myContainers, samplePackets},
+]:=Module[{cache, simulation, mySamples, myContainers, samplePackets},
+
+  (* Lookup our supplied cache and simulation. *)
+  cache = Lookup[ToList@myOptions,Cache,{}];
+  simulation=Lookup[ToList@myOptions,Simulation,Null];
 
   mySamples = Cases[myContainersAndSamples, ObjectP[Object[Sample]], Infinity];
   myContainers = Cases[myContainersAndSamples, ObjectP[Object[Container]], Infinity];
 
-  samplePackets = Download[mySamples, Packet[CellType]];
+  samplePackets = Download[mySamples, Packet[CellType], Cache -> cache, Simulation -> simulation];
 
   (* NOTE: due to the mechanism by which the primitive framework resolves WorkCell, we can't just resolve it on our own and then tell the framework what to use. So, we resolve using the CellType option if specified, or the CellType field in the input sample(s). *)
   Which[
@@ -2449,7 +2422,8 @@ resolveExperimentExtractProteinOptions[mySamples:{ObjectP[Object[Sample]]...},my
   }];
 
   (* Make fast association to look up things from cache quickly.*)
-  fastCacheBall = makeFastAssocFromCache[cacheBall];
+  (* inherit everything from the simulation too *)
+  fastCacheBall = makeFastAssocFromCache[FlattenCachePackets[{cacheBall, Lookup[FirstOrDefault[currentSimulation, <||>], Packets, {}]}]];
   (* - INPUT VALIDATION CHECKS - *)
 
   (*-- DISCARDED SAMPLE CHECK --*)
@@ -2597,7 +2571,7 @@ resolveExperimentExtractProteinOptions[mySamples:{ObjectP[Object[Sample]]...},my
 
   (* Pre-resolve the ContainerOutWell and the indexed version of the container out (without a well). *)
   (* Needed for threading user-specified ContainerOut into unit operations for simulation/protocol.  *)
-  {preResolvedContainerOutWell, preResolvedIndexedContainerOut} = preResolveContainerOutWellAndIndexedContainer[preResolvedContainersOutWithWellsRemoved,roundedExperimentOptions,ContainerOut];
+  {preResolvedContainerOutWell, preResolvedIndexedContainerOut} = preResolveContainerOutWellAndIndexedContainer[preResolvedContainersOutWithWellsRemoved,roundedExperimentOptions,ContainerOut, fastCacheBall];
 
   (* Add in pre-resolved labels into options and make mapThreadFriendly for further resolutions. *)
   preResolvedRoundedExperimentOptions = Merge[
@@ -3043,10 +3017,10 @@ resolveExperimentExtractProteinOptions[mySamples:{ObjectP[Object[Sample]]...},my
   mapThreadFriendlyOptionsWithResolvedPurification = Experiment`Private`mapThreadFriendlySolventAdditions[optionsWithResolvedPurification, preCorrectionMapThreadFriendlyOptionsWithResolvedPurification, LiquidLiquidExtractionSolventAdditions];
 
   (* Pre-resolve purification options. *)
-  preResolvedPurificationOptions = preResolvePurificationSharedOptions[mySamples, optionsWithResolvedPurification, mapThreadFriendlyOptionsWithResolvedPurification, TargetCellularComponent -> resolvedTargetProteins/.Alternatives[All,Null]->TotalProtein];
+  preResolvedPurificationOptions = preResolvePurificationSharedOptions[mySamples, optionsWithResolvedPurification, mapThreadFriendlyOptionsWithResolvedPurification, TargetCellularComponent -> resolvedTargetProteins/.Alternatives[All,Null]->TotalProtein,Cache->cacheBall,Simulation->currentSimulation];
 
   (* Resolve Post Processing Options *)
-  resolvedPostProcessingOptions = resolvePostProcessingOptions[myOptions];
+  resolvedPostProcessingOptions = resolvePostProcessingOptions[myOptions,Sterile->True];
 
   (* Overwrite our rounded options with our resolved options.*)
   resolvedOptions=ReplaceRule[
@@ -3598,10 +3572,15 @@ extractProteinResourcePackets[mySamples:ListableP[ObjectP[Object[Sample]]],myTem
 
   (* get the inherited cache *)
   inheritedCache = Lookup[ToList[ops],Cache,{}];
-  fastCacheBall = makeFastAssocFromCache[inheritedCache];
 
   (* Get the simulation *)
-  currentSimulation=Lookup[ToList[ops],Simulation,{}];
+  currentSimulation=Lookup[ToList[ops],Simulation,Null];
+
+  (* put the simulation packets AND the inherited cache into the fast assoc *)
+  combinedSuperCache = FlattenCachePackets[{inheritedCache, Lookup[FirstOrDefault[currentSimulation, <||>], Packets, {}]}];
+  fastCacheBall = makeFastAssocFromCache[combinedSuperCache];
+
+
 
   (* Lookup the resolved Preparation option. *)
   resolvedPreparation=Lookup[myResolvedOptions, Preparation];
@@ -3798,23 +3777,28 @@ extractProteinResourcePackets[mySamples:ListableP[ObjectP[Object[Sample]]],myTem
     $ExtractProteinOperations=primitives;
 
     (* Get our robotic unit operation packets. *)
-    {{roboticUnitOperationPackets, roboticRunTime}, roboticSimulation} = ExperimentRoboticCellPreparation[
-      primitives,
-      UnitOperationPackets -> True,
-      Output -> {Result, Simulation},
-      FastTrack -> Lookup[expandedResolvedOptions, FastTrack],
-      ParentProtocol -> Lookup[expandedResolvedOptions, ParentProtocol],
-      Name -> Lookup[expandedResolvedOptions, Name],
-      Simulation -> currentSimulation,
-      Upload -> False,
-      ImageSample -> Lookup[expandedResolvedOptions, ImageSample],
-      MeasureVolume -> Lookup[expandedResolvedOptions, MeasureVolume],
-      MeasureWeight -> Lookup[expandedResolvedOptions, MeasureWeight],
-      Priority -> Lookup[expandedResolvedOptions, Priority],
-      StartDate -> Lookup[expandedResolvedOptions, StartDate],
-      HoldOrder -> Lookup[expandedResolvedOptions, HoldOrder],
-      QueuePosition -> Lookup[expandedResolvedOptions, QueuePosition],
-      CoverAtEnd -> False
+    (* quieting the warning about sterile transferring because LLE will likely not contaminate things when extracting RNA, but will cause the warning to get thrown *)
+    (* there is no way around this because the phase separators are not sterile and we can't get a sterile one in hand.  For this case, we're deciding that that is ok *)
+    {{roboticUnitOperationPackets, roboticRunTime}, roboticSimulation} = Quiet[
+      ExperimentRoboticCellPreparation[
+        primitives,
+        UnitOperationPackets -> True,
+        Output -> {Result, Simulation},
+        FastTrack -> Lookup[expandedResolvedOptions, FastTrack],
+        ParentProtocol -> Lookup[expandedResolvedOptions, ParentProtocol],
+        Name -> Lookup[expandedResolvedOptions, Name],
+        Simulation -> currentSimulation,
+        Upload -> False,
+        ImageSample -> Lookup[expandedResolvedOptions, ImageSample],
+        MeasureVolume -> Lookup[expandedResolvedOptions, MeasureVolume],
+        MeasureWeight -> Lookup[expandedResolvedOptions, MeasureWeight],
+        Priority -> Lookup[expandedResolvedOptions, Priority],
+        StartDate -> Lookup[expandedResolvedOptions, StartDate],
+        HoldOrder -> Lookup[expandedResolvedOptions, HoldOrder],
+        QueuePosition -> Lookup[expandedResolvedOptions, QueuePosition],
+        CoverAtEnd -> False
+      ],
+      Warning::ConflictingSourceAndDestinationAsepticHandling
     ];
 
     (* Create our own output unit operation packet, linking up the "sub" robotic unit operation objects. *)
@@ -3844,6 +3828,12 @@ extractProteinResourcePackets[mySamples:ListableP[ObjectP[Object[Sample]]],myTem
     roboticSimulation=UpdateSimulation[
       roboticSimulation,
       Simulation[<|Object->Lookup[outputUnitOperationPacket, Object], Sample->(Link/@mySamples)|>]
+    ];
+
+    (* since we are putting this UO inside RSP, we should re-do the LabelFields so they link via RoboticUnitOperations *)
+    roboticSimulation=If[Length[roboticUnitOperationPackets]==0,
+      roboticSimulation,
+      updateLabelFieldReferences[roboticSimulation,RoboticUnitOperations]
     ];
 
     (* Return back our packets and simulation. *)
@@ -4148,24 +4138,24 @@ extractProteinResourcePackets[mySamples:ListableP[ObjectP[Object[Sample]]],myTem
     (*Determine all of the options that the well can be in this container and put into a rule list.*)
     containerToWellOptions = Map[
       Module[
-        {containerModel},
+        {containerModelPacket},
 
         (*Get the container model to look up the available wells.*)
-        containerModel =
+        containerModelPacket =
             Which[
               (*If the container without a well is just a container model, then that can be used directly.*)
               MatchQ[#, ObjectP[Model[Container]]],
-              #,
+                fetchPacketFromFastAssoc[#, fastCacheBall],
               (*If the container is an object, then the model is downloaded from the cache.*)
               MatchQ[#, ObjectP[Object[Container]]],
-              Download[#, Model],
+                fastAssocPacketLookup[fastCacheBall, #, Model],
               (*If the container is an indexed container model, then the model is the second element.*)
               True,
-              #[[2]]
+                fetchPacketFromFastAssoc[#[[2]], fastCacheBall]
             ];
 
         (*The well options are downloaded from the cache from the container model.*)
-        # -> Flatten[Transpose[AllWells[containerModel]]]
+        # -> Flatten[Transpose[AllWells[AspectRatio -> Lookup[containerModelPacket, AspectRatio], NumberOfWells -> Lookup[containerModelPacket, NumberOfWells]]]]
 
       ]&,
       uniqueContainers

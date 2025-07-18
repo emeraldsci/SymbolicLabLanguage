@@ -20,11 +20,16 @@ DefineTests[PlotAlphaScreen,
 			ValidGraphicsP[],
 			TimeConstraint -> 120
 		],
+		Example[{Basic, "Plot data objects linked to a protocol when given an AlphaScreen protocol object:"},
+			PlotAlphaScreen[Object[Protocol, AlphaScreen, "AlphaScreen Protocol for PlotAlphaScreen Test "<>$SessionUUID]],
+			ValidGraphicsP[],
+			TimeConstraint -> 120
+		],
 		Example[{Basic,"Plot a histogram of intensities from links:"},
 			PlotAlphaScreen[linksObjsHighIntensity],
 			ValidGraphicsP[],
 			TimeConstraint -> 120
-	],
+		],
 		Example[{Basic,"Compare intensities across datasets using a BoxWhiskerChart:"},
 			PlotAlphaScreen[Download/@{objsHighIntensity,objsMedIntensity,objsLowIntensity}],
 			ValidGraphicsP[],
@@ -198,6 +203,59 @@ DefineTests[PlotAlphaScreen,
 			Object[Data, AlphaScreen, "id:XnlV5jK7P6YM"],
 			Object[Data, AlphaScreen, "id:bq9LA0J6L0jv"]};
 		linksObjsHighIntensity=Map[Link[#,Protocol]&,objsHighIntensity];
-	)
+	),
+
+	SymbolSetUp :> (
+		Module[{allObjects},
+			allObjects={
+				Object[Data, AlphaScreen, "AlphaScreen Data for PlotAlphaScreen test " <> $SessionUUID],
+				Object[Protocol, AlphaScreen, "AlphaScreen Protocol for PlotAlphaScreen Test "<>$SessionUUID]
+			};
+
+			EraseObject[
+				PickList[allObjects, DatabaseMemberQ[allObjects]],
+				Force -> True,
+				Verbose -> False
+			]
+		];
+
+		$CreatedObjects={};
+
+		Module[{data1, protocol1},
+			{data1, protocol1} = CreateID[{Object[Data, AlphaScreen], Object[Protocol, AlphaScreen]}];
+
+			Upload[
+				<|
+					Name -> "AlphaScreen Data for PlotAlphaScreen test " <> $SessionUUID,
+					Object -> data1,
+					Type -> Object[Data, AlphaScreen],
+					Intensity -> 190. RLU
+				|>
+			];
+
+			Upload[
+				<|
+					Name -> "AlphaScreen Protocol for PlotAlphaScreen Test "<>$SessionUUID,
+					Object -> protocol1,
+					Type -> Object[Protocol, AlphaScreen],
+					Replace[Data] -> {Link[data1, Protocol]}
+				|>
+			];
+		]
+	),
+	SymbolTearDown:>Module[{objsToErase},
+		objsToErase=Flatten[{
+			$CreatedObjects,
+			Object[Data, AlphaScreen, "AlphaScreen Data for PlotAlphaScreen test " <> $SessionUUID],
+			Object[Protocol, AlphaScreen, "AlphaScreen Protocol for PlotAlphaScreen Test "<>$SessionUUID]
+		}];
+
+		EraseObject[
+			PickList[objsToErase,DatabaseMemberQ[objsToErase]],
+			Force->True,
+			Verbose->False
+		];
+	]
+
 
 ];

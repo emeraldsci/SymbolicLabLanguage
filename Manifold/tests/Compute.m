@@ -27,6 +27,13 @@ DefineTests[Compute,
 			],
 			ObjectP[Object[Notebook, Job]]
 		],
+		Example[{Basic, "Compute a .nb cloud file (evaluate each code and input cell in the cloud file sequentially) asynchronously on the cloud:"},
+			Compute[
+				Object[EmeraldCloudFile, "id:eGakldJp5Vjn"],
+				Computation -> Cloud
+			],
+			ObjectP[Object[Notebook, Job]]
+		],
 		Example[{Basic, "Schedule a computation to run exactly ten days from now:"},
 			Compute[
 				Print["This will run in ten days!"],
@@ -61,12 +68,6 @@ DefineTests[Compute,
 			Compute["Hello World.", Computation -> Cloud, WaitForComputation -> True],
 			"Hello World.",
 			Stubs :> {Compute["Hello World.", Computation -> Cloud, WaitForComputation -> True] = "Hello World."}
-		],
-		Example[{Options, ForceComputation, "Run computation asynchronously on the cloud, returning a Job notebook, even if an interactive Manifold kernel is active."},
-			LaunchInteractiveKernel[],
-			Compute[1+1, ForceComputation->True],
-			ObjectP[Object[Notebook, Job]],
-			Stubs :> {LaunchInteractiveKernel[] = Null}
 		],
 		Example[{Options, Schedule, "If computing on the cloud, schedule a job to run two hours from the current time:"},
 			Compute[
@@ -408,12 +409,12 @@ DefineTests[Compute,
 					SLLPackage -> Developer,
 					RunAsUser -> Object[User, "Test user for notebook-less test protocols"],
 					DisablePaclets -> True,
-					MathematicaVersion -> "12.0.1",
+					MathematicaVersion -> "13.3.1",
 					Upload -> False
 				],
 				{ZDriveFilePaths, SLLVersion, SLLPackage, RunAsUser, FargateCluster, DisablePaclets, MathematicaVersion}
 			] /. {lnk : _Link | _Object :> lnk[Object]},
-			{{"Z://testDirectory"}, Develop, Developer, Object[User, "id:n0k9mG8AXZP6"], "manifold-mm-cluster", True, "12.0.1"},
+			{{"Z://testDirectory"}, Develop, Developer, Object[User, "id:n0k9mG8AXZP6"], "manifold-mm-cluster", True, "13.3.1"},
 			Stubs :> {$PersonID = Object[User, Emerald, Developer, "hendrik"]}
 		],
 		Test["FargateCluster defaults to manifold-mm-cluster when run as a superuser:",

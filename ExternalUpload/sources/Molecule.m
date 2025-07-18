@@ -32,7 +32,13 @@ DefineOptions[UploadMolecule,
 				OptionName -> Molecule,
 				Default -> Null,
 				AllowNull -> True,
-				Widget -> Widget[Type -> Expression, Pattern :> MoleculeP | _?StructureQ | _?StrandQ, Size -> Line],
+				Widget -> Alternatives[
+					"Atomic Structure" -> Widget[
+						Type -> Molecule,
+						Pattern :> MoleculeP
+					],
+					"Polymer Strand/Structure" -> Widget[Type -> Expression, Pattern :> _?StructureQ | _?StrandQ, Size -> Line]
+				],
 				Description -> "The chemical structure that represents this molecule.",
 				Category -> "Organizational Information"
 			},
@@ -202,8 +208,9 @@ DefineOptions[UploadMolecule,
 				Default -> Null,
 				AllowNull -> True,
 				Widget -> Alternatives[
-					Widget[Type -> String, Pattern :> URLP, Size -> Line],
-					Widget[Type -> Object, Pattern :> ObjectP[Object[EmeraldCloudFile]]]
+					"URL" -> Widget[Type -> String, Pattern :> URLP, Size -> Line],
+					"File Path" -> Widget[Type -> String, Pattern :> FilePathP, Size -> Line],
+					"EmeraldCloudFile" -> Widget[Type -> Object, Pattern :> ObjectP[Object[EmeraldCloudFile]]]
 				],
 				Description -> "The URL of an image depicting the chemical structure of the pure form of this substance.",
 				Category -> "Physical Properties"
@@ -438,6 +445,14 @@ DefineOptions[UploadMolecule,
 				],
 				Description -> "Literature references that discuss this molecule.",
 				Category -> "Analysis & Reports"
+			},
+			{
+				OptionName -> Force,
+				Default -> False,
+				AllowNull -> False,
+				Widget -> Widget[Type -> Enumeration, Pattern :> BooleanP],
+				Description -> "Ignore duplicate molecule checks.",
+				Category -> "Hidden"
 			}
 		]
 	},
@@ -457,6 +472,11 @@ DefineOptions[UploadMolecule,
 
 
 Error::UploadMoleculeModelUnknownInput="The following inputs in the given list, `1`, do not match a valid input pattern for the function UploadMolecule[...]. For more information about the inputs that this function can take, evaluate ?UploadMolecule in the notebook.";
+Error::InvalidMSDSURL="The MSDSFile URL(s) provided did not return a pdf when downloaded for inputs `1`. Please double check the URL `2`.";
+Error::InvalidStructureImageFileURL="The StructureImageFile URL(s) did not return an image when downloaded for inputs `1`. Please double check the URL(s) `2`.";
+Error::InvalidStructureFileURL="The StructureFile URL(s) did not return a readable file when downloaded for inputs `1`. Please double check the URL(s) `2`.";
+Error::InvalidStructureImageLocalFile="The StructureImageFile path(s) provided did not return an image when imported for inputs `1`. Please double check the filepath(s) `2`.";
+Error::InvalidStructureLocalFile="The StructureFile path(s) provided did not return a readable file when imported for inputs `1`. Please double check the filepath(s) `2`.";
 
 (* Overload for the case of no input arguments *)
 UploadMolecule[myOptions:OptionsPattern[]]:=UploadMolecule[Null, myOptions];
@@ -636,7 +656,7 @@ UploadMolecule[myInput_, myOptions:OptionsPattern[]]:=Module[
 		Message[Error::InvalidOption, ToString[invalidOptions]];
 	];
 
-	(* If Error::InvalidInput is thrown, message it seperately. These error names must be present for the Command Builder to pick up on them. *)
+	(* If Error::InvalidInput is thrown, message it separately. These error names must be present for the Command Builder to pick up on them. *)
 	messageRulesWithoutInvalidInput=If[KeyExistsQ[messageRulesGrouped, "Error::InvalidInput"],
 		Message[Error::InvalidInput, ToString[First[messageRulesGrouped["Error::InvalidInput"]]]];
 		KeyDrop[messageRulesGrouped, "Error::InvalidInput"],
@@ -750,7 +770,7 @@ uploadMoleculeModelSingleton[myInput_, myOptions:OptionsPattern[]]:=Module[
 		optionsRule, previewRule, testsRule, resultRule, templatedSafeOps, resolvedOptions,
 		optionswithNFPA, optionsWithExtinctionCoefficient,
 		suppliedCache, toDownload, downloadedPacket, cache, referenceObj, nfpaPacket,
-		changePacket, nonChangePacket, packetTests, passedQ},
+		changePacket, auxilliaryPackets, nonChangePacket, packetTests, passedQ},
 
 	(* Make sure we're working with a list of options *)
 	listedOptions=ToList[myOptions];
@@ -918,9 +938,166 @@ uploadMoleculeModelSingleton[myInput_, myOptions:OptionsPattern[]]:=Module[
 			&) /@ optionswithNFPA;
 
 	(* Convert our options into a change packet. *)
-	changePacket=Append[
-		generateChangePacket[Model[Molecule], optionsWithExtinctionCoefficient],
-		Type -> Model[Molecule]
+	(* Note: if we fail to resolve options due to input error, skip changePacket generation *)
+	{changePacket, auxilliaryPackets}= If[!MatchQ[resolvedOptions, $Failed],
+		Module[
+			{
+				specialOptions, packetWithoutSpecialOptions, coreUploadPacket, augmentedPacket, additionalPackets,
+				msdsFieldValue, msdsPackets, structureImageFieldValue, structureImagePackets, structureFieldValue, structurePackets
+			},
+
+			(* Options to treat with a custom approach *)
+			specialOptions = {MSDSFile, StructureImageFile, StructureFile};
+
+			(* Filter those options out of the packet *)
+			packetWithoutSpecialOptions = Select[optionsWithExtinctionCoefficient, !MatchQ[First[#], Alternatives @@ specialOptions] &];
+
+			(* Convert the standard options to fields *)
+			coreUploadPacket = Append[
+				generateChangePacket[Model[Molecule], packetWithoutSpecialOptions],
+				Type -> Model[Molecule]
+			];
+
+
+			(* Generate the field values for the custom fields *)
+			(* MSDSFile *)
+			{msdsFieldValue, msdsPackets} = Switch[Lookup[optionsWithExtinctionCoefficient, MSDSFile],
+				URLP,
+				Module[{localFile, cloudFilePacket},
+					(* downloadAndValidateSDSURL/pathToCloudFilePacket are memoized helpers - we already downloaded the pdf when we searched for the SDS earlier to verify the URL worked *)
+					(* This i) avoids a situation where the URL no longer works (rate limit etc) ii) prevents re-download, so is faster *)
+					(* URL -> memoized validated local file *)
+					localFile = downloadAndValidateSDSURL[Lookup[optionsWithExtinctionCoefficient, MSDSFile]];
+
+					(* local file -> memoized cloud file packet *)
+					cloudFilePacket = Quiet[pathToCloudFilePacket[localFile]];
+
+					(* Throw message if the download/upload didn't work *)
+					If[!MatchQ[cloudFilePacket, PacketP[]],
+						Message[Error::InvalidMSDSURL, myInput, Lookup[optionsWithExtinctionCoefficient, MSDSFile]];
+						Return[{$Failed, {}}, Module]
+					];
+
+					{Link[Lookup[cloudFilePacket, Object]], {cloudFilePacket}}
+				],
+
+				ObjectP[Object[EmeraldCloudFile]],
+				{Link[Lookup[optionsWithExtinctionCoefficient, MSDSFile]], {}},
+
+				_,
+				{Lookup[optionsWithExtinctionCoefficient, MSDSFile], {}}
+			];
+
+			(* StructureImageFile - generated internally, or possibly supplied by user *)
+			(* If generated internally, it's not memoized but the URL is reliable *)
+			(* Handling here prevents repeated download/upload and allows validation of URL *)
+			{structureImageFieldValue, structureImagePackets} = Switch[Lookup[optionsWithExtinctionCoefficient, StructureImageFile],
+				URLP,
+				Module[{localFile, cloudFilePacket},
+					(* URL -> memoized validated local file *)
+					localFile = downloadAndValidateStructureImageFileURL[Lookup[optionsWithExtinctionCoefficient, StructureImageFile]];
+
+					(* local file -> memoized cloud file packet *)
+					cloudFilePacket = Quiet[pathToCloudFilePacket[localFile]];
+
+					(* Throw message if the upload didn't work *)
+					If[!MatchQ[cloudFilePacket, PacketP[]],
+						Message[Error::InvalidStructureImageFileURL, myInput, Lookup[optionsWithExtinctionCoefficient, StructureImageFile]];
+						Return[{$Failed, {}}, Module]
+					];
+
+					{Link[Lookup[cloudFilePacket, Object]], {cloudFilePacket}}
+				],
+
+				FilePathP,
+				Module[{validatedFile, cloudFilePacket},
+					(* file path -> memoized validated file *)
+					validatedFile = validateStructureImageFilePath[Lookup[optionsWithExtinctionCoefficient, StructureImageFile]];
+
+					(* local file -> memoized cloud file packet *)
+					cloudFilePacket = Quiet[pathToCloudFilePacket[validatedFile]];
+
+					(* Throw message if the upload didn't work *)
+					If[!MatchQ[cloudFilePacket, PacketP[]],
+						Message[Error::InvalidStructureImageLocalFile, myInput, Lookup[optionsWithExtinctionCoefficient, StructureImageFile]];
+						Return[{$Failed, {}}, Module]
+					];
+
+					{Link[Lookup[cloudFilePacket, Object]], {cloudFilePacket}}
+				],
+
+				ObjectP[Object[EmeraldCloudFile]],
+				{Link[Lookup[optionsWithExtinctionCoefficient, StructureImageFile]], {}},
+
+				_,
+				{Lookup[optionsWithExtinctionCoefficient, StructureImageFile], {}}
+			];
+
+			(* StructureFile - generated internally, or possibly supplied by user *)
+			(* If generated internally, it's not memoized but the URL is reliable *)
+			(* Handling here prevents repeated download/upload and allows validation of URL *)
+			{structureFieldValue, structurePackets} = Switch[Lookup[optionsWithExtinctionCoefficient, StructureFile],
+				URLP,
+				Module[{localFile, cloudFilePacket},
+					(* URL -> memoized validated local file *)
+					localFile = downloadAndValidateStructureFileURL[Lookup[optionsWithExtinctionCoefficient, StructureFile]];
+
+					(* local file -> memoized cloud file packet *)
+					cloudFilePacket = Quiet[pathToCloudFilePacket[localFile]];
+
+					(* Throw message if the upload didn't work *)
+					If[!MatchQ[cloudFilePacket, PacketP[]],
+						Message[Error::InvalidStructureFileURL, myInput, Lookup[optionsWithExtinctionCoefficient, StructureFile]];
+						Return[{$Failed, {}}, Module]
+					];
+
+					{Link[Lookup[cloudFilePacket, Object]], {cloudFilePacket}}
+				],
+
+				FilePathP,
+				Module[{validatedFile, cloudFilePacket},
+					(* file path -> memoized validated file *)
+					validatedFile = validateStructureFilePath[Lookup[optionsWithExtinctionCoefficient, StructureFile]];
+
+					(* local file -> memoized cloud file packet *)
+					cloudFilePacket = Quiet[pathToCloudFilePacket[validatedFile]];
+
+					(* Throw message if the upload didn't work *)
+					If[!MatchQ[cloudFilePacket, PacketP[]],
+						Message[Error::InvalidStructureLocalFile, myInput, Lookup[optionsWithExtinctionCoefficient, StructureFile]];
+						Return[{$Failed, {}}, Module]
+					];
+
+					{Link[Lookup[cloudFilePacket, Object]], {cloudFilePacket}}
+				],
+
+				ObjectP[Object[EmeraldCloudFile]],
+				{Link[Lookup[optionsWithExtinctionCoefficient, StructureFile]], {}},
+
+				_,
+				{Lookup[optionsWithExtinctionCoefficient, StructureFile], {}}
+			];
+
+			(* Add the custom fields - additional upload packets are linked to directly *)
+			augmentedPacket = Join[
+				coreUploadPacket,
+				<|
+					MSDSFile -> msdsFieldValue,
+					StructureImageFile -> structureImageFieldValue,
+					StructureFile ->structureFieldValue
+				|>
+			];
+
+			(* Combine the additional packets for upload *)
+			additionalPackets = Flatten[{msdsPackets, structureImagePackets, structurePackets}];
+
+			(* Return the change packet and the auxilliary packets *)
+			{
+				augmentedPacket,
+				additionalPackets
+			}
+		],
+		{{}, {}}
 	];
 
 	(* If the input was a Model[Molecule] and ModifyInputModel is True, upload to the existing object *)
@@ -930,13 +1107,20 @@ uploadMoleculeModelSingleton[myInput_, myOptions:OptionsPattern[]]:=Module[
 
 	(* Strip off our change heads (Replace/Append) so that we can pretend that this is a real object so that we can call VOQ on it. *)
 	(* This includes all fields to the packet as Null/{} if they weren't included in the change packet. *)
-	nonChangePacket=stripChangePacket[changePacket];
+	nonChangePacket=If[!MatchQ[resolvedOptions, $Failed],
+		stripChangePacket[changePacket],
+		{}
+	];
 
 	(* Call VOQ, catch the messages that are thrown so that we know the corresponding InvalidOptions message to throw. *)
-	packetTests=ValidObjectQ`Private`testsForPacket[nonChangePacket];
+	packetTests=If[!MatchQ[resolvedOptions, $Failed],
+		ValidObjectQ`Private`testsForPacket[nonChangePacket],
+		{}
+	];
 
 	(* VOQ passes if we didn't have any messages thrown. *)
-	passedQ=Block[{ECL`$UnitTestMessages=True},
+	(* RunUnitTest calls ClearMemoization so Block it to prevent that *)
+	passedQ=Block[{ECL`$UnitTestMessages=True, ClearMemoization},
 		Length[Lookup[
 			EvaluationData[RunUnitTest[<|"Function" -> packetTests|>, OutputFormat -> SingleBoolean, Verbose -> False]],
 			"Messages",
@@ -947,8 +1131,9 @@ uploadMoleculeModelSingleton[myInput_, myOptions:OptionsPattern[]]:=Module[
 	(* --- Generate rules for each possible Output value ---  *)
 
 	(* Prepare the Options result if we were asked to do so *)
+	(* Note: if we fail to resolve options due to input error, return the error with no options *)
 	optionsRule=Options -> If[MemberQ[output, Options],
-		RemoveHiddenOptions[UploadMolecule, resolvedOptions],
+		RemoveHiddenOptions[UploadMolecule, resolvedOptions/.$Failed->{}],
 		Null
 	];
 
@@ -958,14 +1143,15 @@ uploadMoleculeModelSingleton[myInput_, myOptions:OptionsPattern[]]:=Module[
 
 	(* Prepare the Test result if we were asked to do so *)
 	testsRule=Tests -> If[MemberQ[output, Tests],
-		(* Join all exisiting tests generated by helper funcctions with any additional tests *)
+		(* Join all existing tests generated by helper functions with any additional tests *)
 		Flatten[Join[safeOptionTests, validLengthTests, packetTests]],
 		Null
 	];
 
 	(* Prepare the standard result if we were asked for it and we can safely do so *)
+	(* This includes the auxilliary packets *)
 	resultRule=Result -> If[MemberQ[output, Result] && TrueQ[passedQ],
-		changePacket,
+		Flatten[{changePacket, auxilliaryPackets}],
 		Null
 	];
 
@@ -978,17 +1164,19 @@ uploadMoleculeModelSingleton[myInput_, myOptions:OptionsPattern[]]:=Module[
 
 
 Error::InputOptionMismatch="Option `1` with value `2` does not match the supplied input for input(s): `3`. Please change these options to be consistent with the given input(s).";
-Warning::SimilarMolecules="The following molecules, `1`, have a same molecular identifier as the molecules, `2`, you are trying to upload. Please use this existing molecular model if suitable.";
+Error::MoleculeExists="The following existing molecules, `1`, share a molecular identifier with the inputs, `2`, you are trying to upload. Please use this existing model if suitable. If you believe the existing molecule is unsuitable, please file a communication with the Scientific Solutions team.";
+Error::APIConnection="A connection to the scraping API , `1`, was not able to be formed. Please try re-running this function again and check your firewall settings or any input URLs (if applicable).";
 
 (* Helper function to resolve the options to our function. *)
 (* Takes in a list of inputs and a list of options, return a list of resolved options. *)
 resolveUploadMoleculeOptions[myInput_, myOptions_, myRawOptions_, myResolveOptions:OptionsPattern[]]:=Module[
-	{listedOptions, outputOption, myOptionsAssociation, testsRule, resultRule, parsedInput,
-		pubChemAssociation, pubChemWithInput, mergeFunction, myOptionsWithPubChem, invalidOptions, myOptionsWithSynonyms, nonNullOptions, invalidNullOptions,
-		invalidMSDSOptions, optionsWithAuthors, optionsWithAlternativeForms, optionsWithType,
-		myFinalizedOptions, identifiersToLookup, myChemicalIdentifiers, myChemicalIdentifierRules, similarChemicals, similarChemicalsNotInAlternativeForms, storageInformation, defaultStorageCondition, optionsWithDimensions, specifiedTabletBool,
-		specifiedTabletWeight, validTabletTests, myOptionsWithStorageCondition, myOptionsWithVentilated, myOptionsWithTemplateOptions,
-		alternativeFormFields, nfpaObjectFormat, newObjectFields, nearlyResolvedOptions, resolvedModifyQ},
+	{
+		listedOptions, outputOption, myOptionsAssociation, parsedInput, pubChemAssociation, pubChemWithInput,
+		mergeFunction, myOptionsWithPubChem, invalidOptions, myOptionsWithSynonyms, myFinalizedOptions,
+		identifiersToLookup, myChemicalIdentifiers, myChemicalIdentifierRules, similarChemicals, pubChemAssociationWithName,
+		myOptionsWithTemplateOptions, nearlyResolvedOptions, resolvedModifyQ, pubChemName, allSynonyms, pubChemSynonyms
+
+	},
 
 	(* Convert the options to this function into a list. *)
 	listedOptions=ToList[myResolveOptions];
@@ -1049,11 +1237,38 @@ resolveUploadMoleculeOptions[myInput_, myOptions_, myRawOptions_, myResolveOptio
 
 		(* UploadMolecule[thermoURL] *)
 		ThermoFisherURLP,
-		With[{insertMe=myInput}, retryConnection[parseThermoURL[insertMe], 3]],
+		With[{insertMe=myInput},
+			Module[{thermoURL, thermoResult},
+				thermoURL = parseThermoURL[insertMe];
+				thermoResult = If[!MatchQ[thermoURL, $Failed],
+					retryConnection[thermoURL, 3]
+				];
+				(* Return failed no connection after retry  *)
+				If[MatchQ[thermoURL, $Failed] || MatchQ[thermoResult, $Failed],
+					Message[Error::APIConnection, insertMe];
+					Return[$Failed],
+					thermoResult
+				]
+			]
+		],
 
 		(* UploadMolecule[sigmaURL] *)
+		(* Spamming connection to sigma has led to blocked connection, reduce to 2 *)
 		MilliporeSigmaURLP,
-		With[{insertMe=myInput}, retryConnection[parseSigmaURL[insertMe], 3]],
+		With[{insertMe=myInput},
+			Module[{sigmaURL, sigmaResult},
+				sigmaURL = parseSigmaURL[insertMe];
+				sigmaResult = If[!MatchQ[sigmaURL, $Failed],
+					retryConnection[sigmaURL, 2]
+				];
+				(* Return failed no connection after retry  *)
+				If[MatchQ[sigmaURL, $Failed] || MatchQ[sigmaResult, $Failed],
+					Message[Error::APIConnection, insertMe];
+					Return[$Failed],
+					sigmaResult
+				]
+			]
+		],
 
 		(* UploadMolecule[Name] *)
 		_String,
@@ -1168,7 +1383,14 @@ resolveUploadMoleculeOptions[myInput_, myOptions_, myRawOptions_, myResolveOptio
 
 		(* UploadMolecule[Name] *)
 		_String,
-		Merge[{<|Name -> myInput|>, pubChemAssociation}, First]
+		(* if pubchem returns a name, move it to the synonyms, and use the user input as the name *)
+		pubChemName = Lookup[pubChemAssociation, Name, {}];
+		(* look up pubchem synonyms *)
+		pubChemSynonyms = Lookup[pubChemAssociation, Synonyms, {}];
+		(* combine all names and synonyms for Synonyms field *)
+		allSynonyms = DeleteDuplicates[Cases[Flatten[{myInput, pubChemName, pubChemSynonyms}], _String]];
+		(* create the final  *)
+		pubChemAssociationWithName = Merge[{<|Name -> myInput, Synonyms -> allSynonyms|>, pubChemAssociation}, First]
 	];
 
 	(* -- Make sure that we do not overwrite any of the user's supplied OPTIONS. -- *)
@@ -1225,11 +1447,11 @@ resolveUploadMoleculeOptions[myInput_, myOptions_, myRawOptions_, myResolveOptio
 	];
 
 	(* Make sure that if we have a Name and Synonyms field (we've filtered out Nulls above) that Name is apart of the Synonyms list. *)
-	myOptionsWithSynonyms=If[KeyExistsQ[myOptionsWithTemplateOptions, Name] && KeyExistsQ[myOptionsWithTemplateOptions, Synonyms],
+	myOptionsWithSynonyms = If[KeyExistsQ[myOptionsWithTemplateOptions, Name] && KeyExistsQ[myOptionsWithTemplateOptions, Synonyms],
 		(* Make sure that the Name is apart of the Synonyms *)
 		If[!MemberQ[myOptionsWithTemplateOptions[Synonyms], myOptionsWithTemplateOptions[Name]],
 			(* If Name isn't in Synonyms, add it to the list. *)
-			Append[myOptionsWithTemplateOptions, Synonyms -> If[NullQ[myOptionsWithTemplateOptions[Name]], Null, Prepend[ToList[myOptionsWithTemplateOptions[Synonyms]], myOptionsWithTemplateOptions[Name]]]],
+			Append[myOptionsWithTemplateOptions, Synonyms -> If[NullQ[myOptionsWithTemplateOptions[Name]], Null, Prepend[Cases[ToList[myOptionsWithTemplateOptions[Synonyms]], _String], myOptionsWithTemplateOptions[Name]]]],
 			(* Name is apart of Synonyms, don't do anything. *)
 			myOptionsWithTemplateOptions
 		],
@@ -1243,23 +1465,23 @@ resolveUploadMoleculeOptions[myInput_, myOptions_, myRawOptions_, myResolveOptio
 	(* If we are given InChI, InChIKey, CAS, or IUPAC name, search for similar alternative forms in the database. *)
 
 	(* Lookup these chemical identifiers from our resolved options. *)
-	identifiersToLookup={InChI, InChIKey, CAS, IUPAC};
+	identifiersToLookup={InChI, InChIKey, CAS, IUPAC, PubChemID};
 	myChemicalIdentifiers=Lookup[myFinalizedOptions, identifiersToLookup];
 
 	(* Convert this information into rule form (ex. CAS\[Rule]myCAS), filtering out missing identifiers. *)
 	myChemicalIdentifierRules=MapThread[Rule, {identifiersToLookup, myChemicalIdentifiers}] /. ((_ -> _Missing) | (_ -> (Null | {Null..}))) -> Nothing;
 
-	(* Search for chemicals if we got any identifiers. *)
-	similarChemicals=If[Length[myChemicalIdentifierRules] >= 1,
-		With[{insertMe=And @@ (Equal @@ #& /@ myChemicalIdentifierRules)},
-			Search[Model[Molecule], insertMe]
-		],
-		{}
-	];
+	(* Search for similar chemicals. Will throw a message if one already exists *)
+	(* Ignore check if forcing *)
+	If[!TrueQ[Lookup[myRawOptions, Force]],
+		Module[{duplicateMolecules},
+			duplicateMolecules = duplicateMoleculeCheck[myChemicalIdentifierRules];
 
-	(* If we found similar chemicals, throw a warning if they are not all in the AlternativeForms. *)
-	If[Length[similarChemicals] >= 1,
-		Message[Warning::SimilarMolecules, ToString[similarChemicals], ToString[myInput]];
+			(* Throw an error if there is already a duplicate *)
+			If[!MatchQ[duplicateMolecules, {}],
+				Message[Error::MoleculeExists, ToString[duplicateMolecules], ToString[myInput]]
+			]
+		]
 	];
 
 	(* Almost completely resolved options *)
@@ -1267,6 +1489,16 @@ resolveUploadMoleculeOptions[myInput_, myOptions_, myRawOptions_, myResolveOptio
 
 	(* Return resolved options *)
 	ReplaceRule[nearlyResolvedOptions, {ModifyInputModel->resolvedModifyQ}]
+];
+
+
+(* Check if a molecule still exists in Constellation that shares a unique identifier *)
+(* Abstract this as a small helper, mainly so we can selectively stub it for unit testing *)
+(* Empty overload so that unknown molecules with no identifiers don't show as duplicates of each other *)
+duplicateMoleculeCheck[{}] := {};
+duplicateMoleculeCheck[identifierRules : {_Rule..}] := With[
+	{identifierSearchTerm = Or @@ (Equal @@ #& /@ identifierRules)},
+	Search[Model[Molecule], identifierSearchTerm]
 ];
 
 

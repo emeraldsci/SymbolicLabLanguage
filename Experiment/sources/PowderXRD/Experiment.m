@@ -18,12 +18,31 @@
 
 DefineOptions[ExperimentPowderXRD,
 	Options :> {
+		{
+			OptionName -> Instrument,
+			Default -> Model[Instrument, Diffractometer, "XtaLAB Synergy-R"],
+			Description -> "The diffractometer used for this experiment.",
+			AllowNull -> False,
+			Category -> "General",
+			Widget -> Widget[
+				Type -> Object,
+				Pattern :> ObjectP[{Model[Instrument, Diffractometer], Object[Instrument, Diffractometer]}],
+				OpenPaths -> {
+					{
+						Object[Catalog, "Root"],
+						"Instruments",
+						"X-Ray Crystallography",
+						"X-Ray Diffractometers"
+					}
+				}
+			]
+		},
 		IndexMatching[
 			IndexMatchingInput -> "experiment samples",
 			{
 				OptionName -> ExposureTime,
 				Default -> 0.2 * Second,
-				Description -> "The length of time the powder sample is exposed to the x-rays for each scan.",
+				Description -> "The length of time the powder sample is exposed to the X-rays for each scan.",
 				AllowNull -> False,
 				Category -> "X-Ray Parameters",
 				Widget -> Widget[
@@ -41,7 +60,7 @@ DefineOptions[ExperimentPowderXRD,
 				Category -> "Detector Parameters",
 				Widget -> Widget[
 					Type -> Quantity,
-					Pattern :> RangeP[60 Millimeter, 209 Millimeter],
+					Pattern :> RangeP[61 Millimeter, 209 Millimeter],
 					Units :> {1, {Millimeter, {Millimeter, Centimeter}}}
 				]
 			},
@@ -66,7 +85,7 @@ DefineOptions[ExperimentPowderXRD,
 				Category -> "Detector Parameters",
 				Widget -> Widget[
 					Type -> Quantity,
-					Pattern :> RangeP[-50.49 AngularDegree, 81.24 AngularDegree],
+					Pattern :> RangeP[-50.49 AngularDegree, 81.25 AngularDegree],
 					Units :> {1, {AngularDegree, {AngularDegree}}}
 				]
 			},
@@ -79,7 +98,7 @@ DefineOptions[ExperimentPowderXRD,
 				Category -> "Detector Parameters",
 				Widget -> Widget[
 					Type -> Quantity,
-					Pattern :> RangeP[-50.49 AngularDegree, 81.24 AngularDegree],
+					Pattern :> RangeP[-50.49 AngularDegree, 81.25 AngularDegree],
 					Units :> {1, {AngularDegree, {AngularDegree}}}
 				]
 			},
@@ -92,7 +111,7 @@ DefineOptions[ExperimentPowderXRD,
 				Category -> "Detector Parameters",
 				Widget -> Widget[
 					Type -> Quantity,
-					Pattern :> RangeP[-50.49 AngularDegree, 81.24 AngularDegree],
+					Pattern :> RangeP[-50.49 AngularDegree, 81.25 AngularDegree],
 					Units :> {1, {AngularDegree, {AngularDegree}}}
 				]
 			},
@@ -118,7 +137,7 @@ DefineOptions[ExperimentPowderXRD,
 				Category -> "Sample Handler Parameters",
 				Widget -> Widget[
 					Type -> Quantity,
-					Pattern :> RangeP[-17.24 AngularDegree, 17.24 AngularDegree],
+					Pattern :> RangeP[-21.24 AngularDegree, 51.99 AngularDegree],
 					Units :> {1, {AngularDegree, {AngularDegree}}}
 				]
 			},
@@ -131,7 +150,7 @@ DefineOptions[ExperimentPowderXRD,
 				Category -> "Sample Handler Parameters",
 				Widget -> Widget[
 					Type -> Quantity,
-					Pattern :> RangeP[-17.24 AngularDegree, 17.24 AngularDegree],
+					Pattern :> RangeP[-21.24 AngularDegree, 51.99 AngularDegree],
 					Units :> {1, {AngularDegree, {AngularDegree}}}
 				]
 			},
@@ -150,9 +169,10 @@ DefineOptions[ExperimentPowderXRD,
 			},
 			{
 				OptionName -> SpottingVolume,
-				Default -> 3 Microliter,
+				Default -> Automatic,
 				Description -> "The amount of sample to be spotted on each well of the crystallization plate.",
-				AllowNull -> False,
+				ResolutionDescription -> "Automatically set to 3 Microliter for TransferType -> Slurry.",
+				AllowNull -> True,
 				Category -> "Protocol",
 				Widget -> Widget[
 					Type -> Quantity,
@@ -162,9 +182,33 @@ DefineOptions[ExperimentPowderXRD,
 			}
 		],
 		{
+			OptionName -> CrystallizationPlatePreparation,
+			Default -> Automatic,
+			Description -> "Indicates if the sample loading onto the crystallization plate should occur manually or on a robotic liquid handler.",
+			ResolutionDescription -> "Automatically set to Robotic if TransferType is Slurry. Otherwise, automatically set to Manual.",
+			AllowNull -> False,
+			Category -> "Protocol",
+			Widget -> Widget[
+				Type -> Enumeration,
+				Pattern :> PreparationMethodP
+			]
+		},
+		{
+			OptionName -> TransferType,
+			Default -> Automatic,
+			Description -> "How samples are to be transferred to the CrystallizationPlate via Slurry or MassTransfer. The model of crystallization plate used is determined by this option.",
+			ResolutionDescription -> "Automatically set to Slurry if Preparation is Robotic. If Preparation is Manual, automatically set to Slurry for liquid samples or MassTransfer for solid samples.",
+			AllowNull -> False,
+			Category -> "General",
+			Widget -> Widget[
+				Type -> Enumeration,
+				Pattern :> Alternatives[Slurry, MassTransfer]
+			]
+		},
+		{
 			OptionName -> NumberOfReplicates,
 			Default -> Null,
-			Description -> "The number of times to repeat x-ray diffraction reading on each provided sample.  Specifying this option will result in the same sample being aliquoted into multiple wells in the X-ray plate.",
+			Description -> "The number of times to repeat X-ray diffraction reading on each provided sample.  Specifying this option will result in the same sample being aliquoted into multiple wells in the X-ray plate.",
 			AllowNull -> True,
 			Category -> "Protocol",
 			Widget -> Widget[Type -> Number, Pattern :> GreaterEqualP[2, 1]]
@@ -172,7 +216,7 @@ DefineOptions[ExperimentPowderXRD,
 		{
 			OptionName -> Current,
 			Default -> 30 * Milliampere,
-			Description -> "The current used to generate the x-rays in this experiment.",
+			Description -> "The current used to generate the X-rays in this experiment.",
 			AllowNull -> False,
 			Category -> "X-Ray Parameters",
 			Widget -> Widget[
@@ -184,7 +228,7 @@ DefineOptions[ExperimentPowderXRD,
 		{
 			OptionName -> ImageXRDPlate,
 			Default -> Automatic,
-			Description -> "Indicates if the crystallization plate should be imaged after preparing and drying of plates but before loading onto the diffractometer.",
+			Description -> "Indicates if the crystallization plate should be imaged after preparing of the plate but before loading onto the diffractometer.",
 			ResolutionDescription -> "Automatically set to the template value, or False if no template exists.",
 			AllowNull -> False,
 			Category -> "Protocol",
@@ -193,20 +237,22 @@ DefineOptions[ExperimentPowderXRD,
 				Pattern :> BooleanP
 			]
 		},
-		{
-			OptionName -> Instrument,
-			Default -> Model[Instrument, Diffractometer, "XtaLAB Synergy-R"],
-			Description -> "The diffractometer used for this experiment.",
-			AllowNull -> False,
-			Widget -> Widget[
-				Type -> Object,
-				Pattern :> ObjectP[{Model[Instrument, Diffractometer], Object[Instrument, Diffractometer]}]
-			]
-		},
-		FuntopiaSharedOptions,
+		NonBiologyFuntopiaSharedOptions,
 		SubprotocolDescriptionOption,
 		SamplesInStorageOption,
-		SamplesOutStorageOption
+		SamplesOutStorageOption,
+		SimulationOption,
+		ModifyOptions[
+			ModelInputOptions,
+			OptionName -> PreparedModelContainer
+		],
+		ModifyOptions[
+			ModelInputOptions,
+			PreparedModelAmount,
+			{
+				ResolutionDescription -> "Automatically set to 25 Microliter."
+			}
+		]
 	}
 ];
 
@@ -223,14 +269,16 @@ Error::MinDetectorAngleAboveMax = "MinDetectorAngle is greater than MaxDetectorA
 Error::FixedOptionsRequiredTogether = "The following sample(s) have the FixedDetectorAngle option set to Null when DetectorRotation -> Fixed: `1`.  Please adjust FixedDetectorAngle, or set it to Automatic.";
 Error::SweepingOptionsRequiredTogether = "The following sample(s) have the MinDetectorAngle, MaxDetectorAngle, and/or DetectorAngleIncrement options set to Null when DetectorRotation -> Sweeping: `1`.  Please adjust these options, or set them to Automatic.";
 Error::DetectorTooClose = "The following sample(s) have DetectorDistance too small than is allowed for the specified MinOmegaAngle, MaxOmegaAngle, MinDetectorAngle, MaxDetectorAngle, and/or FixedDetectorAngle options: `1`.  Please increase the DetectorDistance, or reduce the specified angles to be a narrower range.";
-Error::PowderXRDTooManySamples = "The (number of input samples * NumberOfReplicates) cannot fit onto the instrument in a single protocol.  Please select fewer than `1` samples to run this protocol.";
+Error::PowderXRDTooManySamples = "The (number of input samples * NumberOfReplicates) cannot fit onto the instrument in a single TransferType -> `1` protocol.  Please select fewer than `2` samples to run this protocol.";
 Warning::PowderXRDHighVolume = "The volume of input samples `1` (or their resolved AssayVolume) (`2`) is above 100 microliters.  If using a sample that is a solid suspended in a solvent, we recommend using volumes at or below 100 microliters to ensure the suspension is adequately concentrated such that sufficient solid may be transferred to the XRD plate.";
 Error::DetectorAngleIncrementTooLarge = "The DetectorAngleIncrement option is greater than the difference between MinDetectorAngle and MaxDetectorAngle for the following sample(s): `1`.  This may occur if MinDetectorAngle and MaxDetectorAngle are too close together; the minimum value for DetectorAngleIncrement is 0.1 AngularDegree.  Please adjust the values for these options.";
 Error::OmegaAngleIncrementTooLarge = "The OmegaAngleIncrement option is greater than the difference between MinOmegaAngle and MaxOmegaAngle for the following sample(s): `1`.  This may occur if MinOmegaAngle and MaxOmegaAngle are too close together; the minimum value for OmegaAngleIncrement is 0.1 AngularDegree.  Please adjust the values for these options.";
+Error::InvalidSpottingVolumeForTransferType = "When TransferType -> `1`, SpottingVolume must be `2`.";
 Error::SpottingVolumeTooLarge = "The SpottingVolume option is greater than either the volume or the AssayVolume (if aliquoting) for the following sample(s): `1`.  Please use a smaller SpottingVolume or a larger AssayVolume for these sample(s).";
-
-
-
+Error::CrystallizationPlatePreparationTransferTypeMismatch = "Robotic solid transfers are unsupported. Please specify TransferType -> MassTransfer with CrystallizationPlatePreparation -> Manual, TransferType -> Slurry with CrystallizationPlatePreparation -> Robotic, or allow either option to be resolved automatically.";
+Error::InvalidSamplesForTransferType = "The inputs `1` at indices `2` will be in the wrong state (following any indicated sample preparation) for a `3` TransferType. If TransferType is MassTransfer, only solid samples may be used; for Slurry, only liquid-containing samples may be used. The function does not support a mixture of solid and liquid-containing samples as inputs.";
+Error::UnableToResolveTransferType = "The inputs at indices `1` are solids and at indices `2` are liquid-containing (following any indicated sample preparation). The function does not support a mixture of solid and liquid-containing samples as inputs.";
+Error::NoPossibleDetectorDistanceForAngles = "The following sample(s) `1` have `2` options unable to be reached by the goniometer at any DetectorDistance. Adjust the omega and theta angles such that they are nearer in value or allow the options to resolve automatically.";
 (*
 	Single Sample with No Second Input:
 		- Takes a single sample and passes through to core overload
@@ -245,13 +293,13 @@ ExperimentPowderXRD[mySample : ObjectP[Object[Sample]], myOptions : OptionsPatte
 ExperimentPowderXRD[mySamples : {ObjectP[Object[Sample]]..}, myOptions : OptionsPattern[ExperimentPowderXRD]] := Module[
 	{
 		inheritedCache, allDownloadValues, newCache, listedOptions,
-		listedSamples, outputSpecification, output, gatherTests, messages, safeOptionTests, upload, confirm, fastTrack,
+		listedSamples, outputSpecification, output, gatherTests, messages, safeOptionTests, upload, confirm, canaryBranch, fastTrack,
 		parentProt, validLengthTests, combinedOptions, expandedCombinedOptions, sampleObjectDownloadFields, resolveOptionsResult, resolvedOptions,
 		resolutionTests, resolvedOptionsNoHidden, returnEarlyQ, finalizedPacket, resourcePacketTests, allTests, validQ,
 		safeOptions, validLengths, unresolvedOptions, applyTemplateOptionTests, sampleModelDownloadFields,
 		sampleContainerFields, sampleContainerModelFields, previewRule, optionsRule, testsRule, resultRule,
-		validSamplePreparationResult,mySamplesWithPreparedSamplesNamed,myOptionsWithPreparedSamplesNamed,samplePreparationCacheNamed,safeOptionsNamed,
-		mySamplesWithPreparedSamples, myOptionsWithPreparedSamples, samplePreparationCache},
+		validSamplePreparationResult,mySamplesWithPreparedSamplesNamed,myOptionsWithPreparedSamplesNamed,safeOptionsNamed,
+		mySamplesWithPreparedSamples, myOptionsWithPreparedSamples, updatedSimulation},
 
 	(* determine the requested return value from the function *)
 	outputSpecification = Quiet[OptionDefault[OptionValue[Output]], OptionValue::nodef];
@@ -267,13 +315,13 @@ ExperimentPowderXRD[mySamples : {ObjectP[Object[Sample]]..}, myOptions : Options
 	(* Simulate our sample preparation. *)
 	validSamplePreparationResult = Check[
 		(* Simulate sample preparation. *)
-		{mySamplesWithPreparedSamplesNamed, myOptionsWithPreparedSamplesNamed, samplePreparationCacheNamed} = simulateSamplePreparationPackets[
+		{mySamplesWithPreparedSamplesNamed, myOptionsWithPreparedSamplesNamed, updatedSimulation} = simulateSamplePreparationPacketsNew[
 			ExperimentPowderXRD,
 			listedSamples,
 			ToList[listedOptions]
 		],
 		$Failed,
-	 	{Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
+	 	{Download::ObjectDoesNotExist, Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
 	];
 
 	(* If we are given an invalid define name, return early. *)
@@ -289,7 +337,7 @@ ExperimentPowderXRD[mySamples : {ObjectP[Object[Sample]]..}, myOptions : Options
 		{SafeOptions[ExperimentPowderXRD, myOptionsWithPreparedSamplesNamed, AutoCorrect -> False], Null}
 	];
 
-	{mySamplesWithPreparedSamples,{safeOptions,myOptionsWithPreparedSamples,samplePreparationCache}}=sanitizeInputs[mySamplesWithPreparedSamplesNamed,{safeOptionsNamed,myOptionsWithPreparedSamplesNamed,samplePreparationCacheNamed}];
+	{mySamplesWithPreparedSamples, safeOptions, myOptionsWithPreparedSamples}=sanitizeInputs[mySamplesWithPreparedSamplesNamed,safeOptionsNamed,myOptionsWithPreparedSamplesNamed,Simulation -> updatedSimulation];
 
 	(* If the specified options don't match their patterns or if the option lengths are invalid, return $Failed*)
 	If[MatchQ[safeOptions, $Failed],
@@ -318,12 +366,12 @@ ExperimentPowderXRD[mySamples : {ObjectP[Object[Sample]]..}, myOptions : Options
 	];
 
 	(* get assorted hidden options *)
-	{upload, confirm, fastTrack, parentProt, inheritedCache} = Lookup[safeOptions, {Upload, Confirm, FastTrack, ParentProtocol, Cache}];
+	{upload, confirm, canaryBranch, fastTrack, parentProt, inheritedCache} = Lookup[safeOptions, {Upload, Confirm, CanaryBranch, FastTrack, ParentProtocol, Cache}];
 
 	(* apply the template options *)
 	(* need to specify the definition number (we are number 1 for samples at this point) *)
 	{unresolvedOptions, applyTemplateOptionTests} = If[gatherTests,
-		ApplyTemplateOptions[ExperimentPowderXRD, {mySamplesWithPreparedSamples}, myOptionsWithPreparedSamples, 1, Output -> {Result, Tests}],
+		ApplyTemplateOptions[ExperimentPowderXRD, {mySamplesWithPreparedSamples}, myOptionsWithPreparedSamples, 1,  Output -> {Result, Tests}],
 		{ApplyTemplateOptions[ExperimentPowderXRD, {mySamplesWithPreparedSamples}, myOptionsWithPreparedSamples, 1, Output -> Result], Null}
 	];
 
@@ -346,7 +394,7 @@ ExperimentPowderXRD[mySamples : {ObjectP[Object[Sample]]..}, myOptions : Options
 	(* --- Make our one big Download call --- *)
 
 	(* Define the fields from which to download information *)
-	sampleObjectDownloadFields = Packet[LiquidHandlerIncompatible, Tablet, TabletWeight, TransportWarmed, TransportChilled, SamplePreparationCacheFields[Object[Sample], Format->Sequence]];
+	sampleObjectDownloadFields = Packet[LiquidHandlerIncompatible, Tablet, SolidUnitWeight,TransportTemperature, SamplePreparationCacheFields[Object[Sample], Format->Sequence]];
 	sampleModelDownloadFields = Packet[Model[{UsedAsSolvent, ConcentratedBufferDiluent, ConcentratedBufferDilutionFactor, BaselineStock, Products, SamplePreparationCacheFields[Model[Sample], Format -> Sequence]}]];
 	sampleContainerFields = Packet[Container[{Model, SamplePreparationCacheFields[Object[Container], Format -> Sequence]}]];
 	sampleContainerModelFields = Packet[Container[Model][{MaxVolume,SamplePreparationCacheFields[Model[Container], Format -> Sequence]}]];
@@ -360,20 +408,21 @@ ExperimentPowderXRD[mySamples : {ObjectP[Object[Sample]]..}, myOptions : Options
 			sampleContainerFields,
 			sampleContainerModelFields
 		},
-		Cache -> FlattenCachePackets[{samplePreparationCache, inheritedCache}],
+		(*Cache -> FlattenCachePackets[{inheritedCache}],*)
+		Simulation-> updatedSimulation,
 		Date -> Now
 	], Download::FieldDoesntExist];
 
 	(* combine the cache we inherited with what we Downloaded  *)
-	newCache = FlattenCachePackets[{samplePreparationCache, inheritedCache, allDownloadValues}];
+	newCache = FlattenCachePackets[{inheritedCache, allDownloadValues}];
 
 	(* --- Resolve the options! --- *)
 
 	(* resolve all options; if we throw InvalidOption or InvalidInput, we're also getting $Failed and we will return early *)
 	resolveOptionsResult = Check[
 		{resolvedOptions, resolutionTests} = If[gatherTests,
-			resolvePowderXRDOptions[mySamplesWithPreparedSamples, expandedCombinedOptions, Output -> {Result, Tests}, Cache -> newCache],
-			{resolvePowderXRDOptions[mySamplesWithPreparedSamples, expandedCombinedOptions, Output -> Result, Cache -> newCache], Null}
+			resolvePowderXRDOptions[mySamplesWithPreparedSamples, expandedCombinedOptions, Output -> {Result, Tests}, Cache -> newCache,Simulation->updatedSimulation],
+			{resolvePowderXRDOptions[mySamplesWithPreparedSamples, expandedCombinedOptions, Output -> Result, Cache -> newCache,Simulation->updatedSimulation], Null}
 		],
 		$Failed,
 		{Error::InvalidInput, Error::InvalidOption}
@@ -404,8 +453,8 @@ ExperimentPowderXRD[mySamples : {ObjectP[Object[Sample]]..}, myOptions : Options
 	(* call the powderXRDResourcePackets function to create the protocol packets with resources in them *)
 	(* if we're gathering tests, make sure the function spits out both the result and the tests; if we are not gathering tests, the result is enough, and the other can be Null *)
 	{finalizedPacket, resourcePacketTests} = If[gatherTests,
-		powderXRDResourcePackets[Download[mySamplesWithPreparedSamples, Object, Cache -> newCache], unresolvedOptions, resolvedOptions, Output -> {Result, Tests}, Cache -> newCache],
-		{powderXRDResourcePackets[Download[mySamplesWithPreparedSamples, Object, Cache -> newCache], unresolvedOptions, resolvedOptions, Output -> Result, Cache -> newCache], Null}
+		powderXRDResourcePackets[Download[mySamplesWithPreparedSamples, Object, Cache -> newCache], unresolvedOptions, resolvedOptions, Output -> {Result, Tests}, Cache -> newCache,Simulation->updatedSimulation],
+		{powderXRDResourcePackets[Download[mySamplesWithPreparedSamples, Object, Cache -> newCache], unresolvedOptions, resolvedOptions, Output -> Result, Cache -> newCache,Simulation->updatedSimulation], Null}
 	];
 
 	(* --- Packaging the return value --- *)
@@ -444,6 +493,7 @@ ExperimentPowderXRD[mySamples : {ObjectP[Object[Sample]]..}, myOptions : Options
 		(* need to do this because want to return only one protocol and not a list of length one *)
 		UploadProtocol[finalizedPacket,
 			Confirm -> confirm,
+			CanaryBranch -> canaryBranch,
 			Upload -> upload,
 			FastTrack -> fastTrack,
 			ParentProtocol -> parentProt,
@@ -452,7 +502,8 @@ ExperimentPowderXRD[mySamples : {ObjectP[Object[Sample]]..}, myOptions : Options
 			HoldOrder->Lookup[safeOptions,HoldOrder],
 			QueuePosition->Lookup[safeOptions,QueuePosition],
 			ConstellationMessage -> {Object[Protocol, PowderXRD]},
-			Cache -> samplePreparationCache],
+			Simulation->updatedSimulation
+		],
 		$Failed
 	];
 
@@ -466,18 +517,18 @@ ExperimentPowderXRD[mySamples : {ObjectP[Object[Sample]]..}, myOptions : Options
 		- Takes a single container and passes it to the core container overload
 *)
 
-ExperimentPowderXRD[myContainer : (ObjectP[{Object[Container], Object[Sample]}] | _String), myOptions : OptionsPattern[ExperimentPowderXRD]] := ExperimentPowderXRD[{myContainer}, myOptions];
+ExperimentPowderXRD[myContainer : (ObjectP[{Object[Container], Object[Sample], Model[Sample]}] | _String), myOptions : OptionsPattern[ExperimentPowderXRD]] := ExperimentPowderXRD[{myContainer}, myOptions];
 
 (*
 	Multiple containers with no second input:
 		- expands the Containers into their contents and passes to the core function
 *)
 
-ExperimentPowderXRD[myContainers : {(ObjectP[{Object[Container], Object[Sample]}] | _String)..}, myOptions : OptionsPattern[ExperimentPowderXRD]] := Module[
-	{listedOptions, outputSpecification, output, gatherTests, safeOptions, safeOptionTests, containerToSampleResult,sampleCache,
+ExperimentPowderXRD[myContainers : {(ObjectP[{Object[Container], Object[Sample], Model[Sample]}] | _String)..}, myOptions : OptionsPattern[ExperimentPowderXRD]] := Module[
+	{listedOptions, outputSpecification, output, gatherTests, safeOptions, safeOptionTests, containerToSampleResult,containerToSampleOutput,
 		containerToSampleTests, inputSamples, samplesOptions, aliquotResults, initialReplaceRules, testsRule, resultRule,
 		previewRule, optionsRule, validSamplePreparationResult, mySamplesWithPreparedSamples, myOptionsWithPreparedSamples,
-		samplePreparationCache, updatedCache},
+	 containerToSampleSimulation,updatedSimulation},
 
 	(* make sure we're working with a list of options *)
 	listedOptions = ToList[myOptions];
@@ -492,13 +543,14 @@ ExperimentPowderXRD[myContainers : {(ObjectP[{Object[Container], Object[Sample]}
 	(* First, simulate our sample preparation. *)
 	validSamplePreparationResult = Check[
 		(* Simulate sample preparation. *)
-		{mySamplesWithPreparedSamples, myOptionsWithPreparedSamples, samplePreparationCache} = simulateSamplePreparationPackets[
+		{mySamplesWithPreparedSamples, myOptionsWithPreparedSamples, updatedSimulation} = simulateSamplePreparationPacketsNew[
 			ExperimentPowderXRD,
 			ToList[myContainers],
-			ToList[myOptions]
+			ToList[myOptions],
+			DefaultPreparedModelAmount -> 25 Microliter
 		],
 		$Failed,
-		{Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
+		{Download::ObjectDoesNotExist, Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
 	];
 
 	(* If we are given an invalid define name, return early. *)
@@ -525,9 +577,34 @@ ExperimentPowderXRD[myContainers : {(ObjectP[{Object[Container], Object[Sample]}
 	];
 
 	(* convert the containers to samples, and also get the options index matched properly *)
-	{containerToSampleResult, containerToSampleTests} = If[gatherTests,
-		containerToSampleOptions[ExperimentPowderXRD, mySamplesWithPreparedSamples, safeOptions, Cache -> samplePreparationCache, Output -> {Result, Tests}],
-		{containerToSampleOptions[ExperimentPowderXRD, mySamplesWithPreparedSamples, safeOptions, Cache -> samplePreparationCache], Null}
+	containerToSampleResult= If[gatherTests,
+		(* We are gathering tests. This silences any messages being thrown. *)
+		{containerToSampleOutput, containerToSampleTests, containerToSampleSimulation} = containerToSampleOptions[
+			ExperimentPowderXRD,
+			mySamplesWithPreparedSamples,
+			safeOptions,
+			Output -> {Result, Tests, Simulation},
+			Simulation -> updatedSimulation
+		];
+		
+		(* Therefore, we have to run the tests to see if we encountered a failure. *)
+		If[RunUnitTest[<|"Tests" -> containerToSampleTests|>, OutputFormat -> SingleBoolean, Verbose -> False],
+			Null,
+			$Failed
+		],
+		
+		(* We are not gathering tests. Simply check for Error::InvalidInput and Error::InvalidOption. *)
+		Check[
+			{containerToSampleOutput, containerToSampleSimulation} = containerToSampleOptions[
+				ExperimentPowderXRD,
+				mySamplesWithPreparedSamples,
+				myOptionsWithPreparedSamples,
+				Output -> {Result, Simulation},
+				Simulation -> updatedSimulation
+			],
+			$Failed,
+			{Error::EmptyContainers, Error::ContainerEmptyWells, Error::WellDoesNotExist}
+		]
 	];
 
 	(* If the specified containers aren't allowed *)
@@ -535,17 +612,11 @@ ExperimentPowderXRD[myContainers : {(ObjectP[{Object[Container], Object[Sample]}
 		Return[$Failed]
 	];
 
-	(* Update our cache with our new simulated values. *)
-	updatedCache = Flatten[{
-		samplePreparationCache,
-		Lookup[listedOptions, Cache, {}]
-	}];
-
 	(* separate out the samples and the options *)
-	{inputSamples, samplesOptions, sampleCache} = containerToSampleResult;
+	{inputSamples, samplesOptions} = containerToSampleOutput;
 
 	(* call ExperimentPowderXRD and get all its outputs *)
-	aliquotResults = ExperimentPowderXRD[inputSamples, ReplaceRule[samplesOptions, Cache -> updatedCache]];
+	aliquotResults = ExperimentPowderXRD[inputSamples, ReplaceRule[samplesOptions, Simulation->containerToSampleSimulation]];
 
 	(* create a list of replace rules from the mass spec call above and whatever the output specification is *)
 	initialReplaceRules = If[MatchQ[outputSpecification, _List],
@@ -582,14 +653,14 @@ ExperimentPowderXRD[myContainers : {(ObjectP[{Object[Container], Object[Sample]}
 
 
 DefineOptions[resolvePowderXRDOptions,
-	Options :> {HelperOutputOption, CacheOption}
+	Options :> {HelperOutputOption, CacheOption, SimulationOption}
 ];
 
 (* private function to resolve all the options *)
 resolvePowderXRDOptions[mySamples : {ObjectP[Object[Sample]]..}, myOptions : {_Rule...}, myResolutionOptions : OptionsPattern[resolvePowderXRDOptions]] := Module[
-	{outputSpecification, output, gatherTests, messages, inheritedCache, samplePrepOptions, xrdOptions, simulatedSamples,
-		resolvedSamplePrepOptions, simulatedCache, samplePrepTests, exposureTime, current, numberOfReplicates, name,
-		parentProtocol, samplePackets, sampleModelPackets, fastTrack, combinedCache,
+	{outputSpecification, output, gatherTests, messages, inheritedCache,simulation, samplePrepOptions, xrdOptions, simulatedSamples,
+		resolvedSamplePrepOptions,  updatedSimulation,samplePrepTests, exposureTime, current, numberOfReplicates, name,
+		parentProtocol, samplePackets, sampleModelPackets, fastTrack, combinedCache, sampleStates, invalidStateInputs,
 		samplePacketsToCheckIfDiscarded, discardedSamplePackets, discardedInvalidInputs, discardedTest,
 		modelPacketsToCheckIfDeprecated, deprecatedModelPackets, deprecatedInvalidInputs, deprecatedTest, roundedXRDOptions,
 		precisionTests, validNameQ, nameInvalidOptions, validNameTest, mapThreadFriendlyOptions,
@@ -605,12 +676,18 @@ resolvePowderXRDOptions[mySamples : {ObjectP[Object[Sample]]..}, myOptions : {_R
 		targetContainers, samplesInStorage, samplesOutStorage, instrument, detectorAngleIncrementTooLargeOptions,
 		detectorAngleIncrementTooLargeTest, resolvedOmegaAngleIncrement, omegaAngleIncrementTooLargeOptions,
 		omegaAngleIncrementTooLargeTest, resolvedAliquotOptions, aliquotTests, invalidOptions, invalidInputs, allTests,
-		confirm, template, cache, operator, upload, outputOption, email, subprotocolDescription, resolvedOptions, testsRule,
-		resultRule, numSamples, tooManySamplesQ, tooManySamplesInputs, tooManySamplesTest, imageXRDPlate, spottingVolume,
-		resolvedAssayVolume, sampleVolume, volumesTooLargeBool, samplesWithVolumesTooLarge, volumesTooLarge,
+		confirm, canaryBranch, template, cache, operator, upload, outputOption, email, subprotocolDescription, resolvedOptions, testsRule,
+		resultRule, numSamples, tooManySamplesQ, tooManySamplesInputs, tooManySamplesTest, imageXRDPlate,
+		resolvedSpottingVolumes, resolvedAssayVolume, sampleVolume, volumesTooLargeBool, samplesWithVolumesTooLarge, volumesTooLarge,
 		volumeTooLargeWarning, resolvedPostProcessingOptions, requiredAliquotAmount, aliquotWarningMessage,
-		omegaAngleIncrementTooLargeErrors, spottingVolumePerSample,
-		spottingVolumesTooLargeBool, spottingVolumesTooLargeOptions, spottingVolumesTooLargeTest},
+		omegaAngleIncrementTooLargeErrors, spottingVolumePerSample, resolvedTransferType, resolvedCrystallizationPlatePreparation,
+		spottingVolumesTooLargeBool, spottingVolumesTooLargeOptions, spottingVolumesTooLargeTest, transferTypePreparationMismatchQ,
+		transferTypePreparationMismatchOptions, transferTypePreparationMismatchTest, transferTypeSampleConflictQ,
+		samplesIncompatibleWithTransferTypeOptions, samplesIncompatibleWithTransferTypeTests, unableToResolveTransferTypeOption,
+		unableToResolveTransferTypeOptionTest, unableToResolveTransferTypeBoole, allowedNumberOfSamples, invalidSpottingVolumeForTransferTypeQ,
+		invalidSpottingVolumeForTransferType, invalidSpottingVolumeForTransferTypeTest, simulatedSamplePackets, noDetectorDistanceForAnglesErrors,
+		noDetectorDistanceInvalidOptionsList, noDetectorDistanceOptions, noDetectorDistanceTest
+	},
 
 	(* --- Setup our user specified options and cache --- *)
 
@@ -622,8 +699,9 @@ resolvePowderXRDOptions[mySamples : {ObjectP[Object[Sample]]..}, myOptions : {_R
 	gatherTests = MemberQ[output, Tests];
 	messages = Not[gatherTests];
 
-	(* pull out the Cache option *)
+	(* pull out the Cache and Simulation option *)
 	inheritedCache = Lookup[ToList[myResolutionOptions], Cache, {}];
+	simulation = Lookup[ToList[myResolutionOptions], Simulation, Simulation[]];
 
 	(* get the sample and model packets *)
 	samplePackets = fetchPacketFromCache[#, inheritedCache]& /@ Download[mySamples, Object];
@@ -635,13 +713,15 @@ resolvePowderXRDOptions[mySamples : {ObjectP[Object[Sample]]..}, myOptions : {_R
 	{samplePrepOptions, xrdOptions} = splitPrepOptions[myOptions];
 
 	(* resolve the sample prep options *)
-	{{simulatedSamples, resolvedSamplePrepOptions, simulatedCache}, samplePrepTests} = If[gatherTests,
-		resolveSamplePrepOptions[ExperimentPowderXRD, mySamples, samplePrepOptions, Cache -> inheritedCache, Output -> {Result, Tests}],
-		{resolveSamplePrepOptions[ExperimentPowderXRD, mySamples, samplePrepOptions, Cache -> inheritedCache, Output -> Result], {}}
+	{{simulatedSamples, resolvedSamplePrepOptions, updatedSimulation}, samplePrepTests} = If[gatherTests,
+		resolveSamplePrepOptionsNew[ExperimentPowderXRD, mySamples, samplePrepOptions, Cache -> inheritedCache, Simulation->simulation, Output -> {Result, Tests}],
+		{resolveSamplePrepOptionsNew[ExperimentPowderXRD, mySamples, samplePrepOptions, Cache -> inheritedCache, Simulation->simulation, Output -> Result], {}}
 	];
 
 	(* merge caches together *)
-	combinedCache = FlattenCachePackets[{inheritedCache, simulatedCache}];
+	combinedCache = FlattenCachePackets[{inheritedCache}];
+
+	simulatedSamplePackets = Download[simulatedSamples,Simulation->updatedSimulation];
 
 	(* pull out the options that are defaulted *)
 	{exposureTime, current, numberOfReplicates, name, parentProtocol, fastTrack} = Lookup[xrdOptions, {ExposureTime, Current, NumberOfReplicates, Name, ParentProtocol, FastTrack}];
@@ -672,12 +752,12 @@ resolvePowderXRDOptions[mySamples : {ObjectP[Object[Sample]]..}, myOptions : {_R
 		Module[{failingTest, passingTest},
 			failingTest = If[Length[discardedInvalidInputs] == 0,
 				Nothing,
-				Test["Provided samples " <> ObjectToString[discardedInvalidInputs, Cache -> inheritedCache] <> " are not discarded:", True, False]
+				Test["Provided samples " <> ObjectToString[discardedInvalidInputs, Simulation -> updatedSimulation] <> " are not discarded:", True, False]
 			];
 
 			passingTest = If[Length[discardedInvalidInputs] == Length[samplePacketsToCheckIfDiscarded],
 				Nothing,
-				Test["Provided input samples " <> ObjectToString[Download[Complement[samplePacketsToCheckIfDiscarded, discardedInvalidInputs], Object], Cache -> inheritedCache] <> " are not discarded:", True, True]
+				Test["Provided input samples " <> ObjectToString[Download[Complement[samplePacketsToCheckIfDiscarded, discardedInvalidInputs], Object], Simulation -> updatedSimulation] <> " are not discarded:", True, True]
 			];
 
 			{failingTest, passingTest}
@@ -709,44 +789,15 @@ resolvePowderXRDOptions[mySamples : {ObjectP[Object[Sample]]..}, myOptions : {_R
 		Module[{failingTest, passingTest},
 			failingTest = If[Length[deprecatedInvalidInputs] == 0,
 				Nothing,
-				Test["Provided samples have models " <> ObjectToString[deprecatedInvalidInputs, Cache -> inheritedCache] <> " that are not deprecated:", True, False]
+				Test["Provided samples have models " <> ObjectToString[deprecatedInvalidInputs, Simulation -> updatedSimulation] <> " that are not deprecated:", True, False]
 			];
 
 			passingTest = If[Length[deprecatedInvalidInputs] == Length[modelPacketsToCheckIfDeprecated],
 				Nothing,
-				Test["Provided samples have models " <> ObjectToString[Download[Complement[modelPacketsToCheckIfDeprecated, deprecatedInvalidInputs], Object], Cache -> inheritedCache] <> " that are not deprecated:", True, True]
+				Test["Provided samples have models " <> ObjectToString[Download[Complement[modelPacketsToCheckIfDeprecated, deprecatedInvalidInputs], Object], Simulation -> updatedSimulation] <> " that are not deprecated:", True, True]
 			];
 
 			{failingTest, passingTest}
-		],
-		Nothing
-	];
-
-	(* get the number of samples *)
-	numSamples = If[NullQ[numberOfReplicates],
-		Length[mySamples],
-		Length[mySamples] * numberOfReplicates
-	];
-
-	(* if we have more than 96 samples, throw an error *)
-	tooManySamplesQ = numSamples > 96;
-
-	(* if there are more than 96 samples, and we are throwing messages, throw an error message and keep track of the invalid inputs *)
-	tooManySamplesInputs = Which[
-		TrueQ[tooManySamplesQ] && messages,
-		(
-			Message[Error::PowderXRDTooManySamples, 96];
-			Download[mySamples, Object]
-		),
-		TrueQ[tooManySamplesQ], Download[mySamples, Object],
-		True, {}
-	];
-
-	(* if we are gathering tests, create a test indicating whether we have too many samples or not *)
-	tooManySamplesTest = If[gatherTests,
-		Test["The number of samples provided times NumberOfReplicates is not greater than 96:",
-			tooManySamplesQ,
-			False
 		],
 		Nothing
 	];
@@ -785,6 +836,88 @@ resolvePowderXRDOptions[mySamples : {ObjectP[Object[Sample]]..}, myOptions : {_R
 		Null
 	];
 
+	(* Determine the State of our samples *)
+	sampleStates = Lookup[simulatedSamplePackets, State];
+
+	(* Set error checking variable to a boole, assuming no error. *)
+	unableToResolveTransferTypeBoole = False;
+
+	(* --- Resolve the plate preparation --- *)
+	resolvedTransferType = Which[
+		(* Trivial case: *)
+		MatchQ[Lookup[roundedXRDOptions, TransferType], Except[Automatic]],
+		Lookup[roundedXRDOptions, TransferType],
+		(* If Robotic was specified, resolve to Slurry. *)
+		MatchQ[Lookup[roundedXRDOptions, CrystallizationPlatePreparation], Robotic],
+		Slurry,
+		(* For Automatic/Manual preparation and solid samples resolve to MassTransfer. *)
+		MatchQ[sampleStates, {Solid..}],
+		MassTransfer,
+		(* For Automatic/Manual preparation and non solid samples resolve to Slurry. *)
+		MatchQ[sampleStates, {Liquid..}],
+		Slurry,
+		True,
+		unableToResolveTransferTypeBoole = True;
+		Slurry
+	];
+
+	(* get the number of samples *)
+	numSamples = If[NullQ[numberOfReplicates],
+		Length[mySamples],
+		Length[mySamples] * numberOfReplicates
+	];
+
+	(* If we are *)
+	unableToResolveTransferTypeOption = If[TrueQ[unableToResolveTransferTypeBoole] && messages,
+		Message[Error::UnableToResolveTransferType, Flatten[Position[sampleStates, Solid]], Flatten[Position[sampleStates, Liquid]]];
+		{TransferType},
+		{}
+	];
+
+	unableToResolveTransferTypeOptionTest = If[gatherTests,
+		Test["The transfer type option was specified or resolvable based on the state of the samples (following any sample preparation):",
+			!TrueQ[unableToResolveTransferTypeBoole],
+			True
+		],
+		Nothing
+	];
+
+	(* if we have more than 92 or 96 samples, throw an error *)
+	allowedNumberOfSamples = If[MatchQ[resolvedTransferType, MassTransfer], 92, 96];
+	tooManySamplesQ = numSamples > allowedNumberOfSamples;
+
+	(* if there are more than 96 samples, and we are throwing messages, throw an error message and keep track of the invalid inputs *)
+	tooManySamplesInputs = Which[
+		TrueQ[tooManySamplesQ] && messages,
+		(
+			Message[Error::PowderXRDTooManySamples, resolvedTransferType, allowedNumberOfSamples];
+			Download[mySamples, Object]
+		),
+		TrueQ[tooManySamplesQ], Download[mySamples, Object],
+		True, {}
+	];
+
+	(* if we are gathering tests, create a test indicating whether we have too many samples or not *)
+	tooManySamplesTest = If[gatherTests,
+		Test["The number of samples provided times NumberOfReplicates is not greater than 92 for TransferType -> MassTransfer or 96 for SlurryTransfer:",
+			tooManySamplesQ,
+			False
+		],
+		Nothing
+	];
+
+	resolvedCrystallizationPlatePreparation = Which[
+		(* Trivial case: *)
+		MatchQ[Lookup[roundedXRDOptions, CrystallizationPlatePreparation], Except[Automatic]],
+		Lookup[roundedXRDOptions, CrystallizationPlatePreparation],
+		(* If a slurry transfer was selected or resolved, default to Robotic. *)
+		MatchQ[resolvedTransferType, Slurry],
+		Robotic,
+		(* If a mass transfer was selected or resolved, default to Manual. *)
+		MatchQ[resolvedTransferType, MassTransfer],
+		Manual
+	];
+
 	(* --- Resolve the index matched options --- *)
 
 	(* MapThread the options so that we can do our big MapThread *)
@@ -802,6 +935,7 @@ resolvePowderXRDOptions[mySamples : {ObjectP[Object[Sample]]..}, myOptions : {_R
 		resolvedMinDetectorAngle,
 		resolvedMaxDetectorAngle,
 		resolvedDetectorAngleIncrement,
+		resolvedSpottingVolumes,
 		fixedOptionsWhenSweepingErrors,
 		sweepingOptionsWhenFixedErrors,
 		minOmegaAboveMaxErrors,
@@ -810,17 +944,23 @@ resolvePowderXRDOptions[mySamples : {ObjectP[Object[Sample]]..}, myOptions : {_R
 		sweepingOptionsRequiredTogetherErrors,
 		detectorTooCloseErrors,
 		detectorAngleIncrementTooLargeErrors,
-		omegaAngleIncrementTooLargeErrors
+		omegaAngleIncrementTooLargeErrors,
+		noDetectorDistanceForAnglesErrors,
+		noDetectorDistanceInvalidOptionsList
 	} = Transpose[MapThread[
 		Function[{samplePacket, options},
 			Module[
-				{fixedOptionsWhenSweepingError, sweepingOptionsWhenFixedError, minOmegaAboveMaxError, minDetectorAngleAboveMaxError,
+				{
+					fixedOptionsWhenSweepingError, sweepingOptionsWhenFixedError, minOmegaAboveMaxError, minDetectorAngleAboveMaxError,
 					fixedOptionsRequiredTogetherError, sweepingOptionsRequiredTogetherError, detectorTooCloseError,
 					specifiedDetectorRotation, specifiedMinDetectorAngle, specifiedMaxDetectorAngle, omegaAngleIncrementTooLargeError,
 					specifiedDetectorAngleIncrement, detectorRotation, minDetectorAngle, maxDetectorAngle, detectorAngleIncrement,
 					specifiedMinOmegaAngle, specifiedMaxOmegaAngle, specifiedDetectorDistance, specifiedFixedDetectorAngle,
 					minOmegaAngle, maxOmegaAngle, fixedDetectorAngle, detectorDistance, minDetectorDistance, temporaryDetectorDistance,
-					detectorAngleIncrementTooLargeError, specifiedOmegaAngleIncrement, omegaAngleIncrement, roundedOmegaAngleDiff},
+					detectorAngleIncrementTooLargeError, specifiedOmegaAngleIncrement, omegaAngleIncrement, roundedOmegaAngleDiff,
+					specifiedSpottingVolume, resolvedSpottingVolume, noDetectorDistanceForAnglesError, noDetectorDistanceInvalidOptions,
+					partiallyResolvedTemporaryDetectorDistance, partiallyResolvedDetectorDistance
+				},
 
 				(* set our error tracking variables *)
 				{
@@ -845,8 +985,20 @@ resolvePowderXRDOptions[mySamples : {ObjectP[Object[Sample]]..}, myOptions : {_R
 					specifiedMaxOmegaAngle,
 					specifiedOmegaAngleIncrement,
 					specifiedDetectorDistance,
-					specifiedFixedDetectorAngle
-				} = Lookup[options, {DetectorRotation, MinDetectorAngle, MaxDetectorAngle, DetectorAngleIncrement, MinOmegaAngle, MaxOmegaAngle, OmegaAngleIncrement, DetectorDistance, FixedDetectorAngle}];
+					specifiedFixedDetectorAngle,
+					specifiedSpottingVolume
+				} = Lookup[options, {DetectorRotation, MinDetectorAngle, MaxDetectorAngle, DetectorAngleIncrement, MinOmegaAngle, MaxOmegaAngle, OmegaAngleIncrement, DetectorDistance, FixedDetectorAngle, SpottingVolume}];
+
+				(* Resolve SpottingVolume*)
+				resolvedSpottingVolume = Which[
+					(* In the trivial case, take what the user specified. *)
+					MatchQ[specifiedSpottingVolume, Except[Automatic]],
+					specifiedSpottingVolume,
+					MatchQ[resolvedTransferType, MassTransfer],
+					Null,
+					True,
+					3 Microliter
+				];
 
 				(* resolve the DetectorRotation master switch *)
 				(* - If it's specified, then obviously it's that *)
@@ -897,7 +1049,15 @@ resolvePowderXRDOptions[mySamples : {ObjectP[Object[Sample]]..}, myOptions : {_R
 
 						(* get the temporary detector distance if it doesn't exist already *)
 						(* basically this helps us with using the empiricalPowderXRDValues function in a way that doesn't corner us before we _actually_ try to resolve it *)
-						temporaryDetectorDistance = empiricalPowderXRDValues[DetectorDistance, MinOmegaAngle -> specifiedMinOmegaAngle, MaxOmegaAngle -> specifiedMaxOmegaAngle, FixedDetectorAngle -> fixedDetectorAngle, MinDetectorAngle -> specifiedMinDetectorAngle, MaxDetectorAngle -> specifiedMaxDetectorAngle];
+						partiallyResolvedTemporaryDetectorDistance = empiricalPowderXRDValues[DetectorDistance, MinOmegaAngle -> specifiedMinOmegaAngle, MaxOmegaAngle -> specifiedMaxOmegaAngle, FixedDetectorAngle -> fixedDetectorAngle, MinDetectorAngle -> specifiedMinDetectorAngle, MaxDetectorAngle -> specifiedMaxDetectorAngle];
+
+						(* If there is no possible detector distance, empiricalPowderXRDValues will have returned a list of invalid options. *)
+						temporaryDetectorDistance = If[MatchQ[partiallyResolvedTemporaryDetectorDistance, UnitsP[Millimeter]],
+							(* If the function returned a distance use that *)
+							partiallyResolvedTemporaryDetectorDistance,
+							(* Otherwise pick an arbirary detector distance to allow the options resolution and error checking to continue. *)
+							61 Millimeter
+						];
 
 						(* resolve the MinOmegaAngle option; if it is specified obviously go with that *)
 						(* if not and DetectorDistance isn't specified, go with the minimum value of with the instrument (i.e., -17.24 AngularDegree) *)
@@ -935,9 +1095,16 @@ resolvePowderXRDOptions[mySamples : {ObjectP[Object[Sample]]..}, myOptions : {_R
 						];
 
 						(* resolve the DetectorDistance option *)
-						detectorDistance = If[MatchQ[specifiedDetectorDistance, UnitsP[Millimeter]],
+						partiallyResolvedDetectorDistance = If[MatchQ[specifiedDetectorDistance, UnitsP[Millimeter]],
 							specifiedDetectorDistance,
 							empiricalPowderXRDValues[DetectorDistance, MinOmegaAngle -> minOmegaAngle, MaxOmegaAngle -> maxOmegaAngle, FixedDetectorAngle -> fixedDetectorAngle, MinDetectorAngle -> minDetectorAngle, MaxDetectorAngle -> maxDetectorAngle]
+						];
+
+						(* As partiallyResolvedDetectorDistance may have a list of options for which are precluding any possible detector distance, fully resolve it to a possible value. *)
+						detectorDistance = If[MatchQ[partiallyResolvedDetectorDistance, UnitsP[Millimeter]],
+							partiallyResolvedDetectorDistance,
+							(* Arbitrarily pick the smallest detector distance in the event no detector distance works. *)
+							61 Millimeter
 						];
 
 						(* make sure MinOmegaAngle is less than MaxOmegaAngle *)
@@ -987,12 +1154,12 @@ resolvePowderXRDOptions[mySamples : {ObjectP[Object[Sample]]..}, myOptions : {_R
 
 						(* - if MaxDetectorAngle is Null, flip the sweepingOptionsRequiredTogetherError switch *)
 						(* - if it is specified, just go with that *)
-						(* - if it is Automatic and DetectorDistance is not specified, resolve to the max of 81.24 AngularDegree *)
+						(* - if it is Automatic and DetectorDistance is not specified, resolve to the max of 81.25 AngularDegree *)
 						(* - if it is Automatic and DetectorDistance is specified, resolve to what the empirical function says *)
 						{maxDetectorAngle, sweepingOptionsRequiredTogetherError} = Which[
 							NullQ[specifiedMaxDetectorAngle], {Null, True},
 							MatchQ[specifiedMaxDetectorAngle, UnitsP[AngularDegree]], {specifiedMaxDetectorAngle, sweepingOptionsRequiredTogetherError},
-							MatchQ[specifiedMaxDetectorAngle, Automatic] && MatchQ[specifiedDetectorDistance, Automatic | Null], {81.24 * AngularDegree, sweepingOptionsRequiredTogetherError},
+							MatchQ[specifiedMaxDetectorAngle, Automatic] && MatchQ[specifiedDetectorDistance, Automatic | Null], {81.25 * AngularDegree, sweepingOptionsRequiredTogetherError},
 							MatchQ[specifiedMaxDetectorAngle, Automatic] && MatchQ[specifiedDetectorDistance, UnitsP[Millimeter]], {empiricalPowderXRDValues[MaxDetectorAngle, DetectorDistance -> specifiedDetectorDistance], sweepingOptionsRequiredTogetherError}
 						];
 
@@ -1007,9 +1174,16 @@ resolvePowderXRDOptions[mySamples : {ObjectP[Object[Sample]]..}, myOptions : {_R
 						];
 
 						(* resolve the DetectorDistance option *)
-						detectorDistance = If[MatchQ[specifiedDetectorDistance, UnitsP[Millimeter]],
+						partiallyResolvedDetectorDistance = If[MatchQ[specifiedDetectorDistance, UnitsP[Millimeter]],
 							specifiedDetectorDistance,
 							empiricalPowderXRDValues[DetectorDistance, MinOmegaAngle -> minOmegaAngle, MaxOmegaAngle -> maxOmegaAngle, MinDetectorAngle -> minDetectorAngle, MaxDetectorAngle -> maxDetectorAngle]
+						];
+
+						(* As partiallyResolvedDetectorDistance may have a list of options for which are precluding any possible detector distance, fully resolve it to a possible value. *)
+						detectorDistance = If[MatchQ[partiallyResolvedDetectorDistance, UnitsP[Millimeter]],
+							partiallyResolvedDetectorDistance,
+							(* Arbitrarily pick the smallest detector distance in the event no detector distance works. *)
+							61 Millimeter
 						];
 
 						(* make sure MinDetectorAngle is less than MaxDetectorAngle *)
@@ -1030,10 +1204,17 @@ resolvePowderXRDOptions[mySamples : {ObjectP[Object[Sample]]..}, myOptions : {_R
 				(* calculate the minimum allowed DetectorDistance based on the values resolved above *)
 				minDetectorDistance = empiricalPowderXRDValues[DetectorDistance, MinOmegaAngle -> minOmegaAngle, MaxOmegaAngle -> maxOmegaAngle, MinDetectorAngle -> minDetectorAngle, MaxDetectorAngle -> maxDetectorAngle, FixedDetectorAngle -> fixedDetectorAngle];
 
-				(* if the actual detector distance is less than the minDetectorDistance, flip the detectorTooCloseError switch *)
-				detectorTooCloseError = If[detectorDistance < minDetectorDistance,
-					True,
-					detectorTooCloseError
+				(* Check that empiricalPowderXRDValues returned a distance rather than a list of invalid options. *)
+				{noDetectorDistanceForAnglesError, noDetectorDistanceInvalidOptions} = If[!MatchQ[minDetectorDistance, UnitsP[]],
+					{True, minDetectorDistance},
+					{False, {}}
+				];
+
+				(* If there is no detector distance possible no need to say its too close.*)
+				detectorTooCloseError = If[noDetectorDistanceForAnglesError,
+					False,
+					(* If the actual detector distance is less than the minDetectorDistance, flip the detectorTooCloseError switch *)
+					detectorDistance < minDetectorDistance
 				];
 
 				(* if the MaxDetectorAngle - MinDetectorAngle is less than the DetectorAngleIncrement, throw an error *)
@@ -1054,6 +1235,7 @@ resolvePowderXRDOptions[mySamples : {ObjectP[Object[Sample]]..}, myOptions : {_R
 					minDetectorAngle,
 					maxDetectorAngle,
 					detectorAngleIncrement,
+					resolvedSpottingVolume,
 					fixedOptionsWhenSweepingError,
 					sweepingOptionsWhenFixedError,
 					minOmegaAboveMaxError,
@@ -1062,7 +1244,9 @@ resolvePowderXRDOptions[mySamples : {ObjectP[Object[Sample]]..}, myOptions : {_R
 					sweepingOptionsRequiredTogetherError,
 					detectorTooCloseError,
 					detectorAngleIncrementTooLargeError,
-					omegaAngleIncrementTooLargeError
+					omegaAngleIncrementTooLargeError,
+					noDetectorDistanceForAnglesError,
+					noDetectorDistanceInvalidOptions
 				}
 			]
 		],
@@ -1071,10 +1255,85 @@ resolvePowderXRDOptions[mySamples : {ObjectP[Object[Sample]]..}, myOptions : {_R
 
 	(* --- Unresolvable error checking --- *)
 
+
+	(* Check if there is a mismatch between the resolved TransferType and CrystallizationPlatePreparation. *)
+	transferTypePreparationMismatchQ = MatchQ[{resolvedTransferType, resolvedCrystallizationPlatePreparation}, {MassTransfer, Robotic}];
+
+	(* Throw a message if the TransferType and CrystallizationPlatePreparation option are mismatched. *)
+	transferTypePreparationMismatchOptions = If[transferTypePreparationMismatchQ && messages,
+		Message[Error::CrystallizationPlatePreparationTransferTypeMismatch];
+		{TransferType, CrystallizationPlatePreparation},
+		{}
+	];
+
+	(* When Output includes tests, return a test checking for a mismatch between the TransferType and CyrstallizationPlatePreparation options. *)
+	transferTypePreparationMismatchTest = If[gatherTests,
+		Test["If the TransferType option is MassTransfer than CrystalPlatePreparation is not Robotic:",
+			transferTypePreparationMismatchQ,
+			False
+		],
+		Nothing
+	];
+
+	transferTypeSampleConflictQ =  Which[
+		MatchQ[resolvedTransferType, MassTransfer], MatchQ[#, Except[Solid]]& /@ sampleStates,
+		MatchQ[resolvedTransferType, Slurry], MatchQ[#, Except[Liquid]]& /@ sampleStates,
+		True, ConstantArray[False, Length[sampleStates]]
+	];
+
+	invalidStateInputs = Lookup[PickList[samplePackets, transferTypeSampleConflictQ], Object, {}];
+
+	(* Throw a message if the any samples invalidate the TransferType option. *)
+	samplesIncompatibleWithTransferTypeOptions = If[MemberQ[transferTypeSampleConflictQ, True] && messages,
+		Message[Error::InvalidSamplesForTransferType, ObjectToString[invalidStateInputs, Simulation -> updatedSimulation], Flatten[Position[transferTypeSampleConflictQ,True]], resolvedTransferType];
+		{TransferType},
+		{}
+	];
+
+	(* When Output includes tests, return tests checking each sample for incompatiblity with the TransferType option. *)
+	samplesIncompatibleWithTransferTypeTests = If[gatherTests,
+		Module[{failingSamples, passingSamples, failingSampleTests, passingSampleTests},
+
+			(* get the inputs that fail this test *)
+			failingSamples = PickList[Lookup[samplePackets, Object, {}], transferTypeSampleConflictQ];
+
+			(* get the inputs that pass this test *)
+			passingSamples = PickList[Lookup[samplePackets, Object, {}], transferTypeSampleConflictQ, False];
+
+			(* create a test for the non-passing inputs *)
+			failingSampleTests = If[Length[failingSamples] > 0,
+				Test["The TransferType is " <> ToString[resolvedTransferType] <> " but the provided samples " <> ObjectToString[failingSamples, Simulation -> updatedSimulation] <> ", will not be " <> If[MatchQ[resolvedTransferType, MassTransfer], "solid", "liquid-containing"] <> " (following any sample preparation):",
+					False,
+					True
+				],
+				Nothing
+			];
+
+			(* create a test for the passing inputs *)
+			passingSampleTests = Which[
+				(* If we do not know the TransferType do not make passing tests. *)
+				MatchQ[resolvedTransferType, Automatic],
+				Nothing,
+				(* If there are passing samples generate tests for the samples. *)
+				Length[passingSamples] > 0,
+				Test[ObjectToString[passingSamples, Simulation -> updatedSimulation] <> " are compatible the " <> ToString[resolvedTransferType] <>" TransferType:",
+					True,
+					True
+				],
+				(* If there are no passing samples, do nothing. *)
+				True,
+				Nothing
+			];
+
+			(* return the created tests *)
+			{passingSampleTests, failingSampleTests}
+		]
+	];
+
 	(* throw a message if options exclusive to a fixed detector are specified when we are sweeping *)
 	fixedOptionsWhenSweepingOptions = If[MemberQ[fixedOptionsWhenSweepingErrors, True] && messages,
 		(
-			Message[Error::FixedOptionsWhileSweeping, ObjectToString[PickList[Lookup[samplePackets, Object], fixedOptionsWhenSweepingErrors, True], Cache -> inheritedCache]];
+			Message[Error::FixedOptionsWhileSweeping, ObjectToString[PickList[Lookup[samplePackets, Object], fixedOptionsWhenSweepingErrors, True], Simulation -> updatedSimulation]];
 			{FixedDetectorAngle}
 		),
 		{}
@@ -1092,7 +1351,7 @@ resolvePowderXRDOptions[mySamples : {ObjectP[Object[Sample]]..}, myOptions : {_R
 
 			(* create a test for the non-passing inputs *)
 			failingSampleTests = If[Length[failingSamples] > 0,
-				Test["For the provided samples " <> ObjectToString[failingSamples, Cache -> inheritedCache] <> ", FixedDetectorAngle is not specified if DetectorRotation -> Sweeping:",
+				Test["For the provided samples " <> ObjectToString[failingSamples, Simulation -> updatedSimulation] <> ", FixedDetectorAngle is not specified if DetectorRotation -> Sweeping:",
 					False,
 					True
 				],
@@ -1101,7 +1360,7 @@ resolvePowderXRDOptions[mySamples : {ObjectP[Object[Sample]]..}, myOptions : {_R
 
 			(* create a test for the passing inputs *)
 			passingSampleTests = If[Length[passingSamples] > 0,
-				Test["For the provided samples " <> ObjectToString[passingSamples, Cache -> inheritedCache] <> ", FixedDetectorAngle is not specified if DetectorRotation -> Sweeping:",
+				Test["For the provided samples " <> ObjectToString[passingSamples, Simulation -> updatedSimulation] <> ", FixedDetectorAngle is not specified if DetectorRotation -> Sweeping:",
 					True,
 					True
 				],
@@ -1117,7 +1376,7 @@ resolvePowderXRDOptions[mySamples : {ObjectP[Object[Sample]]..}, myOptions : {_R
 	(* throw a message if options exclusive to a sweeping detector are specified when we are fixed *)
 	sweepingOptionsWhenFixedOptions = If[MemberQ[sweepingOptionsWhenFixedErrors, True] && messages,
 		(
-			Message[Error::SweepingOptionsWhileFixed, ObjectToString[PickList[Lookup[samplePackets, Object], sweepingOptionsWhenFixedErrors, True], Cache -> inheritedCache]];
+			Message[Error::SweepingOptionsWhileFixed, ObjectToString[PickList[Lookup[samplePackets, Object], sweepingOptionsWhenFixedErrors, True], Simulation -> updatedSimulation]];
 			{MinDetectorAngle, MaxDetectorAngle, DetectorAngleIncrement}
 		),
 		{}
@@ -1135,7 +1394,7 @@ resolvePowderXRDOptions[mySamples : {ObjectP[Object[Sample]]..}, myOptions : {_R
 
 			(* create a test for the non-passing inputs *)
 			failingSampleTests = If[Length[failingSamples] > 0,
-				Test["For the provided samples " <> ObjectToString[failingSamples, Cache -> inheritedCache] <> ", MinDetectorAngle, MaxDetectorAngle, and DetectorAngleIncrement are not specified if DetectorRotation -> Fixed:",
+				Test["For the provided samples " <> ObjectToString[failingSamples, Simulation -> updatedSimulation] <> ", MinDetectorAngle, MaxDetectorAngle, and DetectorAngleIncrement are not specified if DetectorRotation -> Fixed:",
 					False,
 					True
 				],
@@ -1144,7 +1403,7 @@ resolvePowderXRDOptions[mySamples : {ObjectP[Object[Sample]]..}, myOptions : {_R
 
 			(* create a test for the passing inputs *)
 			passingSampleTests = If[Length[passingSamples] > 0,
-				Test["For the provided samples " <> ObjectToString[passingSamples, Cache -> inheritedCache] <> ", MinDetectorAngle, MaxDetectorAngle, and DetectorAngleIncrement are not specified if DetectorRotation -> Fixed:",
+				Test["For the provided samples " <> ObjectToString[passingSamples, Simulation -> updatedSimulation] <> ", MinDetectorAngle, MaxDetectorAngle, and DetectorAngleIncrement are not specified if DetectorRotation -> Fixed:",
 					True,
 					True
 				],
@@ -1160,7 +1419,7 @@ resolvePowderXRDOptions[mySamples : {ObjectP[Object[Sample]]..}, myOptions : {_R
 	(* throw a message if MinOmegaAngle > MaxOmegaAngle *)
 	minOmegaAboveMaxOptions = If[MemberQ[minOmegaAboveMaxErrors, True] && messages,
 		(
-			Message[Error::MinOmegaAboveMax, ObjectToString[PickList[Lookup[samplePackets, Object], minOmegaAboveMaxErrors, True], Cache -> inheritedCache]];
+			Message[Error::MinOmegaAboveMax, ObjectToString[PickList[Lookup[samplePackets, Object], minOmegaAboveMaxErrors, True], Simulation -> updatedSimulation]];
 			{MinOmegaAngle, MaxOmegaAngle}
 		),
 		{}
@@ -1178,7 +1437,7 @@ resolvePowderXRDOptions[mySamples : {ObjectP[Object[Sample]]..}, myOptions : {_R
 
 			(* create a test for the non-passing inputs *)
 			failingSampleTests = If[Length[failingSamples] > 0,
-				Test["For the provided samples " <> ObjectToString[failingSamples, Cache -> inheritedCache] <> ", MinOmegaAngle is less than MaxOmegaAngle:",
+				Test["For the provided samples " <> ObjectToString[failingSamples, Simulation -> updatedSimulation] <> ", MinOmegaAngle is less than MaxOmegaAngle:",
 					False,
 					True
 				],
@@ -1187,7 +1446,7 @@ resolvePowderXRDOptions[mySamples : {ObjectP[Object[Sample]]..}, myOptions : {_R
 
 			(* create a test for the passing inputs *)
 			passingSampleTests = If[Length[passingSamples] > 0,
-				Test["For the provided samples " <> ObjectToString[passingSamples, Cache -> inheritedCache] <> ", MinOmegaAngle is less than MaxOmegaAngle:",
+				Test["For the provided samples " <> ObjectToString[passingSamples, Simulation -> updatedSimulation] <> ", MinOmegaAngle is less than MaxOmegaAngle:",
 					True,
 					True
 				],
@@ -1203,7 +1462,7 @@ resolvePowderXRDOptions[mySamples : {ObjectP[Object[Sample]]..}, myOptions : {_R
 	(* throw a message if MaxOmegaAngle - MinOmegaAngle < OmegaAngleIncrement *)
 	omegaAngleIncrementTooLargeOptions = If[MemberQ[omegaAngleIncrementTooLargeErrors, True] && messages,
 		(
-			Message[Error::OmegaAngleIncrementTooLarge, ObjectToString[PickList[Lookup[samplePackets, Object], omegaAngleIncrementTooLargeErrors, True], Cache -> inheritedCache]];
+			Message[Error::OmegaAngleIncrementTooLarge, ObjectToString[PickList[Lookup[samplePackets, Object], omegaAngleIncrementTooLargeErrors, True], Simulation -> updatedSimulation]];
 			{OmegaAngleIncrement, MinOmegaAngle, MaxOmegaAngle}
 		),
 		{}
@@ -1221,7 +1480,7 @@ resolvePowderXRDOptions[mySamples : {ObjectP[Object[Sample]]..}, myOptions : {_R
 
 			(* create a test for the non-passing inputs *)
 			failingSampleTests = If[Length[failingSamples] > 0,
-				Test["For the provided samples " <> ObjectToString[failingSamples, Cache -> inheritedCache] <> ", OmegaAngleIncrement is less than the difference between MaxOmegaAngle and MaxOmegaAngle if DetectorRotation -> Fixed:",
+				Test["For the provided samples " <> ObjectToString[failingSamples, Simulation -> updatedSimulation] <> ", OmegaAngleIncrement is less than the difference between MaxOmegaAngle and MaxOmegaAngle if DetectorRotation -> Fixed:",
 					False,
 					True
 				],
@@ -1230,7 +1489,7 @@ resolvePowderXRDOptions[mySamples : {ObjectP[Object[Sample]]..}, myOptions : {_R
 
 			(* create a test for the passing inputs *)
 			passingSampleTests = If[Length[passingSamples] > 0,
-				Test["For the provided samples " <> ObjectToString[passingSamples, Cache -> inheritedCache] <> ", OmegaAngleIncrement is less than the difference between MaxOmegaAngle and MaxOmegaAngle if DetectorRotation -> Fixed:",
+				Test["For the provided samples " <> ObjectToString[passingSamples, Simulation -> updatedSimulation] <> ", OmegaAngleIncrement is less than the difference between MaxOmegaAngle and MaxOmegaAngle if DetectorRotation -> Fixed:",
 					True,
 					True
 				],
@@ -1247,7 +1506,7 @@ resolvePowderXRDOptions[mySamples : {ObjectP[Object[Sample]]..}, myOptions : {_R
 	(* throw a message if MinDetectorAngle > MaxDetectorAngle *)
 	minDetectorAboveMaxOptions = If[MemberQ[minDetectorAngleAboveMaxErrors, True] && messages,
 		(
-			Message[Error::MinDetectorAngleAboveMax, ObjectToString[PickList[Lookup[samplePackets, Object], minDetectorAngleAboveMaxErrors, True], Cache -> inheritedCache]];
+			Message[Error::MinDetectorAngleAboveMax, ObjectToString[PickList[Lookup[samplePackets, Object], minDetectorAngleAboveMaxErrors, True], Simulation -> updatedSimulation]];
 			{MinDetectorAngle, MaxDetectorAngle}
 		),
 		{}
@@ -1265,7 +1524,7 @@ resolvePowderXRDOptions[mySamples : {ObjectP[Object[Sample]]..}, myOptions : {_R
 
 			(* create a test for the non-passing inputs *)
 			failingSampleTests = If[Length[failingSamples] > 0,
-				Test["For the provided samples " <> ObjectToString[failingSamples, Cache -> inheritedCache] <> ", MinDetectorAngle is less than MaxDetectorAngle, or both are Null:",
+				Test["For the provided samples " <> ObjectToString[failingSamples, Simulation -> updatedSimulation] <> ", MinDetectorAngle is less than MaxDetectorAngle, or both are Null:",
 					False,
 					True
 				],
@@ -1274,7 +1533,7 @@ resolvePowderXRDOptions[mySamples : {ObjectP[Object[Sample]]..}, myOptions : {_R
 
 			(* create a test for the passing inputs *)
 			passingSampleTests = If[Length[passingSamples] > 0,
-				Test["For the provided samples " <> ObjectToString[passingSamples, Cache -> inheritedCache] <> ", MinDetectorAngle is less than MaxDetectorAngle, or both are Null:",
+				Test["For the provided samples " <> ObjectToString[passingSamples, Simulation -> updatedSimulation] <> ", MinDetectorAngle is less than MaxDetectorAngle, or both are Null:",
 					True,
 					True
 				],
@@ -1290,7 +1549,7 @@ resolvePowderXRDOptions[mySamples : {ObjectP[Object[Sample]]..}, myOptions : {_R
 	(* throw a message if MaxDetectorAngle - MinDetectorAngle < DetectorAngleIncrement *)
 	detectorAngleIncrementTooLargeOptions = If[MemberQ[detectorAngleIncrementTooLargeErrors, True] && messages,
 		(
-			Message[Error::DetectorAngleIncrementTooLarge, ObjectToString[PickList[Lookup[samplePackets, Object], detectorAngleIncrementTooLargeErrors, True], Cache -> inheritedCache]];
+			Message[Error::DetectorAngleIncrementTooLarge, ObjectToString[PickList[Lookup[samplePackets, Object], detectorAngleIncrementTooLargeErrors, True], Simulation -> updatedSimulation]];
 			{DetectorAngleIncrement, MinDetectorAngle, MaxDetectorAngle}
 		),
 		{}
@@ -1308,7 +1567,7 @@ resolvePowderXRDOptions[mySamples : {ObjectP[Object[Sample]]..}, myOptions : {_R
 
 			(* create a test for the non-passing inputs *)
 			failingSampleTests = If[Length[failingSamples] > 0,
-				Test["For the provided samples " <> ObjectToString[failingSamples, Cache -> inheritedCache] <> ", DetectorAngleIncrement is less than the difference between MaxDetectorAngle and MaxDetectorAngle if DetectorRotation -> Sweeping:",
+				Test["For the provided samples " <> ObjectToString[failingSamples, Simulation -> updatedSimulation] <> ", DetectorAngleIncrement is less than the difference between MaxDetectorAngle and MaxDetectorAngle if DetectorRotation -> Sweeping:",
 					False,
 					True
 				],
@@ -1317,7 +1576,7 @@ resolvePowderXRDOptions[mySamples : {ObjectP[Object[Sample]]..}, myOptions : {_R
 
 			(* create a test for the passing inputs *)
 			passingSampleTests = If[Length[passingSamples] > 0,
-				Test["For the provided samples " <> ObjectToString[passingSamples, Cache -> inheritedCache] <> ", DetectorAngleIncrement is less than the difference between MaxDetectorAngle and MaxDetectorAngle if DetectorRotation -> Sweeping:",
+				Test["For the provided samples " <> ObjectToString[passingSamples, Simulation -> updatedSimulation] <> ", DetectorAngleIncrement is less than the difference between MaxDetectorAngle and MaxDetectorAngle if DetectorRotation -> Sweeping:",
 					True,
 					True
 				],
@@ -1333,7 +1592,7 @@ resolvePowderXRDOptions[mySamples : {ObjectP[Object[Sample]]..}, myOptions : {_R
 	(* throw a message if FixedDetectorAngle is Null when DetectorRotation -> Fixed *)
 	fixedOptionsRequiredTogetherOptions = If[MemberQ[fixedOptionsRequiredTogetherErrors, True] && messages,
 		(
-			Message[Error::FixedOptionsRequiredTogether, ObjectToString[PickList[Lookup[samplePackets, Object], fixedOptionsRequiredTogetherErrors, True], Cache -> inheritedCache]];
+			Message[Error::FixedOptionsRequiredTogether, ObjectToString[PickList[Lookup[samplePackets, Object], fixedOptionsRequiredTogetherErrors, True], Simulation -> updatedSimulation]];
 			{FixedDetectorAngle}
 		),
 		{}
@@ -1351,7 +1610,7 @@ resolvePowderXRDOptions[mySamples : {ObjectP[Object[Sample]]..}, myOptions : {_R
 
 			(* create a test for the non-passing inputs *)
 			failingSampleTests = If[Length[failingSamples] > 0,
-				Test["For the provided samples " <> ObjectToString[failingSamples, Cache -> inheritedCache] <> ", FixedDetectorAngle is not Null if DetectorRotation -> Fixed:",
+				Test["For the provided samples " <> ObjectToString[failingSamples, Simulation -> updatedSimulation] <> ", FixedDetectorAngle is not Null if DetectorRotation -> Fixed:",
 					False,
 					True
 				],
@@ -1360,7 +1619,7 @@ resolvePowderXRDOptions[mySamples : {ObjectP[Object[Sample]]..}, myOptions : {_R
 
 			(* create a test for the passing inputs *)
 			passingSampleTests = If[Length[passingSamples] > 0,
-				Test["For the provided samples " <> ObjectToString[passingSamples, Cache -> inheritedCache] <> ", FixedDetectorAngle is not Null if DetectorRotation -> Fixed:",
+				Test["For the provided samples " <> ObjectToString[passingSamples, Simulation -> updatedSimulation] <> ", FixedDetectorAngle is not Null if DetectorRotation -> Fixed:",
 					True,
 					True
 				],
@@ -1376,7 +1635,7 @@ resolvePowderXRDOptions[mySamples : {ObjectP[Object[Sample]]..}, myOptions : {_R
 	(* throw a message if MinDetectorAngle, MaxDetectorAngle, or DetectorAngleIncrement is Null when DetectorRotation -> Sweeping *)
 	sweepingOptionsRequiredTogetherOptions = If[MemberQ[sweepingOptionsRequiredTogetherErrors, True] && messages,
 		(
-			Message[Error::SweepingOptionsRequiredTogether, ObjectToString[PickList[Lookup[samplePackets, Object], sweepingOptionsRequiredTogetherErrors, True], Cache -> inheritedCache]];
+			Message[Error::SweepingOptionsRequiredTogether, ObjectToString[PickList[Lookup[samplePackets, Object], sweepingOptionsRequiredTogetherErrors, True], Simulation -> updatedSimulation]];
 			{MinDetectorAngle, MaxDetectorAngle, DetectorAngleIncrement}
 		),
 		{}
@@ -1394,7 +1653,7 @@ resolvePowderXRDOptions[mySamples : {ObjectP[Object[Sample]]..}, myOptions : {_R
 
 			(* create a test for the non-passing inputs *)
 			failingSampleTests = If[Length[failingSamples] > 0,
-				Test["For the provided samples " <> ObjectToString[failingSamples, Cache -> inheritedCache] <> ", MinDetectorAngle, MaxDetectorAngle, and DetectorAngleIncrement is not Null if DetectorRotation -> Sweeping:",
+				Test["For the provided samples " <> ObjectToString[failingSamples, Simulation -> updatedSimulation] <> ", MinDetectorAngle, MaxDetectorAngle, and DetectorAngleIncrement is not Null if DetectorRotation -> Sweeping:",
 					False,
 					True
 				],
@@ -1403,7 +1662,50 @@ resolvePowderXRDOptions[mySamples : {ObjectP[Object[Sample]]..}, myOptions : {_R
 
 			(* create a test for the passing inputs *)
 			passingSampleTests = If[Length[passingSamples] > 0,
-				Test["For the provided samples " <> ObjectToString[passingSamples, Cache -> inheritedCache] <> ", MinDetectorAngle, MaxDetectorAngle, and DetectorAngleIncrement is not Null if DetectorRotation -> Sweeping:",
+				Test["For the provided samples " <> ObjectToString[passingSamples, Simulation -> updatedSimulation] <> ", MinDetectorAngle, MaxDetectorAngle, and DetectorAngleIncrement is not Null if DetectorRotation -> Sweeping:",
+					True,
+					True
+				],
+				Nothing
+			];
+
+			(* return the created tests *)
+			{passingSampleTests, failingSampleTests}
+
+		]
+	];
+
+	(* Throw a message if the there are no possible detector distances for the angles *)
+	noDetectorDistanceOptions = If[MemberQ[noDetectorDistanceForAnglesErrors, True] && messages,
+		(
+			Message[Error::NoPossibleDetectorDistanceForAngles, ObjectToString[PickList[Lookup[samplePackets, Object], noDetectorDistanceForAnglesErrors, True], Simulation -> updatedSimulation], DeleteDuplicates[Flatten[noDetectorDistanceInvalidOptionsList]]];
+			DeleteDuplicates[Flatten[{noDetectorDistanceInvalidOptionsList, DetectorDistance}]]
+		),
+		{}
+	];
+
+	(* Generate the NoPossibleDetectorDistanceForAngles tests *)
+	noDetectorDistanceTest = If[gatherTests,
+		Module[{failingSamples, passingSamples, failingSampleTests, passingSampleTests},
+
+			(* get the inputs that fail this test *)
+			failingSamples = PickList[Lookup[samplePackets, Object, {}], noDetectorDistanceForAnglesErrors];
+
+			(* get the inputs that pass this test *)
+			passingSamples = PickList[Lookup[samplePackets, Object, {}], noDetectorDistanceForAnglesErrors, False];
+
+			(* create a test for the non-passing inputs *)
+			failingSampleTests = If[Length[failingSamples] > 0,
+				Test["For the provided samples " <> ObjectToString[failingSamples, Simulation -> updatedSimulation] <> ", no DetectorDistance is able to fulfill the specified angles:",
+					False,
+					True
+				],
+				Nothing
+			];
+
+			(* create a test for the passing inputs *)
+			passingSampleTests = If[Length[passingSamples] > 0,
+				Test["For the provided samples " <> ObjectToString[passingSamples, Simulation -> updatedSimulation] <> ", a DetectorDistance is able to fulfill the specified angles:",
 					True,
 					True
 				],
@@ -1419,7 +1721,7 @@ resolvePowderXRDOptions[mySamples : {ObjectP[Object[Sample]]..}, myOptions : {_R
 	(* throw a message if the detector is too close *)
 	detectorTooCloseOptions = If[MemberQ[detectorTooCloseErrors, True] && messages,
 		(
-			Message[Error::DetectorTooClose, ObjectToString[PickList[Lookup[samplePackets, Object], detectorTooCloseErrors, True], Cache -> inheritedCache]];
+			Message[Error::DetectorTooClose, ObjectToString[PickList[Lookup[samplePackets, Object], detectorTooCloseErrors, True], Simulation -> updatedSimulation]];
 			{DetectorDistance}
 		),
 		{}
@@ -1437,7 +1739,7 @@ resolvePowderXRDOptions[mySamples : {ObjectP[Object[Sample]]..}, myOptions : {_R
 
 			(* create a test for the non-passing inputs *)
 			failingSampleTests = If[Length[failingSamples] > 0,
-				Test["For the provided samples " <> ObjectToString[failingSamples, Cache -> inheritedCache] <> ", DetectorDistance is not too low:",
+				Test["For the provided samples " <> ObjectToString[failingSamples, Simulation -> updatedSimulation] <> ", DetectorDistance is not too low:",
 					False,
 					True
 				],
@@ -1446,7 +1748,7 @@ resolvePowderXRDOptions[mySamples : {ObjectP[Object[Sample]]..}, myOptions : {_R
 
 			(* create a test for the passing inputs *)
 			passingSampleTests = If[Length[passingSamples] > 0,
-				Test["For the provided samples " <> ObjectToString[passingSamples, Cache -> inheritedCache] <> ", DetectorDistance is not too low:",
+				Test["For the provided samples " <> ObjectToString[passingSamples, Simulation -> updatedSimulation] <> ", DetectorDistance is not too low:",
 					True,
 					True
 				],
@@ -1462,14 +1764,19 @@ resolvePowderXRDOptions[mySamples : {ObjectP[Object[Sample]]..}, myOptions : {_R
 	(* --- Resolve the aliquot options --- *)
 
 	(* get the simulated sample's container models *)
-	simulatedContainerModels = Download[simulatedSamples, Container[Model][Object], Cache -> combinedCache, Date -> Now];
+	simulatedContainerModels = Download[simulatedSamples, Container[Model][Object], Simulation->updatedSimulation, Date -> Now];
 
-	(* get the target containers; if the simulatedContainerModel is a liquid-handler-compatible model, then pick that one; if not pick a different one *)
-	targetContainers = Map[
-		If[MemberQ[Experiment`Private`hamiltonAliquotContainers["Memoization"], ObjectP[#]],
-			#,
-			Model[Container, Plate, "96-well 2mL Deep Well Plate"]
-		]&,
+
+	targetContainers = If[MatchQ[resolvedTransferType, Slurry],
+		(* get the target containers; if the simulatedContainerModel is a liquid-handler-compatible model, then pick that one; if not pick a different one *)
+		Map[
+			If[MemberQ[Experiment`Private`hamiltonAliquotContainers["Memoization"], ObjectP[#]],
+				#,
+				Model[Container, Plate, "96-well 2mL Deep Well Plate"]
+			]&,
+			simulatedContainerModels
+		],
+		(* If the plate is being prepared by manual MassTransfer, a Hamilton compatable container is not necessary. *)
 		simulatedContainerModels
 	];
 
@@ -1481,8 +1788,8 @@ resolvePowderXRDOptions[mySamples : {ObjectP[Object[Sample]]..}, myOptions : {_R
 
 	(* resolve the aliquot options *)
 	{resolvedAliquotOptions, aliquotTests} = If[gatherTests,
-		resolveAliquotOptions[ExperimentPowderXRD, Lookup[samplePackets, Object], simulatedSamples, ReplaceRule[myOptions, resolvedSamplePrepOptions], Cache -> combinedCache, AliquotWarningMessage -> aliquotWarningMessage, RequiredAliquotContainers ->targetContainers, RequiredAliquotAmounts -> requiredAliquotAmount, Output -> {Result, Tests}],
-		{resolveAliquotOptions[ExperimentPowderXRD, Lookup[samplePackets, Object], simulatedSamples, ReplaceRule[myOptions, resolvedSamplePrepOptions], Cache -> combinedCache, AliquotWarningMessage -> aliquotWarningMessage, RequiredAliquotContainers ->targetContainers, RequiredAliquotAmounts -> requiredAliquotAmount, Output -> Result], {}}
+		resolveAliquotOptions[ExperimentPowderXRD, Lookup[samplePackets, Object], simulatedSamples, ReplaceRule[myOptions, resolvedSamplePrepOptions], Cache -> combinedCache, Simulation->updatedSimulation, AliquotWarningMessage -> aliquotWarningMessage, RequiredAliquotContainers ->targetContainers, RequiredAliquotAmounts -> requiredAliquotAmount, AllowSolids -> True, Output -> {Result, Tests}],
+		{resolveAliquotOptions[ExperimentPowderXRD, Lookup[samplePackets, Object], simulatedSamples, ReplaceRule[myOptions, resolvedSamplePrepOptions], Cache -> combinedCache, Simulation->updatedSimulation, AliquotWarningMessage -> aliquotWarningMessage, RequiredAliquotContainers ->targetContainers, RequiredAliquotAmounts -> requiredAliquotAmount, AllowSolids -> True, Output -> Result], {}}
 	];
 
 	(* Resolve Post Processing Options *)
@@ -1493,10 +1800,27 @@ resolvePowderXRDOptions[mySamples : {ObjectP[Object[Sample]]..}, myOptions : {_R
 
 	(* get the volume and spotting volume of the input samples *)
 	sampleVolume = Lookup[samplePackets, Volume];
-	spottingVolume = Lookup[roundedXRDOptions, SpottingVolume];
+
+	invalidSpottingVolumeForTransferTypeQ = MatchQ[{resolvedSpottingVolumes, resolvedTransferType}, Alternatives[{Except[{GreaterP[0 Microliter]..}], Slurry}, {Except[{Null..}], MassTransfer}]];
+
+	(* Check for a Null SpottingVolume when TransferType -> Slurry *)
+	invalidSpottingVolumeForTransferType = If[invalidSpottingVolumeForTransferTypeQ && messages,
+		Message[Error::InvalidSpottingVolumeForTransferType, resolvedTransferType, If[MatchQ[resolvedTransferType, MassTransfer], "Null", "not Null"]];
+		{TransferType, SpottingVolume},
+		{}
+	];
+
+	(* generate the SpottingVolumeTooLarge tests *)
+	invalidSpottingVolumeForTransferTypeTest = If[gatherTests,
+		Test["For a TransferType -> " <> ToString[resolvedTransferType] <> ", SpottingVolume must be " <> If[MatchQ[resolvedTransferType, MassTransfer], "Null:", "not Null:"],
+			invalidSpottingVolumeForTransferTypeQ,
+			False
+		],
+		Nothing
+	];
 
 	(* get the amount of spotting volume coming from each sample*)
-	spottingVolumePerSample = Merge[Thread[samplePackets -> spottingVolume], Total];
+	spottingVolumePerSample = Merge[Thread[samplePackets -> resolvedSpottingVolumes], Total];
 
 	(* get the booleans for if the sample has a volume smaller than the spotting volume *)
 	(* account for the fact that replicates can mess with this and so if you are not aliquoting but have replicates, your _total_ spotting volume needs to be below the sample volume*)
@@ -1507,20 +1831,20 @@ resolvePowderXRDOptions[mySamples : {ObjectP[Object[Sample]]..}, myOptions : {_R
 				(samplePacket /. spottingVolumePerSample) > sampleVol
 			]
 		],
-		{resolvedAssayVolume, sampleVolume, spottingVolume, samplePackets}
+		{resolvedAssayVolume, sampleVolume, (resolvedSpottingVolumes /. Null -> 0 Microliter), samplePackets}
 	];
 
 	(* throw a message if the spotting volume is too large *)
 	spottingVolumesTooLargeOptions = If[MemberQ[spottingVolumesTooLargeBool, True] && messages,
 		(
-			Message[Error::SpottingVolumeTooLarge, ObjectToString[PickList[Lookup[samplePackets, Object], spottingVolumesTooLargeBool, True], Cache -> inheritedCache]];
+			Message[Error::SpottingVolumeTooLarge, ObjectToString[PickList[Lookup[samplePackets, Object], spottingVolumesTooLargeBool, True], Simulation -> updatedSimulation]];
 			{SpottingVolume}
 		),
 		{}
 	];
 
 	(* generate the SpottingVolumeTooLarge tests *)
-	spottingVolumesTooLargeTest = If[gatherTests,
+	spottingVolumesTooLargeTest = If[gatherTests && MatchQ[resolvedTransferType, Slurry],
 		Module[{failingSamples, passingSamples, failingSampleTests, passingSampleTests},
 
 			(* get the inputs that fail this test *)
@@ -1531,7 +1855,7 @@ resolvePowderXRDOptions[mySamples : {ObjectP[Object[Sample]]..}, myOptions : {_R
 
 			(* create a test for the non-passing inputs *)
 			failingSampleTests = If[Length[failingSamples] > 0,
-				Test["For the provided samples " <> ObjectToString[failingSamples, Cache -> inheritedCache] <> ", the total SpottingVolume is less than the volume of the sample, or, if aliquoting, the AssayVolume:",
+				Test["For the provided samples " <> ObjectToString[failingSamples, Simulation -> updatedSimulation] <> ", the total SpottingVolume is less than the volume of the sample, or, if aliquoting, the AssayVolume:",
 					False,
 					True
 				],
@@ -1540,7 +1864,7 @@ resolvePowderXRDOptions[mySamples : {ObjectP[Object[Sample]]..}, myOptions : {_R
 
 			(* create a test for the passing inputs *)
 			passingSampleTests = If[Length[passingSamples] > 0,
-				Test["For the provided samples " <> ObjectToString[passingSamples, Cache -> inheritedCache] <> ", the total SpottingVolume is less than the volume of the sample, or, if aliquoting, the AssayVolume:",
+				Test["For the provided samples " <> ObjectToString[passingSamples, Simulation -> updatedSimulation] <> ", the total SpottingVolume is less than the volume of the sample, or, if aliquoting, the AssayVolume:",
 					True,
 					True
 				],
@@ -1595,7 +1919,7 @@ resolvePowderXRDOptions[mySamples : {ObjectP[Object[Sample]]..}, myOptions : {_R
 
 			(* create a test for the non-passing inputs *)
 			failingSampleTests = If[Length[failingSamples] > 0,
-				Warning["For the provided samples " <> ObjectToString[failingSamples, Cache -> inheritedCache] <> ", Volume or AssayVolume is 100 microliters or less:",
+				Warning["For the provided samples " <> ObjectToString[failingSamples, Simulation -> updatedSimulation] <> ", Volume or AssayVolume is 100 microliters or less:",
 					False,
 					True
 				],
@@ -1604,7 +1928,7 @@ resolvePowderXRDOptions[mySamples : {ObjectP[Object[Sample]]..}, myOptions : {_R
 
 			(* create a test for the passing inputs *)
 			passingSampleTests = If[Length[passingSamples] > 0,
-				Warning["For the provided samples " <> ObjectToString[failingSamples, Cache -> inheritedCache] <> ", Volume or AssayVolume is 100 microliters or less:",
+				Warning["For the provided samples " <> ObjectToString[failingSamples, Simulation -> updatedSimulation] <> ", Volume or AssayVolume is 100 microliters or less:",
 					True,
 					True
 				],
@@ -1622,6 +1946,9 @@ resolvePowderXRDOptions[mySamples : {ObjectP[Object[Sample]]..}, myOptions : {_R
 	(* combine all the invalid options *)
 	invalidOptions = DeleteDuplicates[Join[
 		nameInvalidOptions,
+		unableToResolveTransferTypeOption,
+		transferTypePreparationMismatchOptions,
+		samplesIncompatibleWithTransferTypeOptions,
 		fixedOptionsWhenSweepingOptions,
 		sweepingOptionsWhenFixedOptions,
 		minOmegaAboveMaxOptions,
@@ -1631,7 +1958,9 @@ resolvePowderXRDOptions[mySamples : {ObjectP[Object[Sample]]..}, myOptions : {_R
 		detectorTooCloseOptions,
 		detectorAngleIncrementTooLargeOptions,
 		omegaAngleIncrementTooLargeOptions,
-		spottingVolumesTooLargeOptions
+		invalidSpottingVolumeForTransferType,
+		spottingVolumesTooLargeOptions,
+		noDetectorDistanceOptions
 	]];
 
 	(* throw the InvalidOption error if necessary *)
@@ -1643,7 +1972,8 @@ resolvePowderXRDOptions[mySamples : {ObjectP[Object[Sample]]..}, myOptions : {_R
 	invalidInputs = DeleteDuplicates[Join[
 		discardedInvalidInputs,
 		deprecatedInvalidInputs,
-		tooManySamplesInputs
+		tooManySamplesInputs,
+		invalidStateInputs
 	]];
 
 
@@ -1659,6 +1989,9 @@ resolvePowderXRDOptions[mySamples : {ObjectP[Object[Sample]]..}, myOptions : {_R
 		deprecatedTest,
 		tooManySamplesTest,
 		validNameTest,
+		unableToResolveTransferTypeOptionTest,
+		transferTypePreparationMismatchTest,
+		samplesIncompatibleWithTransferTypeTests,
 		fixedOptionsWhenSweepingTest,
 		sweepingOptionsWhenFixedTest,
 		minOmegaAboveMaxTest,
@@ -1670,13 +2003,15 @@ resolvePowderXRDOptions[mySamples : {ObjectP[Object[Sample]]..}, myOptions : {_R
 		volumeTooLargeWarning,
 		detectorAngleIncrementTooLargeTest,
 		omegaAngleIncrementTooLargeTest,
-		spottingVolumesTooLargeTest
+		invalidSpottingVolumeForTransferTypeTest,
+		spottingVolumesTooLargeTest,
+		noDetectorDistanceTest
 	}], _EmeraldTest];
 
 	(* --- pull out all the shared options from the input options --- *)
 
 	(* get the rest directly *)
-	{instrument, confirm, template, cache, operator, upload, outputOption, subprotocolDescription, samplesInStorage, samplesOutStorage, samplePreparation} = Lookup[myOptions, {Instrument, Confirm, Template, Cache, Operator, Upload, Output, SubprotocolDescription, SamplesInStorageCondition, SamplesOutStorageCondition, PreparatoryUnitOperations}];
+	{instrument, confirm, canaryBranch, template, cache, operator, upload, outputOption, subprotocolDescription, samplesInStorage, samplesOutStorage, samplePreparation} = Lookup[myOptions, {Instrument, Confirm, CanaryBranch, Template, Cache, Operator, Upload, Output, SubprotocolDescription, SamplesInStorageCondition, SamplesOutStorageCondition, PreparatoryUnitOperations}];
 
 	(* get the resolved Email option; for this experiment, the default is True if it's a parent protocol, and False if it's a sub *)
 	email = Which[
@@ -1704,15 +2039,17 @@ resolvePowderXRDOptions[mySamples : {ObjectP[Object[Sample]]..}, myOptions : {_R
 		MinDetectorAngle -> resolvedMinDetectorAngle,
 		MaxDetectorAngle -> resolvedMaxDetectorAngle,
 		DetectorAngleIncrement -> resolvedDetectorAngleIncrement,
-		SpottingVolume -> spottingVolume,
+		SpottingVolume -> resolvedSpottingVolumes,
 		ImageXRDPlate -> imageXRDPlate,
 		Instrument -> instrument,
 		PreparatoryUnitOperations -> samplePreparation,
-		PreparatoryPrimitives->Lookup[myOptions,PreparatoryPrimitives],
+		CrystallizationPlatePreparation -> resolvedCrystallizationPlatePreparation,
+		TransferType -> resolvedTransferType,
 		resolvedSamplePrepOptions,
 		resolvedAliquotOptions,
 		resolvedPostProcessingOptions,
 		Confirm -> confirm,
+		CanaryBranch -> canaryBranch,
 		Name -> name,
 		Template -> template,
 		Cache -> cache,
@@ -1751,86 +2088,7 @@ resolvePowderXRDOptions[mySamples : {ObjectP[Object[Sample]]..}, myOptions : {_R
 
 
 DefineOptions[empiricalPowderXRDValues,
-	Options :> {
-		{
-			OptionName -> DetectorDistance,
-			Default -> Automatic,
-			Description -> "The distance from the powder sample to the detector.",
-			ResolutionDescription -> "Automatically set from the MinOmegaAngle, MaxOmegaAngle, MinDetectorAngle and MaxDetectorAngle options.",
-			AllowNull -> False,
-			Category -> "Protocol",
-			Widget -> Widget[
-				Type -> Quantity,
-				Pattern :> RangeP[60 Millimeter, 209 Millimeter],
-				Units :> {1, {Millimeter, {Millimeter, Centimeter}}}
-			]
-		},
-		{
-			OptionName -> MinOmegaAngle,
-			Default -> Automatic,
-			Description -> "The angle between the sample and the X-ray source in this run during the first scan of the sample's run.",
-			ResolutionDescription -> "Automatically set to Null if DetectorRotation-> Sweeping, or to an angle based on the DetectorDistance, MaxOmegaAngle, and OmegaAngleIncrement options if DetectorRotation-> Fixed.",
-			AllowNull -> True,
-			Category -> "Protocol",
-			Widget -> Widget[
-				Type -> Quantity,
-				Pattern :> RangeP[-21.24 AngularDegree, 51.99 AngularDegree],
-				Units :> {1, {AngularDegree, {AngularDegree}}}
-			]
-		},
-		{
-			OptionName -> MaxOmegaAngle,
-			Default -> Automatic,
-			Description -> "The angle between the sample and the X-ray source in this run during the last scan of the sample's run.",
-			ResolutionDescription -> "Automatically set to Null if DetectorRotation-> Sweeping, or to an angle based on the DetectorDistance, MinOmegaAngle, and OmegaAngleIncrement options if DetectorRotation-> Fixed.",
-			AllowNull -> True,
-			Category -> "Protocol",
-			Widget -> Widget[
-				Type -> Quantity,
-				Pattern :> RangeP[-21.24 AngularDegree, 51.99 AngularDegree],
-				Units :> {1, {AngularDegree, {AngularDegree}}}
-			]
-		},
-		{
-			OptionName -> FixedDetectorAngle,
-			Default -> Automatic,
-			Description -> "The angle between the X-ray source and the detector held constant through each data recording of a given sample.",
-			ResolutionDescription -> "Automatically set to Null if DetectorRotation-> Sweeping, or to 0 AngularDegree if DetectorRotation-> Fixed.",
-			AllowNull -> True,
-			Category -> "Protocol",
-			Widget -> Widget[
-				Type -> Quantity,
-				Pattern :> RangeP[-50.49 AngularDegree, 81.24 AngularDegree],
-				Units :> {1, {AngularDegree, {AngularDegree}}}
-			]
-		},
-		{
-			OptionName -> MinDetectorAngle,
-			Default -> Automatic,
-			Description -> "The initial angle between the X-ray source and the detector during the sweeping of detector angle during data recording of a given sample.",
-			ResolutionDescription -> "Automatically set to Null if DetectorRotation -> Fixed, or to an angle based on the DetectorDistance option if DetectorRotation -> Sweeping.",
-			AllowNull -> True,
-			Category -> "Protocol",
-			Widget -> Widget[
-				Type -> Quantity,
-				Pattern :> RangeP[-50.49 AngularDegree, 81.24 AngularDegree],
-				Units :> {1, {AngularDegree, {AngularDegree}}}
-			]
-		},
-		{
-			OptionName -> MaxDetectorAngle,
-			Default -> Automatic,
-			Description -> "The final angle between the X-ray source and the detector during the sweeping of detector angle during data recording of a given sample.",
-			ResolutionDescription -> "Automatically set to Null if DetectorRotation-> Fixed, or to an angle based on the DetectorDistance option if DetectorRotation-> Sweeping.",
-			AllowNull -> True,
-			Category -> "Protocol",
-			Widget -> Widget[
-				Type -> Quantity,
-				Pattern :> RangeP[-50.49 AngularDegree, 81.24 AngularDegree],
-				Units :> {1, {AngularDegree, {AngularDegree}}}
-			]
-		}
-	}
+	SharedOptions :> {ExperimentPowderXRD}
 ];
 
 (* list of rules correlating a given type with its empirical data *)
@@ -1843,8 +2101,6 @@ empiricalPowderXRDRules = {
 		{68, 12.49},
 		{65, 10.99},
 		{61, 7.49},
-		{60, 3.99},
-		{60, -4.99},
 		{61, -8.49},
 		{65, -11.99},
 		{68, -13.49},
@@ -1857,8 +2113,6 @@ empiricalPowderXRDRules = {
 		{68, -12.49},
 		{65, -10.99},
 		{61, -7.49},
-		{60, -3.99},
-		{60, 4.99},
 		{61, 8.49},
 		{65, 11.99},
 		{68, 13.49},
@@ -1866,38 +2120,76 @@ empiricalPowderXRDRules = {
 		{209, 17.24}
 	},
 	MinDetectorAngle -> {
-		{209, 81.24},
-		{100, 80.24},
-		{90, 80.24},
-		{80, 74.74},
-		{70, 67.99},
-		{60, 55.74},
-		{60, -25.99},
-		{70, -37.99},
-		{80, -44.99},
-		{90, -50.49},
-		{100, -50.49},
-		{209, -50.49}
+		(* CMU Instrument is incapable of 60 mm*)
+		(*{60, -27.75},*) {61, -29.5}, {61, -29.5}, {62, -29.5}, {63, -31.25}, {64, -31.25},
+		{65, -33}, {66, -33}, {67, -34.5}, {68, -34.5}, {69, -38.25},
+		{70, -38.25}, {71, -38.25}, {72, -38.25}, {73, -38.25}, {74, -41.75},
+		{75, -41.75}, {76, -41.75}, {77, -41.75}, {78, -41.75}, {79, -45},
+		{80, -45}, {81, -45}, {82, -45}, {83, -45}, {84, -48},
+		{85, -48}, {86, -48}, {87, -48}, {88, -48}, {89, -50.5},
+		{90, -50.5}, {91, -50.5}, {92, -50.5}, {93, -50.5}, {94, -50.5},
+		{95, -50.5}, {96, -50.5}, {97, -50.5}, {98, -50.5}, {99, -50.5},
+		{100, -50.5}, {101, -50.5}, {102, -50.5}, {103, -50.5}, {104, -50.5},
+		{105, -50.5}, {106, -50.5}, {107, -50.5}, {108, -50.5}, {109, -50.5},
+		{110, -50.5}, {111, -50.5}, {112, -50.5}, {113, -50.5}, {114, -50.5},
+		{115, -50.5}, {116, -50.5}, {117, -50.5}, {118, -50.5}, {119, -50.5},
+		{120, -50.5}, {121, -50.5}, {122, -50.5}, {123, -50.5}, {124, -50.5},
+		{125, -50.5}, {126, -50.5}, {127, -50.5}, {128, -50.5}, {129, -50.5},
+		{130, -50.5}, {131, -50.5}, {132, -50.5}, {133, -50.5}, {134, -50.5},
+		{135, -50.5}, {136, -50.5}, {137, -50.5}, {138, -50.5}, {139, -50.5},
+		{140, -50.5}, {141, -50.5}, {142, -50.5}, {143, -50.5}, {144, -50.5},
+		{145, -50.5}, {146, -50.5}, {147, -50.5}, {148, -50.5}, {149, -50.5},
+		{150, -50.5}, {151, -50.5}, {152, -50.5}, {153, -48.75}, {154, -48.75},
+		{155, -48.75}, {156, -48.75}, {157, -48.75}, {158, -48.75}, {159, -48.75},
+		{160, -48.75}, {161, -48.75}, {162, -48.75}, {163, -47}, {164, -47},
+		{165, -47}, {166, -47}, {167, -47}, {168, -47}, {169, -47},
+		{170, -47}, {171, -47}, {172, -45}, {173, -45}, {174, -45},
+		{175, -45}, {176, -45}, {177, -45}, {178, -45}, {179, -45},
+		{180, -45}, {181, -45}, {182, -45}, {183, -45}, {184, -45},
+		{185, -45}, {186, -45}, {187, -42.75}, {188, -42.75}, {189, -42.75},
+		{190, -42.75}, {191, -42.75}, {192, -42.75}, {193, -42.75}, {194, -42.75},
+		{195, -42.75}, {196, -42.75}, {197, -42.75}, {198, -42.75}, {199, -42.75},
+		{200, -42.75}, {201, -41}, {202, -41}, {203, -41}, {204, -41},
+		{205, -41}, {206, -41}, {207, -41}, {208, -41}, {209, -41}, {209, -41}
 	},
 	MaxDetectorAngle -> {
-		{209, -50.49},
-		{100, -49.49},
-		{90, -49.49},
-		{80, -43.99},
-		{70, -36.99},
-		{60, -24.99},
-		{60, 56.74},
-		{70, 68.99},
-		{80, 75.74},
-		{90, 81.24},
-		{100, 81.24},
-		{209, 81.24}
+		(* CMU Instrument is incapable of 60 mm*)
+		(*{60, 58.5}*){61, 60.25}, {61, 60.25}, {62, 60.25}, {63, 62}, {64, 62},
+		{65, 63.75}, {66, 63.75}, {67, 65.25}, {68, 65.25}, {69, 69},
+		{70, 69}, {71, 69}, {72, 69}, {73, 69}, {74, 72.5},
+		{75, 72.5}, {76, 72.5}, {77, 72.5}, {78, 72.5}, {79, 75.75},
+		{80, 75.75}, {81, 75.75}, {82, 75.75}, {83, 75.75}, {84, 78.75},
+		{85, 78.75}, {86, 78.75}, {87, 78.75}, {88, 78.75}, {89, 81.25},
+		{90, 81.25}, {91, 81.25}, {92, 81.25}, {93, 81.25}, {94, 81.25},
+		{95, 81.25}, {96, 81.25}, {97, 81.25}, {98, 81.25}, {99, 81.25},
+		{100, 81.25}, {101, 81.25}, {102, 81.25}, {103, 81.25}, {104, 81.25},
+		{105, 81.25}, {106, 81.25}, {107, 81.25}, {108, 81.25}, {109, 81.25},
+		{110, 81.25}, {111, 81.25}, {112, 81.25}, {113, 81.25}, {114, 81.25},
+		{115, 81.25}, {116, 81.25}, {117, 81.25}, {118, 81.25}, {119, 81.25},
+		{120, 81.25}, {121, 81.25}, {122, 81.25}, {123, 81.25}, {124, 81.25},
+		{125, 81.25}, {126, 81.25}, {127, 81.25}, {128, 81.25}, {129, 81.25},
+		{130, 81.25}, {131, 81.25}, {132, 81.25}, {133, 81.25}, {134, 81.25},
+		{135, 81.25}, {136, 81.25}, {137, 81.25}, {138, 81.25}, {139, 81.25},
+		{140, 81.25}, {141, 81.25}, {142, 81.25}, {143, 81.25}, {144, 81.25},
+		{145, 81.25}, {146, 81.25}, {147, 81.25}, {148, 81.25}, {149, 81.25},
+		{150, 81.25}, {151, 81.25}, {152, 81.25}, {153, 81.25}, {154, 81.25},
+		{155, 79.75}, {156, 79.75}, {157, 79.75}, {158, 77.75}, {159, 76},
+		{160, 76}, {161, 76}, {162, 76}, {163, 73.75}, {164, 73.75},
+		{165, 73.75}, {166, 73.75}, {167, 71.75}, {168, 71.75}, {169, 71.75},
+		{170, 71.75}, {171, 70}, {172, 70}, {173, 70}, {174, 70},
+		{175, 70}, {176, 70}, {177, 46}, {178, 46}, {179, 46},
+		{180, 46}, {181, 46}, {182, 46}, {183, 46}, {184, 46},
+		{185, 46}, {186, 46}, {187, 46}, {188, 46}, {189, 46},
+		{190, 46}, {191, 43.75}, {192, 43.75}, {193, 43.75}, {194, 43.75},
+		{195, 43.75}, {196, 43.75}, {197, 43.75}, {198, 43.75}, {199, 43.75},
+		{200, 43.75}, {201, 43.75}, {202, 43.75}, {203, 43.75}, {204, 43.75},
+		{205, 43.75}, {206, 43.75}, {207, 43.75}, {208, 43.75}, {209, 41.75}, {209, 41.75}
 	}
 };
 
 (* a couple of global variables for the absolute max/min of the omega angles *)
-absoluteMinOmega = -21.24 * AngularDegree;
-absoluteMaxOmega = 51.99 * AngularDegree;
+absoluteMinOmega = -21.24 AngularDegree;
+absoluteMaxOmega = 51.99 AngularDegree;
 
 (* private function used to calculate the values that the Rigaku Synergy-R instrument can handle *)
 (* overload for giving the MinOmegaAngle/MaxOmegaAngle *)
@@ -1911,7 +2203,7 @@ empiricalPowderXRDValues[mySymbol : (MinOmegaAngle | MaxOmegaAngle), myOptions :
 
 	(* get the detector distance without any units; Automatic resolves to the closest you can get *)
 	unitlessDetectorDistance = If[MatchQ[detectorDistance, Automatic],
-		60,
+		61,
 		Unitless[detectorDistance, Millimeter]
 	];
 
@@ -1956,9 +2248,9 @@ empiricalPowderXRDValues[mySymbol : (MinOmegaAngle | MaxOmegaAngle), myOptions :
 	(* if desiredAngleNoRounding is outside the Max/Min values, pick those limits instead and return that *)
 	Switch[{mySymbol, desiredAngleNoRounding},
 		{MinOmegaAngle, LessP[absoluteMinOmega]}, absoluteMinOmega,
-		{MinOmegaAngle, GreaterP[absoluteMaxOmega]}, absoluteMaxOmega - 0.24 * AngularDegree,
+		{MinOmegaAngle, GreaterP[absoluteMaxOmega]}, absoluteMaxOmega - 0.24 AngularDegree,
 		{MinOmegaAngle, _}, desiredAngleNoRounding,
-		{MaxOmegaAngle, LessP[absoluteMinOmega]}, absoluteMinOmega + 0.24 * AngularDegree,
+		{MaxOmegaAngle, LessP[absoluteMinOmega]}, absoluteMinOmega + 0.24 AngularDegree,
 		{MaxOmegaAngle, GreaterP[absoluteMaxOmega]}, absoluteMaxOmega,
 		{MaxOmegaAngle, _}, desiredAngleNoRounding
 	]
@@ -1978,7 +2270,7 @@ empiricalPowderXRDValues[mySymbol : (MinDetectorAngle | MaxDetectorAngle), myOpt
 
 	(* get the detector distance without any units; Automatic resolves to the closest you can get *)
 	unitlessDetectorDistance = If[MatchQ[detectorDistance, Automatic],
-		60,
+		61,
 		Unitless[detectorDistance, Millimeter]
 	];
 
@@ -2048,7 +2340,7 @@ empiricalPowderXRDValues[DetectorDistance, myOptions : OptionsPattern[empiricalP
 		True, Unitless[minDetectorAngle, AngularDegree]
 	];
 	unitlessMaxDetectorAngle = Which[
-		MatchQ[maxDetectorAngle, Automatic | Null] && MatchQ[fixedDetectorAngle, Automatic | Null], 81.24,
+		MatchQ[maxDetectorAngle, Automatic | Null] && MatchQ[fixedDetectorAngle, Automatic | Null], 81.25,
 		MatchQ[maxDetectorAngle, Automatic | Null] && MatchQ[fixedDetectorAngle, UnitsP[AngularDegree]], Unitless[fixedDetectorAngle, AngularDegree],
 		True, Unitless[maxDetectorAngle, AngularDegree]
 	];
@@ -2131,7 +2423,7 @@ empiricalPowderXRDValues[DetectorDistance, myOptions : OptionsPattern[empiricalP
 			{minOmegaAngleFormulae, partitionedMinOmegaAngleData[[All, All, 1]]}
 		],
 		(* otherwise the distance is just going to be the closest we can be *)
-		60.
+		Null
 	];
 	maxOmegaAnglePiecewiseFunction = Piecewise[
 		MapThread[
@@ -2140,25 +2432,27 @@ empiricalPowderXRDValues[DetectorDistance, myOptions : OptionsPattern[empiricalP
 			{maxOmegaAngleFormulae, partitionedMaxOmegaAngleData[[All, All, 1]]}
 		],
 		(* otherwise the distance is just going to be the closest we can be *)
-		60.
+		Null
 	];
 	minDetectorAnglePiecewiseFunction = Piecewise[
+		Join[{{61, y > partitionedMinDetectorAngleData[[1,1,1]]}},
 		MapThread[
 			(* need to have >= here because we're in the negative here *)
 			{#1, #2[[1]] >= y >= #2[[2]]}&,
 			{minDetectorAngleFormulae, partitionedMinDetectorAngleData[[All, All, 1]]}
-		],
+		]],
 		(* otherwise the distance is just going to be the closest we can be *)
-		60.
+		Null
 	];
 	maxDetectorAnglePiecewiseFunction = Piecewise[
-		MapThread[
+		Join[{{61, y < partitionedMaxDetectorAngleData[[1, 1, 1]]}},
+			MapThread[
 			(* need to have <= here because we're in positive here *)
 			{#1, #2[[1]] <= y <= #2[[2]]}&,
 			{maxDetectorAngleFormulae, partitionedMaxDetectorAngleData[[All, All, 1]]}
-		],
+		]],
 		(* otherwise the distance is just going to be the closest we can be *)
-		60.
+		Null
 	];
 
 	(* get the detector distance according to the two metrics *)
@@ -2181,13 +2475,24 @@ empiricalPowderXRDValues[DetectorDistance, myOptions : OptionsPattern[empiricalP
 	];
 
 	(* get the closest the detector can be within the constraints of all four measurements here *)
-	unitlessClosestDetectorDistance = Max[{unitlessDDFromMinOmega, unitlessDDFromMaxOmega, unitlessDDFromMinDetector, unitlessDDFromMaxDetector}];
+	unitlessClosestDetectorDistance = If[MemberQ[{unitlessDDFromMinOmega, unitlessDDFromMaxOmega, unitlessDDFromMinDetector, unitlessDDFromMaxDetector}, Null],
+		Return[{
+			If[MatchQ[unitlessDDFromMinOmega, Null], MinOmegaAngle, Nothing],
+			If[MatchQ[unitlessDDFromMaxOmega, Null], MaxOmegaAngle, Nothing],
+			Sequence @@ Which[
+				MatchQ[unitlessMinDetectorAngle, unitlessMaxDetectorAngle] && (MatchQ[unitlessDDFromMinDetector, Null] || MatchQ[unitlessDDFromMaxDetector, Null]), {FixedDetectorAngle},
+				MatchQ[{unitlessDDFromMinDetector, unitlessDDFromMaxDetector}, {Null, Null}], {MinDetectorAngle, MaxDetectorAngle},
+				MatchQ[unitlessDDFromMinDetector, Null], {MinDetectorAngle},
+				MatchQ[unitlessDDFromMaxDetector, Null], {MaxDetectorAngle},
+				True, {}
+			]}],
+		Max[{unitlessDDFromMinOmega, unitlessDDFromMaxOmega, unitlessDDFromMinDetector, unitlessDDFromMaxDetector}]
+	];
 
 	(* return the rounded detector distance *)
 	Round[unitlessClosestDetectorDistance] * Millimeter
 
 ];
-
 
 
 (* ::Subsubsection::Closed:: *)
@@ -2204,8 +2509,9 @@ DefineOptions[powderXRDResourcePackets,
 
 (* create the protocol packet with resource blobs included *)
 powderXRDResourcePackets[mySamples : {ObjectP[Object[Sample]]..}, myUnresolvedOptions : {___Rule}, myResolvedOptions : {___Rule}, myOptions:OptionsPattern[]] := Module[
-	{expandedInputs, expandedResolvedOptions, resolvedOptionsNoHidden, outputSpecification, output, gatherTests, messages,
-		inheritedCache, numReplicates, expandedSamplesWithNumReplicates, diffractometerTime, diffractometerResource,
+	{
+		expandedInputs, expandedResolvedOptions, resolvedOptionsNoHidden, outputSpecification, output, gatherTests, messages,
+		inheritedCache, simulation,simulatedSamples, updatedSimulation,numReplicates, expandedSamplesWithNumReplicates, diffractometerTime, diffractometerResource,
 		expandForNumReplicates, expandedExposureTime, expandedOmegaAngleIncrement, expandedDetectorDistance,
 		expandedDetectorRotation, expandedMinOmegaAngle, expandedMaxOmegaAngle, expandedFixedDetectorAngle,
 		expandedMinDetectorAngle, expandedMaxDetectorAngle, expandedDetectorAngleIncrement, omegaAngles, detectorAngles,
@@ -2213,7 +2519,9 @@ powderXRDResourcePackets[mySamples : {ObjectP[Object[Sample]]..}, myUnresolvedOp
 		pairedSamplesInAndVolumes, sampleVolumeRules, sampleResourceReplaceRules, samplesInResources, sharedFieldPacket,
 		finalizedPacket, allResourceBlobs, fulfillable, frqTests, previewRule, optionsRule, testsRule, resultRule,
 		xrdParameters, plateID, crystallizationPlate, readingDiffractionTimeEstimate, expandedSamplesInStorage,
-		expandedSamplesOutStorage, expandedSpottingVolume, safeOps},
+		expandedSamplesOutStorage, expandedSpottingVolume, safeOps, transferType, wells, xrdParametersIndexMatched,
+		plateXCoordinates, plateYCoordinates, availableWells, plateAdapter, plateAdapterStoragePlacement
+	},
 
 	(* get the safe options for this function *)
 	safeOps = SafeOptions[powderXRDResourcePackets, ToList[myOptions]];
@@ -2224,6 +2532,10 @@ powderXRDResourcePackets[mySamples : {ObjectP[Object[Sample]]..}, myUnresolvedOp
 
 	(* get the inherited cache *)
 	inheritedCache = Lookup[safeOps, Cache];
+	simulation = Lookup[ToList[safeOps], Simulation, Simulation[]];
+	
+	(* simulate the samples after they go through all the sample prep *)
+	{simulatedSamples, updatedSimulation} = simulateSamplesResourcePacketsNew[ExperimentPowderXRD, mySamples, myResolvedOptions, Simulation -> simulation];
 
 	(* expand the resolved options if they weren't expanded already *)
 	{expandedInputs, expandedResolvedOptions} = ExpandIndexMatchedInputs[ExperimentPowderXRD, {mySamples}, myResolvedOptions];
@@ -2243,7 +2555,7 @@ powderXRDResourcePackets[mySamples : {ObjectP[Object[Sample]]..}, myUnresolvedOp
 	(* --- Make our one big Download call --- *)
 
 	(* make our one big (but not really) Download call *)
-	samplePackets = Download[mySamples, Packet[Container, Volume], Cache -> inheritedCache, Date -> Now];
+	samplePackets = Download[mySamples, Packet[Container, Volume], Simulation->updatedSimulation, Date -> Now];
 
 	(* --- Make all the resources needed in the experiment --- *)
 
@@ -2258,25 +2570,49 @@ powderXRDResourcePackets[mySamples : {ObjectP[Object[Sample]]..}, myUnresolvedOp
 	]];
 
 	(* don't make the resource for the sample handler since it just lives on the instrument and we can figure out what specific one we have later *)
-	sampleHandler = Model[Container, Rack, "XtalCheck"];
+	sampleHandler = Model[Container, Rack, "id:R8e1PjpeYzJX"](*XtalCheck*);
+
+	transferType = Lookup[myResolvedOptions, TransferType];
 
 	(* make a resource for the crystallization plate *)
-	crystallizationPlate = Resource[Sample -> Model[Container, Plate, "In Situ-1 Crystallization Plate"]];
+	crystallizationPlate = If[MatchQ[transferType, MassTransfer],
+		Resource[Sample -> Model[Container, Plate, "id:AEqRl9xjk896"]], (*"Microlytic High Throughput Crystal Former Plate"*)
+		Resource[Sample -> Model[Container, Plate, "In Situ-1 Crystallization Plate"]]
+	];
 
 	(* compute the length of time the diffractometer will take to run *)
 	(* 1 Hour is for ramping up the instrument; 10 minutes is getting the experiment ready; 10 minutes per sample is how much it takes for each sample to run; 30 minutes is to tear down the instrument *)
 	diffractometerTime = 1 * Hour + 10 * Minute + (Length[expandedSamplesWithNumReplicates] * 10 * Minute) + 30 * Minute;
 
 	(* make the instrument resource *)
-	diffractometerResource = Resource[Instrument -> Lookup[resolvedOptionsNoHidden, Instrument], Time -> diffractometerTime];
+	diffractometerResource = Resource[Instrument -> Lookup[resolvedOptionsNoHidden, Instrument], Name -> "Diffractometer", Time -> diffractometerTime];
+
+	transferType = Lookup[myResolvedOptions, TransferType];
+
+	(* make a resource for the crystallization plate *)
+	{crystallizationPlate, plateAdapter, plateAdapterStoragePlacement} = If[MatchQ[transferType, MassTransfer],
+		{
+			Resource[Sample -> Model[Container, Plate, "id:AEqRl9xjk896"](*Microlytic High Throughput Crystal Former Plate*)],
+			Resource[Sample -> Model[Container, Rack, "id:o1k9jAonE8Bm"], Name -> "Plate Adapter"(*Xtal Check-S Adapter for Microlytic High Throughput Crystal Former Plate*)],
+			{Link[Resource[Sample -> Model[Container, Rack, "id:o1k9jAonE8Bm"], Name -> "Plate Adapter"]], Link[diffractometerResource], "Left Side Storage Slot"}
+		},
+		{
+			Resource[Sample -> Model[Container, Plate, "id:pZx9jo8x59oP"](*In Situ-1 Crystallization Plate*)],
+			Null,
+			Null
+		}
+	];
 
 	(* pull out the AliquotAmount option *)
 	expandedAliquotVolume = Lookup[expandedResolvedOptions, AliquotAmount];
 
 	(* get the sample volume; if we're aliquoting, use that amount; otherwise it's going to be 20 Microliter since it is too small to pipette less anyway*)
 	sampleVolumes = MapThread[
-		If[VolumeQ[#1],
+		Which[VolumeQ[#1],
 			#1,
+			MatchQ[transferType, MassTransfer],
+			3 Milligram,
+			True,
 			20 * Microliter
 		]&,
 		{expandedAliquotVolume, samplePackets}
@@ -2424,6 +2760,73 @@ powderXRDResourcePackets[mySamples : {ObjectP[Object[Sample]]..}, myUnresolvedOp
 		]
 	|>;
 
+	availableWells = If[MatchQ[transferType, Slurry],
+		(* For SlurryTransfer, we use all wells and the usual order. *)
+		Flatten[AllWells[]],
+		(* For MassTransfer, a snake shape across the plate (i.e. going from the end of A to the end of B, start of B to start of C, saves time. *)
+		(* Wells A1, A12, H1, and H12 are used to correct for any plate (loading) variability and will be empty. *)
+		(Flatten[Riffle[
+			AllWells[][[1 ;; ;; 2]],
+			Reverse /@ AllWells[][[2 ;; ;; 2]]]
+		] /. Alternatives["A1", "A12", "H1", "H12"] -> Nothing)
+	];
+
+	(* Determine which wells we will be using: *)
+	wells = Take[availableWells, Length[samplesInResources]];
+
+	plateXCoordinates = MapThread[#1 -> #2 &,
+		{
+			(* Well Positions for the LHS of the Rule: *)
+			Flatten[AllWells[]],
+			(* Coordinates for teh RHS of the Rule: *)
+			Flatten[Table[
+				Table[6.34 + i * 9.04, {i, 0, 11}],
+			{i, 0, 7}]]
+		}
+	];
+
+	plateYCoordinates = MapThread[#1 -> #2 &,
+		{
+			(* Well Positions for the LHS of the Rule: *)
+			Flatten[AllWells[]],
+			(* Coordinates for teh RHS of the Rule: *)
+			Flatten[Table[
+				Table[1.84, {i, 0, 11}] + i * ConstantArray[8.99, 12],
+				{i, 0, 7}]]
+		}
+	];
+
+	(* Uncollapsed version of XRDParameter*)
+	xrdParametersIndexMatched = MapThread[
+		Function[{
+			sample, well, exposureTime, detectorDistance, omegaAngleIncrement, detectorRotation,
+			minOmegaAngle, maxOmegaAngle, minDetectorAngle, maxDetectorAngle, detectorAngleIncrement
+		},
+			<|
+				Sample -> sample,
+				Position -> well,
+				XCoordinate -> Lookup[plateXCoordinates, well],
+				YCoordinate -> Lookup[plateYCoordinates, well],
+				ZCoordinate -> 0.4,
+				ExposureTime -> exposureTime,
+				DetectorDistance -> detectorDistance,
+				OmegaAngleIncrement -> omegaAngleIncrement,
+				DetectorRotation -> detectorRotation,
+				MinOmegaAngle -> minOmegaAngle,
+				MaxOmegaAngle -> maxOmegaAngle,
+				MinDetectorAngle -> minDetectorAngle,
+				MaxDetectorAngle -> maxDetectorAngle,
+				DetectorAngleIncrement -> detectorAngleIncrement
+			|>
+		],
+	(* MapThread Over: *)
+		{
+		samplesInResources, wells, expandedExposureTime, expandedDetectorDistance, expandedOmegaAngleIncrement,
+		expandedDetectorRotation, expandedMinOmegaAngle, expandedMaxOmegaAngle, expandedMinDetectorAngle,
+		expandedMaxDetectorAngle, expandedDetectorAngleIncrement
+		}
+	];
+
 	(* generate the ID for the plate *)
 	(* the Rigaku XRD is weird in that it 1.) can't take ANY non-alphanumeric character (which precludes using ObjectToFilePath), 2.) has a character limit of 15, and 3.) Can't lead with a number.  So that's super dumb.  Best I can do to guarantee uniqueness is use CreateUUID starting with a letter and without the dashes and only 15 characters *)
 	plateID = StringTake[
@@ -2465,16 +2868,20 @@ powderXRDResourcePackets[mySamples : {ObjectP[Object[Sample]]..}, myUnresolvedOp
 		Replace[ContainersIn] -> (Link[Resource[Sample -> #], Protocols]&) /@ containersIn,
 		SampleHandler -> Link[sampleHandler],
 		CrystallizationPlate -> Link[crystallizationPlate],
+		PlateAdapter -> Link[plateAdapter],
+		PlateAdapterStoragePlacement -> plateAdapterStoragePlacement,
+		TransferType -> transferType,
+		CrystallizationPlatePreparation -> Lookup[myResolvedOptions, CrystallizationPlatePreparation],
 		Instrument -> Link[diffractometerResource],
 
 		(* populate checkpoints with reasonable time estimates TODO probably make these better because they're rather rough right now *)
 		Replace[Checkpoints] -> {
-			{"Picking Resources", 10 Minute, "Samples required to execute this protocol are gathered from storage.", Link[Resource[Operator -> Model[User, Emerald, Operator, "Trainee"], Time -> 10 Minute]]},
-			{"Preparing Samples", 1 Minute, "Preprocessing, such as incubation, mixing, centrifuging, and aliquoting, is performed.", Link[Resource[Operator -> Model[User, Emerald, Operator, "Trainee"], Time -> 1 Minute]]},
-			{"Instrument Warm-Up", 1 * Hour, "X-ray diffractometer power is ramped up.", Link[Resource[Operator -> Model[User, Emerald, Operator, "Trainee"], Time -> 1 * Hour]]},
-			{"Reading Diffraction", readingDiffractionTimeEstimate, "Sample X-ray diffraction is measured.", Link[Resource[Operator -> Model[User, Emerald, Operator, "Trainee"], Time -> 1 * Hour]]},
-			{"Sample Post-Processing", 1 Hour, "Any measuring of volume, weight, or sample imaging post experiment is performed.", Link[Resource[Operator -> Model[User, Emerald, Operator, "Trainee"], Time -> 1 * Hour]]},
-			{"Returning Materials", 10 Minute, "Samples are returned to storage.", Link[Resource[Operator -> Model[User, Emerald, Operator, "Trainee"], Time -> 10 * Minute]]}
+			{"Picking Resources", 10 Minute, "Samples required to execute this protocol are gathered from storage.", Link[Resource[Operator -> $BaselineOperator, Time -> 10 Minute]]},
+			{"Preparing Samples", 1 Minute, "Preprocessing, such as incubation, mixing, centrifuging, and aliquoting, is performed.", Link[Resource[Operator -> $BaselineOperator, Time -> 1 Minute]]},
+			{"Instrument Warm-Up", 1 * Hour, "X-ray diffractometer power is ramped up.", Link[Resource[Operator -> $BaselineOperator, Time -> 1 * Hour]]},
+			{"Reading Diffraction", readingDiffractionTimeEstimate, "Sample X-ray diffraction is measured.", Link[Resource[Operator -> $BaselineOperator, Time -> 1 * Hour]]},
+			{"Sample Post-Processing", 1 Hour, "Any measuring of volume, weight, or sample imaging post experiment is performed.", Link[Resource[Operator -> $BaselineOperator, Time -> 1 * Hour]]},
+			{"Returning Materials", 10 Minute, "Samples are returned to storage.", Link[Resource[Operator -> $BaselineOperator, Time -> 10 * Minute]]}
 		},
 
 		(* assorted other option-controlled fields *)
@@ -2495,11 +2902,26 @@ powderXRDResourcePackets[mySamples : {ObjectP[Object[Sample]]..}, myUnresolvedOp
 		Operator -> Link[Lookup[myResolvedOptions, Operator]],
 		SubprotocolDescription -> Lookup[myResolvedOptions, SubprotocolDescription],
 		XRDParameters -> xrdParameters,
-		PlateFileName -> plateID
+		Replace[XRDParametersIndexMatched] -> xrdParametersIndexMatched,
+		PlateFileName -> plateID,
+		(* Set Startup to Automatic, if the automatic script hits troubleshooting it may get toggled to Manual. *)
+		Startup -> Automatic,
+		(* Resources for MassTransfer *)
+		Sequence@@If[MatchQ[transferType, MassTransfer],
+			{
+				Replace[Spatulas] -> Table[Resource[Sample -> Model[Item, Spatula, "id:rea9jl5v0mlL" (*Micro antistatic disposable spatula, double-ended micro tip, 14 cm*)], Name -> CreateUniqueLabel["Spatula"]], Length[samplesInResources]],
+				Pestle -> Resource[Sample -> Model[Item, Spatula, "id:vXl9j57rvK6k" (*"Flat-Spoon Spatula"*)]],
+				PlateSealFoils -> Resource[Sample -> Model[Item, Consumable, "id:6V0npvqEWrO8" (*"Roll of Kapton Discs, 3/8" Diameter"*)]],
+				Tweezer -> Resource[Sample -> Model[Item, Tweezer, "id:8qZ1VWNwNDVZ" (*"Straight flat tip tweezer"*)]],
+				(* Operations requested transfer for this protocol be done in a fume hood. In the future we may resolve this based on the hazard class or call some ExperimentTransfer/ExperimentTransfer helper to determine the safe transfer environment. *)
+				TransferEnvironment -> Resource[Instrument -> $TransferFumeHoodModel]
+			},
+			{}
+		]
 	|>;
 
 	(* generate a packet with the shared fields *)
-	sharedFieldPacket = populateSamplePrepFields[mySamples, myResolvedOptions, Cache -> inheritedCache];
+	sharedFieldPacket = populateSamplePrepFields[mySamples, myResolvedOptions, Simulation -> updatedSimulation];
 
 	(* Merge the shared fields with the specific fields *)
 	finalizedPacket = Join[sharedFieldPacket, protocolPacket];
@@ -2511,8 +2933,8 @@ powderXRDResourcePackets[mySamples : {ObjectP[Object[Sample]]..}, myUnresolvedOp
 	(* call fulfillableResourceQ on all the resources we created *)
 	{fulfillable, frqTests} = Which[
 		MatchQ[$ECLApplication, Engine], {True, {}},
-		gatherTests, Resources`Private`fulfillableResourceQ[allResourceBlobs, Output -> {Result, Tests}, FastTrack -> Lookup[myResolvedOptions, FastTrack],Site->Lookup[myResolvedOptions,Site], Cache -> inheritedCache],
-		True, {Resources`Private`fulfillableResourceQ[allResourceBlobs, FastTrack -> Lookup[myResolvedOptions, FastTrack],Site->Lookup[myResolvedOptions,Site], Messages -> messages, Cache -> inheritedCache], Null}
+		gatherTests, Resources`Private`fulfillableResourceQ[allResourceBlobs, Output -> {Result, Tests}, FastTrack -> Lookup[myResolvedOptions, FastTrack],Site->Lookup[myResolvedOptions,Site],  Simulation -> updatedSimulation],
+		True, {Resources`Private`fulfillableResourceQ[allResourceBlobs, FastTrack -> Lookup[myResolvedOptions, FastTrack],Site->Lookup[myResolvedOptions,Site], Messages -> messages,  Simulation -> updatedSimulation], Null}
 	];
 
 	(* generate the Preview option; that is always Null *)
@@ -2557,17 +2979,17 @@ DefineOptions[ValidExperimentPowderXRDQ,
 ];
 
 (* --- Overloads --- *)
-ValidExperimentPowderXRDQ[mySample : (_String | ObjectP[Object[Sample]]), myOptions : OptionsPattern[ValidExperimentPowderXRDQ]] := ValidExperimentPowderXRDQ[{mySample}, myOptions];
+ValidExperimentPowderXRDQ[mySample : (_String | ObjectP[{Object[Sample], Model[Sample]}]), myOptions : OptionsPattern[ValidExperimentPowderXRDQ]] := ValidExperimentPowderXRDQ[{mySample}, myOptions];
 
 ValidExperimentPowderXRDQ[myContainer : (_String | ObjectP[Object[Container]]), myOptions : OptionsPattern[ValidExperimentPowderXRDQ]] := ValidExperimentPowderXRDQ[{myContainer}, myOptions];
 
-ValidExperimentPowderXRDQ[myContainers : {(_String | ObjectP[Object[Container]])..}, myOptions : OptionsPattern[ValidExperimentPowderXRDQ]] := Module[
+ValidExperimentPowderXRDQ[myContainers : {(_String | ObjectP[{Object[Container], Object[Sample], Model[Sample]}])..}, myOptions : OptionsPattern[ValidExperimentPowderXRDQ]] := Module[
 	{listedOptions, preparedOptions, xrdTests, initialTestDescription, allTests, verbose, outputFormat},
 
 	(* get the options as a list *)
 	listedOptions = ToList[myOptions];
 
-	(* remove the Output option before passing to the core function because it doens't make sense here *)
+	(* remove the Output option before passing to the core function because it doesn't make sense here *)
 	preparedOptions = DeleteCases[listedOptions, (Output | Verbose | OutputFormat) -> _];
 
 	(* return only the tests for ExperimentPowderXRD *)
@@ -2616,7 +3038,7 @@ ValidExperimentPowderXRDQ[mySamples : {(_String | ObjectP[Object[Sample]])..}, m
 	(* get the options as a list *)
 	listedOptions = ToList[myOptions];
 
-	(* remove the Output option before passing to the core function because it doens't make sense here *)
+	(* remove the Output option before passing to the core function because it doesn't make sense here *)
 	preparedOptions = DeleteCases[listedOptions, (Output | Verbose | OutputFormat) -> _];
 
 	(* return only the tests for ExperimentPowderXRD *)
@@ -2671,17 +3093,17 @@ DefineOptions[ExperimentPowderXRDOptions,
 ];
 
 (* --- Overloads --- *)
-ExperimentPowderXRDOptions[mySample : _String | ObjectP[Object[Sample]], myOptions : OptionsPattern[ExperimentPowderXRDOptions]] := ExperimentPowderXRDOptions[{mySample}, myOptions];
+ExperimentPowderXRDOptions[mySample : _String | ObjectP[{Object[Sample], Model[Sample]}], myOptions : OptionsPattern[ExperimentPowderXRDOptions]] := ExperimentPowderXRDOptions[{mySample}, myOptions];
 
 ExperimentPowderXRDOptions[myContainer : _String | ObjectP[Object[Container]], myOptions : OptionsPattern[ExperimentPowderXRDOptions]] := ExperimentPowderXRDOptions[{myContainer}, myOptions];
 
-ExperimentPowderXRDOptions[myContainers : {(_String | ObjectP[Object[Container]])..}, myOptions : OptionsPattern[ExperimentPowderXRDOptions]] := Module[
+ExperimentPowderXRDOptions[myContainers : {(_String | ObjectP[Object[Container], Object[Sample], Model[Sample]])..}, myOptions : OptionsPattern[ExperimentPowderXRDOptions]] := Module[
 	{listedOptions, noOutputOptions, options},
 
 	(* get the options as a list *)
 	listedOptions = ToList[myOptions];
 
-	(* remove the Output option before passing to the core function because it doens't make sense here *)
+	(* remove the Output option before passing to the core function because it doesn't make sense here *)
 	noOutputOptions = DeleteCases[listedOptions, Alternatives[Output -> _, OutputFormat -> _]];
 
 	(* return only the options for ExperimentPowderXRD *)
@@ -2703,7 +3125,7 @@ ExperimentPowderXRDOptions[mySamples : {(_String | ObjectP[Object[Sample]])..}, 
 	(* get the options as a list *)
 	listedOptions = ToList[myOptions];
 
-	(* remove the Output option before passing to the core function because it doens't make sense here *)
+	(* remove the Output option before passing to the core function because it doesn't make sense here *)
 	noOutputOptions = DeleteCases[listedOptions, Alternatives[Output -> _, OutputFormat -> _]];
 
 	(* return only the options for ExperimentAliquotNew *)
@@ -2726,17 +3148,17 @@ DefineOptions[ExperimentPowderXRDPreview,
 ];
 
 (* --- Overloads --- *)
-ExperimentPowderXRDPreview[mySample : (_String | ObjectP[Object[Sample]]), myOptions : OptionsPattern[ExperimentPowderXRDPreview]] := ExperimentPowderXRDPreview[{mySample}, myOptions];
+ExperimentPowderXRDPreview[mySample : (_String | ObjectP[{Object[Sample], Model[Sample]}]), myOptions : OptionsPattern[ExperimentPowderXRDPreview]] := ExperimentPowderXRDPreview[{mySample}, myOptions];
 
 ExperimentPowderXRDPreview[myContainer : (_String | ObjectP[Object[Container]]), myOptions : OptionsPattern[ExperimentPowderXRDPreview]] := ExperimentPowderXRDPreview[{myContainer}, myOptions];
 
-ExperimentPowderXRDPreview[myContainers : {(_String | ObjectP[Object[Container]])..}, myOptions : OptionsPattern[ExperimentPowderXRDPreview]] := Module[
+ExperimentPowderXRDPreview[myContainers : {(_String | ObjectP[Object[Container], Object[Sample], Model[Sample]])..}, myOptions : OptionsPattern[ExperimentPowderXRDPreview]] := Module[
 	{listedOptions, noOutputOptions},
 
 	(* get the options as a list *)
 	listedOptions = ToList[myOptions];
 
-	(* remove the Output option before passing to the core function because it doens't make sense here *)
+	(* remove the Output option before passing to the core function because it doesn't make sense here *)
 	noOutputOptions = DeleteCases[listedOptions, Alternatives[Output -> _]];
 
 	(* return only the preview for ExperimentPowderXRD *)
@@ -2751,7 +3173,7 @@ ExperimentPowderXRDPreview[mySamples : {(_String | ObjectP[Object[Sample]])..}, 
 	(* get the options as a list *)
 	listedOptions = ToList[myOptions];
 
-	(* remove the Output option before passing to the core function because it doens't make sense here *)
+	(* remove the Output option before passing to the core function because it doesn't make sense here *)
 	noOutputOptions = DeleteCases[listedOptions, Alternatives[Output -> _]];
 
 	(* return only the preview for ExperimentPowderXRD *)

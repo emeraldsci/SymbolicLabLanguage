@@ -59,22 +59,39 @@ DefineTests[ExperimentMeasureSurfaceTension,
 			)
 		],
 		(* - Sample Prep unit tests - *)
-		Example[{Options,PreparatoryPrimitives,"Specify prepared samples to have their SurfaceTensions measured:"},
-			protocol = ExperimentMeasureSurfaceTension[
-				"SDS sample 1",
-				PreparatoryPrimitives -> {
-					Define[Name -> "SDS sample 1",
-						Container -> Model[Container, Vessel, "2mL Tube"]
-					],
-					Transfer[
-						Source -> Model[Sample, StockSolution, "0.5M Sodium dodecyl sulfate"],
-						Destination -> "SDS sample 1", Amount -> 500*Microliter
-					]
-				}
+		Example[{Options, {PreparedModelContainer, PreparedModelAmount}, "Specify the container in which an input Model[Sample] should be prepared:"},
+			options = ExperimentMeasureSurfaceTension[
+				{Model[Sample,StockSolution,"0.5M Sodium dodecyl sulfate"], Model[Sample,StockSolution,"0.5M Sodium dodecyl sulfate"]},
+				PreparedModelContainer -> Model[Container, Plate, "96-well 2mL Deep Well Plate"],
+				PreparedModelAmount -> 2000 Microliter,
+				Output -> Options
 			];
-			Download[protocol, PreparatoryPrimitives],
-			{SampleManipulationP..},
-			Variables :> {protocol}
+			prepUOs = Lookup[options, PreparatoryUnitOperations];
+			{
+				prepUOs[[-1, 1]][Sample],
+				prepUOs[[-1, 1]][Container],
+				prepUOs[[-1, 1]][Amount],
+				prepUOs[[-1, 1]][Well],
+				prepUOs[[-1, 1]][ContainerLabel]
+			},
+			{
+				{ObjectP[Model[Sample,StockSolution,"0.5M Sodium dodecyl sulfate"]]..},
+				{ObjectP[Model[Container, Plate, "96-well 2mL Deep Well Plate"]]..},
+				{EqualP[2000 Microliter]..},
+				{"A1", "B1"},
+				{_String, _String}
+			},
+			Variables :> {options, prepUOs}
+		],
+		Example[{Options, PreparedModelAmount, "If using model input, the sample preparation options can also be specified:"},
+			prot = ExperimentMeasureSurfaceTension[
+				Model[Sample, "Ammonium hydroxide"],
+				PreparedModelAmount -> 0.5 Milliliter,
+				Aliquot -> True,
+				Mix -> True
+			];
+			Download[prot, {Object, PreparedSamples}],
+			{ObjectP[Object[Protocol, MeasureSurfaceTension]], {{_String, _Symbol, __}..}}
 		],
 		Example[{Options,PreparatoryUnitOperations,"Specify prepared samples to have their SurfaceTensions measured:"},
 			protocol = ExperimentMeasureSurfaceTension[
@@ -759,18 +776,18 @@ DefineTests[ExperimentMeasureSurfaceTension,
 			{Options,DilutionNumberOfMixes,"Specify a mixing number to dilute the sample:"},
 			options=ExperimentMeasureSurfaceTension[
 				{Object[Sample, "ExperimentMeasureSurfaceTension Test Sample 1"<> $SessionUUID]},
-				DilutionNumberOfMixes->10,
+				DilutionNumberOfMixes->11,
 				Output -> Options
 			];
 			Lookup[options,DilutionNumberOfMixes],
-			10,
+			11,
 			Variables:>{options}
 		],
 		Example[{Options,DilutionNumberOfMixes,"Specify a mixing number to dilute the sample:"},
 			protocol=ExperimentMeasureSurfaceTension[{Object[Sample, "ExperimentMeasureSurfaceTension Test Sample 1"<> $SessionUUID]},
-				DilutionNumberOfMixes->10];
+				DilutionNumberOfMixes->12];
 			Download[protocol,DilutionNumberOfMixes],
-			{10},
+			{12},
 			SetUp:>($CreatedObjects={}),
 			TearDown:>(
 				EraseObject[$CreatedObjects,Force->True,Verbose->False];
@@ -1350,6 +1367,26 @@ DefineTests[ExperimentMeasureSurfaceTension,
 				EraseObject[$CreatedObjects,Force->True,Verbose->False];
 				Unset[$CreatedObjects]
 			)
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a sample that does not exist (name form):"},
+			ExperimentMeasureSurfaceTension[Object[Sample, "Nonexistent sample"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a container that does not exist (name form):"},
+			ExperimentMeasureSurfaceTension[Object[Container, Vessel, "Nonexistent container"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a sample that does not exist (ID form):"},
+			ExperimentMeasureSurfaceTension[Object[Sample, "id:12345678"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a container that does not exist (ID form):"},
+			ExperimentMeasureSurfaceTension[Object[Container, Vessel, "id:12345678"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
 		],
 		Example[{Messages, "ContainerOutMismatch", "If a non disposal storage condition is given with no containers out, a error will by thrown:"},
 			ExperimentMeasureSurfaceTension[{Object[Sample, "ExperimentMeasureSurfaceTension Test Sample 1"<> $SessionUUID], Object[Sample, "ExperimentMeasureSurfaceTension Test Sample 1"<> $SessionUUID], Object[Sample, "ExperimentMeasureSurfaceTension Test Sample 1"<> $SessionUUID],Object[Sample, "ExperimentMeasureSurfaceTension Test Sample 1"<> $SessionUUID],Object[Sample, "ExperimentMeasureSurfaceTension Test Sample 1"<> $SessionUUID],
@@ -2232,7 +2269,7 @@ DefineTests[ExperimentMeasureSurfaceTension,
 				Output->Options
 			];
 			Lookup[options,AliquotSampleLabel],
-			"mySample1",
+			{"mySample1"},
 			Variables:>{options}
 		],
 		Example[
@@ -2321,7 +2358,7 @@ DefineTests[ExperimentMeasureSurfaceTension,
 				Output -> Options
 			];
 			Lookup[options,DestinationWell],
-			"A1",
+			{"A1","A1","A1"},
 			Variables:>{options}
 		],
 		Example[
@@ -2332,7 +2369,7 @@ DefineTests[ExperimentMeasureSurfaceTension,
 				Output -> Options
 			];
 			Lookup[options,AliquotContainer],
-			{1, ObjectP[Model[Container, Vessel, "2mL Tube"]]},
+			{{1, ObjectP[Model[Container, Vessel, "2mL Tube"]]}},
 			Variables:>{options}
 		],
 		Example[
@@ -2403,7 +2440,7 @@ DefineTests[ExperimentMeasureSurfaceTension,
 		Example[{Options, TargetConcentrationAnalyte, "The analyte whose desired final concentration is specified:"},
 			options = ExperimentMeasureSurfaceTension[
 				Object[Sample, "ExperimentMeasureSurfaceTension Test Sample 1"<> $SessionUUID],
-				TargetConcentration -> 5 Micromolar,
+				TargetConcentration -> 50 Micromolar,
 				TargetConcentrationAnalyte -> Model[Molecule, "Acetone"],
 				Output -> Options];
 			Lookup[options, TargetConcentrationAnalyte],
@@ -2469,6 +2506,8 @@ DefineTests[ExperimentMeasureSurfaceTension,
 			)
 		]
 	},
+	(* without this, telescope crashes and the test fails *)
+	HardwareConfiguration->HighRAM,
 	SymbolSetUp:>(
 		Off[Warning::SamplesOutOfStock];
 		Off[Warning::InstrumentUndergoingMaintenance];
@@ -2886,7 +2925,7 @@ DefineTests[ExperimentMeasureSurfaceTension,
 			Upload[
 					Association[
 						Object -> Object[Sample,"ExperimentMeasureSurfaceTension Test Sample 1"<> $SessionUUID],
-						Replace[Composition] -> {{100 VolumePercent, Link[Model[Molecule, "Water"]]}, {5 Millimolar, Link[Model[Molecule, "Acetone"]]}}
+						Replace[Composition] -> {{100 VolumePercent, Link[Model[Molecule, "Water"]], Now}, {5 Millimolar, Link[Model[Molecule, "Acetone"]], Now}}
 					]
 			];
 
@@ -3054,7 +3093,7 @@ DefineTests[ExperimentMeasureSurfaceTensionPreview,
 			ExperimentMeasureSurfaceTensionPreview[Object[Sample,"ExperimentMeasureSurfaceTensionPreview Test Sample 1"<> $SessionUUID]],
 			Null
 		],
-		Example[{Basic, "Return Null for mulitple samples:"},
+		Example[{Basic, "Return Null for multiple samples:"},
 			ExperimentMeasureSurfaceTensionPreview[{Object[Sample,"ExperimentMeasureSurfaceTensionPreview Test Sample 1"<> $SessionUUID], Object[Sample,"ExperimentMeasureSurfaceTensionPreview Test Sample 2"<> $SessionUUID]}],
 			Null
 		],

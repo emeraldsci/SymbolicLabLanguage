@@ -342,6 +342,20 @@ DefineObjectType[Object[Instrument, HPLC], {
 			Description -> "The connector on the instrument to which a column will be attached to, in the form: {connector type, thread type, material of connector, connector gender, inner diameter, outer diameter}.",
 			Category -> "Instrument Specifications"
 		},
+		ColumnPreheater -> {
+			Format -> Single,
+			Class -> Boolean,
+			Pattern :> BooleanP,
+			Description -> "Indicates whether the instrument is equipped with an electric heating element inside the column compartment that directly heats the column inlet tubing. The rapid heating, low volume design reduces gradient delay and extra-column bandspreading.",
+			Category -> "Instrument Specifications"
+		},
+		ColumnCompartmentOrientation -> {
+			Format -> Single,
+			Class -> Expression,
+			Pattern :> ColumnCompartmentOrientationP,
+			Description -> "Indicates whether the instrument is plumbed to use the vertical or horizontal column compartment.",
+			Category -> "Instrument Specifications"
+		},
 		TubingInnerDiameter -> {
 			Format -> Computable,
 			Expression :> SafeEvaluate[{Field[Model]}, Download[Field[Model],TubingInnerDiameter]],
@@ -498,6 +512,94 @@ DefineObjectType[Object[Instrument, HPLC], {
 			Relation->Object[Plumbing, Tubing][HPLC]|Object[Plumbing, Tubing],
 			Description->"The needle wash solution inlet tubing used to uptake NeedleWash solution from container to the autosampler.",
 			Category->"Instrument Specifications"
+		},
+		SecondaryNeedleWashCap -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[
+				Object[Item,Cap][HPLC]
+			],
+			Description -> "The aspiration cap used to take up a second NeedleWash solution from the container to the instrument pump.",
+			Category -> "Instrument Specifications",
+			(* Set to developer as this wash solution is not controlled by the user (as of August 2024) *)
+			Developer -> True
+		},
+		SecondaryNeedleWashSolutionInlet->{
+			Format->Single,
+			Class->Link,
+			Pattern:>_Link,
+			Relation->Object[Plumbing, Tubing][HPLC]|Object[Plumbing, Tubing],
+			Description->"The needle wash solution inlet tubing used to uptake a second NeedleWash solution from container to the autosampler.",
+			Category->"Instrument Specifications",
+			(* Set to developer as this wash solution is not controlled by the user (as of August 2024) *)
+			Developer -> True
+		},
+		TertiaryNeedleWashCap -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[
+				Object[Item,Cap][HPLC]
+			],
+			Description -> "The aspiration cap used to take up a third NeedleWash solution from the container to the instrument pump.",
+			Category -> "Instrument Specifications",
+			(* Set to developer as this wash solution is not controlled by the user (as of August 2024) *)
+			Developer -> True
+		},
+		TertiaryNeedleWashSolutionInlet->{
+			Format->Single,
+			Class->Link,
+			Pattern:>_Link,
+			Relation->Object[Plumbing, Tubing][HPLC]|Object[Plumbing, Tubing],
+			Description->"The needle wash solution inlet tubing used to uptake a third NeedleWash solution from container to the autosampler.",
+			Category->"Instrument Specifications",
+			(* Set to developer as this wash solution is not controlled by the user (as of August 2024) *)
+			Developer -> True
+		},
+		FluidicsWashCap -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[
+				Object[Item,Cap][HPLC]
+			],
+			Description -> "The aspiration cap used to take up FluidicsWash solution from the container to the instrument pump. FluidicsWash solution is used to clean the instruments internal plumbing.",
+			Category -> "Instrument Specifications",
+			(* Set to developer as this wash solution is not controlled by the user (as of August 2024) *)
+			Developer -> True
+		},
+		FluidicsWashSolutionInlet->{
+			Format->Single,
+			Class->Link,
+			Pattern:>_Link,
+			Relation->Object[Plumbing, Tubing][HPLC]|Object[Plumbing, Tubing],
+			Description->"The fluidics wash solution inlet tubing used to uptake FluidicsWash solution from container to the autosampler. FluidicsWash solution is used to clean the instruments internal plumbing.",
+			Category->"Instrument Specifications",
+			(* Set to developer as this wash solution is not controlled by the user (as of August 2024) *)
+			Developer -> True
+		},
+		SealWashCap -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[
+				Object[Item,Cap][HPLC]
+			],
+			Description -> "The aspiration cap used to take up SealWash solution from the container to the instrument pump. SealWash solution is used to wash away any buffer that leaks from the pumps through the seals and to keep the pump seal gaskets wet.",
+			Category -> "Instrument Specifications",
+			(* Set to developer as this wash solution is not controlled by the user (as of August 2024) *)
+			Developer -> True
+		},
+		SealWashSolutionInlet->{
+			Format->Single,
+			Class->Link,
+			Pattern:>_Link,
+			Relation->Object[Plumbing, Tubing][HPLC]|Object[Plumbing, Tubing],
+			Description->"The seal wash solution inlet tubing used to uptake SealWash solution from container to the instrument pump. SealWash solution is used to wash away any buffer that leaks from the pumps through the seals and to keep the pump seal gaskets wet.",
+			Category->"Instrument Specifications",
+			(* Set to developer as this wash solution is not controlled by the user (as of August 2024) *)
+			Developer -> True
 		},
 
 		(* --- Operating Limits --- *)

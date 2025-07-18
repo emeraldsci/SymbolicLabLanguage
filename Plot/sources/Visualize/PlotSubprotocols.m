@@ -92,7 +92,7 @@ PlotSubprotocols[protocol:ObjectP[ProtocolTypes[]], ops:OptionsPattern[PlotSubpr
 		Module[{statusMap, opsStatusMap, vertexStyle},
 
 			statusMap = MapThread[(#1->#2)&, {flatSubs, flatSubsStatus}]/.{Null -> Grey,InCart -> Blue, Backlogged -> Yellow, ShippingMaterials ->Orange, Processing -> Green, Completed -> Black, Aborted->Red, Canceled->Pink};
-			opsStatusMap = MapThread[(#1->#2)&, {flatSubs, flatSubsOpsStatus}]/.{Null -> Grey,None ->Black, OperatorStart -> Blue, OperatorProcessing -> Green, InstrumentProcessing ->Green, OperatorReady ->Green, Troubleshooting->Red};
+			opsStatusMap = MapThread[(#1->#2)&, {flatSubs, flatSubsOpsStatus}]/.{Null -> Grey,None ->Black, OperatorStart -> Blue, OperatorProcessing -> Green, InstrumentProcessing ->Green, OperatorReady ->Green, ScientificSupport->Red};
 
 			(* select the vertex color map to use based on the option value *)
 			vertexStyle = Which[

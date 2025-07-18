@@ -1,3 +1,671 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:97807847ccb57561dee231858b543d150ea9dd4ca86450fd556ed70ff76f2baa
-size 28437
+(* Content-type: application/vnd.wolfram.mathematica *)
+
+(*** Wolfram Notebook File ***)
+(* http://www.wolfram.com/nb *)
+
+(* CreatedBy='Mathematica 12.0' *)
+
+(*CacheID: 234*)
+(* Internal cache information:
+NotebookFileLineBreakTest
+NotebookFileLineBreakTest
+NotebookDataPosition[       158,          7]
+NotebookDataLength[     27566,        661]
+NotebookOptionsPosition[     20893,        542]
+NotebookOutlinePosition[     22931,        586]
+CellTagsIndexPosition[     22888,        583]
+WindowTitle->NumericAnalysis
+WindowFrame->Normal*)
+
+(* Beginning of Notebook Content *)
+Notebook[{
+Cell[BoxData[GridBox[{
+   {GridBox[{
+      {
+       ItemBox[Cell[BoxData[
+         RowBox[{
+          InterpretationBox[
+           StyleBox[
+            GraphicsBox[{},
+             BaselinePosition->Baseline,
+             ImageSize->{8, 0}],
+            CacheGraphics->False],
+           Spacer[8],
+           Selectable->False], Cell["EMERALD GUIDE", "PacletNameCell",
+           TextAlignment->Center,ExpressionUUID->
+           "7908e89f-b893-47ac-459a-a815c351d89e"], 
+          InterpretationBox[
+           StyleBox[
+            GraphicsBox[{},
+             BaselinePosition->Baseline,
+             ImageSize->{8, 0}],
+            CacheGraphics->False],
+           Spacer[8],
+           Selectable->False]}]],
+         TextAlignment->Center,ExpressionUUID->
+         "867f6861-a9ab-4486-7f3f-3ad8f927adfb"],
+        Background->RGBColor[
+         0.24313725490196078`, 0.27058823529411763`, 0.2980392156862745],
+        ItemSize->Full], ""}
+     },
+     GridBoxAlignment->{"Rows" -> {{Center}}},
+     GridBoxItemSize->{"Columns" -> {Full, 
+         Scaled[0.02]}, "Rows" -> {{2.5}}}], Cell[TextData[{
+     Cell[BoxData[
+      ActionMenuBox[
+       FrameBox[Cell[TextData[{
+         "Functions",
+         " ",
+         Cell[BoxData[
+          GraphicsBox[
+           {RGBColor[183/256., 197/256., 211/256.], Thickness[0.13], 
+            LineBox[{{-1.8, 0.5}, {0, 0}, {1.8, 0.5}}]},
+           AspectRatio->1,
+           ImageSize->20,
+           PlotRange->{{-3, 4}, {-1, 1}}]],ExpressionUUID->
+          "9931a442-5739-42f6-8500-555c63440801"]
+        }],ExpressionUUID->"d5b10a07-8965-4fb4-94d5-6acf24c62553"],
+        StripOnInput->False], {"\<\"AnalyzeClusters\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Analysis/ref/AnalyzeClusters"], "\<\"AnalyzeDownsampling\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Analysis/ref/AnalyzeDownsampling"], "\<\"AnalyzeFit\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Analysis/ref/AnalyzeFit"], "\<\"AnalyzeKinetics\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Analysis/ref/AnalyzeKinetics"], "\<\"AnalyzeMeltingPoint\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Analysis/ref/AnalyzeMeltingPoint"], "\<\"AnalyzeParallelLine\"\
+\>":>Documentation`HelpLookup[
+       "paclet:Analysis/ref/AnalyzeParallelLine"], "\<\"AnalyzePeaks\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Analysis/ref/AnalyzePeaks"], "\<\"AnalyzeSmoothing\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Analysis/ref/AnalyzeSmoothing"], \
+"\<\"AnalyzeStandardCurve\"\>":>Documentation`HelpLookup[
+       "paclet:Analysis/ref/AnalyzeStandardCurve"], \
+"\<\"AnalyzeThermodynamics\"\>":>Documentation`HelpLookup[
+       "paclet:Analysis/ref/AnalyzeThermodynamics"], "\<\"ForwardPrediction\"\
+\>":>Documentation`HelpLookup[
+       "paclet:Analysis/ref/ForwardPrediction"], "\<\"InversePrediction\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Analysis/ref/InversePrediction"], "\<\"MeanPrediction\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Analysis/ref/MeanPrediction"], "\<\"PeakResolution\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Analysis/ref/PeakResolution"], "\<\"PlotMeltingPoint\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Plot/ref/PlotMeltingPoint"], "\<\"PlotPrediction\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Plot/ref/PlotPrediction"], "\<\"PlotSmoothing\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Plot/ref/PlotSmoothing"], "\<\"PlotStandardCurve\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Plot/ref/PlotStandardCurve"], "\<\"PlotThermodynamics\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Plot/ref/PlotThermodynamics"], "\<\"SinglePrediction\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Analysis/ref/SinglePrediction"], \
+"\<\"TrajectoryRegression\"\>":>Documentation`HelpLookup[
+       "paclet:NucleicAcids/ref/TrajectoryRegression"]},
+       LineSpacing -> {1.4, 0},
+       Appearance->None,
+       MenuAppearance->Automatic,
+       MenuStyle->"GuideFunction"]],ExpressionUUID->
+      "83680b80-4d32-4771-be7c-b953a97c3dc9"],
+     "\[ThickSpace]\[ThickSpace]\[ThickSpace]\[ThickSpace]\[ThickSpace]\
+\[ThickSpace]",
+     Cell[BoxData[
+      ActionMenuBox[
+       FrameBox[Cell[TextData[{
+         "Related Guides",
+         " ",
+         Cell[BoxData[
+          GraphicsBox[
+           {RGBColor[183/256., 197/256., 211/256.], Thickness[0.13], 
+            LineBox[{{-1.8, 0.5}, {0, 0}, {1.8, 0.5}}]},
+           AspectRatio->1,
+           ImageSize->20,
+           PlotRange->{{-3, 4}, {-1, 1}}]],ExpressionUUID->
+          "e5e900ad-7328-44bc-b08d-0d31436c54e6"]
+        }],ExpressionUUID->"809b63ec-5d30-46b6-9623-912a70d5192c"],
+        StripOnInput->False], {"\<\"AnalysisBySubjectMatter\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Docs/guide/AnalysisBySubjectMatter"], \
+"\<\"AnalyticalAndPhysicalChemistry\"\>":>Documentation`HelpLookup[
+       "paclet:Docs/guide/AnalyticalAndPhysicalChemistry"], \
+"\<\"ImageAnalysis\"\>":>Documentation`HelpLookup[
+       "paclet:Docs/guide/ImageAnalysis"]},
+       LineSpacing -> {1.4, 0},
+       Appearance->None,
+       MenuAppearance->Automatic,
+       MenuStyle->"GuideFunction"]],ExpressionUUID->
+      "bcbb60fd-629a-425f-9372-0e139a668c6e"]
+    }], "AnchorBar",ExpressionUUID->"38d89a17-1235-41bf-b510-37362793f57d"]}
+  }]], "AnchorBarGrid",
+ CellID->1,ExpressionUUID->"acabac80-3c08-4ffa-b48a-c7d4866604c3"],
+
+Cell["Numeric Analysis", "GuideTitle",
+ CellID->32374813,ExpressionUUID->"08d37606-a1de-48ab-b6f2-1cf391892939"],
+
+Cell["\<\
+Symbolic Lab Language (SLL) data analysis functions which seamlessly connect \
+into the linked data network, providing Constellation objects for that \
+analysis itself which houses and connect the results of the analysis to its \
+source data and methodology, and also serves as a template for future \
+analysis that seeks to replicate previous analytical methodology.\
+\>", "GuideAbstract",
+ CellID->71243511,ExpressionUUID->"129272fd-e3e3-480d-8db5-44894227e8ad"],
+
+Cell["\t", "GuideDelimiterSubsection",
+ CellID->895617850,ExpressionUUID->"40d40f07-a56c-4817-bb48-0874d3eff5bb"],
+
+Cell["Peak Picking", "GuideFunctionsSubsection",
+ CellID->217805336,ExpressionUUID->"8574cc20-9a03-448e-8d3c-29bfe814bb98"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["AnalyzePeaks"]],"paclet:Analysis/ref/AnalyzePeaks"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "66a2cead-6d4c-4841-8ec7-5791bc913668"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Preforms peak picking analysis of experimental source data connecting the \
+results of the analysis to its source data and experimental protocol \
+information."
+}], "GuideText",
+ CellID->413912620,ExpressionUUID->"efcb3878-5bd7-448f-8496-d2fecab2d698"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["PeakResolution"]],"paclet:Analysis/ref/PeakResolution"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "28887c03-9e71-4b9a-9953-b170f663cc2d"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Given a source of peak picking analysis, provides a measure of resolution \
+between any two peaks."
+}], "GuideText",
+ CellID->739071452,ExpressionUUID->"be240e99-3546-4355-b047-75252c049df0"],
+
+Cell["\t", "GuideDelimiterSubsection",
+ CellID->34472265,ExpressionUUID->"4689af3e-d163-4f03-80ed-372b963f9691"],
+
+Cell["Trend Fitting", "GuideFunctionsSubsection",
+ CellID->261323283,ExpressionUUID->"991e2285-1bb3-4ab6-9b42-2a638cb3a3b0"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["AnalyzeFit"]],"paclet:Analysis/ref/AnalyzeFit"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "a41b2204-5100-4b01-ba89-3ce802adb90e"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Performs regression analysis to fit linear or non-linear functions \
+connecting the results of that analysis to source data and experimental \
+protocol information."
+}], "GuideText",
+ CellID->329019591,ExpressionUUID->"f85903fd-5f8f-4e8d-97e0-e362b22e560f"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["SinglePrediction"]],"paclet:Analysis/ref/SinglePrediction"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "e5d48cc1-04e3-457f-98f4-32b8831c40e2"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Given a fit object and an x value or distribution, returns a predicted \
+distribution of y values."
+}], "GuideText",
+ CellID->423877534,ExpressionUUID->"ff2ebe33-b0af-4549-bbe1-52ae851188a4"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["MeanPrediction"]],"paclet:Analysis/ref/MeanPrediction"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "d634b37a-1c8a-4159-b5ce-0ca237b56ecc"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Given a fit object and an x value or distribution, returns a predicted \
+distribution of y values."
+}], "GuideText",
+ CellID->1218675,ExpressionUUID->"f1b3a6a2-11af-467d-9ace-07bca09aedc3"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["InversePrediction"]],"paclet:Analysis/ref/InversePrediction"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "8d40a0f4-3573-40be-a7e8-52074c2ca685"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Given a fit object and an y value or distribution, returns a predicted \
+distribution of x values."
+}], "GuideText",
+ CellID->715677929,ExpressionUUID->"35144f0f-5c74-4879-80b6-cea6beaf094f"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["PlotPrediction"]],"paclet:Plot/ref/PlotPrediction"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "cf55d065-8e2e-4c76-a488-e6712ccbe3e0"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Given a fit object and first it predicts the x or y value associated with \
+a given y or x value or distribution. Then it overlays the results to the fit \
+line plot."
+}], "GuideText",
+ CellID->161466012,ExpressionUUID->"04cfd3a9-b62e-4d2c-9fd7-a1d8662e5b30"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["AnalyzeStandardCurve"]],
+    "paclet:Analysis/ref/AnalyzeStandardCurve"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "ed1bbe6d-b6b5-4cff-b4ca-ee5d629f1e15"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Given a list of input data and a list of standard data, finds a fitted \
+standard curve to the standard data and utilizes the standard curve equation \
+to analyze the input data using interpolation or extrapolation."
+}], "GuideText",
+ CellID->102397875,ExpressionUUID->"89d85460-cb5f-4e80-99aa-4396eddbd948"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["PlotStandardCurve"]],"paclet:Plot/ref/PlotStandardCurve"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "120e24cf-d1e8-49a7-95fb-b2241b0a4381"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Generates a plot of a fitted standard curve overlaid with the data points \
+use to fit it, and the input points the standard was applied to from the \
+provided standard curve analysis object."
+}], "GuideText",
+ CellID->188560761,ExpressionUUID->"8c014dc4-5ba6-4d83-b7f1-7de7ccfe2a8f"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["AnalyzeMeltingPoint"]],
+    "paclet:Analysis/ref/AnalyzeMeltingPoint"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "d7d2a665-dcdd-4f63-b68c-5dddc896fa92"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Calculates the melting point from a melting curve, a cooling curve, or a \
+dynamic light scattering dataset (dataset can be either from fluorescence or \
+absorbance thermodynamics data, or thermal shift instrument which may contain \
+both fluorescence spectra as well as dynamic light scattering data)."
+}], "GuideText",
+ CellID->63262838,ExpressionUUID->"3c63e2d8-4ec0-4031-8a5f-f6f33658da0c"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["PlotMeltingPoint"]],"paclet:Plot/ref/PlotMeltingPoint"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "9ce2c9c3-f0a9-4149-a36c-e4713ee0b55e"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Generates a list plot of the source melting curve analysis along with a \
+demarcation of the fitted melting point."
+}], "GuideText",
+ CellID->576546047,ExpressionUUID->"aa4abe1b-33fc-46da-bb11-bcfc14ab7985"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["AnalyzeParallelLine"]],
+    "paclet:Analysis/ref/AnalyzeParallelLine"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "7b31d7f3-1c25-4c2c-b6b5-5faa5a25b677"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Calculates the relative potency ratio between two dose-response fitted \
+curves."
+}], "GuideText",
+ CellID->45734988,ExpressionUUID->"ce38d463-2db4-436d-a6ce-e4160adf97ad"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["AnalyzeKinetics"]],"paclet:Analysis/ref/AnalyzeKinetics"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "9a832191-ac13-48c7-ac8c-d382eb98ade0"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Given a reaction mechanism and a set of reaction trajectories (either \
+simulated or from experimentation) fits rate constants which represent a best \
+fit to the trajectory data."
+}], "GuideText",
+ CellID->129565343,ExpressionUUID->"f49c4623-965b-40a5-bc47-61f2f9084cf4"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["AnalyzeThermodynamics"]],
+    "paclet:Analysis/ref/AnalyzeThermodynamics"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "0c39bfe7-aab6-4664-aee3-c18dd32954d8"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Given a set of melting curve data or analysis, performs Van't Hoff \
+analysis to determine free-energy, enthalpy, and entropy components of a \
+binding event."
+}], "GuideText",
+ CellID->354246829,ExpressionUUID->"2d73f879-b427-4452-b191-71665f8413de"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["PlotThermodynamics"]],"paclet:Plot/ref/PlotThermodynamics"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "5b5ebf66-de0e-47ae-918c-56bac767d3e3"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Generates a Van't Hoff plot log of Keq as a function of inverse \
+temperature and the fitted line containing the thermodynamic parameters from \
+the provided thermodynamic analysis object."
+}], "GuideText",
+ CellID->687410770,ExpressionUUID->"04236da0-4cc7-4123-a288-b53c30917c85"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["TrajectoryRegression"]],
+    "paclet:NucleicAcids/ref/TrajectoryRegression"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "8c8d878e-b211-4234-b833-43b3ba6b5bcb"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Extracts concentrations of all or specified species at given time from the \
+input trajectory."
+}], "GuideText",
+ CellID->300955625,ExpressionUUID->"c762e043-d716-46e4-a0c3-7fc9b001695d"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["ForwardPrediction"]],"paclet:Analysis/ref/ForwardPrediction"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "c6f1add0-11e5-4229-8b73-2012f8e19039"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Computes a single or mean predicted value distribution obtained by \
+propagating the specified input through the specified function."
+}], "GuideText",
+ CellID->342132960,ExpressionUUID->"6eeda216-363e-46ed-92f8-5392c20ceea5"],
+
+Cell["\t", "GuideDelimiterSubsection",
+ CellID->19435462,ExpressionUUID->"6401c22c-ad68-4988-b092-7c47ba10a240"],
+
+Cell["Data Transformation", "GuideFunctionsSubsection",
+ CellID->260613884,ExpressionUUID->"e190579d-32b4-4c12-acdb-af090499f650"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["AnalyzeDownsampling"]],
+    "paclet:Analysis/ref/AnalyzeDownsampling"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "351c6853-e9bc-490f-96e4-dac05817c010"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Given a list of xy coordinates, downsamples the number of data points to \
+reduce the processing time of the analysis while retaining the broader trend \
+in the data."
+}], "GuideText",
+ CellID->50094732,ExpressionUUID->"b5a7765c-2315-4d92-8e47-ee3942e2c4d1"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["AnalyzeSmoothing"]],"paclet:Analysis/ref/AnalyzeSmoothing"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "4698dd2a-9930-40dd-8ee8-6fae4f4bc37e"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Given a list of xy coordinates, applies different types of smoothing \
+functions to the datasets in order to reduce the noise and make clear the \
+broader trends in the data."
+}], "GuideText",
+ CellID->312142447,ExpressionUUID->"85a5fa41-1ff1-408d-bab3-1857186cc20b"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["PlotSmoothing"]],"paclet:Plot/ref/PlotSmoothing"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "dd5b7e56-cacd-4bfc-98cd-dfd8bac217a4"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Generates a line plot of smooth data along with the original un-smoothed \
+data points from a provided smoothing analysis object."
+}], "GuideText",
+ CellID->711499007,ExpressionUUID->"5748bfea-f1a9-4c3a-9ed1-0f7d63d6688f"],
+
+Cell["\t", "GuideDelimiterSubsection",
+ CellID->74202486,ExpressionUUID->"768137fa-b2c3-4a65-8dbc-30827bcd5960"],
+
+Cell["Clustering Analysis", "GuideFunctionsSubsection",
+ CellID->316679278,ExpressionUUID->"a9d4773f-2f2e-465c-b565-cdac3c1b3275"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["AnalyzeClusters"]],"paclet:Analysis/ref/AnalyzeClusters"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "a9e91365-e8b8-41ba-8ec5-1c1c47f01f09"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Performs clustering analysis to classify groups of multi-dimensional data \
+points connecting the results of the analysis to its source data and \
+experimental protocol information."
+}], "GuideText",
+ CellID->34681033,ExpressionUUID->"77df720f-d4d6-4891-bd4a-82b14e32918f"],
+
+Cell["", "SectionFooterSpacer",
+ CellID->10539097,ExpressionUUID->"04a47c5e-6642-449d-bce0-1b20bdf5c5b2"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  InterpretationBox[
+   StyleBox[
+    GraphicsBox[{},
+     BaselinePosition->Baseline,
+     ImageSize->{6, 0}],
+    CacheGraphics->False],
+   Spacer[6]]],ExpressionUUID->"9ab31127-9a4b-4f3b-8d49-36afa326483a"],
+ "Related Guides"
+}], "GuideMoreAboutSection",
+ WholeCellGroupOpener->True,
+ CellID->275426646,ExpressionUUID->"6d17abb3-393f-4459-81a1-b3a90ff611b6"],
+
+Cell["", "SectionHeaderSpacer",
+ CellID->57233742,ExpressionUUID->"0ac700a9-4762-4483-8259-ade429cde8d2"],
+
+Cell[BoxData[
+ TemplateBox[{Cell[
+    TextData["AnalyticalAndPhysicalChemistry"]],
+   "paclet:Docs/guide/AnalyticalAndPhysicalChemistry"},
+  "RefLink",
+  BaseStyle->"GuideMoreAboutSub"]], "GuideMoreAboutSub",
+ CellID->172610515,ExpressionUUID->"e319fcfd-522c-4625-a546-991e79e7a904"],
+
+Cell[BoxData[
+ TemplateBox[{Cell[
+    TextData["ImageAnalysis"]],"paclet:Docs/guide/ImageAnalysis"},
+  "RefLink",
+  BaseStyle->"GuideMoreAboutSub"]], "GuideMoreAboutSub",
+ CellID->293582134,ExpressionUUID->"88d38c5c-ae47-482e-8d93-6810e98e45b7"],
+
+Cell[BoxData[
+ TemplateBox[{Cell[
+    TextData["AnalysisBySubjectMatter"]],
+   "paclet:Docs/guide/AnalysisBySubjectMatter"},
+  "RefLink",
+  BaseStyle->"GuideMoreAboutSub"]], "GuideMoreAboutSub",
+ CellID->17800079,ExpressionUUID->"e3a76b96-5ed7-41be-b5ea-6eec1ba8d4d7"],
+
+Cell["", "FooterCell",
+ CellID->356650523,ExpressionUUID->"ac3dc49a-1649-44c0-b845-8d45498ed988"]
+},
+Saveable->False,
+ScreenStyleEnvironment->"Working",
+WindowSize->{775, 872},
+WindowMargins->{{564, Automatic}, {Automatic, 54}},
+WindowTitle->"NumericAnalysis",
+Visible->False,
+TaggingRules->{
+ "ModificationHighlight" -> False, "ColorType" -> "GuideColor", 
+  "ExampleCounter" -> 1, "NeedPlatMsgIn" -> None, "RootCaptions" -> "", 
+  "Metadata" -> {
+   "built" -> "Mon 14 Nov 2022 18:49:37", "context" -> "Docs`", 
+    "keywords" -> {
+     "AnalyzePeaks", "PeakResolution", "AnalyzeFit", "SinglePrediction", 
+      "MeanPrediction", "InversePrediction", "PlotPrediction", 
+      "AnalyzeStandardCurve", "PlotStandardCurve", "AnalyzeMeltingPoint", 
+      "PlotMeltingPoint", "AnalyzeParallelLine", "AnalyzeKinetics", 
+      "AnalyzeThermodynamics", "PlotThermodynamics", "TrajectoryRegression", 
+      "ForwardPrediction", "AnalyzeDownsampling", "AnalyzeSmoothing", 
+      "PlotSmoothing", "AnalyzeClusters"}, "specialkeywords" -> {}, 
+    "tutorialcollectionlinks" -> {}, "index" -> True, "label" -> "ECL Guide", 
+    "language" -> "en", "paclet" -> "Docs", "status" -> "None", "summary" -> 
+    "Symbolic Lab Language (SLL) data analysis functions which seamlessly \
+connect into the linked data network, providing Constellation objects for \
+that analysis itself which houses and connect the results of the analysis to \
+its source data and methodology, and also serves as a template for future \
+analysis that seeks to replicate previous analytical methodology.", 
+    "synonyms" -> {}, "titlemodifier" -> "", "Windowtitle" -> 
+    "NumericAnalysis", "title" -> "NumericAnalysis", "type" -> "Guide", "uri" -> 
+    "Docs/guide/NumericAnalysis", "WorkflowDockedCell" -> ""}, 
+  "SearchTextTranslated" -> "", "LinkTrails" -> ""},
+FrontEndVersion->"12.0 for Microsoft Windows (64-bit) (September 6, 2019)",
+StyleDefinitions->"EmeraldReference.nb",
+CharacterEncoding -> "UTF-8"
+]
+(* End of Notebook Content *)
+
+(* Internal cache information *)
+(*CellTagsOutline
+CellTagsIndex->{}
+*)
+(*CellTagsIndex
+CellTagsIndex->{}
+*)
+(*NotebookFileOutline
+Notebook[{
+Cell[587, 21, 5463, 124, 56, "AnchorBarGrid",ExpressionUUID->"acabac80-3c08-4ffa-b48a-c7d4866604c3",
+ CellID->1],
+Cell[6053, 147, 112, 1, 50, "GuideTitle",ExpressionUUID->"08d37606-a1de-48ab-b6f2-1cf391892939",
+ CellID->32374813],
+Cell[6168, 150, 474, 7, 94, "GuideAbstract",ExpressionUUID->"129272fd-e3e3-480d-8db5-44894227e8ad",
+ CellID->71243511],
+Cell[6645, 159, 113, 1, 22, "GuideDelimiterSubsection",ExpressionUUID->"40d40f07-a56c-4817-bb48-0874d3eff5bb",
+ CellID->895617850],
+Cell[6761, 162, 123, 1, 36, "GuideFunctionsSubsection",ExpressionUUID->"8574cc20-9a03-448e-8d3c-29bfe814bb98",
+ CellID->217805336],
+Cell[6887, 165, 555, 13, 53, "GuideText",ExpressionUUID->"efcb3878-5bd7-448f-8496-d2fecab2d698",
+ CellID->413912620],
+Cell[7445, 180, 498, 12, 59, "GuideText",ExpressionUUID->"be240e99-3546-4355-b047-75252c049df0",
+ CellID->739071452],
+Cell[7946, 194, 112, 1, 22, "GuideDelimiterSubsection",ExpressionUUID->"4689af3e-d163-4f03-80ed-372b963f9691",
+ CellID->34472265],
+Cell[8061, 197, 124, 1, 36, "GuideFunctionsSubsection",ExpressionUUID->"991e2285-1bb3-4ab6-9b42-2a638cb3a3b0",
+ CellID->261323283],
+Cell[8188, 200, 556, 13, 53, "GuideText",ExpressionUUID->"f85903fd-5f8f-4e8d-97e0-e362b22e560f",
+ CellID->329019591],
+Cell[8747, 215, 502, 12, 59, "GuideText",ExpressionUUID->"ff2ebe33-b0af-4549-bbe1-52ae851188a4",
+ CellID->423877534],
+Cell[9252, 229, 496, 12, 59, "GuideText",ExpressionUUID->"f1b3a6a2-11af-467d-9ace-07bca09aedc3",
+ CellID->1218675],
+Cell[9751, 243, 504, 12, 59, "GuideText",ExpressionUUID->"35144f0f-5c74-4879-80b6-cea6beaf094f",
+ CellID->715677929],
+Cell[10258, 257, 562, 13, 59, "GuideText",ExpressionUUID->"04cfd3a9-b62e-4d2c-9fd7-a1d8662e5b30",
+ CellID->161466012],
+Cell[10823, 272, 632, 14, 80, "GuideText",ExpressionUUID->"89d85460-cb5f-4e80-99aa-4396eddbd948",
+ CellID->102397875],
+Cell[11458, 288, 593, 13, 59, "GuideText",ExpressionUUID->"8c014dc4-5ba6-4d83-b7f1-7de7ccfe2a8f",
+ CellID->188560761],
+Cell[12054, 303, 716, 15, 101, "GuideText",ExpressionUUID->"3c63e2d8-4ec0-4031-8a5f-f6f33658da0c",
+ CellID->63262838],
+Cell[12773, 320, 514, 12, 59, "GuideText",ExpressionUUID->"aa4abe1b-33fc-46da-bb11-bcfc14ab7985",
+ CellID->576546047],
+Cell[13290, 334, 494, 13, 38, "GuideText",ExpressionUUID->"ce38d463-2db4-436d-a6ce-e4160adf97ad",
+ CellID->45734988],
+Cell[13787, 349, 581, 13, 59, "GuideText",ExpressionUUID->"f49c4623-965b-40a5-bc47-61f2f9084cf4",
+ CellID->129565343],
+Cell[14371, 364, 577, 14, 59, "GuideText",ExpressionUUID->"2d73f879-b427-4452-b191-71665f8413de",
+ CellID->354246829],
+Cell[14951, 380, 592, 13, 80, "GuideText",ExpressionUUID->"04236da0-4cc7-4123-a288-b53c30917c85",
+ CellID->687410770],
+Cell[15546, 395, 515, 13, 59, "GuideText",ExpressionUUID->"c762e043-d716-46e4-a0c3-7fc9b001695d",
+ CellID->300955625],
+Cell[16064, 410, 538, 12, 59, "GuideText",ExpressionUUID->"6eeda216-363e-46ed-92f8-5392c20ceea5",
+ CellID->342132960],
+Cell[16605, 424, 112, 1, 22, "GuideDelimiterSubsection",ExpressionUUID->"6401c22c-ad68-4988-b092-7c47ba10a240",
+ CellID->19435462],
+Cell[16720, 427, 130, 1, 36, "GuideFunctionsSubsection",ExpressionUUID->"e190579d-32b4-4c12-acdb-af090499f650",
+ CellID->260613884],
+Cell[16853, 430, 580, 14, 53, "GuideText",ExpressionUUID->"b5a7765c-2315-4d92-8e47-ee3942e2c4d1",
+ CellID->50094732],
+Cell[17436, 446, 578, 13, 59, "GuideText",ExpressionUUID->"85a5fa41-1ff1-408d-bab3-1857186cc20b",
+ CellID->312142447],
+Cell[18017, 461, 523, 12, 59, "GuideText",ExpressionUUID->"5748bfea-f1a9-4c3a-9ed1-0f7d63d6688f",
+ CellID->711499007],
+Cell[18543, 475, 112, 1, 22, "GuideDelimiterSubsection",ExpressionUUID->"768137fa-b2c3-4a65-8dbc-30827bcd5960",
+ CellID->74202486],
+Cell[18658, 478, 130, 1, 36, "GuideFunctionsSubsection",ExpressionUUID->"a9d4773f-2f2e-465c-b565-cdac3c1b3275",
+ CellID->316679278],
+Cell[18791, 481, 582, 13, 53, "GuideText",ExpressionUUID->"77df720f-d4d6-4891-bd4a-82b14e32918f",
+ CellID->34681033],
+Cell[19376, 496, 105, 1, 29, "SectionFooterSpacer",ExpressionUUID->"04a47c5e-6642-449d-bce0-1b20bdf5c5b2",
+ CellID->10539097],
+Cell[19484, 499, 392, 12, 72, "GuideMoreAboutSection",ExpressionUUID->"6d17abb3-393f-4459-81a1-b3a90ff611b6",
+ CellID->275426646],
+Cell[19879, 513, 105, 1, 14, "SectionHeaderSpacer",ExpressionUUID->"0ac700a9-4762-4483-8259-ade429cde8d2",
+ CellID->57233742],
+Cell[19987, 516, 283, 6, 24, "GuideMoreAboutSub",ExpressionUUID->"e319fcfd-522c-4625-a546-991e79e7a904",
+ CellID->172610515],
+Cell[20273, 524, 245, 5, 24, "GuideMoreAboutSub",ExpressionUUID->"88d38c5c-ae47-482e-8d93-6810e98e45b7",
+ CellID->293582134],
+Cell[20521, 531, 268, 6, 24, "GuideMoreAboutSub",ExpressionUUID->"e3a76b96-5ed7-41be-b5ea-6eec1ba8d4d7",
+ CellID->17800079],
+Cell[20792, 539, 97, 1, 41, "FooterCell",ExpressionUUID->"ac3dc49a-1649-44c0-b845-8d45498ed988",
+ CellID->356650523]
+}
+]
+*)
+
+(* End of internal cache information *)
+

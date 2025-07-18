@@ -15,123 +15,198 @@
 (* ::Subsubsection:: *)
 (*Helper Parser Functions*)
 
+(* Define this global variable to determine whether we memoize result from these parsers. Could be useful to set to False in testing/debugging *)
+$MemoizeProductParseResult = True;
+
+(* Define this feature flag to switch between python and MM parser *)
+(* TODO turn on this feature flag once new pyECL is released *)
+$UsePyeclProductParser = True;
 
 (* ::Subsubsection::Closed:: *)
 (*ThermoFisher to Product Association (parseThermoProductURL)*)
+(* small helper *)
+thermoProductIDFromURL[url_String] := First[StringCases[url, "/catalog/product/"~~x:(DigitCharacter | WordCharacter | "-" | ".").. :> x]];
 
 
 (* Given a thermofisher URL, return as association of parsed information from the URL. *)
 parseThermoProductURL[url_String]:=Module[
-	{result, thermoProductID, thermoFisherAPI, productInformationJSON, productInformation, thermoName,
-		productSize, productPrice, thermoWebsite, productImage},
+	{
+		result, thermoProductID, thermoFisherAPI, productInformationJSON, productInformation, thermoName,
+		productSize, productPrice, thermoWebsite, productImage, isCase, productInformation2, productAmountString2,
+		productAmount2, catalogDescription, sampleType, cleanedURL
+	},
 
 	(* Wrap our computation with Quiet[] and Check[] because sometimes contacting the web server can result in an error. *)
-	result=Quiet[
-		Check[
-			(* Parse out the product ID from the URL. *)
-			thermoProductID=First[StringCases[url, "/catalog/product/"~~x:(DigitCharacter | WordCharacter | "-").. :> x]];
+	(* Parse out the product ID from the URL. *)
+	thermoProductID=thermoProductIDFromURL[url];
 
-			(* Make a request to the ThermoFisher API for the information about this product. *)
-			(* Error: This is reverse engineered and ThermoFisher may change how this works! *)
-			thermoFisherAPI="https://www.thermofisher.com/api/store/sku/price/";
+	(* Make a request to the ThermoFisher API for the information about this product. *)
+	(* Error: This is reverse engineered and ThermoFisher may change how this works! *)
+	thermoFisherAPI="https://www.thermofisher.com/api/store/sku/price/";
 
-			productInformationJSON=HTTPRequestJSON[{<|
-				"URL" -> thermoFisherAPI,
-				"Method" -> "POST",
-				"Body" -> {"items" -> {{"catalogNumber" -> thermoProductID, "quantity" -> 1}}}
-			|>}];
-
-			productInformation=First[First[productInformationJSON]["products"]];
-
-			(* Do a GET request to get the content of the thermo URL. *)
-			thermoWebsite=HTTPRequestJSON[{<|
-				"URL" -> url,
-				"Method" -> "GET"
-			|>}];
-
-			(* Attempt to pull out the name of the product from the association. *)
-			thermoName=Quiet[Check[
-				Module[{rawStringName},
-					(* Pull out the string within the <title> ... </title> *)
-					rawStringName=First[First[StringCases[thermoWebsite, Shortest["<title>"~~x__~~"</title>"] :> x]]];
-
-					(* Convert all HTML entities into empty strings (Mathematica can't handle these) *)
-					StringReplace[rawStringName, {"&#"~~(DigitCharacter | WordCharacter)..~~";" :> "", "&"~~(DigitCharacter | WordCharacter)..~~";" :> ""}]
-				],
-				Null
-			]];
-
-			If[!MatchQ[thermoName, _String|Null],
-				Return[$Failed];
-			];
-
-			(* Attempt to pull out the size of the product from the association. *)
-			productSize=Quiet[Check[
-				Module[{amounts},
-					amounts=StringCases[thermoWebsite, "\"size\":\""~~stringAmount:RegularExpression["[A-Za-z0-9, ]+"]~~"\"" :> stringAmount];
-
-					(* Convert all HTML entities into empty strings (Mathematica can't handle these) *)
-					(* need to handle the Null case if it can't find anything *)
-					FirstCase[Quantity /@ Flatten[amounts], VolumeP | MassP, Null]
-				],
-				Null
-			]];
-
-			If[!MatchQ[productSize, VolumeP|MassP|Null],
-				Return[$Failed];
-			];
-
-			(* Attempt to pull out the price of the product from the association. *)
-			productPrice=Quiet[Check[
-				Module[{finalPriceFloat, currency},
-					finalPriceFloat=productInformation["unFormattedPrice"]["finalPrice"];
-					currency=productInformation["currency"];
-
-					(* Convert all HTML entities into empty strings (Mathematica can't handle these) *)
-					Quantity[finalPriceFloat, currency]
-				],
-				Null
-			]];
-
-			If[!MatchQ[productPrice, UnitsP[USD]|Null],
-				Return[$Failed];
-			];
-
-			(* Attempt to pull out the description of the product from the association. *)
-			productImage=Quiet[Check[
-				Module[{rawStringDescriptionWithMetaTag},
-					(* Get the file name of the image out of the website *)
-					rawStringDescriptionWithMetaTag=First[First[StringCases[thermoWebsite, "https://assets.thermofisher.com/TFS-Assets/LSG/product-images/"~~x:(DigitCharacter | WordCharacter | "-" | "_" | "." | " ")..~~"\"" :> x]]];
-
-					(* Form the full image *)
-					"https://assets.thermofisher.com/TFS-Assets/LSG/product-images/"<>rawStringDescriptionWithMetaTag<>"-250.jpg"
-				],
-				Null
-			]];
-
-			If[!MatchQ[productImage, _String|Null],
-				Return[$Failed];
-			];
-
-			(* Return an association of our information. *)
-			<|
-				Name -> thermoName,
-				Supplier -> Object[Company, Supplier, "Thermo Fisher Scientific"],
-				CatalogNumber -> thermoProductID,
-				ProductURL -> url,
-				Amount -> productSize,
-				Price -> productPrice,
-				ImageFile -> productImage
-			|>,
-
-			(* If something happened, return $Failed. Our high-level functions check for this. *)
-			$Failed
-		]
+	productInformationJSON=Quiet[
+		HTTPRequestJSON[{<|
+			"URL" -> thermoFisherAPI,
+			"Method" -> "POST",
+			"Body" -> {"items" -> {{"catalogNumber" -> thermoProductID, "quantity" -> 1}}}
+		|>}]
 	];
+
+	productInformation = Quiet[Check[
+		First[First[productInformationJSON]["products"]],
+		$Failed
+	]];
+
+	If[MatchQ[productInformation, $Failed],
+		Return[$Failed]
+	];
+
+	(* Do a GET request to get the content of the thermo URL. *)
+	thermoWebsite=HTTPRequestJSON[{<|
+		"URL" -> url,
+		"Method" -> "GET"
+	|>}];
+
+	(* Attempt to pull out the name of the product from the association. *)
+	thermoName=Quiet[Check[
+		Module[{rawStringName},
+			(* Pull out the string within the <title> ... </title> *)
+			rawStringName=First[First[StringCases[thermoWebsite, Shortest["<title>"~~x__~~"</title>"] :> x]]];
+
+			(* Convert all HTML entities into empty strings (Mathematica can't handle these) *)
+			cleanUpHTMLString[StringReplace[rawStringName, {"&#"~~(DigitCharacter | WordCharacter)..~~";" :> "", "&"~~(DigitCharacter | WordCharacter)..~~";" :> ""}]]
+		],
+		Null
+	]];
+
+	If[!MatchQ[thermoName, _String|Null],
+		Return[$Failed];
+	];
+
+	(* Attempt to pull out the size of the product from the association. *)
+	productSize=Quiet[Check[
+		Module[{amounts},
+			amounts=StringCases[thermoWebsite, "\"Quantity\",\"value\":\""~~stringAmount:RegularExpression["[A-Za-z0-9, ]+"]~~"\"" :> stringAmount];
+
+			(* Convert all HTML entities into empty strings (Mathematica can't handle these) *)
+			(* need to handle the Null case if it can't find anything *)
+			Quiet[Check[
+				FirstCase[StringToQuantity[#, Server -> False]& /@ Flatten[amounts], VolumeP | MassP, Null],
+				If[StringMatchQ[First[Flatten[amounts]], Repeated[NumberString]~~" "~~Repeated[WordCharacter]],
+					ToExpression[StringReplace[First[Flatten[amounts]], x:Repeated[NumberString]~~" "~~Repeated[WordCharacter] :> x]],
+					Null
+				]
+			]]
+		],
+		Null
+	]];
+
+	(* Attempt to pull out the price of the product from the association. *)
+	productPrice= Quiet[Check[
+		Module[{finalPriceFloat, currency},
+			finalPriceFloat = productInformation["unFormattedPrice"]["finalPrice"];
+			currency = productInformation["currency"];
+
+			(* Convert all HTML entities into empty strings (Mathematica can't handle these) *)
+			If[MatchQ[finalPriceFloat, _?NumericQ],
+				Quantity[finalPriceFloat, currency],
+				Null
+			]
+		],
+		Null
+	]];
+
+	If[!MatchQ[productPrice, UnitsP[USD]],
+		Return[$Failed];
+	];
+
+	(* If the product uom is "EA" (each), then it's a single item, otherwise it's a case of potentially multiple items *)
+	isCase = If[MatchQ[productInformation["uom"], "EA"],
+		False,
+		True
+	];
+
+	(* Extract product information from an alternative source, and cross-check *)
+	productInformation2 = Quiet[Check[
+		ImportJSONToAssociation[First[StringCases[First[thermoWebsite], "<script type=\"application/ld+json\"> "~~x:Shortest[___]~~"</script>" :> x]]],
+		Null
+	]];
+
+	productAmountString2 = If[MatchQ[productInformation2, _Association],
+		Lookup[productInformation2, "size", Null],
+		Null
+	];
+
+	(* extract amount from the second info block *)
+	productAmount2 = Which[
+		(* If we can't find the size in the info block, set to Null *)
+		NullQ[productAmountString2],
+			Null,
+		(* If we see "xx of n" (e.g., box of 10, case of 200), extract the number *)
+		StringMatchQ[productAmountString2, ___~~Repeated[NumberString]],
+			ToExpression[StringReplace[productAmountString2,  ___~~"of "~~x:Repeated[NumberString]:>x]],
+		(* If we see number + unit (e.g., 50 g, 100 ml), extract the number and unit *)
+		StringMatchQ[productAmountString2, Repeated[NumberString]~~" "~~__],
+			Quiet[Check[
+				StringToQuantity[StringReplace[productAmountString2, {"&micro;" -> "micro ", "&mu;" -> "micro "}]], (* Fix the format of 'micro' notation from thermo *)
+				Null
+			]],
+		True,
+			Null
+	];
+
+	catalogDescription = Quiet[Check[
+		cleanUpHTMLString[First[StringCases[First[thermoWebsite], "<div class=\"short-description\">"~~x:Shortest[___]~~"</div>" :> x]]],
+		Null
+	]];
+
+	(* Attempt to pull out the description of the product from the association. *)
+	productImage=Quiet[Check[
+		Module[{rawStringDescriptionWithMetaTag},
+			(* Get the file name of the image out of the website *)
+			rawStringDescriptionWithMetaTag=First[First[StringCases[thermoWebsite, "/TFS-Assets/LSG/product-images/"~~x:Shortest[Repeated[(DigitCharacter | WordCharacter | "-" | "_" | "." | " ")]]~~"\" as=" :> x]]];
+
+			(* Form the full image *)
+			"https://www.thermofisher.com/TFS-Assets/LSG/product-images/"<>rawStringDescriptionWithMetaTag
+		],
+		Null
+	]];
+
+	If[!MatchQ[productImage, _String|Null],
+		Return[$Failed];
+	];
+
+	sampleType = resolveSampleTypesFromString[thermoName, catalogDescription];
+
+	cleanedURL = StringReplace[url, x:___~~"?"~~___ :> x];
+
+	(* Return an association of our information. *)
+	result = <|
+		Name -> thermoName,
+		Supplier -> Object[Company, Supplier, "Thermo Fisher Scientific"],
+		CatalogNumber -> thermoProductID,
+		ProductURL -> cleanedURL,
+		Amount -> If[NullQ[productSize] && MatchQ[productAmount2, _Quantity],
+			productAmount2,
+			productSize
+		],
+		Price -> productPrice,
+		ImageFile -> productImage,
+		Packaging -> If[isCase,
+			Case,
+			Single
+		],
+		NumberOfItems -> If[isCase,
+			productAmount2,
+			1
+		],
+		CatalogDescription -> catalogDescription,
+		SampleType -> sampleType
+	|>;
 
 	(* Only memoize if the result wasn't Null. This is because the ThermoFisher server can sometimes fail or *)
 	(* lock us out if we're making too many requests. *)
-	If[!SameQ[result, $Failed],
+	If[!SameQ[result, $Failed] && TrueQ[$MemoizeProductParseResult],
 		parseThermoProductURL[url]=result;
 	];
 
@@ -145,65 +220,83 @@ parseThermoProductURL[url_String]:=Module[
 
 
 parseSigmaProductURL[url_String]:=Module[
-	{result,sigmaWebsite,websiteJSON,sigmaName,productID,skus,productVendor,pricingJSON,rawPackageSize,rawPrice,caseQ,samplesPerCase,stringIndividualContainerSize,rawIndividualContainerSize,individualContainerSize,price},
+	{
+		result, sigmaWebsite, websiteJSON, sigmaName, productID, skus, productVendor, pricingJSON, rawPackageSize,
+		rawPrice, caseQ, samplesPerCase, stringIndividualContainerSize, rawIndividualContainerSize, individualContainerSize,
+		price, rawDescription, cleanedUpDescription, sampleType, imageURL, completeImageURL, sigmaNameRaw, rawIndividualContainerSizeCorrected,
+		productInfo
+	},
 	
 	(* Wrap our computation with Quiet[] and Check[] because sometimes contacting the web server can result in an error. *)
-	result=Quiet[Check[
-		Module[{},
-			
-			(* Download the HTML for the website -- this is not true HTML because Sigma uses AJAX to execute JavaScript for all the details. Sizes, prices, etc are dynamically pulled from the API with a JavaScript call, which MM won't execute. So we basically do not get the data we want from this. However, it gives us the information we need to make a call to the API for pricing info *)
-			sigmaWebsite=HTTPRequestJSON[
-				<|
-					"URL"->url,
-					"Method"->"GET",
-					"Headers"-><|
-						"User-Agent"->"Mozilla/5.0 (Windows NT 6.1; Win64; x64; rv:47.0) Gecko/20100101 Firefox/47.0"
-					|>
+	(* Download the HTML for the website -- this is not true HTML because Sigma uses AJAX to execute JavaScript for all the details. Sizes, prices, etc are dynamically pulled from the API with a JavaScript call, which MM won't execute. So we basically do not get the data we want from this. However, it gives us the information we need to make a call to the API for pricing info *)
+	sigmaWebsite = Quiet[
+		HTTPRequestJSON[
+			<|
+				"URL" -> url,
+				"Method" -> "GET",
+				(* this is a header that we found can work to get a response for now, but just so people keep an eye sigma may block us at any time b/c we run unit tests and ping their website too often *)
+				"Headers" -> <|
+					"accept" -> "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
+					"user-agent" -> "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36"
 				|>
-			];
-			
-			(* Import the website details as a JSON -- we are grabbing the jsonLD "key" from the website, which has the details we need, and converting it into an association. The default condition for First will return an empty association, so if we cannot get what we want, we will get a bunch of Nulls below. I am also adding a string replacement for links, which contain "&quot;" and break JSON conversion. There is some weird escaping happening there so just removing "&quot;" does not work, and since we aren't going to parse the links, we can just clear them wholesale here *)
-			websiteJSON=ImportJSONToAssociation[
-					First@StringCases[
-						sigmaWebsite,
-						Shortest["<script id=\"__NEXT_DATA__\" type=\"application/json\">" ~~ json : ("{" ~~ __ ~~ "}") ~~ "</script>"] /; StringCount[json, "{"] == StringCount[json, "}"] :> json
-					]
-			];
-			
-			(* Parse the name of this chemical and its ID from the page *)
-			sigmaName=StringRiffle[Lookup[Lookup[Lookup[Lookup[Lookup[websiteJSON, "props"], "pageProps"], "data"], "getProductDetail"], {"name", "description"}], " "];
+			|>
+		]
+	];
 
-			If[!MatchQ[sigmaName, _String],
-				Return[$Failed];
-			];
+	(* Import the website details as a JSON -- we are grabbing the jsonLD "key" from the website, which has the details we need, and converting it into an association. The default condition for First will return an empty association, so if we cannot get what we want, we will get a bunch of Nulls below. I am also adding a string replacement for links, which contain "&quot;" and break JSON conversion. There is some weird escaping happening there so just removing "&quot;" does not work, and since we aren't going to parse the links, we can just clear them wholesale here *)
+	websiteJSON = Quiet[
+		ImportJSONToAssociation[
+			First@StringCases[
+				sigmaWebsite,
+				Shortest["<script id=\"__NEXT_DATA__\" type=\"application/json\">" ~~ json : ("{" ~~ __ ~~ "}") ~~ "</script>"] /; StringCount[json, "{"] == StringCount[json, "}"] :> json
+			]
+		]
+	];
 
-			productID=Lookup[Lookup[Lookup[Lookup[Lookup[websiteJSON, "props"], "pageProps"], "data"], "getProductDetail"], "productNumber"];
+	If[!MatchQ[websiteJSON, _Association],
+		Return[$Failed, Module]
+	];
 
-			If[!MatchQ[productID, _String],
-				Return[$Failed];
-			];
+	(* extract the product information *)
+	productInfo = Lookup[Lookup[Lookup[Lookup[websiteJSON, "props"], "pageProps"], "data"], "getProductDetail"];
 
-			skus=Lookup[Lookup[Lookup[Lookup[Lookup[websiteJSON, "props"], "pageProps"], "data"], "getProductDetail"], "materialIds"];
+	(* Parse the name of this chemical and its ID from the page *)
+	sigmaNameRaw=StringRiffle[Lookup[productInfo, {"name", "description"}], " "];
 
-			(* Get the vendor from the URL *)
-			productVendor=Lookup[Lookup[Lookup[Lookup[Lookup[Lookup[websiteJSON, "props"], "pageProps"], "data"], "getProductDetail"], "brand"], "key"];
+	If[!MatchQ[sigmaNameRaw, _String],
+		Return[$Failed];
+	];
 
-			(* Construct a HTTP Request to get pricing information -- the post request below is a GraphQL query for their database and returns the price and sizes of available SKUs *)
-			(* CAUTION: This is reverse engineered so Sigma-Aldrich may change their APIs at any point *)
-			pricingJSON=HTTPRequestJSON[
-				<|
-					"URL"->"https://www.sigmaaldrich.com/api",
-					"Method"->"POST",
-					"Headers"-><|
-						"User-Agent"->"Mozilla/5.0 (Windows NT 6.1; Win64; x64; rv:47.0) Gecko/20100101 Firefox/47.0",
-						"x-gql-operation-name"->"PricingAndAvailability",
-						"x-gql-access-token"->"bef17411-67b1-11ec-83ec-3df300cab2fc",
-						"x-gql-country"->"US",
-						"x-gql-language"->"en"
-					|>,
-					"Body"-><|
-						"operationName"->"PricingAndAvailability",
-						"query"->"query PricingAndAvailability($productNumber:String!,$brand:String,$quantity:Int!,$materialIds:[String!]) {
+	(* Remove any formatting from HTML, and also remove non-ASCII characters *)
+	sigmaName = cleanUpHTMLString[sigmaNameRaw];
+
+	productID=Lookup[productInfo, "productNumber"];
+
+	If[!MatchQ[productID, _String],
+		Return[$Failed];
+	];
+
+	skus=Lookup[productInfo, "materialIds"];
+
+	(* Get the vendor from the URL *)
+	productVendor=Lookup[Lookup[productInfo, "brand"], "key"];
+
+	(* Construct a HTTP Request to get pricing information -- the post request below is a GraphQL query for their database and returns the price and sizes of available SKUs *)
+	(* CAUTION: This is reverse engineered so Sigma-Aldrich may change their APIs at any point *)
+	pricingJSON=HTTPRequestJSON[
+		<|
+			"URL"->"https://www.sigmaaldrich.com/api?operation=PricingAndAvailability",
+			"Method"->"POST",
+			"Headers"-><|
+				"accept"->"*/*",
+				"user-agent"->"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36",
+				"x-gql-operation-name"->"PricingAndAvailability",
+				"x-gql-access-token"->"ea816e21-7d19-11ef-90f5-8321289a8c21",
+				"x-gql-country"->"US"
+			|>,
+			"Body"-><|
+				"operationName"->"PricingAndAvailability",
+				"query"->"query PricingAndAvailability($productNumber:String!,$brand:String,$quantity:Int!,$materialIds:[String!]) {
 							getPricingForProduct(input:{productNumber:$productNumber,brand:$brand,quantity:$quantity,materialIds:$materialIds}) {
 								materialPricing {
 									packageSize
@@ -211,88 +304,107 @@ parseSigmaProductURL[url_String]:=Module[
 								}
 							}
 						}",
-						"variables"-><|
-							"brand"->productVendor,
-							"materialIds"->skus,
-							"productNumber"->productID,
-							"quantity"->1
-						|>
-					|>
+				"variables"-><|
+					"brand"->productVendor,
+					"materialIds"->skus,
+					"productNumber"->productID,
+					"quantity"->1
 				|>
-			];
-			
-			(* Get the raw package size and the price from the api call *)
-			{rawPackageSize,rawPrice}=First[Lookup[Lookup[Lookup[Lookup[pricingJSON,"data"],"getPricingForProduct"],"materialPricing"],{"packageSize","price"}]];
-			
-			(* Does this contain an X? If so, it means CaseQuantityXIndividualSize *)
-			{caseQ,samplesPerCase,stringIndividualContainerSize}=If[
-				StringContainsQ[rawPackageSize,"X"],
-				Module[{splitString},
-					
-					(* This is a case. Split by X *)
-					splitString=StringSplit[rawPackageSize,"X"];
-					
-					(* Return the parsed values *)
-					{True,ToExpression[splitString[[1]]],splitString[[2]]}
-				],
-				
-				(* This is not a case. No splitting is needed. *)
-				{False,Null,rawPackageSize}
-			];
-
-			If[MatchQ[caseQ, True] && !MatchQ[samplesPerCase, _Integer],
-				Return[$Failed];
-			];
-			
-			(* Convert individual container size to a quantity *)
-			rawIndividualContainerSize=Quiet[Check[Quantity[ToLowerCase[stringIndividualContainerSize]],ToExpression[First[StringCases[ToLowerCase[stringIndividualContainerSize],DigitCharacter..]]]*Unit,Quantity::unkunit],Quantity::unkunit];
-			
-			(* If our container size came out with weird units, convert to Unit -- this happens because Sigma sells certain items in units that Quantity understands but the Amount field won't accept. For example, pH strips are sold as "100 strips", which will become a quantity in MM but can't be uploaded to the Amount field, so we need to make it "100 Units" *)
-			individualContainerSize=If[
-				MatchQ[rawIndividualContainerSize,UnitsP[1 Liter]|UnitsP[1 Gram]|UnitsP[1 Unit]],
-				rawIndividualContainerSize,
-				QuantityMagnitude[rawIndividualContainerSize]*Unit
-			];
-
-			If[!MatchQ[individualContainerSize, _?QuantityQ],
-				Return[$Failed];
-			];
-			
-			(* Convert price to dollars *)
-			price=ToExpression[rawPrice]*USD;
-
-			If[!MatchQ[price, UnitsP[USD]],
-				Return[$Failed];
-			];
-			
-			(* Return an association with the information that we parsed out. *)
-			<|
-				Name->sigmaName,
-				Supplier->Object[Company,Supplier,"Sigma Aldrich"],
-				CatalogNumber->productID,
-				ProductURL->url,
-				(* If this item is a case, return Case, if not, return Single. *)
-				Packaging->If[caseQ,
-					Case,
-					Single
-				],
-				(* If this item is a case, return the number of samples in the case. If not, there is only 1 sample per item. *)
-				NumberOfItems->If[caseQ,
-					samplesPerCase,
-					1
-				],
-				Amount->individualContainerSize,
-				Price->price
 			|>
+		|>
+	];
+
+	(* Get the raw package size and the price from the api call *)
+	{rawPackageSize,rawPrice}=First[Lookup[Lookup[Lookup[Lookup[pricingJSON,"data"],"getPricingForProduct"],"materialPricing"],{"packageSize","price"}]];
+
+	(* Does this contain an X? If so, it means CaseQuantityXIndividualSize *)
+	{caseQ,samplesPerCase,stringIndividualContainerSize}=If[
+		StringContainsQ[rawPackageSize,"X"],
+		Module[{splitString},
+
+			(* This is a case. Split by X *)
+			splitString=StringSplit[rawPackageSize,"X"];
+
+			(* Return the parsed values *)
+			{True,ToExpression[splitString[[1]]],splitString[[2]]}
 		],
-		
-		(* If something happened, return $Failed. Our high-level functions check for this. *)
-		$Failed
+
+		(* This is not a case. No splitting is needed. *)
+		{False,Null,rawPackageSize}
+	];
+
+	rawIndividualContainerSize= Quiet[Check[
+		StringToQuantity[ToLowerCase[stringIndividualContainerSize]],
+		If[MatchQ[stringIndividualContainerSize, _String] && StringMatchQ[stringIndividualContainerSize, Repeated[DigitCharacter]~~" "~~___],
+			ToExpression[StringReplace[stringIndividualContainerSize, x:Repeated[DigitCharacter]~~" "~~___ :> x]],
+			Null
+		]
 	]];
+
+	(* Note that we may often misinterpret 1 pak/case/kit/... as 1 count, which is not correct. To avoid that, if our size is 1 Unit, set that to Null instead *)
+	rawIndividualContainerSizeCorrected = If[MatchQ[rawIndividualContainerSize, 1],
+		Null,
+		rawIndividualContainerSize
+	];
+
+	(* If our container size came out with weird units, convert to Unit -- this happens because Sigma sells certain items in units that Quantity understands but the Amount field won't accept. For example, pH strips are sold as "100 strips", which will become a quantity in MM but can't be uploaded to the Amount field, so we need to make it "100 Units" *)
+	individualContainerSize=If[MatchQ[rawIndividualContainerSizeCorrected,UnitsP[1 Liter]|UnitsP[1 Gram]|UnitsP[1 Unit]],
+		rawIndividualContainerSizeCorrected,
+		Null
+	];
+
+	(* Convert price to dollars *)
+	price=Check[ToExpression[rawPrice]*USD, Null];
+
+	(* Find product description *)
+	rawDescription = Quiet[Check[
+		StringJoin@@Lookup[First[Lookup[productInfo, "descriptions"]], "values"],
+		Null
+	]];
+
+	cleanedUpDescription = If[MatchQ[rawDescription, _String],
+		cleanUpHTMLString[rawDescription],
+		Null
+	];
+
+	sampleType = resolveSampleTypesFromString[sigmaName, cleanedUpDescription];
+
+	imageURL = Quiet[Check[
+		Lookup[First[Lookup[productInfo, "images"]], "smallUrl"],
+		Null
+	]];
+	completeImageURL = If[MatchQ[imageURL, _String],
+		StringJoin["https://www.sigmaaldrich.com", imageURL],
+		Null
+	];
+
+	(* Return an association with the information that we parsed out. *)
+	result = <|
+		Name->sigmaName,
+		Supplier->Object[Company,Supplier,"Sigma Aldrich"],
+		CatalogNumber->productID,
+		ProductURL->url,
+		(* If this item is a case, return Case, if not, return Single. *)
+		Packaging->If[caseQ,
+			Case,
+			Single
+		],
+		(* If this item is a case, return the number of samples in the case. If not, there is only 1 sample per item. *)
+		NumberOfItems->If[caseQ,
+			samplesPerCase,
+			1
+		],
+		Amount->individualContainerSize,
+		Price->price,
+		CatalogDescription -> cleanedUpDescription,
+		SampleType -> sampleType,
+		(* MM seem to have problem importing image from Sigma. Setting this to Null for now *)
+		ImageFile -> Null
+	|>;
 	
 	(* Only memoize if the result wasn't Null. This is because the ThermoFisher server can sometimes fail or lock us out if we're making too many requests *)
-	If[!SameQ[result,$Failed],
-		parseSigmaProductURL[url]=result;
+	If[!SameQ[result, $Failed] && TrueQ[$MemoizeProductParseResult],
+		parseSigmaProductURL[url] = result;
 	];
 	
 	(* Return our result *)
@@ -305,107 +417,265 @@ parseSigmaProductURL[url_String]:=Module[
 
 
 parseFisherProductURL[url_String]:=Module[
-	{result, body, name, productID, amount, numberOfItems, isCase, price},
+	{
+		result, body, name, productID, amount, numberOfItems, isCase, price, catalogDescription, displayUnitString,
+		amountFromQuantity, amountFromUnitString, sampleType, imageFile, cleanedURL
+	},
 
 	(* Wrap our computation with Quiet[] and Check[] because sometimes contacting the web server can result in an error. *)
-	result=Quiet[
-		Check[
-			(* Download the HTML for the website. *)
-			body=URLRead[HTTPRequest[url, <|Method -> "GET"|>]]["Body"];
+	(* Download the HTML for the website. *)
+	body = Quiet[Check[
+		URLRead[HTTPRequest[url, <|Method -> "GET"|>]]["Body"],
+		$Failed
+	]];
 
-			(* Scrape information from the website. *)
-			name=Quiet[Check[
-				StringTrim[StringReplace[StringCases[body, "<title>"~~x:Except["\""]..~~"</title>" :> x][[1]], "\n" -> ""]],
-				Null
-			]];
-
-			If[!MatchQ[name, _String|Null],
-				Return[$Failed];
-			];
-
-			(* The following information in under the <scripts> section in a JS array. Since we can't import the JS to JSON.stringify it, just regex it out. *)
-			productID=Quiet[Check[
-				StringCases[body, "\"partNumber\":\""~~x:Except["\""]..~~"\"" :> x][[1]],
-				Null
-			]];
-
-			If[!MatchQ[productID, _String|Null],
-				Return[$Failed];
-			];
-
-			amount=Quiet[Check[
-				Quantity[StringCases[body, "\"Quantity\":{\"value\":\""~~x:Except["\""]..~~"\"" :> x][[1]]],
-				Null
-			]];
-
-			If[!MatchQ[amount, _?QuantityQ|Null],
-				Return[$Failed];
-			];
-
-			{numberOfItems, isCase, price}=Quiet[Check[
-				(* If we got the product ID, send a request to the fisher endpoint for pricing information. *)
-				If[MatchQ[productID, _String],
-					Module[{pricingAssociation},
-						(* CAUTION: This is reverse engineered so FisherSci may change their APIs at any point. *)
-						pricingAssociation=ImportString[URLRead[HTTPRequest["https://www.fishersci.com/shop/products/service/pricing?partNumber="<>productID, <|Method -> "POST"|>]]["Body"], "RawJSON"];
-
-						{
-							ToExpression[pricingAssociation["priceAndAvailability"][productID][[1]]["quantity"]],
-							!MatchQ[pricingAssociation["priceAndAvailability"][productID][[1]]["displayUnitString"], "Each"],
-							Quantity[pricingAssociation["priceAndAvailability"][productID][[1]]["price"]]
-						}
-					],
-					{Null, False, Null}
-				],
-				{Null, False, Null}
-			]];
-
-			If[!MatchQ[numberOfItems, _Integer|Null],
-				Return[$Failed];
-			];
-
-			If[!MatchQ[isCase, BooleanP],
-				Return[$Failed];
-			];
-
-			If[!MatchQ[price, UnitsP[USD]|Null],
-				Return[$Failed];
-			];
-
-			(* Return an association with the information that we parsed out. *)
-			<|
-				Name -> name,
-				Supplier -> Object[Company, Supplier, "Fisher Scientific"],
-				CatalogNumber -> productID,
-				ProductURL -> url,
-				(* If this item is a case, return Case, if not, return Single. *)
-				Packaging -> If[isCase,
-					Case,
-					Single
-				],
-				(* If this item is a case, return the number of samples in the case. If not, there is only 1 sample per item. *)
-				NumberOfItems -> If[isCase,
-					numberOfItems,
-					1
-				],
-				Amount -> amount,
-				Price -> price
-			|>,
-
-			(* If something happened, return $Failed. Our high-level functions check for this. *)
-			$Failed
-		]
+	If[MatchQ[body, $Failed],
+		Return[$Failed]
 	];
+
+	(* Scrape information from the website. *)
+	name=Quiet[Check[
+		StringTrim[StringReplace[StringCases[body, "<title>"~~x:Except["\""]..~~"</title>" :> x][[1]], "\n" -> ""]],
+		Null
+	]];
+
+	(* The following information in under the <scripts> section in a JS array. Since we can't import the JS to JSON.stringify it, just regex it out. *)
+	productID=Quiet[Check[
+		StringCases[body, "\"partNumber\":\""~~x:Except["\""]..~~"\"" :> x][[1]],
+		Null
+	]];
+
+	If[!MatchQ[productID, _String|Null],
+		Return[$Failed];
+	];
+
+	(* Try to read the Amount. If this fails, we will use other method *)
+	amountFromQuantity = Quiet[Check[
+		Quantity[StringCases[body, "\"Quantity\":{\"value\":\""~~x:Except["\""]..~~"\"" :> x][[1]]],
+		Null
+	]];
+
+	{numberOfItems, isCase, price, displayUnitString}=Quiet[Check[
+		(* If we got the product ID, send a request to the fisher endpoint for pricing information. *)
+		If[MatchQ[productID, _String],
+			Module[{pricingAssociation, cleanedProductID},
+				(* CAUTION: This is reverse engineered so FisherSci may change their APIs at any point. *)
+				pricingAssociation=ImportString[URLRead[HTTPRequest["https://www.fishersci.com/shop/products/service/pricing?partNumber="<>productID<>"&callerId=products-ui-single-page", <|Method -> "POST"|>]]["Body"], "RawJSON"];
+				cleanedProductID = StringDelete[productID, "-"];
+				{
+					ToExpression[pricingAssociation["priceAndAvailability"][cleanedProductID][[1]]["quantity"]],
+					!MatchQ[pricingAssociation["priceAndAvailability"][cleanedProductID][[1]]["displayUnitString"], "Each"],
+					Quantity[pricingAssociation["priceAndAvailability"][cleanedProductID][[1]]["price"]],
+					pricingAssociation["priceAndAvailability"][cleanedProductID][[1]]["displayUnitString"]
+				}
+			],
+			{Null, False, Null, Null}
+		],
+		{Null, False, Null, Null}
+	]];
+
+	(* Attempt to parse Catalog Description *)
+	catalogDescription = Quiet[Check[
+		(* First see if there's any <p id=\"unauth_3p_item_desc_text\"> in the html *)
+		cleanUpHTMLString[First[StringCases[body, "<p id=\"unauth_3p_item_desc_text\">"~~x:Repeated[Except["\n"]]~~"</p>" :> x]]],
+		(* If not, then attempt to parse from the Description Tab *)
+		Quiet[Check[
+			cleanUpHTMLString[StringRiffle[
+				StringCases[First[StringCases[body, "<!-- Description Tab  starts -->"~~___~~"<!-- Description Tab ends-->"]], "<p"~~Alternatives[">", " id="~~Shortest[___]~~">"]~~x:Shortest[___]~~"</p>":>x ]
+			]],
+			Null
+		]]
+	]];
+
+	(* Resolve Amount *)
+	amount = Which[
+		(* If we have already figured out the Amount from html body, use that *)
+		!MatchQ[amountFromQuantity, Null],
+			amountFromQuantity,
+		(* Otherwise turn to the 'displayUnitString' *)
+		(* If displayUnitString is Null, set Amount to Null *)
+		NullQ[displayUnitString],
+			Null,
+		(* If there's no digit character from displayUnitString, set amount to Null *)
+		!StringContainsQ[displayUnitString, DigitCharacter],
+			Null,
+		(* Finally, try to interpret the displayed unit *)
+		True,
+		(* Extract the quantity part of displayUnitString *)
+			amountFromUnitString = First[StringCases[displayUnitString, Repeated[Alternatives[DigitCharacter, "."]]~~___]];
+			Quiet[Check[
+				(* Call StringToQuantity to try interpreting the quantity *)
+				StringToQuantity[amountFromUnitString],
+				(* If failed, don't give up yet. It could be that there's actually no unit, so the string is a number, not quantity *)
+				Quiet[Check[
+					ToExpression[First[StringCases[amountFromUnitString, Repeated[Alternatives[DigitCharacter, "."]]]]],
+					Null
+				]]
+			]]
+	];
+
+	(* Try to parse SampleType *)
+	sampleType = resolveSampleTypesFromString[name, catalogDescription];
+
+	imageFile = Quiet[Check[
+		First[StringCases[body, "imagesrcset=\""~~x:Shortest[__]~~"\" " :> x]],
+		Null
+	]];
+
+	cleanedURL = StringReplace[url, x:___~~"#?"~~___ :> x];
+
+	(* Return an association with the information that we parsed out. *)
+	result = <|
+		Name -> name,
+		Supplier -> Object[Company, Supplier, "Fisher Scientific"],
+		CatalogNumber -> productID,
+		ProductURL -> cleanedURL,
+		(* If this item is a case, return Case, if not, return Single. *)
+		Packaging -> If[isCase,
+			Case,
+			Single
+		],
+		(* If this item is a case, return the number of samples in the case. If not, there is only 1 sample per item. *)
+		NumberOfItems -> If[isCase,
+			numberOfItems,
+			1
+		],
+		Amount -> amount,
+		Price -> price,
+		CatalogDescription -> catalogDescription,
+		SampleType -> sampleType,
+		ImageFile -> imageFile
+	|>;
 
 
 	(* Only memoize if the result wasn't Null. This is because the Fisher server can sometimes fail or *)
 	(* lock us out if we're making too many requests. *)
-	If[!SameQ[result, $Failed],
+	If[!SameQ[result, $Failed] && TrueQ[$MemoizeProductParseResult],
 		parseFisherProductURL[url]=result;
 	];
 
 	(* Return our result. *)
 	result
+];
+
+(* This helper below removes formatting from HTML and also removes non-ASCII characters *)
+cleanUpHTMLString[myString_String] := StringDelete[
+	StringDelete[myString, Alternatives["<"~~Shortest[___]~~">", "&"~~Shortest[__]~~";"]],
+	Except[Alternatives @@ CharacterRange[0, 128]]
+];
+
+cleanUpHTMLString[_] := Null;
+
+(* ::Subsubsection::Closed:: *)
+(*new parser using pyECL*)
+parseProductURL[url:(_String | Null)] := Module[
+	{
+		pyECLReturn, supplierInput, cleanedName, cleanedDescription, cleanedAssoc, result,
+		cleanedPrice, cleanedAmount, cleanedNumberOfItems
+	},
+
+	supplierInput = Switch[url,
+		FisherScientificURLP,
+			"fisher",
+		ThermoFisherURLP,
+			"thermo",
+		MilliporeSigmaURLP,
+			"sigma",
+		_,
+			"other"
+	];
+
+	If[MatchQ[supplierInput, "other"],
+		Return[$Failed]
+	];
+
+	pyECLReturn = Quiet[
+		PyECLRequest[
+			"/ccd/extract-product",
+			<|"url" -> url, "supplier" -> supplierInput|>,
+			Retries -> 3
+		]
+	];
+
+	If[!MatchQ[pyECLReturn, _Association],
+		Return[$Failed]
+	];
+
+	cleanedName = cleanUpHTMLString[Lookup[pyECLReturn, "title"]];
+
+	cleanedDescription = cleanUpHTMLString[Lookup[pyECLReturn, "description"]];
+
+	cleanedPrice = Quiet[Check[
+		ToExpression[Lookup[pyECLReturn, "price"]],
+		$Failed
+	]];
+
+	cleanedAmount = Quiet[Check[
+		(* Call StringToQuantity to try interpreting the quantity *)
+		StringToQuantity[Lookup[pyECLReturn, "unit"]],
+		(* If failed, don't give up yet. It could be that there's actually no unit, so the string is a number, not quantity *)
+		Quiet[Check[
+			ToExpression[First[StringCases[Lookup[pyECLReturn, "unit"], Repeated[Alternatives[DigitCharacter, "."]]]]],
+			Null
+		]]
+	]];
+
+	cleanedNumberOfItems = Quiet[Check[
+		ToExpression[First[StringCases[Lookup[pyECLReturn, "quantity"], Repeated[DigitCharacter]]]],
+		Null
+	]];
+
+	cleanedAssoc = Join[
+		pyECLReturn,
+		<|
+			"title" -> cleanedName,
+			"description" -> cleanedDescription,
+			ProductURL -> url,
+			Supplier -> Switch[supplierInput,
+				"fisher", Object[Company, Supplier, "Fisher Scientific"],
+				"thermo", Object[Company, Supplier, "Thermo Fisher Scientific"],
+				"sigma", Object[Company, Supplier, "Sigma Aldrich"],
+				_, Null
+			],
+			"price" -> If[MatchQ[cleanedPrice, _?NumberQ],
+				cleanedPrice * 1 USD,
+				Null
+			],
+			"unit" -> If[MatchQ[cleanedAmount, (_Integer | MassP | VolumeP)],
+				cleanedAmount,
+				Null
+			],
+			"quantity" -> If[MatchQ[cleanedNumberOfItems, _Integer],
+				cleanedNumberOfItems,
+				Null
+			],
+			(* TODO for now do not export image because image option does not support url or local file path *)
+			(* once current release is merged, we will be able to get the improved framework function and should be able to take care of that *)
+			"image" -> Null
+		|>
+	];
+
+	result = KeyReplace[
+		cleanedAssoc,
+		{
+			"title" -> Name,
+			"unit" -> Amount,
+			"price" -> Price,
+			"quantity" -> NumberOfItems,
+			"description" -> CatalogDescription,
+			"catalog_number" -> CatalogNumber,
+			"image" -> ImageFile
+		}
+	];
+
+	(* Only memoize if the result wasn't Null. This is because the ThermoFisher server can sometimes fail or lock us out if we're making too many requests *)
+	If[!SameQ[pyECLReturn, $Failed] && TrueQ[$MemoizeProductParseResult] && !MemberQ[$Memoization, ExternalUpload`Private`parseProductURL],
+		AppendTo[$Memoization, ExternalUpload`Private`parseProductURL];
+		parseProductURL[url] = result;
+	];
+
+	result
+
 ];
 
 
@@ -419,7 +689,13 @@ DefineOptions[UploadProduct,
 			OptionName -> Synonyms,
 			Default -> Null,
 			AllowNull -> True,
-			Widget -> Adder[Widget[Type -> String, Pattern :> _String, Size -> Word]],
+			Widget -> Adder[
+				Widget[
+					Type -> String,
+					Pattern :> _String,
+					Size -> Word
+				]
+			],
 			Description -> "List of possible alternative names this product goes by.",
 			Category -> "Organizational Information"
 		},
@@ -587,7 +863,8 @@ DefineOptions[UploadProduct,
 					Model[Container, GasCylinder],
 					Model[Container, Bag],
 					Model[Container, Shipping],
-					Model[Container, Plate]
+					Model[Container, Plate],
+					Model[Container, MicroscopeSlide]
 				}]
 			],
 			Description -> "The model of the container that the sample arrives in upon delivery. If a Model[Container,Plate] is given, the plate must only have 1 well.",
@@ -812,9 +1089,43 @@ DefineOptions[UploadProduct,
 				ObjectTypes -> {Object[Product]}
 			]
 		},
+		{
+			OptionName -> SealedContainer,
+			Default -> Null,
+			Description -> "Indicates whether the items of this product arrive as sealed containers with caps or lids. If SealedContainer -> True, no special storage handling will be performed, even if Sterile -> True.",
+			AllowNull -> True,
+			Category -> "Product Specifications",
+			Widget -> Widget[
+				Type -> Enumeration,
+				Pattern :> BooleanP
+			]
+		},
+		{
+			OptionName -> AsepticShippingContainerType,
+			Default -> Null,
+			Description -> "The manner in which an aseptic product is packed and shipped by the manufacturer. A value of None indicates that the product is not shipped in any specifically aseptic packaging, while a value of Null indicates no available information.",
+			AllowNull -> True,
+			Category -> "Product Specifications",
+			Widget -> Widget[
+				Type -> Enumeration,
+				Pattern :> AsepticShippingContainerTypeP
+			]
+		},
+		{
+			OptionName -> AsepticRebaggingContainerType,
+			Default -> Null,
+			Description -> "Describes the type of container items of this product will be transferred to if they arrive in a non-resealable aseptic shipping container.",
+			AllowNull -> True,
+			Category -> "Product Specifications",
+			Widget -> Widget[
+				Type -> Enumeration,
+				Pattern :> AsepticTransportContainerTypeP
+			]
+		},
 		NameOption,
 		UploadOption,
-		OutputOption
+		OutputOption,
+		CacheOption
 	}
 ];
 
@@ -826,13 +1137,26 @@ DefineOptions[UploadProduct,
 (* ::Subsubsection::Closed:: *)
 (*resolveUploadProductOptions*)
 
+DefineOptions[resolveUploadProductOptions, Options :> {
+	HelperOutputOption
+}];
 
 (* Helper function to resolve the options to our function. *)
 (* Takes in a list of inputs and a list of options, return a list of resolved options. *)
-resolveUploadProductOptions[myInput_, myOptions_, myRawOptions_, myResolveOptions:OptionsPattern[]]:=Module[
-	{listedOptions, outputOption, myOptionsAssociation, testsRule, resultRule, parsedInput, mergeFunction, myMergedOptions,
-		myFinalizedOptions, optionsWithAuthor, optionsWithType, myOptionsWithSynonyms, resolvedKitComponents, kitQ,
-		allProductModelProds, optionsWithCorrectKitComponents, productModelPacket, density, optionsWithNotebook},
+resolveUploadProductOptions[myURL:(URLP | Null), myNewModelType:(TypeP[] | Null), myOptions_, myRawOptions_, fastAssoc_Association, myResolveOptions:OptionsPattern[]]:=Module[
+	{
+		listedOptions, outputOption, myOptionsAssociation, testsRule, resultRule, parsedInput, myMergedOptions,
+		myFinalizedOptions, optionsWithAuthor, optionsWithType, resolvedKitComponents, kitQ,
+		allKitModelPackets, optionsWithCorrectKitComponents, productModelPacket, resolvedDensity, optionsWithNotebook,
+		resolvedSynonyms, unresolvedName, unresolvedSynonyms, resolvedName, productModel, unresolvedDensity, allKitModels,
+		productModelConflictQ, productModelConflictOptions, productModelConflicTests, containerCoverConflictQ,
+		defaultCoverModel, defaultContainerModel, containerCoverConflictOptions, containerCoverConflictTests,
+		allTests, allFailingOptions, kitContainerCoverConflictQs, kitContainerCoverConflictOptions,
+		kitContainerCoverConflictTests, resolvedAmount, unresolvedAmount, rawOptionsNoAutomatic,
+		unresolvedImageFile, imageFilePath, validImageURLQ, validImagePathQ, resolvedImageFile,
+		imageFilePacket, resolvedImageFileObject, templateOp, templatePacket, templatedSafeOps,
+		parsedOptions
+	},
 
 	(* Convert the options to this function into a list. *)
 	listedOptions=ToList[myResolveOptions];
@@ -846,111 +1170,122 @@ resolveUploadProductOptions[myInput_, myOptions_, myRawOptions_, myResolveOption
 	(* Convert the options to an association. *)
 	myOptionsAssociation=Association @@ myOptions;
 
-	(* This option resolver is a little unusual in that we have to AutoFill the options in order to compute *)
-	(* either the tests or the results. *)
-
 	(* -- AutoFill based on the information we're given. -- *)
 
 	(* First, download all of the information that we have from the internet *)
-	parsedInput=Switch[myInput,
-		(* UploadProduct[] *)
-		Null,
-		<||>,
+	parsedInput = If[TrueQ[$UsePyeclProductParser],
+		parseProductURL[myURL],
+		Switch[myURL,
+			(* UploadProduct[] *)
+			Null,
+			{},
 
-		(* UploadProduct[thermoURL], if we could not retrieve anything from website after trying 10 times, return an empty association *)
-		ThermoFisherURLP,
-		With[{rawParsedInput=retryConnection[parseThermoProductURL[myInput], 10]}, If[MatchQ[rawParsedInput,$Failed],<||>,rawParsedInput]],
+			(* UploadProduct[thermoURL], if we could not retrieve anything from website after trying 10 times, return an empty association *)
+			ThermoFisherURLP,
+			With[{rawParsedInput=retryConnection[parseThermoProductURL[myURL], 3]}, If[MatchQ[rawParsedInput,$Failed], {}, rawParsedInput]],
 
-		(* UploadProduct[fisherSciURL], if we could not retrieve anything from website after trying 10 times, return an empty association *)
-		FisherScientificURLP,
-		With[{rawParsedInput=retryConnection[parseFisherProductURL[myInput], 10]}, If[MatchQ[rawParsedInput,$Failed],<||>,rawParsedInput]],
+			(* UploadProduct[fisherSciURL], if we could not retrieve anything from website after trying 10 times, return an empty association *)
+			FisherScientificURLP,
+			With[{rawParsedInput=retryConnection[parseFisherProductURL[myURL], 3]}, If[MatchQ[rawParsedInput,$Failed], {}, rawParsedInput]],
 
-		(* UploadProduct[sigmaURL], if we could not retrieve anything from website after trying 10 times, return an empty association *)
-		MilliporeSigmaURLP,
-		With[{rawParsedInput=retryConnection[parseSigmaProductURL[myInput], 10]}, If[MatchQ[rawParsedInput,$Failed],<||>,rawParsedInput]]
+			(* UploadProduct[sigmaURL], if we could not retrieve anything from website after trying 3 times, return an empty association *)
+			(* decreased retry times here since sigma website may block us b/c we retried too often *)
+			MilliporeSigmaURLP,
+			With[{rawParsedInput=retryConnection[parseSigmaProductURL[myURL], 3]}, If[MatchQ[rawParsedInput,$Failed], {}, rawParsedInput]]
+		]
+	];
+
+	(* Remove all parsed options with value = Null *)
+	parsedOptions = If[MatchQ[parsedInput, ($Failed | {} | <||>)],
+		{},
+		KeyValueMap[
+			Function[{key, value},
+				If[NullQ[value],
+					Nothing,
+					key -> value
+				]
+			],
+			parsedInput
+		]
 	];
 
 	(* -- Make sure that we do not overwrite any of the user's supplied OPTIONS. -- *)
-	(* Define a function to do our association merge with. *)
-	mergeFunction=(If[Length[#] == 1,
-		(* If there's nothing to merge, just return the first element of the merged values list. *)
-		First[#],
-		(* Otherwise, if the First element of the list isn't null (from the myOptions list), return that. *)
-		(* Otherwise, use the second element. *)
-		If[!SameQ[First[#], Null],
-			First[#],
-			#[[2]]
-		]
-	]&);
+	rawOptionsNoAutomatic = Select[myRawOptions, !MatchQ[Values[#], Automatic]&];
 
-	(* Make sure we favor the user's supplied options (that are not Null) over our autofilled options. *)
-	myMergedOptions=Merge[{myOptions, parsedInput}, mergeFunction];
+	(* We use a double Replace Rule to fulfill the purpose. First, take the SafeOptions and replace with auto-parsed option *)
+	(* Then, replace that with user-supplied option (EVEN IF it's Null, so that user can correct an incorrectly-parsed option) *)
+	(* However, exclude XX -> Automatic from the raw options. *)
+	myMergedOptions = ReplaceRule[
+		ReplaceRule[
+			myOptions,
+			parsedOptions
+		],
+		rawOptionsNoAutomatic
+	];
 
-	(* Add name to the synonyms field. *)
-	myOptionsWithSynonyms=If[SameQ[Lookup[myMergedOptions, Name], Null],
-		(* If our Name is Null, don't do anything. *)
-		myMergedOptions,
-		(* If our Name isn't Null, add it to the Synonyms. *)
-		If[SameQ[Lookup[myMergedOptions, Synonyms], Null],
-			(* Synonyms\[Rule]Null. Simply initialize a list with the Name in it. *)
-			Append[myMergedOptions, Synonyms -> {Lookup[myMergedOptions, Name]}],
-			(* Synonyms is not Null. Append Name to the list if it isn't included. *)
-			If[!MemberQ[Lookup[myMergedOptions, Synonyms], Lookup[myMergedOptions, Name]],
-				Append[myMergedOptions, Synonyms -> Append[Lookup[myMergedOptions, Synonyms], Lookup[myMergedOptions, Name]]],
-				myMergedOptions
-			]
-		]
+	(* Resovle Name and Synonyms. *)
+	unresolvedName = Lookup[myMergedOptions, Name];
+	unresolvedSynonyms = Lookup[myMergedOptions, Synonyms];
+
+	{resolvedName, resolvedSynonyms} = Which[
+		(* If Name is Null but Synonyms is not, use the first entry from Synonyms as Name *)
+		NullQ[unresolvedName] && MatchQ[unresolvedSynonyms, _List] && Length[unresolvedSynonyms] > 0,
+			{First[unresolvedSynonyms], unresolvedSynonyms},
+		(* If both Name and Synonyms are Null or {}, keep that unchanged *)
+		NullQ[unresolvedName] && MatchQ[unresolvedSynonyms, (Null | {})],
+			{Null, Null},
+		(* If Name is not Null but Synonyms is, use Name as Synonyms *)
+		MatchQ[unresolvedSynonyms, (Null | {})],
+			{unresolvedName, {unresolvedName}},
+		(* If both are not Null and Synonyms already contain the name, do not change *)
+		MemberQ[unresolvedSynonyms, unresolvedName],
+			{unresolvedName, unresolvedSynonyms},
+		(* Only remaining possibility is that both are not Null and Synonyms do not contain Name. Add Name to Synonyms *)
+		True,
+			{unresolvedName, Prepend[unresolvedSynonyms, unresolvedName]}
 	];
 
 	(* get a packet of the Object[Sample] this Product is associated with *)
-	productModelPacket=If[
-		MatchQ[Lookup[myOptionsWithSynonyms, ProductModel], ObjectP[Model[Sample]]],
-		Download[Lookup[myOptionsWithSynonyms, ProductModel]]
+	productModel = Lookup[myMergedOptions, ProductModel];
+
+	productModelPacket=If[MatchQ[productModel, ObjectP[Model[Sample]]],
+		Experiment`Private`fetchPacketFromFastAssoc[productModel, fastAssoc]
 	];
 
 	(* resolve density *)
-	density=Which[
+	unresolvedDensity = Lookup[myMergedOptions, Density, Null];
+
+	resolvedDensity = Which[
 		(* if user specified Density, use it *)
-		!NullQ[Lookup[myRawOptions, Density, Null]],
-		Lookup[myRawOptions, Density],
+		!NullQ[unresolvedDensity],
+			unresolvedDensity,
 		(* if we have density in the model packet, use it *)
 		!NullQ[productModelPacket] && !NullQ[Lookup[productModelPacket, Density, Null]],
-		Lookup[productModelPacket, Density],
+			Lookup[productModelPacket, Density],
 		(* Otherwise, return Null *)
 		True,
-		Null
+			Null
 	];
 
 	(* Make sure not to overwrite any of the user's specified options. *)
-	myFinalizedOptions=If[
-		(* if density is not informed in the model and we got it *)
-		NullQ[density],
-		(* just merge the options we got so far *)
-		Join[myOptionsWithSynonyms, Association[myRawOptions]],
-		(* otherwise add Density as an option *)
-		Join[myOptionsWithSynonyms,
-			Association[myRawOptions],
-			Association[
-				Density -> density
-			]
-		]
+	myFinalizedOptions = ReplaceRule[
+		myMergedOptions,
+		{
+			Name -> resolvedName,
+			Synonyms -> resolvedSynonyms,
+			Density -> resolvedDensity
+		}
 	];
 
 	(* pull out KitComponents because that changes a lot of what we do below *)
 	resolvedKitComponents=Lookup[myFinalizedOptions, KitComponents];
 	kitQ=Not[NullQ[resolvedKitComponents]];
 
-	(* need to Download the Products and KitProducts fields from all the KitComponents ProductModels *)
-	allProductModelProds=If[kitQ,
-		Download[resolvedKitComponents[[All, 2]], {KitProducts, Products}],
-		Null
-	];
-
 	(* If we have to return Result from this function, compute our result. *)
 	resultRule=Result -> If[MemberQ[ToList[outputOption], Result],
 
 		(* Return our list of options. *)
-		Normal[myFinalizedOptions],
+		myFinalizedOptions,
 
 		(* We don't have to return the Output. Return Null. *)
 		Null
@@ -1007,7 +1342,9 @@ UploadProduct[myInput_, myOptions:OptionsPattern[UploadProduct]]:=Module[
 		resultRule, optionsWithAuthors, optionsWithType, optionsWithoutNulls, linkFields, optionsWithLinkFields,
 		relationFields, relationFieldToTwoWayField, optionsWithTwoWayLinkFields, multipleFields, optionsWithMultiples, optionsWithDeprecated,
 		optionswithStructureImage, functionSpecificOptions, optionsWithoutFunctionOptions, finalizedPacket, templateOp,
-		templateObj, templatedSafeOps, optionsWithTemplate, optionsWithKitComponents, kitComponents, failedTestDescriptions, savedMessageList},
+		templateObj, templatedSafeOps, optionsWithTemplate, optionsWithKitComponents, kitComponents, failedTestDescriptions, savedMessageList,
+		objectsToDownload, downloadedStuff, fastAssoc, cache, packetsToUpload
+	},
 
 	(* Make sure we are working with a list of options *)
 	listedOptions=ToList[myOptions];
@@ -1093,10 +1430,21 @@ UploadProduct[myInput_, myOptions:OptionsPattern[UploadProduct]]:=Module[
 		}
 	];
 
+	(* Do a big download here on all Objects in the options *)
+	objectsToDownload = Cases[Flatten[Values[templatedSafeOps]], ObjectP[]];
+
+	downloadedStuff = Download[objectsToDownload, Packet[All]];
+
+	cache = Lookup[safeOptions, Cache, {}];
+
+	fastAssoc = Experiment`Private`makeFastAssocFromCache[
+		Experiment`Private`FlattenCachePackets[{cache, downloadedStuff}]
+	];
+
 	(* Call resolveUploadCompanySupplierOptions *)
 	(* Check will return $Failed if InvalidInput/InvalidOption is thrown, indicating we cannot actually return the standard result *)
 	resolvedOptionsResult=Check[
-		resolvedOptions=resolveUploadProductOptions[myInput, templatedSafeOps, listedOptions],
+		resolvedOptions=resolveUploadProductOptions[myInput, Null, templatedSafeOps, listedOptions, fastAssoc],
 		$Failed,
 		{Error::InvalidInput, Error::InvalidOption}
 	];
@@ -1180,6 +1528,7 @@ UploadProduct[myInput_, myOptions:OptionsPattern[UploadProduct]]:=Module[
 
 	(* Download the Structure image separately to make sure it has a valid image extension. Some pages serve it as a .cgi *)
 	(* Import the image before uploading it. This will auUploadProductObjecttomatically make the file extension the correct format. *)
+	(* TODO for now this may upload image file with invalid format, but later once the next release happens, we'll change this to the improved downloadAndValidateURL function *)
 	optionswithStructureImage = Map[
 		(
 			If[SameQ[ImageFile, #[[1]]],
@@ -1194,7 +1543,7 @@ UploadProduct[myInput_, myOptions:OptionsPattern[UploadProduct]]:=Module[
 	optionsWithDeprecated = Append[optionswithStructureImage, Deprecated -> False];
 
 	(* Remove function specific options. *)
-	functionSpecificOptions = {Upload, Output};
+	functionSpecificOptions = {Upload, Output, Cache, Strict};
 	optionsWithoutFunctionOptions = (If[MemberQ[functionSpecificOptions, #[[1]]], Nothing, #]&) /@ optionsWithDeprecated;
 
 	(* Convert to an Association (packets are associations) *)
@@ -1213,7 +1562,7 @@ UploadProduct[myInput_, myOptions:OptionsPattern[UploadProduct]]:=Module[
 			myInput,
 			If[MatchQ[$Notebook, ObjectP[Object[LaboratoryNotebook]]],
 				Append[finalizedPacket,
-					Notebook->Link[$Notebook, Objects]
+					Notebook->Link[$Notebook]
 				],
 				finalizedPacket
 			],
@@ -1225,7 +1574,7 @@ UploadProduct[myInput_, myOptions:OptionsPattern[UploadProduct]]:=Module[
 				myInput,
 				If[MatchQ[$Notebook, ObjectP[Object[LaboratoryNotebook]]],
 					Append[finalizedPacket,
-						Notebook->Link[$Notebook, Objects]
+						Notebook->Link[$Notebook]
 					],
 					finalizedPacket
 				],
@@ -1420,7 +1769,7 @@ DefineOptions[UploadInventory,
 				Default -> Automatic,
 				AllowNull -> False,
 				Description -> "Indicates the ECL site at which this item is kept in stock.",
-				ResolutionDescription -> "If creating a new inventory object, automatically set to All, which will create inventory objects for all accessible sites.  If editing an existing inventory object, automatically set to the current site.",
+				ResolutionDescription -> "If creating a new inventory object, automatically set to the user's default site ($Site). If editing an existing inventory object, automatically set to the current site.",
 				Category -> "General",
 				Widget -> Alternatives[
 					"Single Site"->Widget[
@@ -1437,8 +1786,8 @@ DefineOptions[UploadInventory,
 				OptionName -> StockingMethod,
 				Default -> Automatic,
 				AllowNull -> False,
-				Description -> "Indicates if this inventory keeps track of how much to keep in stock in the lab by the number of currently-stocked containers or the total amount of the model stocked.",
-				ResolutionDescription -> "If creating a new inventory object, automatically set to NumberOfStockedContainers if ReorderThreshold or ReorderAmount are specified as integers, or TotalAmount if ReorderThreshold or ReorderAmount are specified as masses or volumes.  If editing an existing inventory object, automatically set to the current value.",
+				Description -> "Indicates if this inventory keeps track of how much to keep in stock in the lab by the number of currently-stocked containers or the total amount (mass/volume/count/number of objects) of the model available for use.",
+				ResolutionDescription -> "If creating a new inventory object for a sample, automatically set to NumberOfStockedContainers when ReorderThreshold or ReorderAmount are specified as integers, or TotalAmount if ReorderThreshold or ReorderAmount are specified as masses or volumes. New inventory objects for reusable objects default to use TotalAmount. If editing an existing inventory object, the StockingMethod will be unchanged.",
 				Category -> "Restocking",
 				Widget -> Widget[
 					Type -> Enumeration,
@@ -1450,7 +1799,7 @@ DefineOptions[UploadInventory,
 				Default -> Automatic,
 				AllowNull -> False,
 				Description -> "Indicates the point below which the current amount of this item in the lab must fall for a new order to be triggered.",
-				ResolutionDescription -> "If creating a new inventory object, automatically set to 0 if StockingMethod -> NumberOfStockedContainers or the sample being restocked is a counted item, or 0 Milligram if it is a solid, or 0 Milliliter if it is a liquid.  If editing an existing inventory object, automatically set to the current value.",
+				ResolutionDescription -> "Automatically set to 0 for new inventories; remains unchanged for existing inventories.",
 				Category -> "Restocking",
 				Widget -> Alternatives[
 					"Volume" -> Widget[
@@ -1479,7 +1828,7 @@ DefineOptions[UploadInventory,
 				Default -> Automatic,
 				AllowNull -> False,
 				Description -> "Indicates the amount that will be automatically ordered if the current amount available in the lab falls below ReorderThreshold.",
-				ResolutionDescription -> "If creating a new inventory object, automatically set to 1 if a product was provided, 1 if a stock solution was provided and StockingMethod was set to NumberOfStockedContainers, or 1 Milligram if it is a solid, or 1 Milliliter if it is a liquid.  If editing an existing inventory object, automatically set to the current value.",
+				ResolutionDescription -> "Automatically set to the greater of ReorderThreshold or 1 mg for solids, 1 mL for liquids, or 1 unit for products, stock solutions, or when StockingMethod is NumberOfStockedContainers.",
 				Category -> "Restocking",
 				Widget -> Alternatives[
 					"Volume" -> Widget[
@@ -1584,7 +1933,8 @@ DefineOptions[UploadInventory,
 Error::DeprecatedProducts="The following specified product(s) or model(s) `1` are deprecated and no longer supported at ECL. Please specify valid products or models to create new inventories.";
 Error::ModelStockedNotNullInvalid="For the following input(s) `1`, ModelStocked was set to an invalid value.  If creating or editing an inventory object for a stock solution, ModelStocked must be Null, and if creating or editing an inventory object for a product, ModelStocked must not be Null. Please set ModelStocked accordingly, or allow it to be set automatically.";
 Error::ModelStockedNotAllowed="For the following product(s) `1`, ModelStocked was set to model(s) `2`.  However, these model(s) are not supplied by the specified products.  Please set ModelStocked to a value contained in the ProductModel or KitComponents fields of these products, or allow ModelStocked to be set automatically.";
-Error::StockingMethodInvalid="If StockingMethod is set to NumberOfStockedContainers, ReorderThreshold and ReorderAmount must be set to an integer value.  If creating or editing an inventory object for a product, ReorderAmount must also be an integer value.  Please set StockingMethod, ReorderThreshold, and/or ReorderAmount accordingly for the following inputs: `1`.";
+Error::StockingMethodInvalidThreshold="ReorderAmount must be set to an integer value if creating or editing an inventory object for a product.";
+Error::StockingMethodInvalid="If StockingMethod is set to NumberOfStockedContainers, ReorderThreshold and ReorderAmount must be set to an integer value.  Please set StockingMethod, ReorderThreshold, and/or ReorderAmount accordingly for the following inputs: `1`.";
 Error::ReorderStateMismatch="For the following input(s) `1`, the state of the samples in question are `2`, but the ReorderThreshold and/or ReorderAmount options aare incompatible with this state.  Please specify these options differently, or allow them to be set automatically.";
 Error::ExpirationDateMismatch="For the following input(s) `1`, the Expires, ShelfLife, and UnsealedShelfLife options are incompatible.  If Expires is set to True, then at least one of ShelfLife and UnsealedShelfLife must be specified.  If set to False, both must not be specified.  Please adjust these options, or allow them to be set automatically.";
 Error::MaxNumberOfUsesInvalid="For the following input(s) `1`, the MaxNumberOfUses option was specified.  However, if creating or editing an inventory object for a stock solution, or if creating or editing one for a product whose ModelStocked lacks the MaxNumberOfUses field, then this option must not be specified.  Please set it to Null, or allow it to be set automatically.";
@@ -1592,8 +1942,9 @@ Error::MaxNumberOfHoursInvalid="For the following input(s) `1`, the MaxNumberOfU
 Error::InventorySiteNotResolved="For the following input(s) `1`, it was not possible to determine an eligible site. Please ensure that the input is passing ValidObjectQ and that any Financing teams for this object have ExperimentSites.";
 Error::InvalidInventorySite="For the following input(s) `1`, the provided Site `2` is not usable for the team financing the input object. Please select a site from the team's ExperimentSites or leave Site as Automatic.";
 Error::IndividualSiteRequired="For the following input(s) `1`, multiple sites were specified (via All) for a single inventory object. Please use a specific Site or set the Site option to Automatic.";
-Warning::InventorySiteChanged="For the following input(s) `1`, the Site at which this inventory will be stocked has changed to `2`. If that was not the intention, you can call UploadInventory on `1` with Site set to the original site.";
-
+Error::LowReorderAmount = "ReorderAmount cannot be less than ReorderThreshold. Please change ReorderAmount (`1`) to values greater than or equal to ReorderThreshold (`2`) for input(s) `3`.";
+Error::AuthorNotFinancerMember = "`1`";
+Error::InventorySiteCannotBeChanged="For the following input(s) `1`, the Site at which this inventory will be stocked is requested to be changed to `2`. Site changes are not permitted for existing inventories - please create a new inventory with the same parameters using UploadInventory.";
 
 (* empty list overload; always return {}*)
 UploadInventory[{}, myOptions:OptionsPattern[UploadInventory]]:={};
@@ -1603,13 +1954,13 @@ UploadInventory[myExistingInventory:ObjectP[Object[Inventory]], myOptions:Option
 UploadInventory[myExistingInventories:{ObjectP[Object[Inventory]]..}, myOptions:OptionsPattern[UploadInventory]]:=Module[
 	{listedOptions, safeOptions, safeOptionTests, validLengths, validLengthTests, outputSpecification, output, expandedOptions,
 		gatherTests, resolvedOptionsResult, resolvedOps, resolvedOptionsTests, allTests, upload, returnEarlyQ,
-		mapThreadFriendlyOptions, newInventoryPackets, testRule, previewRule, optionsRule, resultRule, updatedNames, currentAmounts},
+		mapThreadFriendlyOptions, newInventoryPackets, testRule, previewRule, optionsRule, resultRule, filteredMapThreadFriendlyOptions, safeFieldUpdate},
 
 	(* determine the requested return value from the function *)
 	outputSpecification = Quiet[OptionDefault[OptionValue[Output]], OptionValue::nodef];
 	output = ToList[outputSpecification];
 
-	(* deterimine if we should keep a running list of tests; if True, then silence messages *)
+	(* determine if we should keep a running list of tests; if True, then silence messages *)
 	gatherTests = MemberQ[output, Tests];
 
 	(* Make sure we're working with a list of options *)
@@ -1665,7 +2016,7 @@ UploadInventory[myExistingInventories:{ObjectP[Object[Inventory]]..}, myOptions:
 	];
 
 	(* run all the tests from the resolution; if any of them were False, then we should return early here *)
-	(* need to do this becasue if we are collecting tests then the Check wouldn't have caught it *)
+	(* need to do this because if we are collecting tests then the Check wouldn't have caught it *)
 	(* basically, if _not_ all the tests are passing, then we do need to return early *)
 	returnEarlyQ = Which[
 		MatchQ[resolvedOptionsResult, $Failed], True,
@@ -1684,103 +2035,76 @@ UploadInventory[myExistingInventories:{ObjectP[Object[Inventory]]..}, myOptions:
 	(* MapThread-ify the resolved options *)
 	mapThreadFriendlyOptions = OptionsHandling`Private`mapThreadOptions[UploadInventory, resolvedOps];
 
-	(* ---------------------------- *)
-	(* -- Deal with Site changes -- *)
-	(* ---------------------------- *)
+	(* Filter the resolved options so that we only retain the ones that are being changed *)
+	filteredMapThreadFriendlyOptions = MapThread[
+		(* Map over all inputs *)
+		Function[{newFieldPacket, oldFieldPacket},
 
-	(* determine if the site has changed, if so, update the name *)
-	{updatedNames, currentAmounts} = If[!MemberQ[Lookup[expandedOptions, Site], ObjectP[]],
+			(* Map over every one of the resolved option -> value for the given input *)
+			Association@@KeyValueMap[
 
-		(* get names from our resolved options, site has not changed *)
-		{Lookup[mapThreadFriendlyOptions, Name], ConstantArray[Null, Length[myExistingInventories]]},
-
-		(*Site has changed for something!*)
-		Module[{siteNameDownload, previousNames, previousSiteNames, newSiteNames, newNames, newCurrentAmounts, newNamesRaw, invalidNewNamesBools},
-
-			(* minimal download to grab object names, and names of new/old site *)
-			siteNameDownload = Download[{myExistingInventories, Lookup[mapThreadFriendlyOptions, Site]}, {{Name, Site[Name]}, {Name}}];
-			{previousNames, previousSiteNames, newSiteNames} = {siteNameDownload[[1, All, 1]], siteNameDownload[[1, All, 2]], siteNameDownload[[2, All, 1]]};
-
-			(* If we didnt change sites, leave the name.
-			 Otherwise, make the old name safe (guard against any bad test objects) attempt to strip out the old site reference, and add the new site name.
-			 This may not product the prettiest names, but it should at least be close. Following the existing logic, add UUID to ensure the name is unique and the Upload will go through *)
-			newNamesRaw = MapThread[
-				Which[
-					(*user gave us a new name as option input, use that. Note that this is not a resolved name, which will be the same as the current name*)
-					MatchQ[#4, _String],{#4, False},
-
-					(* the site hasn't changed *)
-					MatchQ[#2, #3], {#4, False},
-
-					(* the site changed, we need to create a new name *)
-					True, {StringDelete[ToString[#1], ToString[#2]]<>" "<>#3, True}
-				]&,
-				{previousNames, previousSiteNames, newSiteNames, Lookup[expandedOptions, Name]}
-			];
-
-			(* check if any names are already in use - in general they will be, thats fine. We are vetting here in order to avoid a mapped DBMemberQ call *)
-			invalidNewNamesBools = DatabaseMemberQ[MapThread[Append[#1, #2[[1]]]&,{Download[myExistingInventories, Type],newNamesRaw}]];
-
-			(* if the name is not new, just return it. Otherwise, determine if it is a unique name - if it isnt append a UUID *)
-			newNames = MapThread[
-				If[MatchQ[#2[[2]], False],
-					#2[[1]],
-					If[MatchQ[#1, True],
-						(* the name is already in the db, need to tag it with UUID *)
-						#2[[1]]<>" "<>StringDelete[CreateUUID[], "-"],
-						#2[[1]]
-					]
-				]&,
-				{invalidNewNamesBools, newNamesRaw}
-			];
-
-
-			(* any time the site changes we need to wipe the inventory count. SyncInventory will repopulate it if there is product on the new site *)
-			newCurrentAmounts = MapThread[
-				If[MatchQ[#1, #2],
-					Null,
-					0 Unit
-				]&,
-				{previousSiteNames, newSiteNames}
-			];
-
-			{newNames, newCurrentAmounts}
-		]
+				(* If the resolved option value doesn't match the existing field value, keep the option. Otherwise remove it *)
+				If[!MatchQ[#2, Alternatives[Lookup[oldFieldPacket, #1], Lookup[oldFieldPacket, #1] /. {x : LinkP[] :> Download[x, Object]}]],
+					#1 -> #2,
+					Nothing
+				] &,
+				newFieldPacket
+			]
+		],
+		{mapThreadFriendlyOptions, Download[myExistingInventories]}
 	];
-
 
 	(* ------------------ *)
 	(* -- Make packets -- *)
 	(* ------------------ *)
 
+	(* Little helpers to add each field change to the upload packet, only if the option is present in the resolved options (and therefore field value is being changed) *)
+	(* Overload for simple options where we just upload a value to the field of the same name *)
+	safeFieldUpdate[options_Association, Rule[field_, value_]] := If[KeyExistsQ[options, field],
+		field -> value,
+		Nothing
+	];
+	(* Overload for more complex options where that's not the case. For example where we upload both to the named field and a log field *)
+	safeFieldUpdate[options_Association, field_Symbol, fieldSpecification_List] := If[KeyExistsQ[options, field],
+		Sequence@@fieldSpecification,
+		Nothing
+	];
+
 	(* generate the packets for the new inventory objects *)
 	(*note that here each packet is per site*)
 	newInventoryPackets = MapThread[
-		Function[{existingInventory, options,updatedName, currentAmount},
+		Function[{existingInventory, options},
+			options;
 			<|
 				Object -> Download[existingInventory, Object],
 				If[MatchQ[existingInventory, ObjectP[Object[Inventory, Product]]],
-					ModelStocked -> Link[Lookup[options, ModelStocked]],
+					safeFieldUpdate[options, ModelStocked -> Link[Lookup[options, ModelStocked]]],
 					Nothing
 				],
-				Name -> updatedName,
-				Status -> Lookup[options, Status],
-				Site -> Link[Lookup[options, Site]],
-				StockingMethod -> Lookup[options, StockingMethod],
-				ReorderThreshold -> Replace[Lookup[options, ReorderThreshold], x_Integer :> x * Unit, {0}],
-				ReorderAmount -> Replace[Lookup[options, ReorderAmount], x_Integer :> x * Unit, {0}],
-				Expires -> Lookup[options, Expires],
-				ShelfLife -> Lookup[options, ShelfLife],
-				UnsealedShelfLife -> Lookup[options, UnsealedShelfLife],
-				MaxNumberOfUses -> Lookup[options, MaxNumberOfUses],
-				MaxNumberOfHours -> Lookup[options, MaxNumberOfHours],
-				If[MatchQ[currentAmount, 0 Unit],
-					CurrentAmount -> currentAmount,
-					Nothing
-				]
+				safeFieldUpdate[options, Name -> Lookup[options, Name]],
+				safeFieldUpdate[options, Status -> Lookup[options, Status]],
+				safeFieldUpdate[options, Site -> Link[Lookup[options, Site]]],
+				safeFieldUpdate[options, StockingMethod -> Lookup[options, StockingMethod]],
+				safeFieldUpdate[options, ReorderThreshold,
+					{
+						ReorderThreshold -> Replace[Lookup[options, ReorderThreshold], x_Integer :> x * Unit, {0}],
+						Append[ReorderThresholdLog] -> {Now, Replace[Lookup[options, ReorderThreshold], x_Integer :> x * Unit, {0}]}
+					}
+				],
+				safeFieldUpdate[options, ReorderAmount,
+					{
+						ReorderAmount -> Replace[Lookup[options, ReorderAmount], x_Integer :> x * Unit, {0}],
+						Append[ReorderAmountLog] -> {Now, Replace[Lookup[options, ReorderAmount], x_Integer :> x * Unit, {0}]}
+					}
+				],
+				safeFieldUpdate[options, Expires -> Lookup[options, Expires]],
+				safeFieldUpdate[options, ShelfLife -> Lookup[options, ShelfLife]],
+				safeFieldUpdate[options, UnsealedShelfLife -> Lookup[options, UnsealedShelfLife]],
+				safeFieldUpdate[options, MaxNumberOfUses -> Lookup[options, MaxNumberOfUses]],
+				safeFieldUpdate[options, MaxNumberOfHours -> Lookup[options, MaxNumberOfHours]]
 			|>
 		],
-		{myExistingInventories, mapThreadFriendlyOptions, updatedNames, currentAmounts}
+		{myExistingInventories, filteredMapThreadFriendlyOptions}
 	];
 
 	(* make the output rules*)
@@ -1802,7 +2126,7 @@ UploadInventory[myExistingInventories:{ObjectP[Object[Inventory]]..}, myOptions:
 						#1,
 						Append[Most[#1], #2]
 					]&,
-					{outputObjs, updatedNames}
+					{outputObjs, Lookup[filteredMapThreadFriendlyOptions, Name, Null]}
 				]
 			],
 		MemberQ[output, Result], newInventoryPackets,
@@ -1825,7 +2149,7 @@ UploadInventory[myProductsOrModels:{ObjectP[{Model[Sample, StockSolution], Model
 	outputSpecification = Quiet[OptionDefault[OptionValue[Output]], OptionValue::nodef];
 	output = ToList[outputSpecification];
 
-	(* deterimine if we should keep a running list of tests; if True, then silence messages *)
+	(* determine if we should keep a running list of tests; if True, then silence messages *)
 	gatherTests = MemberQ[output, Tests];
 
 	(* Make sure we're working with a list of options *)
@@ -1877,7 +2201,7 @@ UploadInventory[myProductsOrModels:{ObjectP[{Model[Sample, StockSolution], Model
 			{resolveUploadInventoryOptions[myProductsOrModels, ConstantArray[Null, Length[myProductsOrModels]], expandedOptions, Output -> Result], {}}
 		],
 		$Failed,
-		{Error::InvalidInput, Error::InvalidOption}
+		{Error::InvalidInput, Error::InvalidOption, Error::AuthorNotFinancerMember}
 	];
 
 	(* Because we resolved Site to a list of Object[Container, Site]s we need to reset this to All for the user to see. *)
@@ -1889,7 +2213,7 @@ UploadInventory[myProductsOrModels:{ObjectP[{Model[Sample, StockSolution], Model
 	resolvedSitesNames = Unflatten[Download[Flatten[resolvedSite], Name],ToList/@resolvedSite];
 
 	(* run all the tests from the resolution; if any of them were False, then we should return early here *)
-	(* need to do this becasue if we are collecting tests then the Check wouldn't have caught it *)
+	(* need to do this because if we are collecting tests then the Check wouldn't have caught it *)
 	(* basically, if _not_ all the tests are passing, then we do need to return early *)
 	returnEarlyQ = Which[
 		MatchQ[resolvedOptionsResult, $Failed], True,
@@ -1933,21 +2257,34 @@ UploadInventory[myProductsOrModels:{ObjectP[{Model[Sample, StockSolution], Model
 					],
 					Replace[StockedInventory] -> {Link[prodOrModel, Inventories]},
 					Status -> Lookup[options, Status],
+					Notebook -> Link[Lookup[options, Notebook]],
 					Author -> Link[$PersonID],
 					Site -> Link[#1],
 					StockingMethod -> Lookup[options, StockingMethod],
 					ReorderThreshold -> Replace[Lookup[options, ReorderThreshold], x_Integer :> x * Unit, {0}],
+					Append[ReorderThresholdLog] -> {Now, Replace[Lookup[options, ReorderThreshold], x_Integer :> x * Unit, {0}]},
 					ReorderAmount -> Replace[Lookup[options, ReorderAmount], x_Integer :> x * Unit, {0}],
+					Append[ReorderAmountLog] -> {Now, Replace[Lookup[options, ReorderAmount], x_Integer :> x * Unit, {0}]},
 					(* set these to be zero now; will get updated by SyncInventory but it's dumb to leave it Null now and then make it be invalid *)
 					CurrentAmount -> Switch[Lookup[options, ReorderThreshold],
 						MassP, 0 Gram,
 						VolumeP, 0 Milliliter,
 						_, 0 Unit
 					],
+					Append[CurrentAmountLog] -> Switch[Lookup[options, ReorderThreshold],
+						MassP, {Now, 0 Gram},
+						VolumeP, {Now, 0 Milliliter},
+						_, {Now, 0 Unit}
+					],
 					OutstandingAmount -> Switch[Lookup[options, ReorderThreshold],
 						MassP, 0 Gram,
 						VolumeP, 0 Milliliter,
 						_, 0 Unit
+					],
+					Append[OutstandingAmountLog] -> Switch[Lookup[options, ReorderThreshold],
+						MassP, {Now, 0 Gram},
+						VolumeP, {Now, 0 Milliliter},
+						_, {Now, 0 Unit}
 					],
 					Expires -> Lookup[options, Expires],
 					ShelfLife -> Lookup[options, ShelfLife],
@@ -1991,6 +2328,14 @@ UploadInventory[myProductsOrModels:{ObjectP[{Model[Sample, StockSolution], Model
 
 ];
 
+(* only do this memoized search if we need to, remove ECL-1 *)
+allECLSites[string:_String]:=allECLSites[string]=Module[{},
+	AppendTo[$Memoization, ExternalUpload`Private`allECLSites];
+
+	DeleteCases[Search[Object[Container, Site], EmeraldFacility==True], Object[Container, Site, "id:1ZA60vLrXG4M"]]
+];
+
+
 (* resolve the options *)
 resolveUploadInventoryOptions[
 	myProductsOrModels:{(Null | ObjectP[{Model[Sample, StockSolution], Model[Sample, Media], Model[Sample, Matrix], Object[Product]}])..},
@@ -2004,17 +2349,19 @@ resolveUploadInventoryOptions[
 		specifiedModelsStockedNoAutoNoNull, resolvedModelStocked, mapThreadFriendlyOptions, modelStockedNotNullInvalidQs,
 		resolvedStatus, resolvedSite, resolvedStockingMethod, resolvedReorderThreshold, resolvedReorderAmount,
 		existingInventoryPossibleModelPackets, existingInventoryProdPackets, modelStockedNotAllowedQs,
-		stockingMethodInvalidQs, reorderStateMismatchQs, reorderStateMismatchOptions, types,
+		stockingMethodInvalidQs, stockingMethodInvalidThresholdQs, reorderStateMismatchQs, reorderStateMismatchOptions, types, productFinancerPackets,
 		maxNumUsesInvalidOptions, maxNumUsesInvalidTests, reorderStateMismatchTests, expiresShelfLifeMismatchOptions,
-		expiresShelfLifeMismatchTests, expiresShelfLifeMismatchQs, resolvedExpires, resolvedShelfLife,
+		expiresShelfLifeMismatchTests, expiresShelfLifeMismatchQs, resolvedExpires, resolvedShelfLife, authorTests,
 		resolvedUnsealedShelfLife, resolvedMaxNumberOfUses, resolvedMaxNumberOfHours, maxNumHoursInvalidOptions,
 		maxNumHoursInvalidQs, maxNumUsesInvalidQs, inputsToUse, gatherTests, messages, maxNumHoursInvalidTests,
-		modelStockedNotNullInvalidOptions, modelStockedNotNullInvalidTests, modelStockedNotAllowedOptions,
-		modelStockedNotAllowedTests, stockingMethodInvalidOptions, stockingMethodInvalidTests, cache,
+		modelStockedNotNullInvalidOptions, modelStockedNotNullInvalidTests, modelStockedNotAllowedOptions, personIDNotebooks,
+		modelStockedNotAllowedTests, stockingMethodInvalidOptions, stockingMethodInvalidTests, cache, resolvedNotebook,
 		potentialFutureObjs, nameAlreadyExistsQs, productModelDeprecatedQ, productModelDeprecatedInputs, productModelDeprecatedTests,
 		resolvedState, invalidOptions, allTests, resolvedOptions, testsRule, resultRule, outputSpecification,
 		resolvedName, conflictingNameQs, productToSiteLookup, inventoryToSiteLookup, userSitesForProducts, userSitesForInventories,
-		noSiteQs, siteChangeQs, invalidSiteQs, existingInventoryToAllQs, noSiteTests, invalidSiteTests, badAllSiteTests, noSiteOptions, invalidSiteOptions, badAllSiteOptions
+		noSiteQs, siteChangeQs, invalidSiteQs, existingInventoryToAllQs, noSiteTests, invalidSiteTests, reorderAmountTests,
+		badAllSiteTests, noSiteOptions, invalidSiteOptions, badAllSiteOptions,allowedNotebooksForProducts, allowedMembersForProducts,
+		lowReorderAmountQs, reorderAmountOptions, invalidSiteChangeOptions
 	},
 
 	(* -------------------- *)
@@ -2045,18 +2392,19 @@ resolveUploadInventoryOptions[
 		{
 			myProductsOrModels,
 			myExistingInventories,
-			specifiedModelsStockedNoAutoNoNull
+			specifiedModelsStockedNoAutoNoNull,
+			{$PersonID}
 		},
 		{
 			{
-				Packet[ProductModel, KitComponents, State, Expires, ShelfLife, UnsealedShelfLife, CountPerSample, Amount, TotalVolume, Deprecated, Name, Site, Notebook],
-				Packet[ProductModel[{State, Tablet, Expires, ShelfLife, UnsealedShelfLife, MaxNumberOfUses, MaxNumberOfHours}]],
-				Packet[KitComponents[[All, ProductModel]][{State, Tablet, Expires, ShelfLife, UnsealedShelfLife, MaxNumberOfUses, MaxNumberOfHours}]],
-				Notebook[Financers][ExperimentSites][Object]
+				Packet[ProductModel, KitComponents, State, Expires, ShelfLife, UnsealedShelfLife, CountPerSample, Amount, TotalVolume, NumberOfItems, Deprecated, Name, Site, Notebook],
+				Packet[ProductModel[{State, Tablet, Expires, ShelfLife, UnsealedShelfLife, MaxNumberOfUses, MaxNumberOfHours, Reusable}]],
+				Packet[KitComponents[[All, ProductModel]][{State, Tablet, Expires, ShelfLife, UnsealedShelfLife, MaxNumberOfUses, MaxNumberOfHours, Reusable}]],
+				Packet[Notebook[Financers][{ExperimentSites, NotebooksFinanced, Members}]]
 			},
 			{
 				Packet[StockedInventory, Status, Site, Notebook, StockingMethod, ReorderThreshold, ReorderAmount, ModelStocked, Expires, ShelfLife, UnsealedShelfLife, MaxNumberOfUses, MaxNumberOfHours, Name],
-				Packet[StockedInventory[{ProductModel, KitComponents, State, Expires, ShelfLife, UnsealedShelfLife, CountPerSample, Amount, TotalVolume}]],
+				Packet[StockedInventory[{ProductModel, KitComponents, State, Expires, ShelfLife, UnsealedShelfLife, CountPerSample, Amount, TotalVolume, NumberOfItems}]],
 				Notebook[Financers][ExperimentSites][Object],
 				Packet[StockedInventory[ProductModel][{State, Tablet, Expires, ShelfLife, UnsealedShelfLife, MaxNumberOfUses, MaxNumberOfHours}]],
 				Packet[StockedInventory[KitComponents][[All, ProductModel]][{State, Tablet, Expires, ShelfLife, UnsealedShelfLife, MaxNumberOfUses, MaxNumberOfHours}]],
@@ -2064,13 +2412,16 @@ resolveUploadInventoryOptions[
 			},
 			{
 				Packet[State, Tablet, Expires, ShelfLife, UnsealedShelfLife, MaxNumberOfUses, MaxNumberOfHours]
+			},
+			{
+				FinancingTeams[NotebooksFinanced]
 			}
 		},
 		Cache -> cache
 	], {Download::FieldDoesntExist, Download::NotLinkField}];
 
 	(* pull out the different relevant packets*)
-	{productOrStockSolutionPackets, productModelPackets, kitProductModelPackets, userSitesForProducts}=If[MatchQ[myProductsOrModels, {Null..}],
+	{productOrStockSolutionPackets, productModelPackets, kitProductModelPackets, productFinancerPackets}=If[MatchQ[myProductsOrModels, {Null..}],
 		ConstantArray[myProductsOrModels, 4],
 		{allDownloadValues[[1, All, 1]], allDownloadValues[[1, All, 2]], allDownloadValues[[1, All, 3]], allDownloadValues[[1, All, 4]]}
 	];
@@ -2079,6 +2430,29 @@ resolveUploadInventoryOptions[
 		{allDownloadValues[[2, All, 1]], allDownloadValues[[2, All, 2]], allDownloadValues[[2, All, 3]], Flatten[allDownloadValues[[2, All, 4;;]]]}
 	];
 	modelsStockedPacketsNoAutoNoNull=Flatten[allDownloadValues[[3]]];
+
+	(* look up the notebooks that the user is part of *)
+	personIDNotebooks = Cases[Flatten[allDownloadValues[[4]]], ObjectP[Object[LaboratoryNotebook]]];
+
+	(* lookup notebook-related values *)
+	(* lookup available experiment sites *)
+	userSitesForProducts = If[MatchQ[Flatten[productFinancerPackets], NullP],
+		ConstantArray[Null, Length[myProductsOrModels]],
+		Download[Lookup[#, ExperimentSites], Object]& /@ productFinancerPackets
+	];
+
+	(* Lookup allowed notebooks *)
+	allowedNotebooksForProducts = If[MatchQ[Flatten[productFinancerPackets], NullP],
+		ConstantArray[{}, Length[myProductsOrModels]],
+		Download[Lookup[Flatten[productFinancerPackets], NotebooksFinanced, {}], Object]
+	];
+
+	(* lookup allowed members *)
+	allowedMembersForProducts = If[MatchQ[Flatten[productFinancerPackets], NullP],
+		ConstantArray[{}, Length[myProductsOrModels]],
+		Download[Lookup[Flatten[productFinancerPackets], Members, {}], Object]
+	];
+
 
 	(* create lookups to navigate from productsOrModels or Inventory to valid sites *)
 	(* the Financers field is multiple, so just make sure to get all valid sites as a flat list *)
@@ -2145,6 +2519,111 @@ resolveUploadInventoryOptions[
 		]
 	];
 
+	(* Throw an error if $PersonID is not a member of $Notebook financer members *)
+	resolvedNotebook = Which[
+
+		(* do not change Notebook for existing inventories. For existing inventories, the Notebook is not updated in the inventory packet, so it does not matter what the notebook is resolved to here. *)
+		MatchQ[myExistingInventories, {ObjectP[Object[Inventory]]..}],
+			Nothing,
+
+		(* allowedNotebooksForProducts and allowedMembersForProducts are concordant since both come from product/inventory Notebook. in other words, if one is populated, the other should be populated too; if one is empty, the other should be empty too *)
+
+	(* allowedMembersForProducts and allowedNotebooksForProducts are both empty for all products/inventories *)
+		(* if an emerald person runs the function and $Notebook is empty, return Null *)
+		And[
+			MatchQ[Flatten[allowedMembersForProducts], {}],
+			MatchQ[Flatten[allowedNotebooksForProducts], {}],
+			MatchQ[$PersonID, ObjectP[Object[User, Emerald]]],
+			MatchQ[$Notebook, Null]
+		],
+			Null,
+
+		(* $Notebook is always populated for a customer, so the case of a customer with empty $Notebook does not exist unless an emerald user uses the customer's $PersonID, so throw an error *)
+		And[
+			MatchQ[Flatten[allowedMembersForProducts], {}],
+			MatchQ[Flatten[allowedNotebooksForProducts], {}],
+			!MatchQ[$PersonID, ObjectP[Object[User, Emerald]]],
+			MatchQ[$Notebook, Null]
+		],
+			Message[Error::AuthorNotFinancerMember, "$Notebook is Null but your $PersonID is" <> ECL`InternalUpload`ObjectToString[$PersonID] <>". Please make sure you have selected a working notebook"
+
+			];
+			Null,
+
+		(* when an emerald person runs the function and $Notebook is populated, throw an error; they probably used a customer Notebook. *)
+		And[
+			MatchQ[Flatten[allowedMembersForProducts], {}],
+			MatchQ[Flatten[allowedNotebooksForProducts], {}],
+			MatchQ[$PersonID, ObjectP[Object[User, Emerald]]],
+			MatchQ[$Notebook, ObjectP[]]
+		],
+			Message[Error::AuthorNotFinancerMember, "$Notebook is " <> ECL`InternalUpload`ObjectToString[$Notebook] <> ". If you intend to create an Inventory for a customer, please use the tutoring account associated with their financing team. If this is a public inventory, set $Notebook to Null."];
+			Null,
+
+		(* if customer runs the function, return their $Notebook. make sure $Notebook belongs to $PersonID *)
+		And[
+			MatchQ[Flatten[allowedMembersForProducts], {}],
+			MatchQ[Flatten[allowedNotebooksForProducts], {}],
+			!MatchQ[$PersonID, ObjectP[Object[User, Emerald]]],
+			MatchQ[$Notebook, ObjectP[]]
+		],
+			If[MatchQ[$Notebook, ObjectP[personIDNotebooks]],
+				$Notebook,
+				Message[Error::AuthorNotFinancerMember, "$Notebook " <> ECL`InternalUpload`ObjectToString[$Notebook] <> " does not belong to this $PersonID: " <> ECL`InternalUpload`ObjectToString[$PersonID] <> ". Please use the correct $PersonID or $Notebook."]
+			],
+
+	(* allowedMembersForProducts and allowedNotebooksForProducts are both populated at least for one product or inventory *)
+		(* if $PersonID and $Notebook are member of allowedMembersForProducts and allowedNotebooksForProducts for all products/inventories that have notebooks, return $Notebook *)
+		And[
+			And @@ (MatchQ[$PersonID, ObjectP[#]] || MatchQ[#, {}]& /@ allowedMembersForProducts),
+			And @@ (MatchQ[$Notebook, ObjectP[#]] || MatchQ[#, {}]& /@ allowedNotebooksForProducts)
+		],
+			$Notebook,
+
+		(* if $PersonID or $Notebook are not members of allowedMembersForProducts or allowedNotebooksForProducts for any products/inventories that have notebooks, throw an error *)
+		Or[
+			MemberQ[(MatchQ[$PersonID, ObjectP[#]] || MatchQ[#, {}])& /@ allowedMembersForProducts, False],
+			MemberQ[(MatchQ[$Notebook, ObjectP[#]] || MatchQ[#, {}])& /@ allowedNotebooksForProducts, False]
+		],
+			Message[Error::AuthorNotFinancerMember, "Some of the products/stock solutions are not associated with your team. Please check $PersonID and $Notebook. Currently $PersonID is " <> ECL`InternalUpload`ObjectToString[$PersonID] <> " and $Notebook is " <> ECL`InternalUpload`ObjectToString[$Notebook] <> "."];
+			Null,
+
+		(* all cases should be addressed before here, but if something made their way here, throw an error for further investigation *)
+		(* unknown error. please contact infrastructure *)
+		True,
+			Message[Error::AuthorNotFinancerMember, "The consistency check between the Notebook of the products/stock solutions, $PersonID, and $Notebook returned unexpected results. Please check $PersonID and $Notebook and make sure you have access to these products/stock solutions."];
+			Null
+	];
+
+	(* tests for AuthorNotFinancerMember error *)
+	authorTests = If[MatchQ[myExistingInventories, {ObjectP[Object[Inventory]]}],
+
+		Nothing,
+
+		Test["The input products belong to the user or are public:",
+			Or[
+				And[
+					MatchQ[Flatten[allowedMembersForProducts], {}],
+					MatchQ[Flatten[allowedNotebooksForProducts], {}],
+					MatchQ[$PersonID, ObjectP[Object[User, Emerald]]],
+					MatchQ[$Notebook, Null]
+				],
+				And[
+					MatchQ[Flatten[allowedMembersForProducts], {}],
+					MatchQ[Flatten[allowedNotebooksForProducts], {}],
+					!MatchQ[$PersonID, ObjectP[Object[User, Emerald]]],
+					MatchQ[$Notebook, ObjectP[personIDNotebooks]]
+				],
+				And[
+					!MatchQ[Flatten[allowedMembersForProducts], {}],
+					!MatchQ[Flatten[allowedNotebooksForProducts], {}],
+					And @@ (MatchQ[$PersonID, ObjectP[#]] || MatchQ[#, {}]& /@ allowedMembersForProducts),
+					And @@ (MatchQ[$Notebook, ObjectP[#]] || MatchQ[#, {}]& /@ allowedNotebooksForProducts)
+				]
+			]
+		]
+	];
+
 	(* --------------------------- *)
 	(* --- Resolve the options --- *)
 	(* --------------------------- *)
@@ -2167,7 +2646,9 @@ resolveUploadInventoryOptions[
 		modelStockedNotNullInvalidQs,
 		modelStockedNotAllowedQs,
 		stockingMethodInvalidQs,
+		stockingMethodInvalidThresholdQs,
 		reorderStateMismatchQs,
+		lowReorderAmountQs,
 		expiresShelfLifeMismatchQs,
 		maxNumUsesInvalidQs,
 		maxNumHoursInvalidQs,
@@ -2182,12 +2663,12 @@ resolveUploadInventoryOptions[
 			Module[
 				{specifiedModelStocked, modelStocked, modelStockedNotNullInvalidQ, modelStockedPacket, specifiedStatus, status,
 					specifiedSite, site, specifiedStockingMethod, specifiedReorderThreshold, specifiedReorderAmount, stockingMethod,
-					reorderThreshold, reorderAmount, state, allowedModelsStocked, modelStockedNotAllowedQ, stockingMethodInvalidQ,
-					reorderStateMismatchQ, specifiedExpires, specifiedShelfLife,
-					specifiedUnsealedShelfLife, specifiedMaxNumberOfUses, specifiedMaxNumberOfHours,
-					expires, shelfLife, unsealedShelfLife, maxNumberOfHours,
+					reorderThreshold, reorderAmount, state, allowedModelsStocked, modelStockedNotAllowedQ, stockingMethodInvalidQ,stockingMethodInvalidThresholdQ,
+					reorderStateMismatchQ, specifiedExpires, specifiedShelfLife, lowReorderAmountQ, actualReorderAmount,
+					specifiedUnsealedShelfLife, specifiedMaxNumberOfUses, specifiedMaxNumberOfHours, numberOfItems, amount,
+					expires, shelfLife, unsealedShelfLife, maxNumberOfHours, halfResolvedReorderAmount,
 					expiresShelfLifeMismatchQ, maxNumberOfUses, maxNumUsesInvalidQ, maxNumHoursInvalidQ, modelFields,
-					newName, noSiteQ, siteChangeQ, invalidSiteQ, existingInventoryToAllQ, defaultSite
+					newName, noSiteQ, siteChangeQ, invalidSiteQ, existingInventoryToAllQ
 				},
 
 				(* set our error tracking variables *)
@@ -2195,11 +2676,13 @@ resolveUploadInventoryOptions[
 					modelStockedNotNullInvalidQ,
 					modelStockedNotAllowedQ,
 					stockingMethodInvalidQ,
+					stockingMethodInvalidThresholdQ,
 					reorderStateMismatchQ,
+					lowReorderAmountQ,
 					expiresShelfLifeMismatchQ,
 					maxNumUsesInvalidQ,
 					maxNumHoursInvalidQ
-				}={False, False, False, False, False, False, False};
+				} = {False, False, False, False, False, False, False, False, False};
 
 				(* pull out the specified option values *)
 				{
@@ -2214,7 +2697,7 @@ resolveUploadInventoryOptions[
 					specifiedUnsealedShelfLife,
 					specifiedMaxNumberOfUses,
 					specifiedMaxNumberOfHours
-				}=Lookup[options, {ModelStocked, Status, Site, StockingMethod, ReorderThreshold, ReorderAmount, Expires, ShelfLife, UnsealedShelfLife, MaxNumberOfUses, MaxNumberOfHours}];
+				} = Lookup[options, {ModelStocked, Status, Site, StockingMethod, ReorderThreshold, ReorderAmount, Expires, ShelfLife, UnsealedShelfLife, MaxNumberOfUses, MaxNumberOfHours}];
 
 				(* need to resolve ModelStocked immediately *)
 				(* obviously if people specify whatever go with that *)
@@ -2275,38 +2758,31 @@ resolveUploadInventoryOptions[
 					True, Active
 				];
 
-				(* only do this memoized search if we need to, remove ECL-1 *)
-				allECLSites[]:=allECLSites[]=DeleteCases[Search[Object[Container, Site], EmeraldFacility==True], Object[Container, Site, "id:1ZA60vLrXG4M"]];
+				(* resolve Site *)
+				site=Which[
+					(* Option was populated, use the specified option *)
+					MatchQ[specifiedSite, ObjectP[Object[Container, Site]]],
+						specifiedSite,
 
-				(* determine the default site(s) based on input type, Public/Private, and Obejct[Product][Site] *)
-				defaultSite = Which[
 					(* inventory object, use existing site *)
-					MatchQ[existingInventory, ObjectP[Object[Inventory]]], Download[Lookup[existingInventory, Site], Object],
+					MatchQ[existingInventory, ObjectP[Object[Inventory]]],
+						Download[Lookup[existingInventory, Site], Object],
 
 					(* product with site - use that *)
-					MatchQ[prodOrModel, ObjectP[Object[Product]]]&&MatchQ[Lookup[prodOrModel, Site], ObjectP[]], Download[Lookup[prodOrModel, Site], Object],
+					MatchQ[prodOrModel, ObjectP[Object[Product]]]&&MatchQ[Lookup[prodOrModel, Site], ObjectP[]],
+						Download[Lookup[prodOrModel, Site], Object],
 
-					(* private product - use ExperimentSites *)
-					MatchQ[Lookup[prodOrModel, Notebook], ObjectP[]], Lookup[productToSiteLookup, Download[prodOrModel, Object]],
+					(* private product - use ExperimentSites if Site is set to ALl *)
+					MatchQ[specifiedSite, All] && MatchQ[Lookup[prodOrModel, Notebook], ObjectP[]],
+						Lookup[productToSiteLookup, Download[prodOrModel, Object]],
 
-					(* public product - use allECLSites[] *)
+					(* For public product with option specified to All, use all ECL sites *)
+					MatchQ[specifiedSite, All],
+						allECLSites["Memoization"],
+
+					(* for all other cases, including public/private products with Automatic Site Option, use $Site *)
 					True,
-					allECLSites[]
-				];
-
-				(* resolve Site; if you're making a new object that is not restricted to a specific site through Object[Product][Site] make an object for each site available;
-				if you're updating an old one, just use the already existing;
-				otherwise set to what was said *)
-				site=Which[
-					(*1. Option was populated, use either the Site or All. Change All into a list of sites *)
-					MatchQ[specifiedSite, ObjectP[Object[Container, Site]]], specifiedSite,
-
-					(* All *)
-					(* Option was populated as All - use the default sites. If there was an inventory object input, we will error check below*)
-					MatchQ[specifiedSite, All], defaultSite,
-
-					(* Automatic *)
-					True, defaultSite
+						$Site
 				];
 
 				(* -- Site error checking -- *)
@@ -2328,14 +2804,14 @@ resolveUploadInventoryOptions[
 						If[MatchQ[Lookup[prodOrModel, Notebook], ObjectP[]],
 							(*this traverses the Notebook/Financers/ExperimentSites link*)
 							!SubsetQ[Lookup[productToSiteLookup, Lookup[prodOrModel, Object]], Download[ToList[site], Object]],
-							!SubsetQ[allECLSites[], Download[ToList[site], Object]]
+							!SubsetQ[allECLSites["Memoization"], Download[ToList[site], Object]]
 						],
 
 						(* Inventory object, check that the site is allowed *)
 						If[MatchQ[Lookup[existingInventory, Notebook], ObjectP[]],
 							(*this traverses the Notebook/Financers/ExperimentSites link*)
 							!SubsetQ[Lookup[inventoryToSiteLookup, Lookup[existingInventory, Object]], Download[ToList[site], Object]],
-							!SubsetQ[allECLSites[], Download[ToList[site], Object]]
+							!SubsetQ[allECLSites["Memoization"], Download[ToList[site], Object]]
 						]
 				];
 
@@ -2350,13 +2826,14 @@ resolveUploadInventoryOptions[
 				(* 0.) Obviously if already specified, pick that *)
 				(* 1.) If an existing inventory, pick that value*)
 				(* 2.) If a new inventory and CountPerSample is populated in the product, set to TotalAmount *)
-				(* 3.) If a new inventory and the model stocked is not a sample, set to NumberOfStockedContainers *)
+				(* 3.) If a new inventory and the model stocked is not a sample, set to TotalAmount for reusable objects (assume types without this field are reusable), NumberOfStockedContainers otherwise *)
 				(* 4.) If a new inventory and ReorderThreshold or ReorderAmount are integers/UnitsP[Unit], set to NumberOfStockedContainers*)
 				(* 5.) Otherwise, set to TotalAmount *)
 				stockingMethod=Which[
 					Not[MatchQ[specifiedStockingMethod, Automatic]], specifiedStockingMethod,
 					MatchQ[existingInventory, ObjectP[Object[Inventory]]], Lookup[existingInventory, StockingMethod],
 					MatchQ[prodOrModel, ObjectP[Object[Product]]] && (IntegerQ[Lookup[prodOrModel, CountPerSample]] || (Not[NullQ[modelStockedPacket]] && TrueQ[Lookup[modelStockedPacket, Tablet]])), TotalAmount,
+					MatchQ[prodOrModel, ObjectP[Object[Product]]] && Not[MatchQ[modelStockedPacket, ObjectP[Model[Sample]]]] && MatchQ[Lookup[modelStockedPacket, Reusable],True|$Failed], TotalAmount,
 					MatchQ[prodOrModel, ObjectP[Object[Product]]] && Not[MatchQ[modelStockedPacket, ObjectP[Model[Sample]]]], NumberOfStockedContainers,
 					(* by the time we get to this part, we should be dealing with only Samples (and not Parts/Items/etc since those should have been caught by the above)*)
 					MatchQ[specifiedReorderThreshold, UnitsP[Unit]] || MatchQ[specifiedReorderAmount, UnitsP[Unit]], NumberOfStockedContainers,
@@ -2374,6 +2851,7 @@ resolveUploadInventoryOptions[
 				reorderThreshold=Which[
 					Not[MatchQ[specifiedReorderThreshold, Automatic]], specifiedReorderThreshold,
 					MatchQ[existingInventory, ObjectP[Object[Inventory]]], Lookup[existingInventory, ReorderThreshold],
+					MatchQ[prodOrModel, ObjectP[Object[Product]]], 0 Unit,
 					MatchQ[stockingMethod, NumberOfStockedContainers], 0 Unit,
 					MatchQ[stockingMethod, TotalAmount] && (IntegerQ[Lookup[prodOrModel, CountPerSample]] || (Not[NullQ[modelStockedPacket]] && TrueQ[Lookup[modelStockedPacket, Tablet]])), 0 Unit,
 					MatchQ[stockingMethod, TotalAmount] && MatchQ[state, Solid], 0 Gram,
@@ -2389,32 +2867,79 @@ resolveUploadInventoryOptions[
 				(* 4.) If a new inventory and it's a stock solution and it's a liquid and TotalVolume is populated, set to TotalVolume *)
 				(* 5.) If a new inventory and it's a stock solution and it's a liquid otherwise, set to 1 Milliliter*)
 				(* 6.) If a new inventory and it's a stock solution and it's a solid, set to 1 Gram (this is almost never going to happen) *)
-				reorderAmount=Which[
+				halfResolvedReorderAmount = Which[
 					Not[MatchQ[specifiedReorderAmount, Automatic]], specifiedReorderAmount,
 					MatchQ[existingInventory, ObjectP[Object[Inventory]]], Lookup[existingInventory, ReorderAmount],
-					MatchQ[prodOrModel, ObjectP[Object[Product]]], 1 Unit,
+					MatchQ[prodOrModel, ObjectP[Object[Product]]], Max[1 Unit, reorderThreshold],
 					MatchQ[stockingMethod, NumberOfStockedContainers], 1 Unit,
 					MatchQ[prodOrModel, ObjectP[Model[Sample]]] && MatchQ[Lookup[prodOrModel, {State, TotalVolume}], {Liquid, VolumeP}], Lookup[prodOrModel, TotalVolume],
 					MatchQ[state, Solid], 1 Gram,
 					True, 1 Milliliter
 				];
 
-				(* flip an error switch if StockingMethod -> NumberOfStockedContainers but ReorderThreshold and ReorderAmount are not integers, or if dealing with a product and ReorderAmount is not an integer *)
-				stockingMethodInvalidQ=Or[
+				(* if the resolved amount is lower than reorderThreshold, use reorderThreshold instead *)
+				reorderAmount = If[
 					And[
-						MatchQ[existingInventory, ObjectP[Object[Inventory, Product]]] || MatchQ[prodOrModel, ObjectP[Object[Product]]],
-						Not[MatchQ[reorderAmount, UnitsP[Unit]]]
+						MatchQ[specifiedReorderAmount, Automatic],
+						CompatibleUnitQ[reorderThreshold, halfResolvedReorderAmount]
 					],
-					And[
-						MatchQ[stockingMethod, NumberOfStockedContainers],
-						Not[MatchQ[reorderThreshold, UnitsP[Unit]]] || Not[MatchQ[reorderAmount, UnitsP[Unit]]]
-					]
+					Max[reorderThreshold, halfResolvedReorderAmount],
+					halfResolvedReorderAmount
 				];
+
+				(* flip an error switch if StockingMethod -> NumberOfStockedContainers but ReorderThreshold and ReorderAmount are not integers *)
+				stockingMethodInvalidQ = If[
+					MatchQ[stockingMethod, NumberOfStockedContainers],
+					Not[MatchQ[reorderThreshold, UnitsP[Unit]]] || Not[MatchQ[reorderAmount, UnitsP[Unit]]]
+				];
+
+				(* flip an error switch if dealing with a product and ReorderAmount is unitless *)
+				stockingMethodInvalidThresholdQ = If[
+					MatchQ[existingInventory, ObjectP[Object[Inventory, Product]]] || MatchQ[prodOrModel, ObjectP[Object[Product]]],
+					Not[MatchQ[reorderAmount, UnitsP[Unit]]]
+					];
 
 				(* flip an error switch if ReorderThreshold and ReorderAmount units don't match the state of the model stocked *)
 				reorderStateMismatchQ=Or[
 					(MassQ[reorderThreshold] || MassQ[reorderAmount]) && Not[MatchQ[state, Solid]],
 					(VolumeQ[reorderThreshold] || VolumeQ[reorderAmount]) && Not[MatchQ[state, Liquid]]
+				];
+
+				(* ReorderThreshold is the actual number of items, however, ReorderAmount is the number of cases. For example, if a case has 24 items and ReorderThreshold is 48 then ReorderAmount of 2 means 2 cases or 48 items. so here the actual reorder amount is ReorderAmount * NumberOfItems in the product *)
+				actualReorderAmount = Which[
+					(* if the input is a model or a stock solution inventory, do not changes the reorderAmount. also if there is already an error, don't change anything *)
+					Or[
+						MatchQ[prodOrModel, ObjectP[Model[Sample]]],
+						MatchQ[existingInventory, ObjectP[Object[Inventory, StockSolution]]],
+						stockingMethodInvalidQ,
+						stockingMethodInvalidThresholdQ,
+						reorderStateMismatchQ
+					],
+						reorderAmount,
+
+					(* if the input is a product and the unit of reorder threshold is mass or volume units, then multiply the reorder amount by number of items by the amount per item *)
+					(* if the unit of reorder threshold is unit, then just multiply reorder amount by number of items *)
+					MatchQ[prodOrModel, ObjectP[Object[Product]]],
+					{numberOfItems, amount} = Lookup[prodOrModel, {NumberOfItems, Amount}];
+					If[MatchQ[reorderThreshold, GreaterEqualP[0 Gram] | GreaterEqualP[0 Liter]],
+						reorderAmount * (numberOfItems /. Null -> 1) * amount,
+						reorderAmount * (numberOfItems /. Null -> 1)
+					],
+
+					(* if the input is a product inventory and the unit of reorder threshold is mass or volume units, then multiply the reorder amount by number of items by the amount per item *)
+					(* if the unit of reorder threshold is unit, then just multiply reorder amount by number of items *)
+					MatchQ[existingInventory, ObjectP[Object[Inventory, Product]]],
+						{numberOfItems, amount} = First[Lookup[existingInventoryProdPacketsPerInventory, {NumberOfItems, Amount}]];
+						If[MatchQ[reorderThreshold, GreaterEqualP[0 Gram] | GreaterEqualP[0 Liter]],
+							reorderAmount * (numberOfItems /. Null -> 1) * amount,
+							reorderAmount * (numberOfItems /. Null -> 1)
+						]
+				];
+
+				(* Throw an error if actualReorderAmount is less than reorderThreshold *)
+				lowReorderAmountQ = If[!reorderStateMismatchQ && CompatibleUnitQ[reorderAmount, reorderThreshold],
+					actualReorderAmount < reorderThreshold,
+					False
 				];
 
 				(* Resolve the Expires option *)
@@ -2525,7 +3050,9 @@ resolveUploadInventoryOptions[
 					modelStockedNotNullInvalidQ,
 					modelStockedNotAllowedQ,
 					stockingMethodInvalidQ,
+					stockingMethodInvalidThresholdQ,
 					reorderStateMismatchQ,
+					lowReorderAmountQ,
 					expiresShelfLifeMismatchQ,
 					maxNumUsesInvalidQ,
 					maxNumHoursInvalidQ,
@@ -2540,8 +3067,6 @@ resolveUploadInventoryOptions[
 		],
 		{productOrStockSolutionPackets, existingInventoryPackets, mapThreadFriendlyOptions, existingInventoryProdPackets}
 	]];
-
-
 
 	(* ---------------------- *)
 	(* --- Error Checking --- *)
@@ -2564,7 +3089,7 @@ resolveUploadInventoryOptions[
 			If[NullQ[name],
 				Object[Inventory, "id:123"], (* this is an object that won't ever exist so it will return False to DatabaseMemberQ which is what I want *)
 				If[MatchQ[inventoryObj, ObjectP[]],
-					(*if we have an existing inventory, dont bother with appending site, just use the name*)
+					(*if we have an existing inventory, don't bother with appending site, just use the name*)
 					Append[type, name],
 					Prepend[Map[Append[type, name<>" "<>#]&, {sites}], Append[type,name]]
 				]
@@ -2623,9 +3148,13 @@ resolveUploadInventoryOptions[
 		{}
 	];
 
-	(* Also throw a warning for switching sites *)
-	If[MemberQ[siteChangeQs, True]&&messages,
-		Message[Warning::InventorySiteChanged, ToString[PickList[inputsToUse, siteChangeQs]], ToString[PickList[resolvedSite, siteChangeQs]]]
+	(* Also throw an error for switching sites *)
+	invalidSiteChangeOptions = If[MemberQ[siteChangeQs, True]&&messages,
+		(
+			Message[Error::InventorySiteCannotBeChanged, ToString[PickList[inputsToUse, siteChangeQs]], ToString[PickList[resolvedSite, siteChangeQs]]];
+			{Site}
+		),
+		{}
 	];
 
 	(* generate NoSite tests*)
@@ -2793,12 +3322,18 @@ resolveUploadInventoryOptions[
 	(* -- Invalid Stocking Method -- *)
 
 	(* throw a message if ModelStocked is set to a model that is not supplied by that product*)
-	stockingMethodInvalidOptions=If[MemberQ[stockingMethodInvalidQs, True] && messages,
+	stockingMethodInvalidOptions=Which[
+		And[MemberQ[stockingMethodInvalidQs, True], messages],
 		(
 			Message[Error::StockingMethodInvalid, ToString[PickList[inputsToUse, stockingMethodInvalidQs]]];
 			{StockingMethod, ReorderThreshold, ReorderAmount}
 		),
-		{}
+		And[MemberQ[stockingMethodInvalidThresholdQs, True], messages],
+		(
+			Message[Error::StockingMethodInvalidThreshold];
+			{ReorderAmount}
+		),
+		True, {}
 	];
 
 	(* generate StockingMethodInvalid tests*)
@@ -2880,6 +3415,49 @@ resolveUploadInventoryOptions[
 		]
 	];
 
+	(* throw a message if ReorderAmount is less than ReorderThreshold *)
+	reorderAmountOptions = If[MemberQ[lowReorderAmountQs, True] && messages,
+		(
+			Message[Error::LowReorderAmount, ToString[PickList[resolvedReorderAmount, lowReorderAmountQs]], ToString[PickList[resolvedReorderThreshold, lowReorderAmountQs]], ECL`InternalUpload`ObjectToString[PickList[inputsToUse, lowReorderAmountQs]]];
+			{ReorderThreshold, ReorderAmount}
+		),
+		{}
+	];
+
+	(* generate ReorderStateMismatch tests*)
+	reorderAmountTests = If[gatherTests,
+		Module[{failingInputs, passingInputs, failingInputTests, passingInputTests},
+
+			(* get the inputs that fail this test *)
+			failingInputs = PickList[inputsToUse, lowReorderAmountQs];
+
+			(* get the inputs that pass this test *)
+			passingInputs = PickList[inputsToUse, lowReorderAmountQs, False];
+
+			(* create a test for the non-passing inputs *)
+			failingInputTests = If[Length[failingInputs] > 0,
+				Test["For the provided inputs " <> ToString[failingInputs] <> ", the specified ReorderAmount is equal to or greater than the specified ReorderThreshold:",
+					False,
+					True
+				],
+				Nothing
+			];
+
+			(* create a test for the passing inputs *)
+			passingInputTests = If[Length[passingInputs] > 0,
+				Test["For the provided inputs " <> ToString[passingInputs] <> ", the specified ReorderAmount is equal to or greater than the specified ReorderThreshold:",
+					True,
+					True
+				],
+				Nothing
+			];
+
+			(* return the created tests *)
+			{passingInputTests, failingInputTests}
+
+		]
+	];
+
 	(* -- Invalid expiration -- *)
 
 	(* throw a message if the Expiration options don't agree with themselves *)
@@ -2927,7 +3505,7 @@ resolveUploadInventoryOptions[
 
 	(* -- Invalid MaxNumberOfUses -- *)
 
-	(* throw a message if MaxNumberOfUses is set for a type that doens't have it*)
+	(* throw a message if MaxNumberOfUses is set for a type that doesn't have it*)
 	maxNumUsesInvalidOptions=If[MemberQ[maxNumUsesInvalidQs, True] && messages,
 		(
 			Message[Error::MaxNumberOfUsesInvalid, ToString[PickList[inputsToUse, maxNumUsesInvalidQs]]];
@@ -2972,7 +3550,7 @@ resolveUploadInventoryOptions[
 
 	(* -- Invalid MaxNumberOfHours -- *)
 
-	(* throw a message if MaxNumberOfHours is set for a type that doens't have it*)
+	(* throw a message if MaxNumberOfHours is set for a type that doesn't have it*)
 	maxNumHoursInvalidOptions=If[MemberQ[maxNumHoursInvalidQs, True] && messages,
 		(
 			Message[Error::MaxNumberOfHoursInvalid, ToString[PickList[inputsToUse, maxNumHoursInvalidQs]]];
@@ -3026,12 +3604,14 @@ resolveUploadInventoryOptions[
 		modelStockedNotAllowedOptions,
 		stockingMethodInvalidOptions,
 		reorderStateMismatchOptions,
+		reorderAmountOptions,
 		expiresShelfLifeMismatchOptions,
 		maxNumUsesInvalidOptions,
 		maxNumHoursInvalidOptions,
 		noSiteOptions,
 		invalidSiteOptions,
-		badAllSiteOptions
+		badAllSiteOptions,
+		invalidSiteChangeOptions
 	}]];
 
 	(* throw the InvalidOption error if necessary *)
@@ -3042,10 +3622,12 @@ resolveUploadInventoryOptions[
 	(* gather all the tests together *)
 	allTests=Cases[Flatten[{
 		productModelDeprecatedTests,
+		authorTests,
 		modelStockedNotNullInvalidTests,
 		modelStockedNotAllowedTests,
 		stockingMethodInvalidTests,
 		reorderStateMismatchTests,
+		reorderAmountTests,
 		expiresShelfLifeMismatchTests,
 		maxNumUsesInvalidTests,
 		maxNumHoursInvalidTests,
@@ -3070,7 +3652,8 @@ resolveUploadInventoryOptions[
 		Name -> resolvedName,
 		Upload -> Lookup[myOptions, Upload],
 		Cache -> cache,
-		Output -> Lookup[myOptions, Output]
+		Output -> Lookup[myOptions, Output],
+		Notebook -> resolvedNotebook
 	};
 
 	(* generate the tests rule *)
@@ -3111,7 +3694,7 @@ DefineOptions[UploadInventoryOptions,
 (* existing inventory overload*)
 UploadInventoryOptions[myExistingInventory:ObjectP[Object[Inventory]], myOptions:OptionsPattern[UploadInventoryOptions]]:=UploadInventoryOptions[{myExistingInventory}, myOptions];
 UploadInventoryOptions[myExistingInventories:{ObjectP[Object[Inventory]]..}, myOptions:OptionsPattern[UploadInventoryOptions]]:=Module[
-	{listedOptions, optionsWithoutOutput, resolvedOptions},
+	{listedOptions, optionsWithoutOutput, resolvedOptions, resolvedOptionsWithNotebook},
 
 	(* get the options as a list *)
 	listedOptions=ToList[myOptions];
@@ -3119,8 +3702,11 @@ UploadInventoryOptions[myExistingInventories:{ObjectP[Object[Inventory]]..}, myO
 	(* since Output option is in UploadInventory options, we want to ignore that if present somehow *)
 	optionsWithoutOutput=DeleteCases[listedOptions, (OutputFormat -> _) | (Output -> _)];
 
-	(* add back in explicitly just the Options Output option for passing to core function to get just resolved optinos *)
-	resolvedOptions=UploadInventory[myExistingInventories, Append[optionsWithoutOutput, Output -> Options]];
+	(* add back in explicitly just the Options Output option for passing to core function to get just resolved options *)
+	resolvedOptionsWithNotebook=UploadInventory[myExistingInventories, Append[optionsWithoutOutput, Output -> Options]];
+
+	(* since Notebook is not an option, LegacySLL`Private`optionsToTable throws an error. so remove the Notebook from resolved options *)
+	resolvedOptions = Normal[KeyDrop[resolvedOptionsWithNotebook, Notebook]];
 
 	(* Return the option as a list or table; OutputFormat may be legit missing, so just default weirdly to Table;
 	 	also handle that we might have a $Failed result if SafeOptions failed *)
@@ -3133,10 +3719,10 @@ UploadInventoryOptions[myExistingInventories:{ObjectP[Object[Inventory]]..}, myO
 	]
 ];
 
-(* new product or model overlaod *)
+(* new product or model overload *)
 UploadInventoryOptions[myProductOrModel:ObjectP[{Model[Sample, StockSolution], Model[Sample, Media], Model[Sample, Matrix], Object[Product]}], myOptions:OptionsPattern[UploadInventoryOptions]]:=UploadInventoryOptions[{myProductOrModel}, myOptions];
 UploadInventoryOptions[myProductsOrModels:{ObjectP[{Model[Sample, StockSolution], Model[Sample, Media], Model[Sample, Matrix], Object[Product]}]..}, myOptions:OptionsPattern[UploadInventoryOptions]]:=Module[
-	{listedOptions, optionsWithoutOutput, resolvedOptions},
+	{listedOptions, optionsWithoutOutput, resolvedOptions, resolvedOptionsWithNotebook},
 
 	(* get the options as a list *)
 	listedOptions=ToList[myOptions];
@@ -3144,8 +3730,11 @@ UploadInventoryOptions[myProductsOrModels:{ObjectP[{Model[Sample, StockSolution]
 	(* since Output option is in UploadInventory options, we want to ignore that if present somehow *)
 	optionsWithoutOutput=DeleteCases[listedOptions, (OutputFormat -> _) | (Output -> _)];
 
-	(* add back in explicitly just the Options Output option for passing to core function to get just resolved optinos *)
-	resolvedOptions=UploadInventory[myProductsOrModels, Append[optionsWithoutOutput, Output -> Options]];
+	(* add back in explicitly just the Options Output option for passing to core function to get just resolved options *)
+	resolvedOptionsWithNotebook=UploadInventory[myProductsOrModels, Append[optionsWithoutOutput, Output -> Options]];
+
+	(* since Notebook is not an option, LegacySLL`Private`optionsToTable throws an error. so remove the Notebook from resolved options *)
+	resolvedOptions = Normal[KeyDrop[resolvedOptionsWithNotebook, Notebook]];
 
 	(* Return the option as a list or table; OutputFormat may be legit missing, so just default weirdly to Table;
 	 	also handle that we might have a $Failed result if SafeOptions failed *)
@@ -4735,14 +5324,58 @@ resolvedUploadLiteratureOptions[myInput:Null, myOptions_, myResolveOptions:Optio
 (* ::Subsubsection::Closed:: *)
 (*PubMed*)
 
+
+(* ::Subsubsection:: *)
+(*importPubMedResponse*)
+(* helper to parse information from pubmed ID, we need to memoize to decrease number of trips to API calls for PubMed *)
+
 (* Code below was tested with PubMed E-utilities API v16.6. For future maintainence, please check the latest API documentation. *)
 (* Release Notes: https://www.ncbi.nlm.nih.gov/books/NBK564895/ *)
 (* API Documentation: https://www.ncbi.nlm.nih.gov/books/NBK25501/ *)
 
+(* using this key helps increase the API rate limit to 10 calls/second, you can get a key by registering from their website: https://ncbiinsights.ncbi.nlm.nih.gov/2017/11/02/new-api-keys-for-the-e-utilities/ *)
+$eUtilAPIKey = "e22c137fd01c2e0af72ae7e106e07d9e6008";
+
+importPubMedResponse[pubmedID:PubMed[_Integer?(GreaterQ[#1, 0] &)]] := Module[
+	{response, validResponseQ},
+
+	retryConnection[
+		Module[{},
+			(* import response from pubmed ID *)
+			response = ManifoldEcho[
+				Quiet[Import["https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pubmed&apiKey="<>$eUtilAPIKey<>"&id="<>ToString[FirstOrDefault[pubmedID]]<>"&retmode=xml", "TSV"]],
+				"Import[\"https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pubmed&apiKey="<>$eUtilAPIKey<>"&id="<>ToString[FirstOrDefault[pubmedID]]<>"&retmode=xml\", \"TSV\"]"
+			];
+
+			(* check if the response is valid that we get the information xml we want *)
+			validResponseQ = Quiet[MatchQ[response[[3]], {"<PubmedArticleSet>"}] && MatchQ[response[[1]], {_?(StringContainsQ[#, "xml version"]&)}]];
+
+			(* return $Failed until we get a valid response *)
+			If[
+				!validResponseQ,
+				$Failed
+			]
+		],
+		5
+	];
+
+	(* only memoize when we actually get a valid response *)
+	If[validResponseQ,
+		If[!MemberQ[$Memoization, ExternalUpload`Private`importPubMedResponse],
+			AppendTo[$Memoization, ExternalUpload`Private`importPubMedResponse]
+		];
+		importPubMedResponse[pubmedID] = {response, validResponseQ}
+	];
+
+	(* return the raw response anyway *)
+	{response, validResponseQ}
+];
+
+
 (* Resolve the UploadLiterature options from a PubMed ID. *)
 (* PubMed API accepts negative integer and remove - symbol; it also accepts mixed Letters/Numbers and only take the first integer number as input, e.g. x1954y9891z will become 1954. To simplify, here only take positive integers as PubMed ID. *)
 resolvedUploadLiteratureOptions[pubmedID:PubMed[_Integer?(GreaterQ[#1, 0] &)], myOptions_, myResolveOptions:OptionsPattern[]]:=Module[
-	{listedOptions, outputOption, pubMedTest, xmlFile, website, rawJournal, journal, title, pages, abstract, affiliation, year, month, day, authorsLast, authorsFirst, rawKeywords, keywords, issnType, issn, vol, issue, doi, authorsNames, firstNamesWithPeriod, keywordsJoined,
+	{listedOptions, outputOption, validURLResponseQ, pubMedTest, xmlFile, validPubMedQ, website, rawJournal, journal, title, pages, abstract, affiliation, year, month, day, authorsLast, authorsFirst, rawKeywords, keywords, issnType, issn, vol, issue, doi, authorsNames, firstNamesWithPeriod, keywordsJoined,
 		authors, parsedOptions, allOptions, manualOptions, finalizedOptions},
 
 	(* Convert the options to this function into a list. *)
@@ -4755,43 +5388,27 @@ resolvedUploadLiteratureOptions[pubmedID:PubMed[_Integer?(GreaterQ[#1, 0] &)], m
 	];
 
 	(* Import the xml version of the citation from PubMed's website. *)
-	For[try=0, try<10, try++,
-		xmlFile = Quiet[Import["https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pubmed&id=" <> ToString[FirstOrDefault[pubmedID]] <> "&retmode=xml", "TSV"]];
+	{xmlFile, validURLResponseQ} = importPubMedResponse[pubmedID];
 
-		(* Continue retrying if: *)
-		If[
-			Or[
-				(* xmlFile is $Failed *)
-				MatchQ[xmlFile,$Failed],
-				(* either: we hit the API rate limit. PubMed API allows 3 calls per second. If a call returns Exceed API rate limit, pause and try again. *)
-				TrueQ[Quiet[StringContainsQ[xmlFile[[1]][[1]],___~~"API rate limit"~~___]]],
-				(* or: the given PubMed ID is valid but somehow we are getting a Null title, which MIGHT happen if website is undergoing maintenance *)
-				And[
-					Quiet[SameQ[xmlFile[[3]],{"<PubmedArticleSet></PubmedArticleSet>"}]],
-					With[{title=FirstOrDefault[Flatten[StringCases[#,"<ArticleTitle>"~~x__~~"</ArticleTitle>":>x]&/@ToList[xmlFile]]]},
-						!MatchQ[title,NullP]
-					]
-				]
-			],
-			Pause[1*(try+1)]; Continue[],
-			Break[]
-		]
-	];
+	(* If PubMed ID is invalid, a XML file will be returned with an empty <PubmedArticleSet></PubmedArticleSet> tag *)
+	(* we quiet the message here b/c sometimes when api is down, xmlFile will not necessarily have a length of 3, in which case we still think it is more of an api issue instead of complaining about PubMed ID *)
+	validPubMedQ = !Quiet[SameQ[xmlFile[[3]], {"<PubmedArticleSet></PubmedArticleSet>"}]];
 
 	(* We only test that we were given a valid PubMed ID. Other than that, all information in the PubMed ID is assumed to be correct. *)
-	(* If PubMed ID is invalid, a XML file will be returned with an empty <PubmedArticleSet></PubmedArticleSet> tag *)
 	pubMedTest=Test[
 		"The given PubMed ID is valid:",
-		Quiet[SameQ[xmlFile[[3]], {"<PubmedArticleSet></PubmedArticleSet>"}]],
-		False
+		validPubMedQ,
+		True
 	];
 
 	(* If PubMed ID does not exist, throw message and return *)
-	If[SameQ[xmlFile[[3]], {"<PubmedArticleSet></PubmedArticleSet>"}],
+	If[!validPubMedQ,
 		Message[UploadLiterature::InvalidPubmedID];
-		Message[Error::InvalidInput, ToString[pubmedID]];
+		Message[Error::InvalidInput, ToString[pubmedID]]
+	];
 
-		(* No option resolving can be done. Just return the default options. *)
+	(* No option resolving can be done if we are not getting a valid response. Just return the default options. *)
+	If[!validURLResponseQ,
 		Return[outputOption /. {Result -> myOptions, Tests -> Append[generateTests[myOptions], pubMedTest]}];
 	];
 
@@ -5279,7 +5896,7 @@ DefineOptions[UploadPipettingMethod,
 			OptionName -> OverAspirationVolume,
 			Default -> Automatic,
 			Description -> "The volume of air drawn into the pipette tip at the end of the aspiration of a liquid.",
-			ResolutionDescription -> "Automatically resolves resolves to 5 Microliter.",
+			ResolutionDescription -> "Automatically resolves to 5 Microliter.",
 			AllowNull -> False,
 			Category -> "Pipetting",
 			Widget -> Widget[
@@ -6024,7 +6641,7 @@ UploadPipettingMethodModelOptions[myName:_String | Null, ops:OptionsPattern[]]:=
 	(* get the options as a list *)
 	listedOptions=ToList[ops];
 
-	(* remove the Output option before passing to the core function because it doens't make sense here *)
+	(* remove the Output option before passing to the core function because it doesn't make sense here *)
 	noOutputOptions=DeleteCases[listedOptions, Alternatives[Output -> _, OutputFormat -> _]];
 
 	(* get only the options for UploadGradientMethod *)
@@ -6137,6 +6754,7 @@ ValidUploadPipettingMethodModelQ[myName:_String | Null, ops:OptionsPattern[]]:=M
 
 DefineOptions[UploadFractionCollectionMethod,
 	Options :> {
+		(* Overall the default option values match ExperimentHPLC *)
 		{
 			OptionName -> FractionCollectionStartTime,
 			Default -> Automatic,
@@ -6166,8 +6784,8 @@ DefineOptions[UploadFractionCollectionMethod,
 		{
 			OptionName -> FractionCollectionMode,
 			Default -> Automatic,
-			Description -> "The method by which fractions collection should be triggered (peak detection, a constant threshold, or a fixed fraction duration).",
-			ResolutionDescription -> "Automatically inherited from a method specified by the Template option, or set to Time if MaxCollectionPeriod is specified but MaxFractionVolume is not. Otherwise defaults to Threshold.",
+			Description -> "The method by which fractions collection should be triggered (peak detection, a constant threshold, or a fixed fraction time). In Peak detection mode, the fraction collection is triggered when a change in slope of the FractionCollectionDetector signal is observed for a specified PeakSlopeDuration time. In constant Threshold mode, whenever the signal from the FractionCollectionDetector is above the specified value, fraction collection is triggered. In fixed fraction Time mode, fractions are collected during the whole time interval specified.",
+			ResolutionDescription -> "Automatically inherited from a method specified by the Template option, or implicitly resolved from other fraction collection options. If AbsoluteThreshold is specified, set to Threshold. If PeakSlope is specified, set to Peak. If MaxCollectionPeriod is specified, set to Time. Otherwise defaults to Threshold.",
 			AllowNull -> True,
 			Category -> "FractionCollection",
 			Widget -> Widget[
@@ -6178,8 +6796,8 @@ DefineOptions[UploadFractionCollectionMethod,
 		{
 			OptionName -> MaxFractionVolume,
 			Default -> Automatic,
-			Description -> "The maximum volume of a single fraction.",
-			ResolutionDescription -> "Automatically resolves to Null if MaxCollectionPeriod is provided, or inherited from a method specified by the Template option. Otherwise defaults to 1.8 Milliliter.",
+			Description -> "The maximum amount of sample to be collected in a single fraction. If fraction detection trigger is not off, the collector moves position to the next container. For example, if AbsorbanceThreshold is set to 180 MilliAbsorbanceUnit and at MaxFractionVolume the absorbance value is still above 180 MilliAbsorbanceUnit, the fraction collector continues to collect fractions in the next container in line.",
+			ResolutionDescription -> "Automatically resolves to Null if FractionCollectionMode is Time, or inherited from a method specified by the Template option. Otherwise defaults to 1.8 Milliliter.",
 			AllowNull -> True,
 			Category -> "FractionCollection",
 			Widget -> Widget[
@@ -6191,7 +6809,7 @@ DefineOptions[UploadFractionCollectionMethod,
 		{
 			OptionName -> MaxCollectionPeriod,
 			Default -> Automatic,
-			Description -> "The amount of time after which a new fraction will be generated when FractionCollectionMode is Time.",
+			Description -> "The amount of time after which a new fraction will be generated (Fraction Collector moves to the next vial) when FractionCollectionMode is Time. For example, if MaxCollectionPeriod is 120 Second, the fraction collector continues to collect fractions in the next container in line after 120 Second.",
 			ResolutionDescription -> "Automatically inherited from a method specified by the Template option, or defaults to 30s FractionCollectionMode is set to Time. Otherwise defaults to Null.",
 			AllowNull -> True,
 			Category -> "FractionCollection",
@@ -6204,37 +6822,56 @@ DefineOptions[UploadFractionCollectionMethod,
 		{
 			OptionName -> AbsoluteThreshold,
 			Default -> Automatic,
-			Description -> "The absorbance signal value above which fractions will always be collected.",
-			ResolutionDescription -> "Automatically resolves to 500 mAU when FractionCollectionMode is Threshold or Peak, or is inherited from a method specified by the Template option. Otherwise defaults to Null.",
+			Description -> "The signal value from FractionCollectionDetector above which fractions will always be collected, when FractionCollectionMode is Threshold.",
+			ResolutionDescription -> "Automatically resolves to 500 mAU when FractionCollectionMode is Threshold, or is inherited from a method specified by the Template option. Otherwise defaults to Null.",
 			AllowNull -> True,
 			Category -> "FractionCollection",
 			Widget -> Widget[
 				Type -> Quantity,
-				Pattern :> GreaterEqualP[0 AbsorbanceUnit],
-				Units -> {MilliAbsorbanceUnit, {MilliAbsorbanceUnit, AbsorbanceUnit}}
+				Pattern :> (GreaterEqualP[0 AbsorbanceUnit] | GreaterEqualP[0 RFU] | GreaterEqualP[10 Micro Siemens / Centimeter]),
+				Units -> Alternatives[
+					{1, {MilliAbsorbanceUnit, {MilliAbsorbanceUnit, AbsorbanceUnit}}},
+					{1, {RFU * Milli, {RFU * Milli, RFU}}},
+					CompoundUnit[
+						{1, {Micro Siemens, {Micro Siemens, Millisiemen, Siemens}}},
+						{-1, {Centimeter, {Centimeter}}}
+					]
+				]
 			]
 		},
 		{
 			OptionName -> PeakSlope,
 			Default -> Automatic,
-			Description -> "The minimum slope rate (per second) that must be met before a peak is detected and fraction collection begins.  A new peak (and new fraction) can be registered once the slope drops below this again, and collection ends when the Threshold value is reached.",
-			ResolutionDescription -> "Automatically resolves to Null or inherited from a method specified by the Template option.",
+			Description -> "The minimum slope (signal change per second) required for PeakSlopeDuration to trigger peak detection and start fraction collection. Fraction collection end slope is defined as the opposite of PeakSlope and fraction collection will continue until the slope exceeds the negative of the PeakSlope. For instance, if PeakSlope is set to 1 Milli Absorbance Unit/Second, fraction collection begins when the slope surpasses this value and ends when the slope falls below -1 Milli Absorbance Unit/Second. If a PeakEndThreshold is specified, both the PeakEndThreshold and PeakSlope conditions must be satisfied to stop fraction collection. A new peak and corresponding fraction can be registered when the slope exceeds the PeakSlope again.",
+			ResolutionDescription -> "Automatically inherited from a method specified by the Template option or set to 1 Milli AbsorbanceUnit/Second if FractionCollectionMode is Peak.",
 			AllowNull -> True,
 			Category -> "FractionCollection",
 			Widget -> Widget[
 				Type -> Quantity,
-				Pattern :> GreaterEqualP[0 AbsorbanceUnit / Second],
-				Units -> CompoundUnit[
-					{1, {AbsorbanceUnit, {AbsorbanceUnit, MilliAbsorbanceUnit}}},
-					{-1, {Second, {Second, Millisecond}}}
+				Pattern :> (GreaterEqualP[0 AbsorbanceUnit / Second] | GreaterEqualP[0 RFU / Second] | GreaterEqualP[10 Micro (Siemens / Centimeter) / Second]),
+				Units -> Alternatives[
+					CompoundUnit[
+						{1, {AbsorbanceUnit, {AbsorbanceUnit, MilliAbsorbanceUnit}}},
+						{-1, {Second, {Second, Millisecond}}}
+					],
+					CompoundUnit[
+						{1, {RFU * Milli, {RFU * Milli, RFU}}},
+						{-1, {Second, {Second, Millisecond}}}
+					],
+					CompoundUnit[
+						{1, {Micro Siemens, {Micro Siemens, Milli Siemens, Siemens}}},
+						{-1, {Centimeter, {Centimeter}}},
+						{-1, {Second, {Second, Millisecond}}}
+					]
 				]
 			]
 		},
+		(* Default to Null if not in the template method, since we don't require this in experiment (basically Null means 0 Second) *)
 		{
 			OptionName -> PeakSlopeDuration,
 			Default -> Automatic,
-			Description -> "The minimum duration that changes in slopes must be maintained before they are registered. Must be between 0 Second and 4 Second.",
-			ResolutionDescription -> "Automatically resolves to 0 Second or inherited from a method specified by the Template option.",
+			Description -> "The minimum duration that changes in slopes must be maintained before fraction collection is registered or ended.",
+			ResolutionDescription -> "Automatically inherited from a method specified by the Template option.",
 			AllowNull -> True,
 			Category -> "FractionCollection",
 			Widget -> Widget[
@@ -6243,17 +6880,25 @@ DefineOptions[UploadFractionCollectionMethod,
 				Units -> {Second, {Second, Millisecond}}
 			]
 		},
+		(* Default to Null if not in the template method, since we don't require this in experiment (basically Null means 0 signal unit) *)
 		{
 			OptionName -> PeakEndThreshold,
 			Default -> Automatic,
-			Description -> "The absorbance signal value below which the end of a peak is marked and fraction collection stops.",
-			ResolutionDescription -> "Automatically resolves to Null or inherited from a method specified by the Template option.",
+			Description -> "The signal value below which the end of a peak is marked and fraction collection stops when FractionCollectionMode is Peak. Both the PeakEndThreshold and PeakSlope conditions must be satisfied to stop fraction collection.",
+			ResolutionDescription -> "Automatically inherited from a method specified by the Template option.",
 			AllowNull -> True,
 			Category -> "FractionCollection",
 			Widget -> Widget[
 				Type -> Quantity,
-				Pattern :> GreaterEqualP[0 AbsorbanceUnit],
-				Units -> {MilliAbsorbanceUnit, {MilliAbsorbanceUnit, AbsorbanceUnit}}
+				Pattern :> (GreaterEqualP[0 AbsorbanceUnit] | GreaterEqualP[0 RFU] | GreaterEqualP[10 Micro Siemens / Centimeter]),
+				Units -> Alternatives[
+					{1, {MilliAbsorbanceUnit, {MilliAbsorbanceUnit, AbsorbanceUnit}}},
+					{1, {RFU * Milli, {RFU * Milli, RFU}}},
+					CompoundUnit[
+						{1, {Micro Siemens, {Micro Siemens, Millisiemen, Siemens}}},
+						{-1, {Centimeter, {Centimeter}}}
+					]
+				]
 			]
 		},
 		{
@@ -6278,7 +6923,7 @@ DefineOptions[UploadFractionCollectionMethod,
 
 Error::MethodNameAlreadyExists="A method Object with the name `1` already exists.";
 Error::FractionCollectionTiming="The FractionCollectionStartTime must be less than the FractionCollectionEndTime.";
-Error::FractionCollectionMode="If FractionCollectionMode is set to `1`, `2` must be provided.";
+Error::FractionCollectionMode="If FractionCollectionMode is set to `1`, `2` must be provided and `3` must be Null.";
 
 
 (* ::Subsubsection::Closed:: *)
@@ -6545,7 +7190,7 @@ resolveUploadMethodFractionCollectionObjectOptions[
 		defaultAbsThreshold=(500 * Milli * AbsorbanceUnit),
 		defaultMaxPeriod=30 * Second,
 		defaultMaxVol=1.8 * Milliliter,
-		defaultSlopeDuration=(0 * Second),
+		defaultPeakSlope=(1 * Milli * AbsorbanceUnit/Second),
 
 		(* Resolved option values *)
 		resolvedMode, resolvedAbsThreshold, resolvedMaxPeriod, resolvedMaxVol, resolvedCollectStart,
@@ -6554,8 +7199,8 @@ resolveUploadMethodFractionCollectionObjectOptions[
 		(* Resolution bools *)
 		nameBool, startStopBool,
 
-		(* Tests *)
-		gatherTestsQ, nameTest, modeThresholdTest, modeTimeTest, startStopTest, allTests
+		(* Tests and Messages *)
+		modeInvalidNullOptions, modeInvalidNotNullOptions, modeOptionRequirementTuples, gatherTestsQ, nameTest, modeOptionTest, startStopTest, allTests
 	},
 
 	(* convert the options into a list *)
@@ -6636,24 +7281,25 @@ resolveUploadMethodFractionCollectionObjectOptions[
 	];
 
 	(* Resolve the FractionCollectionMode option *)
-	(* If neither mode nor AbsoluteThreshold are provided, but MaxCollectionPeriod is provided, set it to Time *)
+	(* Respect user option first *)
+	(* If MaxCollectionPeriod is provided, set it to Time *)
+	(* If any Peak option (PeakEndThreshold, PeakSlope, PeakSlopeDuration) is provided, set it to Peak *)
 	resolvedMode=Which[
 		MatchQ[mode, FractionCollectionModeP], mode,
-		!MatchQ[mode, FractionCollectionModeP] && MatchQ[maxVol, VolumeP], Threshold,
-		!MatchQ[mode, FractionCollectionModeP] && MatchQ[maxPeriod, TimeP], Time,
+		MatchQ[maxPeriod, TimeP], Time,
+		MatchQ[absThreshold, UnitsP[]], Threshold,
+		!MatchQ[{endThreshold, peakSlope, slopeDuration}, {(Automatic|Null)..}], Peak,
 		True, Threshold
 	];
 
 	(* Resolve AbsoluteThreshold *)
 	resolvedAbsThreshold=Which[
-		(* If a valid AbsoluteThreshold was provided, ust it *)
-		MatchQ[absThreshold, AbsorbanceUnitP], absThreshold,
-		(* If AbsoluteThreshold->Automatic and CollectionMode->Threshold or Peak, default Automatic to the hardcoded default *)
-		MatchQ[absThreshold, Automatic] && MatchQ[resolvedMode, Threshold | Peak], defaultAbsThreshold,
-		(* If AbsoluteThreshold->Automatic and CollectionMode->Time, default Automatic to Null *)
-		MatchQ[absThreshold, Automatic] && MatchQ[resolvedMode, Time], Null,
-		(* If User specified Null, resolve to Null *)
-		NullQ[absThreshold], Null
+		(* If a valid AbsoluteThreshold was provided, use it *)
+		MatchQ[absThreshold, UnitsP[]], absThreshold,
+		(* If AbsoluteThreshold->Automatic and CollectionMode->Threshold, default Automatic to the hardcoded default *)
+		MatchQ[absThreshold, Automatic] && MatchQ[resolvedMode, Threshold], defaultAbsThreshold,
+		(* Otherwise set to Null *)
+		True, Null
 	];
 
 	(* Resolve MaxCollectionPeriod *)
@@ -6668,58 +7314,89 @@ resolveUploadMethodFractionCollectionObjectOptions[
 		NullQ[maxPeriod], Null
 	];
 
-	(* Resolve MaxCollectionPeriod *)
+	(* Resolve MaxCollectionVolume *)
 	resolvedMaxVol=Which[
 		(* If a valid MaxCollectionPeriod was provided, ust it *)
 		MatchQ[maxVol, VolumeP], maxVol,
-		(* If MaxCollectionPeriod->Automatic and CollectionMode->Threshold or Peak, default Automatic to Null *)
+		(* If MaxCollectionPeriod->Automatic and CollectionMode->Threshold or Peak, default Automatic to hardcoded default value *)
 		MatchQ[maxVol, Automatic] && MatchQ[resolvedMode, Threshold | Peak], defaultMaxVol,
-		(* If MaxCollectionPeriod->Automatic and CollectionMode->Time, default Automatic to the hardcoded default *)
+		(* If MaxCollectionPeriod->Automatic and CollectionMode->Time, default Automatic to Null *)
 		MatchQ[maxVol, Automatic] && MatchQ[resolvedMode, Time], Null,
 		(* If User specified Null, resolve to Null *)
 		NullQ[maxVol], Null
 	];
 
+	(* Resolve PeakSlope *)
+	resolvedPeakSlope=Which[
+		(* If a valid PeakSlope was provided, ust it *)
+		MatchQ[peakSlope, UnitsP[]], peakSlope,
+		(* If PeakSlope->Automatic and CollectionMode->Threshold or Time, default Automatic to Null *)
+		MatchQ[peakSlope, Automatic] && MatchQ[resolvedMode, Threshold | Time], Null,
+		(* If PeakSlope->Automatic and CollectionMode->Peak, default Automatic to the hardcoded default *)
+		MatchQ[peakSlope, Automatic] && MatchQ[resolvedMode, Peak], defaultPeakSlope,
+		(* If User specified Null, resolve to Null *)
+		NullQ[peakSlope], Null
+	];
+
+	(* PeakSlopeDuration and defaults to Null *)
+	{resolvedSlopeDuration, resolvedEndThreshold}=ReplaceAll[{slopeDuration, endThreshold}, Automatic -> Null];
+
+	(* Options that are Null but should be specified *)
+	modeInvalidNullOptions=Switch[resolvedMode,
+		Time,
+		If[NullQ[resolvedMaxPeriod],
+			{MaxCollectionPeriod},
+			{}
+		],
+		Peak,
+		If[NullQ[resolvedPeakSlope],
+			{PeakSlope},
+			{}
+		],
+		Threshold,
+		If[NullQ[resolvedAbsThreshold],
+			{AbsoluteThreshold},
+			{}
+		]
+	];
+
+	(* Options that are not Null but should not be specified *)
+	modeInvalidNotNullOptions=Switch[resolvedMode,
+		Time,
+		PickList[{AbsoluteThreshold,PeakSlope,PeakSlopeDuration,PeakEndThreshold},{resolvedAbsThreshold,resolvedPeakSlope,resolvedSlopeDuration,resolvedEndThreshold},Except[Null]],
+		Peak,
+		PickList[{AbsoluteThreshold,MaxCollectionPeriod},{resolvedAbsThreshold,resolvedMaxPeriod},Except[Null]],
+		Threshold,
+		PickList[{MaxCollectionPeriod,PeakSlope,PeakSlopeDuration,PeakEndThreshold},{resolvedMaxPeriod,resolvedPeakSlope,resolvedSlopeDuration,resolvedEndThreshold},Except[Null]]
+	];
+
+
 	(* Check that FractionCollectionMode and AbsoluteThreshold or MaxCollectionPeriod are informed together properly *)
-	If[!TrueQ[gatherTestsQ],
+	If[!TrueQ[gatherTestsQ]&&!MatchQ[Join[modeInvalidNullOptions,modeInvalidNotNullOptions],{}],
 		(
-			(* If Mode->Time, MaxPeriodCollection must be provided *)
-			If[MatchQ[resolvedMode, Time] && NullQ[resolvedMaxPeriod],
-				(
-					Message[Error::FractionCollectionMode, resolvedMode, MaxCollectionPeriod];
-					Message[Error::InvalidOption, MaxCollectionPeriod]
-				)
-			];
-			(* If Method->Threshold, AbsoluteThreshold must be provided *)
-			If[MatchQ[resolvedMode, Threshold | Peak] && NullQ[resolvedAbsThreshold],
-				(
-					Message[Error::FractionCollectionMode, resolvedMode, AbsoluteThreshold];
-					Message[Error::InvalidOption, AbsoluteThreshold]
-				)
-			]
+			Message[Error::FractionCollectionMode, resolvedMode, modeInvalidNullOptions, modeInvalidNotNullOptions];
+			Message[Error::InvalidOption, Join[modeInvalidNullOptions,modeInvalidNotNullOptions]]
 		)
 	];
 
-	(* If mode is set to Time, make sure MaxCollectionPeriod*)
-	modeThresholdTest=Test["If FractionCollectionMode is Peak or Threshold, a valid AbsoluteThreshold is provided:",
-		{resolvedMode, resolvedAbsThreshold},
-		{(Peak | Threshold), Except[Null]} | {Except[(Peak | Threshold)], _}
+	(* Set up tuples for required and required Null options for test setup *)
+	modeOptionRequirementTuples=Switch[resolvedMode,
+		Time,
+		{{MaxCollectionPeriod},{AbsoluteThreshold,PeakSlope,PeakSlopeDuration,PeakEndThreshold}},
+		Peak,
+		{{PeakSlope},{AbsoluteThreshold,MaxCollectionPeriod}},
+		Threshold,
+		{{AbsoluteThreshold},{MaxCollectionPeriod,PeakSlope,PeakSlopeDuration,PeakEndThreshold}}
 	];
 
 	(* If mode is set to Time, make sure MaxCollectionPeriod*)
-	modeTimeTest=Test["If FractionCollectionMode is Time, a valid MaxCollectionPeriod is provided:",
-		{resolvedMode, resolvedMaxPeriod},
-		{Time, Except[Null]} | {Except[Time], _}
+	modeOptionTest=Test["For the collection mode of "<>ToString[resolvedMode]<>", the options "<>ToString[modeOptionRequirementTuples[[1]]]<>" must not be Null and the options "<>ToString[modeOptionRequirementTuples[[2]]]<>" cannot be specified:",
+		MatchQ[Join[modeInvalidNullOptions,modeInvalidNotNullOptions],{}],
+		True
 	];
-
-	(* PeakSlopeDuration defaults to 0 seconds *)
-	resolvedSlopeDuration=ReplaceAll[slopeDuration, Automatic -> defaultSlopeDuration];
-
-	(* all default to Null *)
-	{resolvedPeakSlope, resolvedEndThreshold}=ReplaceAll[{peakSlope, endThreshold}, Automatic -> Null];
 
 	(* Join all tests together and cleanse all Nulls *)
-	allTests={nameTest, modeThresholdTest, modeTimeTest, startStopTest};
+	allTests={nameTest, modeOptionTest, startStopTest};
 
 	(* Join all option resolutions *)
 	resolvedOps=ReplaceRule[
@@ -7818,8 +8495,8 @@ resolveUploadGradientMethodOptions[myName:_String | Null, myGradientPacket:Packe
 		If[MatchQ[specifiedGradient, ObjectP[Object[Method, Gradient]]],
 			Lookup[myGradientPacket, Temperature],
 
-			(* Default to ambient 25 Celsius *)
-			25 Celsius
+			(* Default to ambient *)
+			Ambient
 		]
 	];
 
@@ -8154,7 +8831,7 @@ UploadGradientMethodOptions[myName:_String | Null, myOptions:OptionsPattern[]]:=
 	(* get the options as a list *)
 	listedOptions=ToList[myOptions];
 
-	(* remove the Output option before passing to the core function because it doens't make sense here *)
+	(* remove the Output option before passing to the core function because it doesn't make sense here *)
 	noOutputOptions=DeleteCases[listedOptions, Alternatives[Output -> _, OutputFormat -> _]];
 
 	(* get only the options for UploadGradientMethod *)
@@ -8768,7 +9445,7 @@ ExportReport[myFileName:FilePathP, myInputs:{({ReportStyleP, _} | _) ..}, myOpti
 	];
 
 	(* Check that the file does not already exist. If it does, throw an error and stop here. *)
-	If[FileExistsQ[filePath],
+	If[FileExistsQ[filePath] && (TrueQ[saveLocally] || !MatchQ[fileDirectory,$TemporaryDirectory]),
 		Message[ExportReport::FileExists, filePath];
 		Return[$Failed]
 	];
@@ -9699,8 +10376,11 @@ UploadStorageProperties[myModel:ObjectP[{Model[Container], Model[Item], Model[Pa
 	]
 ];
 UploadStorageProperties[myModels:{ObjectP[{Model[Container], Model[Item], Model[Part], Model[Plumbing], Model[Wiring]}]...},ops:OptionsPattern[]]:=Module[
-	{listedOptions,outputSpecification,output,gatherTests,safeOps,safeOpsTests,resolvedOptionsResult,
-	resolvedOptions,resolvedOptionsTests,packets,uploadResult,validLengths,validLengthTests,expandedOptions},
+	{
+		listedOptions,outputSpecification,output,gatherTests,safeOps,safeOpsTests,resolvedOptionsResult,
+		resolvedOptions,resolvedOptionsTests,packets,uploadResult,validLengths,validLengthTests,expandedOptions,
+		allPackets,storageAvailabilityPackets,storageAvailabilityToUpdate
+	},
 	
  (* Make sure we're working with a list of options *)
  listedOptions = ToList[ops];
@@ -9810,17 +10490,103 @@ UploadStorageProperties[myModels:{ObjectP[{Model[Container], Model[Item], Model[
 		Lookup[resolvedOptions,Fragile]
 	}
  ];
- 
- uploadResult = If[Lookup[safeOps, Upload],
-	 Upload[packets],
-	 packets
+
+ (* -- Storage Availability Sync -- *)
+
+ (* if any fields have changed, sync associated storage availability objects *)
+
+ {storageAvailabilityPackets, storageAvailabilityToUpdate} = Module[
+	 {
+		 inputFields,existingParameters,modelChangedBools,modelsToUpdate,
+		 queries,searchTypes,possibleObjectsToUpdate,possiblePositionTuples,allSAToUpdate
+	 },
+
+	 (* -- Check for changes -- *)
+	 inputFields = {Dimensions, StorageOrientation, Fragile};
+
+	 existingParameters = Download[myModels, inputFields];
+	 modelChangedBools = MapThread[
+		 (* if any of the non null values do not match the db val, then *)
+		 Which[
+			 (* no fields were updated *)
+			 MatchQ[#2, {Null..}],
+			 False,
+
+			 (* updates were specified but are the same as existing values *)
+			 MatchQ[Cases[#2, Except[Null]],PickList[#1, #2, Except[Null]]],
+			 False,
+
+			 (* something material has changed *)
+			 True,
+			 True
+		 ]&,
+		 {existingParameters, Transpose[Lookup[resolvedOptions,inputFields]]}
+	 ];
+
+	 (* fin any models that have been altered in a way that will impact packing. If there are non, return early *)
+	 modelsToUpdate = PickList[myModels, modelChangedBools, True];
+	 If[MatchQ[modelsToUpdate, {}],
+		 Return[{{},{}}, Module]
+	 ];
+
+	 (* -- find all impacted objects -- *)
+
+	 (* for each model find real instances in lab (any site) *)
+	 queries = Hold[And[Model==#,Status==(Available|Stocked|InUse),Container!=Null&&Missing!=True]]&/@modelsToUpdate;
+	 searchTypes = {Object@@Most[#]}&/@modelsToUpdate;
+	 possibleObjectsToUpdate = Flatten[Search[searchTypes, Evaluate[queries]]];
+
+	 (* -- find all impacted positions -- *)
+	 possiblePositionTuples = Download[possibleObjectsToUpdate, {Position, Container[StorageAvailability]}];
+
+	 allSAToUpdate = DeleteDuplicates[
+		 Map[
+			 FirstCase[#[[2]], {pos:#[[1]], sa_}:>Download[sa, Object], Nothing]&,
+			 possiblePositionTuples
+		 ]
+	 ];
+
+	 (* Set the storage availability objects to Unsynced, and then let them get picked up by the syncing job *)
+	 (*Note that there is a script that syncs these, so even if something happens, like you call this with Upload->False from another function, it still works *)
+	 {
+		 If[MatchQ[allSAToUpdate, {ObjectP[]..}],
+			 Map[<|Object-> #, Status-> Unsynced, Append[StatusLog]-> {Now, Unsynced,Link[Object[User, Emerald, Developer, "service+lab-infrastructure"]]}|>&,allSAToUpdate],
+			 {}
+		 ],
+		 allSAToUpdate
+	 }
  ];
+
+
+ allPackets = Join[packets, storageAvailabilityPackets];
+
+
+ (* if we are uploading, also make a computation to recalculate the storageAvailabilities *)
+ uploadResult = If[Lookup[safeOps, Upload],
+	 Join[
+		 Upload[allPackets],
+		 (* only do the computation if we are in engine, or in a Null notebook. Dont make Customers do this computation *)
+		 If[MatchQ[storageAvailabilityToUpdate, {ObjectP[]..}]&&MatchQ[$Notebook,Null]&&MatchQ[ProductionQ[], True],
+			 Compute[
+				 Block[
+					 {$Notebook=Null},
+					 InternalUpload`UploadStorageAvailability[#, Force->True]&/@PartitionRemainder[storageAvailabilityToUpdate, 50]
+				 ],
+				 RunAsUser -> Object[User, Emerald, Developer, "service+lab-infrastructure"]
+			 ],
+			 {}
+		 ]
+	 ],
+	 allPackets
+ ];
+
+
 
  (* Return requested output *)
  outputSpecification /. {
 	 Result -> uploadResult,
 	 Tests -> Flatten[{safeOpsTests, resolvedOptionsTests}],
-	 Options -> RemoveHiddenOptions[UploadSite, resolvedOptions],
+	 Options -> RemoveHiddenOptions[UploadStorageProperties, resolvedOptions],
 	 Preview -> Null
  }
 ];
@@ -9835,7 +10601,7 @@ DefineOptions[
 	Options :> {HelperOutputOption, CacheOption}
 ];
 
-(* Overload for editing an existing site *)
+(* Overload for editing an existing model *)
 resolveUploadStoragePropertiesOptions[myModels:{ObjectP[{Model[Container], Model[Item], Model[Part], Model[Plumbing], Model[Wiring]}]...}, myOptions:{_Rule...}, myResolutionOptions:OptionsPattern[resolveUploadStoragePropertiesOptions]]:=Module[
 	{outputSpecification,output,gatherTests,cache,verifiedContainerModelBools,specifiedDimensions,
 	validDimensionsBools,invalidDimensions,invalidDimensionsModels,dimensionsTest,invalidOptions},
@@ -9898,4 +10664,52 @@ resolveUploadStoragePropertiesOptions[myModels:{ObjectP[{Model[Container], Model
 		Result -> myOptions,
 		Tests -> {dimensionsTest}
 	}
-]
+];
+
+(* Helper to resolve SampleType option from the parsed description *)
+resolveSampleTypesFromString[myProductName:(Null | _String), myProductDescription:(Null | _String)] := Module[
+	{
+		allAllowedSampleTypesString, commonSampleTypes, weightedSampleTypesString, nameStringMatching,
+		nameMatchedTypes, descriptionStringMatching, descriptionMatchedTypes, commonSampleTypesLookup
+	},
+
+	allAllowedSampleTypesString = ToString /@ (List @@ SampleDescriptionP);
+	commonSampleTypes = {Tube, Vial, Plate, Bottle, Pack, Kit, Column, Cap};
+	commonSampleTypesLookup = {
+		"Lid" -> PlateCover,
+		"Film" -> PlateCover
+	};
+
+	(* We construct this list of SampleDescriptions which put the common ones in front. *)
+	weightedSampleTypesString = Join[
+		ToString /@ commonSampleTypes,
+		Keys[commonSampleTypesLookup],
+		allAllowedSampleTypesString
+	];
+
+	(* Find whether our product name contains any of the SampleTypes string *)
+	nameStringMatching = If[NullQ[myProductName],
+		ConstantArray[False, Length[weightedSampleTypesString]],
+		StringContainsQ[myProductName, #, IgnoreCase -> True]& /@ weightedSampleTypesString
+	];
+	nameMatchedTypes = PickList[weightedSampleTypesString, nameStringMatching, True];
+
+	(* Find whether our product description contains any of the SampleTypes string *)
+	descriptionStringMatching = If[NullQ[myProductDescription],
+		ConstantArray[False, Length[weightedSampleTypesString]],
+		StringContainsQ[myProductDescription, #, IgnoreCase -> True]& /@ weightedSampleTypesString
+	];
+	descriptionMatchedTypes = PickList[weightedSampleTypesString, descriptionStringMatching, True];
+
+	Which[
+		Length[nameMatchedTypes] > 0,
+		(* If we found the product's name contains any string that matches SampleDescriptionP, use that *)
+			ToExpression[Replace[First[nameMatchedTypes], commonSampleTypesLookup]],
+		(* Otherwise, we'll use what we found from product description *)
+		Length[descriptionMatchedTypes] > 0,
+			ToExpression[Replace[First[descriptionMatchedTypes], commonSampleTypesLookup]],
+		(* Lastly, if we can't find anything, set to Null *)
+		True,
+			Null
+	]
+];

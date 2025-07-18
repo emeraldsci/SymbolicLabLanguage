@@ -34,8 +34,7 @@ validModelContainerQTests[packet:PacketP[Model[Container]]]:={
 			Name,
 			Synonyms,
 			Authors,
-			Dimensions,
-			DefaultStorageCondition
+			Dimensions
 		}
 		]
 	],
@@ -112,6 +111,14 @@ validModelContainerQTests[packet:PacketP[Model[Container]]]:={
 		True
 	],
 
+	Test["If Sterilized field is True, Sterile field must be True:",
+		If[MatchQ[Lookup[packet, Sterilized], True],
+			TrueQ[Lookup[packet, Sterile]],
+			True
+		],
+		True
+	],
+
 	Test["A container of this model cannot be obtained by both a normal product and a kit product (i.e., Products and KitProducts cannot both be populated):",
 		Lookup[packet, {Products, KitProducts}],
 		Alternatives[
@@ -123,9 +130,9 @@ validModelContainerQTests[packet:PacketP[Model[Container]]]:={
 	
 
 	(* not all reusable containers need to be cleaned, but for sure if we ARE cleaning it, it is reusable *)
-	Test["If CleaningMethod is populated, Reusability must be True:",
+	Test["If CleaningMethod is populated, Reusable must be True:",
 		If[MatchQ[Lookup[packet,CleaningMethod],CleaningMethodP],
-			TrueQ[Lookup[packet,Reusability]],
+			TrueQ[Lookup[packet,Reusable]],
 			True
 		],
 		True
@@ -330,6 +337,12 @@ validModelContainerBagDishwasherQTests[packet:PacketP[Model[Container,Bag,Dishwa
 		MeshSize
 	}]
 };
+
+(* ::Subsubsection:: *)
+(*validModelContainerBagAsepticQTests*)
+
+
+validModelContainerBagAsepticQTests[packet:PacketP[Model[Container,Bag,Aseptic]]]:={};
 
 
 (* ::Subsubsection:: *)
@@ -875,7 +888,8 @@ validModelContainerGraduatedCylinderQTests[packet:PacketP[Model[Container,Gradua
 		MaxVolume,
 		Resolution,
 		PreferredCamera,
-		Graduations
+		Graduations,
+		GraduationTypes
 	}],
 
 	(* Shared Fields which should be null *)
@@ -886,9 +900,22 @@ validModelContainerGraduatedCylinderQTests[packet:PacketP[Model[Container,Gradua
 
 	FieldComparisonTest[packet,{MinVolume,MaxVolume},LessEqual],
 
-	Test["If Graduations is informed, they are listed from the smallest marking:",
+	Test["Graduations are listed from the smallest marking:",
 		{Lookup[packet,Graduations],MatchQ[Lookup[packet,Graduations],Sort[Lookup[packet,Graduations]]]},
 		{{___},True}
+	],
+	Test["The first index of Graduations equals the MinVolume:",
+		{{Lookup[packet,Graduations][[1]], Lookup[packet, MinVolume]}, EqualQ[Lookup[packet,Graduations][[1]],Lookup[packet, MinVolume]]},
+		{{___},True}
+	],
+	Test["The last index of Graduations equals the MaxVolume:",
+		{{Lookup[packet,Graduations][[-1]], Lookup[packet, MaxVolume]}, EqualQ[Lookup[packet,Graduations][[-1]],Lookup[packet, MaxVolume]]},
+		{{___},True}
+	],
+	Test[
+		"GraduatedCylinder should has RentByDefault set as True:",
+		MatchQ[Lookup[packet,RentByDefault],True],
+		True
 	]
 };
 
@@ -944,7 +971,7 @@ validModelContainerHemocytometerQTests[packet:PacketP[Model[Container,Hemocytome
 
 	(* Shared Fields which should NOT be null *)
 	NotNullFieldTest[packet,{
-		Reusability,
+		Reusable,
 		MinVolume,
 		MaxVolume
 	}],
@@ -1024,10 +1051,10 @@ validModelContainerJunctionBoxQTests[packet:PacketP[Model[Container,JunctionBox]
 
 
 (* ::Subsection::Closed:: *)
-(*validModelContainerMagazineParkPositionQTests*)
+(*validModelContainerMagazineRackQTests*)
 
 
-validModelContainerMagazineParkPositionQTests[packet:PacketP[Model[Container,MagazineParkPosition]]]:= {
+validModelContainerMagazineRackQTests[packet:PacketP[Model[Container,MagazineRack]]]:= {
 
 	NullFieldTest[packet, {
 		MinVolume,
@@ -1119,7 +1146,7 @@ validModelContainerMicroscopeSlideQTests[packet:PacketP[Model[Container,Microsco
 
 	(* Shared Fields which should NOT be null *)
 	NotNullFieldTest[packet,{
-		Reusability
+		Reusable
 	}],
 
 	(* Shared Fields which should be null *)
@@ -1275,7 +1302,7 @@ validModelContainerPlateQTests[packet:PacketP[Model[Container,Plate]]]:=Module[{
 					Module[{xDim,yDim,zDim},
 						{xDim,yDim,zDim}=Lookup[packet,Dimensions];
 						MatchQ[
-							Lookup[packet,BottomSupport3D],
+							Lookup[packet,BottomCavity3D],
 							{{RangeP[0Millimeter,xDim],RangeP[0Millimeter,yDim],RangeP[0Millimeter,zDim]}..}
 						]],
 					True
@@ -1319,7 +1346,7 @@ validModelContainerPlateQTests[packet:PacketP[Model[Container,Plate]]]:=Module[{
 					Module[{xDim,yDim,zDim},
 						{xDim,yDim,zDim}=Lookup[packet,Dimensions];
 						MatchQ[
-							Lookup[packet,BottomSupport3D],
+							Lookup[packet,BottomCavity3D],
 							{{RangeP[0Millimeter,xDim],RangeP[0Millimeter,yDim],RangeP[0Millimeter,zDim]}..}
 						]],
 					True
@@ -1380,7 +1407,7 @@ validModelContainerPlateIrregularCapillaryELISAQTests[packet:PacketP[Model[Conta
 	(* Not Null Shared Fields *)
 	NotNullFieldTest[packet,{
 		Expires,
-		Reusability
+		Reusable
 	}],
 
 	(* Not Null Unique Fields*)
@@ -1490,7 +1517,7 @@ validModelContainerPlateCapillaryStripQTests[packet:PacketP[Model[Container, Pla
 
 	(*Shared fields*)
 	NotNullFieldTest[packet, {
-		Reusability,
+		Reusable,
 		RecommendedFillVolume
 	}],
 
@@ -1730,7 +1757,7 @@ validModelContainerRackQTests[packet:PacketP[Model[Container,Rack]]]:={
 			Module[{xDim,yDim,zDim},
 				{xDim,yDim,zDim}=Lookup[packet,Dimensions];
 				MatchQ[
-					Lookup[packet,BottomSupport3D],
+					Lookup[packet,BottomCavity3D],
 					{{RangeP[0Millimeter,xDim],RangeP[0Millimeter,yDim],RangeP[0Millimeter,zDim]}..}
 				]],
 			True
@@ -2046,6 +2073,11 @@ validModelContainerVesselQTests[packet:PacketP[Model[Container,Vessel]]]:={
 
 	(* Well dimensions: *)
 
+	Test["For ampoule containers (i.e. Ampoule is True), BuiltInCover is False:",
+		Lookup[packet,{Ampoule, BuiltInCover}],
+		{True, Alternatives[False, Null]}
+	],
+
 	Test["InternalDepth is informed unless the vessel is an Ampoule or PermanentlySealed, in which case it may be Null:",
 		Lookup[packet,{Ampoule, PermanentlySealed, InternalDepth}],
 		{True, _, _} | {_, True, _} | {Except[True], Except[True], Except[NullP]}
@@ -2249,6 +2281,11 @@ validModelContainerVesselVolumetricFlaskQTests[packet:PacketP[Model[Container,Ve
 	Test[
 		"Graduations of the container is informed and only informed one value:",
 		MatchQ[Lookup[packet,Graduations],{_}],
+		True
+	],
+	Test[
+		"VolumetricFlask should has RentByDefault set as True:",
+		MatchQ[Lookup[packet,RentByDefault],True],
 		True
 	]
 };
@@ -2517,6 +2554,7 @@ validModelContainerSpillKitQTests[packet:PacketP[Model[Container,SpillKit]]]:= {
 
 registerValidQTestFunction[Model[Container],validModelContainerQTests];
 registerValidQTestFunction[Model[Container, Bag],validModelContainerBagQTests];
+registerValidQTestFunction[Model[Container, Bag, Aseptic],validModelContainerBagAsepticQTests];
 registerValidQTestFunction[Model[Container, Bag, Autoclave],validModelContainerBagAutoclaveQTests];
 registerValidQTestFunction[Model[Container, Bag, Dishwasher],validModelContainerBagDishwasherQTests];
 registerValidQTestFunction[Model[Container, Bench],validModelContainerBenchQTests];
@@ -2549,7 +2587,7 @@ registerValidQTestFunction[Model[Container, GrindingContainer],validModelContain
 registerValidQTestFunction[Model[Container, Hemocytometer],validModelContainerHemocytometerQTests];
 registerValidQTestFunction[Model[Container, LightBox],validModelContainerLightBoxQTests];
 registerValidQTestFunction[Model[Container, JunctionBox],validModelContainerJunctionBoxQTests];
-registerValidQTestFunction[Model[Container, MagazineParkPosition],validModelContainerMagazineParkPositionQTests];
+registerValidQTestFunction[Model[Container, MagazineRack],validModelContainerMagazineRackQTests];
 registerValidQTestFunction[Model[Container, MicrofluidicChip],validModelContainerMicrofluidicChipQTests];
 registerValidQTestFunction[Model[Container, MicroscopeSlide],validModelContainerMicroscopeSlideQTests];
 registerValidQTestFunction[Model[Container, NMRSpinner],validModelContainerNMRSpinnerQTests];

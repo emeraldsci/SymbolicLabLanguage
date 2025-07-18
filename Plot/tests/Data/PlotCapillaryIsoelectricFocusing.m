@@ -29,6 +29,12 @@ DefineTests[PlotCapillaryIsoelectricFocusing,
 			TimeConstraint->120
 		],
 		Example[
+			{Basic,"Plots capillary isoelectric focusing data when given a CapillaryIsoelectricFocusing protocol object:"},
+			PlotCapillaryIsoelectricFocusing[Object[Protocol, CapillaryIsoelectricFocusing, "CapillaryIsoelectricFocusing Protocol for PlotCapillaryIsoelectricFocusing Test "<>$SessionUUID]],
+			_?ValidGraphicsQ,
+			TimeConstraint->120
+		],
+		Example[
 			{Basic,"Plots capillary isoelectric focusing data when given a list of XY coordinates representing the spectra:"},
 			PlotCapillaryIsoelectricFocusing[Download[Object[Data,CapillaryIsoelectricFocusing,"id:qdkmxzqPomX1"],ProcessedFluorescenceData[[1,2]]]],
 			_?ValidGraphicsQ,
@@ -206,5 +212,62 @@ DefineTests[PlotCapillaryIsoelectricFocusing,
 			Sort@Keys@SafeOptions@PlotCapillaryIsoelectricFocusing,
 			TimeConstraint->120
 		]
-	}
+	},
+	SymbolSetUp :> (
+		Module[{allObjects},
+			allObjects={
+				Object[Data, CapillaryIsoelectricFocusing, "CapillaryIsoelectricFocusing Data for PlotCapillaryIsoelectricFocusing test " <> $SessionUUID],
+				Object[Protocol, CapillaryIsoelectricFocusing, "CapillaryIsoelectricFocusing Protocol for PlotCapillaryIsoelectricFocusing Test "<>$SessionUUID]
+			};
+
+			EraseObject[
+				PickList[allObjects, DatabaseMemberQ[allObjects]],
+				Force -> True,
+				Verbose -> False
+			]
+		];
+
+		$CreatedObjects={};
+
+		Module[{data1, protocol1},
+			{data1, protocol1} = CreateID[{Object[Data, CapillaryIsoelectricFocusing], Object[Protocol, CapillaryIsoelectricFocusing]}];
+
+			Upload[
+				<|
+					Name -> "CapillaryIsoelectricFocusing Data for PlotCapillaryIsoelectricFocusing test " <> $SessionUUID,
+					Object -> data1,
+					Type -> Object[Data, CapillaryIsoelectricFocusing],
+					ProcessedUVAbsorbanceData -> QuantityArray[{#, RandomReal[1]} & /@ Range[1, 2048], {Pixel, AbsorbanceUnit}],
+					Replace[ProcessedFluorescenceData] -> {
+						{10. Second, QuantityArray[{#, RandomReal[800]} & /@ Range[0.5, 2100], {Pixel, RFU}]},
+						{20. Second, QuantityArray[{#, RandomReal[800]} & /@ Range[0.5, 2100], {Pixel, RFU}]},
+						{3. Second, QuantityArray[{#, RandomReal[800]} & /@ Range[0.5, 2100], {Pixel, RFU}]},
+						{5. Second, QuantityArray[{#, RandomReal[800]} & /@ Range[0.5, 2100], {Pixel, RFU}]}
+					}
+				|>
+			];
+
+			Upload[
+				<|
+					Name -> "CapillaryIsoelectricFocusing Protocol for PlotCapillaryIsoelectricFocusing Test "<>$SessionUUID,
+					Object -> protocol1,
+					Type -> Object[Protocol, CapillaryIsoelectricFocusing],
+					Replace[Data] -> {Link[data1, Protocol]}
+				|>
+			];
+		]
+	),
+	SymbolTearDown:>Module[{objsToErase},
+		objsToErase=Flatten[{
+			$CreatedObjects,
+			Object[Data, CapillaryIsoelectricFocusing, "CapillaryIsoelectricFocusing Data for PlotCapillaryIsoelectricFocusing test " <> $SessionUUID],
+			Object[Protocol, CapillaryIsoelectricFocusing, "CapillaryIsoelectricFocusing Protocol for PlotCapillaryIsoelectricFocusing Test "<>$SessionUUID]
+		}];
+
+		EraseObject[
+			PickList[objsToErase,DatabaseMemberQ[objsToErase]],
+			Force->True,
+			Verbose->False
+		];
+	]
 ];

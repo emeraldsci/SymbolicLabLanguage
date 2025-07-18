@@ -91,7 +91,8 @@ DefineOptions[PlotFluorescenceIntensity,
 Error::MismatchedWavelengthsAndIntensities="The intensity readings and emission wavelengths are different lengths in `1` and so the wavelength associated with a given intensity cannot be determined. Please ValidObjectQ on your data objects to verify it is correct. You can also directly send the intensities you wish to plot.";
 Warning::DuplicateWavelengths="Multiple intensity readings at the requested wavelength were found for `1`. The first reading will be shown.";
 Error::NoDataAtWavelength="No data appears to have been recorded at the requested wavelength. Please check the EmissionWavelengths field of `1` to see the wavelengths at which data was recorded.";
-
+Error::NoFluorescenceIntensityDataToPlot = "The protocol object does not contain any associated fluorescence intensity data.";
+Error::FluorescenceIntensityProtocolDataNotPlotted = "The data objects linked to the input protocol were not able to be plotted. The data objects may be missing field values that are required for plotting. Please inspect the data objects to ensure that they contain the data to be plotted, and call PlotFluorescenceIntensity or PlotObject on an individual data object to identify the missing values.";
 
 resolveFluorescenceIntensityPlotType[plotType:(Histogram|BarChart|BoxWhiskerChart),in_]:=plotType;
 resolveFluorescenceIntensityPlotType[Automatic,QuantityArrayP[1]]:=Histogram;
@@ -117,6 +118,69 @@ PlotFluorescenceIntensity[in:ListableP[{(_?NumericQ|_?FluorescenceQ)..}|Quantity
 		Options->resolvedOptions,
 		Tests->{}
 	}
+];
+
+(* Protocol Overload *)
+PlotFluorescenceIntensity[
+	obj: ObjectP[Object[Protocol, FluorescenceIntensity]],
+	ops: OptionsPattern[PlotFluorescenceIntensity]
+] := Module[{safeOps, output, data, previewPlot, plot, resolvedOptions, finalResult, outputOptions},
+
+	(* Check the options pattern and return a list of all options, using defaults for unspecified or invalid options *)
+	safeOps=SafeOptions[PlotFluorescenceIntensity, ToList[ops]];
+
+	(* Requested output, either a single value or list of Alternatives[Result,Options,Preview,Tests] *)
+	output = ToList[Lookup[safeOps, Output]];
+
+	(* Download the data from the input protocol *)
+	data = Download[obj, Data];
+
+	(* Return an error if there is no data or it is not the correct data type *)
+	If[!MatchQ[data, {ObjectP[Object[Data, FluorescenceIntensity]]..}],
+		Message[Error::NoFluorescenceIntensityDataToPlot];
+		Return[$Failed]
+	];
+
+	(* If Preview is requested, return a plot with all of the data objects in the protocol overlaid in one plot *)
+	previewPlot = If[MemberQ[output, Preview],
+		PlotFluorescenceIntensity[data, Sequence @@ ReplaceRule[safeOps, Output -> Preview]],
+		Null
+	];
+
+	(* If either Result or Options are requested, call PlotFluorescenceIntensity on all of the data objects in a list. *)
+	(* For this plot function we do not want to return slide view for protocol inputs, because the default is to plot all of the data in one plot as a histogram. *)
+	(* Remove anything that failed from the list of plots to be displayed*)
+	{plot, resolvedOptions} = If[MemberQ[output, (Result | Options)],
+		PlotFluorescenceIntensity[data, Sequence @@ ReplaceRule[safeOps, Output -> {Result, Options}]],
+		{{}, {}}
+	];
+
+	(* If all of the data objects failed to plot, return an error *)
+	If[MatchQ[plot, (ListableP[{}] | ListableP[Null])] && MatchQ[previewPlot, (Null | $Failed)],
+		Message[Error::FluorescenceIntensityProtocolDataNotPlotted];
+		Return[$Failed],
+		Nothing
+	];
+
+	(* If Options were requested, just take the first set of options since they are the same for all plots. Make it a List first just in case there is only one option set. *)
+	outputOptions = If[MemberQ[output, Options],
+		First[ToList[resolvedOptions]]
+	];
+
+	(* Prepare our final result *)
+	finalResult = output /. {
+		Result -> plot,
+		Options -> outputOptions,
+		Preview -> previewPlot,
+		Tests -> {}
+	};
+
+	(* Return the result *)
+	If[
+		Length[finalResult] == 1,
+		First[finalResult],
+		finalResult
+	]
 ];
 
 

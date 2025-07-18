@@ -17,7 +17,7 @@ DefineTests[PlotDNASequencing,{
 	Example[
 		{Basic,"Plot the results of an ExperimentDNASequencing using a protocol object as input:"},
 		PlotDNASequencing[Object[Protocol,DNASequencing,"PlotDNASequencing Test Protocol with data"]],
-		{ValidGraphicsP[]..}
+		ValidGraphicsP[]
 	],
 
 	Example[

@@ -351,16 +351,18 @@ analyzePeaksPreview[peaksObj:ListableP[PacketP[Object[Analysis,Peaks]]], output_
 	(* If output is preview or result show the preview, otherwise return the options and an empty list for test.
 	Here we set $fromPlotPeaks=True to let AnalyzePeaksPreview know that the call is coming from PlotPeaks and
 	that the returned plot should be free in interactive elements.*)
-	Block[{Plot`Private`$fromPlotPeaks=True},
+	Block[{Plot`Private`$fromPlotPeaks=True, pkOpNames = Symbol/@Keys[Options[ECL`AnalyzePeaks]], apkOpNames = Symbol/@Keys[Options[ECL`AdvancedAnalyzePeaks]]},
 
 		(*Instead, try:
 		 result = ECL`AnalyzePeaksPreview[references, existingOptions]*)
 
 		result = MapThread[
-			ECL`AnalyzePeaksPreview[#1, #2]&,
+			If[ ContainsAny[Keys[#2], Complement[apkOpNames,pkOpNames]], (* object came from AdvancedAnalyzePeaks *)
+				ECL`AdvancedAnalyzePeaksPreview[#1,#2],
+				ECL`AnalyzePeaksPreview[#1, #2]
+			]&,
 			{references, existingOptions}
 		]
-
 
 	];
 

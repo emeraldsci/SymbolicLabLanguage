@@ -1,3 +1,547 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:cd91b8e5996d68cf2eb727d5237a192148d8f9d842ed85f7d1d467b846953a8a
-size 23289
+(* Content-type: application/vnd.wolfram.mathematica *)
+
+(*** Wolfram Notebook File ***)
+(* http://www.wolfram.com/nb *)
+
+(* CreatedBy='Mathematica 12.3' *)
+
+(*CacheID: 234*)
+(* Internal cache information:
+NotebookFileLineBreakTest
+NotebookFileLineBreakTest
+NotebookDataPosition[       158,          7]
+NotebookDataLength[     23089,        537]
+NotebookOptionsPosition[     15797,        414]
+NotebookOutlinePosition[     18955,        472]
+CellTagsIndexPosition[     18912,        469]
+WindowTitle->WorkingWithConstellationObjects
+WindowFrame->Normal*)
+
+(* Beginning of Notebook Content *)
+Notebook[{
+Cell[BoxData[GridBox[{
+   {GridBox[{
+      {
+       ItemBox[Cell[BoxData[
+         RowBox[{
+          InterpretationBox[
+           StyleBox[
+            GraphicsBox[{},
+             BaselinePosition->Baseline,
+             ImageSize->{8, 0}],
+            CacheGraphics->False],
+           Spacer[8],
+           Selectable->False], Cell["EMERALD GUIDE", "PacletNameCell",
+           TextAlignment->Center,ExpressionUUID->
+           "7908e89f-b893-47ac-459a-a815c351d89e"], 
+          InterpretationBox[
+           StyleBox[
+            GraphicsBox[{},
+             BaselinePosition->Baseline,
+             ImageSize->{8, 0}],
+            CacheGraphics->False],
+           Spacer[8],
+           Selectable->False]}]],
+         TextAlignment->Center,ExpressionUUID->
+         "867f6861-a9ab-4486-7f3f-3ad8f927adfb"],
+        Background->RGBColor[
+         0.24313725490196078`, 0.27058823529411763`, 0.2980392156862745],
+        ItemSize->Full], ""}
+     },
+     GridBoxAlignment->{"Rows" -> {{Center}}},
+     GridBoxItemSize->{"Columns" -> {Full, 
+         Scaled[0.02]}, "Rows" -> {{2.5}}}], Cell[TextData[{
+     Cell[BoxData[
+      ActionMenuBox[
+       FrameBox[Cell[TextData[{
+         "Functions",
+         " ",
+         Cell[BoxData[
+          GraphicsBox[
+           {RGBColor[183/256., 197/256., 211/256.], Thickness[0.13], 
+            LineBox[{{-1.8, 0.5}, {0, 0}, {1.8, 0.5}}]},
+           AspectRatio->1,
+           ImageSize->20,
+           PlotRange->{{-3, 4}, {-1, 1}}]],ExpressionUUID->
+          "1bf740fd-47b5-4b69-abaf-622a91c86ff2"]
+        }],ExpressionUUID->"e7a1e8a0-7bd3-4c58-aa17-8339ff764c44"],
+        StripOnInput->False], {"\<\"DatabaseMemberQ\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Constellation/ref/DatabaseMemberQ"], "\<\"Download\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Constellation/ref/Download"], "\<\"Inspect\"\>":>
+       Documentation`HelpLookup[
+       "paclet:ConstellationViewers/ref/Inspect"], "\<\"NamedObject\"\>":>
+       Documentation`HelpLookup[
+       "paclet:LegacySLL/ref/NamedObject"], "\<\"ObjectMap\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Constellation/ref/ObjectMap"], "\<\"ObjectSelect\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Constellation/ref/ObjectSelect"], "\<\"PlotObject\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Plot/ref/PlotObject"], "\<\"PlotTable\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Plot/ref/PlotTable"], "\<\"PlotTablePreview\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Plot/ref/PlotTablePreview"], "\<\"Search\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Constellation/ref/Search"], "\<\"Upload\"\>":>
+       Documentation`HelpLookup["paclet:Constellation/ref/Upload"]},
+       LineSpacing -> {1.4, 0},
+       Appearance->None,
+       MenuAppearance->Automatic,
+       MenuStyle->"GuideFunction"]],ExpressionUUID->
+      "a50c20ed-5bed-4d67-af18-77e1dc7055cc"],
+     "\[ThickSpace]\[ThickSpace]\[ThickSpace]\[ThickSpace]\[ThickSpace]\
+\[ThickSpace]",
+     Cell[BoxData[
+      ActionMenuBox[
+       FrameBox[Cell[TextData[{
+         "Related Guides",
+         " ",
+         Cell[BoxData[
+          GraphicsBox[
+           {RGBColor[183/256., 197/256., 211/256.], Thickness[0.13], 
+            LineBox[{{-1.8, 0.5}, {0, 0}, {1.8, 0.5}}]},
+           AspectRatio->1,
+           ImageSize->20,
+           PlotRange->{{-3, 4}, {-1, 1}}]],ExpressionUUID->
+          "5ccf2033-81bc-4c10-8e61-b164e372d9ab"]
+        }],ExpressionUUID->"4e30cecd-17d6-46a3-b68d-69c14e5126a8"],
+        StripOnInput->False], {"\<\"ConstellationUtilityFunctions\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Docs/guide/ConstellationUtilityFunctions"], \
+"\<\"EmeraldCloudFiles\"\>":>Documentation`HelpLookup[
+       "paclet:Docs/guide/EmeraldCloudFiles"], \
+"\<\"IncludingLiteratureReferences\"\>":>Documentation`HelpLookup[
+       "paclet:Docs/guide/IncludingLiteratureReferences"], \
+"\<\"ObjectOntology\"\>":>Documentation`HelpLookup[
+       "paclet:Docs/guide/ObjectOntology"]},
+       LineSpacing -> {1.4, 0},
+       Appearance->None,
+       MenuAppearance->Automatic,
+       MenuStyle->"GuideFunction"]],ExpressionUUID->
+      "77b85e2a-4c98-4986-bbce-b234b567c91a"]
+    }], "AnchorBar",ExpressionUUID->"d9f7af82-ea97-49ac-89f5-e57e203a76da"]}
+  }]], "AnchorBarGrid",
+ CellID->1,ExpressionUUID->"a3107480-0a7d-4ea1-bf5d-6f56a37f24e7"],
+
+Cell["Working With Constellation Objects", "GuideTitle",
+ CellID->609283552,ExpressionUUID->"bedecde5-2b6e-4372-99d2-3cf3b9c58878"],
+
+Cell["\<\
+The ECL Constellation automatically coordinates and organizes scientific data \
+coming to and from the lab into a vast network of linked data objects.
+Information is organized into Constellation objects by breaking into a set of \
+Fields which each contain a value (e.g. The MolecularWeight Field of the \
+Object representing Ethanol is 46.07 Gram/Mole). The collection of which \
+Fields are available for a given object is defined by the Type of object it \
+is. So for instance Constellation objects of Type Object[Data,Chromatography] \
+have Fields storing their Absorbance data, Pressure Data, Gradient \
+information, etc. whereas Constellation objects of Type Object[Sample] have a \
+different set of fields storing the volume of the sample, the weight of the \
+sample, the conditions under which the sample should be stored etc. In \
+addition to storing values, fields in Constellation objects can also store \
+links to other Constellation objects in their Fields. This structure allows \
+you to easily explore lines of inquiry and answer any follow-up questions \
+about your data, analysis, instrumentation, or any other aspect of your \
+experiments by exploring the network of links. So if you're looking a given \
+data object and you want to know the temperature in the room recorded from \
+the sensor nearest to the instrument at the time the experiment that \
+generated that data was run, you could surf from the data object via its \
+Protocol field to protocol object and then look at the protocol object's \
+EnvironmentalData Field to find a link to the temperature sensor readings \
+from the sensor nearest to the instrument at the time at which the protocol \
+was conducted in the lab.\
+\>", "GuideAbstract",
+ CellID->1026629568,ExpressionUUID->"447c7212-cb8e-4faf-956f-47f249cc9c01"],
+
+Cell["\t", "GuideDelimiterSubsection",
+ CellID->1679529378,ExpressionUUID->"da09a865-4006-45ad-b75e-78a650aaa628"],
+
+Cell["Visualizing Object Information", "GuideFunctionsSubsection",
+ CellID->1325199878,ExpressionUUID->"e6584a33-ac7b-4d2a-bf5f-54fadaea5692"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["Inspect"]], "paclet:ConstellationViewers/ref/Inspect"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "8666e6d2-1c07-4b21-8765-d935d5b3d8b4"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Presents a tabular view of all of the fields stored for a given \
+Constellation object."
+}], "GuideText",
+ CellID->1081446509,ExpressionUUID->"69b46e01-22a2-4533-b632-bc0e9411d9f5"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["PlotObject"]], "paclet:Plot/ref/PlotObject"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "9b36caca-a0cd-4de5-bfae-f884e466ccf1"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Provides a visual representation of the information stored in the given \
+Constellation object."
+}], "GuideText",
+ CellID->1717372202,ExpressionUUID->"2cb2dbe4-6a8f-400d-a76c-85e9b3d47db7"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["PlotTable"]], "paclet:Plot/ref/PlotTable"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "f5ade6f4-c60b-47fd-a518-467f8cb30e4c"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Given a list of Objects and a list of fields within those objects, \
+generates a table which presents the values of Fields in the provided objects."
+}], "GuideText",
+ CellID->1694383334,ExpressionUUID->"ec5f6612-211d-4249-bb3a-868bf97c85c4"],
+
+Cell["\t", "GuideDelimiterSubsection",
+ CellID->1867535318,ExpressionUUID->"2057e24e-def4-442a-8529-0617a0cb97ca"],
+
+Cell["Interacting with the Constellation database", "GuideFunctionsSubsection",
+ CellID->45105074,ExpressionUUID->"0fd81d7a-b07f-4092-8a68-0510ec1e3172"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["Download"]], "paclet:Constellation/ref/Download"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "7a1ba94e-6c8c-4052-9dbf-f0f48fc8d113"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Returns any values stored in a Constellation object's field or all of the \
+objects fields if requested."
+}], "GuideText",
+ CellID->19251327,ExpressionUUID->"2d0d6c65-b982-43b2-8d5f-8dd5e54442c5"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["Upload"]], "paclet:Constellation/ref/Upload"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "b6d99ca5-e0a7-417e-a32f-01f4815e8541"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Adds information to a Constellation object's fields or generates a new \
+Constellation object containing the provided field information."
+}], "GuideText",
+ CellID->1434505839,ExpressionUUID->"b0d9e196-4518-47b8-8eed-3a606a16530a"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["Search"]], "paclet:Constellation/ref/Search"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "648fc3de-3cf9-4def-9da2-e6dd177ab3f8"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Queries all Constellation objects you have access to find those with field \
+values matching specific criteria."
+}], "GuideText",
+ CellID->2088214851,ExpressionUUID->"af3cbc82-6b6a-4d17-aed4-8a80647260d8"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["DatabaseMemberQ"]], "paclet:Constellation/ref/DatabaseMemberQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "d0af234c-1cb6-4dfe-b20f-d5fa2472b699"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks to see if a provided Object ID can be found in Constellation."
+}], "GuideText",
+ CellID->301757836,ExpressionUUID->"fb76a0fb-7c45-4cc6-96e3-f4736ba350cb"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["NamedObject"]], "paclet:LegacySLL/ref/NamedObject"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "d09d4816-e5b3-4677-928f-b9c1f4c60408"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Replaces the ID of Objects with their Names."
+}], "GuideText",
+ CellID->1435059085,ExpressionUUID->"f3a98b12-ab81-46cb-a729-85e57ccbc445"],
+
+Cell["\t", "GuideDelimiterSubsection",
+ CellID->649202138,ExpressionUUID->"4052ea8f-822b-4d19-8514-3310c1b80aba"],
+
+Cell["Object List Functions", "GuideFunctionsSubsection",
+ CellID->1923406606,ExpressionUUID->"651ae106-168e-471e-b8d5-c2400e4267bb"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["ObjectMap"]], "paclet:Constellation/ref/ObjectMap"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "c54f970d-e87c-4d04-9ccd-93a7fb72848e"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " For each object in a list, applies a given function to the values of that \
+object's fields."
+}], "GuideText",
+ CellID->623488751,ExpressionUUID->"c9b4eda0-2b90-4413-b07f-f0b986e093b1"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["ObjectSelect"]], "paclet:Constellation/ref/ObjectSelect"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "86c88b4b-c592-4803-96a5-fcd841fb2eb5"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Given a list of objects, selects those with fields matching the provided \
+criteria."
+}], "GuideText",
+ CellID->1402724344,ExpressionUUID->"79eba04e-4fd7-4e93-840b-d014d196ad2b"],
+
+Cell["\t", "GuideDelimiterSubsection",
+ CellID->512572842,ExpressionUUID->"2c7166f9-714f-4895-8203-707937fcd795"],
+
+Cell["Validating", "GuideFunctionsSubsection",
+ CellID->1254847377,ExpressionUUID->"12f690a2-76c8-4191-96ab-42e7c45a295e"],
+
+Cell["\t", "GuideDelimiterSubsection",
+ CellID->1930451699,ExpressionUUID->"2bf0cde9-d90b-4b22-a09c-2f5305446024"],
+
+Cell["Calculate Options", "GuideFunctionsSubsection",
+ CellID->918766217,ExpressionUUID->"1f63115a-7e1f-4ae0-9dac-688161eba88b"],
+
+Cell["\t", "GuideDelimiterSubsection",
+ CellID->1296387189,ExpressionUUID->"5b6f5ae2-6db2-414a-8167-fe585843e323"],
+
+Cell["Preview", "GuideFunctionsSubsection",
+ CellID->10403061,ExpressionUUID->"40ad4f24-02b1-4137-9033-db9e5b5500bd"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["PlotTablePreview"]], "paclet:Plot/ref/PlotTablePreview"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "5193fc02-c2c9-4655-a6b3-c236cb8e8c49"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Previews the list which presents the values of Fields in the provided \
+objects or Fields in these objects."
+}], "GuideText",
+ CellID->898070820,ExpressionUUID->"9b41d813-b4d6-4db6-9f08-6197e3263b1c"],
+
+Cell["", "SectionFooterSpacer",
+ CellID->1361200624,ExpressionUUID->"937130dc-7ca3-441c-9421-da8683b37999"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  InterpretationBox[
+   StyleBox[
+    GraphicsBox[{},
+     BaselinePosition->Baseline,
+     ImageSize->{6, 0}],
+    CacheGraphics->False],
+   Spacer[6]]],ExpressionUUID->"97bc7f1a-cc80-4010-92b3-7e0f818cfc74"],
+ "Related Guides"
+}], "GuideMoreAboutSection",
+ WholeCellGroupOpener->True,
+ CellID->555596077,ExpressionUUID->"a00245c5-c194-41f6-ba5b-c38cb3fb2a2e"],
+
+Cell["", "SectionHeaderSpacer",
+ CellID->644368983,ExpressionUUID->"1f710a2c-71d6-49c3-a79f-bafd1059c8a4"],
+
+Cell[BoxData[
+ TemplateBox[{
+   Cell[
+    TextData["ObjectOntology"]], "paclet:Docs/guide/ObjectOntology"},
+  "RefLink",
+  BaseStyle->"GuideMoreAboutSub"]], "GuideMoreAboutSub",
+ CellID->149465460,ExpressionUUID->"2acca304-439d-497b-b68c-233f0b4abb82"],
+
+Cell[BoxData[
+ TemplateBox[{
+   Cell[
+    TextData["EmeraldCloudFiles"]], "paclet:Docs/guide/EmeraldCloudFiles"},
+  "RefLink",
+  BaseStyle->"GuideMoreAboutSub"]], "GuideMoreAboutSub",
+ CellID->1657602877,ExpressionUUID->"ed16597c-4f78-4546-8438-4ce144f46ac3"],
+
+Cell[BoxData[
+ TemplateBox[{
+   Cell[
+    TextData["IncludingLiteratureReferences"]], 
+   "paclet:Docs/guide/IncludingLiteratureReferences"},
+  "RefLink",
+  BaseStyle->"GuideMoreAboutSub"]], "GuideMoreAboutSub",
+ CellID->26201208,ExpressionUUID->"4ca3fb5b-5958-4c3b-b254-719086fbd706"],
+
+Cell[BoxData[
+ TemplateBox[{
+   Cell[
+    TextData["ConstellationUtilityFunctions"]], 
+   "paclet:Docs/guide/ConstellationUtilityFunctions"},
+  "RefLink",
+  BaseStyle->"GuideMoreAboutSub"]], "GuideMoreAboutSub",
+ CellID->129555221,ExpressionUUID->"122b6413-0d8e-453f-9c4a-d1932ef2f4b9"],
+
+Cell["", "FooterCell",
+ CellID->2033664936,ExpressionUUID->"55daed5c-9d52-4376-a527-11283b28f6c7"]
+},
+Saveable->False,
+ScreenStyleEnvironment->"Working",
+WindowSize->{808, 911},
+WindowMargins->{{460, Automatic}, {Automatic, 70}},
+WindowTitle->"WorkingWithConstellationObjects",
+Visible->False,
+TaggingRules->{
+ "ModificationHighlight" -> False, "ColorType" -> "GuideColor", 
+  "ExampleCounter" -> 1, "NeedPlatMsgIn" -> None, "RootCaptions" -> "", 
+  "Metadata" -> {
+   "built" -> "Tue 15 Nov 2022 15:11:26", "context" -> "Docs`", 
+    "keywords" -> {
+     "Inspect", "PlotObject", "PlotTable", "Download", "Upload", "Search", 
+      "DatabaseMemberQ", "NamedObject", "ObjectMap", "ObjectSelect", 
+      "PlotTablePreview"}, "specialkeywords" -> {}, 
+    "tutorialcollectionlinks" -> {}, "index" -> True, "label" -> "ECL Guide", 
+    "language" -> "en", "paclet" -> "Docs", "status" -> "None", "summary" -> 
+    "The ECL Constellation automatically coordinates and organizes scientific \
+data coming to and from the lab into a vast network of linked data objects.\n\
+Information is organized into Constellation objects by breaking into a set of \
+Fields which each contain a value (e.g. The MolecularWeight Field of the \
+Object representing Ethanol is 46.07 Gram/Mole). The collection of which \
+Fields are available for a given object is defined by the Type of object it \
+is. So for instance Constellation objects of Type Object[Data,Chromatography] \
+have Fields storing their Absorbance data, Pressure Data, Gradient \
+information, etc. whereas Constellation objects of Type Object[Sample] have a \
+different set of fields storing the volume of the sample, the weight of the \
+sample, the conditions under which the sample should be stored etc. In \
+addition to storing values, fields in Constellation objects can also store \
+links to other Constellation objects in their Fields. This structure allows \
+you to easily explore lines of inquiry and answer any follow-up questions \
+about your data, analysis, instrumentation, or any other aspect of your \
+experiments by exploring the network of links. So if you're looking a given \
+data object and you want to know the temperature in the room recorded from \
+the sensor nearest to the instrument at the time the experiment that \
+generated that data was run, you could surf from the data object via its \
+Protocol field to protocol object and then look at the protocol object's \
+EnvironmentalData Field to find a link to the temperature sensor readings \
+from the sensor nearest to the instrument at the time at which the protocol \
+was conducted in the lab.", "synonyms" -> {}, "titlemodifier" -> "", 
+    "Windowtitle" -> "WorkingWithConstellationObjects", "title" -> 
+    "WorkingWithConstellationObjects", "type" -> "Guide", "uri" -> 
+    "Docs/guide/WorkingWithConstellationObjects", "WorkflowDockedCell" -> ""},
+   "SearchTextTranslated" -> "", "LinkTrails" -> ""},
+FrontEndVersion->"12.3 for Mac OS X ARM (64-bit) (September 30, 2021)",
+StyleDefinitions->"EmeraldReference.nb",
+ExpressionUUID->"4a244e1e-663d-4ba4-923c-5fe12ba24387"
+]
+(* End of Notebook Content *)
+
+(* Internal cache information *)
+(*CellTagsOutline
+CellTagsIndex->{}
+*)
+(*CellTagsIndex
+CellTagsIndex->{}
+*)
+(*NotebookFileOutline
+Notebook[{
+Cell[603, 21, 4402, 105, 58, "AnchorBarGrid",ExpressionUUID->"a3107480-0a7d-4ea1-bf5d-6f56a37f24e7",
+ CellID->1],
+Cell[5008, 128, 131, 1, 45, "GuideTitle",ExpressionUUID->"bedecde5-2b6e-4372-99d2-3cf3b9c58878",
+ CellID->609283552],
+Cell[5142, 131, 1808, 25, 362, "GuideAbstract",ExpressionUUID->"447c7212-cb8e-4faf-956f-47f249cc9c01",
+ CellID->1026629568],
+Cell[6953, 158, 114, 1, 24, "GuideDelimiterSubsection",ExpressionUUID->"da09a865-4006-45ad-b75e-78a650aaa628",
+ CellID->1679529378],
+Cell[7070, 161, 142, 1, 34, "GuideFunctionsSubsection",ExpressionUUID->"e6584a33-ac7b-4d2a-bf5f-54fadaea5692",
+ CellID->1325199878],
+Cell[7215, 164, 492, 13, 31, "GuideText",ExpressionUUID->"69b46e01-22a2-4533-b632-bc0e9411d9f5",
+ CellID->1081446509],
+Cell[7710, 179, 490, 13, 37, "GuideText",ExpressionUUID->"2cb2dbe4-6a8f-400d-a76c-85e9b3d47db7",
+ CellID->1717372202],
+Cell[8203, 194, 540, 13, 57, "GuideText",ExpressionUUID->"ec5f6612-211d-4249-bb3a-868bf97c85c4",
+ CellID->1694383334],
+Cell[8746, 209, 114, 1, 24, "GuideDelimiterSubsection",ExpressionUUID->"2057e24e-def4-442a-8529-0617a0cb97ca",
+ CellID->1867535318],
+Cell[8863, 212, 153, 1, 34, "GuideFunctionsSubsection",ExpressionUUID->"0fd81d7a-b07f-4092-8a68-0510ec1e3172",
+ CellID->45105074],
+Cell[9019, 215, 502, 13, 51, "GuideText",ExpressionUUID->"2d0d6c65-b982-43b2-8d5f-8dd5e54442c5",
+ CellID->19251327],
+Cell[9524, 230, 532, 13, 57, "GuideText",ExpressionUUID->"b0d9e196-4518-47b8-8eed-3a606a16530a",
+ CellID->1434505839],
+Cell[10059, 245, 507, 13, 57, "GuideText",ExpressionUUID->"af3cbc82-6b6a-4d17-aed4-8a80647260d8",
+ CellID->2088214851],
+Cell[10569, 260, 481, 12, 37, "GuideText",ExpressionUUID->"fb76a0fb-7c45-4cc6-96e3-f4736ba350cb",
+ CellID->301757836],
+Cell[11053, 274, 446, 12, 37, "GuideText",ExpressionUUID->"f3a98b12-ab81-46cb-a729-85e57ccbc445",
+ CellID->1435059085],
+Cell[11502, 288, 113, 1, 24, "GuideDelimiterSubsection",ExpressionUUID->"4052ea8f-822b-4d19-8514-3310c1b80aba",
+ CellID->649202138],
+Cell[11618, 291, 133, 1, 34, "GuideFunctionsSubsection",ExpressionUUID->"651ae106-168e-471e-b8d5-c2400e4267bb",
+ CellID->1923406606],
+Cell[11754, 294, 493, 13, 31, "GuideText",ExpressionUUID->"c9b4eda0-2b90-4413-b07f-f0b986e093b1",
+ CellID->623488751],
+Cell[12250, 309, 492, 13, 37, "GuideText",ExpressionUUID->"79eba04e-4fd7-4e93-840b-d014d196ad2b",
+ CellID->1402724344],
+Cell[12745, 324, 113, 1, 24, "GuideDelimiterSubsection",ExpressionUUID->"2c7166f9-714f-4895-8203-707937fcd795",
+ CellID->512572842],
+Cell[12861, 327, 122, 1, 34, "GuideFunctionsSubsection",ExpressionUUID->"12f690a2-76c8-4191-96ab-42e7c45a295e",
+ CellID->1254847377],
+Cell[12986, 330, 114, 1, 18, "GuideDelimiterSubsection",ExpressionUUID->"2bf0cde9-d90b-4b22-a09c-2f5305446024",
+ CellID->1930451699],
+Cell[13103, 333, 128, 1, 34, "GuideFunctionsSubsection",ExpressionUUID->"1f63115a-7e1f-4ae0-9dac-688161eba88b",
+ CellID->918766217],
+Cell[13234, 336, 114, 1, 18, "GuideDelimiterSubsection",ExpressionUUID->"5b6f5ae2-6db2-414a-8167-fe585843e323",
+ CellID->1296387189],
+Cell[13351, 339, 117, 1, 34, "GuideFunctionsSubsection",ExpressionUUID->"40ad4f24-02b1-4137-9033-db9e5b5500bd",
+ CellID->10403061],
+Cell[13471, 342, 513, 13, 51, "GuideText",ExpressionUUID->"9b41d813-b4d6-4db6-9f08-6197e3263b1c",
+ CellID->898070820],
+Cell[13987, 357, 107, 1, 29, "SectionFooterSpacer",ExpressionUUID->"937130dc-7ca3-441c-9421-da8683b37999",
+ CellID->1361200624],
+Cell[14097, 360, 392, 12, 73, "GuideMoreAboutSection",ExpressionUUID->"a00245c5-c194-41f6-ba5b-c38cb3fb2a2e",
+ CellID->555596077],
+Cell[14492, 374, 106, 1, 14, "SectionHeaderSpacer",ExpressionUUID->"1f710a2c-71d6-49c3-a79f-bafd1059c8a4",
+ CellID->644368983],
+Cell[14601, 377, 252, 6, 24, "GuideMoreAboutSub",ExpressionUUID->"2acca304-439d-497b-b68c-233f0b4abb82",
+ CellID->149465460],
+Cell[14856, 385, 259, 6, 24, "GuideMoreAboutSub",ExpressionUUID->"ed16597c-4f78-4546-8438-4ce144f46ac3",
+ CellID->1657602877],
+Cell[15118, 393, 285, 7, 24, "GuideMoreAboutSub",ExpressionUUID->"4ca3fb5b-5958-4c3b-b254-719086fbd706",
+ CellID->26201208],
+Cell[15406, 402, 286, 7, 24, "GuideMoreAboutSub",ExpressionUUID->"122b6413-0d8e-453f-9c4a-d1932ef2f4b9",
+ CellID->129555221],
+Cell[15695, 411, 98, 1, 40, "FooterCell",ExpressionUUID->"55daed5c-9d52-4376-a527-11283b28f6c7",
+ CellID->2033664936]
+}
+]
+*)
+
+(* End of internal cache information *)
+

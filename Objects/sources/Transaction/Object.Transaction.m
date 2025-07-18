@@ -95,6 +95,15 @@ DefineObjectType[Object[Transaction], {
 			Description -> "Tracking numbers provided by the shipping company for the transaction.",
 			Category -> "Shipping Information"
 		},
+		ShippingCommunicationLog -> {
+			Format -> Multiple,
+			Class -> {Date, Expression, String, Link},
+			Pattern :> {_?DateObjectQ, CommunicationTypeP, _String, _Link},
+			Relation -> {Null, Null, Null, Object[Company]},
+			Description -> "A log of communications regarding the shipping of this transaction.",
+			Headers -> {"Communication Date", "Communication Type", "Content", "Company"},
+			Category -> "Status"
+		},
 		DeveloperObject -> {
 			Format -> Single,
 			Class -> Expression,
@@ -119,43 +128,24 @@ DefineObjectType[Object[Transaction], {
 			Description -> "Discussions with users about the fulfillment of this transaction.",
 			Category -> "Organizational Information"
 		},
-		OperationsSupportTickets -> {
+		InternalCommunications -> {
 			Format -> Multiple,
 			Class -> Link,
 			Pattern :> _Link,
 			Relation -> Object[SupportTicket, Operations][AffectedTransaction],
 			Description -> "Support tickets associated with the fulfillment of this transaction.",
 			Category -> "Organizational Information",
-			Developer -> True
+			Developer -> True,
+			AdminViewOnly -> True
 		},
-
-		(* == Fields to Be Replaced, should be removed April 2024 post migration to SupportTicket ==*)
-		TroubleshootingReports -> {
-			Format -> Multiple,
-			Class -> Link,
-			Pattern :> _Link,
-			Relation -> Object[Troubleshooting, Report][AffectedTransaction],
-			Description -> "Troubleshooting reports associated with the fulfillment of this transaction.",
-			Category -> "Troubleshooting"
-		},
-		TroubleshootingTickets -> {
-			Format -> Multiple,
-			Class -> Link,
-			Pattern :> _Link,
-			Relation -> Object[Troubleshooting, Ticket][AffectedTransaction],
-			Description -> "Troubleshooting tickets associated with the fulfillment of this transaction.",
-			Category -> "Troubleshooting",
-			Developer -> True
-		},
-
-		(* ===== *)
 
 		Troubleshooting -> {
 			Format -> Single,
 			Class -> Boolean,
 			Pattern :> BooleanP,
-			Description -> "Indicates that this transaction is currently in troubleshooting.",
-			Category -> "Troubleshooting"
+			Description -> "Indicates that this transaction is currently receiving scientific support.",
+			Category -> "Protocol Support",
+			Developer -> True
 		},
 
 		LegacyID -> {
@@ -215,6 +205,23 @@ DefineObjectType[Object[Transaction], {
 			Category -> "Analysis & Reports",
 			Developer -> True
 		},
+		PackingSlips -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[EmeraldCloudFile],
+			Description -> "Packing slips associated with this order.",
+			Category -> "Analysis & Reports"
+		},
+		CurrentPackingSlips -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[EmeraldCloudFile],
+			Description -> "Packing slips associated with this order obtained from the current receiving maintenance.",
+			Category -> "Analysis & Reports",
+			Developer -> True
+		},
 		SupplierProvidedDocumentation -> {
 			Format -> Multiple,
 			Class -> Link,
@@ -229,6 +236,13 @@ DefineObjectType[Object[Transaction], {
 			Pattern :> _Link,
 			Relation -> Alternatives[Object[Container, Rack], Model[Container, Rack]],
 			Description -> "A list of rack objects or models shipped as part of the transaction.",
+			Category -> "Storage Information"
+		},
+		RequiresAsepticCertification -> {
+			Format -> Single,
+			Class -> Boolean,
+			Pattern :> BooleanP,
+			Description -> "Indicates whether the operator receiving this transaction must be certified in aseptic handling.",
 			Category -> "Storage Information"
 		},
 
@@ -248,6 +262,15 @@ DefineObjectType[Object[Transaction], {
 			Units -> None,
 			Description -> "The verbatim options originally input by the protocol author to generate this protocol, often with some options set to Automatic.",
 			Category -> "Option Handling"
+		},
+		VerifiedSelectAgentFree->{
+			Format->Single,
+			Class->Boolean,
+			Pattern:>BooleanP,
+			Description->"Indicates that the molecules shipped in this transaction have been verified to not contain any harmful sequences as defined by the Select Agents and Toxins List issued by the Food & Drug Administration (FDA).",
+			Category->"Organizational Information",
+			Developer->True,
+			AdminWriteOnly->True
 		},
 
 		(* -- For V1 of Afterburner, we only want to display those transactions that were created from Afterburner in the dashboard. -- *)

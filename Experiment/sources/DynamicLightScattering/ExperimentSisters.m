@@ -21,7 +21,7 @@ DefineOptions[ValidExperimentDynamicLightScatteringQ,
 ];
 
 (* --- Source code --- *)
-ValidExperimentDynamicLightScatteringQ[myInputs:ListableP[ObjectP[{Object[Container],Object[Sample]}]|_String],myOptions:OptionsPattern[ValidExperimentDynamicLightScatteringQ]]:=Module[
+ValidExperimentDynamicLightScatteringQ[myInputs:ListableP[ObjectP[{Object[Container],Object[Sample],Model[Sample]}]|_String],myOptions:OptionsPattern[ValidExperimentDynamicLightScatteringQ]]:=Module[
   {listedOptions, preparedOptions, dlsTests,initialTestDescription, allTests, verbose,outputFormat},
 
   (* get the options as a list *)
@@ -87,7 +87,7 @@ DefineOptions[ExperimentDynamicLightScatteringOptions,
 ];
 
 (* --- Source code --- *)
-ExperimentDynamicLightScatteringOptions[myInputs:ListableP[ObjectP[{Object[Container],Object[Sample]}]|_String],myOptions:OptionsPattern[ExperimentDynamicLightScatteringOptions]]:=Module[
+ExperimentDynamicLightScatteringOptions[myInputs:ListableP[ObjectP[{Object[Container],Object[Sample],Model[Sample]}]|_String],myOptions:OptionsPattern[ExperimentDynamicLightScatteringOptions]]:=Module[
   {listedOptions,noOutputOptions,options},
 
   (* get the options as a list *)
@@ -117,7 +117,7 @@ DefineOptions[ExperimentDynamicLightScatteringPreview,
 
 
 (* --- Source code --- *)
-ExperimentDynamicLightScatteringPreview[myInputs:ListableP[ObjectP[{Object[Container],Object[Sample]}]|_String],myOptions:OptionsPattern[ExperimentTotalProteinQuantificationPreview]]:=Module[
+ExperimentDynamicLightScatteringPreview[myInputs:ListableP[ObjectP[{Object[Container],Object[Sample],Model[Sample]}]|_String],myOptions:OptionsPattern[ExperimentTotalProteinQuantificationPreview]]:=Module[
   {listedOptions,noOutputOptions},
 
   (* get the options as a list *)

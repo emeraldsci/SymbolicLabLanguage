@@ -271,9 +271,23 @@ DefineOptions[ExperimentDifferentialScanningCalorimetry,
 			}
 		],
 		(* Shared options *)
-		FuntopiaSharedOptionsPooled,
+		ModifyOptions[
+			ModelInputOptions,
+			{
+				{
+					OptionName -> PreparedModelAmount,
+					NestedIndexMatching -> True
+				},
+				{
+					OptionName -> PreparedModelContainer,
+					NestedIndexMatching -> True
+				}
+			}
+		],
+		NonBiologyFuntopiaSharedOptionsPooled,
 		SubprotocolDescriptionOption,
 		SamplesInStorageOptions,
+		SimulationOption,
 		{
 			OptionName -> NumberOfReplicates,
 			Default -> Null,
@@ -300,10 +314,10 @@ Error::CleaningFrequencyTooHigh="The specified CleaningFrequency (`1`) is greate
 
 
 (* Overload for mixed input like {s1,{s2,s3}} -> We assume the first sample is going to be inside a pool and turn this into {{s1},{s2,s3}} *)
-ExperimentDifferentialScanningCalorimetry[mySemiPooledInputs : ListableP[ListableP[Alternatives[ObjectP[Object[Sample]], ObjectP[Object[Container]], _String]]], myOptions : OptionsPattern[]] := Module[
-	{listedOptions, listedInputs, outputSpecification, output, gatherTests, containerToSampleResult, containerToSampleOutput,
-		containerToSampleTests, samples, sampleOptions, validSamplePreparationResult, mySamplesWithPreparedSamples, myOptionsWithPreparedSamples,
-		samplePreparationCache, updatedCache, listedSamples, mySamplesWithPreparedSamplesNamed, myOptionsWithPreparedSamplesNamed},
+ExperimentDifferentialScanningCalorimetry[mySemiPooledInputs : ListableP[ListableP[Alternatives[ObjectP[{Object[Sample], Object[Container], Model[Sample]}], _String]]], myOptions : OptionsPattern[]] := Module[
+	{listedInputs, outputSpecification, output, gatherTests, containerToSampleResult, containerToSampleOutput,
+		containerToSampleTests, samples, sampleOptions, validSamplePreparationResult, containerToSampleSimulation,
+		updatedSimulation, updatedCache, mySamplesWithPreparedSamplesNamed, myOptionsWithPreparedSamplesNamed},
 
 
 	(* Determine the requested return value from the function *)
@@ -313,19 +327,16 @@ ExperimentDifferentialScanningCalorimetry[mySemiPooledInputs : ListableP[Listabl
 	(* Determine if we should keep a running list of tests *)
 	gatherTests = MemberQ[output, Tests];
 
-	(* make sure we're working with a list of options and samples, and remove all temporal links *)
-	{listedSamples, listedOptions} = removeLinks[ToList[mySemiPooledInputs], ToList[myOptions]];
-
 	(* First, simulate our sample preparation. *)
 	validSamplePreparationResult = Check[
 		(* Simulate sample preparation. *)
-		{mySamplesWithPreparedSamplesNamed, myOptionsWithPreparedSamplesNamed, samplePreparationCache} = simulateSamplePreparationPackets[
+		{mySamplesWithPreparedSamplesNamed, myOptionsWithPreparedSamplesNamed, updatedSimulation} = simulateSamplePreparationPacketsNew[
 			ExperimentDifferentialScanningCalorimetry,
-			listedSamples,
-			listedOptions
+			ToList[mySemiPooledInputs],
+			ToList[myOptions]
 		],
 		$Failed,
-		{Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
+		{Download::ObjectDoesNotExist, Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
 	];
 
 	(* If we are given an invalid define name, return early. *)
@@ -349,12 +360,12 @@ ExperimentDifferentialScanningCalorimetry[mySemiPooledInputs : ListableP[Listabl
 	(* ignoring the options, since'll use the ones from from ExpandIndexMatchedInputs *)
 	containerToSampleResult = If[gatherTests,
 		(* We are gathering tests. This silences any messages being thrown. *)
-		{containerToSampleOutput, containerToSampleTests} = pooledContainerToSampleOptions[
+		{containerToSampleOutput, containerToSampleTests, containerToSampleSimulation} = pooledContainerToSampleOptions[
 			ExperimentDifferentialScanningCalorimetry,
 			listedInputs,
 			myOptionsWithPreparedSamplesNamed,
-			Output -> {Result, Tests},
-			Cache -> samplePreparationCache
+			Output -> {Result, Tests, Simulation},
+			Simulation -> updatedSimulation
 		];
 
 		(* Therefore,we have to run the tests to see if we encountered a failure. *)
@@ -366,12 +377,12 @@ ExperimentDifferentialScanningCalorimetry[mySemiPooledInputs : ListableP[Listabl
 		(* We are not gathering tests. Simply check for Error::InvalidInput and Error::InvalidOption. *)
 		{
 			Check[
-				containerToSampleOutput = pooledContainerToSampleOptions[
+				{containerToSampleOutput, containerToSampleSimulation} = pooledContainerToSampleOptions[
 					ExperimentDifferentialScanningCalorimetry,
 					listedInputs,
 					myOptionsWithPreparedSamplesNamed,
-					Output -> Result,
-					Cache -> samplePreparationCache
+					Output -> {Result, Simulation},
+					Simulation -> updatedSimulation
 				],
 				$Failed,
 				{Error::EmptyContainers, Error::ContainerEmptyWells, Error::WellDoesNotExist}
@@ -379,12 +390,6 @@ ExperimentDifferentialScanningCalorimetry[mySemiPooledInputs : ListableP[Listabl
 			{}
 		}
 	];
-
-	(* Update our cache with our new simulated values. *)
-	updatedCache = Flatten[{
-		samplePreparationCache,
-		Lookup[listedOptions, Cache, {}]
-	}];
 
 
 	(* If we were given an empty container,return early. *)
@@ -403,24 +408,22 @@ ExperimentDifferentialScanningCalorimetry[mySemiPooledInputs : ListableP[Listabl
 
 		(* take the samples from the mapped containerToSampleOptions, and the options from expandedOptions *)
 		(* this way we'll end up index matching each grouping to an option *)
-		experimentDifferentialScanningCalorimetryCore[samples, ReplaceRule[sampleOptions, Cache -> updatedCache]]
+		experimentDifferentialScanningCalorimetryCore[samples, ReplaceRule[sampleOptions, Simulation -> containerToSampleSimulation]]
 	]
 ];
 
 (* This is the core function taking only clean pooled lists of samples in the form -> {{s1},{s2},{s3,s4},{s5,s6,s7}} *)
 experimentDifferentialScanningCalorimetryCore[myPooledSamples : ListableP[{ObjectP[Object[Sample]]..}], myOptions : OptionsPattern[ExperimentDifferentialScanningCalorimetry]] := Module[
-	{listedOptions, outputSpecification, output, gatherTests, safeOps, safeOpsTests, validLengths,
-		validLengthTests, templatedOptions, templateTests, inheritedOptions, upload, confirm, fastTrack, parentProtocol,
+	{outputSpecification, output, gatherTests, listedSamples,listedOptions,validSamplePreparationResult,mySamplesWithPreparedSamplesNamed,
+		myOptionsWithPreparedSamplesNamed, safeOps, safeOpsTests, validLengths,
+		validLengthTests, templatedOptions, templateTests, inheritedOptions, upload, confirm, canaryBranch, fastTrack, parentProtocol,
 		cache, expandedSafeOps, newCache, resolvedOptionsResult, resolvedOptions, resolvedOptionsTests,
 		objectSampleFields, objectContainerFields, packetObjectSample, packetObjectContainer,
 		collapsedResolvedOptions, resourcePackets, resourcePacketTests, packetModel,
 		allTests, validQ, previewRule, optionsRule, testsRule, resultRule,
-		samplePreparationCache, returnEarlyQ, allPackets, specifiedAliquotContainerObjects, modelFields, safeOpsNamed,
-		sanitizedPooledSamples, sanitizedOptions
+		returnEarlyQ, allPackets, specifiedAliquotContainerObjects, modelFields, safeOpsNamed,
+		sanitizedPooledSamples, sanitizedOptions, updatedSimulation
 	},
-
-	(* Make sure we're working with a list of options *)
-	listedOptions = ToList[myOptions];
 
 	(* Determine the requested return value from the function *)
 	outputSpecification = Quiet[OptionDefault[OptionValue[Output]], OptionValue::nodef];
@@ -429,19 +432,35 @@ experimentDifferentialScanningCalorimetryCore[myPooledSamples : ListableP[{Objec
 	(* Determine if we should keep a running list of tests *)
 	gatherTests = MemberQ[output, Tests];
 
+	(* Make sure we're working with a list of options and samples, and remove all temporal links *)
+	{listedSamples, listedOptions} = removeLinks[ToList[myPooledSamples], ToList[myOptions]];
+
+	(* First, simulate our sample preparation. *)
+	validSamplePreparationResult = Check[
+		(* Simulate sample preparation. *)
+		{mySamplesWithPreparedSamplesNamed, myOptionsWithPreparedSamplesNamed, updatedSimulation} = simulateSamplePreparationPacketsNew[
+			ExperimentDifferentialScanningCalorimetry,
+			listedSamples,
+			listedOptions
+		],
+		$Failed,
+		{Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
+	];
+
+	(* If we are given an invalid define name, return early. *)
+	If[MatchQ[validSamplePreparationResult, $Failed],
+		(* Return early. *)
+		(* Note: We've already thrown a message above in simulateSamplePreparationPackets. *)
+		Return[$Failed]
+	];
+
 	(* Call SafeOptions to make sure all options match pattern *)
 	{safeOpsNamed, safeOpsTests} = If[gatherTests,
-		SafeOptions[ExperimentDifferentialScanningCalorimetry, listedOptions, AutoCorrect -> False, Output -> {Result, Tests}],
-		{SafeOptions[ExperimentDifferentialScanningCalorimetry, listedOptions, AutoCorrect -> False], {}}
+		SafeOptions[ExperimentDifferentialScanningCalorimetry, myOptionsWithPreparedSamplesNamed, AutoCorrect -> False, Output -> {Result, Tests}],
+		{SafeOptions[ExperimentDifferentialScanningCalorimetry, myOptionsWithPreparedSamplesNamed, AutoCorrect -> False], {}}
 	];
 
-	{sanitizedPooledSamples,safeOps,sanitizedOptions}=sanitizeInputs[myPooledSamples,safeOpsNamed,listedOptions];
-
-	(* Call ValidInputLengthsQ to make sure all options are the right length *)
-	{validLengths, validLengthTests} = If[gatherTests,
-		ValidInputLengthsQ[ExperimentDifferentialScanningCalorimetry, {sanitizedPooledSamples}, sanitizedOptions, Output -> {Result, Tests}],
-		{ValidInputLengthsQ[ExperimentDifferentialScanningCalorimetry, {sanitizedPooledSamples}, sanitizedOptions], Null}
-	];
+	{sanitizedPooledSamples,safeOps,sanitizedOptions}=sanitizeInputs[mySamplesWithPreparedSamplesNamed,safeOpsNamed,myOptionsWithPreparedSamplesNamed, Simulation -> updatedSimulation];
 
 	(* If the specified options don't match their patterns or if option lengths are invalid return $Failed *)
 	If[MatchQ[safeOps, $Failed],
@@ -451,6 +470,12 @@ experimentDifferentialScanningCalorimetryCore[myPooledSamples : ListableP[{Objec
 			Options -> $Failed,
 			Preview -> Null
 		}]
+	];
+
+	(* Call ValidInputLengthsQ to make sure all options are the right length *)
+	{validLengths, validLengthTests} = If[gatherTests,
+		ValidInputLengthsQ[ExperimentDifferentialScanningCalorimetry, {sanitizedPooledSamples}, sanitizedOptions, Output -> {Result, Tests}],
+		{ValidInputLengthsQ[ExperimentDifferentialScanningCalorimetry, {sanitizedPooledSamples}, sanitizedOptions], Null}
 	];
 
 	(* If option lengths are invalid return $Failed (or the tests up to this point) *)
@@ -483,7 +508,7 @@ experimentDifferentialScanningCalorimetryCore[myPooledSamples : ListableP[{Objec
 	inheritedOptions = ReplaceRule[safeOps, templatedOptions];
 
 	(* get assorted hidden options *)
-	{upload, confirm, fastTrack, parentProtocol, cache} = Lookup[inheritedOptions, {Upload, Confirm, FastTrack, ParentProtocol, Cache}];
+	{upload, confirm, canaryBranch, fastTrack, parentProtocol, cache} = Lookup[inheritedOptions, {Upload, Confirm, CanaryBranch, FastTrack, ParentProtocol, Cache}];
 
 	(* Expand index-matching options *)
 	expandedSafeOps = Last[ExpandIndexMatchedInputs[ExperimentDifferentialScanningCalorimetry, {sanitizedPooledSamples}, inheritedOptions]];
@@ -502,48 +527,37 @@ experimentDifferentialScanningCalorimetryCore[myPooledSamples : ListableP[{Objec
 	packetObjectContainer = Packet[Container[objectContainerFields]];
 	packetModel = Packet[Model[modelFields]];
 
-	(* pull out the Cache option *)
-	samplePreparationCache = Lookup[safeOps, Cache];
-
 	(* make the up front Download call *)
-	allPackets = Check[
-		Quiet[
-			Download[
+	allPackets = Quiet[
+		Download[
+			{
+				Flatten[sanitizedPooledSamples],
+				specifiedAliquotContainerObjects
+			},
+			{
 				{
-					Flatten[sanitizedPooledSamples],
-					specifiedAliquotContainerObjects
+					packetObjectSample,
+					packetObjectContainer,
+					(*needed for the Error::DeprecatedModels testing*)
+					packetModel
 				},
-				{
-					{
-						packetObjectSample,
-						packetObjectContainer,
-          				(*needed for the Error::DeprecatedModels testing*)
-						packetModel
-					},
-					{Packet[Contents, Name]}
-				},
-				Cache -> Flatten[{cache, samplePreparationCache}],
-				Date -> Now
-			],
-			{Download::FieldDoesntExist}
+				{Packet[Contents, Name]}
+			},
+			Cache -> cache,
+			Simulation -> updatedSimulation,
+			Date -> Now
 		],
-		$Failed,
-		{Download::ObjectDoesNotExist}
-	];
-
-	(* Return early if objects do not exist *)
-	If[MatchQ[allPackets, $Failed],
-		Return[$Failed]
+		{Download::FieldDoesntExist}
 	];
 
 	(* combine all the Download information together  *)
-	newCache = FlattenCachePackets[{samplePreparationCache, cache, allPackets}];
+	newCache = FlattenCachePackets[{cache, allPackets}];
 
 	(* resolve all options; if we throw InvalidOption or InvalidInput, we're also getting $Failed and we will return early *)
 	resolvedOptionsResult = Check[
 		{resolvedOptions, resolvedOptionsTests} = If[gatherTests,
-			resolveDifferentialScanningCalorimetryOptions[sanitizedPooledSamples, expandedSafeOps, Output -> {Result, Tests}, Cache -> newCache],
-			{resolveDifferentialScanningCalorimetryOptions[sanitizedPooledSamples, expandedSafeOps, Output -> Result, Cache -> newCache], {}}
+			resolveDifferentialScanningCalorimetryOptions[sanitizedPooledSamples, expandedSafeOps, Output -> {Result, Tests}, Cache -> newCache, Simulation -> updatedSimulation],
+			{resolveDifferentialScanningCalorimetryOptions[sanitizedPooledSamples, expandedSafeOps, Output -> Result, Cache -> newCache, Simulation -> updatedSimulation], {}}
 		],
 		$Failed,
 		{Error::InvalidInput, Error::InvalidOption}
@@ -573,8 +587,8 @@ experimentDifferentialScanningCalorimetryCore[myPooledSamples : ListableP[{Objec
 
 	(* Build packets with resources *)
 	{resourcePackets, resourcePacketTests} = If[gatherTests,
-		dscResourcePackets[sanitizedPooledSamples, templatedOptions, resolvedOptions, collapsedResolvedOptions, Cache -> newCache, Output -> {Result, Tests}],
-		{dscResourcePackets[sanitizedPooledSamples, templatedOptions, resolvedOptions, collapsedResolvedOptions, Cache -> newCache], {}}
+		dscResourcePackets[sanitizedPooledSamples, templatedOptions, resolvedOptions, collapsedResolvedOptions, Cache -> newCache, Simulation -> updatedSimulation, Output -> {Result, Tests}],
+		{dscResourcePackets[sanitizedPooledSamples, templatedOptions, resolvedOptions, collapsedResolvedOptions, Cache -> newCache, Simulation -> updatedSimulation], {}}
 	];
 
 	(* get all the tests together *)
@@ -610,6 +624,7 @@ experimentDifferentialScanningCalorimetryCore[myPooledSamples : ListableP[{Objec
 		UploadProtocol[
 			resourcePackets,
 			Confirm -> confirm,
+			CanaryBranch -> canaryBranch,
 			Upload -> upload,
 			ParentProtocol -> parentProtocol,
 			Priority->Lookup[safeOps,Priority],
@@ -617,7 +632,8 @@ experimentDifferentialScanningCalorimetryCore[myPooledSamples : ListableP[{Objec
 			HoldOrder->Lookup[safeOps,HoldOrder],
 			QueuePosition->Lookup[safeOps,QueuePosition],
 			ConstellationMessage -> Object[Protocol, DifferentialScanningCalorimetry],
-			Cache -> samplePreparationCache
+			Cache -> newCache,
+			Simulation -> updatedSimulation
 		],
 		$Failed
 	];
@@ -637,7 +653,7 @@ experimentDifferentialScanningCalorimetryCore[myPooledSamples : ListableP[{Objec
 
 DefineOptions[
 	resolveDifferentialScanningCalorimetryOptions,
-	Options :> {HelperOutputOption, CacheOption}
+	Options :> {HelperOutputOption, CacheOption, SimulationOption}
 ];
 
 resolveDifferentialScanningCalorimetryOptions[myPooledSamples : ListableP[{ObjectP[Object[Sample]]..}], myOptions : {_Rule...}, myResolutionOptions : OptionsPattern[resolveDifferentialScanningCalorimetryOptions]] := Module[
@@ -665,11 +681,11 @@ resolveDifferentialScanningCalorimetryOptions[myPooledSamples : ListableP[{Objec
 		startTempAboveEndTempOptions, startTempAboveEndTempTests, cleaningFrequencyTooHighQ, cleaningFrequencyTooHighOptions,
 		cleaningFrequencyTooHighTest,
 		resolvedPooledIncubationTemperature, resolvedPooledAnnealingTime, invalidPoolIncubateOptionsQ,
-		pooledIncubateMismatchOptions, pooledIncubateMismatchTest, invalidOptions, invalidInputs, allTests, confirm,
+		pooledIncubateMismatchOptions, pooledIncubateMismatchTest, invalidOptions, invalidInputs, allTests, confirm, canaryBranch,
 		template, cache, operator, upload, outputOption, subprotocolDescription, samplesInStorage, samplePreparation,
 		email, resolvedPostProcessingOptions, resolvedOptions, testsRule, resultRule, specifiedAliquotContainerObjects,
 		sampleDownloadValues, aliquotContainerPackets, notEmptyAliquotContainers, notEmptyAliquotContainerOptions,
-		nonEmptyAliquotContainerTest, numReplicatesNoNull, simulatedSamplesWithNumReplicates},
+		nonEmptyAliquotContainerTest, numReplicatesNoNull, simulatedSamplesWithNumReplicates, simulation, updatedSimulation},
 
 	(* --- Setup our user specified options and cache --- *)
 
@@ -684,14 +700,15 @@ resolveDifferentialScanningCalorimetryOptions[myPooledSamples : ListableP[{Objec
 
 	(* pull out the Cache options *)
 	inheritedCache = Lookup[ToList[myResolutionOptions], Cache, {}];
+	simulation = Lookup[ToList[myResolutionOptions], Simulation, Simulation[]];
 
 	(* separate out our abs spece options from our sample prep options *)
 	{samplePrepOptions, dscOptions} = splitPrepOptions[myOptions];
 
 	(* Resolve our sample prep options *)
-	{{simulatedSamples, resolvedSamplePrepOptions, simulatedCache}, samplePrepTests} = If[gatherTests,
-		resolveSamplePrepOptions[ExperimentDifferentialScanningCalorimetry, myPooledSamples, samplePrepOptions, Cache -> inheritedCache, Output -> {Result, Tests}],
-		{resolveSamplePrepOptions[ExperimentDifferentialScanningCalorimetry, myPooledSamples, samplePrepOptions, Cache -> inheritedCache, Output -> Result], {}}
+	{{simulatedSamples, resolvedSamplePrepOptions, updatedSimulation}, samplePrepTests} = If[gatherTests,
+		resolveSamplePrepOptionsNew[ExperimentDifferentialScanningCalorimetry, myPooledSamples, samplePrepOptions, Cache -> inheritedCache, Simulation -> simulation, Output -> {Result, Tests}],
+		{resolveSamplePrepOptionsNew[ExperimentDifferentialScanningCalorimetry, myPooledSamples, samplePrepOptions, Cache -> inheritedCache, Simulation -> simulation, Output -> Result], {}}
 	];
 
 	(* get the pooled samples flatter and also get the lengths of the pooled simulated samples*)
@@ -717,7 +734,7 @@ resolveDifferentialScanningCalorimetryOptions[myPooledSamples : ListableP[{Objec
 				},
 				{Packet[Contents, Name]}
 			},
-			Cache -> simulatedCache,
+			Simulation -> updatedSimulation,
 			Date -> Now
 		],
 		{Download::FieldDoesntExist}
@@ -754,7 +771,7 @@ resolveDifferentialScanningCalorimetryOptions[myPooledSamples : ListableP[{Objec
 
 	(* If there are invalid inputs and we are throwing messages,throw an error message and keep track of the invalid inputs.*)
 	If[Length[discardedInvalidInputs] > 0 && messages,
-		Message[Error::DiscardedSamples, ObjectToString[discardedInvalidInputs, Cache -> simulatedCache]]
+		Message[Error::DiscardedSamples, ObjectToString[discardedInvalidInputs, Simulation -> updatedSimulation]]
 	];
 
 	(* If we are gathering tests, create a passing and/or failing test with the appropriate result. *)
@@ -762,11 +779,11 @@ resolveDifferentialScanningCalorimetryOptions[myPooledSamples : ListableP[{Objec
 		Module[{failingTest, passingTest},
 			failingTest = If[Length[discardedInvalidInputs] == 0,
 				Nothing,
-				Test["Our input samples " <> ObjectToString[discardedInvalidInputs, Cache -> simulatedCache] <> " are not discarded:", True, False]
+				Test["Our input samples " <> ObjectToString[discardedInvalidInputs, Simulation -> updatedSimulation] <> " are not discarded:", True, False]
 			];
 			passingTest = If[Length[discardedInvalidInputs] == Length[flatSampleList],
 				Nothing,
-				Test["Our input samples " <> ObjectToString[Complement[flatSampleList, discardedInvalidInputs], Cache -> simulatedCache] <> " are not discarded:", True, True]
+				Test["Our input samples " <> ObjectToString[Complement[flatSampleList, discardedInvalidInputs], Simulation -> updatedSimulation] <> " are not discarded:", True, True]
 			];
 			{failingTest, passingTest}
 		],
@@ -799,12 +816,12 @@ resolveDifferentialScanningCalorimetryOptions[myPooledSamples : ListableP[{Objec
 		Module[{failingTest, passingTest},
 			failingTest = If[Length[deprecatedInvalidInputs] == 0,
 				Nothing,
-				Test["Provided samples have models " <> ObjectToString[deprecatedInvalidInputs, Cache -> simulatedCache] <> " that are not deprecated:", True, False]
+				Test["Provided samples have models " <> ObjectToString[deprecatedInvalidInputs, Simulation -> updatedSimulation] <> " that are not deprecated:", True, False]
 			];
 
 			passingTest = If[Length[deprecatedInvalidInputs] == Length[modelPacketsToCheckIfDeprecated],
 				Nothing,
-				Test["Provided samples have models " <> ObjectToString[Download[Complement[modelPacketsToCheckIfDeprecated, deprecatedInvalidInputs], Object], Cache -> simulatedCache] <> " that are not deprecated:", True, True]
+				Test["Provided samples have models " <> ObjectToString[Download[Complement[modelPacketsToCheckIfDeprecated, deprecatedInvalidInputs], Object], Simulation -> updatedSimulation] <> " that are not deprecated:", True, True]
 			];
 
 			{failingTest, passingTest}
@@ -848,8 +865,8 @@ resolveDifferentialScanningCalorimetryOptions[myPooledSamples : ListableP[{Objec
 
 	(* call CompatibleMaterialsQ and figure out if materials are compatible *)
 	{compatibleMaterialsBool, compatibleMaterialsTests} = If[gatherTests,
-		CompatibleMaterialsQ[instrument, flatSimulatedSamples, Output -> {Result, Tests}, Cache -> simulatedCache],
-		{CompatibleMaterialsQ[instrument, flatSimulatedSamples, Messages -> messages, Cache -> simulatedCache], {}}
+		CompatibleMaterialsQ[instrument, flatSimulatedSamples, Output -> {Result, Tests}, Simulation -> updatedSimulation],
+		{CompatibleMaterialsQ[instrument, flatSimulatedSamples, Messages -> messages, Simulation -> updatedSimulation], {}}
 	];
 
 	(* if the materials are incompatible, then the Instrument is invalid *)
@@ -1007,7 +1024,7 @@ resolveDifferentialScanningCalorimetryOptions[myPooledSamples : ListableP[{Objec
 	(* throw a message if we have StartTemperature above EndTemperature *)
 	startTempAboveEndTempOptions = If[MemberQ[startTempAboveEndTempBools, True] && messages,
 		(
-			Message[Error::StartTemperatureAboveEndTemperature, ObjectToString[PickList[simulatedSamples, startTempAboveEndTempBools], Cache -> simulatedCache]];
+			Message[Error::StartTemperatureAboveEndTemperature, ObjectToString[PickList[simulatedSamples, startTempAboveEndTempBools], Simulation -> updatedSimulation]];
 			{StartTemperature, EndTemperature}
 		),
 		{}
@@ -1025,7 +1042,7 @@ resolveDifferentialScanningCalorimetryOptions[myPooledSamples : ListableP[{Objec
 
 			(* create a test for the non-passing inputs *)
 			failingSampleTests = If[Length[failingSamples] > 0,
-				Test["For the provided samples " <> ObjectToString[failingSamples, Cache -> inheritedCache] <> ", StartTemperature is below EndTemperature:",
+				Test["For the provided samples " <> ObjectToString[failingSamples, Simulation -> updatedSimulation] <> ", StartTemperature is below EndTemperature:",
 					False,
 					True
 				],
@@ -1034,7 +1051,7 @@ resolveDifferentialScanningCalorimetryOptions[myPooledSamples : ListableP[{Objec
 
 			(* create a test for the passing inputs *)
 			passingSampleTests = If[Length[passingSamples] > 0,
-				Test["For the provided samples " <> ObjectToString[passingSamples, Cache -> inheritedCache] <> ", StartTemperature is below EndTemperature:",
+				Test["For the provided samples " <> ObjectToString[passingSamples, Simulation -> updatedSimulation] <> ", StartTemperature is below EndTemperature:",
 					True,
 					True
 				],
@@ -1050,7 +1067,7 @@ resolveDifferentialScanningCalorimetryOptions[myPooledSamples : ListableP[{Objec
 	(* throw a message if RescanCoolingRate and NumberOfScans are incompatible *)
 	rescanCoolingRateInvalidOptions = If[MemberQ[rescanCoolingRateErrors, True] && messages,
 		(
-			Message[Error::RescanCoolingRateIncompatible, ObjectToString[PickList[simulatedSamples, rescanCoolingRateErrors], Cache -> simulatedCache]];
+			Message[Error::RescanCoolingRateIncompatible, ObjectToString[PickList[simulatedSamples, rescanCoolingRateErrors], Simulation -> updatedSimulation]];
 			{RescanCoolingRate, NumberOfScans}
 		),
 		{}
@@ -1068,7 +1085,7 @@ resolveDifferentialScanningCalorimetryOptions[myPooledSamples : ListableP[{Objec
 
 			(* create a test for the non-passing inputs *)
 			failingSampleTests = If[Length[failingSamples] > 0,
-				Test["For the provided samples " <> ObjectToString[failingSamples, Cache -> inheritedCache] <> ", RescanCoolingRate is Null if NumberOfScans is 1, or RescanCoolingRate is not Null if NumberOfScans > 1:",
+				Test["For the provided samples " <> ObjectToString[failingSamples, Simulation -> updatedSimulation] <> ", RescanCoolingRate is Null if NumberOfScans is 1, or RescanCoolingRate is not Null if NumberOfScans > 1:",
 					False,
 					True
 				],
@@ -1077,7 +1094,7 @@ resolveDifferentialScanningCalorimetryOptions[myPooledSamples : ListableP[{Objec
 
 			(* create a test for the passing inputs *)
 			passingSampleTests = If[Length[passingSamples] > 0,
-				Test["For the provided samples " <> ObjectToString[passingSamples, Cache -> inheritedCache] <> ", RescanCoolingRate is Null if NumberOfScans is 1, or RescanCoolingRate is not Null if NumberOfScans > 1:",
+				Test["For the provided samples " <> ObjectToString[passingSamples, Simulation -> updatedSimulation] <> ", RescanCoolingRate is Null if NumberOfScans is 1, or RescanCoolingRate is not Null if NumberOfScans > 1:",
 					True,
 					True
 				],
@@ -1153,7 +1170,7 @@ resolveDifferentialScanningCalorimetryOptions[myPooledSamples : ListableP[{Objec
 	(* if there are any occupied containers, throw an error *)
 	notEmptyAliquotContainerOptions = If[messages && Not[MatchQ[notEmptyAliquotContainers, {}]],
 		(
-			Message[Error::AliquotContainerOccupied, ObjectToString[notEmptyAliquotContainers, Cache -> simulatedCache]];
+			Message[Error::AliquotContainerOccupied, ObjectToString[notEmptyAliquotContainers, Simulation -> updatedSimulation]];
 			{AliquotContainer}
 		),
 		{}
@@ -1180,8 +1197,8 @@ resolveDifferentialScanningCalorimetryOptions[myPooledSamples : ListableP[{Objec
 	(* resolve the aliquot options *)
 	(* we are not cool with having solids here *)
 	{resolvedAliquotOptions, aliquotTests} = If[gatherTests,
-		resolveAliquotOptions[ExperimentDifferentialScanningCalorimetry, myPooledSamples, simulatedSamples, ReplaceRule[myOptions, Flatten[{resolveSamplePrepOptionsWithoutAliquot, DestinationWell -> semiResolvedDestinationWell}]], Cache -> simulatedCache, RequiredAliquotContainers -> requiredAliquotContainers, RequiredAliquotAmounts -> requiredAliquotAmounts, AllowSolids -> False, Output -> {Result, Tests}],
-		{resolveAliquotOptions[ExperimentDifferentialScanningCalorimetry, myPooledSamples, simulatedSamples, ReplaceRule[myOptions, Flatten[{resolveSamplePrepOptionsWithoutAliquot, DestinationWell -> semiResolvedDestinationWell}]], Cache -> simulatedCache, RequiredAliquotContainers -> requiredAliquotContainers, RequiredAliquotAmounts -> requiredAliquotAmounts, AllowSolids -> False, Output -> Result], {}}
+		resolveAliquotOptions[ExperimentDifferentialScanningCalorimetry, myPooledSamples, simulatedSamples, ReplaceRule[myOptions, Flatten[{resolveSamplePrepOptionsWithoutAliquot, DestinationWell -> semiResolvedDestinationWell}]], Simulation -> updatedSimulation, RequiredAliquotContainers -> requiredAliquotContainers, RequiredAliquotAmounts -> requiredAliquotAmounts, AllowSolids -> False, Output -> {Result, Tests}],
+		{resolveAliquotOptions[ExperimentDifferentialScanningCalorimetry, myPooledSamples, simulatedSamples, ReplaceRule[myOptions, Flatten[{resolveSamplePrepOptionsWithoutAliquot, DestinationWell -> semiResolvedDestinationWell}]], Simulation -> updatedSimulation, RequiredAliquotContainers -> requiredAliquotContainers, RequiredAliquotAmounts -> requiredAliquotAmounts, AllowSolids -> False, Output -> Result], {}}
 	];
 
 	(* Resolve Post Processing Options *)
@@ -1403,7 +1420,7 @@ resolveDifferentialScanningCalorimetryOptions[myPooledSamples : ListableP[{Objec
 	(* --- pull out all the shared options from the input options --- *)
 
 	(* get the rest directly *)
-	{confirm, template, cache, operator, upload, outputOption, subprotocolDescription, samplesInStorage, samplePreparation} = Lookup[myOptions, {Confirm, Template, Cache, Operator, Upload, Output, SubprotocolDescription, SamplesInStorageCondition, PreparatoryUnitOperations}];
+	{confirm, canaryBranch, template, cache, operator, upload, outputOption, subprotocolDescription, samplesInStorage, samplePreparation} = Lookup[myOptions, {Confirm, CanaryBranch, Template, Cache, Operator, Upload, Output, SubprotocolDescription, SamplesInStorageCondition, PreparatoryUnitOperations}];
 
 	(* get the resolved Email option; for this experiment, the default is True if it's a parent protocol, and False if it's a sub *)
 	email = Which[
@@ -1439,11 +1456,11 @@ resolveDifferentialScanningCalorimetryOptions[myPooledSamples : ListableP[{Objec
 		NestedIndexMatchingIncubationTemperature -> resolvedPooledIncubationTemperature,
 		NestedIndexMatchingAnnealingTime -> resolvedPooledAnnealingTime,
 		PreparatoryUnitOperations -> samplePreparation,
-		PreparatoryPrimitives->Lookup[myOptions, PreparatoryPrimitives],
 		resolveSamplePrepOptionsWithoutAliquot,
 		resolvedAliquotOptions,
 		resolvedPostProcessingOptions,
 		Confirm -> confirm,
+		CanaryBranch -> canaryBranch,
 		Name -> name,
 		Template -> template,
 		Cache -> cache,
@@ -1482,7 +1499,7 @@ resolveDifferentialScanningCalorimetryOptions[myPooledSamples : ListableP[{Objec
 
 
 DefineOptions[dscResourcePackets,
-	Options :> {CacheOption, HelperOutputOption}
+	Options :> {CacheOption, HelperOutputOption, SimulationOption}
 ];
 
 dscResourcePackets[myPooledSamples:ListableP[{ObjectP[Object[Sample]]..}], myUnresolvedOptions:{___Rule}, myResolvedOptions:{___Rule}, myCollapsedResolvedOptions:{___Rule}, myOptions:OptionsPattern[]] := Module[
@@ -1493,7 +1510,7 @@ dscResourcePackets[myPooledSamples:ListableP[{ObjectP[Object[Sample]]..}], myUnr
 		pairedSamplesInAndVolumes, sampleVolumeRules, sampleResourceReplaceRules, samplesInResources, containerObjs,
 		protocolPacket, sharedFieldPacket, finalizedPacket, allResourceBlobs, fulfillable, frqTests, previewRule,
 		optionsRule, testsRule, resultRule, containerModelPackets, plateSealResource, refillSampleResource,
-		sampleRunTimes, cleaningFrequency, cleaningRunTimes, pooledIncubateSamplePrep, pooledMixSamplePrep,
+		sampleRunTimes, cleaningFrequency, cleaningRunTimes, pooledIncubateSamplePrep, pooledMixSamplePrep, simulation,
 		pooledCentrifugeSamplePrep,cleaningContainer,cleaningBottleCap,cleaningSolutionResources,cleaningBottleCapResources},
 
 	(* expand the resolved options if they weren't expanded already *)
@@ -1516,7 +1533,8 @@ dscResourcePackets[myPooledSamples:ListableP[{ObjectP[Object[Sample]]..}], myUnr
 	messages = Not[gatherTests];
 
 	(* get the inherited cache *)
-	inheritedCache = Lookup[expandedResolvedOptions, Cache];
+	inheritedCache = Lookup[ToList[myOptions], Cache];
+	simulation = Lookup[ToList[myOptions], Simulation, Simulation[]];
 
 	(* Get the information we need via Download *)
 	{
@@ -1531,11 +1549,11 @@ dscResourcePackets[myPooledSamples:ListableP[{ObjectP[Object[Sample]]..}], myUnr
 			{Container[Object]},
 			{Packet[MaxVolume]}
 		},
-		Cache -> inheritedCache,
+		Simulation -> simulation,
 		Date -> Now
 	];
 
-	(* determine the pool lenghts*)
+	(* determine the pool lengths*)
 	poolLengths = Length[#]& /@ myPooledSamples;
 
 	(* get the number of replicates so that we can expand the fields (samplesIn etc.) accordingly  *)
@@ -1772,11 +1790,11 @@ dscResourcePackets[myPooledSamples:ListableP[{ObjectP[Object[Sample]]..}], myUnr
 
 		(* populate checkpoints with reasonable time estimates *)
 		Replace[Checkpoints] -> {
-			{"Preparing Samples",1 Minute,"Preprocessing, such as incubation, mixing, centrifuging, and aliquoting, is performed.",Link[Resource[Operator -> Model[User, Emerald, Operator, "Trainee"], Time -> 1 Minute]]},
-			{"Picking Resources", 10*Minute, "Samples required to execute this protocol are gathered from storage.", Link[Resource[Operator -> Model[User, Emerald, Operator, "Trainee"], Time -> 10 Minute]]},
+			{"Preparing Samples",1 Minute,"Preprocessing, such as incubation, mixing, centrifuging, and aliquoting, is performed.",Link[Resource[Operator -> $BaselineOperator, Time -> 1 Minute]]},
+			{"Picking Resources", 10*Minute, "Samples required to execute this protocol are gathered from storage.", Link[Resource[Operator -> $BaselineOperator, Time -> 10 Minute]]},
 			(* the Thermocycling checkpoint mirrors the runTime estimated above almost directly, padded with a little bit of overhead *)
-			{"Thermocycling", runTime + 30*Minute, "The thermocycling of samples is performed and data is collected.", Link[Resource[Operator -> Model[User, Emerald, Operator, "Trainee"], Time -> (runTime + 30*Minute)]]},
-			{"Sample Post-Processing",1 Hour,"Any measuring of volume, weight, or sample imaging post experiment is performed.", Link[Resource[Operator -> Model[User, Emerald, Operator, "Trainee"], Time -> 5*Minute]]}
+			{"Thermocycling", runTime + 30*Minute, "The thermocycling of samples is performed and data is collected.", Link[Resource[Operator -> $BaselineOperator, Time -> (runTime + 30*Minute)]]},
+			{"Sample Post-Processing",1 Hour,"Any measuring of volume, weight, or sample imaging post experiment is performed.", Link[Resource[Operator -> $BaselineOperator, Time -> 5*Minute]]}
 		},
 		RunTime -> runTime,
 
@@ -1815,7 +1833,7 @@ dscResourcePackets[myPooledSamples:ListableP[{ObjectP[Object[Sample]]..}], myUnr
 	|>;
 
 	(* generate a packet with the shared fields *)
-	sharedFieldPacket = populateSamplePrepFieldsPooled[myPooledSamples, myResolvedOptions, Cache -> inheritedCache];
+	sharedFieldPacket = populateSamplePrepFieldsPooled[myPooledSamples, myResolvedOptions, Simulation -> simulation];
 
 	(* Merge the shared fields with the specific fields *)
 	finalizedPacket = Join[sharedFieldPacket, protocolPacket];
@@ -1827,8 +1845,8 @@ dscResourcePackets[myPooledSamples:ListableP[{ObjectP[Object[Sample]]..}], myUnr
 	(* call fulfillableResourceQ on all the resources we created *)
 	{fulfillable, frqTests} = Which[
 		MatchQ[$ECLApplication, Engine], {True, {}},
-		gatherTests, Resources`Private`fulfillableResourceQ[allResourceBlobs, Output -> {Result, Tests}, FastTrack -> Lookup[myResolvedOptions, FastTrack],Site->Lookup[myResolvedOptions,Site], Cache -> inheritedCache],
-		True, {Resources`Private`fulfillableResourceQ[allResourceBlobs, FastTrack -> Lookup[myResolvedOptions, FastTrack],Site->Lookup[myResolvedOptions,Site], Messages -> messages, Cache -> inheritedCache], Null}
+		gatherTests, Resources`Private`fulfillableResourceQ[allResourceBlobs, Output -> {Result, Tests}, FastTrack -> Lookup[myResolvedOptions, FastTrack],Site->Lookup[myResolvedOptions,Site], Simulation -> simulation],
+		True, {Resources`Private`fulfillableResourceQ[allResourceBlobs, FastTrack -> Lookup[myResolvedOptions, FastTrack],Site->Lookup[myResolvedOptions,Site], Messages -> messages, Simulation -> simulation], Null}
 	];
 
 	(* generate the Preview option; that is always Null *)
@@ -1873,26 +1891,25 @@ DefineOptions[ValidExperimentDifferentialScanningCalorimetryQ,
 
 
 (* --- Overloads --- *)
-ValidExperimentDifferentialScanningCalorimetryQ[mySample : ObjectP[Object[Sample]], myOptions : OptionsPattern[ValidExperimentDifferentialScanningCalorimetryQ]] := ValidExperimentDifferentialScanningCalorimetryQ[{mySample}, myOptions];
-ValidExperimentDifferentialScanningCalorimetryQ[myContainer : ObjectP[Object[Container]], myOptions : OptionsPattern[ValidExperimentDifferentialScanningCalorimetryQ]] := ValidExperimentDifferentialScanningCalorimetryQ[{myContainer}, myOptions];
+ValidExperimentDifferentialScanningCalorimetryQ[myContainer : ObjectP[{Object[Sample], Object[Container], Model[Sample]}], myOptions : OptionsPattern[ValidExperimentDifferentialScanningCalorimetryQ]] := ValidExperimentDifferentialScanningCalorimetryQ[{myContainer}, myOptions];
 
-ValidExperimentDifferentialScanningCalorimetryQ[myContainers : {ObjectP[Object[Container]]..}, myOptions : OptionsPattern[ValidExperimentDifferentialScanningCalorimetryQ]] := Module[
-	{listedOptions, preparedOptions, uvMeltingTests, initialTestDescription, allTests, verbose, outputFormat},
+ValidExperimentDifferentialScanningCalorimetryQ[myContainers : {ObjectP[{Object[Container], Model[Sample]}]..}, myOptions : OptionsPattern[ValidExperimentDifferentialScanningCalorimetryQ]] := Module[
+	{listedOptions, preparedOptions, dscTests, initialTestDescription, allTests, verbose, outputFormat},
 
 	(* get the options as a list *)
 	listedOptions = ToList[myOptions];
 
-	(* remove the Output option before passing to the core function because it doens't make sense here *)
+	(* remove the Output option before passing to the core function because it doesn't make sense here *)
 	preparedOptions = DeleteCases[listedOptions, (Output | Verbose | OutputFormat) -> _];
 
 	(* return only the tests for ExperimentDifferentialScanningCalorimetry *)
-	uvMeltingTests = ExperimentDifferentialScanningCalorimetry[myContainers, Append[preparedOptions, Output -> Tests]];
+	dscTests = ExperimentDifferentialScanningCalorimetry[myContainers, Append[preparedOptions, Output -> Tests]];
 
 	(* define the general test description *)
 	initialTestDescription = "All provided options and inputs match their provided patterns (no further testing can proceed if this test fails):";
 
 	(* make a list of all the tests, including the blanket test *)
-	allTests = If[MatchQ[uvMeltingTests, $Failed],
+	allTests = If[MatchQ[dscTests, $Failed],
 		{Test[initialTestDescription, False, True]},
 		Module[
 			{initialTest, validObjectBooleans, voqWarnings},
@@ -1911,7 +1928,7 @@ ValidExperimentDifferentialScanningCalorimetryQ[myContainers : {ObjectP[Object[C
 			];
 
 			(* get all the tests/warnings *)
-			Flatten[{initialTest, uvMeltingTests, voqWarnings}]
+			Flatten[{initialTest, dscTests, voqWarnings}]
 		]
 	];
 
@@ -1925,17 +1942,17 @@ ValidExperimentDifferentialScanningCalorimetryQ[myContainers : {ObjectP[Object[C
 ];
 
 (* --- Overload for SemiPooledInputs --- *)
-ValidExperimentDifferentialScanningCalorimetryQ[mySemiPooledInputs : ListableP[ListableP[Alternatives[ObjectP[Object[Sample]], ObjectP[Object[Container]]]]], myOptions : OptionsPattern[ExperimentDifferentialScanningCalorimetryOptions]] := Module[
-	{listedOptions, preparedOptions, uvMeltingTests, allTests, verbose, outputFormat},
+ValidExperimentDifferentialScanningCalorimetryQ[mySemiPooledInputs : ListableP[ListableP[ObjectP[{Object[Sample], Object[Container], Model[Sample]}]]], myOptions : OptionsPattern[ExperimentDifferentialScanningCalorimetryOptions]] := Module[
+	{listedOptions, preparedOptions, dscTests, allTests, verbose, outputFormat},
 
 	(* get the options as a list *)
 	listedOptions = ToList[myOptions];
 
-	(* remove the Output option before passing to the core function because it doens't make sense here *)
+	(* remove the Output option before passing to the core function because it doesn't make sense here *)
 	preparedOptions = DeleteCases[listedOptions, (Output | Verbose | OutputFormat) -> _];
 
 	(* return only the tests for ExperimentDifferentialScanningCalorimetry *)
-	uvMeltingTests = ExperimentDifferentialScanningCalorimetry[mySemiPooledInputs, Append[preparedOptions, Output -> Tests]];
+	dscTests = ExperimentDifferentialScanningCalorimetry[mySemiPooledInputs, Append[preparedOptions, Output -> Tests]];
 
 	(* make a list of all the tests, including the blanket test *)
 	allTests = Module[
@@ -1952,7 +1969,7 @@ ValidExperimentDifferentialScanningCalorimetryQ[mySemiPooledInputs : ListableP[L
 		];
 
 		(* get all the tests/warnings *)
-		Flatten[{uvMeltingTests, voqWarnings}]
+		Flatten[{dscTests, voqWarnings}]
 	];
 
 	(* determine the Verbose and OutputFormat options; quiet the OptionValue::nodef message in case someone just passed nonsense *)
@@ -1967,16 +1984,16 @@ ValidExperimentDifferentialScanningCalorimetryQ[mySemiPooledInputs : ListableP[L
 
 (* --- Core Function --- *)
 ValidExperimentDifferentialScanningCalorimetryQ[myPooledSamples : ListableP[{ObjectP[Object[Sample]]..}], myOptions : OptionsPattern[ValidExperimentDifferentialScanningCalorimetryQ]] := Module[
-	{listedOptions, preparedOptions, uvMeltingTests, allTests, verbose, outputFormat},
+	{listedOptions, preparedOptions, dscTests, allTests, verbose, outputFormat},
 
 	(* get the options as a list *)
 	listedOptions = ToList[myOptions];
 
-	(* remove the Output option before passing to the core function because it doens't make sense here *)
+	(* remove the Output option before passing to the core function because it doesn't make sense here *)
 	preparedOptions = DeleteCases[listedOptions, (Output | Verbose | OutputFormat) -> _];
 
 	(* return only the tests for ExperimentDifferentialScanningCalorimetry *)
-	uvMeltingTests = ExperimentDifferentialScanningCalorimetry[myPooledSamples, Append[preparedOptions, Output -> Tests]];
+	dscTests = ExperimentDifferentialScanningCalorimetry[myPooledSamples, Append[preparedOptions, Output -> Tests]];
 
 	(* make a list of all the tests, including the blanket test *)
 	allTests = Module[
@@ -1993,7 +2010,7 @@ ValidExperimentDifferentialScanningCalorimetryQ[myPooledSamples : ListableP[{Obj
 		];
 
 		(* get all the tests/warnings *)
-		Flatten[{uvMeltingTests, voqWarnings}]
+		Flatten[{dscTests, voqWarnings}]
 	];
 
 	(* determine the Verbose and OutputFormat options; quiet the OptionValue::nodef message in case someone just passed nonsense *)
@@ -2025,15 +2042,14 @@ DefineOptions[ExperimentDifferentialScanningCalorimetryOptions,
 ];
 
 (* --- Overloads --- *)
-ExperimentDifferentialScanningCalorimetryOptions[mySample : ObjectP[Object[Sample]], myOptions : OptionsPattern[ExperimentDifferentialScanningCalorimetryOptions]] := ExperimentDifferentialScanningCalorimetryOptions[{mySample}, myOptions];
-ExperimentDifferentialScanningCalorimetryOptions[myContainer : ObjectP[Object[Container]], myOptions : OptionsPattern[ExperimentDifferentialScanningCalorimetryOptions]] := ExperimentDifferentialScanningCalorimetryOptions[{myContainer}, myOptions];
-ExperimentDifferentialScanningCalorimetryOptions[myContainers : {ObjectP[Object[Container]]..}, myOptions : OptionsPattern[ExperimentDifferentialScanningCalorimetryOptions]] := Module[
+ExperimentDifferentialScanningCalorimetryOptions[myContainer : ObjectP[{Object[Sample], Object[Container], Model[Sample]}], myOptions : OptionsPattern[ExperimentDifferentialScanningCalorimetryOptions]] := ExperimentDifferentialScanningCalorimetryOptions[{myContainer}, myOptions];
+ExperimentDifferentialScanningCalorimetryOptions[myContainers : {ObjectP[{Object[Container], Model[Sample]}]..}, myOptions : OptionsPattern[ExperimentDifferentialScanningCalorimetryOptions]] := Module[
 	{listedOptions, noOutputOptions, options},
 
 	(* get the options as a list *)
 	listedOptions = ToList[myOptions];
 
-	(* remove the Output option before passing to the core function because it doens't make sense here *)
+	(* remove the Output option before passing to the core function because it doesn't make sense here *)
 	noOutputOptions = DeleteCases[listedOptions, Alternatives[Output -> _, OutputFormat -> _]];
 
 	(* return only the options for ExperimentDifferentialScanningCalorimetry *)
@@ -2048,13 +2064,13 @@ ExperimentDifferentialScanningCalorimetryOptions[myContainers : {ObjectP[Object[
 ];
 
 (* --- Overload for SemiPooledInputs --- *)
-ExperimentDifferentialScanningCalorimetryOptions[mySemiPooledInputs : ListableP[ListableP[Alternatives[ObjectP[Object[Sample]], ObjectP[Object[Container]]]]], myOptions : OptionsPattern[ExperimentDifferentialScanningCalorimetryOptions]] := Module[
+ExperimentDifferentialScanningCalorimetryOptions[mySemiPooledInputs : ListableP[ListableP[ObjectP[{Object[Sample], Object[Container], Model[Sample]}]]], myOptions : OptionsPattern[ExperimentDifferentialScanningCalorimetryOptions]] := Module[
 	{listedOptions, noOutputOptions},
 
 	(* get the options as a list *)
 	listedOptions = ToList[myOptions];
 
-	(* remove the Output option before passing to the core function because it doens't make sense here *)
+	(* remove the Output option before passing to the core function because it doesn't make sense here *)
 	noOutputOptions = DeleteCases[listedOptions, Alternatives[Output -> _, OutputFormat -> _]];
 
 	(* return only the options for ExperimentDifferentialScanningCalorimetry *)
@@ -2074,7 +2090,7 @@ ExperimentDifferentialScanningCalorimetryOptions[myPooledSamples : ListableP[{Ob
 	(* get the options as a list *)
 	listedOptions = ToList[myOptions];
 
-	(* remove the Output option before passing to the core function because it doens't make sense here *)
+	(* remove the Output option before passing to the core function because it doesn't make sense here *)
 	noOutputOptions = DeleteCases[listedOptions, Alternatives[Output -> _, OutputFormat -> _]];
 
 	(* return only the options for ExperimentDifferentialScanningCalorimetry *)
@@ -2097,15 +2113,14 @@ DefineOptions[ExperimentDifferentialScanningCalorimetryPreview,
 ];
 
 (* --- Overloads --- *)
-ExperimentDifferentialScanningCalorimetryPreview[mySample : ObjectP[Object[Sample]], myOptions : OptionsPattern[ExperimentDifferentialScanningCalorimetryPreview]] := ExperimentDifferentialScanningCalorimetryPreview[{mySample}, myOptions];
-ExperimentDifferentialScanningCalorimetryPreview[myContainer : ObjectP[Object[Container]], myOptions : OptionsPattern[ExperimentDifferentialScanningCalorimetryPreview]] := ExperimentDifferentialScanningCalorimetryPreview[{myContainer}, myOptions];
-ExperimentDifferentialScanningCalorimetryPreview[myContainers : {ObjectP[Object[Container]]..}, myOptions : OptionsPattern[ExperimentDifferentialScanningCalorimetryPreview]] := Module[
+ExperimentDifferentialScanningCalorimetryPreview[myContainer : ObjectP[{Object[Sample], Object[Container], Model[Sample]}], myOptions : OptionsPattern[ExperimentDifferentialScanningCalorimetryPreview]] := ExperimentDifferentialScanningCalorimetryPreview[{myContainer}, myOptions];
+ExperimentDifferentialScanningCalorimetryPreview[myContainers : {ObjectP[{Object[Container], Model[Sample]}]..}, myOptions : OptionsPattern[ExperimentDifferentialScanningCalorimetryPreview]] := Module[
 	{listedOptions, noOutputOptions},
 
 	(* get the options as a list *)
 	listedOptions = ToList[myOptions];
 
-	(* remove the Output option before passing to the core function because it doens't make sense here *)
+	(* remove the Output option before passing to the core function because it doesn't make sense here *)
 	noOutputOptions = DeleteCases[listedOptions, Alternatives[Output -> _]];
 
 	(* return only the preview for ExperimentDifferentialScanningCalorimetry *)
@@ -2114,13 +2129,13 @@ ExperimentDifferentialScanningCalorimetryPreview[myContainers : {ObjectP[Object[
 ];
 
 (* SemiPooledInputs *)
-ExperimentDifferentialScanningCalorimetryPreview[mySemiPooledInputs : ListableP[ListableP[Alternatives[ObjectP[Object[Sample]], ObjectP[Object[Container]]]]], myOptions : OptionsPattern[ExperimentDifferentialScanningCalorimetryPreview]] := Module[
+ExperimentDifferentialScanningCalorimetryPreview[mySemiPooledInputs : ListableP[ListableP[ObjectP[{Object[Sample], Object[Container], Model[Sample]}]]], myOptions : OptionsPattern[ExperimentDifferentialScanningCalorimetryPreview]] := Module[
 	{listedOptions, noOutputOptions},
 
 	(* get the options as a list *)
 	listedOptions = ToList[myOptions];
 
-	(* remove the Output option before passing to the core function because it doens't make sense here *)
+	(* remove the Output option before passing to the core function because it doesn't make sense here *)
 	noOutputOptions = DeleteCases[listedOptions, Alternatives[Output -> _]];
 
 	(* return only the preview for ExperimentDifferentialScanningCalorimetry *)
@@ -2134,7 +2149,7 @@ ExperimentDifferentialScanningCalorimetryPreview[myPooledSamples : ListableP[{Ob
 	(* get the options as a list *)
 	listedOptions = ToList[myOptions];
 
-	(* remove the Output option before passing to the core function because it doens't make sense here *)
+	(* remove the Output option before passing to the core function because it doesn't make sense here *)
 	noOutputOptions = DeleteCases[listedOptions, Alternatives[Output -> _]];
 
 	(* return only the preview for ExperimentDifferentialScanningCalorimetry *)

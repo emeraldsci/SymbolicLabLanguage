@@ -48,7 +48,14 @@ DefineOptions[ExperimentDegas,
 							Object[Instrument,VacuumDegasser],
 							Object[Instrument,FreezePumpThawApparatus]
 						}
-					]
+					],
+					OpenPaths -> {
+						{
+							Object[Catalog, "Root"],
+							"Instruments",
+							"Degassers"
+						}
+					}
 				],
 				Description->"Indicates which degassing instrument should be used.",
 				ResolutionDescription->"If no options are provided, the instrument will be selected based on the degassing type.",
@@ -57,13 +64,12 @@ DefineOptions[ExperimentDegas,
 			},
 			{
 				OptionName->DissolvedOxygen,
-				Default->Automatic,
+				Default->False,
 				Widget->Widget[
 					Type->Enumeration,
 					Pattern:>BooleanP
 				],
 				Description->"Indicates whether dissolved oxygen measurements should be taken on a 25 milliliter aliquot of a sample using the dissolved oxygen meter, before and after the degassing procedure is performed. Aliquots are returned to their parent sample following measurements.  The dissolved oxygen measurements can only be taken on aqueous solutions and will expose the degassed sample to air.",
-				ResolutionDescription->"If no options are provided, will default to True for aqueous solutions over 25 milliliters, and False for organic solutions and low volume aqueous solutions.",
 				AllowNull->False,
 				Category->"General"
 			},
@@ -117,7 +123,7 @@ DefineOptions[ExperimentDegas,
 					Pattern:>RangeP[0*Minute,6*Hour],
 					Units->Alternatives[Hour,Minute,Second]
 				],
-				Description->"The amount of time the sample will be thawed during the freeze-pump-thaw procedure. During the thaw step, the decreased headspace pressure from the pump step will decrease the solubility of dissolved gases in the thawed liquid, thereby causing dissolved gases to bubble out from the liquid as it thaws.",
+				Description->"The minimum amount of time the sample will be thawed during the freeze-pump-thaw procedure. During the thaw step, the decreased headspace pressure from the pump step will decrease the solubility of dissolved gases in the thawed liquid, thereby causing dissolved gases to bubble out from the liquid as it thaws.",
 				ResolutionDescription->"If no options are provided, the sample volume will be used to determine an estimated thawing time.",
 				AllowNull->True,
 				Category->"Freeze-Pump-Thaw"
@@ -145,7 +151,13 @@ DefineOptions[ExperimentDegas,
 							Model[Container,Vessel],
 							Object[Container,Vessel]
 						}
-					]
+					],
+					OpenPaths -> {
+						{
+							Object[Catalog, "Root"],
+							"Containers"
+						}
+					}
 				],
 				Description -> "The container that will hold the sample during Freeze Pump Thaw. No more than 50% of the volume of the container can be filled during Freeze Pump Thaw.",
 				Category -> "Freeze-Pump-Thaw"
@@ -308,10 +320,24 @@ DefineOptions[ExperimentDegas,
 					UnitOperation -> True
 				}
 
-		]
+		],
 		(*Note: not including NumberOfReplicates. For Sparging and VacuumDegas, you can just set the time to go on longer. For FreezePumpThaw, you would just add in more NumberOfCycles*)
-	},
-	SharedOptions:>{FuntopiaSharedOptions,SamplesInStorageOptions,SamplesOutStorageOptions,SimulationOption}
+		NonBiologyFuntopiaSharedOptions,
+		SamplesInStorageOptions,
+		SamplesOutStorageOptions,
+		SimulationOption,
+		ModifyOptions[
+			ModelInputOptions,
+			OptionName -> PreparedModelAmount
+		],
+		ModifyOptions[
+			ModelInputOptions,
+			PreparedModelContainer,
+			{
+				ResolutionDescription -> "If PreparedModelAmount is set to All and the input model has a product associated with both Amount and DefaultContainerModel populated, automatically set to the DefaultContainerModel value in the product. Otherwise, automatically set to Model[Container, Vessel, \"10 mL Schlenk Flask, 14/20 Outer Joint with Chem-Cap High Vacuum Valve\"]."
+			}
+		]
+	}
 ];
 
 
@@ -358,7 +384,7 @@ Warning::DegasSpargingTimeLow="In ExperimentDegas, the resolved SpargingTime (`1
 (*ExperimentDegas*)
 (* - Container to Sample Overload - *)
 
-ExperimentDegas[myContainers:ListableP[ObjectP[{Object[Container],Object[Sample]}]|_String|{LocationPositionP,_String|ObjectP[Object[Container]]}],myOptions:OptionsPattern[]]:=Module[
+ExperimentDegas[myContainers:ListableP[ObjectP[{Object[Container],Object[Sample],Model[Sample]}]|_String|{LocationPositionP,_String|ObjectP[Object[Container]]}],myOptions:OptionsPattern[]]:=Module[
 	{listedOptions,outputSpecification,output,gatherTests,validSamplePreparationResult,mySamplesWithPreparedSamples,myOptionsWithPreparedSamples,samplePreparationCache,
 		containerToSampleResult,containerToSampleOutput,updatedCache,samples,sampleOptions,containerToSampleTests,listedContainers,cache,containerToSampleSimulation,
 		samplePreparationSimulation},
@@ -372,9 +398,9 @@ ExperimentDegas[myContainers:ListableP[ObjectP[{Object[Container],Object[Sample]
 	gatherTests=MemberQ[output,Tests];
 
 	(* Remove temporal links and named objects. *)
-	{listedContainers, listedOptions} = removeLinks[ToList[myContainers], ToList[myOptions]];
+	{listedContainers, listedOptions} = {ToList[myContainers], ToList[myOptions]};
 
-	(* Fetch teh cache from listedOptions *)
+	(* Fetch the cache from listedOptions *)
 	cache=ToList[Lookup[listedOptions, Cache, {}]];
 
 	(* First, simulate our sample preparation. *)
@@ -383,17 +409,18 @@ ExperimentDegas[myContainers:ListableP[ObjectP[{Object[Container],Object[Sample]
 		{mySamplesWithPreparedSamples,myOptionsWithPreparedSamples,samplePreparationSimulation}=simulateSamplePreparationPacketsNew[
 			ExperimentDegas,
 			listedContainers,
-			listedOptions
+			listedOptions,
+			DefaultPreparedModelContainer -> Model[Container, Vessel, "id:pZx9joxev3k0"] (*"10 mL Schlenk Flask, 14/20 Outer Joint with Chem-Cap High Vacuum Valve"*)
 		],
 		$Failed,
-		{Error::MissingDefineNames,Error::InvalidInput,Error::InvalidOption}
+		{Download::ObjectDoesNotExist,Error::MissingDefineNames,Error::InvalidInput,Error::InvalidOption}
 	];
 
 	(* If we are given an invalid define name, return early. *)
 	If[MatchQ[validSamplePreparationResult,$Failed],
 		(* Return early. *)
 		(* Note: We've already thrown a message above in simulateSamplePreparationPackets. *)
-		ClearMemoization[Experiment`Private`simulateSamplePreparationPackets];Return[$Failed]
+		ClearMemoization[Experiment`Private`simulateSamplePreparationPacketsNew];Return[$Failed]
 	];
 
 	(* Convert our given containers into samples and sample index-matched options. *)
@@ -484,7 +511,7 @@ ExperimentDegas[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:OptionsPa
 			listedOptions
 		],
 		$Failed,
-		{Error::MissingDefineNames,Error::InvalidInput,Error::InvalidOption}
+		{Download::ObjectDoesNotExist,Error::MissingDefineNames,Error::InvalidInput,Error::InvalidOption}
 	];
 
 	(* If we are given an invalid define name, return early. *)
@@ -501,16 +528,8 @@ ExperimentDegas[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:OptionsPa
 	];
 
 	(* Call sanitize-inputs to clean any named objects *)
-	{mySamplesWithPreparedSamples,safeOps, myOptionsWithPreparedSamples} = sanitizeInputs[mySamplesWithPreparedSamplesNamed,safeOpsNamed, myOptionsWithPreparedSamplesNamed];
-
-	cache = cacheOption;
-
-	(* Call ValidInputLengthsQ to make sure all options are the right length *)
-	{validLengths,validLengthTests}=If[gatherTests,
-		ValidInputLengthsQ[ExperimentDegas,{mySamplesWithPreparedSamples},myOptionsWithPreparedSamples,Output->{Result,Tests}],
-		{ValidInputLengthsQ[ExperimentDegas,{mySamplesWithPreparedSamples},myOptionsWithPreparedSamples],Null}
-	];
-
+	{mySamplesWithPreparedSamples,safeOps, myOptionsWithPreparedSamples} = sanitizeInputs[mySamplesWithPreparedSamplesNamed,safeOpsNamed, myOptionsWithPreparedSamplesNamed,Simulation->updatedSimulation];
+	
 	(* If the specified options don't match their patterns or if option lengths are invalid return $Failed *)
 	If[MatchQ[safeOps,$Failed],
 		Return[outputSpecification/.{
@@ -519,6 +538,14 @@ ExperimentDegas[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:OptionsPa
 			Options->$Failed,
 			Preview->Null
 		}]
+	];
+	
+	cache = cacheOption;
+
+	(* Call ValidInputLengthsQ to make sure all options are the right length *)
+	{validLengths,validLengthTests}=If[gatherTests,
+		ValidInputLengthsQ[ExperimentDegas,{mySamplesWithPreparedSamples},myOptionsWithPreparedSamples,Output->{Result,Tests}],
+		{ValidInputLengthsQ[ExperimentDegas,{mySamplesWithPreparedSamples},myOptionsWithPreparedSamples],Null}
 	];
 
 	(* If option lengths are invalid return $Failed (or the tests up to this point) *)
@@ -753,6 +780,7 @@ ExperimentDegas[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:OptionsPa
 			Cache -> cacheBall,
 			Upload->Lookup[safeOps,Upload],
 			Confirm->Lookup[safeOps,Confirm],
+			CanaryBranch->Lookup[safeOps,CanaryBranch],
 			ParentProtocol->Lookup[safeOps,ParentProtocol],
 			ConstellationMessage->Object[Protocol,Degas],
 			Simulation->simulation
@@ -835,7 +863,7 @@ resolveExperimentDegasOptions[mySamples:{ObjectP[Object[Sample]]...},myOptions:{
 		resolvedOptions,resolvedPostProcessingOptions,resolvedEmail,
 
 		(* misc options *)
-		emailOption,uploadOption,nameOption,confirmOption,parentProtocolOption,fastTrackOption,templateOption,samplesInStorageOption,samplesOutStorageOption,operator,
+		emailOption,uploadOption,nameOption,confirmOption,canaryBranchOption,parentProtocolOption,fastTrackOption,templateOption,samplesInStorageOption,samplesOutStorageOption,operator,
 		validSampleStorageConditionQ,invalidStorageConditionOptions,
 
 		(*unit operation support*)
@@ -856,7 +884,7 @@ resolveExperimentDegasOptions[mySamples:{ObjectP[Object[Sample]]...},myOptions:{
 	cache=Lookup[ToList[myResolutionOptions],Cache,{}];
 	simulation=Lookup[ToList[myResolutionOptions],Simulation];
 
-	(* Seperate out our Degas options from our Sample Prep options. *)
+	(* Separate out our Degas options from our Sample Prep options. *)
 	{samplePrepOptions,degasOptions}=splitPrepOptions[myOptions];
 
 	(* Resolve our sample prep options *)
@@ -1115,7 +1143,7 @@ resolveExperimentDegasOptions[mySamples:{ObjectP[Object[Sample]]...},myOptions:{
 		Nothing
 	];
 
-	(*- 1. DegasType and Instrument are copacetic -*)
+	(*- 1. DegasType and Instrument are compatible -*)
 	degasTypeInstrumentMismatches=MapThread[
 		Function[{degasType,instrument,sampleObject},
 			(* Based on our mix type, make sure that the mix instrument matches. *)
@@ -1189,7 +1217,7 @@ resolveExperimentDegasOptions[mySamples:{ObjectP[Object[Sample]]...},myOptions:{
 		{}
 	];
 
-	(* 2. DegasType and FreezeTime/PumpTime/ThawTemperature/ThawTime/NumberOfCycles/FreezePumpThawContainer are copacetic *)
+	(* 2. DegasType and FreezeTime/PumpTime/ThawTemperature/ThawTime/NumberOfCycles/FreezePumpThawContainer are compatible *)
 	freezePumpThawOnlyMismatches=MapThread[
 		Function[{degasType,freezeTime,pumpTime,thawTemperature,thawTime,numberOfCycles,freezePumpThawContainer,sampleObject},
 			(* FreezeTime/PumpTime/ThawTemperature/ThawTime/NumberOfCycles can only be set when DegasType is FreezePumpThaw or Automatic *)
@@ -1246,7 +1274,7 @@ resolveExperimentDegasOptions[mySamples:{ObjectP[Object[Sample]]...},myOptions:{
 		{}
 	];
 
-	(* 3. DegasType and VacuumPressure/VacuumSonicate/VacuumTime/VacuumUntilBubbleless/MaxVacuumTime are copacetic *)
+	(* 3. DegasType and VacuumPressure/VacuumSonicate/VacuumTime/VacuumUntilBubbleless/MaxVacuumTime are compatible *)
 	vacuumDegasOnlyMismatches=MapThread[
 		Function[{degasType,vacuumPressure,vacuumSonicate,vacuumTime,vacuumUntilBubbleless,maxVacuumTime,sampleObject},
 			(* VacuumPressure/VacuumSonicate/VacuumTime/VacuumUntilBubbleless/MaxVacuumTime can only be set when DegasType is VacuumDegas or Automatic *)
@@ -1303,7 +1331,7 @@ resolveExperimentDegasOptions[mySamples:{ObjectP[Object[Sample]]...},myOptions:{
 		{}
 	];
 
-	(* 4. VacuumUntilBubbleless and MaxVacuumTime are copacetic *)
+	(* 4. VacuumUntilBubbleless and MaxVacuumTime are compatible *)
 	maxVacuumUntilBubblelessMismatches=MapThread[
 		Function[{vacuumUntilBubbleless,maxVacuumTime,sampleObject},
 			(* MaxVacuumTime can only be set when VacuumUntilBubbleless is set to True or Automatic. *)
@@ -1358,7 +1386,7 @@ resolveExperimentDegasOptions[mySamples:{ObjectP[Object[Sample]]...},myOptions:{
 		{}
 	];
 
-	(* 5. DegasType and SpargingGas/SpargingTime are copacetic *)
+	(* 5. DegasType and SpargingGas/SpargingTime are compatible *)
 	spargingOnlyMismatches=MapThread[
 		Function[{degasType,spargingGas,spargingTime,sampleObject},
 			(* SpargingGas/SpargingTime can only be set when DegasType is Sparging or Automatic *)
@@ -1415,7 +1443,7 @@ resolveExperimentDegasOptions[mySamples:{ObjectP[Object[Sample]]...},myOptions:{
 		{}
 	];
 
-	(* 6. HeadspaceGasFlush and HeadspaceGasFlushTime are copacetic *)
+	(* 6. HeadspaceGasFlush and HeadspaceGasFlushTime are compatible *)
 	headSpaceGasFlushMismatches=MapThread[
 		Function[{headSpaceGasFlush,headSpaceGasFlushTime,sampleObject},
 			(* HeadspaceGasFlushTime can only be set when HeadspaceGasFlush is not None. *)
@@ -1642,7 +1670,7 @@ resolveExperimentDegasOptions[mySamples:{ObjectP[Object[Sample]]...},myOptions:{
 		{}
 	];
 
-	(* 8. DegasType and HeadspaceGasFlush/HeadspaceGasFlushTime are copacetic *)
+	(* 8. DegasType and HeadspaceGasFlush/HeadspaceGasFlushTime are compatible *)
 	headspaceGasFlushTypeMismatches=MapThread[
 		Function[{degasType,headspaceGasFlush,headspaceGasFlushTime,sampleObject},
 			(* headspaceGasFlush/headspaceGasFlushTime can only be set when DegasType is VacuumDegas, FreezePumpThaw or Automatic *)
@@ -2631,16 +2659,8 @@ resolveExperimentDegasOptions[mySamples:{ObjectP[Object[Sample]]...},myOptions:{
 			(*Resolve dissolved oxygen*)
 
 			dissolvedOxygen=If[!MatchQ[supDissolvedOxygen,Except[Null|Automatic]],
-				(* not specified, set manually. First check to see if the composition contains water*)
-				If[MemberQ[ToList[myComposition],"Water"],
-					(* if it contains water, we need to check that the volume is high enough to do dissolved oxygen before and after*)
-					If[GreaterEqual[mySampVol,50 Milliliter],
-						True,
-						(* if the sample volume is not high enough, cannot do a dissolved oxygen measurement *)
-						False
-					],
-					False
-				],
+				(* not specified, set to False*)
+				False,
 
 				(* specified. First check composition*)
 				If[Nand[!MemberQ[ToList[myComposition],"Water"],supDissolvedOxygen==True],
@@ -2705,9 +2725,9 @@ resolveExperimentDegasOptions[mySamples:{ObjectP[Object[Sample]]...},myOptions:{
 	]];
 
 	(* Pull out Miscellaneous options *)
-	{emailOption,uploadOption,nameOption,confirmOption,parentProtocolOption,fastTrackOption,templateOption,samplesInStorageOption,samplesOutStorageOption,operator}=
+	{emailOption,uploadOption,nameOption,confirmOption,canaryBranchOption,parentProtocolOption,fastTrackOption,templateOption,samplesInStorageOption,samplesOutStorageOption,operator}=
 		Lookup[allOptionsRounded,
-			{Email,Upload,Name,Confirm,ParentProtocol,FastTrack,Template,SamplesInStorageCondition,SamplesOutStorageCondition,Operator}];
+			{Email,Upload,Name,Confirm,CanaryBranch,ParentProtocol,FastTrack,Template,SamplesInStorageCondition,SamplesOutStorageCondition,Operator}];
 
 	(*Generate the error messages and warnings from the errors and warnings*)
 	(*Volumes*)
@@ -3352,8 +3372,8 @@ resolveExperimentDegasOptions[mySamples:{ObjectP[Object[Sample]]...},myOptions:{
 	(* Resolve Aliquot Options *)
 	{resolvedAliquotOptions,aliquotTests}=If[gatherTests,
 		(* Note: Also include AllowSolids\[Rule]True as an option to this function if your experiment function can take solid samples as input. Otherwise, resolveAliquotOptions will throw an error if solid samples will be given as input to your function. *)
-		resolveAliquotOptions[ExperimentDegas,mySamples,simulatedSamples,ReplaceRule[myOptions,resolvedSamplePrepOptions],Cache->cache,RequiredAliquotContainers->targetContainers,RequiredAliquotAmounts->targetVolumes,AliquotWarningMessage->aliquotMessage,Output->{Result,Tests}],
-		{resolveAliquotOptions[ExperimentDegas,mySamples,simulatedSamples,ReplaceRule[myOptions,resolvedSamplePrepOptions],Cache->cache,RequiredAliquotContainers->targetContainers,RequiredAliquotAmounts->targetVolumes,AliquotWarningMessage->aliquotMessage,Output->Result],{}}
+		resolveAliquotOptions[ExperimentDegas,mySamples,simulatedSamples,ReplaceRule[myOptions,resolvedSamplePrepOptions],Cache->cache,Simulation->updatedSimulation,RequiredAliquotContainers->targetContainers,RequiredAliquotAmounts->targetVolumes,AliquotWarningMessage->aliquotMessage,Output->{Result,Tests}],
+		{resolveAliquotOptions[ExperimentDegas,mySamples,simulatedSamples,ReplaceRule[myOptions,resolvedSamplePrepOptions],Cache->cache,Simulation->updatedSimulation,RequiredAliquotContainers->targetContainers,RequiredAliquotAmounts->targetVolumes,AliquotWarningMessage->aliquotMessage,Output->Result],{}}
 	];
 
 	(* Resolve Label Options *)
@@ -3448,6 +3468,7 @@ resolveExperimentDegasOptions[mySamples:{ObjectP[Object[Sample]]...},myOptions:{
 				HeadspaceGasFlushTime->resolvedHeadspaceGasFlushTime,
 				DissolvedOxygen->resolvedDissolvedOxygen,
 				Confirm -> confirmOption,
+				CanaryBranch -> canaryBranchOption,
 				Name -> name,
 				Email -> resolvedEmail,
 				ParentProtocol -> parentProtocolOption,
@@ -3498,7 +3519,7 @@ degasResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresolvedOptions:{
 		expandedCaps,expandedAdapters,expandedImpellerGuides,expandedImpellers,capResourcesNoNull,adapterResourcesNoNull,impellerResourcesNoNull,impellerGuideResourcesNoNull,impellerBoxResources,
 		rawDegasParameters,batchParameterPackets,degasParameters,instrumentProcessTimes,totalInstrumentTime,instrumentSetupTearDown,groupedBatches,finalSampleIndexes,finalContainerIndexes,batchContainerLengths,batchSampleLengths,
 		degasParameterTypes,batchedConnections,batchedConnectionLengths,
-		fumeHood,schlenkLineResource,freezePumpThawResources,dewarResources,heatBlockResources,freezePumpThawContainerResources,freezePumpThawContainerResourcesNoNull,septumResources,septumResourcesNoNull,liquidNitrogenResources,vacuumDegasResources,sonicatorResources,spargingResources, teflonTapeResource,
+		schlenkLineResource,freezePumpThawResources,dewarResources,heatBlockResources,freezePumpThawContainerResources,freezePumpThawContainerResourcesNoNull,septumResources,septumResourcesNoNull,liquidNitrogenResources,vacuumDegasResources,sonicatorResources,spargingResources, teflonTapeResource,
 		simulation,updatedSimulation,simulationRule,simulatedSamples,unitOperationPacket,rawResourceBlobs,resourcesWithoutName,
 		resourceToNameReplaceRules,resourcesOk,resourceTests,cache,cacheBall
 	},
@@ -3980,10 +4001,11 @@ degasResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresolvedOptions:{
 
 	(*Resources that all instruments will use*)
 	(*schlenk line*)
-	schlenkLineResource=Resource[Instrument->Object[Instrument, SchlenkLine, "Hydra of Lerna"],Time->totalTimeAllInstruments,Name -> ToString[Unique[]]];
-
-	(*Reserve fume hood*)
-	fumeHood=Link[Object[Instrument,FumeHood,"E6 Hood 1"]];
+	schlenkLineResource = Resource[
+		Instrument -> Model[Instrument, SchlenkLine, "id:R8e1Pjp8vOK4"], (* High Tech Schlenk Line  *)
+		Time -> totalTimeAllInstruments,
+		Name -> ToString[Unique[]]
+	];
 
 	instrumentResource=Map[
 		Resource[Instrument->#[[1]],Time->#[[2]]]&,
@@ -4013,7 +4035,7 @@ degasResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresolvedOptions:{
 
 			(*liquid nitrogen doser*)
 			Module[{doser},
-				doser=Object[Instrument,LiquidNitrogenDoser,"Lapras"];
+				doser=Model[Instrument,LiquidNitrogenDoser,"id:GmzlKjPWrV3E"] (* UltraDoser *);
 				Resource[
 					Instrument->doser,
 					Time->#[[2]]
@@ -4125,7 +4147,7 @@ degasResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresolvedOptions:{
 		nonHiddenDegasOptions=DeleteCases[Lookup[
 			Cases[OptionDefinition[ExperimentDegas], KeyValuePattern["Category"->Except["Hidden"]]],
 			"OptionSymbol"
-		],PreparatoryPrimitives|Name];
+		],PreparatoryUnitOperations|Name];
 
 		UploadUnitOperation[
 			Degas@@Join[
@@ -4167,7 +4189,6 @@ degasResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresolvedOptions:{
 
 			(*General instrument set up*)
 			Replace[Instrument]->instrumentResource,
-			Replace[FumeHood]->fumeHood,
 			Replace[SchlenkLine]->schlenkLineResource,
 
 			(*Specific instrument set up*)
@@ -4216,11 +4237,11 @@ degasResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresolvedOptions:{
 
 			(*Resources*)
 			Replace[Checkpoints]->{
-				{"Picking Resources",30 Minute,"Samples required to execute this protocol are gathered from storage.",Link[Resource[Operator->Model[User,Emerald,Operator,"Trainee"],Time->10 Minute]]},
-				{"Preparing Samples",45 Minute,"Preprocessing, such as incubation, mixing, centrifuging, and aliquoting, is performed.",Link[Resource[Operator->Model[User,Emerald,Operator,"Trainee"],Time->1 Minute]]},
-				{"Degassing Samples",totalTimeAllInstruments,"Samples are placed into the instrument and then degassing is performed.",Link[Resource[Operator->Model[User,Emerald,Operator,"Trainee"],Time->28 Hour]]},
-				{"Sample Post-Processing",1 Hour,"Any measuring of volume, weight, or sample imaging post experiment is performed.",Link[Resource[Operator->Model[User,Emerald,Operator,"Trainee"],Time->1*Hour]]},
-				{"Returning Materials",20 Minute,"Samples are returned to storage.",Link[Resource[Operator->Model[User,Emerald,Operator,"Trainee"],Time->10*Minute]]}
+				{"Picking Resources",30 Minute,"Samples required to execute this protocol are gathered from storage.",Link[Resource[Operator->$BaselineOperator,Time->10 Minute]]},
+				{"Preparing Samples",45 Minute,"Preprocessing, such as incubation, mixing, centrifuging, and aliquoting, is performed.",Link[Resource[Operator->$BaselineOperator,Time->1 Minute]]},
+				{"Degassing Samples",totalTimeAllInstruments,"Samples are placed into the instrument and then degassing is performed.",Link[Resource[Operator->$BaselineOperator,Time->28 Hour]]},
+				{"Sample Post-Processing",1 Hour,"Any measuring of volume, weight, or sample imaging post experiment is performed.",Link[Resource[Operator->$BaselineOperator,Time->1*Hour]]},
+				{"Returning Materials",20 Minute,"Samples are returned to storage.",Link[Resource[Operator->$BaselineOperator,Time->10*Minute]]}
 			},
 			Replace[BatchedUnitOperations]->(Link[#, Protocol]&)/@ToList[Lookup[unitOperationPacket, Object]]
 		|>

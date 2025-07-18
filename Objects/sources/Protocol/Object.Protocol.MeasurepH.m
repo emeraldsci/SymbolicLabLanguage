@@ -181,15 +181,6 @@ DefineObjectType[Object[Protocol, MeasurepH], {
 			Developer->True,
 			Category -> "General"
 		},
-		ProbeRecoupPrimitives->{
-			Format->Multiple,
-			Class->Expression,
-			Pattern:>SampleManipulationP,
-			Relation->None,
-			Description->"For each member of ProbeSamples, the instructions used to put the requested amount of ProbeSample back into the original container.",
-			Developer->True,
-			Category -> "General"
-		},
 		ProbeRecoupManipulations->{
 			Format->Multiple,
 			Class -> Link,
@@ -198,12 +189,12 @@ DefineObjectType[Object[Protocol, MeasurepH], {
 			Description->"For each member of ProbeSamples, the subprotocols used to put the loaded amount of ProbeSample back into the original container.",
 			Category -> "General"
 		},
-		SurfaceDropletSampleManipulations->{
-			Format->Multiple,
+		SurfaceDropletSampleManipulations -> {
+			Format -> Multiple,
 			Class -> Link,
 			Pattern :> _Link,
-			Relation -> Object[Protocol],
-			Description->"The subprotocols used to make droplets which can then be read by the surface probe.",
+			Relation -> Object[Protocol, SampleManipulation] | Object[Protocol, RoboticSamplePreparation] | Object[Protocol, ManualSamplePreparation] | Object[Notebook, Script],
+			Description -> "The subprotocols used to make droplets which can then be read by the surface probe.",
 			Category -> "General"
 		},
 		ProbeAcquisitionTimes -> {
@@ -288,11 +279,11 @@ DefineObjectType[Object[Protocol, MeasurepH], {
 			Pattern:>{
 				Sample->_Link,
 				NumberOfAcquisitions->_?NumericQ,
-				RecoupPrimitive->SampleManipulationP,
+				RecoupPrimitive->SampleManipulationP|SamplePreparationP,
 				RecoupSample->BooleanP,
 				SampleName -> _String,
 				DropletContainer->ObjectP[{Model[Container],Object[Container]}],
-				DropletPrimitive->SampleManipulationP
+				DropletPrimitive->SampleManipulationP|SamplePreparationP
 			},
 			Relation->{
 				Sample->Object[Sample]|Model[Sample],
@@ -340,6 +331,22 @@ DefineObjectType[Object[Protocol, MeasurepH], {
 			Class -> String,
 			Pattern :> FilePathP,
 			Description -> "The file path of the calibration file generated at the conclusion of the experiment for each batch of Probe samples.",
+			Category -> "General",
+			Developer -> True
+		},
+		InitialDataFilePath -> {
+			Format -> Multiple,
+			Class -> String,
+			Pattern :> FilePathP,
+			Description -> "For each probe instrument, the file path of the data file exported prior to the experiment. This file includes any existing data from the instrument and will be used to verify data export after measurements are taken in this protocol.",
+			Category -> "General",
+			Developer -> True
+		},
+		InitialCalibrationFilePath -> {
+			Format -> Multiple,
+			Class -> String,
+			Pattern :> FilePathP,
+			Description -> "For each probe instrument, the file path of the calibration file exported prior to the experiment. This file includes any existing calibration data from the instrument and will be used to verify calibration data export after calibration steps are performed in this protocol.",
 			Category -> "General",
 			Developer -> True
 		},

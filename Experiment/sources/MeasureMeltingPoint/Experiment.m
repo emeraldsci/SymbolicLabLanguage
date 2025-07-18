@@ -14,7 +14,7 @@ DefineOptions[ExperimentMeasureMeltingPoint,
 		{
 			OptionName -> MeasurementMethod,
 			Default -> Pharmacopeia,
-			Description -> "Determines the method used to adjust the measured temperatures obtained from the apparatus's temperature sensor. When set to \"Pharmacopeia\", the temperatures are adjusted using Pharmacopeia melting point standards; when set to \"Thermodynamic\", thermodynamic melting point standards are utilized for temperature adjustments. In \"Pharmacopeia\" mode, adjustments are based on experimental measurements following pharmacopeial guidelines. This method neglects the furnace temperature being slightly higher than the sample temperature during heating, leading to dependency on heating rate for comparability. In contrast, \"Thermodynamic\" mode provides a physically accurate melting point that represents the theoretical temperature at which a substance transitions from solid to liquid phase under standard conditions.",
+			Description -> "Determines the method to adjust the instrument's temperature sensor. When set to Pharmacopeia or Thermodynamic, the temperature sensor is calibrated using the corresponding standard. The Pharmacopeia method ignores that the furnace temperature exceeds the sample temperature during heating, making the measured melting temperature dependent on the ramp rate.",
 			AllowNull -> False,
 			Category -> "General",
 			Widget -> Widget[
@@ -30,12 +30,10 @@ DefineOptions[ExperimentMeasureMeltingPoint,
 				OptionName -> OrderOfOperations,
 				Default -> Automatic,
 				Description -> "Determines the order of grinding and desiccation steps. {Desiccate, Grind} indicates that, first, the sample is dried via a desiccator, then it is ground into a fine powder via a grinder, then loaded into a capillary tube.",
-				ResolutionDescription -> "Automatically set to {Desiccate, Grind} if both Desiccate and Grind are set to True. Set to {Desiccate} or {Grind} if only one is set to True.",
+				ResolutionDescription -> "Automatically set to {Desiccate, Grind} if both Desiccate and Grind are set to True.",
 				AllowNull -> True,
 				Category -> "General",
-				Widget -> Widget[
-					Type -> Enumeration,
-					Pattern :> Alternatives[{Desiccate, Grind}, {Grind, Desiccate}]]
+				Widget -> Adder[Widget[Type -> Enumeration, Pattern :> Alternatives[Desiccate , Grind]]]
 			},
 			{
 				OptionName -> ExpectedMeltingPoint,
@@ -51,39 +49,43 @@ DefineOptions[ExperimentMeasureMeltingPoint,
 					],
 					Widget[
 						Type -> Quantity,
-						Pattern :> RangeP[25 Celsius, 350 Celsius],
-						Units -> Celsius
+						Pattern :> RangeP[25 Celsius, 400 Celsius, 0.1 Celsius],
+						Units -> Alternatives[Celsius, Kelvin, Fahrenheit]
 					]
 				]
 			},
 			{
 				OptionName -> NumberOfReplicates,
 				Default -> Automatic,
-				Description -> "Determines the number of melting point capillaries to be packed with the same sample and read. If the sample is prepacked in a melting point capillary tube, NumberOfReplicates must be set to Null. Otherwise, Null, 2, or 3, respectively, indicate that 1, 2, or 3 capillary tubes are to be packed by the same sample.",
+				Description -> "Determines the number of melting point capillaries to be packed with the same sample and read. If the sample is prepacked in a melting point capillary tube, NumberOfReplicates must be set to Null. Null indicates that 1 capillary tube is to be packed by the sample.",
 				ResolutionDescription -> "Automatically set to 3 if the sample is not prepacked in a melting point capillary tube.",
 				AllowNull -> True,
 				Category -> "General",
 				Widget -> Widget[
 					Type -> Number,
-					Pattern :> RangeP[2, 3, 1]
+					Pattern :> RangeP[2, 6, 1]
 				]
 			},
 			{
 				OptionName -> Amount,
 				Default -> Automatic,
-				Description -> "Determines how much sample to use in this experiment if Grind or Desiccate is True. If Grind is True, Amount determines how much sample to grind into a fine powder via a grinder before packing into a melting point capillary and measuring the melting point. If Desiccate is True, Amount determines how much sample to dry via a desiccator before packing into a melting point capillary and measuring the melting point. If both Grind and Desiccate are True, Amount determines how much sample to grind and desiccate, in the order determined by OrderOfOperations, before packing into a melting point capillary and measuring the melting point. If both Grind and Desiccate are false, the determined Amount is ignored in calculating other options. If Amount is set to Null, the sample is directly transferred to a melting point capillary from its original container without grinding or desiccation.",
+				Description -> "Determines the sample quantity for desiccation and/or grinding. If either Desiccate or Grind is True, it specifies the amount of sample to be desiccated and/or ground before packing into a melting point capillary. If both are False, the amount is ignored. If set to Null, the sample is packed directly from its container without grinding or desiccation.",
 				ResolutionDescription -> "Automatically set to 1 Gram or All whichever is less if Desiccate or Grind is True.",
 				AllowNull -> True,
 				Category -> "General",
 				Widget -> Alternatives[
-					"Mass" -> Widget[Type -> Quantity, Pattern :> RangeP[0 Gram, $MaxTransferMass], Units -> Gram],
+					"Mass" -> Widget[
+						Type -> Quantity,
+						Pattern :> RangeP[1 Milligram, $MaxTransferMass],
+						Units -> {1, {Gram, {Gram, Milligram}}}
+					],
 					"All" -> Widget[Type -> Enumeration, Pattern :> Alternatives[All]]
 				]
 			},
 			{
 				OptionName -> SampleLabel,
 				Default -> Automatic,
-				Description -> "A user defined word or phrase used to identify the input samples, for use in downstream unit operations.",
+				Description -> "A user defined word or phrase used to identify the input samples, for use in downstream unit operations. Null indicates the sample is not transferred to another container and is desiccated in its primary container.",
 				AllowNull -> True,
 				Category -> "General",
 				Widget -> Widget[
@@ -119,25 +121,12 @@ DefineOptions[ExperimentMeasureMeltingPoint,
 				],
 				UnitOperation -> True
 			},
-			{
-				OptionName -> PreparedSampleContainerLabel,
-				Default -> Automatic,
-				Description -> "A user defined word or phrase used to identify the The container that the PreparedSample is transferred into after the experiment if RecoupSample is True.",
-				AllowNull -> True,
-				Category -> "General",
-				Widget -> Widget[
-					Type -> String,
-					Pattern :> _String,
-					Size -> Line
-				],
-				UnitOperation -> True
-			},
 			(*Grinding*)
 			{
 				OptionName -> Grind,
 				Default -> Automatic,
 				Description -> "Determines if the sample is ground to a fine powder (to reduce the size of powder particles) via a lab mill (grinder) before measuring the melting point. Smaller powder particles enhance heat transfer and reproducibility of the measurements.",
-				ResolutionDescription -> "Automatically set to False if the sample is prepacked in a melting point capillary tube. Otherwise set to True.",
+				ResolutionDescription -> "Automatically set to False if the sample is prepacked in a melting point capillary tube or Amount is set Null. Otherwise set to True.",
 				AllowNull -> False,
 				Category -> "Grinding",
 				Widget -> Widget[
@@ -185,8 +174,8 @@ DefineOptions[ExperimentMeasureMeltingPoint,
 				Category -> "Grinding",
 				Widget -> Widget[
 					Type -> Quantity,
-					Pattern :> GreaterP[0 Millimeter],
-					Units -> Millimeter
+					Pattern :> RangeP[1 Micrometer, 80 Millimeter, 1 Micrometer],
+					Units -> {1, {Millimeter, {Millimeter, Micrometer}}}
 				]
 			},
 			{
@@ -198,8 +187,15 @@ DefineOptions[ExperimentMeasureMeltingPoint,
 				Category -> "Grinding",
 				Widget -> Widget[
 					Type -> Quantity,
-					Pattern :> GreaterP[0 Gram / Milliliter],
-					Units -> CompoundUnit[{1, {Gram, {Milligram, Gram, Kilogram}}}, {-1, {Milliliter, {Microliter, Milliliter, Liter}}}]
+					Pattern :> RangeP[
+						1 Milligram/Milliliter,
+						25 Gram/Milliliter,
+						1 Milligram/Milliliter
+					],
+					Units -> CompoundUnit[
+						{1, {Gram, {Milligram, Gram, Kilogram}}},
+						{-1, {Milliliter, {Microliter, Milliliter, Liter}}}
+					]
 				]
 			},
 			{
@@ -212,7 +208,12 @@ DefineOptions[ExperimentMeasureMeltingPoint,
 				Category -> "Grinding",
 				Widget -> Widget[
 					Type -> Object,
-					Pattern :> ObjectP[{Model[Container], Object[Container]}],
+					Pattern :> ObjectP[{
+						Model[Container, Vessel],
+						Object[Container, Vessel],
+						Model[Container, GrindingContainer],
+						Object[Container, GrindingContainer]
+					}],
 					OpenPaths -> {
 						{
 							Object[Catalog, "Root"],
@@ -256,7 +257,7 @@ DefineOptions[ExperimentMeasureMeltingPoint,
 				Category -> "Grinding",
 				Widget -> Widget[
 					Type -> Number,
-					Pattern :> GreaterEqualP[1, 1]
+					Pattern :> RangeP[1, 20, 1]
 				]
 			},
 			{
@@ -267,14 +268,14 @@ DefineOptions[ExperimentMeasureMeltingPoint,
 				AllowNull -> True,
 				Category -> "Grinding",
 				Widget -> Alternatives[
-					"RPM" -> Widget[
+					Widget[
 						Type -> Quantity,
-						Pattern :> RangeP[20 RPM, 25000 RPM],
+						Pattern :> RangeP[1 RPM, 25000 RPM],
 						Units -> RPM
 					],
-					"Hertz" -> Widget[
+					Widget[
 						Type -> Quantity,
-						Pattern :> RangeP[0.3 Hertz, 420 Hertz],
+						Pattern :> RangeP[0.01 Hertz, 420 Hertz],
 						Units -> Hertz
 					]
 				]
@@ -285,10 +286,10 @@ DefineOptions[ExperimentMeasureMeltingPoint,
 				Description -> "Determines the duration for which the solid substance is ground into a fine powder in the grinder.",
 				ResolutionDescription -> "Automatically set to a default value based on the selected Grinder according to table x.x if Grind is set to True.",
 				AllowNull -> True,
-				Category -> "General",
+				Category -> "Grinding",
 				Widget -> Widget[
 					Type -> Quantity,
-					Pattern :> RangeP[0 Minute, $MaxExperimentTime],
+					Pattern :> RangeP[1 Second, $MaxExperimentTime, 1 Second],
 					Units -> {1, {Second, {Second, Minute, Hour}}}
 				]
 			},
@@ -313,24 +314,38 @@ DefineOptions[ExperimentMeasureMeltingPoint,
 				Category -> "Grinding",
 				Widget -> Widget[
 					Type -> Quantity,
-					Pattern :> RangeP[0 Minute, $MaxExperimentTime],
+					Pattern :> RangeP[1 Second, $MaxExperimentTime, 1 Second],
 					Units -> {1, {Second, {Second, Minute, Hour}}}
 				]
 			},
 			{
 				OptionName -> GrindingProfile,
 				Default -> Automatic,
-				Description -> "A paired list of time and activities of the grinding process in the form of Activity (Grinding or Cooling), Duration, and GrindingRate.",
+				Description -> "A set of steps of the grinding process, with each step provided as {grinding rate, grinding time} or as {wait time} indicating a cooling period to prevent the sample from overheating.",
 				ResolutionDescription -> "Automatically set to reflect the selections of GrindingRate, GrindingTime, NumberOfGrindingSteps, and CoolingTime if Grind is set to True.",
 				AllowNull -> True,
 				Category -> "Grinding",
-				Widget -> Adder[
-					{
-						"Activity" -> Widget[Type -> Enumeration, Pattern :> Alternatives[Grinding , Cooling]],
-						"Rate" -> Widget[Type -> Quantity, Pattern :> RangeP[0 RPM, 25000 RPM], Units -> RPM],
-						"Time" -> Widget[Type -> Quantity, Pattern :> RangeP[0 Minute, $MaxExperimentTime], Units -> {1, {Second, {Second, Minute, Hour}}}]
+				Widget -> Adder[Alternatives[
+					"Grinding" -> {
+						"Rate" -> Widget[
+							Type -> Quantity,
+							Pattern :> Alternatives[RangeP[0 RPM, 25000 RPM], RangeP[0 Hertz, 420 Hertz]],
+							Units -> Alternatives[RPM, Hertz]
+						],
+						"Time" -> Widget[
+							Type -> Quantity,
+							Pattern :> RangeP[1 Second, $MaxExperimentTime, 1 Second],
+							Units -> {1, {Second, {Second, Minute, Hour}}}
+						]
+					},
+					"Cooling" -> {
+						"Time" -> Widget[
+							Type -> Quantity,
+							Pattern :> RangeP[1 Second, $MaxExperimentTime, 1 Second],
+							Units -> {1, {Second, {Second, Minute, Hour}}}
+						]
 					}
-				]
+				]]
 			},
 
 			(* Desiccation *)
@@ -338,7 +353,7 @@ DefineOptions[ExperimentMeasureMeltingPoint,
 				OptionName -> Desiccate,
 				Default -> Automatic,
 				Description -> "Determines if the sample is dried (removing water or solvent molecules) via a desiccator or an oven before loading into a capillary and measuring the melting point. Water or solvent molecules can act as an impurity and may affect the observed melting range.",
-				ResolutionDescription -> "Automatically set to False if the StorageCondition of the input sample is set to a desiccator or the sample is prepacked into a melting point capillary.",
+				ResolutionDescription -> "Automatically set to False the sample is prepacked into a melting point capillary or Amount is set Null.",
 				AllowNull -> False,
 				Category -> "Desiccation",
 				Widget -> Widget[
@@ -348,13 +363,14 @@ DefineOptions[ExperimentMeasureMeltingPoint,
 			},
 			{
 				OptionName -> SampleContainer,
-				Default -> Null,
-				Description -> "The container that the sample Amount is transferred into prior to desiccating in a bell jar if Desiccate is set to True. The container's lid is off during desiccation.",
+				Default -> Automatic,
+				Description -> "The container that the sample Amount is transferred into prior to desiccating in a bell jar if Desiccate is set to True. The container's lid is off during desiccation. Null indicates the sample is desiccated in its primary container.",
+				ResolutionDescription -> "Automatically set to Null if Desiccate is False or Amount is set to All; otherwise, it is calculated by the PreferredContainer function. If Desiccate is True, Null indicates that the sample is desiccated in its primary container without being transferred to another.",
 				AllowNull -> True,
 				Category -> "Desiccation",
 				Widget -> Widget[
 					Type -> Object,
-					Pattern :> ObjectP[{Model[Container], Object[Container]}],
+					Pattern :> ObjectP[{Model[Container, Vessel], Object[Container, Vessel]}],
 					OpenPaths -> {
 						{
 							Object[Catalog, "Root"],
@@ -382,8 +398,8 @@ DefineOptions[ExperimentMeasureMeltingPoint,
 			Default -> Automatic,
 			AllowNull -> True,
 			Description -> "The hygroscopic chemical that is used in the desiccator to dry the exposed sample by absorbing water molecules from the sample before grinding and/or packing the sample into a melting point capillary tube prior to the measurement.",
-			ResolutionDescription -> "Automatically set to Model[Sample, \"Indicating Drierite\"] if Desiccate is set to True".
-				Category -> "Desiccation",
+			ResolutionDescription -> "Automatically set to Model[Sample, \"Indicating Drierite\"] if Desiccate is set to True",
+			Category -> "Desiccation",
 			Widget -> Widget[
 				Type -> Object,
 				Pattern :> ObjectP[{Model[Item, Consumable], Object[Item, Consumable], Model[Sample], Object[Sample]}],
@@ -397,28 +413,91 @@ DefineOptions[ExperimentMeasureMeltingPoint,
 				}
 			]
 		},
-		{  OptionName -> DesiccantPhase,
+		{
+			OptionName -> DesiccantPhase,
 			Default -> Automatic,
 			AllowNull -> True,
 			Description -> "The physical state of the desiccant in the desiccator which dries the exposed sample by absorbing water molecules from the sample.",
 			ResolutionDescription -> "Automatically set to the physical state of the selected desiccant if Desiccate is set to True.",
-			Category -> "General",
+			Category -> "Desiccation",
 			Widget -> Widget[
 				Type -> Enumeration,
 				Pattern :> Alternatives[Solid, Liquid]
 			]
 		},
-
-		{  OptionName -> DesiccantAmount,
+		{
+			OptionName -> CheckDesiccant,
+			Default -> Automatic,
+			AllowNull -> True,
+			Description -> "Indicates if the color of the desiccant is verified and is thrown out before the experiment begins if the color indicates it is expired.",
+			ResolutionDescription -> "Automatically set to True if Desiccant model is Model[Sample, \"Indicating Drierite\"].",
+			Category -> "Desiccation",
+			Widget -> Widget[
+				Type -> Enumeration,
+				Pattern :> BooleanP
+			]
+		},
+		{
+			OptionName -> DesiccantAmount,
 			Default -> Automatic,
 			AllowNull -> True,
 			Description -> "The mass of a solid or the volume of a liquid hygroscopic chemical that is used in the desiccator to dry the exposed sample by absorbing water molecules from the sample before grinding and/or packing the sample into a melting point capillary tube prior to the measurement.",
 			ResolutionDescription -> "Automatically set to 100 Gram or Milliliter if Desiccate is set to True and DesiccantPhase is Solid or Liquid.",
 			Category -> "Desiccation",
+			Widget -> Alternatives[
+				"Mass" -> Widget[
+					Type -> Quantity,
+					Pattern :> RangeP[1 Gram, $MaxTransferMass, 1 Gram],
+					Units -> {1, {Gram, {Gram, Kilogram}}}
+				],
+				"Volume" -> Widget[
+					Type -> Quantity,
+					Pattern :> RangeP[1 Milliliter, $MaxTransferVolume, 1 Milliliter],
+					Units -> {1, {Milliliter, {Milliliter, Liter}}}
+				]
+			]
+		},
+		{
+			OptionName -> DesiccantStorageCondition,
+			Default -> Automatic,
+			Description -> "The storage conditions of the desiccant after the protocol is completed.",
+			ResolutionDescription -> "Automatically set to Disposal if Desiccant is not Null.",
+			AllowNull -> True,
+			Category -> "Storage Information",
+			Widget -> Alternatives[
+				Widget[
+					Type -> Enumeration,
+					Pattern :> SampleStorageTypeP | Desiccated | VacuumDesiccated | RefrigeratorDesiccated | Disposal
+				],
+				Widget[
+					Type -> Object,
+					Pattern :> ObjectP[Model[StorageCondition]],
+					OpenPaths -> {
+						{
+							Object[Catalog, "Root"],
+							"Storage Conditions"
+						}
+					}
+				]
+			]
+		},
+		{
+			OptionName -> DesiccantStorageContainer,
+			Default -> Automatic,
+			Description -> "The desired container that the desiccant is transferred into after desiccation. If Not specified, it is determined by PreferredContainer function.",
+			ResolutionDescription -> "Automatically set to Null if DesiccantStorageCondition is Disposal, otherwise, calculated by PreferredContainer function.",
+			AllowNull -> True,
+			Category -> "Storage Information",
 			Widget -> Widget[
-				Type -> Quantity,
-				Pattern :> Alternatives[RangeP[0 Gram, $MaxTransferMass], RangeP[0 Milliliter, $MaxTransferVolume]],
-				Units -> Alternatives[Gram, Milliliter]
+				Type -> Object,
+				Pattern :> ObjectP[{Model[Container, Vessel], Object[Container, Vessel]}],
+				OpenPaths -> {
+					{
+						Object[Catalog, "Root"],
+						"Containers",
+						"Tubes & Vials"
+					}
+				}
 			]
 		},
 		{
@@ -435,7 +514,6 @@ DefineOptions[ExperimentMeasureMeltingPoint,
 					{
 						Object[Catalog, "Root"],
 						"Instruments",
-						"Storage Devices",
 						"Desiccators",
 						"Open Sample Desiccators"
 					}
@@ -451,7 +529,7 @@ DefineOptions[ExperimentMeasureMeltingPoint,
 			Category -> "Desiccation",
 			Widget -> Widget[
 				Type -> Quantity,
-				Pattern :> RangeP[0 Hour, $MaxExperimentTime],
+				Pattern :> RangeP[1 Minute, $MaxExperimentTime, 1 Minute],
 				Units -> {1, {Hour, {Minute, Hour, Day}}}
 			]
 		},
@@ -478,8 +556,9 @@ DefineOptions[ExperimentMeasureMeltingPoint,
 		(* The Experiment: Measuring Melting Point *)
 		{
 			OptionName -> Instrument,
-			Default -> Model[Instrument, MeltingPointApparatus, "Melting Point System MP80"],
+			Default -> Automatic,
 			Description -> "The instrument that is used to measure the melting point of solid substances by applying an increasing temperature gradient to the samples that are packed into capillary tubes and monitoring phase transitions over the course of time.",
+			ResolutionDescription -> "Automatically set to an available melting point apparatus depending on the EndTemperature and NumberOfReplicates.",
 			AllowNull -> False,
 			Category -> "Measurement",
 			Widget -> Widget[
@@ -506,8 +585,8 @@ DefineOptions[ExperimentMeasureMeltingPoint,
 				Category -> "Measurement",
 				Widget -> Widget[
 					Type -> Quantity,
-					Pattern :> RangeP[25 Celsius, 350 Celsius],
-					Units -> {1, {Celsius, {Celsius, Fahrenheit, Kelvin}}}
+					Pattern :> RangeP[25 Celsius, 400 Celsius, 0.1 Celsius],
+					Units -> Alternatives[Celsius, Kelvin, Fahrenheit]
 				]
 			},
 			{
@@ -518,7 +597,7 @@ DefineOptions[ExperimentMeasureMeltingPoint,
 				Category -> "Measurement",
 				Widget -> Widget[
 					Type -> Quantity,
-					Pattern :> RangeP[0 Second, 120 Second],
+					Pattern :> RangeP[0 Second, 120 Second, 1 Second],
 					Units -> {1, {Second, {Second, Minute}}}
 				]
 			},
@@ -527,12 +606,12 @@ DefineOptions[ExperimentMeasureMeltingPoint,
 				Default -> Automatic,
 				Description -> "The final temperature to conclude the temperature sweep of the chamber that holds the capillaries. Typically set to 5 Celsius above the ExpectedMeltingPoint if known.",
 				ResolutionDescription -> "Automatically set to 5 Celsius above the ExpectedMeltingPoint. If ExpectedMeltingPoint is set to Unknown, the measurement automatically stops after the sample melts.",
-				AllowNull -> True,
+				AllowNull -> False,
 				Category -> "Measurement",
 				Widget -> Widget[
 					Type -> Quantity,
-					Pattern :> RangeP[25 Celsius, 350 Celsius],
-					Units -> {1, {Celsius, {Celsius, Fahrenheit, Kelvin}}}
+					Pattern :> RangeP[25 Celsius, 400 Celsius, 0.1 Celsius],
+					Units -> Alternatives[Celsius, Kelvin, Fahrenheit]
 				]
 			},
 			{
@@ -544,8 +623,8 @@ DefineOptions[ExperimentMeasureMeltingPoint,
 				Category -> "Measurement",
 				Widget -> Widget[
 					Type -> Quantity,
-					Pattern :> RangeP[0.1 Celsius / Minute, 20 Celsius / Minute],
-					Units -> CompoundUnit[{1, {Celsius, {Celsius, Fahrenheit, Kelvin}}}, {-1, {Minute, {Second, Minute, Hour}}}]
+					Pattern :> RangeP[0.1 Celsius/Minute, 20 Celsius/Minute, 0.1 Celsius/Minute],
+					Units -> CompoundUnit[{1, {Celsius, {Celsius, Kelvin, Fahrenheit}}}, {-1, {Minute, {Second, Minute}}}]
 				]
 			},
 			{
@@ -557,40 +636,16 @@ DefineOptions[ExperimentMeasureMeltingPoint,
 				Category -> "Measurement",
 				Widget -> Widget[
 					Type -> Quantity,
-					Pattern :> RangeP[0 Minute, 3250 Minute],
+					Pattern :> RangeP[0 Minute, 3750 Minute, 1 Second],
 					Units :> {1, {Minute, {Second, Minute, Hour}}}
 				]
 			},
 
 			(*Storage Information*)
 			{
-				OptionName -> RecoupSample,
-				Default -> Automatic,
-				Description -> "Determines if the PreparedSample remaining after grinding and/or desiccating is retained or discarded after the needed amount of the sample is used for packing into the melting point capillary. If set to True, the remaining sample is retained, otherwise, it is discarded.",
-				ResolutionDescription -> "Automatically set to False if Grind or Desiccate is True.",
-				AllowNull -> True,
-				Category -> "Storage Information",
-				Widget -> Widget[
-					Type -> Enumeration,
-					Pattern :> BooleanP
-				]
-			},
-			{
-				OptionName -> PreparedSampleContainer,
-				Default -> Automatic,
-				Description -> "The container that the PreparedSample remaining after grinding and/or desiccating is transferred into for storage after the completion of experiment if RecoupSample is True.",
-				ResolutionDescription -> "Automatically set to the input sample's container if RecoupSample is True.",
-				AllowNull -> True,
-				Category -> "Storage Information",
-				Widget -> Widget[
-					Type -> Object,
-					Pattern :> ObjectP[{Model[Container], Object[Container]}]
-				]
-			},
-			{
 				OptionName -> PreparedSampleStorageCondition,
 				Default -> Null,
-				Description -> "The non-default conditions under which the PreparedSample remaining after grinding and/or desiccating is stored after the protocol is completed. If left unset, the PreparedSample will be stored according to the corresponding input sample's StorageCondition.",
+				Description -> "The non-default conditions under which the prepared sample remaining after grinding and/or desiccating is stored after the protocol is completed. If left unset, the prepared sample will be stored according to its corresponding input sample's StorageCondition or its model's DefaultStorageCondition.",
 				AllowNull -> True,
 				Category -> "Storage Information",
 				(* Null indicates the storage conditions is inherited from the model *)
@@ -636,74 +691,51 @@ DefineOptions[ExperimentMeasureMeltingPoint,
 			}
 		],
 		PreparatoryUnitOperationsOption,
-		Experiment`Private`PreparatoryPrimitivesOption,
 		ProtocolOptions,
+		ModifyOptions[
+			ModelInputOptions,
+			PreparedModelAmount,
+			{
+				ResolutionDescription -> "Automatically set to 1 Gram."
+			}
+		],
+		ModifyOptions[
+			ModelInputOptions,
+			PreparedModelContainer,
+			{
+				ResolutionDescription -> "If PreparedModelAmount is set to All and the input model has a product associated with both Amount and DefaultContainerModel populated, automatically set to the DefaultContainerModel value in the product. Otherwise, automatically set to Model[Container, Vessel, \"2 mL conical tube (no skirt) with cap and sealing ring\"]."
+			}
+		],
 		SimulationOption,
-		PostProcessingOptions
+		NonBiologyPostProcessingOptions
 	}
 ];
 
 (* ::Subsection::Closed:: *)
 (* ExperimentMeasureMeltingPoint Errors and Warnings *)
-Error::NonSolidSample = "The samples `1` do not have a Solid state and cannot be processed. Please remove these samples from the function input.";
-Warning::ExtraneousOrderOfOperations = "OrderOfOperations is to be informed only if both Desiccate and Grind are set to True. Desiccate or Grind are set to False for samples `1`, however, OrderOfOperations is populated extraneously. Therefore, OrderOfOperations was ignored in calculating options for those samples.";
-Error::UndefinedOrderOfOperations = "Sample(s) `1` are determined to be desiccated and ground (Desiccate and Grind both set to True), however, OrderOfOperations is set to Null. Please specify OrderOfOperations.";
-Error::InvalidDesiccateOptions = "Sample(s) `1` are prepacked in melting point capillaries and cannot be desiccated, however, Desiccate is set to True for these samples. Please set Desiccate to False for Sample(s) `1`.";
-Error::InvalidSampleContainerOptions = "Sample(s) `1` are prepacked in melting point capillaries and cannot be desiccated, however, SampleContainer is informed for these samples. Please set SampleContainer to Null or let it be calculated automatically for Sample(s) `1`.";
-Error::SampleContainerMismatchOptions = "Desiccate is set to False for Sample(s) `1`, however, SampleContainer is informed for these samples. Please set SampleContainer to Null or let it be calculated automatically for Sample(s) `1`.";
-Error::InvalidDesiccationMethodOptions = "All input samples are prepacked in melting point capillary tubes, therefore, cannot be desiccated. However, DesiccationMethod is not Null. Please set DesiccationMethod to Null or let it be calculated automatically.";
-Error::DesiccationMethodMismatchOptions = "Desiccate is set to False for all samples, however, DesiccationMethod is not Null. Please set DesiccationMethod to Null or let it be calculated automatically.";
-Error::InvalidDesiccantOptions = "All input samples are prepacked in melting point capillary tubes, therefore, cannot be desiccated. However, Desiccant is not Null. Please set Desiccant to Null or let it be calculated automatically.";
-Error::DesiccantMismatchOptions = "Desiccate is set to False for all samples, however, Desiccant is not Null. Please set Desiccant to Null or let it be calculated automatically.";
-Error::InvalidDesiccantPhaseOptions = "All input samples are prepacked in melting point capillary tubes, therefore, cannot be desiccated. However, DesiccantPhase is not Null. Please set DesiccantPhase to Null or let it be calculated automatically.";
-Error::DesiccantPhaseMismatchOptions = "Desiccate is set to False for all samples, however, DesiccantPhase is not Null. Please set DesiccantPhase to Null or let it be calculated automatically.";
-Error::InvalidDesiccantAmountOptions = "All input samples are prepacked in melting point capillary tubes, therefore, cannot be desiccated. However, DesiccantAmount is not Null. Please set DesiccantAmount to Null or let it be calculated automatically.";
-Error::DesiccantAmountMismatchOptions = "Desiccate is set to False for all samples, however, DesiccantAmount is not Null. Please set DesiccantAmount to Null or let it be calculated automatically.";
-Error::InvalidDesiccatorOptions = "All input samples are prepacked in melting point capillary tubes, therefore, cannot be desiccated. However, Desiccator is not Null. Please set Desiccator to Null or let it be calculated automatically.";
-Error::DesiccatorMismatchOptions = "Desiccate is set to False for all samples, however, Desiccator is not Null. Please set Desiccator to Null or let it be calculated automatically.";
-Error::InvalidDesiccationTimeOptions = "All input samples are prepacked in melting point capillary tubes, therefore, cannot be desiccated. However, DesiccationTime is not Null. Please set DesiccationTime to Null or let it be calculated automatically.";
-Error::DesiccationTimeMismatchOptions = "Desiccate is set to False for all samples, however, DesiccationTime is not Null. Please set DesiccationTime to Null or let it be calculated automatically.";
-Error::InvalidGrindOptions = "Sample(s) `1` are prepacked in melting point capillaries and cannot be ground, however, Grind is set to True for these samples. Please set Grind to False for Sample(s) `1`.";
-Error::InvalidGrinderTypeOptions = "Sample(s) `1` are prepacked in melting point capillaries and cannot be ground, however, GrinderType is informed for these samples. Please set GrinderType to Null or let it be calculated automatically for Sample(s) `1`.";
-Error::GrinderTypeMismatchOptions = "Grind is set to False for Sample(s) `1`, however, a Grind-related option (GrinderType) is informed for these samples. Please set GrinderType to Null or let it be calculated automatically for Sample(s) `1`.";
-Error::InvalidGrinderOptions = "Sample(s) `1` are prepacked in melting point capillaries and cannot be ground, however, Grinder is informed for these samples. Please set Grinder to Null or let it be calculated automatically for Sample(s) `1`.";
-Error::GrinderMismatchOptions = "Grind is set to False for Sample(s) `1`, however, a Grind-related option (Grinder) is informed for these samples. Please set Grinder to Null or let it be calculated automatically for Sample(s) `1`.";
-Error::InvalidFinenessOptions = "Sample(s) `1` are prepacked in melting point capillaries and cannot be ground, however, a Grind-related option (Fineness) is informed for these samples. Please set Fineness to Null or let it be calculated automatically for Sample(s) `1`.";
-Error::FinenessMismatchOptions = "Grind is set to False for Sample(s) `1`, however, Fineness is informed for these samples. Please set Fineness to Null or let it be calculated automatically for Sample(s) `1`.";
-Error::InvalidBulkDensityOptions = "Sample(s) `1` are prepacked in melting point capillaries and cannot be ground, however, BulkDensity is informed for these samples. Please set BulkDensity to Null or let it be calculated automatically for Sample(s) `1`.";
-Error::BulkDensityMismatchOptions = "Grind is set to False for Sample(s) `1`, however, a Grind-related option (BulkDensity) is informed for these samples. Please set BulkDensity to Null or let it be calculated automatically for Sample(s) `1`.";
-Error::InvalidGrindingContainerOptions = "Sample(s) `1` are prepacked in melting point capillaries and cannot be ground, however, GrindingContainer is informed for these samples. Please set GrindingContainer to Null or let it be calculated automatically for Sample(s) `1`.";
-Error::GrindingContainerMismatchOptions = "Grind is set to False for Sample(s) `1`, however, GrindingContainer is informed for these samples. Please set GrindingContainer to Null or let it be calculated automatically for Sample(s) `1`.";
-Error::InvalidGrindingBeadOptions = "Sample(s) `1` are prepacked in melting point capillaries and cannot be ground, however, GrindingBead is informed for these samples. Please set GrindingBead to Null or let it be calculated automatically for Sample(s) `1`.";
-Error::GrindingBeadMismatchOptions = "Grind is set to False for Sample(s) `1`, however, a Grind-related option (GrindingBead) is informed for these samples. Please set GrindingBead to Null or let it be calculated automatically for Sample(s) `1`.";
-Error::InvalidNumberOfGrindingBeadsOptions = "Sample(s) `1` are prepacked in melting point capillaries and cannot be ground, however, NumberOfGrindingBeads is informed for these samples. Please set NumberOfGrindingBeads to Null or let it be calculated automatically for Sample(s) `1`.";
-Error::NumberOfGrindingBeadsMismatchOptions = "Grind is set to False for Sample(s) `1`, however, NumberOfGrindingBeads is informed for these samples. Please set NumberOfGrindingBeads to Null or let it be calculated automatically for Sample(s) `1`.";
-Error::InvalidGrindingRateOptions = "Sample(s) `1` are prepacked in melting point capillaries and cannot be ground, however, GrindingRate is informed for these samples. Please set GrindingRate to Null or let it be calculated automatically for Sample(s) `1`.";
-Error::GrindingRateMismatchOptions = "Grind is set to False for Sample(s) `1`, however, GrindingRate is informed for these samples. Please set GrindingRate to Null or let it be calculated automatically for Sample(s) `1`.";
-Error::InvalidGrindingTimeOptions = "Sample(s) `1` are prepacked in melting point capillaries and cannot be ground, however, GrindingTime is informed for these samples. Please set GrindingTime to Null or let it be calculated automatically for Sample(s) `1`.";
-Error::GrindingTimeMismatchOptions = "Grind is set to False for Sample(s) `1`, however, GrindingTime is informed for these samples. Please set GrindingTime to Null or let it be calculated automatically for Sample(s) `1`.";
-Error::InvalidNumberOfGrindingStepsOptions = "Sample(s) `1` are prepacked in melting point capillaries and cannot be ground, however, NumberOfGrindingSteps is informed for these samples. Please set NumberOfGrindingSteps to Null or let it be calculated automatically for Sample(s) `1`.";
-Error::NumberOfGrindingStepsMismatchOptions = "Grind is set to False for Sample(s) `1`, however, NumberOfGrindingSteps is informed for these samples. Please set NumberOfGrindingSteps to Null or let it be calculated automatically for Sample(s) `1`.";
-Error::InvalidCoolingTimeOptions = "Sample(s) `1` are prepacked in melting point capillaries and cannot be ground, however, CoolingTime is informed for these samples. Please set CoolingTime to Null or let it be calculated automatically for Sample(s) `1`.";
-Error::CoolingTimeMismatchOptions = "Grind is set to False for Sample(s) `1`, however, a Grind-related option (CoolingTime) is informed for these samples. Please set CoolingTime to Null or let it be calculated automatically for Sample(s) `1`.";
-Error::InvalidGrindingProfileOptions = "Sample(s) `1` are prepacked in melting point capillaries and cannot be ground, however, GrindingProfile is informed for these samples. Please set GrindingProfile to Null or let it be calculated automatically for Sample(s) `1`.";
-Error::GrindingProfileMismatchOptions = "Grind is set to False for Sample(s) `1`, however, GrindingProfile is informed for these samples. Please set GrindingProfile to Null or let it be calculated automatically for Sample(s) `1`.";
-Error::InvalidExpectedMeltingPoint = "ExpectedMeltingPoint for samples `1` is set to a value that is out of the instrument's temperature range. Please make sure that the ExpectedMeltingPoint is set to a value between 25.1 and 349.9 Celsius.";
-Error::InvalidStartEndTemperatures = "StartTemperature is greater than EndTemperature for the following samples: `1`. Please make sure that StartTemperature is set to a value that is smaller than EndTemperature.";
+Error::NonSolidSample = "The samples `1` do not have a Solid state and cannot be processed. Remove these samples from the function input.";
+Error::UnusedOptions = "`1`";
+Error::RequiredPreparationOptions = "`1`";
+Error::RequiredDesiccateOptions = "`1`";
+Error::RequiredGrindOptions = "`1`";
+Error::OrderOfOperationsMismatch = "The specified OrderOfOperations, `1`, does not match Desiccate and Grind options for Sample(s) `2`. OrderOfOperation must be set to {Desiccate, Grind} or {Grind, Desiccate} if both Desiccate and Grind are True; otherwise, it should be Null. Alternatively, leave it unspecified to calculate automatically.";
+Error::InvalidExpectedMeltingPoint = "ExpectedMeltingPoint for samples `1` is set to a value that is out of the instrument's temperature range. Set the ExpectedMeltingPoint option to a value between 25.1 and `2`.";
+Error::InvalidStartEndTemperatures = "EndTemperature must be greater than StartTemperature for the following samples: `1`.";
 Warning::MismatchedRampRateAndTime = "TemperatureRampRate and RampTime are set to mismatching values for the following samples: `1`. TemperatureRampRate is adjusted to a value that matches RampTime.";
-Error::InvalidPreparedSampleContainer = "RecoupSample is False or Null in samples `1`, however, PreparedSampleContainer is informed. Please set PreparedSampleContainer to Null or set RecoupSample to True.";
-Error::InvalidPreparedSampleStorageCondition = "RecoupSample is False or Null in samples `1`, however, PreparedSampleStorageCondition is informed. Please set PreparedSampleStorageCondition to Null or set RecoupSample to True.";
 Error::InvalidNumberOfReplicates = "Sample(s) `1` are prepacked in melting point capillary tubes. Therefore, NumberOfReplicates must be Null for these samples. NumberOfReplicates determines how many melting point capillaries are packed with the same sample. If the sample is prepacked in a melting point capillary, NumberOfReplicates must be set to Null. If the sample is not prepacked, NumberOfReplicates of Null, 2, or 3, respectively, indicate that 1, 2, or 3 capillaries are to be packed with the same sample.";
-Warning::MissingMassInformation = "The sample(s) `1` are missing mass information. 1 Gram will be considered to calculate automatic options.";
-Error::NoPreparedSample = "Sample(s) `1` are prepacked in melting point capillary tubes but PreparedSampleContainer is set to True for these samples. No new samples are prepared by grinding or desiccation in this experiment for the samples that are already packed in melting point capillary tubes, therefore, there is no prepared sample to be transferred into PreparedSampleContainer for these samples. Please set PreparedSampleContainer to Null or let it be calculated automatically for sample(s) `1`.";
-Error::NoPreparedSampleToRecoup = "Sample(s) `1` are prepacked in melting point capillary tubes but RecoupSample is set to True for these samples. No new samples are prepared by grinding or desiccation in this experiment for the samples that are already packed in melting point capillary tubes, therefore, there is no sample to recoup. Please set RecoupSample to Null or let it be calculated automatically for sample(s) `1`.";
+Error::InvalidPreparedSampleStorageCondition = "Storage conditions of the sample(s) `1` are not informed, therefore, PreparedSampleStorageCondition of the corresponding prepared samples cannot be automatically determined. Please specify PreparedSampleStorageCondition in options or update the StorageCondition of sample(s) `1` or DefaultStorageCondition of the sample model(s).";
+Error::LongExperimentTime = "The estimated total experiment time is greater than the maximum allowed experiment time, `1`. Please reduce the experiment times or number of samples.";
+Error::NoAvailableMeltingPointInstruments = "There's no melting point instruments at your experiment sites, `1`.";
+Error::InvalidInstrument = "The specified instrument, `1`, does not exist at your allowed experiment sites, `2`.";
+Error::InvalidEndTemperatures = "The specified EndTemperature, `1`, for samples `2` are greater than the MaxTemperature of the `3`.";
+Error::HighNumberOfReplicates = "The specified NumberOfReplicates, `1`, for samples `2` are greater than the NumberOfMeltingPointCapillarySlots of the `3`.";
 
 
 (* ::Subsection::Closed:: *)
 (* ExperimentMeasureMeltingPoint *)
 
 (*Mixed Input*)
-ExperimentMeasureMeltingPoint[myInputs : ListableP[ObjectP[{Object[Container], Object[Sample]}] | _String | {LocationPositionP, _String | ObjectP[Object[Container]]}], myOptions : OptionsPattern[]] := Module[
+ExperimentMeasureMeltingPoint[myInputs : ListableP[ObjectP[{Object[Container], Object[Sample], Model[Sample]}] | _String | {LocationPositionP, _String | ObjectP[Object[Container]]}], myOptions : OptionsPattern[]] := Module[
 	{listedContainers, listedOptions, outputSpecification, output, gatherTests, containerToSampleResult, samples,
 		sampleOptions, containerToSampleTests, containerToSampleOutput, validSamplePreparationResult, containerToSampleSimulation,
 		mySamplesWithPreparedSamples, myOptionsWithPreparedSamples, updatedSimulation},
@@ -715,8 +747,8 @@ ExperimentMeasureMeltingPoint[myInputs : ListableP[ObjectP[{Object[Container], O
 	(*Determine if we should keep a running list of tests*)
 	gatherTests = MemberQ[output, Tests];
 
-	(*Remove temporal links and named objects.*)
-	{listedContainers, listedOptions} = sanitizeInputs[ToList[myInputs], ToList[myOptions]];
+	(*Make sure inputs are lists.*)
+	{listedContainers, listedOptions} = {ToList[myInputs], ToList[myOptions]};
 
 	(*First, simulate our sample preparation.*)
 	validSamplePreparationResult = Check[
@@ -724,10 +756,12 @@ ExperimentMeasureMeltingPoint[myInputs : ListableP[ObjectP[{Object[Container], O
 		{mySamplesWithPreparedSamples, myOptionsWithPreparedSamples, updatedSimulation} = simulateSamplePreparationPacketsNew[
 			ExperimentMeasureMeltingPoint,
 			listedContainers,
-			listedOptions
+			listedOptions,
+			DefaultPreparedModelAmount -> 1 Gram,
+			DefaultPreparedModelContainer -> Model[Container, Vessel, "2 mL conical tube (no skirt) with cap and sealing ring"]
 		],
 		$Failed,
-		{Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
+		{Download::ObjectDoesNotExist, Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
 	];
 
 	(*If we are given an invalid define name, return early.*)
@@ -790,25 +824,26 @@ ExperimentMeasureMeltingPoint[myInputs : ListableP[ObjectP[{Object[Container], O
 ];
 
 (* Sample input/core overload*)
-ExperimentMeasureMeltingPoint[mySamples : ListableP[ObjectP[Object[Sample]]], myOptions : OptionsPattern[]] := Module[
-	{listedSamples, listedOptions, outputSpecification, output, gatherTests,
-		validSamplePreparationResult, samplesWithPreparedSamples,
+ExperimentMeasureMeltingPoint[mySamples : ListableP[ObjectP[{Object[Sample], Model[Sample]}]], myOptions : OptionsPattern[]] := Module[
+	{
+		listedSamples, listedOptions, outputSpecification, output, gatherTests, site, meltingPointInstrumentObjects,
+		validSamplePreparationResult, samplesWithPreparedSamples, personID, meltingPointInstrumentModelFields,
 		optionsWithPreparedSamples, safeOps, safeOpsTests, capillarySeal,
 		grinderFields, packingDeviceFields, packingDevices,
-		validLengths, validLengthTests, instruments, meltingPointInstrumentModels,
-		templatedOptions, templateTests, inheritedOptions, desiccators, grinders,
+		validLengths, validLengthTests, instruments, allMeltingPointInstrumentModels,
+		templatedOptions, templateTests, inheritedOptions, desiccatorModels, grinders,
 		expandedSafeOps, capillaryContainers, packetObjectSample, preferredContainers,
-		containerOutObjects, containerOutModels, instrumentOption,
+		containerOutObjects, containerOutModels, desiccatorObjects,
 		instrumentObjects, allObjects, allContainers, objectSampleFields,
 		modelSampleFields, modelContainerFields, objectContainerFields,
-		updatedSimulation, upload, confirm, fastTrack, parentProtocol, cache,
+		updatedSimulation, upload, confirm, canaryBranch, fastTrack, parentProtocol, cache,
 		meltingPointInstrumentFields, allGrindingBeadModels,
 		downloadedStuff, cacheBall, resolvedOptionsResult,
 		resolvedOptions, resolvedOptionsTests, collapsedResolvedOptions,
 		returnEarlyQ, performSimulationQ, grindingContainers, grindingBeads,
 		samplesWithPreparedSamplesNamed, optionsWithPreparedSamplesNamed,
 		safeOptionsNamed, allContainerModels, specifiedDesiccant,
-		protocolPacketWithResources, resourcePacketTests, postProcessingOptions, result,
+		protocolPacketWithResources, resourcePacketTests, result,
 		simulatedProtocol, simulation, capillaryRod
 	},
 
@@ -831,7 +866,7 @@ ExperimentMeasureMeltingPoint[mySamples : ListableP[ObjectP[Object[Sample]]], my
 			listedOptions
 		],
 		$Failed,
-		{Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
+		{Download::ObjectDoesNotExist, Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
 	];
 
 	(* If we are given an invalid define name, return early. *)
@@ -848,7 +883,7 @@ ExperimentMeasureMeltingPoint[mySamples : ListableP[ObjectP[Object[Sample]]], my
 	];
 
 	(* replace all objects referenced by Name to ID *)
-	{samplesWithPreparedSamples, safeOps, optionsWithPreparedSamples} = sanitizeInputs[samplesWithPreparedSamplesNamed, safeOptionsNamed, optionsWithPreparedSamplesNamed];
+	{samplesWithPreparedSamples, safeOps, optionsWithPreparedSamples} = sanitizeInputs[samplesWithPreparedSamplesNamed, safeOptionsNamed, optionsWithPreparedSamplesNamed, Simulation -> updatedSimulation];
 
 	(* If the specified options don't match their patterns or if option lengths are invalid return $Failed *)
 	If[MatchQ[safeOps, $Failed],
@@ -899,7 +934,7 @@ ExperimentMeasureMeltingPoint[mySamples : ListableP[ObjectP[Object[Sample]]], my
 	inheritedOptions = ReplaceRule[safeOps, templatedOptions];
 
 	(*get assorted hidden options*)
-	{upload, confirm, fastTrack, parentProtocol, cache} = Lookup[inheritedOptions, {Upload, Confirm, FastTrack, ParentProtocol, Cache}];
+	{upload, confirm, canaryBranch, fastTrack, parentProtocol, cache} = Lookup[inheritedOptions, {Upload, Confirm, CanaryBranch, FastTrack, ParentProtocol, Cache}];
 
 	(*Expand index-matching options*)
 	expandedSafeOps = Last[ExpandIndexMatchedInputs[ExperimentMeasureMeltingPoint, {samplesWithPreparedSamples}, inheritedOptions]];
@@ -936,18 +971,15 @@ ExperimentMeasureMeltingPoint[mySamples : ListableP[ObjectP[Object[Sample]]], my
 		ObjectP[Model]
 	]];
 
-	(* gather the instrument option *)
-	instrumentOption = Lookup[expandedSafeOps, Instrument];
-
-	(* pull out any Object[Instrument]s in the Instrument option (since users can specify a mix of Objects, Models, and Automatic) *)
-	instrumentObjects = Cases[Flatten[{instrumentOption}], ObjectP[Object[Instrument]]];
+	desiccatorObjects = Cases[instrumentObjects, ObjectP[Object[Instrument, Desiccator]]];
+	meltingPointInstrumentObjects = Cases[instrumentObjects, ObjectP[Object[Instrument, MeltingPointApparatus]]];
 
 	(* split things into groups by types (since we'll be downloading different things from different types of objects) *)
 	allObjects = DeleteDuplicates[Flatten[{instruments, preferredContainers, containerOutModels, containerOutObjects, capillaryContainers, grindingContainers}]];
 	instruments = Cases[allObjects, ObjectP[Model[Instrument]]];
 	grinders = Cases[instruments, ObjectP[Model[Instrument, Grinder]]];
-	desiccators = Cases[instruments, ObjectP[Model[Instrument, Desiccator]]];
-	meltingPointInstrumentModels = Cases[instruments, ObjectP[Model[Instrument, MeltingPointApparatus]]];
+	desiccatorModels = Cases[instruments, ObjectP[Model[Instrument, Desiccator]]];
+	allMeltingPointInstrumentModels = Cases[instruments, ObjectP[Model[Instrument, MeltingPointApparatus]]];
 	allContainerModels = Flatten[{
 		Cases[allObjects, ObjectP[{Model[Container, Vessel], Model[Container, Capillary], Model[Container, GrindingContainer]}]],
 		Cases[KeyDrop[inheritedOptions, {Cache, Simulation}], ObjectReferenceP[{Model[Container]}], Infinity],
@@ -971,11 +1003,12 @@ ExperimentMeasureMeltingPoint[mySamples : ListableP[ObjectP[Object[Sample]]], my
 
 	(*articulate all the fields needed*)
 	objectSampleFields = Union[SamplePreparationCacheFields[Object[Sample]], {Composition, MeltingPoint, BoilingPoint}];
-	modelSampleFields = Union[SamplePreparationCacheFields[Model[Sample]], {DefaultStorageCondition}];
+	modelSampleFields = Union[SamplePreparationCacheFields[Model[Sample]], {DefaultStorageCondition, MeltingPoint, BoilingPoint}];
 	objectContainerFields = Union[SamplePreparationCacheFields[Object[Container]]];
 	modelContainerFields = Union[SamplePreparationCacheFields[Model[Container]]];
-	meltingPointInstrumentFields = {Name, Measurands, NumberOfMeltingPointCapillarySlots, StartTemperature, EndTemperature, MinTemperatureRampRate, MaxTemperatureRampRate};
-	grinderFields = {Name, GrinderType, Objects, MinAmount, MaxAmount, MinTime, MaxTime, FeedFineness, MaxGrindingRate, MinGrindingRate};
+	meltingPointInstrumentModelFields = {Name, Measurands, NumberOfMeltingPointCapillarySlots, MinTemperature, MaxTemperature, MinTemperatureRampRate, MaxTemperatureRampRate};
+	meltingPointInstrumentFields = {Model, Site};
+	grinderFields = {Name, GrinderType, Objects, MinAmount, MaxAmount, MinTime, MaxTime, FeedFineness, MaxGrindingRate, MinGrindingRate, Positions, AssociatedAccessories};
 	packingDeviceFields = {Name, NumberOfCapillaries};
 
 	(* in the past including all these different through-link traversals in the main Download call made things slow because there would be duplicates if you have many samples in a plate *)
@@ -985,52 +1018,63 @@ ExperimentMeasureMeltingPoint[mySamples : ListableP[ObjectP[Object[Sample]]], my
 		Packet[Container[objectContainerFields]],
 		Packet[Container[Model][modelContainerFields]],
 		Packet[Model[modelSampleFields]],
-		Packet[Model[{DefaultStorageCondition}]]
+		Packet[Model[Hold[Composition[[All, 2]]]][modelSampleFields]]
 	};
 
 	(*Lookup specified Desiccant *)
 	(* Lookup specified Desiccant *)
-	specifiedDesiccant = If[
-		MatchQ[Lookup[expandedSafeOps, Desiccant], Automatic],
-		{Model[Sample, "Indicating Drierite"], Model[Sample, "Sulfuric acid"]},
-		Lookup[expandedSafeOps, Desiccant]
-	];
+	specifiedDesiccant = Cases[Flatten[{
+		Lookup[expandedSafeOps, Desiccant],
+		Model[Sample, "id:GmzlKjzrmB85"], (*Indicating Drierite*)
+		Model[Sample, "id:Vrbp1jG80ZnE"] (*Sulfuric acid*)
+	}], ObjectP[]];
+
+	(* look up site and PersonID to download available experiments sites and instrument models *)
+	site = $Site;
+	personID = $PersonID;
 
 	(* download all the things *)
 	downloadedStuff = Quiet[
 		Download[
 			{
-				(*1*)samplesWithPreparedSamples,
-				(*2*)Flatten[Download[samplesWithPreparedSamples, Composition[[All, 2]], Simulation -> updatedSimulation]],
-				(*3*)meltingPointInstrumentModels,
-				(*4*)allContainerModels,
-				(*5*)allContainers,
-				(*6*)allGrindingBeadModels,
-				(*7*)ToList[specifiedDesiccant],
-				(*8*)grinders,
-				(*9*)desiccators,
-				(*10*)packingDevices,
-				(*11*)capillarySeal,
-				(*12*)capillaryRod
+				samplesWithPreparedSamples,
+				allMeltingPointInstrumentModels,
+				allContainerModels,
+				allContainers,
+				(*5*)allGrindingBeadModels,
+				ToList[specifiedDesiccant],
+				grinders,
+				desiccatorModels,
+				packingDevices,
+				(*10*)capillarySeal,
+				capillaryRod,
+				desiccatorObjects,
+				ToList[personID],
+				(*14*)meltingPointInstrumentObjects
 			},
 			Evaluate[
 				{
-					(*1*)packetObjectSample,
-					(*2*){Packet[State, MeltingPoint, BoilingPoint]},
-					(*3*){Evaluate[Packet @@ meltingPointInstrumentFields]},
-					(*4*){Evaluate[Packet @@ modelContainerFields]},
+					packetObjectSample,
+					{Evaluate[Packet @@ meltingPointInstrumentModelFields]},
+					{Evaluate[Packet @@ modelContainerFields]},
 					(* all basic container models (from PreferredContainers) *)
-					(*5*){
-					Evaluate[Packet @@ objectContainerFields],
-					Packet[Model[modelContainerFields]]
-				},
-					(*6*){Packet[Diameter]},
-					(*7*){Packet[State, Mass, Volume, Status, Model]},
-					(*8*){Evaluate[Packet @@ grinderFields]},
-					(*9*){Packet[Name]},
-					(*10*){Evaluate[Packet @@ packingDeviceFields]},
-					(*11*){Packet[Name]},
-					(*11*){Packet[Name]}
+					{
+						Evaluate[Packet @@ objectContainerFields],
+						Packet[Model[modelContainerFields]]
+					},
+					(*5*){Packet[Diameter]},
+					{Packet[State, Mass, Volume, Status, Model, Density, StorageCondition, DefaultStorageCondition]},
+					{Evaluate[Packet @@ grinderFields]},
+					{Packet[Name, Positions, SampleType]},
+					{Evaluate[Packet @@ packingDeviceFields]},
+					(*10*){Packet[Name]},
+					{Packet[Name]},
+					{Packet[Model]},
+					{
+						Packet[FinancingTeams, FirstName, LastName, Email, TeamEmailPreference, NotebookEmailPreferences, Site],
+						Packet[FinancingTeams[ExperimentSites]]
+					},
+					(*14*){Evaluate[Packet @@ meltingPointInstrumentFields]}
 				}
 			],
 			Cache -> cache,
@@ -1075,7 +1119,7 @@ ExperimentMeasureMeltingPoint[mySamples : ListableP[ObjectP[Object[Sample]]], my
 	(* need to return some type of simulation to our parent function that called us. *)
 	(*performSimulationQ = MemberQ[output, Simulation] || MatchQ[$CurrentSimulation, SimulationP];*)
 
-	performSimulationQ = MemberQ[output, Result | Simulation] && MatchQ[Lookup[resolvedOptions, PreparatoryPrimitives], Null | {}];
+	performSimulationQ = MemberQ[output, Result | Simulation];
 
 	(* If option resolution failed and we aren't asked for the simulation or output, return early. *)
 	If[returnEarlyQ && !performSimulationQ,
@@ -1090,46 +1134,47 @@ ExperimentMeasureMeltingPoint[mySamples : ListableP[ObjectP[Object[Sample]]], my
 
 	(*Build packets with resources*)
 	{protocolPacketWithResources, resourcePacketTests} = Which[
-		returnEarlyQ, {$Failed, {}},
-		gatherTests, measureMeltingPointResourcePackets[
-			samplesWithPreparedSamples,
-			templatedOptions,
-			resolvedOptions,
-			collapsedResolvedOptions,
-			Cache -> cacheBall,
-			Simulation -> updatedSimulation,
-			Output -> {Result, Tests}
-		],
-		True, {measureMeltingPointResourcePackets[
-			samplesWithPreparedSamples,
-			templatedOptions,
-			resolvedOptions,
-			collapsedResolvedOptions,
-			Cache -> cacheBall,
-			Simulation -> updatedSimulation,
-			Output -> Result
-		],
-			{}
-		}];
+		returnEarlyQ,
+			{$Failed, {}},
+		gatherTests,
+			measureMeltingPointResourcePackets[
+				samplesWithPreparedSamples,
+				templatedOptions,
+				resolvedOptions,
+				collapsedResolvedOptions,
+				Cache -> cacheBall,
+				Simulation -> updatedSimulation,
+				Output -> {Result, Tests}
+			],
+		True,
+			{
+				measureMeltingPointResourcePackets[
+					samplesWithPreparedSamples,
+					templatedOptions,
+					resolvedOptions,
+					collapsedResolvedOptions,
+					Cache -> cacheBall,
+					Simulation -> updatedSimulation,
+					Output -> Result
+				],
+				{}
+			}
+	];
 
 	(* --- Simulation --- *)
 	(* If we were asked for a simulation, also return a simulation. *)
-	{simulatedProtocol, simulation} = If[performSimulationQ,
-		simulateExperimentMeasureMeltingPoint[
-			If[MatchQ[protocolPacketWithResources, $Failed],
-				$Failed,
-				protocolPacketWithResources[[1]] (* protocolPacket *)
+	{simulatedProtocol, simulation} = Which[
+		MatchQ[protocolPacketWithResources, $Failed], {$Failed, Simulation[]},
+		performSimulationQ,
+			simulateExperimentMeasureMeltingPoint[
+				protocolPacketWithResources[[1]], (* protocolPacket *)
+				Flatten[ToList[protocolPacketWithResources[[2]]]], (* unitOperationPackets *)
+				ToList[samplesWithPreparedSamples],
+				resolvedOptions,
+				Cache -> cacheBall,
+				Simulation -> updatedSimulation
 			],
-			If[MatchQ[protocolPacketWithResources, $Failed],
-				$Failed,
-				Flatten[ToList[protocolPacketWithResources[[2]]]] (* unitOperationPackets *)
-			],
-			ToList[samplesWithPreparedSamples],
-			resolvedOptions,
-			Cache -> cacheBall,
-			Simulation -> updatedSimulation
-		],
-		{Null, Null}
+		True, {Null, Null}
 	];
 
 	(* If Result does not exist in the output, return everything without uploading *)
@@ -1143,15 +1188,6 @@ ExperimentMeasureMeltingPoint[mySamples : ListableP[ObjectP[Object[Sample]]], my
 		}]
 	];
 
-	postProcessingOptions = Map[
-		If[
-			MatchQ[Lookup[safeOps, #], Except[Automatic]],
-			# -> Lookup[safeOps, #],
-			Nothing
-		]&,
-		{ImageSample, MeasureVolume, MeasureWeight}
-	];
-
 	(* We have to return the result. Call UploadProtocol[...] to prepare our protocol packet (and upload it if asked). *)
 	result = If[
 		(* If our resource packets failed, we can't upload anything. *)
@@ -1163,6 +1199,7 @@ ExperimentMeasureMeltingPoint[mySamples : ListableP[ObjectP[Object[Sample]]], my
 			ToList[protocolPacketWithResources[[2]]], (*unitOperationPackets*)
 			Upload -> Lookup[safeOps, Upload],
 			Confirm -> Lookup[safeOps, Confirm],
+			CanaryBranch -> Lookup[safeOps, CanaryBranch],
 			ParentProtocol -> Lookup[safeOps, ParentProtocol],
 			Priority -> Lookup[safeOps, Priority],
 			StartDate -> Lookup[safeOps, StartDate],
@@ -1194,114 +1231,75 @@ DefineOptions[
 
 resolveExperimentMeasureMeltingPointOptions[myInputSamples : {ObjectP[Object[Sample]]...}, myOptions : {_Rule...}, myResolutionOptions : OptionsPattern[resolveExperimentMeasureMeltingPointOptions]] := Module[
 	{
-		outputSpecification, output, gatherTests, cache, simulation,
-		samplePrepOptions, measureMeltingPointOptions,
-		simulatedSamples, mismatchedRampRateRampTimeTest,
-		resolvedSampleLabel, resolvedSampleContainerLabel,
-		resolvedSamplePrepOptions, updatedSimulation, samplePrepTests,
-		samplePackets, modelPackets, sampleContainerPacketsWithNulls,
-		sampleContainerModelPacketsWithNulls, temperatureUnit,
-		resolvedOrderOfOperations, invalidStartEndTemperatures,
-		startEndTemperatureInvalidOptions, startEndTemperatureInvalidTest,
-		invalidOrders, orderTest, mismatchedRampRateRampTimeOptions,
-		resolvedExpectedMeltingPoint, resolvedNumberOfReplicates,
-		resolvedSealCapillary, unresolvedMeasurementMethod, invalidNumbersOfReplicates,
-		numberOfReplicatesMismatchedOptions, numberOfReplicatesMismatchedTest,
-		capillaryStorageCondition, recoupSampleContainerMismatchOptions,
-		recoupSampleContainerMismatchTest, recoupStorageConditionMismatches,
-		recoupStorageMismatchOptions, recoupStorageMismatchTest,
-		resolvedStartTemperature, equilibrationTime,
-		resolvedEndTemperature, resolvedTemperatureRampRate,
-		resolvedRampTime, rampRateChangeWarnings,
-		resolvedRecoupSample, resolvedPreparedSampleContainer,
-		preparedSampleStorageCondition, resolvedPreparedSampleLabel,
-		resolvedPreparedSampleContainerLabel, resolvedAmount,
-		cacheBall,
-		sampleDownloads, fastAssoc, recoupSampleContainerMismatches,
-		sampleContainerModelPackets, sampleContainerPackets,
-		messages, discardedSamplePackets, discardedInvalidInputs,
-		discardedTest, mapThreadFriendlyOptions, desiccatePrepackedMismatches,
-		measureMeltingPointOptionAssociation, optionPrecisions,
-		roundedMeasureMeltingPointOptions, precisionTests,
-		nonSolidSamplePackets, nonSolidSampleInvalidInputs,
-		nonSolidSampleTest, desiccateOptions, sampleObjects,
-		missingMassSamplePackets, missingMassInvalidInputs,
-		missingMassTest, desiccateSamples,
-		desiccateResolvedOptionsResult,
-		grindTests, grindResolvedOptionsResult, renamedGrindOptions,
-		grindOptionValues, grindOptionKeys, grindSamples,
-		orderInvalidOptions, extraneousOrdersOfOperations,
-		extraneousOrderTest, extraneousOrderOptions,
-		invalidExpectedMeltingPoints, desiccateQs, grindQs, realGrindQs,
-		prepackedQs, desiccateTests,
-		expectedMeltingPointInvalidOptions, desiccant, unresolvedDesiccant,
-		expectedMeltingPointInvalidTest, unresolvedDesiccationMethod,
-		amount, desiccationMethod, unresolvedDesiccantPhase,
-		resolvedPostProcessingOptions, resolvedOptions, desiccantPhase,
-		desiccantAmount, unresolvedInstrument, unresolvedDesiccantAmount, unresolvedDesiccationTime,
-		desiccator, unresolvedDesiccator, desiccationTime, sampleContainer,
-		resolvedDesiccateIndexMatchedOptions, resolvedDesiccateSingletonOptions,
-		halfResolvedGrinderType, halfResolvedGrinder, halfResolvedFineness,
-		halfResolvedBulkDensity, halfResolvedGrindingContainer, halfResolvedGrindingBead,
-		halfResolvedNumberOfGrindingBeads, halfResolvedGrindingRate, halfResolvedGrindingTime,
-		halfResolvedNumberOfGrindingSteps, halfResolvedCoolingTime, halfResolvedGrindingProfile,
-		resolvedGrindOptions, grindOptions, optionValues, noGrindOptions, noGrindOptionValues,
-		renamedGrindResolvedOptionsResult, grindPrepackedMismatches, grindGrinderTypeMismatches,
-		prepackedGrinderTypeMismatches, prepackedGrinderMismatches, grindGrinderMismatches,
+		outputSpecification, output, gatherTests, cache, simulation, unresolvedGrindingRates, orderMismatches, site,
+		samplePrepOptions, measureMeltingPointOptions, unresolvedGrindingTimes, orderOptionMismatches, resolvedGrinderTypes,
+		simulatedSamples, mismatchedRampRateRampTimeTest, grinderTypeChangeQs, resolvedDesiccationTime, resolvedDesiccator,
+		resolvedSampleLabel, resolvedSampleContainerLabel, resolvedAmounts, resolvedDesiccationMethod, resolvedGrinders,
+		resolvedSamplePrepOptions, updatedSimulation, samplePrepTests, resolvedGrindingProfiles, grindTargetOptions,
+		samplePackets, modelPackets, sampleContainerPacketsWithNulls, resolvedNumberOfGrindingSteps, allPrepackedQ,
+		sampleContainerModelPacketsWithNulls, temperatureUnit, resolvedGrindingTimes, resolvedGrindingRates, personID,
+		resolvedOrderOfOperations, invalidStartEndTemperatures, resolvedGrindingContainers, desiccateTargetOptions,
+		startEndTemperatureInvalidOptions, startEndTemperatureInvalidTest, resolvedBulkDensities, resolvedGrindValues,
+		invalidOrders, mismatchedRampRateRampTimeOptions, resolvedFinenesses, resolvedDesiccateValues, onSiteInstrumentModels,
+		resolvedExpectedMeltingPoint, resolvedNumberOfReplicates, valueChangedQs, realDesiccateQs, possibleInstrumentModels,
+		resolvedSealCapillary, unresolvedMeasurementMethod, invalidNumbersOfReplicates, resolvedOptionValues, desiredInstrumentModels,
+		numberOfReplicatesMismatchedOptions, numberOfReplicatesMismatchedTest, prepackedSamplePrepUnneededOptions,
+		capillaryStorageCondition, amountStorageConditionMismatches, unresolvedOptionValues, prepareQs, financingTeams,
+		amountChangedQs, samplePreparationOptionNames, allPrepackedErrorOptions, allNoPrepErrorOptions, experimentSites,
+		resolvedStartTemperature, equilibrationTime, grinderChangedQs, finenessChangedQs, bulkDensityChangedQs,
+		grindingContainerChangedQs, grindingRateChangedQs, grindingTimeChangedQs, numberOfGrindingStepsChangedQs,
+		grindingProfileChangesQs, desiccationMethodChangedQ, desiccatorChangedQ, desiccationTimeChangedQ,
+		resolvedEndTemperature, resolvedTemperatureRampRate, resolvedRampTime, rampRateChangeWarnings, availableMaxTemperatures,
+		preparedSampleStorageCondition, resolvedPreparedSampleLabel, resolvedAmount, multipleDesiccateOptionNames,
+		cacheBall, unresolvedGrinderTypes, unresolvedGrinders, unresolvedFinenesses, requiredDesiccateSingletonOptionNames,
+		unresolvedBulkDensities, unresolvedGrindingContainers, unresolvedNumbersOfGrindingSteps, errorNumbers,
+		unresolvedGrindingProfiles, sampleDownloads, fastAssoc, sampleContainerModelPackets, sampleContainerPackets,
+		messages, discardedSamplePackets, discardedInvalidInputs, errorTuples, errorToSampleRules, noPrepUnneededOptions,
+		discardedTest, mapThreadFriendlyOptions, desiccatePrepackedMismatches, requiredGrindOptionNames, availableMaxSlots,
+		measureMeltingPointOptionAssociation, optionPrecisions, prepackedDesiccateUnneededOptions, uniqueErrorAssociations,
+		roundedMeasureMeltingPointOptions, precisionTests, noDesiccateQ, allOptionNames, uniqueErrorLists,
+		nonSolidSamplePackets, nonSolidSampleInvalidInputs, noGrindQ, noGrindUnneededOptions, formattedErrorLists,
+		nonSolidSampleTest, desiccateOptions, sampleObjects, noDesiccateUnneededOptions, allMultipleOptionNames,
+		missingMassSamplePackets, missingMassInvalidInputs, prepackedGrindUnneededOptions, allDesiccateOptionNames,
+		missingMassTest, desiccateSamples, desiccateResolvedOptionsResult, singletonDesiccateOptionNames,
+		grindTests, grindResolvedOptionsResult, renamedGrindOptions, prepackedGrindMessageQ, prepackedPrepMessageQ,
+		rawGrindOptionValues, grindOptionValues, grindOptionNames, grindSamples, requiredDesiccateMultipleOptionNames,
+		invalidExpectedMeltingPoints, desiccateQs, grindQs, realGrindQs, noPrepMessageQ, groupedErrorLists,
+		prepackedQs, desiccateTests, expectedMeltingPointInvalidOptions, desiccant, unresolvedDesiccant,
+		expectedMeltingPointInvalidTest, unresolvedDesiccationMethod, requiredSingletonDesiccateOptions, suitableInstruments,
+		amount, desiccationMethod, unresolvedDesiccantPhase, prepackedDesiccateMessageQ, noPrepTests, availableMaxSlot,
+		resolvedPostProcessingOptions, resolvedOptions, desiccantPhase, requiredSingletonDesiccateOptionTests,
+		desiccantAmount, unresolvedInstrument, unresolvedDesiccantAmount, unresolvedDesiccationTime, availableMaxTemperature,
+		desiccantStorageCondition, unresolvedDesiccantStorageCondition, invalidPreparedSampleStorageConditions,
+		desiccantStorageContainer, unresolvedDesiccantStorageContainer, desiccateGrindOptionMismatches, resolvedInstrument,
+		desiccator, unresolvedDesiccator, desiccationTime, resolvedSampleContainer, orderOptionMismatchTests,
+		resolvedDesiccateIndexMatchedOptions, resolvedDesiccateSingletonOptions, grindOptionNamesWithAmount,
+		halfResolvedGrinderType, halfResolvedGrinder, halfResolvedFineness, desiccateGrindOptionMismatchTests,
+		halfResolvedBulkDensity, halfResolvedGrindingContainer, halfResolvedGrindingBead, groupedMeltingPointOptions,
+		halfResolvedNumberOfGrindingBeads, halfResolvedGrindingRate, halfResolvedGrindingTime, longExperimentTimeTest,
+		halfResolvedNumberOfGrindingSteps, halfResolvedCoolingTime, halfResolvedGrindingProfile, groupedRampTimes,
+		resolvedGrindOptions, grindOptions, optionValues, noGrindOptions, noGrindOptionValues, groupedEquilibrationTimes,
+		renamedGrindResolvedOptionsResult, grindPrepackedMismatches, grindGrinderTypeMismatches, groupedNumberOfReplicates,
+		prepackedGrinderTypeMismatches, prepackedGrinderMismatches, grindGrinderMismatches, groupedSampleLengths,
 		prepackedFinenessMismatches, grindFinenessMismatches, prepackedBulkDensityMismatches, grindBulkDensityMismatches,
-		prepackedGrindingContainerMismatches, grindGrindingContainerMismatches,
-		recoupPrepackedSampleMismatches, prepackedPreparedSampleContainerMismatches,
-		prepackedGrindingBeadMismatches, grindGrindingBeadMismatches,
-		prepackedNumberOfGrindingBeadsMismatches, grindNumberOfGrindingBeadsMismatches,
-		prepackedGrindingRateMismatches, grindGrindingRateMismatches,
-		prepackedGrindingTimeMismatches, grindGrindingTimeMismatches,
-		prepackedCoolingTimeMismatches, grindCoolingTimeMismatches,
-		prepackedNumberOfGrindingStepsMismatches, grindNumberOfGrindingStepsMismatches,
-		prepackedGrindingProfileMismatches, grindGrindingProfileMismatches,
-		desiccatePrepackedMismatchOptions, desiccatePrepackedMismatchTest,
-		grindPrepackedMismatchOptions, grindPrepackedMismatchTest,
-		prepackedGrinderTypeMismatchOptions, prepackedGrinderTypeMismatchTest,
-		grindGrinderTypeMismatchOptions, grindGrinderTypeMismatchTest,
-		prepackedGrinderMismatchTest, grindGrinderMismatchTest,
-		prepackedFinenessMismatchTest, grindFinenessMismatchTest,
-		prepackedBulkDensityMismatchTest, grindBulkDensityMismatchTest,
-		prepackedGrindingContainerMismatchTest, grindGrindingContainerMismatchTest,
-		prepackedGrindingBeadMismatchTest, grindGrindingBeadMismatchTest,
-		prepackedNumberOfGrindingBeadsMismatchTest, grindNumberOfGrindingBeadsMismatchTest,
-		prepackedGrindingRateMismatchTest, grindGrindingRateMismatchTest,
-		prepackedGrindingTimeMismatchTest, grindGrindingTimeMismatchTest,
-		prepackedNumberOfGrindingStepsMismatchTest, grindNumberOfGrindingStepsMismatchTest,
-		prepackedCoolingTimeMismatchTest, grindCoolingTimeMismatchTest,
-		prepackedGrindingProfileMismatchTest, grindGrindingProfileMismatchTest,
-		prepackedGrinderMismatchOptions, grindGrinderMismatchOptions,
-		prepackedFinenessMismatchOptions, grindFinenessMismatchOptions,
-		prepackedBulkDensityMismatchOptions, grindBulkDensityMismatchOptions,
-		prepackedGrindingContainerMismatchOptions, grindGrindingContainerMismatchOptions,
-		prepackedGrindingBeadMismatchOptions, grindGrindingBeadMismatchOptions,
-		prepackedNumberOfGrindingBeadsMismatchOptions, grindNumberOfGrindingBeadsMismatchOptions,
-		prepackedGrindingRateMismatchOptions, grindGrindingRateMismatchOptions,
-		prepackedGrindingTimeMismatchOptions, grindGrindingTimeMismatchOptions,
-		prepackedNumberOfGrindingStepsMismatchOptions, grindNumberOfGrindingStepsMismatchOptions,
-		prepackedCoolingTimeMismatchOptions, grindCoolingTimeMismatchOptions,
-		prepackedGrindingProfileMismatchOptions, grindGrindingProfileMismatchOptions,
-		prepackedSampleContainerMismatches, desiccateSampleContainerMismatches,
-		prepackedSampleContainerMismatchOptions, prepackedSampleContainerMismatchTest,
-		desiccateSampleContainerMismatchOptions, desiccateSampleContainerMismatchTest,
-		prepackedDesiccationMethodMismatchOptions, prepackedDesiccationMethodMismatchTest,
-		desiccateDesiccationMethodMismatchOptions, desiccateDesiccationMethodMismatchTest,
-		prepackedDesiccantMismatchOptions, prepackedDesiccantMismatchTest,
-		desiccateDesiccantMismatchOptions, desiccateDesiccantMismatchTest,
-		prepackedDesiccantPhaseMismatchOptions, prepackedDesiccantPhaseMismatchTest,
-		desiccateDesiccantPhaseMismatchOptions, desiccateDesiccantPhaseMismatchTest,
-		prepackedDesiccantAmountMismatchOptions, prepackedDesiccantAmountMismatchTest,
-		desiccateDesiccantAmountMismatchOptions, desiccateDesiccantAmountMismatchTest,
-		prepackedDesiccatorMismatchOptions, prepackedDesiccatorMismatchTest,
-		desiccateDesiccatorMismatchOptions, desiccateDesiccatorMismatchTest,
-		mismatchedRecoupPrepackedOptions, mismatchedRecoupPrepackedTest,
-		mismatchedPrepackedPreparedOptions, mismatchedPrepackedPreparedTest,
-		prepackedDesiccationTimeMismatchOptions, prepackedDesiccationTimeMismatchTest,
-		desiccateDesiccationTimeMismatchOptions, desiccateDesiccationTimeMismatchTest,
-		invalidInputs, invalidOptions, allTests
+		prepackedGrindingContainerMismatches, grindGrindingContainerMismatches, noGrindMessageQ, grindingProfiles,
+		amountPrepackedMismatches, amountDesiccateMismatches, amountGrindMismatches, longExperimentTimeOptions,
+		prepackedGrindingBeadMismatches, grindGrindingBeadMismatches, noDesiccateMessageQ, sampleModels, grindInvalidOptions,
+		prepackedNumberOfGrindingBeadsMismatches, grindNumberOfGrindingBeadsMismatches, availableInstrumentTuples,
+		prepackedGrindingRateMismatches, grindGrindingRateMismatches, doubleTrueRequiredSamplePreparationOptionNames,
+		prepackedGrindingTimeMismatches, grindGrindingTimeMismatches, singleTrueRequiredSamplePreparationOptionNames,
+		prepackedCoolingTimeMismatches, grindCoolingTimeMismatches, totalDesiccationTime, totalGrindTime,
+		prepackedNumberOfGrindingStepsMismatches, grindNumberOfGrindingStepsMismatches, totalMeltingPointTime,
+		prepackedGrindingProfileMismatches, grindGrindingProfileMismatches, totalEstimatedExperimentTime,
+		prepackedSampleContainerMismatches, desiccateSampleContainerMismatches, invalidPreparedSampleStorageConditionsOptions,
+		invalidInputs, invalidOptions, allTests, invalidPreparedSampleStorageConditionsTest, invalidEndTemperatures,
+		endTemperatureInvalidOptions, endTemperatureInvalidTest, maxResolvedEndTemperature, invalidInstrumentTests,
+		highNumbersOfReplicates, highNumberOfReplicatesTest, highNumberOfReplicatesOptions, desiccateInvalidOptions,
+		maxResolvedNumberOfReplicates, meltingPointInstrumentObjects, meltingPointInstrumentObjectPackets,
+		meltingPointInstrumentSites, allMeltingPointInstrumentModels, meltingPointInstrumentTuples, resolvedInstrumentModel,
+		numberOfCapillarySlots, defaultMaxTemperature, defaultMaxNumberOfCapillarySlots, unresolvedInstrumentModel,
+		noAvailableInstrumentQ, noAvailableInstruments, noAvailableInstrumentTests, invalidInstrumentQ, invalidInstruments,
+		checkDesiccant, unresolvedCheckDesiccant, compositionModelPackets
 	},
 
 	(* Determine the requested output format of this function. *)
@@ -1330,8 +1328,9 @@ resolveExperimentMeasureMeltingPointOptions[myInputSamples : {ObjectP[Object[Sam
 	sampleDownloads = Quiet[Download[
 		simulatedSamples,
 		{
-			Packet[Name, Volume, Mass, State, Status, Container, Solvent, Position, Composition, MeltingPoint, BoilingPoint, Model],
-			Packet[Model[{DefaultStorageCondition}]],
+			Packet[Name, Volume, Mass, State, Status, Container, Solvent, Position, Composition, MeltingPoint, BoilingPoint, Model, StorageCondition, DefaultStorageCondition],
+			Packet[Model[{DefaultStorageCondition, MeltingPoint, BoilingPoint, State}]],
+			Packet[Model[Composition[[All, 2]][{DefaultStorageCondition, MeltingPoint, BoilingPoint, State}]]],
 			Packet[Container[{Object, Model}]],
 			Packet[Container[Model[{MaxVolume}]]]
 		},
@@ -1351,12 +1350,45 @@ resolveExperimentMeasureMeltingPointOptions[myInputSamples : {ObjectP[Object[Sam
 	{
 		samplePackets,
 		modelPackets,
+		compositionModelPackets,
 		sampleContainerPacketsWithNulls,
 		sampleContainerModelPacketsWithNulls
 	} = Transpose[sampleDownloads];
 
-	(* If the sample is discarded, it doesn't have a container, so the corresponding container packet is Null.
-			Make these packets {} instead so that we can call Lookup on them like we would on a packet. *)
+	(* look up sample models *)
+	sampleModels = Lookup[samplePackets, Model, Null];
+
+	(*Lookup some singleton options*)
+	{
+		unresolvedMeasurementMethod,
+		unresolvedInstrument,
+		unresolvedDesiccationMethod,
+		unresolvedDesiccant,
+		unresolvedDesiccantPhase,
+		unresolvedDesiccantAmount,
+		unresolvedDesiccator,
+		unresolvedDesiccationTime,
+		unresolvedDesiccantStorageContainer,
+		unresolvedDesiccantStorageCondition,
+		unresolvedCheckDesiccant
+	} = Lookup[
+		myOptions,
+		{
+			MeasurementMethod,
+			Instrument,
+			DesiccationMethod,
+			Desiccant,
+			DesiccantPhase,
+			DesiccantAmount,
+			Desiccator,
+			DesiccationTime,
+			DesiccantStorageContainer,
+			DesiccantStorageCondition,
+			CheckDesiccant
+		}
+	];
+
+	(* If the sample is discarded, it doesn't have a container, so the corresponding container packet is Null. Make these packets {} instead so that we can call Lookup on them like we would on a packet. *)
 	sampleContainerModelPackets = Replace[sampleContainerModelPacketsWithNulls, {Null -> {}}, 1];
 	sampleContainerPackets = Replace[sampleContainerPacketsWithNulls, {Null -> {}}, 1];
 
@@ -1456,7 +1488,95 @@ resolveExperimentMeasureMeltingPointOptions[myInputSamples : {ObjectP[Object[Sam
 	measureMeltingPointOptionAssociation = Association[measureMeltingPointOptions];
 
 	(* TemperatureUnit used to be an option for the user to determine the unit of temperature unit of the instrument. now it is defaulted to Celsius *)
-	temperatureUnit = "DegreesCelsius";
+	temperatureUnit = Celsius;
+
+	(* find available Instruments *)
+	site = $Site;
+	personID = $PersonID;
+
+	(* lookup the model of the unresolved and resolved instrument *)
+	unresolvedInstrumentModel = If[
+		MatchQ[unresolvedInstrument, ObjectP[Object[Instrument, MeltingPointApparatus]]],
+		Download[fastAssocLookup[fastAssoc, unresolvedInstrument, Model], Object],
+		unresolvedInstrument
+	];
+
+	(* default instrument model: this is only used if no instrument model is found so that the code does not break down *)
+	meltingPointInstrumentObjectPackets = Cases[fastAssoc, ObjectP[Object[Instrument, MeltingPointApparatus]]];
+	meltingPointInstrumentObjects = DeleteDuplicates[Download[Lookup[meltingPointInstrumentObjectPackets, Object], Object]];
+	allMeltingPointInstrumentModels = DeleteDuplicates[Download[Lookup[meltingPointInstrumentObjectPackets, Model], Object]];
+	meltingPointInstrumentSites = DeleteDuplicates[Download[Lookup[meltingPointInstrumentObjectPackets, Site], Object]];
+
+	(* create a tuple of instruments *)
+	meltingPointInstrumentTuples = Transpose[{meltingPointInstrumentObjects, allMeltingPointInstrumentModels, meltingPointInstrumentSites}];
+
+	(* instruments that exist on the user $Site *)
+	onSiteInstrumentModels = Cases[meltingPointInstrumentTuples, {
+		instrumentObject:ObjectP[Object[Instrument, MeltingPointApparatus]],
+		instrumentModel:ObjectP[Model[Instrument, MeltingPointApparatus]],
+		instrumentSite:ObjectP[site]
+	} :> instrumentModel];
+
+	financingTeams = Download[fastAssocLookup[fastAssoc, personID, FinancingTeams], Object];
+	experimentSites = DeleteDuplicates[Download[Flatten[{
+		site,
+		fastAssocLookup[fastAssoc, financingTeams, ExperimentSites]
+	}], Object]];
+
+	(* instrument models that match the user's $Site or ExperimentSites *)
+	possibleInstrumentModels = Flatten[Cases[meltingPointInstrumentTuples, {
+		instrumentObject:ObjectP[Object[Instrument, MeltingPointApparatus]],
+		instrumentModel:ObjectP[Model[Instrument, MeltingPointApparatus]],
+		instrumentSite:ObjectP[experimentSites]
+	} :> instrumentModel]];
+
+	desiredInstrumentModels = If[
+		MatchQ[unresolvedInstrument, Automatic],
+
+		DeleteDuplicates[Flatten[Prepend[possibleInstrumentModels, onSiteInstrumentModels]]],
+
+		Flatten[Cases[meltingPointInstrumentTuples, {
+			instrumentObject:ObjectP[Object[Instrument, MeltingPointApparatus]],
+			instrumentModel:ObjectP[unresolvedInstrumentModel],
+			instrumentSite:ObjectP[experimentSites]
+		} :> instrumentModel]]
+	];
+
+	(* the max number of capillary slots and temperatures provided by all ECL instruments at all sites *)
+	defaultMaxTemperature = Max[fastAssocLookup[fastAssoc, allMeltingPointInstrumentModels, MaxTemperature]];
+
+	defaultMaxNumberOfCapillarySlots = Max[fastAssocLookup[fastAssoc, allMeltingPointInstrumentModels, NumberOfMeltingPointCapillarySlots]];
+
+		(* lookup max temperature and max number of capillary slots in the instruments *)
+	availableMaxTemperatures = fastAssocLookup[fastAssoc, desiredInstrumentModels, MaxTemperature];
+	availableMaxTemperature = Which[
+		MatchQ[unresolvedInstrumentModel, ObjectP[Model[Instrument, MeltingPointApparatus]]],
+			fastAssocLookup[fastAssoc, unresolvedInstrumentModel, MaxTemperature],
+
+		MatchQ[availableMaxTemperatures, {TemperatureP..}],
+			Max[fastAssocLookup[fastAssoc, possibleInstrumentModels, MaxTemperature]],
+
+		(* if no suitable instrument found, give it a default value so the code does not break down *)
+		True,
+			defaultMaxTemperature
+	];
+
+	availableMaxSlots = fastAssocLookup[fastAssoc, desiredInstrumentModels, NumberOfMeltingPointCapillarySlots];
+
+	availableMaxSlot = Which[
+		MatchQ[unresolvedInstrumentModel, ObjectP[Model[Instrument, MeltingPointApparatus]]],
+			fastAssocLookup[fastAssoc, unresolvedInstrumentModel, NumberOfMeltingPointCapillarySlots],
+
+		MatchQ[possibleInstrumentModels, {ObjectP[]..}],
+			Max[fastAssocLookup[fastAssoc, possibleInstrumentModels, NumberOfMeltingPointCapillarySlots]],
+
+		(* if no suitable instrument found, give it a default value so the code does not break down *)
+		True,
+			defaultMaxNumberOfCapillarySlots
+	];
+
+	(* create a tuple of available instruments and their features *)
+	availableInstrumentTuples = Transpose[{desiredInstrumentModels, availableMaxTemperatures, availableMaxSlots}];
 
 	(*Define the options and associated precisions that we need to check*)
 	optionPrecisions = {
@@ -1471,8 +1591,8 @@ resolveExperimentMeasureMeltingPointOptions[myInputSamples : {ObjectP[Object[Sam
 
 	(* round values for options based on option precisions *)
 	{roundedMeasureMeltingPointOptions, precisionTests} = If[gatherTests,
-		RoundOptionPrecision[measureMeltingPointOptionAssociation, optionPrecisions[[All, 1]], optionPrecisions[[All, 2]], Output -> {Result, Tests}],
-		{RoundOptionPrecision[measureMeltingPointOptionAssociation, optionPrecisions[[All, 1]], optionPrecisions[[All, 2]]], Null}
+		RoundOptionPrecision[measureMeltingPointOptionAssociation, optionPrecisions[[All, 1]], optionPrecisions[[All, 2]], AvoidZero -> True, Output -> {Result, Tests}],
+		{RoundOptionPrecision[measureMeltingPointOptionAssociation, optionPrecisions[[All, 1]], optionPrecisions[[All, 2]], AvoidZero -> True], Null}
 	];
 
 	(* -- RESOLVE INDEX-MATCHED OPTIONS *)
@@ -1484,111 +1604,128 @@ resolveExperimentMeasureMeltingPointOptions[myInputSamples : {ObjectP[Object[Sam
 	(* big MapThread to get all the options resolved *)
 	{
 		(*1*)resolvedOrderOfOperations,
-		(*2*)resolvedExpectedMeltingPoint,
-		(*3*)resolvedNumberOfReplicates,
-		(*4*)resolvedAmount,
-		(*5*)resolvedPreparedSampleLabel,
-		(*6*)resolvedPreparedSampleContainerLabel,
-		(*7*)grindQs,
-		(*8*)halfResolvedGrinderType,
-		(*9*)halfResolvedGrinder,
-		(*10*)halfResolvedFineness,
-		(*11*)halfResolvedBulkDensity,
-		(*12*)halfResolvedGrindingContainer,
-		(*13*)halfResolvedGrindingBead,
-		(*14*)halfResolvedNumberOfGrindingBeads,
-		(*15*)halfResolvedGrindingRate,
-		(*16*)halfResolvedGrindingTime,
-		(*17*)halfResolvedNumberOfGrindingSteps,
-		(*18*)halfResolvedCoolingTime,
-		(*19*)halfResolvedGrindingProfile,
-		(*20*)desiccateQs,
-		(*21*)sampleContainer,
-		(*22*)resolvedSealCapillary,
-		(*24*)resolvedStartTemperature,
-		(*25*)equilibrationTime,
-		(*26*)resolvedEndTemperature,
-		(*27*)resolvedTemperatureRampRate,
-		(*28*)resolvedRampTime,
-		(*29*)resolvedRecoupSample,
-		(*30*)resolvedPreparedSampleContainer,
-		(*31*)preparedSampleStorageCondition,
-		(*32*)capillaryStorageCondition,
-		(*33*)invalidOrders,
-		(*34*)extraneousOrdersOfOperations,
-		(*35*)invalidExpectedMeltingPoints,
-		(*36*)invalidStartEndTemperatures,
-		(*37*)rampRateChangeWarnings,
-		(*38*)recoupSampleContainerMismatches,
-		(*39*)recoupStorageConditionMismatches,
-		(*40*)invalidNumbersOfReplicates,
-		(*41*)prepackedQs,
-		(*42*)desiccatePrepackedMismatches,
-		(*43*)grindPrepackedMismatches,
-		(*44*)grindGrinderTypeMismatches,
-		(*45*)prepackedGrinderTypeMismatches,
-		(*46*)prepackedGrinderMismatches,
-		(*47*)grindGrinderMismatches,
-		(*48*)prepackedFinenessMismatches,
-		(*49*)grindFinenessMismatches,
-		(*50*)prepackedBulkDensityMismatches,
-		(*51*)grindBulkDensityMismatches,
-		(*52*)prepackedGrindingContainerMismatches,
-		(*53*)grindGrindingContainerMismatches,
-		(*54*)prepackedGrindingBeadMismatches,
-		(*55*)grindGrindingBeadMismatches,
-		(*56*)prepackedNumberOfGrindingBeadsMismatches,
-		(*57*)grindNumberOfGrindingBeadsMismatches,
-		(*58*)prepackedGrindingRateMismatches,
-		(*59*)grindGrindingRateMismatches,
-		(*60*)prepackedGrindingTimeMismatches,
-		(*61*)grindGrindingTimeMismatches,
-		(*62*)prepackedNumberOfGrindingStepsMismatches,
-		(*63*)grindNumberOfGrindingStepsMismatches,
-		(*64*)prepackedCoolingTimeMismatches,
-		(*65*)grindCoolingTimeMismatches,
-		(*66*)prepackedGrindingProfileMismatches,
-		(*67*)grindGrindingProfileMismatches,
-		(*68*)prepackedSampleContainerMismatches,
-		(*69*)desiccateSampleContainerMismatches,
-		(*70*)resolvedSampleLabel,
-		(*71*)recoupPrepackedSampleMismatches,
-		(*72*)prepackedPreparedSampleContainerMismatches,
-		(*73*)resolvedSampleContainerLabel
+		resolvedExpectedMeltingPoint,
+		resolvedNumberOfReplicates,
+		resolvedAmount,
+		resolvedPreparedSampleLabel,
+		grindQs,
+		halfResolvedGrinderType,
+		halfResolvedGrinder,
+		halfResolvedFineness,
+		halfResolvedBulkDensity,
+		(*11*)halfResolvedGrindingContainer,
+		halfResolvedGrindingBead,
+		halfResolvedNumberOfGrindingBeads,
+		halfResolvedGrindingRate,
+		halfResolvedGrindingTime,
+		halfResolvedNumberOfGrindingSteps,
+		halfResolvedCoolingTime,
+		halfResolvedGrindingProfile,
+		desiccateQs,
+		resolvedSampleContainer,
+		(*21*)resolvedSealCapillary,
+		resolvedStartTemperature,
+		equilibrationTime,
+		resolvedEndTemperature,
+		resolvedTemperatureRampRate,
+		resolvedRampTime,
+		preparedSampleStorageCondition,
+		capillaryStorageCondition,
+		invalidOrders,
+		invalidExpectedMeltingPoints,
+		(*31*)invalidStartEndTemperatures,
+		rampRateChangeWarnings,
+		amountStorageConditionMismatches,
+		invalidNumbersOfReplicates,
+		prepackedQs,
+		desiccatePrepackedMismatches,
+		grindPrepackedMismatches,
+		grindGrinderTypeMismatches,
+		prepackedGrinderTypeMismatches,
+		prepackedGrinderMismatches,
+		(*41*)grindGrinderMismatches,
+		prepackedFinenessMismatches,
+		grindFinenessMismatches,
+		prepackedBulkDensityMismatches,
+		grindBulkDensityMismatches,
+		prepackedGrindingContainerMismatches,
+		grindGrindingContainerMismatches,
+		prepackedGrindingBeadMismatches,
+		grindGrindingBeadMismatches,
+		prepackedNumberOfGrindingBeadsMismatches,
+		(*51*)grindNumberOfGrindingBeadsMismatches,
+		prepackedGrindingRateMismatches,
+		grindGrindingRateMismatches,
+		prepackedGrindingTimeMismatches,
+		grindGrindingTimeMismatches,
+		prepackedNumberOfGrindingStepsMismatches,
+		grindNumberOfGrindingStepsMismatches,
+		prepackedCoolingTimeMismatches,
+		grindCoolingTimeMismatches,
+		prepackedGrindingProfileMismatches,
+		(*61*)grindGrindingProfileMismatches,
+		prepackedSampleContainerMismatches,
+		desiccateSampleContainerMismatches,
+		resolvedSampleLabel,
+		amountPrepackedMismatches,
+		resolvedSampleContainerLabel,
+		amountDesiccateMismatches,
+		amountGrindMismatches,
+		unresolvedGrindingRates,
+		unresolvedGrindingTimes,
+		(*71*)orderMismatches,
+		unresolvedGrinderTypes,
+		unresolvedGrinders,
+		unresolvedFinenesses,
+		unresolvedBulkDensities,
+		unresolvedGrindingContainers,
+		unresolvedNumbersOfGrindingSteps,
+		unresolvedGrindingProfiles,
+		grinderTypeChangeQs,
+		grinderChangedQs,
+		(*81*)finenessChangedQs,
+		bulkDensityChangedQs,
+		grindingContainerChangedQs,
+		grindingRateChangedQs,
+		grindingTimeChangedQs,
+		numberOfGrindingStepsChangedQs,
+		grindingProfileChangesQs,
+		amountChangedQs,
+		invalidPreparedSampleStorageConditions,
+		invalidEndTemperatures,
+		(*91*)highNumbersOfReplicates
 	} = Transpose[
 		MapThread[
 			Function[{samplePacket, modelPacket, options, sampleContainerPacket, sampleContainerModelPacket},
 				Module[
 					{
-						convertedStartTemperature, rampRateChangeWarning,
-						unresolvedDesiccate, desiccateQ, unresolvedGrind, grindQ,
-						unresolvedOrderOfOperations, orderOfOperations,
-						extraneousOrderOfOperations, rampTimeQ, rampRateQ,
-						expectedMeltingPoint, invalidExpectedMeltingPoint,
-						massComponents, sortedComponents, dominantComponent,
+						convertedStartTemperature, rampRateChangeWarning, correctOrderPattern, orderMismatch,
+						unresolvedDesiccate, desiccateQ, unresolvedGrind, grindQ, grinderTypeChangeQ,
+						unresolvedOrderOfOperations, orderOfOperations, grinderChangedQ, highNumberOfReplicates,
+						finenessChangedQ, bulkDensityChangedQ, grindingContainerChangedQ, grindingRateChangedQ,
+						grindingTimeChangedQ, numberOfGrindingStepsChangedQ, grindingProfileChangesQ, amountChangedQ,
+						rampTimeQ, rampRateQ, invalidPreparedSampleStorageCondition, dominantComponentBoilingPoint,
+						expectedMeltingPoint, invalidExpectedMeltingPoint, invalidEndTemperature,
+						massComponents, sortedComponents, dominantComponent, dominantComponentMeltingPoint,
 						sealCapillary, unroundedStartTemperature, startTemperature,
 						equilibrationTime, endTemperature, temperatureRampRate,
-						rampTime, recoupSample, preparedSampleContainer,
-						unresolvedPreparedSampleContainerLabel, unresolvedSampleLabel,
+						rampTime, unresolvedSampleLabel,
 						unresolvedSampleContainerLabel, sampleContainerLabel,
-						unresolvedPreparedSampleLabel, capillaryStorageCondition,
+						unresolvedPreparedSampleLabel, sampleContainer,
 						unresolvedExpectedMeltingPoint, unresolvedNumberOfReplicates,
 						numberOfReplicates, invalidNumberOfReplicates, unresolvedAmount,
-						unresolvedSealCapillary, prepackedQ, desiccatePrepackedMismatch,
-						recoupSampleContainerMismatch, recoupStorageConditionMismatch,
+						unresolvedSealCapillary, prepackedQ, desiccatePrepackedMismatch, amountStorageConditionMismatch,
 						unresolvedStartTemperature, grindPrepackedMismatch,
-						recoupPrepackedSampleMismatch, prepackedPreparedSampleContainerMismatch,
+						amountPrepackedMismatch,
 						unresolvedEndTemperature, unresolvedTemperatureRampRate, unresolvedRampTime,
-						unroundedEndTemperature, convertedEndTemperature, unresolvedRecoupSample, unresolvedPreparedSampleContainer,
+						unroundedEndTemperature, convertedEndTemperature,
 						unresolvedPreparedSampleStorageCondition, unresolvedCapillaryStorageCondition,
 						invalidOrderOfOperations, unroundedTemperatureRampRate,
 						invalidStartEndTemperature, convertedTemperatureRampRate,
 						grinderType, grinder, fineness, bulkDensity, grindingContainer, grindingBead,
 						numberOfGrindingBeads, grindingRate, grindingTime, numberOfGrindingSteps,
-						coolingTime, grindingProfile, preparedSampleLabel, preparedSampleContainerLabel,
-						unresolvedSampleContainer, unresolvedDesiccationMethod, unresolvedDesiccant,
-						unresolvedDesiccantPhase, unresolvedDesiccantAmount, unresolvedDesiccator, unresolvedDesiccationTime,
-						unresolvedGrinderType, unresolvedGrinder, unresolvedFineness,
+						coolingTime, grindingProfile, preparedSampleLabel,
+						unresolvedSampleContainer, unresolvedGrinderType, unresolvedGrinder, unresolvedFineness,
 						unresolvedBulkDensity, unresolvedGrindingContainer, unresolvedGrindingBead,
 						unresolvedNumberOfGrindingBeads, unresolvedGrindingRate, unresolvedGrindingTime,
 						unresolvedNumberOfGrindingSteps, unresolvedCoolingTime, unresolvedGrindingProfile,
@@ -1604,224 +1741,486 @@ resolveExperimentMeasureMeltingPointOptions[myInputSamples : {ObjectP[Object[Sam
 						prepackedNumberOfGrindingStepsMismatch, grindNumberOfGrindingStepsMismatch,
 						prepackedCoolingTimeMismatch, grindCoolingTimeMismatch,
 						prepackedGrindingProfileMismatch, grindGrindingProfileMismatch,
-						prepackedSampleContainerMismatch, desiccateSampleContainerMismatch
+						prepackedSampleContainerMismatch, desiccateSampleContainerMismatch, errorCheckingVariables,
+						amountDesiccateMismatch, amountGrindMismatch
 					},
 
 					(* error checking variables *)
-					{
-						(*1*)extraneousOrderOfOperations,
-						(*2*)invalidOrderOfOperations,
-						(*3*)invalidExpectedMeltingPoint,
-						(*4*)invalidStartEndTemperature,
-						(*5*)rampRateChangeWarning,
-						(*6*)recoupSampleContainerMismatch,
-						(*7*)recoupStorageConditionMismatch,
-						(*8*)invalidNumberOfReplicates,
-						(*9*)desiccatePrepackedMismatch,
-						(*10*)grindPrepackedMismatch,
-						(*11*)grindGrinderTypeMismatch,
-						(*12*)prepackedGrinderTypeMismatch,
-						(*13*)prepackedGrinderMismatch,
-						(*14*)grindGrinderMismatch,
-						(*15*)prepackedFinenessMismatch,
-						(*16*)grindFinenessMismatch,
-						(*17*)prepackedBulkDensityMismatch,
-						(*18*)grindBulkDensityMismatch,
-						(*19*)prepackedGrindingContainerMismatch,
-						(*20*)grindGrindingContainerMismatch,
-						(*21*)prepackedGrindingBeadMismatch,
-						(*22*)grindGrindingBeadMismatch,
-						(*23*)prepackedNumberOfGrindingBeadsMismatch,
-						(*24*)grindNumberOfGrindingBeadsMismatch,
-						(*25*)prepackedGrindingRateMismatch,
-						(*26*)grindGrindingRateMismatch,
-						(*27*)prepackedGrindingTimeMismatch,
-						(*28*)grindGrindingTimeMismatch,
-						(*29*)prepackedNumberOfGrindingStepsMismatch,
-						(*30*)grindNumberOfGrindingStepsMismatch,
-						(*31*)prepackedCoolingTimeMismatch,
-						(*32*)grindCoolingTimeMismatch,
-						(*33*)prepackedGrindingProfileMismatch,
-						(*34*)grindGrindingProfileMismatch,
-						(*35*)prepackedSampleContainerMismatch,
-						(*36*)desiccateSampleContainerMismatch,
-						(*37*)recoupPrepackedSampleMismatch,
-						(*38*)prepackedPreparedSampleContainerMismatch
-					} = ConstantArray[False, 38];
+					errorCheckingVariables = {
+						(*1*)invalidOrderOfOperations,
+						invalidExpectedMeltingPoint,
+						invalidStartEndTemperature,
+						rampRateChangeWarning,
+						amountStorageConditionMismatch,
+						invalidNumberOfReplicates,
+						desiccatePrepackedMismatch,
+						grindPrepackedMismatch,
+						grindGrinderTypeMismatch,
+						prepackedGrinderTypeMismatch,
+						(*11*)prepackedGrinderMismatch,
+						grindGrinderMismatch,
+						prepackedFinenessMismatch,
+						grindFinenessMismatch,
+						prepackedBulkDensityMismatch,
+						grindBulkDensityMismatch,
+						prepackedGrindingContainerMismatch,
+						grindGrindingContainerMismatch,
+						prepackedGrindingBeadMismatch,
+						grindGrindingBeadMismatch,
+						(*21*)prepackedNumberOfGrindingBeadsMismatch,
+						grindNumberOfGrindingBeadsMismatch,
+						prepackedGrindingRateMismatch,
+						grindGrindingRateMismatch,
+						prepackedGrindingTimeMismatch,
+						grindGrindingTimeMismatch,
+						prepackedNumberOfGrindingStepsMismatch,
+						grindNumberOfGrindingStepsMismatch,
+						prepackedCoolingTimeMismatch,
+						grindCoolingTimeMismatch,
+						(*31*)prepackedGrindingProfileMismatch,
+						grindGrindingProfileMismatch,
+						prepackedSampleContainerMismatch,
+						desiccateSampleContainerMismatch,
+						amountPrepackedMismatch,
+						amountDesiccateMismatch,
+						amountGrindMismatch,
+						orderMismatch,
+						(*39*)invalidPreparedSampleStorageCondition
+					};
+
+					Evaluate[errorCheckingVariables] = ConstantArray[False, Length[errorCheckingVariables]];
 
 					(* pull out all the relevant unresolved options*)
 					{
 						(*1*)unresolvedOrderOfOperations,
-						(*2*)unresolvedExpectedMeltingPoint,
-						(*3*)unresolvedNumberOfReplicates,
-						(*4*)unresolvedSealCapillary,
-						(*6*)unresolvedStartTemperature,
-						(*7*)equilibrationTime,
-						(*8*)unresolvedEndTemperature,
-						(*9*)unresolvedTemperatureRampRate,
-						(*10*)unresolvedRampTime,
-						(*11*)unresolvedRecoupSample,
-						(*12*)unresolvedPreparedSampleContainer,
-						(*13*)unresolvedPreparedSampleStorageCondition,
-						(*14*)unresolvedCapillaryStorageCondition,
-						(*15*)unresolvedDesiccate,
-						(*16*)unresolvedGrind,
-						(*17*)unresolvedAmount,
-						(*18*)unresolvedSampleContainer,
-						(*19*)unresolvedGrinderType,
-						(*20*)unresolvedGrinder,
-						(*21*)unresolvedFineness,
-						(*22*)unresolvedBulkDensity,
-						(*23*)unresolvedGrindingContainer,
-						(*24*)unresolvedGrindingBead,
-						(*25*)unresolvedNumberOfGrindingBeads,
-						(*26*)unresolvedGrindingRate,
-						(*27*)unresolvedGrindingTime,
-						(*28*)unresolvedNumberOfGrindingSteps,
-						(*29*)unresolvedCoolingTime,
-						(*30*)unresolvedGrindingProfile,
-						(*31*)unresolvedPreparedSampleLabel,
-						(*32*)unresolvedPreparedSampleContainerLabel,
-						(*33*)unresolvedSampleLabel,
-						(*34*)unresolvedSampleContainerLabel
+						unresolvedExpectedMeltingPoint,
+						unresolvedNumberOfReplicates,
+						unresolvedSealCapillary,
+						unresolvedStartTemperature,
+						equilibrationTime,
+						unresolvedEndTemperature,
+						unresolvedTemperatureRampRate,
+						unresolvedRampTime,
+						unresolvedPreparedSampleStorageCondition,
+						(*11*)unresolvedCapillaryStorageCondition,
+						unresolvedDesiccate,
+						unresolvedGrind,
+						unresolvedAmount,
+						unresolvedSampleContainer,
+						unresolvedGrinderType,
+						unresolvedGrinder,
+						unresolvedFineness,
+						unresolvedBulkDensity,
+						unresolvedGrindingContainer,
+						(*21*)unresolvedGrindingBead,
+						unresolvedNumberOfGrindingBeads,
+						unresolvedGrindingRate,
+						unresolvedGrindingTime,
+						unresolvedNumberOfGrindingSteps,
+						unresolvedCoolingTime,
+						unresolvedGrindingProfile,
+						unresolvedPreparedSampleLabel,
+						unresolvedSampleLabel,
+						(*30*)unresolvedSampleContainerLabel
 					} = Lookup[
 						options,
 						{
 							(*1*)OrderOfOperations,
-							(*2*)ExpectedMeltingPoint,
-							(*3*)NumberOfReplicates,
-							(*4*)SealCapillary,
-							(*6*)StartTemperature,
-							(*7*)EquilibrationTime,
-							(*8*)EndTemperature,
-							(*9*)TemperatureRampRate,
-							(*10*)RampTime,
-							(*11*)RecoupSample,
-							(*12*)PreparedSampleContainer,
-							(*13*)PreparedSampleStorageCondition,
-							(*14*)CapillaryStorageCondition,
-							(*15*)Desiccate,
-							(*16*)Grind,
-							(*17*)Amount,
-							(*18*)SampleContainer,
-							(*19*)GrinderType,
-							(*20*)Grinder,
-							(*21*)Fineness,
-							(*22*)BulkDensity,
-							(*23*)GrindingContainer,
-							(*24*)GrindingBead,
-							(*25*)NumberOfGrindingBeads,
-							(*26*)GrindingRate,
-							(*27*)GrindingTime,
-							(*28*)NumberOfGrindingSteps,
-							(*29*)CoolingTime,
-							(*30*)GrindingProfile,
-							(*31*)PreparedSampleLabel,
-							(*32*)PreparedSampleContainerLabel,
-							(*33*)SampleLabel,
-							(*34*)SampleContainerLabel
+							ExpectedMeltingPoint,
+							NumberOfReplicates,
+							SealCapillary,
+							StartTemperature,
+							EquilibrationTime,
+							EndTemperature,
+							TemperatureRampRate,
+							RampTime,
+							PreparedSampleStorageCondition,
+							(*11*)CapillaryStorageCondition,
+							Desiccate,
+							Grind,
+							Amount,
+							SampleContainer,
+							GrinderType,
+							Grinder,
+							Fineness,
+							BulkDensity,
+							GrindingContainer,
+							(*21*)GrindingBead,
+							NumberOfGrindingBeads,
+							GrindingRate,
+							GrindingTime,
+							NumberOfGrindingSteps,
+							CoolingTime,
+							GrindingProfile,
+							PreparedSampleLabel,
+							SampleLabel,
+							(*30*)SampleContainerLabel
 						}
 					];
 
 					(* --- Resolve IndexMatched Options --- *)
 
+					(*--------------------*)
+					(*--------------------*)
+					(* High level options *)
+					(*--------------------*)
+					(*--------------------*)
+
 					(*Determine the type of the sample: prepacked if sample's container is a capillary, not packed if sample's container is not a capillary?*)
 					prepackedQ = If[MatchQ[Lookup[sampleContainerPacket, Object], ObjectP[Object[Container, Capillary]]], True, False];
 
-					(*Master Switch: Desiccate*)
+					(*Master Switch: Desiccate. If The sample is in a capillary, resolve to False, otherwise True. *)
 					desiccateQ = Which[
 						MatchQ[unresolvedDesiccate, Except[Automatic]], unresolvedDesiccate,
-						MatchQ[unresolvedDesiccate, Automatic] && prepackedQ, False,
+						MatchQ[unresolvedDesiccate, Automatic] && (prepackedQ || NullQ[unresolvedAmount]), False,
 						True, True
 					];
 
+					(* Master Switch: Grind. If The sample is in a capillary, resolve to False, otherwise True. *)
+					grindQ = Which[
+						MatchQ[unresolvedGrind, Except[Automatic]], unresolvedGrind,
+						MatchQ[unresolvedGrind, Automatic] && (prepackedQ || NullQ[unresolvedAmount]), False,
+						True, True
+					];
+
+					(* SampleLabel; Default: Automatic *)
+					sampleLabel = Which[
+						MatchQ[unresolvedSampleLabel, Except[Automatic]], unresolvedSampleLabel,
+						And[MatchQ[simulation, SimulationP], MemberQ[Lookup[simulation[[1]], Labels][[All, 2]], Lookup[samplePacket, Object]]],
+						Lookup[Reverse /@ Lookup[simulation[[1]], Labels], Lookup[samplePacket, Object]],
+						True, "sample " <> StringDrop[Lookup[samplePacket, ID], 3]
+					];
+
+					(*Resolve OrderOfOperation. if both Desiccate and Grind are True, resolve to {Desiccate, Grind}, otherwise Null *)
+					orderOfOperations = Which[
+						MatchQ[unresolvedOrderOfOperations, Except[Automatic]], unresolvedOrderOfOperations,
+						MatchQ[unresolvedOrderOfOperations, Automatic] && !prepackedQ && MatchQ[{desiccateQ, grindQ}, {True, True}], {Desiccate, Grind},
+						True, Null
+					];
+
+					(* Throw an error if OrderOfOperation does not match with specified Desiccate and Grind *)
+					correctOrderPattern = Switch[{prepackedQ, desiccateQ, grindQ},
+						{True, _, _}, Null,
+						{_, True, True}, {Desiccate, Grind} | {Grind, Desiccate},
+						{_, True, False}, {Desiccate} | Null,
+						{_, False, True}, {Grind} | Null,
+						{_, False, False}, Null
+					];
+
+					(* flip the error switch if:
+						1. OrderOfOperations does not match the pattern
+						2. prepacked sample *)
+					invalidOrderOfOperations = prepackedQ && !NullQ[orderOfOperations];
+					orderMismatch = !prepackedQ && !MatchQ[orderOfOperations, correctOrderPattern];
+
+					(*Resolve Amount: Amount determines the amount of the sample to be desiccated or ground. Amount is only needed when Desiccate or Grind is True. if both are False, Amount is ignored. *)
+					{amount, amountChangedQ} = Which[
+						prepackedQ,
+							{unresolvedAmount /. Automatic :> Null, False},
+
+						And[
+							grindQ || desiccateQ,
+							NullQ[unresolvedAmount]
+						],
+							{
+								If[
+									GreaterEqualQ[(Lookup[samplePacket, Mass] /. {Null | {} -> 1Gram}), 1 Gram],
+									1 Gram,
+									All
+								],
+								True
+							},
+
+						And[
+							grindQ || desiccateQ,
+							MatchQ[unresolvedAmount, Except[Automatic]]
+						],
+							{unresolvedAmount, False},
+
+						grindQ || desiccateQ,
+							{
+								If[
+									GreaterEqualQ[(Lookup[samplePacket, Mass] /. {Null | {} -> 1Gram}), 1 Gram],
+									1 Gram,
+									All
+								],
+								False
+							},
+
+						True,
+							{Null, False}
+					];
+
+					(*flip an error switch if the sample is prepacked but Amount is informed. Throw the warning only if Amount is not automatically resolved*)
+					amountPrepackedMismatch = TrueQ[prepackedQ] && !NullQ[amount] && !MatchQ[unresolvedAmount, Automatic];
+
+					(*Resolve PreparedSampleLabel*)
+					preparedSampleLabel = Which[
+						MatchQ[unresolvedPreparedSampleLabel, Except[Automatic]],
+						unresolvedPreparedSampleLabel,
+						prepackedQ,
+						Null,
+						!NullQ[amount],
+						CreateUniqueLabel["prepared sample "],
+						True,
+						Null
+					];
+
+					(*Resolve PreparedSampleStorageCondition*)
+					(*flip an error switch if amount is Null but PreparedSampleStorageCondition is not Null*)
+					amountStorageConditionMismatch = If[
+						NullQ[amount] && !NullQ[unresolvedPreparedSampleStorageCondition],
+						True,
+						False
+					];
+
+					(*Throw an error if PreparedSampleStorageCondition resolves to Null*)
+					invalidPreparedSampleStorageCondition = And[
+						!prepackedQ,
+						desiccateQ || grindQ,
+						NullQ[unresolvedPreparedSampleStorageCondition],
+						NullQ[Lookup[samplePacket, StorageCondition, Null]],
+						Or[
+							NullQ[modelPacket],
+							NullQ[Lookup[modelPacket, DefaultStorageCondition, Null]]
+						]
+					];
+
+					(*-----------------------------------*)
+					(*-----------------------------------*)
+					(* resolve Desiccate-related options *)
+					(*-----------------------------------*)
+					(*-----------------------------------*)
 					(*flip an error switch if the sample is prepacked but Desiccate is True*)
 					desiccatePrepackedMismatch = If[prepackedQ && desiccateQ, True, False];
 
-					(*flip an error switch if the sample is prepacked in a melting point capillary but SampleContainer is not Null*)
-					prepackedSampleContainerMismatch = If[prepackedQ && !desiccateQ && !NullQ[unresolvedSampleContainer], True, False];
+					(* SampleContainer; Default: Automatic; Null indicates Input Sample's Container. If Desiccate is False or Amount is set to a value other than All, the specified amount of the sample is transferred into a SampleContainer determined by PreferredContainer*)
+					sampleContainer = Which[
+						MatchQ[unresolvedSampleContainer, Except[Automatic]],
+							unresolvedSampleContainer,
 
-					(*flip an error switch if the sample is Desiccate is False but SampleContainer is not Null*)
-					desiccateSampleContainerMismatch = If[!prepackedQ && !desiccateQ && !NullQ[unresolvedSampleContainer], True, False];
+						MatchQ[amount, Except[All | Null]] && TrueQ[desiccateQ],
+							PreferredContainer[amount],
 
-
-					(*Master Switch: Grind*)
-					grindQ = Which[
-						MatchQ[unresolvedGrind, Except[Automatic]], unresolvedGrind,
-						MatchQ[unresolvedGrind, Automatic] && prepackedQ, False,
-						True, True
+						True,
+							Null
 					];
+
+					(* SampleContainerLabel; Default: Automatic.
+					SampleContainer refers to the container that contains the sample during desiccation. *)
+					sampleContainerLabel = Which[
+						MatchQ[unresolvedSampleContainerLabel, Except[Automatic]],
+						unresolvedSampleContainerLabel,
+						And[
+							MatchQ[simulation, SimulationP],
+							MemberQ[Lookup[simulation[[1]], Labels][[All, 2]], Lookup[sampleContainerPacket, Object]]
+						],
+						Lookup[Reverse /@ Lookup[simulation[[1]], Labels], Lookup[sampleContainerPacket, Object]],
+						NullQ[sampleContainer],
+						CreateUniqueLabel["input container " <> StringDrop[Lookup[sampleContainerPacket, ID], 3]],
+						True,
+						CreateUniqueLabel["sample container " <> StringDrop[Download[sampleContainer, ID], 3]]
+					];
+
+					(*flip an error switch if the sample is prepacked in a melting point capillary but SampleContainer is not Null or Automatic*)
+					prepackedSampleContainerMismatch = If[prepackedQ && !desiccateQ && !MatchQ[unresolvedSampleContainer, Null | Automatic], True, False];
+
+					(*flip an error switch if the sample is not prepacked and Desiccate is False but SampleContainer is not Null*)
+					desiccateSampleContainerMismatch = If[!prepackedQ && !desiccateQ && !MatchQ[unresolvedSampleContainer, Null | Automatic], True, False];
+
+					(*flip an error switch if the desiccateQ is True and unresolvedAmount is Null*)
+					amountDesiccateMismatch = If[desiccateQ && NullQ[unresolvedAmount], True, False];
+
+
+
+					(*-------------------------------*)
+					(*-------------------------------*)
+					(* resolve Grind-related options *)
+					(*-------------------------------*)
+					(*-------------------------------*)
+
+					(*resolve Grind-related options: If Grind is True, Grind options will resolve by ExperimentGrind after the Big MapThread. Here, Grind-related options are resolved only if Grind is False*)
 
 					(*flip an error switch if the sample is prepacked but Grind is True*)
 					grindPrepackedMismatch = If[prepackedQ && grindQ, True, False];
 
-					(*resolve Grind-related options: If Grind is True, Grind options will resolve by ExperimentGrind
-					after the Big MapThread. Here, Grind-related options are resolved only if Grind is False*)
+					(*flip an error switch if the grindQ is True and unresolvedAmount is Null*)
+					amountGrindMismatch = If[grindQ && NullQ[unresolvedAmount], True, False];
+
 
 					(*Resolve GrinderType*)
-					grinderType = If[
-						!grindQ && MatchQ[unresolvedGrinderType, Automatic],
-						Null,
-						unresolvedGrinderType
+					(* if Grind is True but we are in Error State, we need to change the user-specified value to successfully run the Grind resolver. these cases are tracked to change the value back to the user-specified value at the end of the resolver *)
+					{grinderType, grinderTypeChangeQ} = Switch[{grindQ, unresolvedGrinderType},
+						(* if Grind is False, GrinderType is Null *)
+						{False, Automatic},
+							{Null, False},
+
+						(* if Grind is True but GrinderType is Null, it's an error state; set it to Automatic to be resolved by Grind resolver *)
+						{True, Null},
+							{Automatic, True},
+
+						(* no need to change the value in other cases:
+							{False, Except[Automatic]}: error state; won't go to Grind resolver;
+							{True, Automatic | Except[Automatic}: handled by ExperimentGrind resolver. *)
+						{_, _},
+							{unresolvedGrinderType, False}
 					];
 
 					(*flip an error switch if the sample is prepacked in a melting point capillary but GrinderType is not Null*)
-					prepackedGrinderTypeMismatch = If[prepackedQ && !grindQ && !NullQ[grinderType], True, False];
+					prepackedGrinderTypeMismatch = If[prepackedQ && MatchQ[unresolvedGrinderType, Except[Null | Automatic]], True, False];
 
-					(*flip an error switch if the sample is Grind is False but GrinderType is not Null*)
-					grindGrinderTypeMismatch = If[!prepackedQ && !grindQ && !NullQ[grinderType], True, False];
+					(* flip an error switch if:
+						 Grind is False but GrinderType is not Null or Automatic
+						 OR
+						 Grind is True but GrinderType is Null *)
+					grindGrinderTypeMismatch = If[
+						Or[
+							grindQ && NullQ[unresolvedGrinderType],
+							!grindQ && MatchQ[unresolvedGrinderType, Except[Null|Automatic]]
+						],
+						True,
+						False
+					];
 
 					(*Resolve Grinder*)
-					grinder = If[
-						!grindQ && MatchQ[unresolvedGrinder, Automatic],
-						Null,
-						unresolvedGrinder
+					{grinder, grinderChangedQ} = Switch[{grindQ, unresolvedGrinder},
+						(* if Grind is False, Grinder is Null *)
+						{False, Automatic},
+							{Null, False},
+
+						(* if Grind is True but Grinder is Null, it's an error state; set it to Automatic to be resolved by Grind resolver *)
+						{True, Null},
+							{Automatic, True},
+
+						(* no need to change the value in other cases:
+							{False, Except[Automatic]}: error state; won't go to Grind resolver;
+							{True, Automatic | Except[Automatic}: handled by ExperimentGrind resolver. *)
+						{_, _},
+							{unresolvedGrinder, False}
 					];
 
 					(*flip an error switch if the sample is prepacked in a melting point capillary but Grinder is not Null*)
-					prepackedGrinderMismatch = If[prepackedQ && !grindQ && !NullQ[grinder], True, False];
+					prepackedGrinderMismatch = If[prepackedQ && MatchQ[unresolvedGrinder, Except[Null | Automatic]], True, False];
 
-					(*flip an error switch if the sample is Grind is False but Grinder is not Null*)
-					grindGrinderMismatch = If[!prepackedQ && !grindQ && !NullQ[grinder], True, False];
+					(* flip an error switch if:
+						 Grind is False but Grinder is not Null or Automatic
+						 OR
+						 Grind is True but Grinder is Null *)
+					grindGrinderMismatch = If[
+						Or[
+							grindQ && NullQ[unresolvedGrinder],
+							!grindQ && MatchQ[unresolvedGrinder, Except[Null|Automatic]]
+						],
+						True,
+						False
+					];
 
 					(*Resolve Fineness*)
-					fineness = Which[
-						!grindQ && MatchQ[unresolvedFineness, Automatic], Null,
-						grindQ && MatchQ[unresolvedFineness, Automatic], 1Millimeter,
-						True, unresolvedFineness
+					{fineness, finenessChangedQ} = Switch[{grindQ, unresolvedFineness},
+						(* if Grind is False, Fineness is Null *)
+						{False, Automatic},
+							{Null, False},
+
+						(* if Grind is True and specified Fineness Automatic, resolve to default *)
+						{True, Automatic},
+							{1 Millimeter, False},
+
+						(* if Grind is True but Fineness is Null, it's an error state; set it to default *)
+						{True, Null},
+							{1 Millimeter, True},
+
+						(* no need to change the value in other cases:
+							{False, Except[Automatic]}: error state; won't go to Grind resolver;
+							{True, Except[Automatic}: handled by ExperimentGrind resolver. *)
+						{_, _},
+							{unresolvedFineness, False}
 					];
 
 					(*flip an error switch if the sample is prepacked in a melting point capillary but Fineness is not Null*)
-					prepackedFinenessMismatch = If[prepackedQ && !grindQ && !NullQ[fineness], True, False];
+					prepackedFinenessMismatch = If[prepackedQ && MatchQ[unresolvedFineness, Except[Null|Automatic]], True, False];
 
-					(*flip an error switch if the sample is Grind is False but Fineness is not Null*)
-					grindFinenessMismatch = If[!prepackedQ && !grindQ && !NullQ[fineness], True, False];
+					(* flip an error switch if:
+						 Grind is False but Fineness is not Null or Automatic
+						 OR
+						 Grind is True but Fineness is Null *)
+					grindFinenessMismatch = If[
+						Or[
+							grindQ && NullQ[unresolvedFineness],
+							!grindQ && MatchQ[unresolvedFineness, Except[Null|Automatic]]
+						],
+						True,
+						False
+					];
 
 					(*Resolve BulkDensity*)
-					bulkDensity = Which[
-						!grindQ && MatchQ[unresolvedBulkDensity, Automatic], Null,
-						grindQ && MatchQ[unresolvedBulkDensity, Automatic], 1Gram / Milliliter,
-						True, unresolvedBulkDensity
+					{bulkDensity, bulkDensityChangedQ} = Switch[{grindQ, unresolvedBulkDensity},
+						(* if Grind is False, BulkDensity is Null *)
+						{False, Automatic},
+							{Null, False},
+
+						(* if Grind is True and specified BulkDensity Automatic, resolve to default *)
+						{True, Automatic},
+							{1 Gram / Milliliter, False},
+
+						(* if Grind is True but BulkDensity is Null, it's an error state; set it to default *)
+						{True, Null},
+							{1 Gram / Milliliter, True},
+
+						(* no need to change the value in other cases:
+							{False, Except[Automatic]}: error state; won't go to Grind resolver;
+							{True, Except[Automatic}: handled by ExperimentGrind resolver. *)
+						{_, _},
+							{unresolvedBulkDensity, False}
 					];
 
 					(*flip an error switch if the sample is prepacked in a melting point capillary but BulkDensity is not Null*)
-					prepackedBulkDensityMismatch = If[prepackedQ && !grindQ && !NullQ[bulkDensity], True, False];
+					prepackedBulkDensityMismatch = If[prepackedQ && MatchQ[unresolvedBulkDensity, Except[Null|Automatic]], True, False];
 
-					(*flip an error switch if the sample is Grind is False but BulkDensity is not Null*)
-					grindBulkDensityMismatch = If[!prepackedQ && !grindQ && !NullQ[bulkDensity], True, False];
+					(* flip an error switch if:
+						 Grind is False but BulkDensity is not Null or Automatic
+						 OR
+						 Grind is True but BulkDensity is Null *)
+					grindBulkDensityMismatch = If[
+						Or[
+							grindQ && NullQ[unresolvedBulkDensity],
+							!grindQ && MatchQ[unresolvedBulkDensity, Except[Null|Automatic]]
+						],
+						True,
+						False
+					];
 
 					(*Resolve GrindingContainer*)
-					grindingContainer = If[
-						!grindQ && MatchQ[unresolvedGrindingContainer, Automatic],
-						Null,
-						unresolvedGrindingContainer
+					{grindingContainer, grindingContainerChangedQ} = Switch[{grindQ, unresolvedGrindingContainer},
+						(* if Grind is False, GrindingContainer is Null *)
+						{False, Automatic},
+							{Null, False},
+
+						(* if Grind is True but GrindingContainer is Null, it's an error state; set it to Automatic to be resolved by Grind resolver *)
+						{True, Null},
+							{Automatic, True},
+
+						(* no need to change the value in other cases:
+							{False, Except[Automatic]}: error state; won't go to Grind resolver;
+							{True, Automatic | Except[Automatic}: handled by ExperimentGrind resolver. *)
+						{_, _},
+							{unresolvedGrindingContainer, False}
 					];
 
 					(*flip an error switch if the sample is prepacked in a melting point capillary but GrindingContainer is not Null*)
-					prepackedGrindingContainerMismatch = If[prepackedQ && !grindQ && !NullQ[grindingContainer], True, False];
+					prepackedGrindingContainerMismatch = If[prepackedQ && MatchQ[unresolvedGrindingContainer, Except[Null | Automatic]], True, False];
 
-					(*flip an error switch if the sample is Grind is False but GrindingContainer is not Null*)
-					grindGrindingContainerMismatch = If[!prepackedQ && !grindQ && !NullQ[grindingContainer], True, False];
+					(* flip an error switch if:
+						 Grind is False but GrindingContainer is not Null or Automatic
+						 OR
+						 Grind is True but GrindingContainer is Null *)
+					grindGrindingContainerMismatch = If[
+						Or[
+							grindQ && NullQ[unresolvedGrindingContainer],
+							!grindQ && MatchQ[unresolvedGrindingContainer, Except[Null|Automatic]]
+						],
+						True,
+						False
+					];
 
 					(*Resolve GrindingBead*)
 					grindingBead = If[
@@ -1831,10 +2230,10 @@ resolveExperimentMeasureMeltingPointOptions[myInputSamples : {ObjectP[Object[Sam
 					];
 
 					(*flip an error switch if the sample is prepacked in a melting point capillary but GrindingBead is not Null*)
-					prepackedGrindingBeadMismatch = If[prepackedQ && !grindQ && !NullQ[grindingBead], True, False];
+					prepackedGrindingBeadMismatch = If[prepackedQ && MatchQ[unresolvedGrindingBead, Except[Null | Automatic]], True, False];
 
-					(*flip an error switch if the sample is Grind is False but GrindingBead is not Null*)
-					grindGrindingBeadMismatch = If[!prepackedQ && !grindQ && !NullQ[grindingBead], True, False];
+					(*flip an error switch if Grind is False but GrindingBead is not Null*)
+					grindGrindingBeadMismatch = If[!grindQ && MatchQ[unresolvedGrindingBead, Except[Null | Automatic]], True, False];
 
 					(*Resolve NumberOfGrindingBeads*)
 					numberOfGrindingBeads = If[
@@ -1844,49 +2243,111 @@ resolveExperimentMeasureMeltingPointOptions[myInputSamples : {ObjectP[Object[Sam
 					];
 
 					(*flip an error switch if the sample is prepacked in a melting point capillary but NumberOfGrindingBeads is not Null*)
-					prepackedNumberOfGrindingBeadsMismatch = If[prepackedQ && !grindQ && !NullQ[numberOfGrindingBeads], True, False];
+					prepackedNumberOfGrindingBeadsMismatch = If[prepackedQ && MatchQ[unresolvedNumberOfGrindingBeads, Except[Null | Automatic]], True, False];
 
 					(*flip an error switch if the sample is Grind is False but NumberOfGrindingBeads is not Null*)
-					grindNumberOfGrindingBeadsMismatch = If[!prepackedQ && !grindQ && !NullQ[numberOfGrindingBeads], True, False];
+					grindNumberOfGrindingBeadsMismatch = If[!grindQ && MatchQ[unresolvedNumberOfGrindingBeads, Except[Null | Automatic]], True, False];
 
-					(*Resolve GrindingRate*)
-					grindingRate = If[
-						!grindQ && MatchQ[unresolvedGrindingRate, Automatic],
-						Null,
-						unresolvedGrindingRate
+					(* Resolve GrindingRate *)
+					{grindingRate, grindingRateChangedQ} = Switch[{grindQ, unresolvedGrindingRate},
+						(* if Grind is False, GrindingRate is Null *)
+						{False, Automatic},
+							{Null, False},
+
+						(* if Grind is True but GrindingRate is Null, it's an error state; set it to Automatic to be resolved by Grind resolver *)
+						{True, Null},
+							{Automatic, True},
+
+						(* no need to change the value in other cases:
+							{False, Except[Automatic]}: error state; won't go to Grind resolver;
+							{True, Automatic | Except[Automatic}: handled by ExperimentGrind resolver. *)
+						{_,_},
+							{unresolvedGrindingRate, False}
 					];
 
-					(*flip an error switch if the sample is prepacked in a melting point capillary but GrindingRate is not Null*)
-					prepackedGrindingRateMismatch = If[prepackedQ && !grindQ && !NullQ[grindingRate], True, False];
+					(* flip an error switch if the sample is prepacked in a melting point capillary but GrindingRate is not Null *)
+					prepackedGrindingRateMismatch = If[prepackedQ && MatchQ[unresolvedGrindingRate, Except[Null | Automatic]], True, False];
 
-					(*flip an error switch if the sample is Grind is False but GrindingRate is not Null*)
-					grindGrindingRateMismatch = If[!prepackedQ && !grindQ && !NullQ[grindingRate], True, False];
-
-					(*Resolve GrindingTime*)
-					grindingTime = If[
-						!grindQ && MatchQ[unresolvedGrindingTime, Automatic],
-						Null,
-						unresolvedGrindingTime
+					(* flip an error switch if:
+					 	Grind is False but GrindingRate is not Null or Automatic
+					 	OR
+					 	Grind is True but GrindingRate is Null *)
+					grindGrindingRateMismatch = If[
+						Or[
+							grindQ && NullQ[unresolvedGrindingRate],
+							!grindQ && MatchQ[unresolvedGrindingRate, Except[Null|Automatic]]
+						],
+						True,
+						False
 					];
 
-					(*flip an error switch if the sample is prepacked in a melting point capillary but GrindingTime is not Null*)
-					prepackedGrindingTimeMismatch = If[prepackedQ && !grindQ && !NullQ[grindingTime], True, False];
+					(* Resolve GrindingTime *)
+					{grindingTime, grindingTimeChangedQ} = Switch[{grindQ, unresolvedGrindingTime},
+						(* if Grind is False, GrindingTime is Null *)
+						{False, Automatic},
+							{Null, False},
 
-					(*flip an error switch if the sample is Grind is False but GrindingTime is not Null*)
-					grindGrindingTimeMismatch = If[!prepackedQ && !grindQ && !NullQ[grindingTime], True, False];
+						(* if Grind is True but GrindingTime is Null, it's an error state; set it to Automatic to be resolved by Grind resolver *)
+						{True, Null},
+							{Automatic, True},
+
+						(* no need to change the value in other cases:
+							{False, Except[Automatic]}: error state; won't go to Grind resolver;
+							{True, Automatic | Except[Automatic}: handled by ExperimentGrind resolver. *)
+						{_,_},
+							{unresolvedGrindingTime, False}
+					];
+
+					(* flip an error switch if the sample is prepacked in a melting point capillary but GrindingTime is not Null *)
+					prepackedGrindingTimeMismatch = If[prepackedQ && MatchQ[unresolvedGrindingTime, Except[Null | Automatic]], True, False];
+
+
+					(* flip an error switch if:
+						Grind is False but GrindingTime is not Null or Automatic
+						OR
+						Grind is True but GrindingTime is Null *)
+					grindGrindingTimeMismatch = If[
+						Or[
+							grindQ && NullQ[unresolvedGrindingTime],
+							!grindQ && MatchQ[unresolvedGrindingTime, Except[Null|Automatic]]
+						],
+						True,
+						False
+					];
 
 					(*Resolve NumberOfGrindingSteps*)
-					numberOfGrindingSteps = Which[
-						!grindQ && MatchQ[unresolvedNumberOfGrindingSteps, Automatic], Null,
-						grindQ && MatchQ[unresolvedNumberOfGrindingSteps, Automatic], 1,
-						True, unresolvedNumberOfGrindingSteps
+					{numberOfGrindingSteps, numberOfGrindingStepsChangedQ} = Switch[{grindQ, unresolvedNumberOfGrindingSteps},
+						(* if Grind is False, NumberOfGrindingSteps is Null *)
+						{False, Automatic},
+							{Null, False},
+
+						(* if Grind is True but NumberOfGrindingSteps is Null, it's an error state; set it to Automatic to be resolved by Grind resolver *)
+						{True, Null},
+							{Automatic, True},
+
+						(* no need to change the value in other cases:
+							{False, Except[Automatic]}: error state; won't go to Grind resolver;
+							{True, Automatic | Except[Automatic}: handled by ExperimentGrind resolver. *)
+						{_,_},
+							{unresolvedNumberOfGrindingSteps, False}
 					];
 
-					(*flip an error switch if the sample is prepacked in a melting point capillary but NumberOfGrindingSteps is not Null*)
-					prepackedNumberOfGrindingStepsMismatch = If[prepackedQ && !grindQ && !NullQ[numberOfGrindingSteps], True, False];
+					(* flip an error switch if the sample is prepacked in a melting point capillary but NumberOfGrindingSteps is not Null *)
+					prepackedNumberOfGrindingStepsMismatch = If[prepackedQ && MatchQ[unresolvedNumberOfGrindingSteps, Except[Null | Automatic]], True, False];
 
-					(*flip an error switch if the sample is Grind is False but NumberOfGrindingSteps is not Null*)
-					grindNumberOfGrindingStepsMismatch = If[!prepackedQ && !grindQ && !NullQ[numberOfGrindingSteps], True, False];
+
+					(* flip an error switch if:
+						Grind is False but NumberOfGrindingSteps is not Null or Automatic
+						OR
+						Grind is True but NumberOfGrindingSteps is Null *)
+					grindNumberOfGrindingStepsMismatch = If[
+						Or[
+							grindQ && NullQ[unresolvedNumberOfGrindingSteps],
+							!grindQ && MatchQ[unresolvedNumberOfGrindingSteps, Except[Null|Automatic]]
+						],
+						True,
+						False
+					];
 
 					(*Resolve CoolingTime*)
 					coolingTime = If[
@@ -1896,37 +2357,45 @@ resolveExperimentMeasureMeltingPointOptions[myInputSamples : {ObjectP[Object[Sam
 					];
 
 					(*flip an error switch if the sample is prepacked in a melting point capillary but CoolingTime is not Null*)
-					prepackedCoolingTimeMismatch = If[prepackedQ && !grindQ && !NullQ[coolingTime], True, False];
+					prepackedCoolingTimeMismatch = If[prepackedQ && MatchQ[unresolvedCoolingTime, Except[Null|Automatic]], True, False];
 
-					(*flip an error switch if the sample is Grind is False but CoolingTime is not Null*)
-					grindCoolingTimeMismatch = If[!prepackedQ && !grindQ && !NullQ[coolingTime], True, False];
+					(*flip an error switch if Grind is False but CoolingTime is not Null*)
+					grindCoolingTimeMismatch = If[!grindQ && MatchQ[unresolvedCoolingTime, Except[Null|Automatic]], True, False];
 
 					(*Resolve GrindingProfile*)
-					grindingProfile = If[
-						!grindQ && MatchQ[unresolvedGrindingProfile, Automatic],
-						Null,
-						unresolvedGrindingProfile
+					{grindingProfile, grindingProfileChangesQ} = Switch[{grindQ, unresolvedGrindingProfile},
+						(* if Grind is False, GrindingProfile is Null *)
+						{False, Automatic},
+							{Null, False},
+
+						(* if Grind is True but GrindingProfile is Null, it's an error state; set it to Automatic to be resolved by Grind resolver *)
+						{True, Null},
+							{Automatic, True},
+
+						(* no need to change the value in other cases:
+							{False, Except[Automatic]}: error state; won't go to Grind resolver;
+							{True, Automatic | Except[Automatic}: handled by ExperimentGrind resolver. *)
+						{_,_},
+							{unresolvedGrindingProfile, False}
 					];
 
-					(*flip an error switch if the sample is prepacked in a melting point capillary but GrindingProfile is not Null*)
-					prepackedGrindingProfileMismatch = If[prepackedQ && !grindQ && !NullQ[grindingProfile], True, False];
+					(* flip an error switch if the sample is prepacked in a melting point capillary but GrindingProfile is not Null *)
+					prepackedGrindingProfileMismatch = If[prepackedQ && MatchQ[unresolvedGrindingProfile, Except[Null|Automatic]], True, False];
 
-					(*flip an error switch if the sample is Grind is False but GrindingProfile is not Null*)
-					grindGrindingProfileMismatch = If[!prepackedQ && !grindQ && !NullQ[grindingProfile], True, False];
+
+					(* flip an error switch if:
+						Grind is False but GrindingProfile is not Null or Automatic
+						OR
+						Grind is True but GrindingProfile is Null *)
+					grindGrindingProfileMismatch = If[
+						Or[
+							grindQ && NullQ[unresolvedGrindingProfile],
+							!grindQ && MatchQ[unresolvedGrindingProfile, Except[Null|Automatic]]
+						],
+						True,
+						False
+					];
 					(*End of Grind-Related options*)
-
-					(*Resolve OrderOfOperation*)
-					orderOfOperations = Which[
-						MatchQ[unresolvedOrderOfOperations, Except[Automatic]], unresolvedOrderOfOperations,
-						MatchQ[unresolvedOrderOfOperations, Automatic] && MatchQ[{desiccateQ, grindQ}, {True, True}], {Desiccate, Grind},
-						True, Null
-					];
-
-					(*Warning if OrderOfOperations is not set to Null but desiccateQ or grindQ is false.*)
-					extraneousOrderOfOperations = If[!NullQ[orderOfOperations], !(desiccateQ && grindQ), False];
-
-					(*Error if desiccateQ and grindQ are True but OrderOfOperations is Null*)
-					invalidOrderOfOperations = If[NullQ[orderOfOperations], desiccateQ && grindQ, False];
 
 
 					(*Resolve ExpectedMeltingPoint: If it is not specified, automatically set to the MP of the dominant component*)
@@ -1935,8 +2404,8 @@ resolveExperimentMeasureMeltingPointOptions[myInputSamples : {ObjectP[Object[Sam
 					if Composition has only one component, then massComponents is that single component*)
 					massComponents = Which[
 						MatchQ[samplePacket[Composition], Null | {Null} | {{Null}} | {} | {{}}], Null,
-						Length[samplePacket[Composition]] == 1, samplePacket[Composition],
-						Length[samplePacket[Composition]] > 1, Cases[samplePacket[Composition], {MassPercentP | MassConcentrationP, ObjectP[]}]
+						Length[samplePacket[Composition]] == 1, samplePacket[Composition][[All, {1, 2}]],
+						Length[samplePacket[Composition]] > 1, Cases[samplePacket[Composition], {MassPercentP | MassConcentrationP, ObjectP[], _}][[All, {1, 2}]]
 					];
 
 					(*Sort components based on amount. if massComponents is Null, sortedComponents is Null*)
@@ -1944,31 +2413,42 @@ resolveExperimentMeasureMeltingPointOptions[myInputSamples : {ObjectP[Object[Sam
 
 					(*Extract the Identity Model: If length of *)
 					dominantComponent = If[MatchQ[sortedComponents, Null], Null, Download[Last[sortedComponents][[2]], Object]];
+					dominantComponentMeltingPoint = fastAssocLookup[fastAssoc, dominantComponent, MeltingPoint];
+					dominantComponentBoilingPoint = fastAssocLookup[fastAssoc, dominantComponent, BoilingPoint];
 
 					expectedMeltingPoint = Which[
 						MatchQ[unresolvedExpectedMeltingPoint, Except[Automatic]],
-						unresolvedExpectedMeltingPoint,
+							unresolvedExpectedMeltingPoint,
 
 						(*Set expectedMeltingPoint to SamplePacket's MeltingPoint if it is informed*)
-						(MatchQ[unresolvedExpectedMeltingPoint, Automatic] &&
-							!NullQ[Download[samplePacket, MeltingPoint]] &&
-							Download[samplePacket, MeltingPoint] >= 25.1Celsius &&
-							Download[samplePacket, MeltingPoint] <= 349.9Celsius),
-						Download[samplePacket, MeltingPoint],
+						And[
+							MatchQ[unresolvedExpectedMeltingPoint, Automatic],
+							!NullQ[Download[samplePacket, MeltingPoint]],
+							Download[samplePacket, MeltingPoint] >= 25.1Celsius,
+							Download[samplePacket, MeltingPoint] <= availableMaxTemperature
+						],
+							N[Round[Download[samplePacket, MeltingPoint], Rationalize[0.1]]],
 
 						(*Set expectedMeltingPoint to the dominant component's MeltingPoint if it is informed*)
-						(MatchQ[unresolvedExpectedMeltingPoint, Automatic] &&
-							!NullQ[fastAssocLookup[fastAssoc, dominantComponent, MeltingPoint]] &&
-							fastAssocLookup[fastAssoc, dominantComponent, MeltingPoint] >= 25.1Celsius &&
-							fastAssocLookup[fastAssoc, dominantComponent, MeltingPoint] <= 349.9Celsius),
-						fastAssocLookup[fastAssoc, dominantComponent, MeltingPoint],
+						And[
+							MatchQ[unresolvedExpectedMeltingPoint, Automatic],
+							TemperatureQ[dominantComponentMeltingPoint],
+							dominantComponentMeltingPoint >= 25.1Celsius,
+							dominantComponentMeltingPoint <= availableMaxTemperature
+						],
+							N[Round[fastAssocLookup[fastAssoc, dominantComponent, MeltingPoint], Rationalize[0.1]]],
 
 						(*Otherwise set expectedMeltingPoint Unknown*)
-						True, Unknown
+						True,
+							Unknown
 					];
 
 					(*Invalid ExpectedMeltingPoint option*)
-					invalidExpectedMeltingPoint = If[expectedMeltingPoint < 25.1Celsius || expectedMeltingPoint > 349.9Celsius, True, False];
+					invalidExpectedMeltingPoint = If[
+						expectedMeltingPoint < 25.1Celsius || expectedMeltingPoint >= availableMaxTemperature,
+						True,
+						False
+					];
 
 
 					(*Resolve NumberOfReplicates*)
@@ -1978,70 +2458,73 @@ resolveExperimentMeasureMeltingPointOptions[myInputSamples : {ObjectP[Object[Sam
 						True, 3
 					];
 
-					(*flip a switch if the sample is prepacked and NumberOfReplicates is not Null*)
-					invalidNumberOfReplicates = If[
-						prepackedQ && !MatchQ[numberOfReplicates, Null],
-						True,
-						False
-					];
+					(* flip a switch if NumberOfReplicates is greater than the available number of capillary slots *)
+					highNumberOfReplicates = !prepackedQ && GreaterQ[numberOfReplicates /. Null -> 1, availableMaxSlot];
 
-					(*Resolve Amount*)
-					amount = Which[
-						MatchQ[unresolvedAmount, Except[Automatic]], unresolvedAmount,
-						MatchQ[unresolvedAmount, Automatic] && (grindQ || desiccateQ), Min[1Gram, Lookup[samplePacket, Mass] /. {Null | {} -> 1Gram}],
-						MatchQ[unresolvedAmount, Automatic] && prepackedQ, Null,
-						True, Null
-					];
+					(* flip a switch if the sample is prepacked and NumberOfReplicates is not Null *)
+					invalidNumberOfReplicates = prepackedQ && !MatchQ[numberOfReplicates, Null];
 
 					(*Resolve StartTemperature*)
 					unroundedStartTemperature = Which[
 						MatchQ[unresolvedStartTemperature, Except[Automatic]],
-						unresolvedStartTemperature,
+							unresolvedStartTemperature,
 						MatchQ[unresolvedStartTemperature, Automatic] && MatchQ[expectedMeltingPoint, TemperatureP],
-						Max[expectedMeltingPoint - Quantity[5, "DegreesCelsiusDifference"], 25Celsius],
-						True, 40Celsius
+							Max[expectedMeltingPoint - Quantity[5, "DegreesCelsiusDifference"], 25Celsius],
+						True,
+							40Celsius
 					];
 
 					(*Convert unit to TemperatureUnit*)
-					convertedStartTemperature = UnitConvert[unroundedStartTemperature, Quantity[temperatureUnit]];
+					convertedStartTemperature = UnitConvert[unroundedStartTemperature, temperatureUnit];
 
 					(*round StartTemperature to 1 decimal place*)
-					startTemperature = Round[convertedStartTemperature, 0.1];
-
+					startTemperature = N[Round[convertedStartTemperature, Rationalize[0.1]]];
 
 					(*Resolve EndTemperature*)
 					unroundedEndTemperature = Which[
 						MatchQ[unresolvedEndTemperature, Except[Automatic]],
-						unresolvedEndTemperature,
+							unresolvedEndTemperature,
 						MatchQ[unresolvedEndTemperature, Automatic] && MatchQ[expectedMeltingPoint, TemperatureP],
-						Min[expectedMeltingPoint + Quantity[5, "DegreesCelsiusDifference"], 350Celsius],
-						True, 300Celsius
+							Min[expectedMeltingPoint + Quantity[5, "DegreesCelsiusDifference"], availableMaxTemperature],
+						True,
+							300Celsius
 					];
 
 					(*Convert unit to TemperatureUnit*)
-					convertedEndTemperature = UnitConvert[unroundedEndTemperature, Quantity[temperatureUnit]];
+					convertedEndTemperature = UnitConvert[unroundedEndTemperature, temperatureUnit];
 
 					(*round StartTemperature to 1 decimal place*)
-					endTemperature = Round[convertedEndTemperature, 0.1];
+					endTemperature = N[Round[convertedEndTemperature, Rationalize[0.1]]];
 
-					(*flip an error switch if startTemperature is greater than or equal to endTemperature*)
-					invalidStartEndTemperature = If[GreaterEqualQ[startTemperature, endTemperature], True, False];
+					(* flip an error switch if EndTemperature is greater than the available max temperature *)
+					invalidEndTemperature = GreaterQ[endTemperature, availableMaxTemperature];
 
+					(* flip an error switch if startTemperature is greater than or equal to endTemperature *)
+					invalidStartEndTemperature = GreaterEqualQ[startTemperature, endTemperature];
 
 					(*Resolve SealCapillary*)
 					sealCapillary = Which[
 
 						MatchQ[unresolvedSealCapillary, Except[Automatic]],
-						unresolvedSealCapillary,
+							unresolvedSealCapillary,
 
-						MatchQ[unresolvedSealCapillary, Automatic] && !NullQ[Download[samplePacket, BoilingPoint]] && Download[samplePacket, BoilingPoint] - Quantity[20, "DegreesCelsiusDifference"] < endTemperature,
-						True,
+						And[
+							MatchQ[unresolvedSealCapillary, Automatic],
+							!NullQ[Download[samplePacket, BoilingPoint]],
+							Download[samplePacket, BoilingPoint] - Quantity[20, "DegreesCelsiusDifference"] < endTemperature
+						],
+							True,
 
 						(*Set SealCapillary to True if the dominant component's BoilingPoint is informed and it is less than 20C greater than the EndTemperature*)
-						MatchQ[unresolvedSealCapillary, Automatic] && !NullQ[fastAssocLookup[fastAssoc, dominantComponent, BoilingPoint]] && fastAssocLookup[fastAssoc, dominantComponent, BoilingPoint] - Quantity[20, "DegreesCelsiusDifference"] < endTemperature,
-						True,
+						And[
+							MatchQ[unresolvedSealCapillary, Automatic],
+							TemperatureQ[dominantComponentBoilingPoint],
+							dominantComponentBoilingPoint - Quantity[20, "DegreesCelsiusDifference"] < endTemperature
+						],
+							True,
 
-						True, False
+						True,
+							False
 					];
 
 					(*Resolve RampTime and TemperatureRampRate. These two are related to each other, so should be resolved together*)
@@ -2054,7 +2537,7 @@ resolveExperimentMeasureMeltingPointOptions[myInputSamples : {ObjectP[Object[Sam
 					(*If rampTimeQ is True, calculate TemperatureRampRate. In this case it doesn't matter
 					 what TemperatureRampRate is set to. will throw a Warning if we change a specified TemperatureRampRate*)
 					unroundedTemperatureRampRate = If[rampTimeQ,
-						(endTemperature - startTemperature) / unresolvedRampTime,
+						Max[(endTemperature - startTemperature) / unresolvedRampTime, 0.1 Celsius/Minute],
 						Which[
 							MatchQ[unresolvedTemperatureRampRate, Except[Automatic]], unresolvedTemperatureRampRate,
 							MatchQ[unresolvedTemperatureRampRate, Automatic] && MatchQ[expectedMeltingPoint, Unknown], 10Celsius / Minute,
@@ -2063,10 +2546,10 @@ resolveExperimentMeasureMeltingPointOptions[myInputSamples : {ObjectP[Object[Sam
 					];
 
 					(*Convert unit to TemperatureUnit/Minute*)
-					convertedTemperatureRampRate = UnitConvert[unroundedTemperatureRampRate, Quantity[temperatureUnit] / Minute];
+					convertedTemperatureRampRate = UnitConvert[unroundedTemperatureRampRate, temperatureUnit / Minute];
 
 					(*round TemperatureRampRate to 1 decimal place*)
-					temperatureRampRate = Round[convertedTemperatureRampRate, 0.1];
+					temperatureRampRate = N[Round[convertedTemperatureRampRate, Rationalize[0.1]]];
 
 					(*Resolve RampTime*)
 					(*calculate unrounded RampTime.*)
@@ -2077,169 +2560,102 @@ resolveExperimentMeasureMeltingPointOptions[myInputSamples : {ObjectP[Object[Sam
 					(*flip an error switch if both TemperatureRampRate and RampTime are specified by user and we changed TemperatureRampRate*)
 					rampRateChangeWarning = If[
 						rampTimeQ && rampRateQ &&
-							!MatchQ[unroundedTemperatureRampRate, unresolvedTemperatureRampRate],
-						True, False
-					];
-
-					(*Resolve RecoupSample and PreparedSampleContainer*)
-					{recoupSample, preparedSampleContainer} = Which[
-						MatchQ[{unresolvedRecoupSample, unresolvedPreparedSampleContainer}, {Except[Automatic], Except[Automatic]}],
-						{unresolvedRecoupSample, unresolvedPreparedSampleContainer},
-
-						MatchQ[{unresolvedRecoupSample, unresolvedPreparedSampleContainer}, {Automatic, Null}],
-						{False, Null},
-
-						MatchQ[{unresolvedRecoupSample, unresolvedPreparedSampleContainer}, {Automatic, Except[Automatic]}],
-						{If[prepackedQ, Null, True], unresolvedPreparedSampleContainer},
-
-						MatchQ[{unresolvedRecoupSample, unresolvedPreparedSampleContainer}, {Null, Automatic}],
-						{Null, Null},
-
-						MatchQ[{unresolvedRecoupSample, unresolvedPreparedSampleContainer}, {True, Automatic}],
-						{True, If[prepackedQ, Null, Lookup[sampleContainerPacket, Object]]},
-
-						MatchQ[{unresolvedRecoupSample, unresolvedPreparedSampleContainer}, {Automatic, Automatic}] && !prepackedQ && (grindQ || desiccateQ),
-						{False, Null},
-
-						True,
-						{Null, Null}
-					];
-
-					(*flip an error switch if the sample is prepacked but RecoupSample is True*)
-					recoupPrepackedSampleMismatch = If[
-						TrueQ[prepackedQ] && TrueQ[recoupSample],
-						True, False
-					];
-
-					(*flip an error switch if RecoupSample is False or Null but PreparedSampleContainer is not Null*)
-					recoupSampleContainerMismatch = If[
-						MatchQ[recoupSample, False | Null] && !NullQ[preparedSampleContainer],
-						True, False
-					];
-
-					(*flip an error switch if the sample is prepacked but PreparedSampleContainer 	is not Null*)
-					prepackedPreparedSampleContainerMismatch = If[
-						TrueQ[prepackedQ] && !NullQ[preparedSampleContainer],
-						True, False
-					];
-
-					(* SampleLabel; Default: Automatic *)
-					sampleLabel = Which[
-						MatchQ[unresolvedSampleLabel, Except[Automatic]], unresolvedSampleLabel,
-						And[MatchQ[simulation, SimulationP], MemberQ[Lookup[simulation[[1]], Labels][[All, 2]], Lookup[samplePacket, Object]]],
-						Lookup[Reverse /@ Lookup[simulation[[1]], Labels], Lookup[samplePacket, Object]],
-						True, "sample " <> StringDrop[Lookup[samplePacket, ID], 3]
-					];
-
-					(* SampleContainerLabel; Default: Automatic *)
-					sampleContainerLabel = Which[
-						MatchQ[unresolvedSampleContainerLabel, Except[Automatic]], unresolvedSampleContainerLabel,
-						And[MatchQ[simulation, SimulationP], MemberQ[Lookup[simulation[[1]], Labels][[All, 2]], Lookup[sampleContainerPacket, Object]]],
-						Lookup[Reverse /@ Lookup[simulation[[1]], Labels], Lookup[sampleContainerPacket, Object]],
-						!NullQ[unresolvedSampleContainer], "sample container " <> StringDrop[ToString[unresolvedSampleContainer], 3],
-						True, Null
-					];
-
-					(*Resolve PreparedSampleContainerLabel*)
-					preparedSampleContainerLabel = Which[
-						MatchQ[unresolvedPreparedSampleContainerLabel, Except[Automatic]],
-						unresolvedPreparedSampleContainerLabel,
-						!NullQ[preparedSampleContainer],
-						CreateUniqueLabel["prepared sample container "],
-						True, Null
-					];
-
-					(*Resolve PreparedSampleLabel*)
-					preparedSampleLabel = Which[
-						MatchQ[unresolvedPreparedSampleLabel, Except[Automatic]],
-						unresolvedPreparedSampleLabel,
-						prepackedQ,
-						Null,
-						MatchQ[recoupSample, True],
-						CreateUniqueLabel["prepared sample "],
-						True, Null
-					];
-
-					(*Resolve PreparedSampleStorageCondition*)
-					(*flip an error switch if RecoupSample is False or Null but PreparedSampleStorageCondition is not Null*)
-					recoupStorageConditionMismatch = If[
-						MatchQ[recoupSample, False | Null] && !NullQ[unresolvedPreparedSampleStorageCondition],
+							!EqualQ[unroundedTemperatureRampRate, unresolvedTemperatureRampRate],
 						True, False
 					];
 
 					{
 						(*1*)orderOfOperations,
-						(*2*)expectedMeltingPoint,
-						(*3*)numberOfReplicates,
-						(*4*)amount,
-						(*5*)preparedSampleLabel,
-						(*6*)preparedSampleContainerLabel,
-						(*7*)grindQ,
-						(*8*)grinderType,
-						(*9*)grinder,
-						(*10*)fineness,
-						(*11*)bulkDensity,
-						(*12*)grindingContainer,
-						(*13*)grindingBead,
-						(*14*)numberOfGrindingBeads,
-						(*15*)grindingRate,
-						(*16*)grindingTime,
-						(*17*)numberOfGrindingSteps,
-						(*18*)coolingTime,
-						(*19*)grindingProfile,
-						(*20*)desiccateQ,
-						(*21*)unresolvedSampleContainer,
-						(*22*)sealCapillary,
-						(*24*)startTemperature,
-						(*25*)equilibrationTime,
-						(*26*)endTemperature,
-						(*27*)temperatureRampRate,
-						(*28*)rampTime,
-						(*29*)recoupSample,
-						(*30*)preparedSampleContainer,
-						(*31*)unresolvedPreparedSampleStorageCondition,
-						(*32*)unresolvedCapillaryStorageCondition,
-						(*33*)invalidOrderOfOperations,
-						(*34*)extraneousOrderOfOperations,
-						(*35*)invalidExpectedMeltingPoint,
-						(*36*)invalidStartEndTemperature,
-						(*37*)rampRateChangeWarning,
-						(*38*)recoupSampleContainerMismatch,
-						(*39*)recoupStorageConditionMismatch,
-						(*40*)invalidNumberOfReplicates,
-						(*41*)prepackedQ,
-						(*42*)desiccatePrepackedMismatch,
-						(*43*)grindPrepackedMismatch,
-						(*44*)grindGrinderTypeMismatch,
-						(*45*)prepackedGrinderTypeMismatch,
-						(*46*)prepackedGrinderMismatch,
-						(*47*)grindGrinderMismatch,
-						(*48*)prepackedFinenessMismatch,
-						(*49*)grindFinenessMismatch,
-						(*50*)prepackedBulkDensityMismatch,
-						(*51*)grindBulkDensityMismatch,
-						(*52*)prepackedGrindingContainerMismatch,
-						(*53*)grindGrindingContainerMismatch,
-						(*54*)prepackedGrindingBeadMismatch,
-						(*55*)grindGrindingBeadMismatch,
-						(*56*)prepackedNumberOfGrindingBeadsMismatch,
-						(*57*)grindNumberOfGrindingBeadsMismatch,
-						(*58*)prepackedGrindingRateMismatch,
-						(*59*)grindGrindingRateMismatch,
-						(*60*)prepackedGrindingTimeMismatch,
-						(*61*)grindGrindingTimeMismatch,
-						(*62*)prepackedNumberOfGrindingStepsMismatch,
-						(*63*)grindNumberOfGrindingStepsMismatch,
-						(*64*)prepackedCoolingTimeMismatch,
-						(*65*)grindCoolingTimeMismatch,
-						(*66*)prepackedGrindingProfileMismatch,
-						(*67*)grindGrindingProfileMismatch,
-						(*68*)prepackedSampleContainerMismatch,
-						(*69*)desiccateSampleContainerMismatch,
-						(*70*)sampleLabel,
-						(*71*)recoupPrepackedSampleMismatch,
-						(*72*)prepackedPreparedSampleContainerMismatch,
-						(*73*)sampleContainerLabel
+						expectedMeltingPoint,
+						numberOfReplicates,
+						amount,
+						preparedSampleLabel,
+						grindQ,
+						grinderType,
+						grinder,
+						fineness,
+						bulkDensity,
+						(*11*)grindingContainer,
+						grindingBead,
+						numberOfGrindingBeads,
+						grindingRate,
+						grindingTime,
+						numberOfGrindingSteps,
+						coolingTime,
+						grindingProfile,
+						desiccateQ,
+						sampleContainer,
+						(*21*)sealCapillary,
+						startTemperature,
+						equilibrationTime,
+						endTemperature,
+						temperatureRampRate,
+						rampTime,
+						unresolvedPreparedSampleStorageCondition,
+						unresolvedCapillaryStorageCondition,
+						invalidOrderOfOperations,
+						invalidExpectedMeltingPoint,
+						(*31*)invalidStartEndTemperature,
+						rampRateChangeWarning,
+						amountStorageConditionMismatch,
+						invalidNumberOfReplicates,
+						prepackedQ,
+						desiccatePrepackedMismatch,
+						grindPrepackedMismatch,
+						grindGrinderTypeMismatch,
+						prepackedGrinderTypeMismatch,
+						prepackedGrinderMismatch,
+						(*41*)grindGrinderMismatch,
+						prepackedFinenessMismatch,
+						grindFinenessMismatch,
+						prepackedBulkDensityMismatch,
+						grindBulkDensityMismatch,
+						prepackedGrindingContainerMismatch,
+						grindGrindingContainerMismatch,
+						prepackedGrindingBeadMismatch,
+						grindGrindingBeadMismatch,
+						prepackedNumberOfGrindingBeadsMismatch,
+						(*51*)grindNumberOfGrindingBeadsMismatch,
+						prepackedGrindingRateMismatch,
+						grindGrindingRateMismatch,
+						prepackedGrindingTimeMismatch,
+						grindGrindingTimeMismatch,
+						prepackedNumberOfGrindingStepsMismatch,
+						grindNumberOfGrindingStepsMismatch,
+						prepackedCoolingTimeMismatch,
+						grindCoolingTimeMismatch,
+						prepackedGrindingProfileMismatch,
+						(*61*)grindGrindingProfileMismatch,
+						prepackedSampleContainerMismatch,
+						desiccateSampleContainerMismatch,
+						sampleLabel,
+						amountPrepackedMismatch,
+						sampleContainerLabel,
+						amountDesiccateMismatch,
+						amountGrindMismatch,
+						unresolvedGrindingRate,
+						unresolvedGrindingTime,
+						(*71*)orderMismatch,
+						unresolvedGrinderType,
+						unresolvedGrinder,
+						unresolvedFineness,
+						unresolvedBulkDensity,
+						unresolvedGrindingContainer,
+						unresolvedNumberOfGrindingSteps,
+						unresolvedGrindingProfile,
+						grinderTypeChangeQ,
+						grinderChangedQ,
+						(*81*)finenessChangedQ,
+						bulkDensityChangedQ,
+						grindingContainerChangedQ,
+						grindingRateChangedQ,
+						grindingTimeChangedQ,
+						numberOfGrindingStepsChangedQ,
+						grindingProfileChangesQ,
+						amountChangedQ,
+						invalidPreparedSampleStorageCondition,
+						invalidEndTemperature,
+						(*91*)highNumberOfReplicates
 					}
 				]
 			],
@@ -2250,134 +2666,754 @@ resolveExperimentMeasureMeltingPointOptions[myInputSamples : {ObjectP[Object[Sam
 	(* Resolve Post Processing Options *)
 	resolvedPostProcessingOptions = resolvePostProcessingOptions[myOptions];
 
-	(*resolve singleton options: If Desiccate is True, Desiccate options will resolve by ExperimentDesiccate.
-	Here, Desiccate-related options are resolved only if Desiccate is False*)
-	(*Lookup singleton options*)
-	{
-        unresolvedMeasurementMethod,
-		unresolvedInstrument,
-		unresolvedDesiccationMethod,
-		unresolvedDesiccant,
-		unresolvedDesiccantPhase,
-		unresolvedDesiccantAmount,
-		unresolvedDesiccator,
-		unresolvedDesiccationTime
-	} = Lookup[
-		myOptions,
-		{
-            MeasurementMethod,
-			Instrument,
-			DesiccationMethod,
-			Desiccant,
-			DesiccantPhase,
-			DesiccantAmount,
-			Desiccator,
-			DesiccationTime
-		}
+	(*------------------------------------------*)
+	(*------------------------------------------*)
+	(*--- Overall Sample-prep related Errors ---*)
+	(*------------------------------------------*)
+	(*------------------------------------------*)
+	(* since Desiccate and Grind resolvers are run and they throw errors on the fly, here Overall sample-prep related errors are thrown for better organizing purposes *)
+
+	(* define some variables *)
+	(* Desiccate-related options *)
+
+	(*Non-index matching option names that are use in this experiment for Desiccate*)
+	singletonDesiccateOptionNames = {Desiccant, DesiccantAmount, DesiccantPhase, Desiccator, DesiccationTime, DesiccantStorageContainer, DesiccantStorageCondition, DesiccationMethod, CheckDesiccant};
+
+	(*Index matching option names that are use in this experiment for Desiccate*)
+	multipleDesiccateOptionNames = {SampleContainer};
+
+	(* all desiccate options combined *)
+	allDesiccateOptionNames = Flatten[{singletonDesiccateOptionNames, multipleDesiccateOptionNames}];
+
+	(* Grind-related options *)
+	grindOptionNames = {
+		GrinderType, Grinder, Fineness, BulkDensity, GrindingContainer,
+		GrindingBead, NumberOfGrindingBeads, GrindingRate, GrindingTime, NumberOfGrindingSteps,
+		CoolingTime, GrindingProfile
+	};
+
+	(* Amount should be added to GrindOptionsNames to be used for ExperimentGrind *)
+	grindOptionNamesWithAmount = Flatten[{Amount, grindOptionNames}];
+
+	(* general sample preparation options *)
+	samplePreparationOptionNames = {Amount, OrderOfOperations, PreparedSampleStorageCondition};
+	singleTrueRequiredSamplePreparationOptionNames = {Amount};
+	doubleTrueRequiredSamplePreparationOptionNames = {Amount, OrderOfOperations};
+
+	(* combine all options *)
+	allOptionNames = DeleteDuplicates[Flatten[{singletonDesiccateOptionNames, multipleDesiccateOptionNames, grindOptionNames}]];
+	allMultipleOptionNames = DeleteDuplicates[Flatten[{samplePreparationOptionNames, multipleDesiccateOptionNames, grindOptionNames}]];
+
+	(* required Desiccate-related options when Desiccate is True *)
+	requiredDesiccateSingletonOptionNames = {DesiccationMethod, Desiccator, DesiccationTime};
+	requiredDesiccateMultipleOptionNames = {Amount};
+
+	(* required Grind-related options when Grind is True *)
+	requiredGrindOptionNames = {
+		GrinderType, Grinder, Amount, Fineness, BulkDensity, GrindingContainer,
+		GrindingRate, GrindingTime, NumberOfGrindingSteps, GrindingProfile
+	};
+
+	(* are all samples in capillaries? *)
+	allPrepackedQ = And@@prepackedQs;
+
+	(* if Desiccate is set to True by the user but the sample is prepacked, realDesiccateQs should be False *)
+	realDesiccateQs = MapThread[And, {desiccateQs, Not /@ prepackedQs}];
+
+	(* if Grind is set to True by the user but the sample is prepacked, realGrindQs should be False *)
+	realGrindQs = MapThread[And, {grindQs, Not /@ prepackedQs}];
+
+	(* does the sample go through any of Desiccate or Grind steps? *)
+	prepareQs = MapThread[#1 || #2&, {desiccateQs, grindQs}];
+
+	(* is Desiccate False for all samples *)
+	noDesiccateQ = !Or@@realDesiccateQs;
+
+	(* is Grind False for all samples *)
+	noGrindQ = !Or@@realGrindQs;
+
+
+	(*--------------------------*)
+	(*--------------------------*)
+	(*--- High-Level Error 1 ---*)
+	(*--------------------------*)
+	(*--------------------------*)
+	(* if all samples are prepacked or Desiccate and Grind are False for all samples, no Desiccate or Grind options should be set. Throw an error if otherwise *)
+	(* find options that are not Automatic or Null when all samples are prepacked, or Desiccate or Grind is False for all samples *)
+	(* unneeded Desiccate options due to all samples being prepacked *)
+	prepackedDesiccateUnneededOptions = If[allPrepackedQ,
+		Join[
+			If[Or@@desiccateQs, {Desiccate}, {}],
+			PickList[allDesiccateOptionNames, Lookup[measureMeltingPointOptions, allDesiccateOptionNames], Except[ListableP[Automatic | Null]]]
+		],
+		{}
 	];
 
-	(* Instrument does not need resolution. Default is informed and Null is not allowed *)
+	(* unneeded Grind options due to all samples being prepacked *)
+	prepackedGrindUnneededOptions = If[allPrepackedQ,
+		Join[
+			If[Or@@grindQs, {Grind}, {}],
+			PickList[grindOptionNames, Lookup[measureMeltingPointOptions, grindOptionNames], Except[ListableP[Automatic | Null]]]
+		],
+		{}
+	];
+
+	(* unneeded sample prep options due to all samples being prepacked *)
+	prepackedSamplePrepUnneededOptions = If[allPrepackedQ,
+		PickList[samplePreparationOptionNames, Lookup[measureMeltingPointOptions, samplePreparationOptionNames], Except[ListableP[Automatic | Null]]],
+		{}
+	];
+
+	(* combine all prepacked error options *)
+	allPrepackedErrorOptions = DeleteDuplicates[Flatten[{prepackedSamplePrepUnneededOptions, prepackedDesiccateUnneededOptions, prepackedGrindUnneededOptions}]];
+
+	(* unneeded Desiccate options due to Desiccate being False for all samples *)
+	noDesiccateUnneededOptions = If[noDesiccateQ,
+		PickList[allDesiccateOptionNames, Lookup[measureMeltingPointOptions, allDesiccateOptionNames], Except[ListableP[Automatic | Null]]],
+		{}
+	];
+
+	(* unneeded Grind options due to Grind being False for all samples *)
+	noGrindUnneededOptions = If[noGrindQ,
+		PickList[grindOptionNames, Lookup[measureMeltingPointOptions, grindOptionNames], Except[ListableP[Automatic | Null]]],
+		{}
+	];
+
+	(* unneeded sample prep options due to all samples being prepacked *)
+	noPrepUnneededOptions = If[noGrindQ && noDesiccateQ,
+		PickList[samplePreparationOptionNames, Lookup[measureMeltingPointOptions, samplePreparationOptionNames], Except[ListableP[Automatic | Null]]],
+		{}
+	];
+
+	(* combine all no-prep error options *)
+	allNoPrepErrorOptions = DeleteDuplicates[Flatten[{noPrepUnneededOptions, noDesiccateUnneededOptions, noGrindUnneededOptions}]];
+
+
+	(* if we throw this high level error, no other desiccate/grind-related errors should be thrown *)
+	prepackedDesiccateMessageQ = !MatchQ[prepackedDesiccateUnneededOptions,{}];
+	prepackedGrindMessageQ = !MatchQ[prepackedGrindUnneededOptions,{}];
+	prepackedPrepMessageQ = !MatchQ[prepackedSamplePrepUnneededOptions,{}];
+	noDesiccateMessageQ = !MatchQ[noDesiccateUnneededOptions,{}];
+	noGrindMessageQ = !MatchQ[noGrindUnneededOptions,{}];
+	noPrepMessageQ = !MatchQ[noPrepUnneededOptions,{}];
+
+	(* if all samples are prepacked or Desiccate and Grind are False for all samples, no Desiccate or Grind options should be set. Throw an error if otherwise *)
+	noPrepTests = Switch[{prepackedDesiccateMessageQ || prepackedPrepMessageQ, prepackedGrindMessageQ || prepackedPrepMessageQ, noDesiccateMessageQ || noPrepMessageQ, noGrindMessageQ || noPrepMessageQ},
+
+		(* if the sample is prepacked but Desiccate or Grind is True or Desiccate-/Grind-related options are specified, throw an error *)
+		{True, _, _, _} | {_, True, _, _},
+			If[messages,
+				Message[
+					Error::UnusedOptions,
+						If[MatchQ[DeleteCases[allPrepackedErrorOptions, Desiccate | Grind], {}],
+							"All input samples are in capillaries, therefore, they cannot be desiccated and/or ground. Please set Desiccate and Grind to False for all samples.",
+							"All input samples are in capillaries, therefore, they cannot be desiccated and/or ground. Please set Desiccate and Grind to False and set the following options to Null or leave them unspecified to be calculated automatically: " <> ObjectToString[DeleteCases[allPrepackedErrorOptions, Desiccate | Grind]] <> "."
+						]
+					]
+			];
+			If[gatherTests,
+				Test["If all samples are prepacked, Desiccate and Grind are False and no Desiccate- and Grind-related options are specified:", True, MatchQ[allPrepackedErrorOptions,{}]],
+				{}
+			],
+
+		(* If not all samples are prepacked and Desiccate/Grind are False for all samples but Desiccate-/Grind-related options are specified, throw an error *)
+		{_, _, True, True},
+			If[messages,
+				Message[
+					Error::UnusedOptions,
+					"Desiccate and Grind are set to False, therefore, no desiccation or grinding options should be specified. Please set Desiccate or Grind to True or set the following options to Null or leave them unspecified to be calculated automatically: " <> ObjectToString[allNoPrepErrorOptions] <> "."
+				]
+			];
+			If[gatherTests,
+				Test["No Desiccate- and Grind-related options are specified when Desiccate and Grind are both False:", True, MatchQ[allNoPrepErrorOptions,{}]],
+				{}
+			],
+
+		(* If not all samples are prepacked and Desiccate is False for all samples but Desiccate-related options are specified, throw an error *)
+		{_, _, True, _},
+			If[messages,
+				Message[
+					Error::UnusedOptions,
+					"Desiccate is set to False, therefore, no desiccation options should be specified. Please set Desiccate to True or set the following options to Null or leave them unspecified to be calculated automatically: " <> ObjectToString[DeleteDuplicates[Flatten[{noDesiccateUnneededOptions}]]] <> "."
+				]
+			];
+			If[gatherTests,
+				Test["No Desiccate-related options are specified when Desiccate is False:", True, MatchQ[DeleteDuplicates[Flatten[{noDesiccateUnneededOptions}]],{}]],
+				{}
+			],
+
+		(* If not all samples are prepacked and Grind is False for all samples but Grind-related options are specified, throw an error *)
+		{_, _, _, True},
+			If[messages,
+				Message[
+					Error::UnusedOptions,
+					"Grind is set to False, therefore, no grinding options should be specified. Please set Grind to True or set the following options to Null or leave them unspecified to be calculated automatically: " <> ObjectToString[DeleteDuplicates[Flatten[{noGrindUnneededOptions}]]] <> "."
+				]
+			];
+			If[gatherTests,
+				Test["No Grind-related options are specified when Grind is False:", True, MatchQ[DeleteDuplicates[Flatten[{noGrindUnneededOptions}]],{}]],
+				{}
+			]
+	];
+
+	(*--------------------------*)
+	(*--------------------------*)
+	(*--- High-Level Error 2 ---*)
+	(*--------------------------*)
+	(*--------------------------*)
+	(* if Desiccate is True for non-capillary samples, Desiccate-related singleton options should not be Null. Throw an error otherwise *)
+	(* find options that are Null when all samples are prepacked, or Desiccate or Grind is False for all samples *)
+
+	requiredSingletonDesiccateOptions = If[Or@@realDesiccateQs,
+		PickList[requiredDesiccateSingletonOptionNames, Lookup[measureMeltingPointOptions, requiredDesiccateSingletonOptionNames], Null],
+		{}
+	];
+
+	(* throw an error if any Desiccate-related singleton options have been set to Null when Desiccate is True for at least one sample *)
+	If[messages && !MatchQ[requiredSingletonDesiccateOptions, {}],
+		Message[
+			Error::RequiredDesiccateOptions,
+			"Desiccate is set to True for samples " <> ObjectToString[PickList[myInputSamples, realDesiccateQs]] <> ". Therefore, Desiccate-related options should be specified. Please set the following options to non-Null values or leave them unspecified to be calculated automatically: " <> ObjectToString[requiredSingletonDesiccateOptions] <> "."
+		]
+	];
+
+	(* Define the tests the user will see for the above messages *)
+	requiredSingletonDesiccateOptionTests = If[gatherTests,
+		Test["If Desiccate is True for at least one sample that is not in a capillary, Desiccate-related options are specified.", True, MatchQ[requiredSingletonDesiccateOptions,{}]],
+		Nothing
+	];
+
+
+
+	(*--------------------------*)
+	(*--------------------------*)
+	(*--- High-Level Error 3 ---*)
+	(*--------------------------*)
+	(*--------------------------*)
+	(* check if prepacked status matches with Desiccate/Grind and other related options. throw errors for mismatches *)
+	(*
+		These are possible error cases:
+			1. the sample is in a capillary, Desiccate/Grind is True, desiccate/grind-related options are not specified
+			2. the sample is in a capillary, Desiccate/Grind is True or False, desiccate/grind-related options are specified
+			3-5. the sample is not in capillary, Desiccate or Grind is True, desiccate/grind-related options are set to Null
+			6-8. the sample is not in capillary, Desiccate or Grind is False, desiccate/grind-related options are specified
+	 *)
+	errorTuples = MapThread[
+		Function[{prepackedQ, desiccateQ, grindQ, specifiedOptions},
+			Switch[{prepackedQ, desiccateQ, grindQ},
+				(* prepacked sample, with Desiccate or Grind -> True *)
+				{True, True, _} | {True, _, True},
+					With[{errorOptions = PickList[allMultipleOptionNames, Lookup[specifiedOptions, allMultipleOptionNames], Except[Automatic | Null]]},
+						If[MatchQ[errorOptions, {}],
+							(* error case1: if no Desiccate/Grind-related option is specified, throw an error about Desiccate/Grind not being False *)
+							{{PickList[{Desiccate, Grind}, {desiccateQ, grindQ}]}, 1},
+							(* error case2: if Desiccate/Grind-related option are specified, throw an error about Desiccate/Grind not being False and options being specified *)
+							{errorOptions, 2}
+						]
+					],
+
+				(* error case2: Desiccate/Grind are False but Desiccate/Grind-related option are specified, throw an error about options being specified *)
+				{True, False, False},
+					With[{errorOptions = PickList[allMultipleOptionNames, Lookup[specifiedOptions, allMultipleOptionNames], Except[Automatic | Null]]},
+						{errorOptions, 2}
+					],
+
+				(* error case 3 *)
+				(* in this case, we should make sure that the required options are not set to Null if Desiccate and Grind are True *)
+				{False, True, True},
+					Module[{errorOptions, optionsToLookup},
+						optionsToLookup = DeleteDuplicates[Flatten[{requiredDesiccateMultipleOptionNames, requiredGrindOptionNames, doubleTrueRequiredSamplePreparationOptionNames}]];
+						errorOptions = PickList[optionsToLookup, Lookup[specifiedOptions, optionsToLookup], Null];
+						{errorOptions, 3}
+					],
+
+				{False, True, False},
+					Module[{requiredErrorOptions, requiredOptionsToLookup, unneededErrorOptions, unneededOptionsToLookUp},
+						(* error case 4: make sure that the required options are not set to Null if only Desiccate is True  *)
+						requiredOptionsToLookup = DeleteDuplicates[Flatten[{requiredDesiccateMultipleOptionNames, singleTrueRequiredSamplePreparationOptionNames}]];
+						requiredErrorOptions = PickList[requiredOptionsToLookup, Lookup[specifiedOptions, requiredOptionsToLookup], Null];
+						(* error case 8: make sure that Grind-related options are not specified when Grind is False  *)
+						unneededOptionsToLookUp = grindOptionNames;
+						unneededErrorOptions = PickList[unneededOptionsToLookUp, Lookup[specifiedOptions, unneededOptionsToLookUp], Except[Automatic | Null]];
+						{{requiredErrorOptions, 4}, {unneededErrorOptions, 8}}
+					],
+
+				{False, False, True},
+					Module[{requiredErrorOptions, requiredOptionsToLookup, unneededErrorOptions, unneededOptionsToLookUp},
+						(* error case 5: make sure that the required options are not set to Null if only Grind is True  *)
+						requiredOptionsToLookup = DeleteDuplicates[Flatten[{requiredGrindOptionNames, singleTrueRequiredSamplePreparationOptionNames}]];
+						requiredErrorOptions = PickList[requiredOptionsToLookup, Lookup[specifiedOptions, requiredOptionsToLookup], Null];
+						(* error case 7: make sure that Desiccate-related options are not specified when Desiccate is False  *)
+						unneededOptionsToLookUp = multipleDesiccateOptionNames;
+						unneededErrorOptions = PickList[unneededOptionsToLookUp, Lookup[specifiedOptions, unneededOptionsToLookUp], Except[Automatic | Null]];
+						{{requiredErrorOptions, 5}, {unneededErrorOptions, 7}}
+					],
+
+				(* error case 6: make sure that Desiccate/Grind-related options are not specified when both are False  *)
+				{False, False, False},
+					Module[{errorOptions, optionsToLookup},
+						optionsToLookup = allMultipleOptionNames;
+						errorOptions = PickList[optionsToLookup, Lookup[specifiedOptions, optionsToLookup], Except[Automatic | Null]];
+						{errorOptions, 6}
+					],
+
+				(* other cases (if Any!) are not wrong; don't require error *)
+				_,
+					Nothing
+			]
+		],
+		{prepackedQs, desiccateQs, grindQs, mapThreadFriendlyOptions}
+	];
+
+	(* extract data from the error tuples *)
+	(* error codes that were thrown *)
+	errorNumbers = Sort[DeleteDuplicates[Cases[Flatten[errorTuples], _Integer]]];
+
+	(* rules that related each error options and error codes to each sample *)
+	errorToSampleRules = MapThread[Rule, {errorTuples, myInputSamples}] /. Rule[list : {{_, _} ..}, obj__] :> Sequence @@ Map[Rule[#, obj] &, list];
+
+	(* group samples with similar errors *)
+	uniqueErrorAssociations = GroupBy[errorToSampleRules, First -> Last];
+
+	(* convert the association to list *)
+	uniqueErrorLists = List @@@ Normal[uniqueErrorAssociations];
+
+	(* reformat error lists; bring the error code upfront to group error-samples tuples by error codes *)
+	formattedErrorLists = Flatten[Cases[uniqueErrorLists, pairs : {{{__}, #}, inputSamples_} :> {pairs[[1, 2]], {Flatten[{pairs[[1, 1]]}], inputSamples}}]& /@ errorNumbers, 1];
+
+	(* group error-samples tuples by error codes *)
+	groupedErrorLists = GroupBy[formattedErrorLists, First -> Last];
+
+	(* gather all options with errors *)
+	desiccateGrindOptionMismatches = DeleteDuplicates[Intersection[Flatten[formattedErrorLists], Flatten[{Desiccate, Grind, allOptionNames}]]];
+
+	(* throw error based on the error codes *)
+	desiccateGrindOptionMismatchTests = If[
+		Or[
+			allPrepackedQ,
+			noDesiccateQ && noGrindQ
+		],
+		{},
+		MapThread[
+			Module[{errorCode, optionSampleTuples, inputSamples},
+				errorCode = #1;
+				optionSampleTuples = #2;
+				inputSamples = DeleteDuplicates[Flatten[optionSampleTuples[[All, 2]]]];
+				Switch[errorCode,
+					1,
+						If[messages && !allPrepackedQ,
+							Message[
+								Error::UnusedOptions,
+								"Samples " <> ObjectToString[inputSamples] <> " are in melting point capillaries, therefore, cannot be desiccated or ground. Please set both Desiccate and Grind to False for those sample(s)."
+							]
+						];
+						If[gatherTests && !allPrepackedQ,
+							{
+								Test["Desiccate and Grind are False for " <> ObjectToString[Flatten[inputSamples]] <> " which are in melting point capillaries: ", True, False],
+								Test["Desiccate and Grind are False for " <> ObjectToString[Complement[myInputSamples, inputSamples]] <> " which are in melting point capillaries: ", True, True]
+							},
+							{}
+						],
+					2,
+						If[messages && !allPrepackedQ,
+							Message[
+								Error::UnusedOptions,
+								"Sample(s) " <> ObjectToString[inputSamples] <> " are in melting point capillaries, therefore, cannot be desiccated or ground. Please set both Desiccate and Grind to False for those sample(s) and set the following options to Null or leave them unspecified to be calculated automatically: " <> ObjectToString[StringRiffle[StringRiffle[#, " for "]& /@ optionSampleTuples, "; "]] <> "."
+							]
+						];
+						If[gatherTests && !allPrepackedQ,
+							{
+								Test["Desiccate- and Grind-related options are not specified for " <> ObjectToString[inputSamples] <> " which are in melting point capillaries: ", True, False],
+								Test["Desiccate- and Grind-related options are not specified for " <> ObjectToString[Complement[myInputSamples, inputSamples]] <> " which are in melting point capillaries: ", True, True]
+							},
+							{}
+						],
+					3,
+						If[messages,
+							Message[
+								Error::RequiredPreparationOptions,
+								"Desiccate- and Grind-related options should be specified when Desiccate and Grind are True. Please set the following options to non-Null values or leave them unspecified to be calculated automatically: " <> StringRiffle[StringRiffle[#, " for "]& /@ optionSampleTuples, "; "] <> "."
+							]
+						];
+						If[gatherTests,
+							{
+								Test["Desiccate and Grind are True for " <> ObjectToString[inputSamples] <> ", therefore, Desiccate- and Grind-related options are specified for those samples:", True, False],
+								Test["Desiccate and Grind are True for " <> ObjectToString[Complement[myInputSamples, inputSamples]] <> ", therefore, Desiccate- and Grind-related options are specified for those samples:", True, True]
+							},
+							{}
+						],
+					4,
+						If[messages,
+							Message[
+								Error::RequiredDesiccateOptions,
+								"If Desiccate is set to True, Desiccate-related options should be specified. Please set the following options to non-Null values or leave them unspecified to be calculated automatically: " <> StringRiffle[StringRiffle[#, " for "]& /@ optionSampleTuples, "; "] <> "."
+							]
+						];
+						If[gatherTests,
+							{
+								Test["Desiccate is True for " <> ObjectToString[inputSamples] <> ", therefore, Desiccate-related options are specified for those samples:", True, False],
+								Test["Desiccate is True for " <> ObjectToString[Complement[myInputSamples, inputSamples]] <> ", therefore, Desiccate-related options are specified for those samples:", True, True]
+							},
+							{}
+						],
+					5,
+						If[messages,
+							Message[
+								Error::RequiredGrindOptions,
+								"If Grind is set to True, Grind-related options should be specified. Please set the following options to non-Null values or leave them unspecified to be calculated automatically: " <> StringRiffle[StringRiffle[#, " for "]& /@ optionSampleTuples, "; "] <> "."
+							]
+						];
+						If[gatherTests,
+							{
+								Test["Grind is True for " <> ObjectToString[inputSamples] <> ", therefore, Grind-related options are specified for those samples:", True, False],
+								Test["Grind is True for " <> ObjectToString[Complement[myInputSamples, inputSamples]] <> ", therefore, Grind-related options are specified for those samples:", True, True]
+							},
+							{}
+						],
+					6,
+					If[messages && !allPrepackedQ && !noDesiccateQ && !noGrindQ,
+						Message[
+							Error::UnusedOptions,
+							"If Desiccate and Grind are set to False, Desiccate- and Grind-related options should be Null. Please set the following options to Null or leave them unspecified to be calculated automatically: " <> StringRiffle[StringRiffle[#, " for "]& /@ optionSampleTuples, "; "] <> "."
+						]
+					];
+					If[gatherTests && !allPrepackedQ && !noDesiccateQ && !noGrindQ,
+						{
+							Test["Desiccate is set to False for samples " <> ObjectToString[inputSamples] <> ". Therefore, Desiccate-related options are Null for those samples: ", True, False],
+							Test["Desiccate is set to False for samples " <> ObjectToString[Complement[myInputSamples, inputSamples]] <> ". Therefore, Desiccate-related options are Null for those samples: ", True, True]
+						},
+						{}
+					],
+					7,
+						If[messages && !allPrepackedQ && !noDesiccateQ,
+							Message[
+								Error::UnusedOptions,
+								"If Desiccate is set to False, Desiccate-related options should be Null. Please set the following options to Null or leave them unspecified to be calculated automatically: " <> StringRiffle[StringRiffle[#, " for "]& /@ optionSampleTuples, "; "] <> "."
+							]
+						];
+						If[gatherTests && !allPrepackedQ && !noDesiccateQ,
+							{
+								Test["Desiccate is set to False for samples " <> ObjectToString[inputSamples] <> ". Therefore, Desiccate-related options are Null for those samples: ", True, False],
+								Test["Desiccate is set to False for samples " <> ObjectToString[Complement[myInputSamples, inputSamples]] <> ". Therefore, Desiccate-related options are Null for those samples: ", True, True]
+							},
+							{}
+						],
+					8,
+						If[messages && !allPrepackedQ && !noGrindQ,
+							Message[
+								Error::UnusedOptions,
+								"If Grind is set to False, Grind-related options should be Null. Please set the following options to Null or leave them unspecified to be calculated automatically: " <> StringRiffle[StringRiffle[#, " for "]& /@ optionSampleTuples, "; "] <> "."
+							]
+						];
+						If[gatherTests && !allPrepackedQ && !noGrindQ,
+							{
+								Test["Grind is set to False for samples " <> ObjectToString[inputSamples] <> ". Therefore, Grind-related options are Null for those samples: ", True, False],
+								Test["Grind is set to False for samples " <> ObjectToString[Complement[myInputSamples, inputSamples]] <> ". Therefore, Grind-related options are Null for those samples: ", True, True]
+							},
+							{}
+						]
+				]
+			]&,
+			{Keys[groupedErrorLists], Values[groupedErrorLists] /. sample:ObjectP[Object[Sample]] :> ObjectToString[sample]}
+		]
+	];
+
+
+	(*throw an error if OrderOfOperations does not match Grind and Desiccate options*)
+	orderOptionMismatches = If[MemberQ[orderMismatches, True] && messages,
+		(
+			Message[
+				Error::OrderOfOperationsMismatch,
+				ObjectToString[PickList[resolvedOrderOfOperations, orderMismatches], Cache -> cacheBall],
+				ObjectToString[PickList[simulatedSamples, orderMismatches], Cache -> cacheBall]
+			];
+			{OrderOfOperations}
+		),
+		{}
+	];
+
+	(*Create appropriate tests if gathering them, or return {}*)
+	orderOptionMismatchTests = If[gatherTests,
+		Module[{failingInputs, passingInputs, passingInputsTest, failingInputTest},
+			(*Get the failing and not failing samples*)
+			failingInputs = PickList[simulatedSamples, orderMismatches];
+			passingInputs = PickList[simulatedSamples, orderMismatches, False];
+			(*Create the passing and failing tests*)
+			failingInputTest = If[Length[failingInputs] > 0,
+				Test["OrderOfOperations matches Grind and Desiccate for samples " <> ObjectToString[failingInputs, Cache -> cacheBall] <> ".", True, False],
+				Nothing
+			];
+			(* Create a test for the passing inputs. *)
+			passingInputsTest = If[Length[passingInputs] > 0,
+				Test["OrderOfOperations matches Grind and Desiccate for samples " <> ObjectToString[passingInputs, Cache -> cacheBall] <> ".", True, True],
+				Nothing
+			];
+
+			(* Return our created tests. *)
+			{passingInputsTest, failingInputTest}
+		],
+		{}
+	];
+
+	(*throw an error if the sample is prepacked but NumberOfReplicates is not Null*)
+	numberOfReplicatesMismatchedOptions = If[MemberQ[invalidNumbersOfReplicates, True] && messages,
+		(
+			Message[
+				Error::InvalidNumberOfReplicates,
+				ObjectToString[PickList[simulatedSamples, invalidNumbersOfReplicates], Cache -> cacheBall]
+			];
+			{NumberOfReplicates}
+		),
+		{}
+	];
+
+	(*Create appropriate tests if gathering them, or return {}*)
+	numberOfReplicatesMismatchedTest = If[gatherTests,
+		Module[{failingInputs, passingInputs, passingInputsTest, failingInputTest},
+			(*Get the failing and not failing samples*)
+			failingInputs = PickList[simulatedSamples, invalidNumbersOfReplicates];
+			passingInputs = PickList[simulatedSamples, invalidNumbersOfReplicates, False];
+			(*Create the passing and failing tests*)
+			failingInputTest = If[Length[failingInputs] > 0,
+				Test["If the sample is prepacked in a melting point capillary, NumberOfReplicates is Null for the following samples: " <> ObjectToString[failingInputs, Cache -> cacheBall] <> ".", True, False],
+				Nothing
+			];
+			(* Create a test for the passing inputs. *)
+			passingInputsTest = If[Length[passingInputs] > 0,
+				Test["If the sample is prepacked in a melting point capillary, NumberOfReplicates is Null for the following samples: " <> ObjectToString[passingInputs, Cache -> cacheBall] <> ".", True, True],
+				Nothing
+			];
+
+			(* Return our created tests. *)
+			{passingInputsTest, failingInputTest}
+		],
+		{}
+	];
+
+	(* throw an error if PreparedSampleStorageCondition is resolved to Null for any samples *)
+	invalidPreparedSampleStorageConditionsOptions = If[MemberQ[invalidPreparedSampleStorageConditions, True] && messages,
+		(
+			Message[
+				Error::InvalidPreparedSampleStorageCondition,
+				ObjectToString[PickList[simulatedSamples, invalidPreparedSampleStorageConditions], Cache -> cacheBall]];
+			{PreparedSampleStorageCondition}
+		),
+		{}
+	];
+
+	(* Create appropriate tests if gathering them, or return {} *)
+	invalidPreparedSampleStorageConditionsTest = If[gatherTests,
+		Module[{failingInputs, passingInputs, passingInputsTest, failingInputTest},
+
+			(* Get the failing and not failing samples *)
+			failingInputs = PickList[simulatedSamples, invalidPreparedSampleStorageConditions];
+			passingInputs = PickList[simulatedSamples, invalidPreparedSampleStorageConditions, False];
+
+			(* Create the passing and failing tests *)
+			failingInputTest = If[Length[failingInputs] > 0,
+				Test["The following samples, " <> ObjectToString[failingInputs, Cache -> cacheBall] <> " have a valid PreparedSampleStorageCondition.", True, False],
+				Nothing
+			];
+
+			(* Create a test for the passing inputs. *)
+			passingInputsTest = If[Length[passingInputs] > 0,
+				Test["The following samples, " <> ObjectToString[passingInputs, Cache -> cacheBall] <> " have a valid PreparedSampleStorageCondition.", True, True],
+				Nothing
+			];
+
+			(* Return our created tests. *)
+			{passingInputsTest, failingInputTest}
+		],
+		{}
+	];
+
+
+	(*---------------------------------*)
+	(*---------------------------------*)
+	(*--- Resolve Desiccate options ---*)
+	(*---------------------------------*)
+	(*---------------------------------*)
+
+	(*resolve singleton options: If Desiccate is True, Desiccate options will resolve by ExperimentDesiccate.
+	Here, Desiccate-related options are resolved only if Desiccate is False*)
 
 	(*Resolve DesiccationMethod*)
-	desiccationMethod = Which[
-		!MemberQ[desiccateQs, True] && MatchQ[unresolvedDesiccationMethod, Automatic], Null,
-		MemberQ[desiccateQs, True] && MatchQ[unresolvedDesiccationMethod, Automatic], StandardDesiccant,
-		True, unresolvedDesiccationMethod
+	{desiccationMethod, desiccationMethodChangedQ} = Switch[{Or@@realDesiccateQs, unresolvedDesiccationMethod},
+		(*if Desiccate is False for all samples, DesiccationMethod is resolved to Null*)
+		{False, Automatic},
+			{Null, False},
+
+		(*if Desiccate is True for at least one sample, DesiccationMethod is resolved to StandardDesiccant*)
+		{True, Automatic},
+			{StandardDesiccant, False},
+
+		(* if Desiccate is True but DesiccationMethod is Null, it is in an error state. change DesiccationMethod to default so that Desiccate resolver does not break *)
+		{True, Null},
+			{
+				If[NullQ[unresolvedDesiccant], Vacuum, StandardDesiccant],
+				True
+			},
+
+		(*other cases are ok to leave it as is*)
+		{_, _},
+			{unresolvedDesiccationMethod, False}
 	];
 
 	(*Resolve Desiccant*)
 	desiccant = If[
-		!MemberQ[desiccateQs, True] && MatchQ[unresolvedDesiccant, Automatic],
+		!Or@@realDesiccateQs && MatchQ[unresolvedDesiccant, Automatic],
 		Null,
 		unresolvedDesiccant
 	];
 
 	(*Resolve DesiccantPhase*)
 	desiccantPhase = If[
-		!MemberQ[desiccateQs, True] && MatchQ[unresolvedDesiccantPhase, Automatic],
+		!Or@@realDesiccateQs && MatchQ[unresolvedDesiccantPhase, Automatic],
 		Null,
 		unresolvedDesiccantPhase
 	];
 
+	(* Resolve CheckDesiccant *)
+	checkDesiccant = If[
+		!Or@@realDesiccateQs && MatchQ[unresolvedCheckDesiccant, Automatic],
+		Null,
+		unresolvedCheckDesiccant
+	];
+
 	(*Resolve DesiccantAmount*)
 	desiccantAmount = If[
-		!MemberQ[desiccateQs, True] && MatchQ[unresolvedDesiccantAmount, Automatic],
+		!Or@@realDesiccateQs && MatchQ[unresolvedDesiccantAmount, Automatic],
 		Null,
 		unresolvedDesiccantAmount
 	];
 
-	(*Resolve Desiccator*)
-	desiccator = Which[
-		!MemberQ[desiccateQs, True] && MatchQ[unresolvedDesiccator, Automatic],
+	(* DesiccantStorageCondition; Default: Automatic; If not specified, it is set to Disposal*)
+	desiccantStorageCondition = If[
+		!Or@@realDesiccateQs && MatchQ[unresolvedDesiccantStorageCondition, Automatic],
 		Null,
-		MemberQ[desiccateQs, True] && MatchQ[unresolvedDesiccator, Automatic],
-		Model[Instrument, Desiccator, "Bel-Art Space Saver Vacuum Desiccator"],
-		True, unresolvedDesiccator
+		unresolvedDesiccantStorageCondition
+	];
+
+	(* DesiccantStorageContainer; Default: Automatic; If not specified, it is determined by PreferredContainer*)
+
+	desiccantStorageContainer = If[
+		!Or@@realDesiccateQs && MatchQ[unresolvedDesiccantStorageContainer, Automatic],
+		Null,
+		unresolvedDesiccantStorageContainer
+	];
+
+	(*Resolve Desiccator*)
+	{desiccator, desiccatorChangedQ} = Switch[{Or@@realDesiccateQs, unresolvedDesiccator},
+		(*if Desiccate is False for all samples, Desiccator is resolved to Null*)
+		{False, Automatic},
+			{Null, False},
+
+		(*if Desiccate is True for at least one sample, Desiccator is resolved to the default desiccator*)
+		{True, Automatic},
+			{Model[Instrument, Desiccator, "Bel-Art Space Saver Vacuum Desiccator"], False},
+
+		(* if Desiccate is True but DesiccationMethod is Null, it is in an error state. change DesiccationMethod to default so that Desiccate resolver does not break *)
+		{True, Null},
+			{Model[Instrument, Desiccator, "Bel-Art Space Saver Vacuum Desiccator"], True},
+
+		(*other cases are ok to leave it as is*)
+		{_, _},
+			{unresolvedDesiccator, False}
 	];
 
 	(*Resolve DesiccationTime*)
-	desiccationTime = Which[
-		!MemberQ[desiccateQs, True] && MatchQ[unresolvedDesiccationTime, Automatic],
-		Null,
-		MemberQ[desiccateQs, True] && MatchQ[unresolvedDesiccationTime, Automatic],
-		5Hour,
-		True, unresolvedDesiccationTime
+	{desiccationTime, desiccationTimeChangedQ} = Switch[{Or@@realDesiccateQs, unresolvedDesiccationTime},
+		(* if Desiccate is False for all samples, DesiccationTime is resolved to Null *)
+		{False, Automatic},
+			{Null, False},
+
+		(* if Desiccate is True for at least one sample, DesiccationTime is resolved to default *)
+		{True, Automatic},
+			{5 Hour, False},
+
+		(* if Desiccate is True but desiccationTime is Null, it is in an error state. change DesiccationTime to default so that Desiccate resolver does not break *)
+		{True, Null},
+			{5 Hour, True},
+
+		(* other cases are ok to leave it as is *)
+		{_, _},
+			{unresolvedDesiccationTime, False}
 	];
 
 	(*Determine samples that should be desiccated: desiccateSamples*)
 	sampleObjects = Lookup[samplePackets, Object];
-	desiccateSamples = PickList[sampleObjects, desiccateQs];
-
-	(*	(*Determine desiccateOptions and desiccateResolutionOptions for those samples*)
-    desiccateOptionKeys={Amount,SampleContainer,DesiccationMethod,Desiccant,
-      DesiccantPhase,DesiccantAmount,Desiccator,DesiccationTime};*)
+	desiccateSamples = PickList[sampleObjects, realDesiccateQs];
 
 	desiccateOptions = {
-		Amount -> PickList[resolvedAmount, desiccateQs],
-		SampleContainer -> PickList[sampleContainer, desiccateQs],
+		Amount -> PickList[resolvedAmount, realDesiccateQs],
+		SampleContainer -> PickList[resolvedSampleContainer, realDesiccateQs],
+		SampleContainerLabel -> PickList[resolvedSampleContainerLabel, realDesiccateQs],
 		Method -> desiccationMethod,
 		Desiccant -> desiccant,
+		CheckDesiccant -> checkDesiccant,
 		DesiccantPhase -> desiccantPhase,
 		DesiccantAmount -> desiccantAmount,
+		DesiccantStorageCondition -> desiccantStorageCondition,
+		DesiccantStorageContainer -> desiccantStorageContainer,
 		Desiccator -> desiccator,
 		Time -> desiccationTime
 	};
 
 	(* Build the resolved desiccate options IF Desiccate is True for at least one sample *)
+	(* define these invalid option/input tracker constants, to be populated by ExperimentDesiccate *)
+	$DesiccateInvalidInputs = {};
+	$DesiccateInvalidOptions = {};
+
+	(* below SamplesOutStorageCondition -> AmbientStorage is just added to avoid throwing error by Desiccate function. the real storage condition of samples are determined by PreparedSampleStorageCondition option in MeasureMeltingPoint *)
 	{desiccateResolvedOptionsResult, desiccateTests} = Which[
-		MemberQ[desiccateQs, True] && gatherTests,
-		Quiet[
-			ExperimentDesiccate[desiccateSamples, Join[desiccateOptions, {Simulation -> updatedSimulation, Cache -> cacheBall, OptionsResolverOnly -> True, Output -> {Options, Tests}}]],
-			{
-				Error::MissingMassInformation,
-				Error::InvalidInput
-			}
-		],
-		MemberQ[desiccateQs, True] && !gatherTests,
-		{
+		MemberQ[realDesiccateQs, True] && gatherTests,
 			Quiet[
-				ExperimentDesiccate[desiccateSamples, Join[desiccateOptions, {Simulation -> updatedSimulation, Cache -> cacheBall, OptionsResolverOnly -> True, Output -> Options}]],
+				ExperimentDesiccate[desiccateSamples, Join[desiccateOptions, {SamplesOutStorageCondition -> AmbientStorage, Simulation -> updatedSimulation, Cache -> cacheBall, OptionsResolverOnly -> True, Output -> {Options, Tests}}]],
 				{
+					Error::NonSolidSample,
 					Error::MissingMassInformation,
+					Error::InvalidSamplesOutStorageCondition,
+					Error::InvalidOption,
 					Error::InvalidInput
 				}
 			],
-			{}
-		},
-		True, {{}, {}}
+		MemberQ[realDesiccateQs, True] && !gatherTests,
+			{
+				Quiet[
+					ExperimentDesiccate[desiccateSamples, Join[desiccateOptions, {SamplesOutStorageCondition -> AmbientStorage, Simulation -> updatedSimulation, Cache -> cacheBall, OptionsResolverOnly -> True, Output -> Options}]],
+					{
+						Error::NonSolidSample,
+						Error::MissingMassInformation,
+						Error::InvalidSamplesOutStorageCondition,
+						Error::InvalidOption,
+						Error::InvalidInput
+					}
+				],
+				{}
+			},
+		True,
+			{{}, {}}
 	];
 
 	(*Get needed resolved options form ExperimentDesiccate; Rename Method and Time back to DesiccationMethod and DesiccationTime*)
-	resolvedDesiccateSingletonOptions = Normal@Which[
-		MemberQ[desiccateQs, True],
-		KeyTake[desiccateResolvedOptionsResult,
-			{Method, Desiccant, DesiccantPhase, DesiccantAmount, Desiccator, Time}
-		],
+	resolvedDesiccateSingletonOptions = Normal[
+		Which[
+			MemberQ[realDesiccateQs, True],
+				KeyTake[
+					desiccateResolvedOptionsResult,
+					{Method, Desiccant, CheckDesiccant, DesiccantPhase, DesiccantAmount, DesiccantStorageCondition, DesiccantStorageContainer, Desiccator, Time}
+				],
 
-		!MemberQ[desiccateQs, True],
-		KeyTake[desiccateOptions, {Method, Desiccant, DesiccantPhase, DesiccantAmount, Desiccator, Time}
+			!MemberQ[realDesiccateQs, True],
+				KeyTake[
+					desiccateOptions,
+					{Method, Desiccant, CheckDesiccant, DesiccantPhase, DesiccantAmount, DesiccantStorageCondition, DesiccantStorageContainer, Desiccator, Time}
+				]
 		]
 	] /. {Time -> DesiccationTime, Method -> DesiccationMethod};
+
+	(* any invalid options thrown by Desiccate *)
+	desiccateInvalidOptions = Intersection[$DesiccateInvalidOptions, {Method, Desiccant, CheckDesiccant, DesiccantPhase, DesiccantAmount, DesiccantStorageCondition, DesiccantStorageContainer, Desiccator, Time}] /. {Time -> DesiccationTime, Method -> DesiccationMethod};
 
 	(*select resolved desiccate-related index-matched options using RiffleAlternatives.
 	The only desiccate-related index-matched option is SampleContainer*)
@@ -2387,22 +3423,21 @@ resolveExperimentMeasureMeltingPointOptions[myInputSamples : {ObjectP[Object[Sam
 		Lookup[desiccateResolvedOptionsResult, SampleContainer, {}],
 
 		(*False list is the options of samples that were not resolved by ExperimentDesiccate*)
-		PickList[sampleContainer, Not /@ desiccateQs],
+		PickList[resolvedSampleContainer, realDesiccateQs, False],
 
-		desiccateQs
+		realDesiccateQs
 	]};
 	(*End of resolving Desiccate-related options*)
 
-	(* if Grind is set to True by the user but the sample is prepacked, realGrindQs should be False *)
-	realGrindQs = MapThread[And, {grindQs, Not /@ prepackedQs}];
+	(*-----------------------------*)
+	(*-----------------------------*)
+	(*--- Resolve Grind options ---*)
+	(*-----------------------------*)
+	(*-----------------------------*)
+
 
 	(*Determine samples that should be ground*)
 	grindSamples = PickList[sampleObjects, realGrindQs];
-
-	(*Determine grindOptions for those samples*)
-	grindOptionKeys = {Amount, GrinderType, Grinder, Fineness, BulkDensity, GrindingContainer,
-		GrindingBead, NumberOfGrindingBeads, GrindingRate, GrindingTime, NumberOfGrindingSteps,
-		CoolingTime, GrindingProfile};
 
 	optionValues = {resolvedAmount, halfResolvedGrinderType, halfResolvedGrinder, halfResolvedFineness,
 		halfResolvedBulkDensity, halfResolvedGrindingContainer, halfResolvedGrindingBead,
@@ -2410,36 +3445,61 @@ resolveExperimentMeasureMeltingPointOptions[myInputSamples : {ObjectP[Object[Sam
 		halfResolvedNumberOfGrindingSteps, halfResolvedCoolingTime, halfResolvedGrindingProfile};
 
 	(*pick options of samples that should be ground*)
-	grindOptionValues = PickList[#, realGrindQs]& /@ optionValues;
+	rawGrindOptionValues = PickList[#, realGrindQs]& /@ optionValues;
+
+	grindOptionValues = If[
+		MemberQ[realGrindQs, True],
+		Join[{rawGrindOptionValues[[1]]}, Rest[rawGrindOptionValues]],
+		rawGrindOptionValues
+	];
 
 	(*pick options of samples that should not be ground*)
-	noGrindOptionValues = PickList[#, Not /@ realGrindQs]& /@ optionValues;
+	noGrindOptionValues = PickList[#, realGrindQs, False]& /@ optionValues;
 
 	(*make a list of rules for grind options*)
-	grindOptions = MapThread[Rule, {grindOptionKeys, grindOptionValues}];
+	grindOptions = MapThread[Rule, {grindOptionNamesWithAmount, grindOptionValues}];
 
 	(*make a list of rules for grind options of samples that should not be ground*)
-	noGrindOptions = MapThread[Rule, {grindOptionKeys, noGrindOptionValues}];
+	noGrindOptions = MapThread[Rule, {grindOptionNamesWithAmount, noGrindOptionValues}];
 
-	(*Grinder and GrindingTime should change to Instrument and Time to be used in ExperimentDesiccate*)
+	(*Grinder and GrindingTime should change to Instrument and Time to be used in ExperimentGrind*)
 	renamedGrindOptions = Map[(Keys[#] /. {Grinder -> Instrument, GrindingTime -> Time}) -> Values[#]&, grindOptions];
 
 	(* Build the resolved grind options *)
+
+	(* define these invalid option/input tracker constants, to be populated by ExperimentGrind *)
+	$GrindInvalidInputs = {};
+	$GrindInvalidOptions = {};
+
+	(* below SamplesOutStorageCondition -> AmbientStorage is just added to avoid throwing error by Grind function. the real storage condition of samples are determined by PreparedSampleStorageCondition option in MeasureMeltingPoint *)
 	{grindResolvedOptionsResult, grindTests} = Which[
 		MemberQ[realGrindQs, True] && gatherTests,
-		Quiet[
-			ExperimentGrind[grindSamples, Join[renamedGrindOptions, {Simulation -> updatedSimulation, Cache -> cacheBall, OptionsResolverOnly -> True, Output -> {Options, Tests}}]],
-			{Warning::MissingMassInformation}
-		],
-		MemberQ[realGrindQs, True] && !gatherTests,
-		{
 			Quiet[
-				ExperimentGrind[grindSamples, Join[renamedGrindOptions, {Simulation -> updatedSimulation, Cache -> cacheBall, OptionsResolverOnly -> True, Output -> Options}]],
-				{Warning::MissingMassInformation}
+				ExperimentGrind[grindSamples, Join[renamedGrindOptions, {SamplesOutStorageCondition -> AmbientStorage, Simulation -> updatedSimulation, Cache -> cacheBall, OptionsResolverOnly -> True, Output -> {Options, Tests}}]],
+				{
+					Error::NonSolidSample,
+					Warning::MissingMassInformation,
+					Error::InvalidSamplesOutStorageCondition,
+					Error::InvalidOption,
+					Error::InvalidInput
+				}
 			],
-			{}
-		},
-		True, {{}, {}}
+		MemberQ[realGrindQs, True] && !gatherTests,
+			{
+				Quiet[
+					ExperimentGrind[grindSamples, Join[renamedGrindOptions, {SamplesOutStorageCondition -> AmbientStorage, Simulation -> updatedSimulation, Cache -> cacheBall, OptionsResolverOnly -> True, Output -> Options}]],
+					{
+						Error::NonSolidSample,
+						Warning::MissingMassInformation,
+						Error::InvalidSamplesOutStorageCondition,
+						Error::InvalidOption,
+						Error::InvalidInput
+					}
+				],
+				{}
+			},
+		True,
+			{{}, {}}
 	];
 
 	(*Get needed resolved options form ExperimentGrind; Rename Instrument and Time back to Grinder and GrindingTime*)
@@ -2456,1456 +3516,121 @@ resolveExperimentMeasureMeltingPointOptions[myInputSamples : {ObjectP[Object[Sam
 			Lookup[#2, #1],
 
 			realGrindQs
-		]&, {grindOptionKeys, noGrindOptions}
+		]&, {grindOptionNamesWithAmount, noGrindOptions}
 	];
+
+	(* any invalid options thrown by Grind *)
+	grindInvalidOptions = $GrindInvalidOptions /. {Instrument -> Grinder, Time -> GrindingTime};
+
 
 	(*End of resolving Grind-related options*)
 
-	(***Error, Warning, and Test Definitions***)
-	(*throw an error if the sample is prepacked but Desiccate is not Null*)
-	desiccatePrepackedMismatchOptions = If[MemberQ[desiccatePrepackedMismatches, True] && messages,
+	(*------------------------------------------*)
+	(*------------------------------------------*)
+	(*--- MeasureMeltingPoint-related errors ---*)
+	(*------------------------------------------*)
+	(*------------------------------------------*)
+
+	(* resolve instrument and throw errors if needed *)
+
+	(* max of the resolved EndTemperatures *)
+	maxResolvedEndTemperature = Max[resolvedEndTemperature];
+
+	(* max of the resolved NumberOfReplicates *)
+	maxResolvedNumberOfReplicates = Max[resolvedNumberOfReplicates /. Null :> 1];
+
+	(* all suitable instruments *)
+	suitableInstruments = Cases[availableInstrumentTuples, {
+		meltingPointInstrument:ObjectP[Model[Instrument, MeltingPointApparatus]],
+		instrumentMaxTemperature:GreaterEqualP[maxResolvedEndTemperature],
+		instrumentMaxSlots:GreaterEqualP[maxResolvedNumberOfReplicates]
+	} :> meltingPointInstrument];
+
+	(* resolve the instrument: select the first suitable instrument. onsite instruments are added first in this list *)
+	resolvedInstrument = If[
+		MatchQ[unresolvedInstrument, Automatic],
+		First[suitableInstruments, Automatic],
+		unresolvedInstrument
+	];
+
+	(* lookup the model of the resolved instrument *)
+	resolvedInstrumentModel = If[
+		MatchQ[resolvedInstrument, ObjectP[Object[Instrument, MeltingPointApparatus]]],
+		fastAssocLookup[fastAssoc, resolvedInstrument, Model],
+		resolvedInstrument
+	];
+
+	(* lookup the number of capillary slots of the resolved instrument *)
+	numberOfCapillarySlots = If[
+		MatchQ[resolvedInstrumentModel, ObjectP[Model[Instrument, MeltingPointApparatus]]],
+		fastAssocLookup[fastAssoc, resolvedInstrumentModel, NumberOfMeltingPointCapillarySlots],
+		(* if resolvedInstrumentModel is not a Model, give numberOfCapillarySlots a default number so the code does not break *)
+		3
+	];
+
+	(* Throw an error if no instrument found at any site at all, not even considering NumberOfReplicates or EndTemperature *)
+	noAvailableInstrumentQ = MatchQ[possibleInstrumentModels, {}];
+
+	noAvailableInstruments = If[
+		messages && noAvailableInstrumentQ,
+
 		(
 			Message[
-				Error::InvalidDesiccateOptions,
-				ObjectToString[PickList[simulatedSamples, desiccatePrepackedMismatches], Cache -> cacheBall]
+				Error::NoAvailableMeltingPointInstruments,
+				ObjectToString[experimentSites, Cache -> cacheBall]
 			];
-			{Desiccate}
+			{Instrument}
 		),
+
 		{}
 	];
 
 	(*Create appropriate tests if gathering them, or return {}*)
-	desiccatePrepackedMismatchTest = If[gatherTests,
-		Module[{failingInputs, passingInputs, passingInputsTest, failingInputTest},
-			(*Get the failing and not failing samples*)
-			failingInputs = PickList[simulatedSamples, desiccatePrepackedMismatches];
-			passingInputs = PickList[simulatedSamples, desiccatePrepackedMismatches, False];
-			(*Create the passing and failing tests*)
-			failingInputTest = If[Length[failingInputs] > 0,
-				Test["If the sample is prepacked in a melting point capillary, Desiccate is False for the following samples: " <> ObjectToString[failingInputs, Cache -> cacheBall] <> ".", True, False],
-				Nothing
-			];
-			(* Create a test for the passing inputs. *)
-			passingInputsTest = If[Length[passingInputs] > 0,
-				Test["If the sample is prepacked in a melting point capillary, Desiccate is False for the following samples: " <> ObjectToString[failingInputs, Cache -> cacheBall] <> ".", True, True],
-				Nothing
-			];
+	noAvailableInstrumentTests = If[
+		gatherTests,
 
-			(* Return our created tests. *)
-			{passingInputsTest, failingInputTest}
-		],
+		Test["At least one melting point apparatus exists at any of the allowed experiment sites (" <> ObjectToString[experimentSites, Cache -> cacheBall] <> ").", True, !noAvailableInstrumentQ],
+
 		{}
 	];
 
-	(*throw an error if all samples are prepacked but DesiccationMethod is not Null*)
-	prepackedDesiccationMethodMismatchOptions = If[!MemberQ[prepackedQs, False] && !MemberQ[desiccateQs, True] && !NullQ[desiccationMethod] && messages,
+	(* Throw an error if the user specified an instrument but it is not included in the desiredInstrumentModels list *)
+	invalidInstrumentQ = And[
+		MatchQ[unresolvedInstrumentModel, ObjectP[Model[Instrument, MeltingPointApparatus]]],
+		!MemberQ[desiredInstrumentModels, ObjectP[unresolvedInstrumentModel]]
+	];
+
+	invalidInstruments = If[
+		messages && invalidInstrumentQ,
 		(
 			Message[
-				Error::InvalidDesiccationMethodOptions,
-				ObjectToString[PickList[simulatedSamples], Cache -> cacheBall]
+				Error::InvalidInstrument,
+				ObjectToString[unresolvedInstrument, Cache -> cacheBall],
+				ObjectToString[experimentSites, Cache -> cacheBall]
 			];
-			{DesiccationMethod}
+			{Instrument}
 		),
+
 		{}
 	];
 
 	(*Create appropriate tests if gathering them, or return {}*)
-	prepackedDesiccationMethodMismatchTest = If[gatherTests,
-		Module[{passingInputsTest, failingInputTest},
-			(*Create the passing and failing tests*)
-			failingInputTest = If[!MemberQ[prepackedQs, False] && !MemberQ[desiccateQs, True] && !NullQ[desiccationMethod],
-				Test["If all input samples are prepacked in melting point capillaries, DesiccationMethod is Null.", True, False],
-				Nothing
-			];
-			(* Create a test for the passing inputs. *)
-			passingInputsTest = If[!MemberQ[prepackedQs, False] && !MemberQ[desiccateQs, True] && NullQ[desiccationMethod],
-				Test["If all input samples are prepacked in melting point capillaries, DesiccationMethod is Null.", True, True],
-				Nothing
-			];
+	invalidInstrumentTests = If[
+		gatherTests,
 
-			(* Return our created tests. *)
-			{passingInputsTest, failingInputTest}
-		],
-		{}
-	];
-
-	(*throw an error if Desiccate is False for all samples but DesiccationMethod is not Null*)
-	desiccateDesiccationMethodMismatchOptions = If[!MemberQ[desiccateQs, True] && !NullQ[desiccationMethod] && messages,
-		(
-			Message[
-				Error::DesiccationMethodMismatchOptions,
-				ObjectToString[PickList[simulatedSamples], Cache -> cacheBall]
-			];
-			{DesiccationMethod}
-		),
-		{}
-	];
-
-	(*Create appropriate tests if gathering them, or return {}*)
-	desiccateDesiccationMethodMismatchTest = If[gatherTests,
-		Module[{passingInputsTest, failingInputTest},
-			(*Create the passing and failing tests*)
-			failingInputTest = If[!MemberQ[prepackedQs, True] && !MemberQ[desiccateQs, True] && !NullQ[desiccationMethod],
-				Test["If Desiccate is False for all input samples, DesiccationMethod is Null.", True, False],
-				Nothing
-			];
-			(* Create a test for the passing inputs. *)
-			passingInputsTest = If[!MemberQ[prepackedQs, True] && !MemberQ[desiccateQs, True] && NullQ[desiccationMethod],
-				Test["If Desiccate is False for all input samples, DesiccationMethod is Null.", True, True],
-				Nothing
-			];
-
-			(* Return our created tests. *)
-			{passingInputsTest, failingInputTest}
-		],
-		{}
-	];
-
-	(*throw an error if all samples are prepacked but Desiccant is not Null*)
-	prepackedDesiccantMismatchOptions = If[!MemberQ[prepackedQs, False] && !MemberQ[desiccateQs, True] && !NullQ[desiccant] && messages,
-		(
-			Message[
-				Error::InvalidDesiccantOptions,
-				ObjectToString[PickList[simulatedSamples], Cache -> cacheBall]
-			];
-			{Desiccant}
-		),
-		{}
-	];
-
-	(*Create appropriate tests if gathering them, or return {}*)
-	prepackedDesiccantMismatchTest = If[gatherTests,
-		Module[{passingInputsTest, failingInputTest},
-			(*Create the passing and failing tests*)
-			failingInputTest = If[!MemberQ[prepackedQs, False] && !MemberQ[desiccateQs, True] && !NullQ[Desiccant],
-				Test["If all input samples are prepacked in melting point capillaries, Desiccant is Null.", True, False],
-				Nothing
-			];
-			(* Create a test for the passing inputs. *)
-			passingInputsTest = If[!MemberQ[prepackedQs, False] && !MemberQ[desiccateQs, True] && NullQ[Desiccant],
-				Test["If all input samples are prepacked in melting point capillaries, Desiccant is Null.", True, True],
-				Nothing
-			];
-
-			(* Return our created tests. *)
-			{passingInputsTest, failingInputTest}
-		],
-		{}
-	];
-
-	(*throw an error if Desiccate is False for all samples but Desiccant is not Null*)
-	desiccateDesiccantMismatchOptions = If[!MemberQ[desiccateQs, True] && !NullQ[desiccant] && messages,
-		(
-			Message[
-				Error::DesiccantMismatchOptions,
-				ObjectToString[PickList[simulatedSamples], Cache -> cacheBall]
-			];
-			{Desiccant}
-		),
-		{}
-	];
-
-	(*Create appropriate tests if gathering them, or return {}*)
-	desiccateDesiccantMismatchTest = If[gatherTests,
-		Module[{passingInputsTest, failingInputTest},
-			(*Create the passing and failing tests*)
-			failingInputTest = If[!MemberQ[prepackedQs, True] && !MemberQ[desiccateQs, True] && !NullQ[Desiccant],
-				Test["If Desiccate is False for all input samples, Desiccant is Null.", True, False],
-				Nothing
-			];
-			(* Create a test for the passing inputs. *)
-			passingInputsTest = If[!MemberQ[prepackedQs, True] && !MemberQ[desiccateQs, True] && NullQ[Desiccant],
-				Test["If Desiccate is False for all input samples, Desiccant is Null.", True, True],
-				Nothing
-			];
-
-			(* Return our created tests. *)
-			{passingInputsTest, failingInputTest}
-		],
-		{}
-	];
-
-	(*throw an error if all samples are prepacked but DesiccantPhase is not Null*)
-	prepackedDesiccantPhaseMismatchOptions = If[!MemberQ[prepackedQs, False] && !MemberQ[desiccateQs, True] && !NullQ[desiccantPhase] && messages,
-		(
-			Message[
-				Error::InvalidDesiccantPhaseOptions,
-				ObjectToString[PickList[simulatedSamples], Cache -> cacheBall]
-			];
-			{DesiccantPhase}
-		),
-		{}
-	];
-
-	(*Create appropriate tests if gathering them, or return {}*)
-	prepackedDesiccantPhaseMismatchTest = If[gatherTests,
-		Module[{passingInputsTest, failingInputTest},
-			(*Create the passing and failing tests*)
-			failingInputTest = If[!MemberQ[prepackedQs, False] && !MemberQ[desiccateQs, True] && !NullQ[DesiccantPhase],
-				Test["If all input samples are prepacked in melting point capillaries, DesiccantPhase is Null.", True, False],
-				Nothing
-			];
-			(* Create a test for the passing inputs. *)
-			passingInputsTest = If[!MemberQ[prepackedQs, False] && !MemberQ[desiccateQs, True] && NullQ[DesiccantPhase],
-				Test["If all input samples are prepacked in melting point capillaries, DesiccantPhase is Null.", True, True],
-				Nothing
-			];
-
-			(* Return our created tests. *)
-			{passingInputsTest, failingInputTest}
-		],
-		{}
-	];
-
-	(*throw an error if Desiccate is False for all samples but DesiccantPhase is not Null*)
-	desiccateDesiccantPhaseMismatchOptions = If[!MemberQ[desiccateQs, True] && !NullQ[desiccantPhase] && messages,
-		(
-			Message[
-				Error::DesiccantPhaseMismatchOptions,
-				ObjectToString[PickList[simulatedSamples], Cache -> cacheBall]
-			];
-			{DesiccantPhase}
-		),
-		{}
-	];
-
-	(*Create appropriate tests if gathering them, or return {}*)
-	desiccateDesiccantPhaseMismatchTest = If[gatherTests,
-		Module[{passingInputsTest, failingInputTest},
-			(*Create the passing and failing tests*)
-			failingInputTest = If[!MemberQ[prepackedQs, True] && !MemberQ[desiccateQs, True] && !NullQ[DesiccantPhase],
-				Test["If Desiccate is False for all input samples, DesiccantPhase is Null.", True, False],
-				Nothing
-			];
-			(* Create a test for the passing inputs. *)
-			passingInputsTest = If[!MemberQ[prepackedQs, True] && !MemberQ[desiccateQs, True] && NullQ[DesiccantPhase],
-				Test["If Desiccate is False for all input samples, DesiccantPhase is Null.", True, True],
-				Nothing
-			];
-
-			(* Return our created tests. *)
-			{passingInputsTest, failingInputTest}
-		],
-		{}
-	];
-
-	(*throw an error if all samples are prepacked but DesiccantAmount is not Null*)
-	prepackedDesiccantAmountMismatchOptions = If[!MemberQ[prepackedQs, False] && !MemberQ[desiccateQs, True] && !NullQ[desiccantAmount] && messages,
-		(
-			Message[
-				Error::InvalidDesiccantAmountOptions,
-				ObjectToString[PickList[simulatedSamples], Cache -> cacheBall]
-			];
-			{DesiccantAmount}
-		),
-		{}
-	];
-
-	(*Create appropriate tests if gathering them, or return {}*)
-	prepackedDesiccantAmountMismatchTest = If[gatherTests,
-		Module[{passingInputsTest, failingInputTest},
-			(*Create the passing and failing tests*)
-			failingInputTest = If[!MemberQ[prepackedQs, False] && !MemberQ[desiccateQs, True] && !NullQ[DesiccantAmount],
-				Test["If all input samples are prepacked in melting point capillaries, DesiccantAmount is Null.", True, False],
-				Nothing
-			];
-			(* Create a test for the passing inputs. *)
-			passingInputsTest = If[!MemberQ[prepackedQs, False] && !MemberQ[desiccateQs, True] && NullQ[DesiccantAmount],
-				Test["If all input samples are prepacked in melting point capillaries, DesiccantAmount is Null.", True, True],
-				Nothing
-			];
-
-			(* Return our created tests. *)
-			{passingInputsTest, failingInputTest}
-		],
-		{}
-	];
-
-	(*throw an error if Desiccate is False for all samples but DesiccantAmount is not Null*)
-	desiccateDesiccantAmountMismatchOptions = If[!MemberQ[desiccateQs, True] && !NullQ[desiccantAmount] && messages,
-		(
-			Message[
-				Error::DesiccantAmountMismatchOptions,
-				ObjectToString[PickList[simulatedSamples], Cache -> cacheBall]
-			];
-			{DesiccantAmount}
-		),
-		{}
-	];
-
-	(*Create appropriate tests if gathering them, or return {}*)
-	desiccateDesiccantAmountMismatchTest = If[gatherTests,
-		Module[{passingInputsTest, failingInputTest},
-			(*Create the passing and failing tests*)
-			failingInputTest = If[!MemberQ[prepackedQs, True] && !MemberQ[desiccateQs, True] && !NullQ[DesiccantAmount],
-				Test["If Desiccate is False for all input samples, DesiccantAmount is Null.", True, False],
-				Nothing
-			];
-			(* Create a test for the passing inputs. *)
-			passingInputsTest = If[!MemberQ[prepackedQs, True] && !MemberQ[desiccateQs, True] && NullQ[DesiccantAmount],
-				Test["If Desiccate is False for all input samples, DesiccantAmount is Null.", True, True],
-				Nothing
-			];
-
-			(* Return our created tests. *)
-			{passingInputsTest, failingInputTest}
-		],
-		{}
-	];
-
-	(*throw an error if all samples are prepacked but Desiccator is not Null*)
-	prepackedDesiccatorMismatchOptions = If[!MemberQ[prepackedQs, False] && !MemberQ[desiccateQs, True] && !NullQ[desiccator] && messages,
-		(
-			Message[
-				Error::InvalidDesiccatorOptions,
-				ObjectToString[PickList[simulatedSamples], Cache -> cacheBall]
-			];
-			{Desiccator}
-		),
-		{}
-	];
-
-	(*Create appropriate tests if gathering them, or return {}*)
-	prepackedDesiccatorMismatchTest = If[gatherTests,
-		Module[{passingInputsTest, failingInputTest},
-			(*Create the passing and failing tests*)
-			failingInputTest = If[!MemberQ[prepackedQs, False] && !MemberQ[desiccateQs, True] && !NullQ[Desiccator],
-				Test["If all input samples are prepacked in melting point capillaries, Desiccator is Null.", True, False],
-				Nothing
-			];
-			(* Create a test for the passing inputs. *)
-			passingInputsTest = If[!MemberQ[prepackedQs, False] && !MemberQ[desiccateQs, True] && NullQ[Desiccator],
-				Test["If all input samples are prepacked in melting point capillaries, Desiccator is Null.", True, True],
-				Nothing
-			];
-
-			(* Return our created tests. *)
-			{passingInputsTest, failingInputTest}
-		],
-		{}
-	];
-
-	(*throw an error if Desiccate is False for all samples but Desiccator is not Null*)
-	desiccateDesiccatorMismatchOptions = If[!MemberQ[desiccateQs, True] && !NullQ[desiccator] && messages,
-		(
-			Message[
-				Error::DesiccatorMismatchOptions,
-				ObjectToString[PickList[simulatedSamples], Cache -> cacheBall]
-			];
-			{Desiccator}
-		),
-		{}
-	];
-
-	(*Create appropriate tests if gathering them, or return {}*)
-	desiccateDesiccatorMismatchTest = If[gatherTests,
-		Module[{passingInputsTest, failingInputTest},
-			(*Create the passing and failing tests*)
-			failingInputTest = If[!MemberQ[prepackedQs, True] && !MemberQ[desiccateQs, True] && !NullQ[Desiccator],
-				Test["If Desiccate is False for all input samples, Desiccator is Null.", True, False],
-				Nothing
-			];
-			(* Create a test for the passing inputs. *)
-			passingInputsTest = If[!MemberQ[prepackedQs, True] && !MemberQ[desiccateQs, True] && NullQ[Desiccator],
-				Test["If Desiccate is False for all input samples, Desiccator is Null.", True, True],
-				Nothing
-			];
-
-			(* Return our created tests. *)
-			{passingInputsTest, failingInputTest}
-		],
-		{}
-	];
-
-	(*throw an error if all samples are prepacked but DesiccationTime is not Null*)
-	prepackedDesiccationTimeMismatchOptions = If[!MemberQ[prepackedQs, False] && !MemberQ[desiccateQs, True] && !NullQ[desiccationTime] && messages,
-		(
-			Message[
-				Error::InvalidDesiccationTimeOptions,
-				ObjectToString[PickList[simulatedSamples], Cache -> cacheBall]
-			];
-			{DesiccationTime}
-		),
-		{}
-	];
-
-	(*Create appropriate tests if gathering them, or return {}*)
-	prepackedDesiccationTimeMismatchTest = If[gatherTests,
-		Module[{passingInputsTest, failingInputTest},
-			(*Create the passing and failing tests*)
-			failingInputTest = If[!MemberQ[prepackedQs, False] && !MemberQ[desiccateQs, True] && !NullQ[DesiccationTime],
-				Test["If all input samples are prepacked in melting point capillaries, DesiccationTime is Null.", True, False],
-				Nothing
-			];
-			(* Create a test for the passing inputs. *)
-			passingInputsTest = If[!MemberQ[prepackedQs, False] && !MemberQ[desiccateQs, True] && NullQ[DesiccationTime],
-				Test["If all input samples are prepacked in melting point capillaries, DesiccationTime is Null.", True, True],
-				Nothing
-			];
-
-			(* Return our created tests. *)
-			{passingInputsTest, failingInputTest}
-		],
-		{}
-	];
-
-	(*throw an error if Desiccate is False for all samples but DesiccationTime is not Null*)
-	desiccateDesiccationTimeMismatchOptions = If[!MemberQ[desiccateQs, True] && !NullQ[desiccationTime] && messages,
-		(
-			Message[
-				Error::DesiccationTimeMismatchOptions,
-				ObjectToString[PickList[simulatedSamples], Cache -> cacheBall]
-			];
-			{DesiccationTime}
-		),
-		{}
-	];
-
-	(*Create appropriate tests if gathering them, or return {}*)
-	desiccateDesiccationTimeMismatchTest = If[gatherTests,
-		Module[{passingInputsTest, failingInputTest},
-			(*Create the passing and failing tests*)
-			failingInputTest = If[!MemberQ[prepackedQs, True] && !MemberQ[desiccateQs, True] && !NullQ[DesiccationTime],
-				Test["If Desiccate is False for all input samples, DesiccationTime is Null.", True, False],
-				Nothing
-			];
-			(* Create a test for the passing inputs. *)
-			passingInputsTest = If[!MemberQ[prepackedQs, True] && !MemberQ[desiccateQs, True] && NullQ[DesiccationTime],
-				Test["If Desiccate is False for all input samples, DesiccationTime is Null.", True, True],
-				Nothing
-			];
-
-			(* Return our created tests. *)
-			{passingInputsTest, failingInputTest}
-		],
-		{}
-	];
-
-	(*throw an error if the sample is prepacked but GrinderType is not Null*)
-	prepackedSampleContainerMismatchOptions = If[MemberQ[prepackedSampleContainerMismatches, True] && messages,
-		(
-			Message[
-				Error::InvalidSampleContainerOptions,
-				ObjectToString[PickList[simulatedSamples, prepackedSampleContainerMismatches], Cache -> cacheBall]
-			];
-			{SampleContainer}
-		),
-		{}
-	];
-
-	(*Create appropriate tests if gathering them, or return {}*)
-	prepackedSampleContainerMismatchTest = If[gatherTests,
-		Module[{failingInputs, passingInputs, passingInputsTest, failingInputTest},
-			(*Get the failing and not failing samples*)
-			failingInputs = PickList[simulatedSamples, prepackedSampleContainerMismatches];
-			passingInputs = PickList[simulatedSamples, prepackedSampleContainerMismatches, False];
-			(*Create the passing and failing tests*)
-			failingInputTest = If[Length[failingInputs] > 0,
-				Test["If the sample is prepacked in a melting point capillary, SampleContainer is Null for the following samples: " <> ObjectToString[failingInputs, Cache -> cacheBall] <> ".", True, False],
-				Nothing
-			];
-			(* Create a test for the passing inputs. *)
-			passingInputsTest = If[Length[passingInputs] > 0,
-				Test["If the sample is prepacked in a melting point capillary, SampleContainer is Null for the following samples: " <> ObjectToString[failingInputs, Cache -> cacheBall] <> ".", True, True],
-				Nothing
-			];
-
-			(* Return our created tests. *)
-			{passingInputsTest, failingInputTest}
-		],
-		{}
-	];
-
-	(*throw an error if Grind is set to False but GrinderType is not Null*)
-	desiccateSampleContainerMismatchOptions = If[MemberQ[desiccateSampleContainerMismatches, True] && messages,
-		(
-			Message[
-				Error::SampleContainerMismatchOptions,
-				ObjectToString[PickList[simulatedSamples, desiccateSampleContainerMismatches], Cache -> cacheBall]
-			];
-			{SampleContainer}
-		),
-		{}
-	];
-
-	(*Create appropriate tests if gathering them, or return {}*)
-	desiccateSampleContainerMismatchTest = If[gatherTests,
-		Module[{failingInputs, passingInputs, passingInputsTest, failingInputTest},
-			(*Get the failing and not failing samples*)
-			failingInputs = PickList[simulatedSamples, desiccateSampleContainerMismatches];
-			passingInputs = PickList[simulatedSamples, desiccateSampleContainerMismatches, False];
-			(*Create the passing and failing tests*)
-			failingInputTest = If[Length[failingInputs] > 0,
-				Test["If Desiccate is False, SampleContainer is Null for the following samples: " <> ObjectToString[failingInputs, Cache -> cacheBall] <> ".", True, False],
-				Nothing
-			];
-			(* Create a test for the passing inputs. *)
-			passingInputsTest = If[Length[passingInputs] > 0,
-				Test["If Desiccate is False, SampleContainer is Null for the following samples: " <> ObjectToString[failingInputs, Cache -> cacheBall] <> ".", True, True],
-				Nothing
-			];
-
-			(* Return our created tests. *)
-			{passingInputsTest, failingInputTest}
-		],
-		{}
-	];
-
-	(*throw an error if the sample is prepacked but Grind is not Null*)
-	grindPrepackedMismatchOptions = If[MemberQ[grindPrepackedMismatches, True] && messages,
-		(
-			Message[
-				Error::InvalidGrindOptions,
-				ObjectToString[PickList[simulatedSamples, grindPrepackedMismatches], Cache -> cacheBall]
-			];
-			{Grind}
-		),
-		{}
-	];
-
-	(*Create appropriate tests if gathering them, or return {}*)
-	grindPrepackedMismatchTest = If[gatherTests,
-		Module[{failingInputs, passingInputs, passingInputsTest, failingInputTest},
-			(*Get the failing and not failing samples*)
-			failingInputs = PickList[simulatedSamples, grindPrepackedMismatches];
-			passingInputs = PickList[simulatedSamples, grindPrepackedMismatches, False];
-			(*Create the passing and failing tests*)
-			failingInputTest = If[Length[failingInputs] > 0,
-				Test["If the sample is prepacked in a melting point capillary, Grind is False for the following samples: " <> ObjectToString[failingInputs, Cache -> cacheBall] <> ".", True, False],
-				Nothing
-			];
-			(* Create a test for the passing inputs. *)
-			passingInputsTest = If[Length[passingInputs] > 0,
-				Test["If the sample is prepacked in a melting point capillary, Grind is False for the following samples: " <> ObjectToString[failingInputs, Cache -> cacheBall] <> ".", True, True],
-				Nothing
-			];
-
-			(* Return our created tests. *)
-			{passingInputsTest, failingInputTest}
-		],
-		{}
-	];
-
-	(*throw an error if the sample is prepacked but GrinderType is not Null*)
-	prepackedGrinderTypeMismatchOptions = If[MemberQ[prepackedGrinderTypeMismatches, True] && messages,
-		(
-			Message[
-				Error::InvalidGrinderTypeOptions,
-				ObjectToString[PickList[simulatedSamples, prepackedGrinderTypeMismatches], Cache -> cacheBall]
-			];
-			{GrinderType}
-		),
-		{}
-	];
-
-	(*Create appropriate tests if gathering them, or return {}*)
-	prepackedGrinderTypeMismatchTest = If[gatherTests,
-		Module[{failingInputs, passingInputs, passingInputsTest, failingInputTest},
-			(*Get the failing and not failing samples*)
-			failingInputs = PickList[simulatedSamples, prepackedGrinderTypeMismatches];
-			passingInputs = PickList[simulatedSamples, prepackedGrinderTypeMismatches, False];
-			(*Create the passing and failing tests*)
-			failingInputTest = If[Length[failingInputs] > 0,
-				Test["If the sample is prepacked in a melting point capillary, GrinderType is Null for the following samples: " <> ObjectToString[failingInputs, Cache -> cacheBall] <> ".", True, False],
-				Nothing
-			];
-			(* Create a test for the passing inputs. *)
-			passingInputsTest = If[Length[passingInputs] > 0,
-				Test["If the sample is prepacked in a melting point capillary, GrinderType is Null for the following samples: " <> ObjectToString[failingInputs, Cache -> cacheBall] <> ".", True, True],
-				Nothing
-			];
-
-			(* Return our created tests. *)
-			{passingInputsTest, failingInputTest}
-		],
-		{}
-	];
-
-	(*throw an error if Grind is set to False but GrinderType is not Null*)
-	grindGrinderTypeMismatchOptions = If[MemberQ[grindGrinderTypeMismatches, True] && messages,
-		(
-			Message[
-				Error::GrinderTypeMismatchOptions,
-				ObjectToString[PickList[simulatedSamples, grindGrinderTypeMismatches], Cache -> cacheBall]
-			];
-			{GrinderType}
-		),
-		{}
-	];
-
-	(*Create appropriate tests if gathering them, or return {}*)
-	grindGrinderTypeMismatchTest = If[gatherTests,
-		Module[{failingInputs, passingInputs, passingInputsTest, failingInputTest},
-			(*Get the failing and not failing samples*)
-			failingInputs = PickList[simulatedSamples, grindGrinderTypeMismatches];
-			passingInputs = PickList[simulatedSamples, grindGrinderTypeMismatches, False];
-			(*Create the passing and failing tests*)
-			failingInputTest = If[Length[failingInputs] > 0,
-				Test["If Grind is False, GrinderType is Null for the following samples: " <> ObjectToString[failingInputs, Cache -> cacheBall] <> ".", True, False],
-				Nothing
-			];
-			(* Create a test for the passing inputs. *)
-			passingInputsTest = If[Length[passingInputs] > 0,
-				Test["If Grind is False, GrinderType is Null for the following samples: " <> ObjectToString[failingInputs, Cache -> cacheBall] <> ".", True, True],
-				Nothing
-			];
-
-			(* Return our created tests. *)
-			{passingInputsTest, failingInputTest}
-		],
-		{}
-	];
-
-	(*throw an error if the sample is prepacked but Grinder is not Null*)
-	prepackedGrinderMismatchOptions = If[MemberQ[prepackedGrinderMismatches, True] && messages,
-		(
-			Message[
-				Error::InvalidGrinderOptions,
-				ObjectToString[PickList[simulatedSamples, prepackedGrinderMismatches], Cache -> cacheBall]
-			];
-			{Grinder}
-		),
-		{}
-	];
-
-	(*Create appropriate tests if gathering them,or return {}*)
-	prepackedGrinderMismatchTest = If[gatherTests,
-		Module[{failingInputs, passingInputs, passingInputsTest, failingInputTest},
-			(*Get the failing and not failing samples*)
-			failingInputs = PickList[simulatedSamples, prepackedGrinderMismatches];
-			passingInputs = PickList[simulatedSamples, prepackedGrinderMismatches, False];
-			(*Create the passing and failing tests*)
-			failingInputTest = If[Length[failingInputs] > 0,
-				Test["If the sample is prepacked in a melting point capillary, Grinder is Null for the following samples: " <> ObjectToString[failingInputs, Cache -> cacheBall] <> ".", True, False],
-				Nothing
-			];
-			(*Create a test for the passing inputs.*)
-			passingInputsTest = If[Length[passingInputs] > 0,
-				Test["If the sample is prepacked in a melting point capillary, Grinder is Null for the following samples: " <> ObjectToString[failingInputs, Cache -> cacheBall] <> ".", True, True],
-				Nothing
-			];
-
-			(*Return our created tests.*)
-			{passingInputsTest, failingInputTest}
-		],
-		{}
-	];
-
-	(*throw an error if the sample is prepacked but Grinder is not Null*)
-	grindGrinderMismatchOptions = If[MemberQ[grindGrinderMismatches, True] && messages,
-		(
-			Message[
-				Error::GrinderMismatchOptions,
-				ObjectToString[PickList[simulatedSamples, grindGrinderMismatches], Cache -> cacheBall]
-			];
-			{Grinder}
-		),
-		{}
-	];
-
-	(*Create appropriate tests if gathering them,or return {}*)
-	grindGrinderMismatchTest = If[gatherTests,
-		Module[{failingInputs, passingInputs, passingInputsTest, failingInputTest},
-			(*Get the failing and not failing samples*)
-			failingInputs = PickList[simulatedSamples, grindGrinderMismatches];
-			passingInputs = PickList[simulatedSamples, grindGrinderMismatches, False];
-			(*Create the passing and failing tests*)
-			failingInputTest = If[Length[failingInputs] > 0,
-				Test["If Grind is False, Grinder is Null for the following samples: " <> ObjectToString[failingInputs, Cache -> cacheBall] <> ".", True, False],
-				Nothing
-			];
-			(*Create a test for the passing inputs.*)
-			passingInputsTest = If[Length[passingInputs] > 0,
-				Test["If Grind is False, Grinder is Null for the following samples: " <> ObjectToString[failingInputs, Cache -> cacheBall] <> ".", True, True],
-				Nothing
-			];
-
-			(*Return our created tests.*)
-			{passingInputsTest, failingInputTest}
-		],
-		{}
-	];
-
-	(*throw an error if the sample is prepacked but Fineness is not Null*)
-	prepackedFinenessMismatchOptions = If[MemberQ[prepackedFinenessMismatches, True] && messages,
-		(
-			Message[
-				Error::InvalidFinenessOptions,
-				ObjectToString[PickList[simulatedSamples, prepackedFinenessMismatches], Cache -> cacheBall]
-			];
-			{Fineness}
-		),
-		{}
-	];
-
-	(*Create appropriate tests if gathering them,or return {}*)
-	prepackedFinenessMismatchTest = If[gatherTests,
-		Module[{failingInputs, passingInputs, passingInputsTest, failingInputTest},
-			(*Get the failing and not failing samples*)
-			failingInputs = PickList[simulatedSamples, prepackedFinenessMismatches];
-			passingInputs = PickList[simulatedSamples, prepackedFinenessMismatches, False];
-			(*Create the passing and failing tests*)
-			failingInputTest = If[Length[failingInputs] > 0,
-				Test["If the sample is prepacked in a melting point capillary, Fineness is Null for the following samples: " <> ObjectToString[failingInputs, Cache -> cacheBall] <> ".", True, False],
-				Nothing
-			];
-			(*Create a test for the passing inputs.*)
-			passingInputsTest = If[Length[passingInputs] > 0,
-				Test["If the sample is prepacked in a melting point capillary, Fineness is Null for the following samples: " <> ObjectToString[failingInputs, Cache -> cacheBall] <> ".", True, True],
-				Nothing
-			];
-
-			(*Return our created tests.*)
-			{passingInputsTest, failingInputTest}
-		],
-		{}
-	];
-
-	(*throw an error if the sample is prepacked but Fineness is not Null*)
-	grindFinenessMismatchOptions = If[MemberQ[grindFinenessMismatches, True] && messages,
-		(
-			Message[
-				Error::FinenessMismatchOptions,
-				ObjectToString[PickList[simulatedSamples, grindFinenessMismatches], Cache -> cacheBall]
-			];
-			{Fineness}
-		),
-		{}
-	];
-
-	(*Create appropriate tests if gathering them,or return {}*)
-	grindFinenessMismatchTest = If[gatherTests,
-		Module[{failingInputs, passingInputs, passingInputsTest, failingInputTest},
-			(*Get the failing and not failing samples*)
-			failingInputs = PickList[simulatedSamples, grindFinenessMismatches];
-			passingInputs = PickList[simulatedSamples, grindFinenessMismatches, False];
-			(*Create the passing and failing tests*)
-			failingInputTest = If[Length[failingInputs] > 0,
-				Test["If Grind is False, Fineness is Null for the following samples: " <> ObjectToString[failingInputs, Cache -> cacheBall] <> ".", True, False],
-				Nothing
-			];
-			(*Create a test for the passing inputs.*)
-			passingInputsTest = If[Length[passingInputs] > 0,
-				Test["If Grind is False, Fineness is Null for the following samples: " <> ObjectToString[failingInputs, Cache -> cacheBall] <> ".", True, True],
-				Nothing
-			];
-
-			(*Return our created tests.*)
-			{passingInputsTest, failingInputTest}
-		],
-		{}
-	];
-
-	(*throw an error if the sample is prepacked but BulkDensity is not Null*)
-	prepackedBulkDensityMismatchOptions = If[MemberQ[prepackedBulkDensityMismatches, True] && messages,
-		(
-			Message[
-				Error::InvalidBulkDensityOptions,
-				ObjectToString[PickList[simulatedSamples, prepackedBulkDensityMismatches], Cache -> cacheBall]
-			];
-			{BulkDensity}
-		),
-		{}
-	];
-
-	(*Create appropriate tests if gathering them,or return {}*)
-	prepackedBulkDensityMismatchTest = If[gatherTests,
-		Module[{failingInputs, passingInputs, passingInputsTest, failingInputTest},
-			(*Get the failing and not failing samples*)
-			failingInputs = PickList[simulatedSamples, prepackedBulkDensityMismatches];
-			passingInputs = PickList[simulatedSamples, prepackedBulkDensityMismatches, False];
-			(*Create the passing and failing tests*)
-			failingInputTest = If[Length[failingInputs] > 0,
-				Test["If the sample is prepacked in a melting point capillary, BulkDensity is Null for the following samples: " <> ObjectToString[failingInputs, Cache -> cacheBall] <> ".", True, False],
-				Nothing
-			];
-			(*Create a test for the passing inputs.*)
-			passingInputsTest = If[Length[passingInputs] > 0,
-				Test["If the sample is prepacked in a melting point capillary, BulkDensity is Null for the following samples: " <> ObjectToString[failingInputs, Cache -> cacheBall] <> ".", True, True],
-				Nothing
-			];
-
-			(*Return our created tests.*)
-			{passingInputsTest, failingInputTest}
-		],
-		{}
-	];
-
-	(*throw an error if the sample is prepacked but BulkDensity is not Null*)
-	grindBulkDensityMismatchOptions = If[MemberQ[grindBulkDensityMismatches, True] && messages,
-		(
-			Message[
-				Error::BulkDensityMismatchOptions,
-				ObjectToString[PickList[simulatedSamples, grindBulkDensityMismatches], Cache -> cacheBall]
-			];
-			{BulkDensity}
-		),
-		{}
-	];
-
-	(*Create appropriate tests if gathering them,or return {}*)
-	grindBulkDensityMismatchTest = If[gatherTests,
-		Module[{failingInputs, passingInputs, passingInputsTest, failingInputTest},
-			(*Get the failing and not failing samples*)
-			failingInputs = PickList[simulatedSamples, grindBulkDensityMismatches];
-			passingInputs = PickList[simulatedSamples, grindBulkDensityMismatches, False];
-			(*Create the passing and failing tests*)
-			failingInputTest = If[Length[failingInputs] > 0,
-				Test["If Grind is False, BulkDensity is Null for the following samples: " <> ObjectToString[failingInputs, Cache -> cacheBall] <> ".", True, False],
-				Nothing
-			];
-			(*Create a test for the passing inputs.*)
-			passingInputsTest = If[Length[passingInputs] > 0,
-				Test["If Grind is False, BulkDensity is Null for the following samples: " <> ObjectToString[failingInputs, Cache -> cacheBall] <> ".", True, True],
-				Nothing
-			];
-
-			(*Return our created tests.*)
-			{passingInputsTest, failingInputTest}
-		],
-		{}
-	];
-
-	(*throw an error if the sample is prepacked but GrindingContainer is not Null*)
-	prepackedGrindingContainerMismatchOptions = If[MemberQ[prepackedGrindingContainerMismatches, True] && messages,
-		(
-			Message[
-				Error::InvalidGrindingContainerOptions,
-				ObjectToString[PickList[simulatedSamples, prepackedGrindingContainerMismatches], Cache -> cacheBall]
-			];
-			{GrindingContainer}
-		),
-		{}
-	];
-
-	(*Create appropriate tests if gathering them,or return {}*)
-	prepackedGrindingContainerMismatchTest = If[gatherTests,
-		Module[{failingInputs, passingInputs, passingInputsTest, failingInputTest},
-			(*Get the failing and not failing samples*)
-			failingInputs = PickList[simulatedSamples, prepackedGrindingContainerMismatches];
-			passingInputs = PickList[simulatedSamples, prepackedGrindingContainerMismatches, False];
-			(*Create the passing and failing tests*)
-			failingInputTest = If[Length[failingInputs] > 0,
-				Test["If the sample is prepacked in a melting point capillary, GrindingContainer is Null for the following samples: " <> ObjectToString[failingInputs, Cache -> cacheBall] <> ".", True, False],
-				Nothing
-			];
-			(*Create a test for the passing inputs.*)
-			passingInputsTest = If[Length[passingInputs] > 0,
-				Test["If the sample is prepacked in a melting point capillary, GrindingContainer is Null for the following samples: " <> ObjectToString[failingInputs, Cache -> cacheBall] <> ".", True, True],
-				Nothing
-			];
-
-			(*Return our created tests.*)
-			{passingInputsTest, failingInputTest}
-		],
-		{}
-	];
-
-	(*throw an error if the sample is prepacked but GrindingContainer is not Null*)
-	grindGrindingContainerMismatchOptions = If[MemberQ[grindGrindingContainerMismatches, True] && messages,
-		(
-			Message[
-				Error::GrindingContainerMismatchOptions,
-				ObjectToString[PickList[simulatedSamples, grindGrindingContainerMismatches], Cache -> cacheBall]
-			];
-			{GrindingContainer}
-		),
-		{}
-	];
-
-	(*Create appropriate tests if gathering them,or return {}*)
-	grindGrindingContainerMismatchTest = If[gatherTests,
-		Module[{failingInputs, passingInputs, passingInputsTest, failingInputTest},
-			(*Get the failing and not failing samples*)
-			failingInputs = PickList[simulatedSamples, grindGrindingContainerMismatches];
-			passingInputs = PickList[simulatedSamples, grindGrindingContainerMismatches, False];
-			(*Create the passing and failing tests*)
-			failingInputTest = If[Length[failingInputs] > 0,
-				Test["If Grind is False, GrindingContainer is Null for the following samples: " <> ObjectToString[failingInputs, Cache -> cacheBall] <> ".", True, False],
-				Nothing
-			];
-			(*Create a test for the passing inputs.*)
-			passingInputsTest = If[Length[passingInputs] > 0,
-				Test["If Grind is False, GrindingContainer is Null for the following samples: " <> ObjectToString[failingInputs, Cache -> cacheBall] <> ".", True, True],
-				Nothing
-			];
-
-			(*Return our created tests.*)
-			{passingInputsTest, failingInputTest}
-		],
-		{}
-	];
-
-	(*throw an error if the sample is prepacked but GrindingBead is not Null*)
-	prepackedGrindingBeadMismatchOptions = If[MemberQ[prepackedGrindingBeadMismatches, True] && messages,
-		(
-			Message[
-				Error::InvalidGrindingBeadOptions,
-				ObjectToString[PickList[simulatedSamples, prepackedGrindingBeadMismatches], Cache -> cacheBall]
-			];
-			{GrindingBead}
-		),
-		{}
-	];
-
-	(*Create appropriate tests if gathering them,or return {}*)
-	prepackedGrindingBeadMismatchTest = If[gatherTests,
-		Module[{failingInputs, passingInputs, passingInputsTest, failingInputTest},
-			(*Get the failing and not failing samples*)
-			failingInputs = PickList[simulatedSamples, prepackedGrindingBeadMismatches];
-			passingInputs = PickList[simulatedSamples, prepackedGrindingBeadMismatches, False];
-			(*Create the passing and failing tests*)
-			failingInputTest = If[Length[failingInputs] > 0,
-				Test["If the sample is prepacked in a melting point capillary, GrindingBead is Null for the following samples: " <> ObjectToString[failingInputs, Cache -> cacheBall] <> ".", True, False],
-				Nothing
-			];
-			(*Create a test for the passing inputs.*)
-			passingInputsTest = If[Length[passingInputs] > 0,
-				Test["If the sample is prepacked in a melting point capillary, GrindingBead is Null for the following samples: " <> ObjectToString[failingInputs, Cache -> cacheBall] <> ".", True, True],
-				Nothing
-			];
-
-			(*Return our created tests.*)
-			{passingInputsTest, failingInputTest}
-		],
-		{}
-	];
-
-	(*throw an error if the sample is prepacked but GrindingBead is not Null*)
-	grindGrindingBeadMismatchOptions = If[MemberQ[grindGrindingBeadMismatches, True] && messages,
-		(
-			Message[
-				Error::GrindingBeadMismatchOptions,
-				ObjectToString[PickList[simulatedSamples, grindGrindingBeadMismatches], Cache -> cacheBall]
-			];
-			{GrindingBead}
-		),
-		{}
-	];
-
-	(*Create appropriate tests if gathering them,or return {}*)
-	grindGrindingBeadMismatchTest = If[gatherTests,
-		Module[{failingInputs, passingInputs, passingInputsTest, failingInputTest},
-			(*Get the failing and not failing samples*)
-			failingInputs = PickList[simulatedSamples, grindGrindingBeadMismatches];
-			passingInputs = PickList[simulatedSamples, grindGrindingBeadMismatches, False];
-			(*Create the passing and failing tests*)
-			failingInputTest = If[Length[failingInputs] > 0,
-				Test["If Grind is False, GrindingBead is Null for the following samples: " <> ObjectToString[failingInputs, Cache -> cacheBall] <> ".", True, False],
-				Nothing
-			];
-			(*Create a test for the passing inputs.*)
-			passingInputsTest = If[Length[passingInputs] > 0,
-				Test["If Grind is False, GrindingBead is Null for the following samples: " <> ObjectToString[failingInputs, Cache -> cacheBall] <> ".", True, True],
-				Nothing
-			];
-
-			(*Return our created tests.*)
-			{passingInputsTest, failingInputTest}
-		],
-		{}
-	];
-
-	(*throw an error if the sample is prepacked but NumberOfGrindingBeads is not Null*)
-	prepackedNumberOfGrindingBeadsMismatchOptions = If[MemberQ[prepackedNumberOfGrindingBeadsMismatches, True] && messages,
-		(
-			Message[
-				Error::InvalidNumberOfGrindingBeadsOptions,
-				ObjectToString[PickList[simulatedSamples, prepackedNumberOfGrindingBeadsMismatches], Cache -> cacheBall]
-			];
-			{NumberOfGrindingBeads}
-		),
-		{}
-	];
-
-	(*Create appropriate tests if gathering them,or return {}*)
-	prepackedNumberOfGrindingBeadsMismatchTest = If[gatherTests,
-		Module[{failingInputs, passingInputs, passingInputsTest, failingInputTest},
-			(*Get the failing and not failing samples*)
-			failingInputs = PickList[simulatedSamples, prepackedNumberOfGrindingBeadsMismatches];
-			passingInputs = PickList[simulatedSamples, prepackedNumberOfGrindingBeadsMismatches, False];
-			(*Create the passing and failing tests*)
-			failingInputTest = If[Length[failingInputs] > 0,
-				Test["If the sample is prepacked in a melting point capillary, NumberOfGrindingBeads is Null for the following samples: " <> ObjectToString[failingInputs, Cache -> cacheBall] <> ".", True, False],
-				Nothing
-			];
-			(*Create a test for the passing inputs.*)
-			passingInputsTest = If[Length[passingInputs] > 0,
-				Test["If the sample is prepacked in a melting point capillary, NumberOfGrindingBeads is Null for the following samples: " <> ObjectToString[failingInputs, Cache -> cacheBall] <> ".", True, True],
-				Nothing
-			];
-
-			(*Return our created tests.*)
-			{passingInputsTest, failingInputTest}
-		],
-		{}
-	];
-
-	(*throw an error if the sample is prepacked but NumberOfGrindingBeads is not Null*)
-	grindNumberOfGrindingBeadsMismatchOptions = If[MemberQ[grindNumberOfGrindingBeadsMismatches, True] && messages,
-		(
-			Message[
-				Error::NumberOfGrindingBeadsMismatchOptions,
-				ObjectToString[PickList[simulatedSamples, grindNumberOfGrindingBeadsMismatches], Cache -> cacheBall]
-			];
-			{NumberOfGrindingBeads}
-		),
-		{}
-	];
-
-	(*Create appropriate tests if gathering them,or return {}*)
-	grindNumberOfGrindingBeadsMismatchTest = If[gatherTests,
-		Module[{failingInputs, passingInputs, passingInputsTest, failingInputTest},
-			(*Get the failing and not failing samples*)
-			failingInputs = PickList[simulatedSamples, grindNumberOfGrindingBeadsMismatches];
-			passingInputs = PickList[simulatedSamples, grindNumberOfGrindingBeadsMismatches, False];
-			(*Create the passing and failing tests*)
-			failingInputTest = If[Length[failingInputs] > 0,
-				Test["If Grind is False, NumberOfGrindingBeads is Null for the following samples: " <> ObjectToString[failingInputs, Cache -> cacheBall] <> ".", True, False],
-				Nothing
-			];
-			(*Create a test for the passing inputs.*)
-			passingInputsTest = If[Length[passingInputs] > 0,
-				Test["If Grind is False, NumberOfGrindingBeads is Null for the following samples: " <> ObjectToString[failingInputs, Cache -> cacheBall] <> ".", True, True],
-				Nothing
-			];
-
-			(*Return our created tests.*)
-			{passingInputsTest, failingInputTest}
-		],
-		{}
-	];
-
-	(*throw an error if the sample is prepacked but GrindingRate is not Null*)
-	prepackedGrindingRateMismatchOptions = If[MemberQ[prepackedGrindingRateMismatches, True] && messages,
-		(
-			Message[
-				Error::InvalidGrindingRateOptions,
-				ObjectToString[PickList[simulatedSamples, prepackedGrindingRateMismatches], Cache -> cacheBall]
-			];
-			{GrindingRate}
-		),
-		{}
-	];
-
-	(*Create appropriate tests if gathering them,or return {}*)
-	prepackedGrindingRateMismatchTest = If[gatherTests,
-		Module[{failingInputs, passingInputs, passingInputsTest, failingInputTest},
-			(*Get the failing and not failing samples*)
-			failingInputs = PickList[simulatedSamples, prepackedGrindingRateMismatches];
-			passingInputs = PickList[simulatedSamples, prepackedGrindingRateMismatches, False];
-			(*Create the passing and failing tests*)
-			failingInputTest = If[Length[failingInputs] > 0,
-				Test["If the sample is prepacked in a melting point capillary, GrindingRate is Null for the following samples: " <> ObjectToString[failingInputs, Cache -> cacheBall] <> ".", True, False],
-				Nothing
-			];
-			(*Create a test for the passing inputs.*)
-			passingInputsTest = If[Length[passingInputs] > 0,
-				Test["If the sample is prepacked in a melting point capillary, GrindingRate is Null for the following samples: " <> ObjectToString[failingInputs, Cache -> cacheBall] <> ".", True, True],
-				Nothing
-			];
-
-			(*Return our created tests.*)
-			{passingInputsTest, failingInputTest}
-		],
-		{}
-	];
-
-	(*throw an error if the sample is prepacked but GrindingRate is not Null*)
-	grindGrindingRateMismatchOptions = If[MemberQ[grindGrindingRateMismatches, True] && messages,
-		(
-			Message[
-				Error::GrindingRateMismatchOptions,
-				ObjectToString[PickList[simulatedSamples, grindGrindingRateMismatches], Cache -> cacheBall]
-			];
-			{GrindingRate}
-		),
-		{}
-	];
-
-	(*Create appropriate tests if gathering them,or return {}*)
-	grindGrindingRateMismatchTest = If[gatherTests,
-		Module[{failingInputs, passingInputs, passingInputsTest, failingInputTest},
-			(*Get the failing and not failing samples*)
-			failingInputs = PickList[simulatedSamples, grindGrindingRateMismatches];
-			passingInputs = PickList[simulatedSamples, grindGrindingRateMismatches, False];
-			(*Create the passing and failing tests*)
-			failingInputTest = If[Length[failingInputs] > 0,
-				Test["If Grind is False, GrindingRate is Null for the following samples: " <> ObjectToString[failingInputs, Cache -> cacheBall] <> ".", True, False],
-				Nothing
-			];
-			(*Create a test for the passing inputs.*)
-			passingInputsTest = If[Length[passingInputs] > 0,
-				Test["If Grind is False, GrindingRate is Null for the following samples: " <> ObjectToString[failingInputs, Cache -> cacheBall] <> ".", True, True],
-				Nothing
-			];
-
-			(*Return our created tests.*)
-			{passingInputsTest, failingInputTest}
-		],
-		{}
-	];
-
-	(*throw an error if the sample is prepacked but GrindingTime is not Null*)
-	prepackedGrindingTimeMismatchOptions = If[MemberQ[prepackedGrindingTimeMismatches, True] && messages,
-		(
-			Message[
-				Error::InvalidGrindingTimeOptions,
-				ObjectToString[PickList[simulatedSamples, prepackedGrindingTimeMismatches], Cache -> cacheBall]
-			];
-			{GrindingTime}
-		),
-		{}
-	];
-
-	(*Create appropriate tests if gathering them,or return {}*)
-	prepackedGrindingTimeMismatchTest = If[gatherTests,
-		Module[{failingInputs, passingInputs, passingInputsTest, failingInputTest},
-			(*Get the failing and not failing samples*)
-			failingInputs = PickList[simulatedSamples, prepackedGrindingTimeMismatches];
-			passingInputs = PickList[simulatedSamples, prepackedGrindingTimeMismatches, False];
-			(*Create the passing and failing tests*)
-			failingInputTest = If[Length[failingInputs] > 0,
-				Test["If the sample is prepacked in a melting point capillary, GrindingTime is Null for the following samples: " <> ObjectToString[failingInputs, Cache -> cacheBall] <> ".", True, False],
-				Nothing
-			];
-			(*Create a test for the passing inputs.*)
-			passingInputsTest = If[Length[passingInputs] > 0,
-				Test["If the sample is prepacked in a melting point capillary, GrindingTime is Null for the following samples: " <> ObjectToString[failingInputs, Cache -> cacheBall] <> ".", True, True],
-				Nothing
-			];
-
-			(*Return our created tests.*)
-			{passingInputsTest, failingInputTest}
-		],
-		{}
-	];
-
-	(*throw an error if the sample is prepacked but GrindingTime is not Null*)
-	grindGrindingTimeMismatchOptions = If[MemberQ[grindGrindingTimeMismatches, True] && messages,
-		(
-			Message[
-				Error::GrindingTimeMismatchOptions,
-				ObjectToString[PickList[simulatedSamples, grindGrindingTimeMismatches], Cache -> cacheBall]
-			];
-			{GrindingTime}
-		),
-		{}
-	];
-
-	(*Create appropriate tests if gathering them,or return {}*)
-	grindGrindingTimeMismatchTest = If[gatherTests,
-		Module[{failingInputs, passingInputs, passingInputsTest, failingInputTest},
-			(*Get the failing and not failing samples*)
-			failingInputs = PickList[simulatedSamples, grindGrindingTimeMismatches];
-			passingInputs = PickList[simulatedSamples, grindGrindingTimeMismatches, False];
-			(*Create the passing and failing tests*)
-			failingInputTest = If[Length[failingInputs] > 0,
-				Test["If Grind is False, GrindingTime is Null for the following samples: " <> ObjectToString[failingInputs, Cache -> cacheBall] <> ".", True, False],
-				Nothing
-			];
-			(*Create a test for the passing inputs.*)
-			passingInputsTest = If[Length[passingInputs] > 0,
-				Test["If Grind is False, GrindingTime is Null for the following samples: " <> ObjectToString[failingInputs, Cache -> cacheBall] <> ".", True, True],
-				Nothing
-			];
-
-			(*Return our created tests.*)
-			{passingInputsTest, failingInputTest}
-		],
-		{}
-	];
-
-	(*throw an error if the sample is prepacked but NumberOfGrindingSteps is not Null*)
-	prepackedNumberOfGrindingStepsMismatchOptions = If[MemberQ[prepackedNumberOfGrindingStepsMismatches, True] && messages,
-		(
-			Message[
-				Error::InvalidNumberOfGrindingStepsOptions,
-				ObjectToString[PickList[simulatedSamples, prepackedNumberOfGrindingStepsMismatches], Cache -> cacheBall]
-			];
-			{NumberOfGrindingSteps}
-		),
-		{}
-	];
-
-	(*Create appropriate tests if gathering them,or return {}*)
-	prepackedNumberOfGrindingStepsMismatchTest = If[gatherTests,
-		Module[{failingInputs, passingInputs, passingInputsTest, failingInputTest},
-			(*Get the failing and not failing samples*)
-			failingInputs = PickList[simulatedSamples, prepackedNumberOfGrindingStepsMismatches];
-			passingInputs = PickList[simulatedSamples, prepackedNumberOfGrindingStepsMismatches, False];
-			(*Create the passing and failing tests*)
-			failingInputTest = If[Length[failingInputs] > 0,
-				Test["If the sample is prepacked in a melting point capillary, NumberOfGrindingSteps is Null for the following samples: " <> ObjectToString[failingInputs, Cache -> cacheBall] <> ".", True, False],
-				Nothing
-			];
-			(*Create a test for the passing inputs.*)
-			passingInputsTest = If[Length[passingInputs] > 0,
-				Test["If the sample is prepacked in a melting point capillary, NumberOfGrindingSteps is Null for the following samples: " <> ObjectToString[failingInputs, Cache -> cacheBall] <> ".", True, True],
-				Nothing
-			];
-
-			(*Return our created tests.*)
-			{passingInputsTest, failingInputTest}
-		],
-		{}
-	];
-
-	(*throw an error if the sample is prepacked but NumberOfGrindingSteps is not Null*)
-	grindNumberOfGrindingStepsMismatchOptions = If[MemberQ[grindNumberOfGrindingStepsMismatches, True] && messages,
-		(
-			Message[
-				Error::NumberOfGrindingStepsMismatchOptions,
-				ObjectToString[PickList[simulatedSamples, grindNumberOfGrindingStepsMismatches], Cache -> cacheBall]
-			];
-			{NumberOfGrindingSteps}
-		),
-		{}
-	];
-
-	(*Create appropriate tests if gathering them,or return {}*)
-	grindNumberOfGrindingStepsMismatchTest = If[gatherTests,
-		Module[{failingInputs, passingInputs, passingInputsTest, failingInputTest},
-			(*Get the failing and not failing samples*)
-			failingInputs = PickList[simulatedSamples, grindNumberOfGrindingStepsMismatches];
-			passingInputs = PickList[simulatedSamples, grindNumberOfGrindingStepsMismatches, False];
-			(*Create the passing and failing tests*)
-			failingInputTest = If[Length[failingInputs] > 0,
-				Test["If Grind is False, NumberOfGrindingSteps is Null for the following samples: " <> ObjectToString[failingInputs, Cache -> cacheBall] <> ".", True, False],
-				Nothing
-			];
-			(*Create a test for the passing inputs.*)
-			passingInputsTest = If[Length[passingInputs] > 0,
-				Test["If Grind is False, NumberOfGrindingSteps is Null for the following samples: " <> ObjectToString[failingInputs, Cache -> cacheBall] <> ".", True, True],
-				Nothing
-			];
-
-			(*Return our created tests.*)
-			{passingInputsTest, failingInputTest}
-		],
-		{}
-	];
-
-	(*throw an error if the sample is prepacked but CoolingTime is not Null*)
-	prepackedCoolingTimeMismatchOptions = If[MemberQ[prepackedCoolingTimeMismatches, True] && messages,
-		(
-			Message[
-				Error::InvalidCoolingTimeOptions,
-				ObjectToString[PickList[simulatedSamples, prepackedCoolingTimeMismatches], Cache -> cacheBall]
-			];
-			{CoolingTime}
-		),
-		{}
-	];
-
-	(*Create appropriate tests if gathering them,or return {}*)
-	prepackedCoolingTimeMismatchTest = If[gatherTests,
-		Module[{failingInputs, passingInputs, passingInputsTest, failingInputTest},
-			(*Get the failing and not failing samples*)
-			failingInputs = PickList[simulatedSamples, prepackedCoolingTimeMismatches];
-			passingInputs = PickList[simulatedSamples, prepackedCoolingTimeMismatches, False];
-			(*Create the passing and failing tests*)
-			failingInputTest = If[Length[failingInputs] > 0,
-				Test["If the sample is prepacked in a melting point capillary, CoolingTime is Null for the following samples: " <> ObjectToString[failingInputs, Cache -> cacheBall] <> ".", True, False],
-				Nothing
-			];
-			(*Create a test for the passing inputs.*)
-			passingInputsTest = If[Length[passingInputs] > 0,
-				Test["If the sample is prepacked in a melting point capillary, CoolingTime is Null for the following samples: " <> ObjectToString[failingInputs, Cache -> cacheBall] <> ".", True, True],
-				Nothing
-			];
-
-			(*Return our created tests.*)
-			{passingInputsTest, failingInputTest}
-		],
-		{}
-	];
-
-	(*throw an error if the sample is prepacked but CoolingTime is not Null*)
-	grindCoolingTimeMismatchOptions = If[MemberQ[grindCoolingTimeMismatches, True] && messages,
-		(
-			Message[
-				Error::CoolingTimeMismatchOptions,
-				ObjectToString[PickList[simulatedSamples, grindCoolingTimeMismatches], Cache -> cacheBall]
-			];
-			{CoolingTime}
-		),
-		{}
-	];
-
-	(*Create appropriate tests if gathering them,or return {}*)
-	grindCoolingTimeMismatchTest = If[gatherTests,
-		Module[{failingInputs, passingInputs, passingInputsTest, failingInputTest},
-			(*Get the failing and not failing samples*)
-			failingInputs = PickList[simulatedSamples, grindCoolingTimeMismatches];
-			passingInputs = PickList[simulatedSamples, grindCoolingTimeMismatches, False];
-			(*Create the passing and failing tests*)
-			failingInputTest = If[Length[failingInputs] > 0,
-				Test["If Grind is False, CoolingTime is Null for the following samples: " <> ObjectToString[failingInputs, Cache -> cacheBall] <> ".", True, False],
-				Nothing
-			];
-			(*Create a test for the passing inputs.*)
-			passingInputsTest = If[Length[passingInputs] > 0,
-				Test["If Grind is False, CoolingTime is Null for the following samples: " <> ObjectToString[failingInputs, Cache -> cacheBall] <> ".", True, True],
-				Nothing
-			];
-
-			(*Return our created tests.*)
-			{passingInputsTest, failingInputTest}
-		],
-		{}
-	];
-
-	(*throw an error if the sample is prepacked but GrindingProfile is not Null*)
-	prepackedGrindingProfileMismatchOptions = If[MemberQ[prepackedGrindingProfileMismatches, True] && messages,
-		(
-			Message[
-				Error::InvalidGrindingProfileOptions,
-				ObjectToString[PickList[simulatedSamples, prepackedGrindingProfileMismatches], Cache -> cacheBall]
-			];
-			{GrindingProfile}
-		),
-		{}
-	];
-
-	(*Create appropriate tests if gathering them,or return {}*)
-	prepackedGrindingProfileMismatchTest = If[gatherTests,
-		Module[{failingInputs, passingInputs, passingInputsTest, failingInputTest},
-			(*Get the failing and not failing samples*)
-			failingInputs = PickList[simulatedSamples, prepackedGrindingProfileMismatches];
-			passingInputs = PickList[simulatedSamples, prepackedGrindingProfileMismatches, False];
-			(*Create the passing and failing tests*)
-			failingInputTest = If[Length[failingInputs] > 0,
-				Test["If the sample is prepacked in a melting point capillary, GrindingProfile is Null for the following samples: " <> ObjectToString[failingInputs, Cache -> cacheBall] <> ".", True, False],
-				Nothing
-			];
-			(*Create a test for the passing inputs.*)
-			passingInputsTest = If[Length[passingInputs] > 0,
-				Test["If the sample is prepacked in a melting point capillary, GrindingProfile is Null for the following samples: " <> ObjectToString[failingInputs, Cache -> cacheBall] <> ".", True, True],
-				Nothing
-			];
-
-			(*Return our created tests.*)
-			{passingInputsTest, failingInputTest}
-		],
-		{}
-	];
-
-	(*throw an error if the sample is prepacked but GrindingProfile is not Null*)
-	grindGrindingProfileMismatchOptions = If[MemberQ[grindGrindingProfileMismatches, True] && messages,
-		(
-			Message[
-				Error::GrindingProfileMismatchOptions,
-				ObjectToString[PickList[simulatedSamples, grindGrindingProfileMismatches], Cache -> cacheBall]
-			];
-			{GrindingProfile}
-		),
-		{}
-	];
-
-	(*Create appropriate tests if gathering them,or return {}*)
-	grindGrindingProfileMismatchTest = If[gatherTests,
-		Module[{failingInputs, passingInputs, passingInputsTest, failingInputTest},
-			(*Get the failing and not failing samples*)
-			failingInputs = PickList[simulatedSamples, grindGrindingProfileMismatches];
-			passingInputs = PickList[simulatedSamples, grindGrindingProfileMismatches, False];
-			(*Create the passing and failing tests*)
-			failingInputTest = If[Length[failingInputs] > 0,
-				Test["If Grind is False, GrindingProfile is Null for the following samples: " <> ObjectToString[failingInputs, Cache -> cacheBall] <> ".", True, False],
-				Nothing
-			];
-			(*Create a test for the passing inputs.*)
-			passingInputsTest = If[Length[passingInputs] > 0,
-				Test["If Grind is False, GrindingProfile is Null for the following samples: " <> ObjectToString[failingInputs, Cache -> cacheBall] <> ".", True, True],
-				Nothing
-			];
-
-			(*Return our created tests.*)
-			{passingInputsTest, failingInputTest}
-		],
-		{}
-	];
-
-	(*throw an error if Grind or Desiccate are set to False but OrderOfOperations is NOT set to Null*)
-	extraneousOrderOptions = If[MemberQ[extraneousOrdersOfOperations, True] && messages,
-		(
-			Message[
-				Warning::ExtraneousOrderOfOperations,
-				ObjectToString[PickList[simulatedSamples, extraneousOrdersOfOperations], Cache -> cacheBall]
-			];
-			{OrderOfOperations}
-		),
-		{}
-	];
-
-	(*Create appropriate tests if gathering them, or return {}*)
-	extraneousOrderTest = If[gatherTests,
-		Module[{failingInputs, passingInputs, passingInputsTest, failingInputTest},
-
-			(*Get the failing and not failing samples*)
-			failingInputs = PickList[simulatedSamples, extraneousOrdersOfOperations];
-			passingInputs = PickList[simulatedSamples, extraneousOrdersOfOperations, False];
-
-			(*Create the passing and failing tests*)
-			failingInputTest = If[Length[failingInputs] > 0,
-				Warning["If Desiccate or Grind is set to False, OrderOfOperations is Null for the following samples: " <> ObjectToString[failingInputs, Cache -> cacheBall] <> ".", True, False],
-				Nothing
-			];
-
-			(*Create a test for the passing inputs.*)
-			passingInputsTest = If[Length[passingInputs] > 0,
-				Warning["If Desiccate or Grind is set to False, OrderOfOperations is Null for the following samples: " <> ObjectToString[failingInputs, Cache -> cacheBall] <> ".", True, True],
-				Nothing
-			];
-
-			(*Return our created tests.*)
-			{passingInputsTest, failingInputTest}
-		],
-		{}
-	];
-
-	(*throw an error if OrderOfOperations is Null but Desiccate and Grind are True*)
-	orderInvalidOptions = If[MemberQ[invalidOrders, True] && messages,
-		(
-			Message[
-				Error::UndefinedOrderOfOperations,
-				ObjectToString[PickList[simulatedSamples, invalidOrders], Cache -> cacheBall]
-			];
-			{OrderOfOperations}
-		),
-		{}
-	];
-
-	(*Create appropriate tests if gathering them, or return {}*)
-	orderTest = If[gatherTests,
-		Module[{failingInputs, passingInputs, passingInputsTest, failingInputTest},
-			(*Get the failing and not failing samples*)
-			failingInputs = PickList[simulatedSamples, invalidOrders];
-			passingInputs = PickList[simulatedSamples, invalidOrders, False];
-			(*Create the passing and failing tests*)
-			failingInputTest = If[Length[failingInputs] > 0,
-				Test["The following samples " <> ObjectToString[failingInputs, Cache -> cacheBall] <> " have valid OrderOfOperations if both Desiccate and Grind are set to True.", True, False],
-				Nothing
-			];
-			(* Create a test for the passing inputs. *)
-			passingInputsTest = If[Length[passingInputs] > 0,
-				Test["The following samples " <> ObjectToString[passingInputs, Cache -> cacheBall] <> " have valid OrderOfOperations if both Desiccate and Grind are set to True.", True, True],
-				Nothing
-			];
+		Test["The selected melting point apparatus exists at any of the allowed experiment sites (" <> ObjectToString[experimentSites, Cache -> cacheBall] <> ").", True, !invalidInstrumentQ],
 
-			(* Return our created tests. *)
-			{passingInputsTest, failingInputTest}
-		],
 		{}
 	];
 
 
-	(*throw an error if ExpectedMeltingPoint is set to greater than 349.9 Celsius or below 25 Celsius*)
+	(*throw an error if ExpectedMeltingPoint is set to greater than availableMaxTemperature or below 25 Celsius*)
 	expectedMeltingPointInvalidOptions = If[MemberQ[invalidExpectedMeltingPoints, True] && messages,
 		(
 			Message[
 				Error::InvalidExpectedMeltingPoint,
-				ObjectToString[PickList[simulatedSamples, invalidExpectedMeltingPoints], Cache -> cacheBall]
+				ObjectToString[PickList[simulatedSamples, invalidExpectedMeltingPoints], Cache -> cacheBall],
+				ObjectToString[availableMaxTemperature, Cache -> cacheBall]
 			];
 			{ExpectedMeltingPoint}
 		),
@@ -3920,12 +3645,76 @@ resolveExperimentMeasureMeltingPointOptions[myInputSamples : {ObjectP[Object[Sam
 			passingInputs = PickList[simulatedSamples, invalidExpectedMeltingPoints, False];
 			(*Create the passing and failing tests*)
 			failingInputTest = If[Length[failingInputs] > 0,
-				Test["ExpectedMeltingPoint is set to a valid value (between 25 and 349.9 Celsius) for the following samples: " <> ObjectToString[failingInputs, Cache -> cacheBall] <> ".", True, False],
+				Test["ExpectedMeltingPoint is set to a valid value (between 25 and " <> ObjectToString[availableMaxTemperature, Cache -> cacheBall] <> ") for the following samples: " <> ObjectToString[failingInputs, Cache -> cacheBall] <> ".", True, False],
 				Nothing
 			];
 			(* Create a test for the passing inputs. *)
 			passingInputsTest = If[Length[passingInputs] > 0,
-				Test["ExpectedMeltingPoint is set to a valid value (between 25 and 349.9 Celsius) for the following samples: " <> ObjectToString[failingInputs, Cache -> cacheBall] <> ".", True, True],
+				Test["ExpectedMeltingPoint is set to a valid value (between 25 and " <> ObjectToString[availableMaxTemperature, Cache -> cacheBall] <> ") for the following samples: " <> ObjectToString[passingInputs, Cache -> cacheBall] <> ".", True, True],
+				Nothing
+			];
+
+			(* Return our created tests. *)
+			{passingInputsTest, failingInputTest}
+		],
+		{}
+	];
+
+	(* throw an error if EndTemperature is greater than the available max temperature *)
+	endTemperatureInvalidOptions = Which[
+		And[
+			messages,
+			MemberQ[invalidEndTemperatures, True],
+			MatchQ[unresolvedInstrumentModel, ObjectP[Model[Instrument, MeltingPointApparatus]]],
+			!invalidInstrumentQ,
+			!noAvailableInstrumentQ
+		],
+
+			(
+				Message[
+					Error::InvalidEndTemperatures,
+					ObjectToString[PickList[resolvedEndTemperature, invalidEndTemperatures], Cache -> cacheBall],
+					ObjectToString[PickList[simulatedSamples, invalidEndTemperatures], Cache -> cacheBall],
+					"specified melting point instrument, " <> ObjectToString[unresolvedInstrument, Cache -> cacheBall]
+				];
+				{EndTemperature, Instrument}
+			),
+
+		And[
+			messages,
+			MemberQ[invalidEndTemperatures, True],
+			!invalidInstrumentQ,
+			!noAvailableInstrumentQ
+		],
+
+			(
+				Message[
+					Error::InvalidEndTemperatures,
+					ObjectToString[PickList[resolvedEndTemperature, invalidEndTemperatures], Cache -> cacheBall],
+					ObjectToString[PickList[simulatedSamples, invalidEndTemperatures], Cache -> cacheBall],
+					"available melting point instruments at your allowed experiment sites " <> ObjectToString[experimentSites, Cache -> cacheBall]
+				];
+				{EndTemperature, Instrument}
+			),
+
+		True,
+			{}
+	];
+
+	(* Create appropriate tests if gathering them, or return {} *)
+	endTemperatureInvalidTest = If[gatherTests,
+		Module[{failingInputs, passingInputs, passingInputsTest, failingInputTest},
+			(*Get the failing and not failing samples*)
+			failingInputs = PickList[simulatedSamples, invalidEndTemperatures];
+			passingInputs = PickList[simulatedSamples, invalidEndTemperatures, False];
+			(*Create the passing and failing tests*)
+			failingInputTest = If[Length[failingInputs] > 0,
+				Test["The specified EndTemperature is less than or equal to the MaxTemperature of the available instruments: " <> ObjectToString[failingInputs, Cache -> cacheBall] <> ".", True, False],
+				Nothing
+			];
+			(* Create a test for the passing inputs. *)
+			passingInputsTest = If[Length[passingInputs] > 0,
+				Test["The specified EndTemperature is less than or equal to the MaxTemperature of the available instruments: " <> ObjectToString[passingInputs, Cache -> cacheBall] <> ".", True, True],
 				Nothing
 			];
 
@@ -3960,7 +3749,88 @@ resolveExperimentMeasureMeltingPointOptions[myInputSamples : {ObjectP[Object[Sam
 			];
 			(* Create a test for the passing inputs. *)
 			passingInputsTest = If[Length[passingInputs] > 0,
-				Test["StartTemperature is less than EndTemperature for the following samples: " <> ObjectToString[failingInputs, Cache -> cacheBall] <> ".", True, True],
+				Test["StartTemperature is less than EndTemperature for the following samples: " <> ObjectToString[passingInputs, Cache -> cacheBall] <> ".", True, True],
+				Nothing
+			];
+
+			(* Return our created tests. *)
+			{passingInputsTest, failingInputTest}
+		],
+		{}
+	];
+
+	(* throw an error if specified NumberOfReplicates are greater than the number of capillary slots *)
+	highNumberOfReplicatesOptions = Which[
+		And[
+			messages,
+			MemberQ[highNumbersOfReplicates, True],
+			MatchQ[unresolvedInstrument, ObjectP[]],
+			!invalidInstrumentQ,
+			!noAvailableInstrumentQ
+		],
+			(
+				Message[
+					Error::HighNumberOfReplicates,
+					ObjectToString[PickList[resolvedNumberOfReplicates, highNumbersOfReplicates], Cache -> cacheBall],
+					ObjectToString[PickList[simulatedSamples, highNumbersOfReplicates], Cache -> cacheBall],
+					"specified melting point instrument, " <> ObjectToString[unresolvedInstrument, Cache -> cacheBall]
+				];
+				{NumberOfReplicates, Instrument}
+			),
+
+		And[
+			messages,
+			MemberQ[highNumbersOfReplicates, True],
+			!invalidInstrumentQ,
+			!noAvailableInstrumentQ
+		],
+			(
+				Message[
+					Error::HighNumberOfReplicates,
+					ObjectToString[PickList[resolvedNumberOfReplicates, highNumbersOfReplicates], Cache -> cacheBall],
+					ObjectToString[PickList[simulatedSamples, highNumbersOfReplicates], Cache -> cacheBall],
+					"available melting point instruments at your allowed experiment sites " <> ObjectToString[experimentSites, Cache -> cacheBall]
+				];
+				{NumberOfReplicates}
+			),
+
+		True,
+			{}
+	];
+
+	(* Create appropriate tests if gathering them, or return {} *)
+	highNumberOfReplicatesTest = If[gatherTests,
+		Module[{failingInputs, passingInputs, passingInputsTest, failingInputTest},
+			(*Get the failing and not failing samples*)
+			failingInputs = PickList[simulatedSamples, highNumbersOfReplicates];
+			passingInputs = PickList[simulatedSamples, highNumbersOfReplicates, False];
+			(*Create the passing and failing tests*)
+			failingInputTest = If[
+				And[
+					Length[failingInputs] > 0,
+					MemberQ[highNumbersOfReplicates, True],
+					MatchQ[unresolvedInstrument, ObjectP[]],
+					!invalidInstrumentQ,
+					!noAvailableInstrumentQ
+				],
+
+				Test["The specified NumbersOfReplicates " <> resolvedNumberOfReplicates <> " is less than or equal to the NumberOfMeltingPointCapillarySlots of the specified instrument: " <> ObjectToString[resolvedInstrument, Cache -> cacheBall] <> " for samples: " <> ObjectToString[failingInputs, Cache -> cacheBall] <> ".", True, False],
+
+				Nothing
+			];
+
+			(* Create a test for the passing inputs. *)
+			passingInputsTest = If[
+				And[
+					Length[passingInputs] > 0,
+					MemberQ[highNumbersOfReplicates, True],
+					MatchQ[unresolvedInstrument, ObjectP[]],
+					!invalidInstrumentQ,
+					!noAvailableInstrumentQ
+				],
+
+				Test["The specified NumbersOfReplicates " <> resolvedNumberOfReplicates <> " is less than or equal to the NumberOfMeltingPointCapillarySlots of the specified instrument: " <> ObjectToString[resolvedInstrument, Cache -> cacheBall] <> " for samples: " <> ObjectToString[passingInputs, Cache -> cacheBall] <> ".", True, True],
+
 				Nothing
 			];
 
@@ -3999,7 +3869,7 @@ resolveExperimentMeasureMeltingPointOptions[myInputSamples : {ObjectP[Object[Sam
 
 			(*Create a test for the passing inputs.*)
 			passingInputsTest = If[Length[passingInputs] > 0,
-				Warning["TemperatureRampRate and RampTime are set to matching values for the following samples: " <> ObjectToString[failingInputs, Cache -> cacheBall] <> ".", True, True],
+				Warning["TemperatureRampRate and RampTime are set to matching values for the following samples: " <> ObjectToString[passingInputs, Cache -> cacheBall] <> ".", True, True],
 				Nothing
 			];
 
@@ -4009,232 +3879,165 @@ resolveExperimentMeasureMeltingPointOptions[myInputSamples : {ObjectP[Object[Sam
 		{}
 	];
 
-	(*throw a warning if the sample is prepacked but RecoupSample is not Null*)
-	mismatchedRecoupPrepackedOptions = If[MemberQ[recoupPrepackedSampleMismatches, True] && messages,
+	(* estimate the total experiment time and throw an error if it is more than $MaxExperimentTime *)
+	grindingProfiles = Lookup[resolvedGrindOptions, GrindingProfile];
+
+	(* estimated total Desiccate time *)
+	totalDesiccationTime = If[TimeQ[resolvedDesiccationTime],
+		UnitConvert[resolvedDesiccationTime, Hour] + 1 Hour,
+		0 Hour
+	];
+
+	(* estimated total Grind time *)
+	totalGrindTime = With[{grindTime = Plus @@ Cases[Flatten[grindingProfiles], TimeP]},
+		If[TimeQ[grindTime],
+			UnitConvert[grindTime, Hour] + 1 Hour,
+			0 Hour
+		]
+	];
+
+	groupedMeltingPointOptions = Lookup[Experiment`Private`groupByKey[
+		{
+			NumberOfReplicates -> resolvedNumberOfReplicates,
+			StartTemperature -> resolvedStartTemperature,
+			EquilibrationTime -> equilibrationTime,
+			EndTemperature -> resolvedEndTemperature,
+			TemperatureRampRate -> resolvedTemperatureRampRate,
+			RampTime -> resolvedRampTime,
+			Prepacked -> prepackedQs
+		},
+		{NumberOfReplicates, StartTemperature, EquilibrationTime, EndTemperature, TemperatureRampRate, RampTime, Prepacked}
+	][[All, 2]], {RampTime, EquilibrationTime, NumberOfReplicates}];
+
+	(* estimated total MeasureMeltingPoint time *)
+	groupedRampTimes = groupedMeltingPointOptions[[All, 1, 1]];
+	groupedEquilibrationTimes = groupedMeltingPointOptions[[All, 2, 1]];
+	groupedNumberOfReplicates = groupedMeltingPointOptions[[All, 3]];
+	groupedSampleLengths = Length /@ groupedNumberOfReplicates;
+
+	totalMeltingPointTime = Plus @@ MapThread[If[NullQ[#1[[1]]],
+		UnitConvert[Ceiling[#2 / numberOfCapillarySlots] * (#3 + #4), Hour] + 1 Hour,
+		UnitConvert[#2 * (#3 + #4), Hour] + 1 Hour
+	]&, {groupedNumberOfReplicates, groupedSampleLengths, groupedRampTimes, groupedEquilibrationTimes}];
+
+	(* estimated total experiment time *)
+	totalEstimatedExperimentTime = totalDesiccationTime + totalGrindTime + totalMeltingPointTime + Length[PickList[myInputSamples, prepackedQs, False]] * Hour;
+
+	(* throw an error if it is more than $MaxExperimentTime *)
+	longExperimentTimeOptions = If[messages && totalEstimatedExperimentTime > $MaxExperimentTime,
 		(
 			Message[
-				Error::NoPreparedSampleToRecoup,
-				ObjectToString[PickList[simulatedSamples, recoupPrepackedSampleMismatches], Cache -> cacheBall]
+				Error::LongExperimentTime,
+				$MaxExperimentTime
 			];
-			{RecoupSample}
+			Flatten[{
+				PickList[{DesiccationTime, GrindingTime}, {Or @@ realDesiccateQs, Or @@ realGrindQs}],
+				RampTime
+			}]
 		),
 		{}
 	];
 
 	(*Create appropriate tests if gathering them, or return {}*)
-	mismatchedRecoupPrepackedTest = If[gatherTests,
-		Module[{failingInputs, passingInputs, passingInputsTest, failingInputTest},
-
-			(*Get the failing and not failing samples*)
-			failingInputs = PickList[simulatedSamples, recoupPrepackedSampleMismatches];
-			passingInputs = PickList[simulatedSamples, recoupPrepackedSampleMismatches, False];
-
-			(*Create the passing and failing tests*)
-			failingInputTest = If[Length[failingInputs] > 0,
-				Warning["Recoup is Null for the following input samples which are prepacked in capillary tube: " <> ObjectToString[failingInputs, Cache -> cacheBall] <> ".", True, False],
-				Nothing
-			];
-
-			(*Create a test for the passing inputs.*)
-			passingInputsTest = If[Length[passingInputs] > 0,
-				Warning["Recoup is Null for the following input samples which are prepacked in capillary tube: " <> ObjectToString[failingInputs, Cache -> cacheBall] <> ".", True, True],
-				Nothing
-			];
-
-			(*Return our created tests.*)
-			{passingInputsTest, failingInputTest}
-		],
+	longExperimentTimeTest = If[gatherTests,
+		Test["The estimated total experiment time is less than the allowed maximum experiment time (" <>  ObjectToString[$MaxExperimentTime] <> ").", True, totalEstimatedExperimentTime <= $MaxExperimentTime],
 		{}
 	];
 
-	(*throw a warning if the sample is prepacked but PreparedSampleContainer is not Null*)
-	mismatchedPrepackedPreparedOptions = If[MemberQ[prepackedPreparedSampleContainerMismatches, True] && messages,
-		(
-			Message[
-				Error::NoPreparedSample,
-				ObjectToString[PickList[simulatedSamples, prepackedPreparedSampleContainerMismatches], Cache -> cacheBall]
-			];
-			{PreparedSampleContainer}
-		),
-		{}
-	];
+	(* some user-specified variables that caused Error State may have changed in order to successfully run Grind and Desiccate resolvers.
+	 These variables are set back to the user-specified values here *)
+	grindTargetOptions = {
+		GrinderType, Grinder, Fineness, BulkDensity, GrindingContainer,
+		GrindingRate, GrindingTime, NumberOfGrindingSteps, GrindingProfile, Amount
+	};
 
-	(*Create appropriate tests if gathering them, or return {}*)
-	mismatchedPrepackedPreparedTest = If[gatherTests,
-		Module[{failingInputs, passingInputs, passingInputsTest, failingInputTest},
+	desiccateTargetOptions = {DesiccationMethod, Desiccator, DesiccationTime};
 
-			(*Get the failing and not failing samples*)
-			failingInputs = PickList[simulatedSamples, prepackedPreparedSampleContainerMismatches];
-			passingInputs = PickList[simulatedSamples, prepackedPreparedSampleContainerMismatches, False];
+	valueChangedQs = {
+		grinderTypeChangeQs, grinderChangedQs, finenessChangedQs, bulkDensityChangedQs, grindingContainerChangedQs,
+		grindingRateChangedQs, grindingTimeChangedQs, numberOfGrindingStepsChangedQs, grindingProfileChangesQs,
+		amountChangedQs, ToList[desiccationMethodChangedQ], ToList[desiccatorChangedQ], ToList[desiccationTimeChangedQ]
+	};
 
-			(*Create the passing and failing tests*)
-			failingInputTest = If[Length[failingInputs] > 0,
-				Warning["PreparedSampleContainer is Null for the following input samples which are prepacked in capillary tube: " <> ObjectToString[failingInputs, Cache -> cacheBall] <> ".", True, False],
-				Nothing
-			];
+	unresolvedOptionValues = ToList /@ Lookup[roundedMeasureMeltingPointOptions, Join[grindTargetOptions, desiccateTargetOptions]];
 
-			(*Create a test for the passing inputs.*)
-			passingInputsTest = If[Length[passingInputs] > 0,
-				Warning["PreparedSampleContainer is Null for the following input samples which are prepacked in capillary tube: " <> ObjectToString[failingInputs, Cache -> cacheBall] <> ".", True, True],
-				Nothing
-			];
+	resolvedGrindValues = Lookup[resolvedGrindOptions, grindTargetOptions];
 
-			(*Return our created tests.*)
-			{passingInputsTest, failingInputTest}
-		],
-		{}
-	];
+	resolvedDesiccateValues = ToList /@ Lookup[resolvedDesiccateSingletonOptions, desiccateTargetOptions];
 
-	(*throw an error if RecoupSample is False but PreparedSampleContainer is not Null*)
-	recoupSampleContainerMismatchOptions = If[MemberQ[recoupSampleContainerMismatches, True] && messages,
-		(
-			Message[
-				Error::InvalidPreparedSampleContainer,
-				ObjectToString[PickList[simulatedSamples, recoupSampleContainerMismatches], Cache -> cacheBall]
-			];
-			{RecoupSample, PreparedSampleContainer}
-		),
-		{}
-	];
+	resolvedOptionValues = Join[resolvedGrindValues, resolvedDesiccateValues];
 
-	(*Create appropriate tests if gathering them, or return {}*)
-	recoupSampleContainerMismatchTest = If[gatherTests,
-		Module[{failingInputs, passingInputs, passingInputsTest, failingInputTest},
-			(*Get the failing and not failing samples*)
-			failingInputs = PickList[simulatedSamples, recoupSampleContainerMismatches];
-			passingInputs = PickList[simulatedSamples, recoupSampleContainerMismatches, False];
-			(*Create the passing and failing tests*)
-			failingInputTest = If[Length[failingInputs] > 0,
-				Test["If RecoupSample is False or Null, PreparedSampleContainer is Null for the following samples: " <> ObjectToString[failingInputs, Cache -> cacheBall] <> ".", True, False],
-				Nothing
-			];
-			(* Create a test for the passing inputs. *)
-			passingInputsTest = If[Length[passingInputs] > 0,
-				Test["If RecoupSample is False or Null, PreparedSampleContainer is Null for the following samples: " <> ObjectToString[failingInputs, Cache -> cacheBall] <> ".", True, True],
-				Nothing
-			];
-
-			(* Return our created tests. *)
-			{passingInputsTest, failingInputTest}
-		],
-		{}
+	{
+		resolvedGrinderTypes,
+		resolvedGrinders,
+		resolvedFinenesses,
+		resolvedBulkDensities,
+		resolvedGrindingContainers,
+		resolvedGrindingRates,
+		resolvedGrindingTimes,
+		resolvedNumberOfGrindingSteps,
+		resolvedGrindingProfiles,
+		resolvedAmounts,
+		{resolvedDesiccationMethod},
+		{resolvedDesiccator},
+		{resolvedDesiccationTime}
+	} = MapThread[
+		Function[{changedQs, unresolvedValues, resolvedValues},
+			MapThread[If[#1, #2, #3]&, {changedQs, unresolvedValues, resolvedValues}]],
+		{valueChangedQs, unresolvedOptionValues, resolvedOptionValues}
 	];
 
 
-	(*throw an error if RecoupSample is False but PreparedSampleStorageCondition is not Null*)
-	recoupStorageMismatchOptions = If[MemberQ[recoupStorageConditionMismatches, True] && messages,
-		(
-			Message[
-				Error::InvalidPreparedSampleStorageCondition,
-				ObjectToString[PickList[simulatedSamples, recoupStorageConditionMismatches], Cache -> cacheBall]
-			];
-			{RecoupSample, PreparedSampleStorageCondition}
-		),
-		{}
-	];
-
-	(*Create appropriate tests if gathering them, or return {}*)
-	recoupStorageMismatchTest = If[gatherTests,
-		Module[{failingInputs, passingInputs, passingInputsTest, failingInputTest},
-			(*Get the failing and not failing samples*)
-			failingInputs = PickList[simulatedSamples, recoupStorageConditionMismatches];
-			passingInputs = PickList[simulatedSamples, recoupStorageConditionMismatches, False];
-			(*Create the passing and failing tests*)
-			failingInputTest = If[Length[failingInputs] > 0,
-				Test["If RecoupSample is False or Null, PreparedSampleStorageCondition is Null for the following samples: " <> ObjectToString[failingInputs, Cache -> cacheBall] <> ".", True, False],
-				Nothing
-			];
-			(* Create a test for the passing inputs. *)
-			passingInputsTest = If[Length[passingInputs] > 0,
-				Test["If RecoupSample is False or Null, PreparedSampleStorageCondition is Null for the following samples: " <> ObjectToString[failingInputs, Cache -> cacheBall] <> ".", True, True],
-				Nothing
-			];
-
-			(* Return our created tests. *)
-			{passingInputsTest, failingInputTest}
-		],
-		{}
-	];
-
-	(*throw an error if the sample is prepacked but NumberOfReplicates is not Null*)
-	numberOfReplicatesMismatchedOptions = If[MemberQ[invalidNumbersOfReplicates, True] && messages,
-		(
-			Message[
-				Error::InvalidNumberOfReplicates,
-				ObjectToString[PickList[simulatedSamples, invalidNumbersOfReplicates], Cache -> cacheBall]
-			];
-			{NumberOfReplicates}
-		),
-		{}
-	];
-
-	(*Create appropriate tests if gathering them, or return {}*)
-	numberOfReplicatesMismatchedTest = If[gatherTests,
-		Module[{failingInputs, passingInputs, passingInputsTest, failingInputTest},
-			(*Get the failing and not failing samples*)
-			failingInputs = PickList[simulatedSamples, invalidNumbersOfReplicates];
-			passingInputs = PickList[simulatedSamples, invalidNumbersOfReplicates, False];
-			(*Create the passing and failing tests*)
-			failingInputTest = If[Length[failingInputs] > 0,
-				Test["If the sample is prepacked in a melting point capillary, NumberOfReplicates is Null for the following samples: " <> ObjectToString[failingInputs, Cache -> cacheBall] <> ".", True, False],
-				Nothing
-			];
-			(* Create a test for the passing inputs. *)
-			passingInputsTest = If[Length[passingInputs] > 0,
-				Test["If the sample is prepacked in a melting point capillary, NumberOfReplicates is Null for the following samples: " <> ObjectToString[failingInputs, Cache -> cacheBall] <> ".", True, True],
-				Nothing
-			];
-
-			(* Return our created tests. *)
-			{passingInputsTest, failingInputTest}
-		],
-		{}
-	];
+	(*------------------------------*)
+	(*------------------------------*)
+	(*--- Final Resolved Options ---*)
+	(*------------------------------*)
+	(*------------------------------*)
 
 	(* gather all the resolved options together *)
 	(* doing this ReplaceRule ensures that any newly-added defaulted ProtocolOptions are going to be just included in myOptions*)
 	resolvedOptions = ReplaceRule[
 		myOptions,
 		Flatten[{
-            MeasurementMethod -> unresolvedMeasurementMethod,
+			MeasurementMethod -> unresolvedMeasurementMethod,
 			OrderOfOperations -> resolvedOrderOfOperations,
 			ExpectedMeltingPoint -> resolvedExpectedMeltingPoint,
 			NumberOfReplicates -> resolvedNumberOfReplicates,
-			Amount -> resolvedAmount,
+			Amount -> resolvedAmounts,
 			SampleLabel -> resolvedSampleLabel,
 			SampleContainerLabel -> resolvedSampleContainerLabel,
 			PreparedSampleLabel -> resolvedPreparedSampleLabel,
-			PreparedSampleContainerLabel -> resolvedPreparedSampleContainerLabel,
 			Grind -> grindQs,
-			GrinderType -> Lookup[resolvedGrindOptions, GrinderType],
-			Grinder -> Lookup[resolvedGrindOptions, Grinder],
-			Fineness -> Lookup[resolvedGrindOptions, Fineness],
-			BulkDensity -> Lookup[resolvedGrindOptions, BulkDensity],
-			GrindingContainer -> Lookup[resolvedGrindOptions, GrindingContainer],
+			GrinderType -> resolvedGrinderTypes,
+			Grinder -> resolvedGrinders,
+			Fineness -> resolvedFinenesses,
+			BulkDensity -> resolvedBulkDensities,
+			GrindingContainer -> resolvedGrindingContainers,
 			GrindingBead -> Lookup[resolvedGrindOptions, GrindingBead],
 			NumberOfGrindingBeads -> Lookup[resolvedGrindOptions, NumberOfGrindingBeads],
-			GrindingRate -> Lookup[resolvedGrindOptions, GrindingRate],
-			GrindingTime -> Lookup[resolvedGrindOptions, GrindingTime],
-			NumberOfGrindingSteps -> Lookup[resolvedGrindOptions, NumberOfGrindingSteps],
+			GrindingRate -> resolvedGrindingRates,
+			GrindingTime -> resolvedGrindingTimes,
+			NumberOfGrindingSteps -> resolvedNumberOfGrindingSteps,
 			CoolingTime -> Lookup[resolvedGrindOptions, CoolingTime],
-			GrindingProfile -> Lookup[resolvedGrindOptions, GrindingProfile],
+			GrindingProfile -> resolvedGrindingProfiles,
 			Desiccate -> desiccateQs,
 			SampleContainer -> Lookup[resolvedDesiccateIndexMatchedOptions, SampleContainer],
-			DesiccationMethod -> Lookup[resolvedDesiccateSingletonOptions, DesiccationMethod],
+			DesiccationMethod -> resolvedDesiccationMethod,
 			Desiccant -> Lookup[resolvedDesiccateSingletonOptions, Desiccant],
 			DesiccantPhase -> Lookup[resolvedDesiccateSingletonOptions, DesiccantPhase],
+			CheckDesiccant -> Lookup[resolvedDesiccateSingletonOptions, CheckDesiccant],
 			DesiccantAmount -> Lookup[resolvedDesiccateSingletonOptions, DesiccantAmount],
-			Desiccator -> Lookup[resolvedDesiccateSingletonOptions, Desiccator],
-			DesiccationTime -> Lookup[resolvedDesiccateSingletonOptions, DesiccationTime],
+			DesiccantStorageCondition -> Lookup[resolvedDesiccateSingletonOptions, DesiccantStorageCondition],
+			DesiccantStorageContainer -> Lookup[resolvedDesiccateSingletonOptions, DesiccantStorageContainer],
+			Desiccator -> resolvedDesiccator,
+			DesiccationTime -> resolvedDesiccationTime,
 			SealCapillary -> resolvedSealCapillary,
-			Instrument -> unresolvedInstrument,
+			Instrument -> resolvedInstrument,
 			StartTemperature -> resolvedStartTemperature,
 			EquilibrationTime -> equilibrationTime,
 			EndTemperature -> resolvedEndTemperature,
 			TemperatureRampRate -> resolvedTemperatureRampRate,
 			RampTime -> resolvedRampTime,
-			RecoupSample -> resolvedRecoupSample,
-			PreparedSampleContainer -> resolvedPreparedSampleContainer,
 			PreparedSampleStorageCondition -> preparedSampleStorageCondition,
 			CapillaryStorageCondition -> capillaryStorageCondition,
 			resolvedPostProcessingOptions
@@ -4243,60 +4046,34 @@ resolveExperimentMeasureMeltingPointOptions[myInputSamples : {ObjectP[Object[Sam
 
 	(* Check our invalid input and invalid option variables and throw Error::InvalidInput or Error::InvalidOption if necessary. *)
 	invalidInputs = DeleteDuplicates[Flatten[{
+		$DesiccateInvalidInputs,
+		$GrindInvalidInputs,
 		nonSolidSampleInvalidInputs,
 		discardedInvalidInputs
 	}]];
 
 	(* gather all the invalid options together *)
 	invalidOptions = DeleteDuplicates[Flatten[{
-		desiccatePrepackedMismatchOptions,
-		prepackedSampleContainerMismatchOptions,
-		desiccateSampleContainerMismatchOptions,
-		prepackedDesiccationMethodMismatchOptions,
-		desiccateDesiccationMethodMismatchOptions,
-		prepackedDesiccantMismatchOptions,
-		desiccateDesiccantMismatchOptions,
-		prepackedDesiccantPhaseMismatchOptions,
-		desiccateDesiccantPhaseMismatchOptions,
-		prepackedDesiccantAmountMismatchOptions,
-		desiccateDesiccantAmountMismatchOptions,
-		prepackedDesiccatorMismatchOptions,
-		desiccateDesiccatorMismatchOptions,
-		prepackedDesiccationTimeMismatchOptions,
-		desiccateDesiccationTimeMismatchOptions,
-		grindPrepackedMismatchOptions,
-		prepackedGrinderTypeMismatchOptions,
-		grindGrinderTypeMismatchOptions,
-		prepackedGrinderMismatchOptions,
-		grindGrinderMismatchOptions,
-		prepackedFinenessMismatchOptions,
-		grindFinenessMismatchOptions,
-		prepackedBulkDensityMismatchOptions,
-		grindBulkDensityMismatchOptions,
-		prepackedGrindingContainerMismatchOptions,
-		grindGrindingContainerMismatchOptions,
-		prepackedGrindingBeadMismatchOptions,
-		grindGrindingBeadMismatchOptions,
-		prepackedNumberOfGrindingBeadsMismatchOptions,
-		grindNumberOfGrindingBeadsMismatchOptions,
-		prepackedGrindingRateMismatchOptions,
-		grindGrindingRateMismatchOptions,
-		prepackedGrindingTimeMismatchOptions,
-		grindGrindingTimeMismatchOptions,
-		prepackedNumberOfGrindingStepsMismatchOptions,
-		grindNumberOfGrindingStepsMismatchOptions,
-		prepackedCoolingTimeMismatchOptions,
-		grindCoolingTimeMismatchOptions,
-		prepackedGrindingProfileMismatchOptions,
-		grindGrindingProfileMismatchOptions,
-		orderInvalidOptions,
-		expectedMeltingPointInvalidOptions,
-		startEndTemperatureInvalidOptions,
-		recoupSampleContainerMismatchOptions,
-		recoupStorageMismatchOptions,
+		desiccateInvalidOptions,
+		grindInvalidOptions,
+		prepackedSamplePrepUnneededOptions,
+		noPrepUnneededOptions,
+		prepackedDesiccateUnneededOptions,
+		requiredSingletonDesiccateOptions,
+		noDesiccateUnneededOptions,
+		prepackedGrindUnneededOptions,
+		noGrindUnneededOptions,
+		desiccateGrindOptionMismatches,
+		orderOptionMismatches,
 		numberOfReplicatesMismatchedOptions,
-		mismatchedRecoupPrepackedOptions,
-		mismatchedPrepackedPreparedOptions
+		highNumberOfReplicatesOptions,
+		invalidPreparedSampleStorageConditionsOptions,
+		noAvailableInstruments,
+		invalidInstruments,
+		expectedMeltingPointInvalidOptions,
+		endTemperatureInvalidOptions,
+		startEndTemperatureInvalidOptions,
+		longExperimentTimeOptions
 	}]];
 
 
@@ -4317,61 +4094,25 @@ resolveExperimentMeasureMeltingPointOptions[myInputSamples : {ObjectP[Object[Sam
 		discardedTest,
 		missingMassTest,
 		nonSolidSampleTest,
-		extraneousOrderTest,
-		desiccatePrepackedMismatchTest,
-		prepackedSampleContainerMismatchTest,
-		desiccateSampleContainerMismatchTest,
-		prepackedDesiccationMethodMismatchTest,
-		desiccateDesiccationMethodMismatchTest,
-		prepackedDesiccantMismatchTest,
-		desiccateDesiccantMismatchTest,
-		prepackedDesiccantPhaseMismatchTest,
-		desiccateDesiccantPhaseMismatchTest,
-		prepackedDesiccantAmountMismatchTest,
-		desiccateDesiccantAmountMismatchTest,
-		prepackedDesiccatorMismatchTest,
-		desiccateDesiccatorMismatchTest,
-		prepackedDesiccationTimeMismatchTest,
-		desiccateDesiccationTimeMismatchTest,
-		grindPrepackedMismatchTest,
-		prepackedGrinderTypeMismatchTest,
-		prepackedGrinderMismatchTest,
-		grindGrinderMismatchTest,
-		prepackedFinenessMismatchTest,
-		grindFinenessMismatchTest,
-		prepackedBulkDensityMismatchTest,
-		grindBulkDensityMismatchTest,
-		prepackedGrindingContainerMismatchTest,
-		grindGrindingContainerMismatchTest,
-		prepackedGrindingBeadMismatchTest,
-		grindGrindingBeadMismatchTest,
-		prepackedNumberOfGrindingBeadsMismatchTest,
-		grindNumberOfGrindingBeadsMismatchTest,
-		prepackedGrindingRateMismatchTest,
-		grindGrindingRateMismatchTest,
-		prepackedGrindingTimeMismatchTest,
-		grindGrindingTimeMismatchTest,
-		prepackedNumberOfGrindingStepsMismatchTest,
-		grindNumberOfGrindingStepsMismatchTest,
-		prepackedCoolingTimeMismatchTest,
-		grindCoolingTimeMismatchTest,
-		prepackedGrindingProfileMismatchTest,
-		grindGrindingProfileMismatchTest,
-		grindGrinderTypeMismatchTest,
-		orderTest,
+		precisionTests,
+		noPrepTests,
+		requiredSingletonDesiccateOptionTests,
+		desiccateGrindOptionMismatchTests,
+		orderOptionMismatchTests,
+		invalidPreparedSampleStorageConditionsTest,
+		numberOfReplicatesMismatchedTest,
+		highNumberOfReplicatesTest,
+		desiccateTests,
+		grindTests,
+		noAvailableInstrumentTests,
+		invalidInstrumentTests,
 		expectedMeltingPointInvalidTest,
+		endTemperatureInvalidTest,
 		startEndTemperatureInvalidTest,
 		mismatchedRampRateRampTimeTest,
-		recoupSampleContainerMismatchTest,
-		mismatchedRecoupPrepackedTest,
-		mismatchedPrepackedPreparedTest,
-		recoupStorageMismatchTest,
-		numberOfReplicatesMismatchedTest,
-		desiccateTests,
-		grindTests
+		longExperimentTimeTest
 	}], TestP];
 
-	(* pending to add updatedExperimentGrindSimulation to the Result *)
 	(* return our resolved options and/or tests *)
 	outputSpecification /. {Result -> resolvedOptions, Tests -> allTests}
 ];
@@ -4395,57 +4136,39 @@ measureMeltingPointResourcePackets[
 	myOptions : OptionsPattern[]
 ] := Module[
 	{
-		safeOps, outputSpecification, output, gatherTests, messages, desiccator,
-		cache, simulation, fastAssoc, simulatedSamples, desiccationTime,
-		updatedSimulation, simulatedSampleContainers, samplesInResources,
-		desiccantResources, inputSampleContainers,
-		capillaryNumbers, prepackedQ, meltingPointCapillaries, meltingPointCapillary,
-		capillaryResourceNames, capillaryResources,
-		preparationUnitOperations, desiccateFirstOptions, packingDevices,
-		capillarySeal, capillarySealResource, capillarySealResources, packingDevice,
-		sampleContainerResources, grindingContainerResources,
-		preparedSampleContainerResources, grindFirstQ, grindSecondQ,
-		grindFirstSamples, grindSampleOutLabels, grindSampleToLabelRules,
-		desiccateSamples, desiccateSampleOutLabels, desiccateSampleToLabelRules,
-		grindSecondSamples, grindOptionKeys, grindOptions, grindFirstOptions,
-		grindSecondOptions, packingDeviceResource, desiccateOptionKeys, desiccateOptions,
-		allInstruments, instrumentTimeRules, totalGrindTimes, desiccatorResources,
-		grinderResourceRules, grinderResources, mergedGrinderTimes, grinderTimeRules,
-		desiccationMethod, desiccant, desiccantPhase, desiccantAmount,
-        measurementMethod, orderOfOperations, expectedMeltingPoint, numberOfReplicates,
-		sealCapillary, instrument, startTemperature, equilibrationTime, endTemperature,
-		temperatureRampRate, rampTime, recoupSample, preparedSampleContainer,
+		safeOps, outputSpecification, output, gatherTests, messages, desiccator, desiccantStorageCondition,
+		cache, simulation, fastAssoc, simulatedSamples, desiccationTime, realDesiccateQs,allMeltingPointInstrumentModels,
+		updatedSimulation, containersIn, simulatedSampleContainers, simulatedSampleContainerModels, samplesInResources,
+		desiccantResources, inputSampleContainers, desiccantStorageContainerResources, numberOfCapillarySlots,
+		capillaryNumbers, prepackedQ, meltingPointCapillaries, meltingPointCapillary, defaultMeltingPointInstrumentModel,
+		capillaryResourceNames, capillaryResources, preparationUnitOperations, packingDevices, samplesToSkip,
+		capillarySeal, capillarySealResource, capillarySealResources, packingDevice, rawPreparationUnitOperations,
+		sampleContainerResources, grindingContainerResources, grind1Qs, grind2Qs, checkDesiccant,
+		grind1Samples, desiccateSamples, grind2Samples, grindOptionNames, grindOptions, grind1Options,
+		grind2Options, packingDeviceResource, allInstruments, totalGrindTimes, desiccatorResources,
+		grinderResourceRules, grinderResources, mergedGrinderTimes, grinderTimeRules, containersInResources,
+		desiccationMethod, desiccant, desiccantPhase, desiccantAmount, desiccantStorageContainer,
+		measurementMethod, orderOfOperations, expectedMeltingPoint, numberOfReplicates,
+		sealCapillary, instrument, startTemperature, equilibrationTime, endTemperature, temperatureRampRate, rampTime,
 		preparedSampleStorageCondition, capillaryStorageCondition, desiccateQs,
 		realGrindQs, grindQs, amount, sampleContainer, grinderType, grinder, fineness, bulkDensity,
-		grindingContainer, grindingBead, numberOfGrindingBeads, grindingRate,
-		grindingTime, numberOfGrindingSteps, coolingTime, grindingProfile,
-		preparedSampleLabel, preparedSampleContainerLabel, instrumentTag,
-		instruments, grindingBeadResourceRules, mergedBeadsAndNumbers,
-		sampleGroupedOptions, sampleGrouper, beadsAndNumbers, sampleLabel,
-		sampleContainerLabel, unitOperationPackets,
-		instrumentResources, grindingBeadResources,
-		updatedPreparedSampleStorageCondition, sampleModels, numericAmount,
-		updatedCapillaryStorageCondition, grindFirstOptionRules,
-		nonIndexMatchedDesiccateOptionKeys, indexMatchedDesiccateOptionKeys,
-		nonIndexMatchedDesiccateOptions, indexMatchedDesiccateOptions,
-		desiccateFirstIndexMatchedOptions, desiccateFirstNonIndexMatchedOptionRules,
-		desiccateFirstIndexMatchedOptionRules, grindSecondOptionRules,
-		groupedOptions, protocolPacket, totalInstrumentTime,
-		sharedFieldPacket, finalizedPacket, instrumentModel,
+		grindingContainer, grindingBead, numberOfGrindingBeads, grindingRate, rawGrindingProfile,
+		grindingTime, numberOfGrindingSteps, coolingTime, grindingProfile, preparedSampleLabel, instrumentTag,
+		grindingBeadResourceRules, mergedBeadsAndNumbers, samplePrepTime, experimentTime, postProcessingTime,
+		sampleGroupedOptions, BatchSamplesByReplicates, beadsAndNumbers, sampleLabel,
+		sampleContainerLabel, unitOperationPackets, instrumentResources, grindingBeadResources,
+		numericAmount, grind1OptionRules, nonIndexMatchedDesiccateOptionNames, indexMatchedDesiccateOptionNames,
+		nonIndexMatchedDesiccateOptions, indexMatchedDesiccateOptions,storageTime,
+		desiccateIndexMatchedOptions, desiccateNonIndexMatchedOptionRules, desiccateIndexMatchedOptionRules, grind2OptionRules,
+		groupedOptions, protocolPacket, totalInstrumentTime, sharedFieldPacket, finalizedPacket, instrumentModel,
 		grindingContainerModel, allResourceBlobs, capillaryRod, capillaryRodResources,
-		fulfillable, frqTests, previewRule, optionsRule, testsRule, resultRule
+		fulfillable, frqTests, previewRule, optionsRule, testsRule, resultRule,
+		transfer1Qs, transfer2Qs, transfer3Qs, labelFinder, samplesInLabels,
+		processesQ, notPrepackedInputSamples, numberOfGrind1Samples, numberOfDesiccateSamples, numberOfGrind2Samples
 	},
 
 	(*get the safe options for this function*)
 	safeOps = SafeOptions[measureMeltingPointResourcePackets, ToList[myOptions]];
-
-	(* Get the resolved collapsed index matching options that don't include hidden options *)
-	resolvedOptionsNoHidden = CollapseIndexMatchedOptions[
-		ExperimentMeasureMeltingPoint,
-		RemoveHiddenOptions[ExperimentMeasureMeltingPoint, myResolvedOptions],
-		Ignore -> myUnresolvedOptions,
-		Messages -> False
-	];
 
 	(* pull out the output options *)
 	outputSpecification = Lookup[safeOps, Output];
@@ -4465,7 +4188,8 @@ measureMeltingPointResourcePackets[
 	{simulatedSamples, updatedSimulation} = simulateSamplesResourcePacketsNew[ExperimentMeasureMeltingPoint, mySamples, myResolvedOptions, Cache -> cache, Simulation -> simulation];
 
 	(*this is the only real Download I need to do, which is to get the simulated sample containers*)
-	simulatedSampleContainers = Download[simulatedSamples, Container[Object], Cache -> cache, Simulation -> updatedSimulation];
+	{containersIn, simulatedSampleContainers} = Download[{mySamples, simulatedSamples}, Container[Object], Cache -> cache, Simulation -> updatedSimulation];
+	containersInResources = Resource[Sample -> #, Name->ToString[Unique[]]]& /@ containersIn;
 
 	(* lookup option values*)
 	{
@@ -4474,7 +4198,6 @@ measureMeltingPointResourcePackets[
 		(*3*)numberOfReplicates,
 		(*4*)amount,
 		(*5*)preparedSampleLabel,
-		(*6*)preparedSampleContainerLabel,
 		(*7*)grindQs,
 		(*8*)grinderType,
 		(*9*)grinder,
@@ -4487,7 +4210,7 @@ measureMeltingPointResourcePackets[
 		(*16*)grindingTime,
 		(*17*)numberOfGrindingSteps,
 		(*18*)coolingTime,
-		(*19*)grindingProfile,
+		(*19*)rawGrindingProfile,
 		(*20*)desiccateQs,
 		(*21*)sampleContainer,
 		(*22*)desiccationMethod,
@@ -4503,13 +4226,14 @@ measureMeltingPointResourcePackets[
 		(*32*)endTemperature,
 		(*33*)temperatureRampRate,
 		(*34*)rampTime,
-		(*35*)recoupSample,
-		(*36*)preparedSampleContainer,
 		(*37*)preparedSampleStorageCondition,
 		(*38*)capillaryStorageCondition,
 		(*40*)sampleLabel,
 		(*41*)sampleContainerLabel,
-        (*42*)measurementMethod
+		(*42*)measurementMethod,
+		(*43*)desiccantStorageContainer,
+		(*44*)desiccantStorageCondition,
+		(*45*)checkDesiccant
 	} = Lookup[
 		myResolvedOptions,
 		{
@@ -4518,7 +4242,6 @@ measureMeltingPointResourcePackets[
 			(*3*)NumberOfReplicates,
 			(*4*)Amount,
 			(*5*)PreparedSampleLabel,
-			(*6*)PreparedSampleContainerLabel,
 			(*7*)Grind,
 			(*8*)GrinderType,
 			(*9*)Grinder,
@@ -4547,15 +4270,24 @@ measureMeltingPointResourcePackets[
 			(*32*)EndTemperature,
 			(*33*)TemperatureRampRate,
 			(*34*)RampTime,
-			(*35*)RecoupSample,
-			(*36*)PreparedSampleContainer,
 			(*37*)PreparedSampleStorageCondition,
 			(*38*)CapillaryStorageCondition,
 			(*40*)SampleLabel,
 			(*41*)SampleContainerLabel,
-            (*42*)MeasurementMethod
+			(*42*)MeasurementMethod,
+			(*43*)DesiccantStorageContainer,
+			(*44*)DesiccantStorageCondition,
+			(*45*)CheckDesiccant
 		}
 	];
+
+	(* instrument models *)
+	allMeltingPointInstrumentModels = DeleteDuplicates@Lookup[
+		Cases[fastAssoc, ObjectP[Model[Instrument, MeltingPointApparatus]]], Object
+	];
+
+	defaultMeltingPointInstrumentModel = First[allMeltingPointInstrumentModels];
+
 
 	(*capillary model*)
 	meltingPointCapillaries = DeleteDuplicates@Lookup[
@@ -4579,13 +4311,24 @@ measureMeltingPointResourcePackets[
 		MatchQ[#1, ObjectP[Object[Container, Capillary]]], True, False
 	]&, inputSampleContainers];
 
-	(* if the sample is prepacked but Grind is set to True by the user, the sample cannot be ground. realGrindQs determines when the Grind is True and the the sample is not prepacked *)
+	(* samples in capillaries are not ground or desiccated. realGrindQs and realDesiccateQs indicate samples that are Grind/Desiccate -> True, and are not prepacked in capillaries *)
+	realDesiccateQs = MapThread[And, {desiccateQs, Not /@ prepackedQ}];
 	realGrindQs = MapThread[And, {grindQs, Not /@ prepackedQ}];
 
 	(* --- Make all the resources needed in the experiment --- *)
 	(*Update amount value to quantity if it is resolved to All*)
+	(* if amount is set to All and Mass is not informed, use 1 Gram *)
 	numericAmount = MapThread[If[
-		MatchQ[#1, All], fastAssocLookup[fastAssoc, #2, Mass], #1
+		MatchQ[#1, All | Null],
+		fastAssocLookup[fastAssoc, #2, Mass],
+		#1
+	]&, {amount, ToList[mySamples]}];
+
+	(* the samples that SamplesMustBeMoved warning should be skipped (the ones that Amount is not All) *)
+	samplesToSkip = MapThread[If[
+		MatchQ[#1, Except[All | Null]],
+		#2,
+		Nothing
 	]&, {amount, ToList[mySamples]}];
 
 	(*SampleIn Resources: if the sample is prepacked, its container (capillary tube) is used for resources. If the sample is not prepacked, it is treated normally*)
@@ -4604,8 +4347,18 @@ measureMeltingPointResourcePackets[
 	];
 
 	(*Desiccator resource*)
-	desiccatorResources = If[MatchQ[desiccator, Null], Null,
+	desiccatorResources = If[MemberQ[{desiccator, desiccationTime}, Null], Null,
 		Link[Resource[Instrument -> desiccator, Time -> desiccationTime, Name -> desiccator /. instrumentTag]]
+	];
+
+	(* GrindingProfile is in the form of {{GrindingRate, GrindingTime}|{GrindingTime}..}, The former indicates a grinding step and the latter indicates a cooling step. The grinding profile should be expanded to the form of {{Grinding|Cooling, GrindingRate, GrindingTime}..} *)
+	grindingProfile = Map[
+		If[MatchQ[#, {TimeP}],
+			ReleaseHold[Prepend[#, Hold[Sequence@@{Cooling, 0 RPM}]]],
+			Prepend[#, Grinding]
+	]&,
+		rawGrindingProfile,
+		{2}
 	];
 
 	(*Calculate the time required for grinding from GrindingProfile. If GrindingProfile is Null, it is replaced by {{0,0,-5Minute}} to prevent error. -5Minute corrects for the 5 minute additional time for samples that need grinding*)
@@ -4634,7 +4387,7 @@ measureMeltingPointResourcePackets[
 
 	(* make Instrument (melting point apparatus) resources *)
 	instrumentResources = Link[Resource[
-		Instrument -> instrument, Time -> totalInstrumentTime, Name -> CreateUniqueLabel["Melting Point Apparatus"]
+		Instrument -> instrument /. Automatic -> defaultMeltingPointInstrumentModel, Time -> totalInstrumentTime, Name -> CreateUniqueLabel["Melting Point Apparatus"]
 	]];
 
 	(* --- Resources for Desiccate --- *)
@@ -4643,14 +4396,34 @@ measureMeltingPointResourcePackets[
 		Link[Resource[
 			Sample -> desiccant,
 			Container -> Model[Container, Vessel, "id:4pO6dMOxdbJM"], (* Pyrex Crystallization Dish *)
-			Amount -> desiccantAmount, RentContainer -> True]]
+			Amount -> desiccantAmount,
+			ExactAmount -> True,
+			(* 10% Tolerance (or 0.01 Gram/Milliliter, whichever is greater): The mass/volume that the desiccant is allowed to deviate from the requested Amount when fulfilling the sample, because ExactAmount is True. Desiccant can rarely be a liquid, like concentrated Sulfuric acid *)
+			Tolerance -> Max[0.1 * desiccantAmount, If[VolumeQ[desiccantAmount], 0.01 Milliliter, 0.01 Gram]],
+			RentContainer -> True,
+			AutomaticDisposal -> False
+		]]
+	];
+
+	(* DesiccantStorageContainer resource if not Null *)
+	desiccantStorageContainerResources = If[
+		NullQ[desiccantStorageContainer],
+		Null,
+		Link[Resource[
+			Sample -> desiccantStorageContainer,
+			Name -> CreateUniqueLabel["Desiccant Storage Container Container "]
+		]]
 	];
 
 	(* SampleContainer resource if not Null *)
 	sampleContainerResources = If[
 		NullQ[#1],
 		Null,
-		Link[Resource[Sample -> #, Name -> CreateUniqueLabel["Sample Container "]]]]& /@ sampleContainer;
+		Link[Resource[
+			Sample -> #,
+			Name -> CreateUniqueLabel["Sample Container "]
+		]]
+	]& /@ sampleContainer;
 
 	(* --- Resources for Grind --- *)
 	(*GrindingContainer Resources*)
@@ -4707,13 +4480,6 @@ measureMeltingPointResourcePackets[
 	(*Capillary Seal resources*)
 	capillarySealResources = Map[If[#, capillarySealResource, Null]&, sealCapillary];
 
-	(* --- Resources for PreparedSample --- *)
-	preparedSampleContainerResources = MapThread[If[TrueQ[#1] || NullQ[#2], Null,
-		Resource[Sample -> #2, Name -> #3]]&,
-		{prepackedQ, preparedSampleContainer, preparedSampleContainerLabel}
-	];
-
-
 	grindingContainerModel = If[
 		MatchQ[#, ObjectP[Object]],
 		fastAssocLookup[fastAssoc, #, Model],
@@ -4721,180 +4487,298 @@ measureMeltingPointResourcePackets[
 	]& /@ grindingContainer;
 
 	instrumentModel = If[
-		MatchQ[#, ObjectP[Object]],
-		fastAssocLookup[fastAssoc, #, Model],
-		#
-	]& /@ instruments;
-
-	(*Change PreparedSampleStorageCondition to Model's default if it is resolved to Null*)
-	sampleModels = Download[fastAssocLookup[fastAssoc, #, Model], Object]& /@ ToList[mySamples];
-
-	updatedPreparedSampleStorageCondition = MapThread[
-		If[NullQ[#1] && !TrueQ[2] && (TrueQ[3] || TrueQ[4]), Download[fastAssocLookup[fastAssoc, #5, DefaultStorageCondition], Object], #1]&,
-		{preparedSampleStorageCondition, prepackedQ, realGrindQs, desiccateQs, sampleModels}
+		MatchQ[instrument, ObjectP[Object]],
+		fastAssocLookup[fastAssoc, instrument, Model],
+		instrument
 	];
 
-	(*Change CapillaryStorageCondition to Model's default if it is resolved to Null*)
-	updatedCapillaryStorageCondition = MapThread[
-		Which[
-			NullQ[#1], Link@Download[fastAssocLookup[fastAssoc, #2, DefaultStorageCondition], Object],
-			MatchQ[#1, ObjectP[Model[StorageCondition]]], Link@#1,
-			True, #1]&,
-		{capillaryStorageCondition, sampleModels}
-	];
+	(*-----------------------------------------------*)
+	(*-----------------------------------------------*)
+	(*-------Sample Preparation UnitOperations-------*)
+	(*-----------------------------------------------*)
+	(*-----------------------------------------------*)
 
-	(****This block is a sample preparation step for samples are set to be ground and/or desiccated. This is a three-step process. In the first step the samples that are {Grind->True and Desiccate->False} are ground with samples that are {Grind&Desiccate->True and OrderOfOperations->{Grind,Desiccate}}. the second step is a desiccation step for all samples that should be desiccated. The third step is another Grind step for samples that are {Grind&Desiccate->True and OrderOfOperations->{Desiccate,Grind}}****)
+	(* samples may need to be desiccated or ground before being used for measuring melting point *)
+	(* the following code block determines the samples that should be desiccated or ground, as well as the operation order *)
+	(*
+		These are all possible cases for Grind and Desiccate steps:
+	 	1. No desiccate, No Grind
+	 	2. Only Desiccate
+	 	3. Only Grind
+	 	4. First Desiccate, Then Grind
+	 	5. First Grind some sample, Then Desiccate all samples, Then Grind some other samples
 
-	(*Preparation steps: Grind and Desiccate before packing the sample into melting point capillary*)
-	(*A list of booleans to determine which samples should be ground first (before desiccate) *)
-	grindFirstQ = MapThread[TrueQ[#1] && (MatchQ[#3, ({Grind, _} | Null)] || !TrueQ[#2])&, {realGrindQs, desiccateQs, orderOfOperations}];
+	 	depending on the containers that the samples are in and containers that are specified for desiccation and grinding, Transfer UOs may be used as well.
 
-	(*A list of booleans to determine which samples should be ground second (after desiccate) *)
-	grindSecondQ = MapThread[!TrueQ[#1] && TrueQ[#2] && MatchQ[#3, ({_, Grind} | Null)]&, {grindFirstQ, realGrindQs, orderOfOperations}];
+	 *)
 
-	(*Samples that should be ground first*)
-	grindFirstSamples = PickList[ToList[mySamples], grindFirstQ];
-	grindSampleOutLabels = ToString[#, InputForm]& /@ grindFirstSamples;
-	grindSampleToLabelRules = AssociationThread[grindFirstSamples, grindSampleOutLabels];
+	(* input samples that are not already prepacked into a capillary *)
+	notPrepackedInputSamples = PickList[ToList[mySamples], prepackedQ, False];
 
-	(*Samples that should be desiccated*)
-	desiccateSamples = PickList[ToList[mySamples], desiccateQs];
-	desiccateSampleOutLabels = Map[
-		If[StringQ[# /. grindSampleToLabelRules],
-			Automatic,
-			"SampleOut " <> StringDrop[Download[#, ID], 3]
-		]&,
-		desiccateSamples
-	];
+	(* input container models *)
+	simulatedSampleContainerModels = Download[fastAssocLookup[fastAssoc, simulatedSampleContainers, Model], Object];
 
-	desiccateSampleToLabelRules = AssociationThread[desiccateSamples, desiccateSampleOutLabels];
 
-	(*Samples that should be ground second*)
-	grindSecondSamples = PickList[ToList[mySamples], grindSecondQ];
+	(**********************************************)
+	(**** variables related to the first grind ****)
+	(**********************************************)
+
+	(* A list of booleans to determine which samples should be ground first (before desiccate) *)
+	(* grind1Qs is True only for samples that are not prepacked. If the sample is prepacked but Grind is set to True, an error will be thrown and grind1Qs still will be False *)
+	grind1Qs = MapThread[TrueQ[#1] && (!TrueQ[#2] || MatchQ[#3, ({Grind, _} | Null)])&, {realGrindQs, realDesiccateQs, orderOfOperations}];
+
+	(* not-prepacked samples that should be ground first *)
+	grind1Samples = PickList[ToList[mySamples], grind1Qs];
+	numberOfGrind1Samples = Length[grind1Samples];
 
 	(*option names that are use in this experiment for Grind*)
-	grindOptionKeys = {
+	grindOptionNames = {
 		Amount, BulkDensity, CoolingTime, Fineness, GrinderType, GrindingBead,
 		GrindingContainer, GrindingProfile, GrindingRate, Grinder,
 		NumberOfGrindingBeads, NumberOfGrindingSteps, SampleLabel, GrindingTime};
 
 	(*Values of Grind options*)
-	grindOptions = Lookup[Join[myResolvedOptions, myUnresolvedOptions], grindOptionKeys];
+	grindOptions = Lookup[Join[myResolvedOptions, myUnresolvedOptions], grindOptionNames];
 
 	(*grind option values for samples that should be ground first (before desiccate). In MM12, Transpose[{}] = error, so {} should be replaced with {{}, {}} *)
-	grindFirstOptions = Transpose[PickList[Transpose[grindOptions], grindFirstQ] /. {} -> {{}, {}}];
+	grind1Options = Transpose[PickList[Transpose[grindOptions], grind1Qs] /. {} -> {{}, {}}];
 
 	(*grind option rules for samples that should be ground first (before desiccate). In MM12, Transpose[{}] = error, so {} should be replaced with {{}, {}} *)
-	grindFirstOptionRules = If[NullQ[grindFirstOptions /. {{} -> Null}], Null,
-		MapThread[Rule, {grindOptionKeys /. {Grinder -> Instrument, GrindingTime -> Time}, grindFirstOptions /. {} -> {{}, {}}}]
+	grind1OptionRules = If[NullQ[grind1Options /. {{} -> Null}], Null,
+		MapThread[Rule, {grindOptionNames /. {Grinder -> Instrument, GrindingTime -> Time}, grind1Options /. {} -> {{}, {}}}]
 	];
+
+	(****************************************)
+	(**** variables related to desiccate ****)
+	(****************************************)
+
+	(*Samples that should be desiccated*)
+	desiccateSamples = PickList[ToList[mySamples], realDesiccateQs];
+	numberOfDesiccateSamples = Length[desiccateSamples];
+
+	(***********************************************)
+	(**** variables related to the second grind ****)
+	(***********************************************)
+
+	(* grind2Qs is True only for samples that are not prepacked. If the sample is prepacked but Grind is set to True, an error will be thrown and grind2Qs still will be False *)
+	grind2Qs = MapThread[TrueQ[#1] && TrueQ[#2] && MatchQ[#3, ({_, Grind} | Null)]&, {realGrindQs, realDesiccateQs, orderOfOperations}];
+
+	(*Samples that should be ground second*)
+	grind2Samples = PickList[ToList[mySamples], grind2Qs];
+	numberOfGrind2Samples = Length[grind2Samples];
 
 	(*grind options for samples that should be ground second (after desiccate). In MM12, Transpose[{}] = error, so {} should be replaced with {{}, {}}  *)
-	grindSecondOptions = Transpose[PickList[Transpose[grindOptions], grindSecondQ] /. {} -> {{}, {}}];
+	grind2Options = Transpose[PickList[Transpose[grindOptions], grind2Qs] /. {} -> {{}, {}}];
 
 	(*grind option rules for samples that should be ground second (after desiccate), In MM12, Transpose[{}] = error, so {} should be replaced with {{}, {}} *)
-	grindSecondOptionRules = If[NullQ[grindSecondOptions /. {{} -> Null}], Null,
-		MapThread[Rule, {grindOptionKeys /. {Grinder -> Instrument, GrindingTime -> Time}, grindSecondOptions /. {} -> {{}, {}}}]
+	grind2OptionRules = If[NullQ[grind2Options /. {{} -> Null}], Null,
+		MapThread[Rule, {grindOptionNames /. {Grinder -> Instrument, GrindingTime -> Time}, grind2Options /. {} -> {{}, {}}}]
 	];
 
-	(*Non-indexmatching option names that are use in this experiment for Desiccate*)
-	nonIndexMatchedDesiccateOptionKeys = {Desiccant, DesiccantAmount, DesiccantPhase, Desiccator, DesiccationTime};
 
-	(*Indexmatching option names that are use in this experiment for Desiccate*)
-	indexMatchedDesiccateOptionKeys = {Amount, SampleContainer, SampleContainerLabel, SampleLabel};
+	(***************************)
+	(**** Desiccate Options ****)
+	(***************************)
 
-	(*Values of Non-indexmatching Desiccate options*)
-	nonIndexMatchedDesiccateOptions = Lookup[Join[myResolvedOptions, myUnresolvedOptions], nonIndexMatchedDesiccateOptionKeys];
+	(*Non-index matching option names that are use in this experiment for Desiccate*)
+	nonIndexMatchedDesiccateOptionNames = {Desiccant, CheckDesiccant, DesiccantAmount, DesiccantPhase, Desiccator, DesiccationTime, DesiccantStorageCondition, DesiccantStorageContainer, DesiccationMethod};
+
+	(*Index matching option names that are use in this experiment for Desiccate*)
+	indexMatchedDesiccateOptionNames = {Amount, SampleContainer, SampleContainerLabel, SampleLabel};
+
+	(*Values of Non-index matching Desiccate options*)
+	nonIndexMatchedDesiccateOptions = Lookup[Join[myResolvedOptions, myUnresolvedOptions], nonIndexMatchedDesiccateOptionNames];
 
 	(*NonIndexMatched desiccate option rules for samples that should be desiccated *)
-	desiccateFirstNonIndexMatchedOptionRules = If[NullQ[nonIndexMatchedDesiccateOptions /. {{} -> Null}], Null,
-		MapThread[Rule, {nonIndexMatchedDesiccateOptionKeys /. {DesiccationTime -> Time}, nonIndexMatchedDesiccateOptions}]
+	desiccateNonIndexMatchedOptionRules = If[NullQ[nonIndexMatchedDesiccateOptions /. {{} -> Null}], Null,
+		MapThread[Rule, {nonIndexMatchedDesiccateOptionNames /. {DesiccationTime -> Time, DesiccationMethod -> Method}, nonIndexMatchedDesiccateOptions}]
 	];
 
-	(*Values of indexmatching Desiccate options*)
-	indexMatchedDesiccateOptions = Lookup[Join[myResolvedOptions, myUnresolvedOptions], indexMatchedDesiccateOptionKeys];
+	(*Values of index matching Desiccate options*)
+	indexMatchedDesiccateOptions = Lookup[Join[myResolvedOptions, myUnresolvedOptions], indexMatchedDesiccateOptionNames];
 
-	(*Values of indexmatching Desiccate options for samples that should be desiccated. In MM12, Transpose[{}] = error, so {} should be replaced with {{}, {}} *)
-	desiccateFirstIndexMatchedOptions = Transpose[PickList[Transpose[indexMatchedDesiccateOptions], desiccateQs] /. {} -> {{}, {}}];
+	(*Values of index matching Desiccate options for samples that should be desiccated. In MM12, Transpose[{}] = error, so {} should be replaced with {{}, {}} *)
+	desiccateIndexMatchedOptions = Transpose[PickList[Transpose[indexMatchedDesiccateOptions], realDesiccateQs] /. {} -> {{}, {}}];
 
 	(*IndexMatched desiccate option rules for samples that should be desiccated *)
-	desiccateFirstIndexMatchedOptionRules = If[NullQ[desiccateFirstIndexMatchedOptions /. {{} -> Null}], Null,
-		MapThread[Rule, {indexMatchedDesiccateOptionKeys, desiccateFirstIndexMatchedOptions}]
+	desiccateIndexMatchedOptionRules = If[NullQ[desiccateIndexMatchedOptions /. {{} -> Null}], {},
+		MapThread[Rule, {indexMatchedDesiccateOptionNames, desiccateIndexMatchedOptions}]
 	];
 
-	preparationUnitOperations = Which[
-		!MemberQ[realGrindQs, True] && !MemberQ[desiccateQs, True], Null,
 
-		!MemberQ[realGrindQs, True] && MemberQ[desiccateQs, True],
-		{
-			Desiccate[
-				Sample -> desiccateSamples /. grindSampleToLabelRules,
-				Sequence @@ desiccateFirstNonIndexMatchedOptionRules,
-				Sequence @@ desiccateFirstIndexMatchedOptionRules
-			]
-		},
+	(*******************************************)
+	(**** Explicit Transfer Unit Operations ****)
+	(*******************************************)
 
-		MemberQ[realGrindQs, True] && !MemberQ[desiccateQs, True],
-		{
-			Grind[
-				Sample -> grindFirstSamples,
-				Sequence @@ grindFirstOptionRules
-			]
-		},
+	(* Grind and Desiccate rely on implicit Transfer triggered by Resource Generation when needed; however, when Grind or Desiccate are created as subprotocols inside a protocol by UOs, Resource Generation does not create the necessary Transfer protocols, therefore, an explicit generation of Transfer protocols is needed when for transferring SamplesIn into GrindingContainer or SampleContainer when needed. *)
 
-		NullQ[grindSecondOptionRules],
-		{
-			Grind[
-				Sample -> grindFirstSamples,
-				SampleOutLabel -> grindSampleOutLabels,
-				Sequence @@ Normal@KeyDrop[grindFirstOptionRules, SampleOutLabel]
-			],
-			Desiccate[
-				Sample -> desiccateSamples /. grindSampleToLabelRules,
-				SampleOutLabel -> desiccateSampleOutLabels,
-				Sequence @@ Normal@KeyDrop[desiccateFirstNonIndexMatchedOptionRules, SampleOutLabel],
-				Sequence @@ desiccateFirstIndexMatchedOptionRules
-			]
-		},
-
-		NullQ[grindFirstOptionRules],
-		{
-			Desiccate[
-				Sample -> desiccateSamples /. grindSampleToLabelRules,
-				SampleOutLabel -> desiccateSampleOutLabels,
-				Sequence @@ Normal@KeyDrop[desiccateFirstNonIndexMatchedOptionRules, SampleOutLabel],
-				Sequence @@ desiccateFirstIndexMatchedOptionRules
-			],
-			Grind[
-				(*Sample->grindSecondSamples/.desiccateSampleToLabelRules,*)
-				Sequence @@ grindSecondOptionRules
-			]
-		},
-
-		True,
-		{
-			Grind[
-				Sample -> grindFirstSamples,
-				SampleOutLabel -> grindSampleOutLabels,
-				Sequence @@ Normal@KeyDrop[grindFirstOptionRules, SampleOutLabel]
-			],
-			Desiccate[
-				Sample -> desiccateSamples /. grindSampleToLabelRules,
-				SampleOutLabel -> desiccateSampleOutLabels,
-				Sequence @@ Normal@KeyDrop[desiccateFirstNonIndexMatchedOptionRules, SampleOutLabel],
-				Sequence @@ desiccateFirstIndexMatchedOptionRules
-			],
-			Grind[
-				Sample -> grindSecondSamples /. desiccateSampleToLabelRules,
-				Sequence @@ grindSecondOptionRules
-			]
-		}
+	(* Transfers needed for SamplesIn for first Grind *)
+	transfer1Qs = MapThread[
+		If[
+			(*
+				no need to do Transfer1 for a sample if:
+			 	1. the sample is not going through the first grind experiment
+			 	2. the grinding container that is going to be used in the first grind experiment is the same as the sample's current container or its model and amount is All
+			*)
+			!TrueQ[#1] || (MatchQ[#2, ObjectP[{#3, #4}]] && MatchQ[#5, All]),
+			False,
+			True
+		]&,
+		{grind1Qs, grindingContainer, simulatedSampleContainers, simulatedSampleContainerModels, amount}
 	];
-	(****End of Sample Preparation Step****)
+
+	(* Transfers needed for SamplesIn that are going to be desiccated *)
+	transfer2Qs = MapThread[
+		Function[{grind1Q, desiccateQ, desiccateSampleContainer, sampleInContainer, SampleInContainerModels, sampleAmount},
+			If[
+				Or[
+					(* if the sample is not desiccated, no need to transfer *)
+					!TrueQ[desiccateQ],
+					(* if the sample is first ground then desiccated, DesiccantContainer option will be determined in Grind UO using ContainerOut, so no need to transfer here *)
+					TrueQ[grind1Q] && TrueQ[desiccateQ],
+					(* if the SampleContainer is Null, no need to transfer. the sample will be desiccated in its current container *)
+					NullQ[desiccateSampleContainer],
+					(* if the specified SampleContainer matches the current SamplesIn container or its model and amount is All no need to transfer *)
+					MatchQ[sampleInContainer, ObjectP[{SampleInContainerModels, desiccateSampleContainer}]] && MatchQ[sampleAmount, All]
+				],
+				False,
+				True
+			]
+		],
+		{grind1Qs, realDesiccateQs, sampleContainer, simulatedSampleContainers, simulatedSampleContainerModels, amount}
+	];
+
+	(* Transfers needed for SamplesIn for second Grind. *)
+	transfer3Qs = MapThread[
+		Function[{desiccateQ, grind2Q, grind2SampleInContainer, grindSampleInContainerModels, grindSampleContainer},
+			If[
+				Or[
+					(* if the sample is not ground after desiccation, no need to transfer *)
+					!TrueQ[grind2Q],
+					(* if the sample was desiccated and it is going to be ground, GrindingContainer will be determined in Desiccate UO, so transfer2Qs is False if the sample is desiccated then ground *)
+					TrueQ[desiccateQ] && TrueQ[grind2Q],
+					(* if the specified GrindingContainer matches the current SamplesIn container or its model, no need to transfer *)
+					MatchQ[grind2SampleInContainer, ObjectP[{grindSampleInContainerModels, grindSampleContainer}]]
+				],
+				False,
+				True
+			]
+		],
+		{realDesiccateQs, grind2Qs, sampleContainer, simulatedSampleContainers, simulatedSampleContainerModels}
+	];
+
+	(* labels for SamplesIn for different processes for tracking purposes *)
+	(*
+	 	there are a maximum of 6 processes that need labels for samples:
+	 	Transfer 1,	Grind 1, Transfer 2, Desiccate, Transfer 3, Grind 2
+	 	By determining the process number, a suitable pre-determined label is used for SamplesIn and SamplesOut in UOs
+	 *)
+	(* format: {{sample1 -> "label1 1", sample1 -> "label1 2", ..., sample1 -> "label1 6"}, ...} *)
+	samplesInLabels = Join[{# -> #}, Table[# -> CreateUniqueLabel[ToString[#]], 6]] & /@ ToList[mySamples];
+
+	(* the processes that each sample goes through. A list of Booleans for each sample *)
+	processesQ = Transpose @ {transfer1Qs, grind1Qs, transfer2Qs, realDesiccateQs, transfer3Qs, grind2Qs};
+
+	(* this function finds the correct sample labels for each primitive *)
+	labelFinder[processNumber_Integer] := Module[{actualPositions, lastProcessNumbers},
+
+		(* the number of the processes that the sample was used in. For example, if transfer1, grind1, and transfer2 are done but sample1 was transferred at Transfer1 and ground at Grind1 but did not participate in Transfer2, the actual position for sample1 would be {{1},{2} *)
+		(* any sample not participated at any processes has an actualPosition of {{0}} *)
+		actualPositions = (Position[#, True] /. {{} -> {{0}}}) & /@ (processesQ[[All, 1 ;; processNumber]]);
+
+		(* the number of the last process that each sample was used in *)
+		lastProcessNumbers = Max /@ (Sequence @@ Flatten[actualPositions, {3}]);
+
+		(* the rule that should be used to replace the input sample object with a label *)
+		MapThread[#1[[#2 + 1]] &, {samplesInLabels, lastProcessNumbers}]
+	];
+
+	(********************************************)
+	(**** sample preparation unit operations ****)
+	(********************************************)
+	rawPreparationUnitOperations = {
+		If[
+			!MemberQ[transfer1Qs, True],
+			Nothing,
+			Transfer[
+				Source -> PickList[ToList[mySamples], transfer1Qs],
+				Destination -> PickList[grindingContainer, transfer1Qs],
+				Amount -> PickList[numericAmount, transfer1Qs],
+				DestinationLabel -> PickList[ToList[mySamples], transfer1Qs] /. samplesInLabels[[All, 2]]
+			]
+		],
+		If[
+			!MemberQ[grind1Qs, True],
+			Nothing,
+			Grind[
+				Sample -> PickList[ToList[mySamples], grind1Qs] /. labelFinder[1],
+				SampleOutLabel -> PickList[ToList[mySamples], grind1Qs] /. samplesInLabels[[All, 3]],
+				Sequence @@ Normal@KeyDrop[grind1OptionRules, {SampleOutLabel, SampleLabel}],
+				ContainerOut -> MapThread[Which[
+					!TrueQ[#1], Nothing,
+					TrueQ[#2], #3,
+					True, Automatic
+				]&, {grind1Qs, realDesiccateQs, sampleContainer}]
+			]
+		],
+		If[
+			!MemberQ[transfer2Qs, True],
+			Nothing,
+			Transfer[
+				Source -> PickList[ToList[mySamples], transfer2Qs] /. labelFinder[2],
+				Destination -> PickList[sampleContainer, transfer2Qs],
+				Amount -> PickList[numericAmount, transfer2Qs],
+				DestinationLabel -> PickList[ToList[mySamples], transfer2Qs] /. samplesInLabels[[All, 4]]
+			]
+		],
+		If[
+			!MemberQ[realDesiccateQs, True],
+			Nothing,
+			Desiccate[
+				Sample -> PickList[ToList[mySamples], realDesiccateQs] /. labelFinder[3],
+				SampleOutLabel -> PickList[ToList[mySamples], realDesiccateQs] /. samplesInLabels[[All, 5]],
+				Sequence @@ Normal@KeyDrop[desiccateNonIndexMatchedOptionRules, SampleOutLabel],
+				(* Since samples have already been moved if needed in the previous step, we don't need to include SampleContainer and Amount here. Otherwise, ExperimentDesiccate might trigger an additional transfer round. *)
+				Sequence @@ Normal@KeyDrop[desiccateIndexMatchedOptionRules, {SampleLabel, SampleContainer, Amount}],
+				ContainerOut -> MapThread[Which[
+					!TrueQ[#1], Nothing,
+					TrueQ[#2], #3,
+					True, Null
+				]&, {realDesiccateQs, grind2Qs, grindingContainer}]
+			]
+		],
+		If[
+			!MemberQ[transfer3Qs, True],
+			Nothing,
+			Transfer[
+				Source -> PickList[ToList[mySamples], transfer3Qs] /. labelFinder[4],
+				Destination -> PickList[grindingContainer, transfer3Qs],
+				Amount -> PickList[numericAmount, transfer3Qs],
+				DestinationLabel -> PickList[ToList[mySamples], transfer3Qs] /. samplesInLabels[[All, 6]]
+			]
+		],
+		If[
+			!MemberQ[grind2Qs, True],
+			Nothing,
+			Grind[
+				Sample -> PickList[ToList[mySamples], grind2Qs] /. labelFinder[5],
+				Sequence @@ Normal@KeyDrop[grind2OptionRules, {SampleOutLabel, SampleLabel}]
+			]
+		]
+	};
+
+	(* change the format of GrindingProfile to match GrindingProfile option pattern  *)
+	preparationUnitOperations = rawPreparationUnitOperations /. {
+		({Grinding, rate : RPMP | FrequencyP, time : TimeP} :> {rate, time}),
+		({Cooling, rate_, time : TimeP} :> {time})
+	};
+
+	(*------------------------------------------------------*)
+	(*-------End of Sample Preparation UnitOperations-------*)
+	(*------------------------------------------------------*)
 
 	(* group relevant options into batches *)
 	(* NOTE THAT I HAVE TO REPLICATE THIS CODE TO SOME DEGREE IN grindPopulateWorkingSamples SO IF THE LOGIC CHANGES HERE CHANGE IT THERE TOO*)
-	(* note that we don't actually have to do any grouping if we're doing robotic, then we just want a list so we are just grouping by the preparation *)
 	groupedOptions = Experiment`Private`groupByKey[
 		{
 			(*General*)
@@ -4903,11 +4787,10 @@ measureMeltingPointResourcePackets[
 			OrderOfOperations -> orderOfOperations,
 			ExpectedMeltingPoint -> expectedMeltingPoint,
 			NumberOfReplicates -> numberOfReplicates,
-			Amount -> amount,
+			Amount -> numericAmount,
 			SampleLabel -> sampleLabel,
 			SampleContainerLabel -> sampleContainerLabel,
 			PreparedSampleLabel -> preparedSampleLabel,
-			PreparedSampleContainerLabel -> preparedSampleContainerLabel,
 
 			(*Grind*)
 			Grind -> grindQs,
@@ -4941,34 +4824,63 @@ measureMeltingPointResourcePackets[
 			TemperatureRampRate -> temperatureRampRate,
 			RampTime -> rampTime,
 			(*Storage*)
-			RecoupSample -> recoupSample,
-			PreparedSampleContainer -> preparedSampleContainerResources,
-			PreparedSampleStorageCondition -> updatedPreparedSampleStorageCondition,
-			CapillaryStorageCondition -> updatedCapillaryStorageCondition
+			PreparedSampleStorageCondition -> preparedSampleStorageCondition,
+			CapillaryStorageCondition -> capillaryStorageCondition
 		},
 		{NumberOfReplicates, StartTemperature, EquilibrationTime, EndTemperature, TemperatureRampRate, RampTime, Prepacked}
 	];
 
-	(*The meltingPointApparatus can only measure three capillaries at the same time. so if the NumberOfReplicates is 3 or 2, no need to group the samples (beyond groupByKey). if NumberOfReplicates is Null or 1, group the samples further in groups of three. This way, there will be one UnitOperation consisting all samples that have 2 or 3 capillaries and other UnitOperation's that have 3 samples in them (each containing up to 3 capillaries*)
-	sampleGrouper[groupedOption : {_Rule..}] := Module[
-		{grouperFunction, expandedOptions, mapFriendlyOptions,
-			partitionedOptions, collapsedOptions, mergedOptions},
+	(* The melting point instruments can measure three (MP80) or six (MP90) capillaries at the same time. so we need to create BatchedUnitOperations based on NumberOfReplicates. However, the sample preparation procedure in MeasureMeltingPoint procedures has the following restrictions:
+	 1. If NumberOfReplicates > 1, there should be only one SamplesIn in the BatchedUnitOperations
+	 2. If NumberOfReplicates = 1, there can be multiple SamplesIn in the BatchedUnitOperations (so there is a 1:1 ratio between the SamplesIn and WorkingCapillaries so it can easily loop over both of them.)
+	 *)
+	numberOfCapillarySlots = fastAssocLookup[fastAssoc, instrumentModel, NumberOfMeltingPointCapillarySlots];
 
-		grouperFunction = Function[{groupMe, number},
-			expandedOptions = Thread /@ groupMe;
-			mapFriendlyOptions = Transpose@expandedOptions;
-			partitionedOptions = Partition[mapFriendlyOptions, UpTo[number]];
-			collapsedOptions = Map[Transpose, partitionedOptions];
-			mergedOptions = Sequence @@ Normal[Map[Merge[#, Join]&, collapsedOptions]]
+	BatchSamplesByReplicates[groupedOption : {_Rule..}] := Module[
+		{
+			expandedOptions, mapFriendlyOptions, numberOfSamplesInEachBatch,
+			partitionedOptions, collapsedOptions, mergedOptions
+		},
+
+		(* if NumberOfReplicates (which is similar to NumberOfCapillaries) is greater than one, put one SampleIn in each batch, otherwise, put as much as numberOfCapillarySlots of the instrument *)
+		numberOfSamplesInEachBatch = If[
+			(First@Lookup[groupedOption, NumberOfCapillaries] /. Null :> 1) > 1,
+			1,
+			numberOfCapillarySlots
 		];
 
-		If[First@Lookup[groupedOption, NumberOfCapillaries] > 1,
-			grouperFunction[groupedOption, 1],
-			grouperFunction[groupedOption, 3]]
+		(* create 1:1 option->value lists:
+			input: {option1 -> {value1, value2, value3}, option2 -> {value4, value5, value6}
+			output: {
+				{option1 -> value1, option1 -> value2, option1 -> value3},
+				{option2 -> value4, option2 -> value5, option2 -> value6}
+			}
+		*)
+		expandedOptions = Thread /@ groupedOption;
+
+		(* create a list of map friendly options *)
+		mapFriendlyOptions = Transpose@expandedOptions;
+
+		(* group options up to numberOfCapillarySlots *)
+		partitionedOptions = Partition[mapFriendlyOptions, UpTo[numberOfSamplesInEachBatch]];
+
+		(* collapse options *)
+		collapsedOptions = Map[Transpose, partitionedOptions];
+
+		(* merge all in one list *)
+		mergedOptions = Sequence @@ Normal[Map[Merge[#, Join]&, collapsedOptions]]
+
 	];
 
 	(*group samples in three*)
-	sampleGroupedOptions = Map[sampleGrouper, groupedOptions[[All, 2]]];
+	sampleGroupedOptions = Map[BatchSamplesByReplicates, groupedOptions[[All, 2]]];
+
+	(* Check point time calculations *)
+	samplePrepTime = (2 Hour + Total[mergedGrinderTimes] + desiccationTime /. Null -> 0);
+	experimentTime = (1 Hour + totalInstrumentTime);
+	postProcessingTime = 2 Hour;
+	storageTime = 2 Hour;
+
 
 	(* Preparing protocol and unitOperationObject packets *)
 	(* Preparing unitOperationObject *)
@@ -4985,7 +4897,7 @@ measureMeltingPointResourcePackets[
 						{
 							(*General*)
 							Sample -> Lookup[options, Sample],
-                            MeasurementMethod -> measurementMethod,
+							MeasurementMethod -> measurementMethod,
 							OrderOfOperations -> Lookup[options, OrderOfOperations],
 							ExpectedMeltingPoint -> Lookup[options, ExpectedMeltingPoint],
 
@@ -4998,7 +4910,6 @@ measureMeltingPointResourcePackets[
 							SampleLabel -> Lookup[options, SampleLabel],
 							SampleContainerLabel -> Lookup[options, SampleContainerLabel],
 							PreparedSampleLabel -> Lookup[options, PreparedSampleLabel],
-							PreparedSampleContainerLabel -> Lookup[options, PreparedSampleContainerLabel],
 							(*Grind*)
 							Grind -> Lookup[options, Grind],
 							GrinderType -> Lookup[options, GrinderType],
@@ -5019,8 +4930,10 @@ measureMeltingPointResourcePackets[
 							(*Desiccate single fields*)
 							DesiccationMethod -> desiccationMethod,
 							Desiccant -> desiccantResources,
+							CheckDesiccant -> checkDesiccant,
 							DesiccantPhase -> desiccantPhase,
 							DesiccantAmount -> desiccantAmount,
+							DesiccantStorageContainer -> desiccantStorageContainerResources,
 							Desiccator -> desiccatorResources,
 							DesiccationTime -> desiccationTime,
 							(*Sample preparation UO*)
@@ -5039,8 +4952,7 @@ measureMeltingPointResourcePackets[
 							TemperatureRampRate -> Lookup[options, TemperatureRampRate],
 							RampTime -> Lookup[options, RampTime],
 							(*Storage*)
-							RecoupSample -> Lookup[options, RecoupSample],
-							PreparedSampleContainer -> Lookup[options, PreparedSampleContainer],
+							DesiccantStorageCondition -> desiccantStorageCondition,
 							PreparedSampleStorageCondition -> Lookup[options, PreparedSampleStorageCondition],
 							CapillaryStorageCondition -> Lookup[options, CapillaryStorageCondition]
 						}
@@ -5059,19 +4971,19 @@ measureMeltingPointResourcePackets[
 		<|
 			Object -> CreateID[Object[Protocol, MeasureMeltingPoint]],
 			Type -> Object[Protocol, MeasureMeltingPoint],
-			Replace[SamplesIn] -> samplesInResources,
+			Replace[SamplesIn] -> Map[Link[#, Protocols]&, samplesInResources],
+			Replace[ContainersIn] -> Map[Link[#, Protocols]&, containersInResources],
 			(*General*)
 			Replace[OrdersOfOperations] -> orderOfOperations,
-            MeasurementMethod -> measurementMethod,
-            Replace[ExpectedMeltingPoints] -> expectedMeltingPoint,
+			MeasurementMethod -> measurementMethod,
+			Replace[ExpectedMeltingPoints] -> expectedMeltingPoint,
 			Replace[NumbersOfReplicates] -> numberOfReplicates,
-			Replace[Amounts] -> amount,
+			Replace[Amounts] -> numericAmount,
 			Rod -> capillaryRodResources,
 			(*Labels*)
 			Replace[SampleLabels] -> sampleLabel,
 			Replace[SampleContainerLabels] -> sampleContainerLabel,
 			Replace[PreparedSampleLabels] -> preparedSampleLabel,
-			Replace[PreparedSampleContainerLabels] -> preparedSampleContainerLabel,
 			(*Grind*)
 			Replace[Grind] -> grindQs,
 			Replace[GrinderTypes] -> grinderType,
@@ -5091,8 +5003,10 @@ measureMeltingPointResourcePackets[
 			Replace[SampleContainers] -> sampleContainerResources,
 			DesiccationMethod -> desiccationMethod,
 			Desiccant -> desiccantResources,
+			CheckDesiccant -> checkDesiccant,
 			DesiccantPhase -> desiccantPhase,
 			DesiccantAmount -> desiccantAmount,
+			DesiccantStorageContainer -> desiccantStorageContainerResources,
 			Desiccator -> desiccatorResources,
 			DesiccationTime -> desiccationTime,
 			(*Sample preparation UO*)
@@ -5112,19 +5026,22 @@ measureMeltingPointResourcePackets[
 			Replace[TemperatureRampRates] -> temperatureRampRate,
 			Replace[RampTimes] -> rampTime,
 			(*Storage*)
-			Replace[RecoupSamples] -> recoupSample,
-			Replace[PreparedSampleContainers] -> preparedSampleContainerResources,
-			Replace[PreparedSampleStorageConditions] -> Link /@ updatedPreparedSampleStorageCondition,
-			Replace[CapillaryStorageConditions] -> updatedCapillaryStorageCondition,
+			DesiccantStorageCondition -> desiccantStorageCondition /. x:ObjectP[] :> Link[x],
+			Replace[PreparedSampleStorageConditions] -> preparedSampleStorageCondition /. x:ObjectP[] :> Link[x],
+			Replace[CapillaryStorageConditions] -> capillaryStorageCondition,
+
+			(* Post-processing options *)
+			ImageSample -> Lookup[myResolvedOptions, ImageSample],
+			MeasureWeight -> Lookup[myResolvedOptions, MeasureWeight],
+			MeasureVolume -> Lookup[myResolvedOptions, MeasureVolume],
 
 			UnresolvedOptions -> myUnresolvedOptions,
 			ResolvedOptions -> myResolvedOptions,
 			Replace[Checkpoints] -> {
-				{"Picking Resources", 45Minute, "Samples required to execute this protocol are gathered from storage.", Link[Resource[Operator -> Model[User, Emerald, Operator, "Level 1"], Time -> 45Minute]]},
-				{"Preparing Samples", Total@mergedGrinderTimes + desiccationTime /. Null -> 0, "Preprocessing, such as desiccation and grinding is performed.", Link[Resource[Operator -> Model[User, Emerald, Operator, "Level 1"], Time -> (Total@mergedGrinderTimes + desiccationTime /. Null -> 0)]]},
-				{"Running Experiment", totalInstrumentTime, "The samples are being ground into smaller particles via the grinders.", Link[Resource[Operator -> Model[User, Emerald, Operator, "Level 1"], Time -> totalInstrumentTime]]},
-				{"Sample Post-Processing", 60Minute, "Any measuring of volume, weight, or sample imaging post experiment is performed.", Link[Resource[Operator -> Model[User, Emerald, Operator, "Level 1"], Time -> 60Minute]]},
-				{"Returning Materials", 45Minute, "Samples are returned to storage.", Link[Resource[Operator -> Model[User, Emerald, Operator, "Level 1"], Time -> 45Minute]]}
+				{"Resource Picking and Sample Preparation", samplePrepTime, "Samples are gathered from storage and processed.", Link[Resource[Operator -> Model[User, Emerald, Operator, "Level 1"], Time -> samplePrepTime]]},
+				{"Running Experiment", experimentTime, "Melting points of samples are measured.", Link[Resource[Operator -> Model[User, Emerald, Operator, "Level 1"], Time -> experimentTime]]},
+				{"Post-Processing", postProcessingTime, "Any volume/weight measurement or imaging of samples are performed post experiment.", Link[Resource[Operator -> Model[User, Emerald, Operator, "Level 1"], Time -> postProcessingTime]]},
+				{"Returning Materials", storageTime, "Samples are returned to storage.", Link[Resource[Operator -> Model[User, Emerald, Operator, "Level 1"], Time -> storageTime]]}
 			},
 			Replace[BatchedUnitOperations] -> (Link[#, Protocol]&) /@ ToList[Lookup[unitOperationPackets, Object]]
 		|>
@@ -5138,13 +5055,13 @@ measureMeltingPointResourcePackets[
 
 	(* get all the resource symbolic representations *)
 	(* need to pull these at infinite depth because otherwise all resources with Link wrapped around them won't be grabbed *)
-	allResourceBlobs = DeleteDuplicates[Cases[Flatten[Values[protocolPacket]], _Resource, Infinity]];
+	allResourceBlobs = DeleteDuplicates[Cases[Flatten[Values[finalizedPacket]], _Resource, Infinity]];
 
 	(* call fulfillableResourceQ on all the resources we created *)
 	{fulfillable, frqTests} = Which[
 		MatchQ[$ECLApplication, Engine], {True, {}},
-		gatherTests, Resources`Private`fulfillableResourceQ[allResourceBlobs, Output -> {Result, Tests}, FastTrack -> Lookup[myResolvedOptions, FastTrack], Simulation -> updatedSimulation, Site -> Lookup[myResolvedOptions, Site], Cache -> cache],
-		True, {Resources`Private`fulfillableResourceQ[allResourceBlobs, FastTrack -> Lookup[myResolvedOptions, FastTrack], Simulation -> updatedSimulation, Messages -> messages, Site -> Lookup[myResolvedOptions, Site], Cache -> cache], Null}
+		gatherTests, Resources`Private`fulfillableResourceQ[allResourceBlobs, Output -> {Result, Tests}, FastTrack -> Lookup[myResolvedOptions, FastTrack], Simulation -> updatedSimulation, Site -> Lookup[myResolvedOptions, Site], SkipSampleMovementWarning -> samplesToSkip,Cache -> cache],
+		True, {Resources`Private`fulfillableResourceQ[allResourceBlobs, FastTrack -> Lookup[myResolvedOptions, FastTrack], Simulation -> updatedSimulation, Messages -> messages, Site -> Lookup[myResolvedOptions, Site], SkipSampleMovementWarning -> samplesToSkip, Cache -> cache], Null}
 	];
 
 	(* --- Output --- *)
@@ -5166,7 +5083,7 @@ measureMeltingPointResourcePackets[
 	(* generate the Result output rule *)
 	(* if not returning Result, or the resources are not fulfillable, Results rule is just $Failed *)
 	resultRule = Result -> If[MemberQ[output, Result] && TrueQ[fulfillable],
-		{protocolPacket, unitOperationPackets},
+		{finalizedPacket, unitOperationPackets},
 		$Failed
 	];
 
@@ -5190,7 +5107,14 @@ simulateExperimentMeasureMeltingPoint[
 	myResolutionOptions : OptionsPattern[simulateExperimentMeasureMeltingPoint]
 ] := Module[
 	{
-		amount, cache, capillarySourceSample, capillaryNumbers, capillaryResourceNames, capillaryResources, currentSimulation, desiccateQs, fastAssoc, grindQs, inputSampleContainers, inputSampleModel, mapThreadFriendlyOptions, meltingPointCapillaries, meltingPointCapillary, newSamplePackets, numberOfReplicates, numericAmount, prepackedQ, preparedSampleContainer, preparedSampleContainerLabel, preparedSampleContainerResources, preparedSampleObject, preparedSampleLabel, protocolObject, recoupSourceSample, recoupSampleQ, sampleContainerLabel, sampleContainer, sampleContainerResources, sampleLabel, samplesInResources, sealCapillary, simulatedCapillaryDestination, simulatedCapillaryObjects, simulatedNewSamples, simulatedPreparedSampleContainer, simulatedPreparedSampleDestination, simulatedSampleContainer, simulation, simulationWithLabels, sourceSamplePackets, uploadSampleTransferPackets
+		amount, cache, capillarySourceSample, capillaryNumbers, capillaryResourceNames, capillaryResources, currentSimulation,
+		desiccateQs, fastAssoc, grindQs, inputSampleContainers, inputSampleModel, mapThreadFriendlyOptions, meltingPointCapillaries,
+		meltingPointCapillary, newSamplePackets, numberOfReplicates, numericAmount, prepackedQ, preparedSampleObject, preparedSampleLabel,
+		protocolObject, sampleContainerLabel, sampleContainer, sampleContainerResources, sampleLabel, samplesInResources,
+		sealCapillary, simulatedCapillaryDestination, simulatedCapillaryObjects, simulatedNewSamples, simulatedPreparedSampleDestination,
+		simulatedSampleContainer, simulation, simulationWithLabels, sourceSamplePackets, uploadSampleTransferPackets,
+		simulatedGrindingContainerResources, simulatedPreparedSampleContainer, preparedSampleSources, preparedSampleQs, newSampleDestinations,
+		grindingContainer, simulatedSampleContainers, simulatedGrindingContainers
 	},
 
 	(* Lookup our cache and simulation and make our fast association *)
@@ -5202,10 +5126,10 @@ simulateExperimentMeasureMeltingPoint[
 	protocolObject = Which[
 		(* NOTE: If myProtocolPacket is $Failed, we had a problem in the option resolver. *)
 		MatchQ[myProtocolPacket, $Failed],
-		SimulateCreateID[Object[Protocol, MeasureMeltingPoint]],
+			SimulateCreateID[Object[Protocol, MeasureMeltingPoint]],
 
 		True,
-		Lookup[myProtocolPacket, Object]
+			Lookup[myProtocolPacket, Object]
 	];
 
 	(* lookup some option values*)
@@ -5213,30 +5137,26 @@ simulateExperimentMeasureMeltingPoint[
 		(*3*)numberOfReplicates,
 		(*4*)amount,
 		(*5*)preparedSampleLabel,
-		(*6*)preparedSampleContainerLabel,
 		(*7*)grindQs,
 		(*20*)desiccateQs,
 		(*21*)sampleContainer,
 		(*28*)sealCapillary,
-		(*35*)recoupSampleQ,
-		(*36*)preparedSampleContainer,
 		(*40*)sampleLabel,
-		(*41*)sampleContainerLabel
+		(*41*)sampleContainerLabel,
+		grindingContainer
 	} = Lookup[
 		myResolvedOptions,
 		{
 			(*3*)NumberOfReplicates,
 			(*4*)Amount,
 			(*5*)PreparedSampleLabel,
-			(*6*)PreparedSampleContainerLabel,
 			(*7*)Grind,
 			(*20*)Desiccate,
 			(*21*)SampleContainer,
 			(*28*)SealCapillary,
-			(*35*)RecoupSample,
-			(*36*)PreparedSampleContainer,
 			(*40*)SampleLabel,
-			(*41*)SampleContainerLabel
+			(*41*)SampleContainerLabel,
+			GrindingContainer
 		}
 	];
 
@@ -5276,11 +5196,19 @@ simulateExperimentMeasureMeltingPoint[
 		MatchQ[#1, ObjectP[Object[Container, Capillary]]], True, False
 	]&, inputSampleContainers];
 
+	preparedSampleQs = MapThread[!#1 && MemberQ[{#2, #3}, ObjectP[]] &, {prepackedQ, sampleContainer, grindingContainer}];
+
 	(* --- Make resources needed in the simulation --- *)
 	(*Update amount value to quantity if it is resolved to All*)
-	numericAmount = MapThread[If[
-		MatchQ[#1, All], fastAssocLookup[fastAssoc, #2, Mass], #1
-	]&, {amount, ToList[mySamples]}];
+	numericAmount = MapThread[
+		Which[
+			TrueQ[#1] && MatchQ[#2, All], fastAssocLookup[fastAssoc, #3, Mass],
+			TrueQ[#1] && MatchQ[#2, Null], 1 Gram,
+			TrueQ[#1], #2,
+			True, Null
+		]&,
+		{preparedSampleQs, amount, ToList[mySamples]}
+	];
 
 	(*SampleIn Resources: if the sample is prepacked, its container (capillary tube) is used for resources. If the sample is not prepacked, it is treated normally*)
 	samplesInResources = MapThread[If[TrueQ[#1] || NullQ[#4],
@@ -5312,13 +5240,11 @@ simulateExperimentMeasureMeltingPoint[
 		Link[Resource[Sample -> #, Name -> CreateUniqueLabel["Simulation SampleContainer "]]]]& /@ sampleContainer;
 
 	(* --- Resources for PreparedSample --- *)
-	preparedSampleContainerResources = MapThread[
-		If[
-			TrueQ[#1] || NullQ[#2] || !TrueQ[#3],
-			Null,
-			Resource[Sample -> #2, Name -> CreateUniqueLabel["Simulation preparedSampleContainerLabel "]]]&,
-		{prepackedQ, preparedSampleContainer, recoupSampleQ}
-	];
+	simulatedGrindingContainerResources = If[
+		!NullQ[#],
+		Resource[Sample -> PreferredContainer[#], Name -> CreateUniqueLabel["Simulation preparedSampleContainerLabel "]],
+		Null
+		]& /@ numericAmount;
 
 	(* Simulate the fulfillment of all resources by the procedure. *)
 	(* NOTE: We won't actually get back a resource packet if there was a problem during option resolution. In that case, *)
@@ -5359,7 +5285,6 @@ simulateExperimentMeasureMeltingPoint[
 								sampleContainerResources
 							],
 							Replace[SealCapillary] -> {Lookup[options, SealCapillary]},
-							Replace[PreparedSampleContainer] -> preparedSampleContainerResources,
 							Replace[SampleContainerLabel] -> {Lookup[options, SampleContainerLabel]}
 						|>
 					]
@@ -5378,7 +5303,8 @@ simulateExperimentMeasureMeltingPoint[
 				Replace[BatchedUnitOperations] -> (Link[#, Protocol]&) /@ simulatedUnitOperationIDs,
 				Replace[SampleContainers] -> sampleContainerResources,
 				Replace[CapillaryResource] -> (Link[#]&) /@ capillaryResources,
-				Replace[PreparedSampleContainers] -> (Link[#]&) /@ preparedSampleContainerResources,
+				(* there is no actual PreparedSampleContainer. The samples that are transferred to another containers and for desiccation and/or grinding purposes are considered PreparedSamples. their containers are determined by SampleContainer and GrindingContainer options *)
+				Replace[GrindingContainers] -> (Link[#]&) /@ simulatedGrindingContainerResources,
 				ResolvedOptions -> myResolvedOptions
 			|>;
 
@@ -5389,14 +5315,15 @@ simulateExperimentMeasureMeltingPoint[
 		SimulateResources[myProtocolPacket, myUnitOperationPackets, ParentProtocol -> Lookup[myResolvedOptions, ParentProtocol, Null], Simulation -> simulation]
 	];
 
-	(*Download simulated preparedSampleContainer and Capillary Objects from simulation*)
 	{
-		simulatedPreparedSampleContainer,
+		simulatedSampleContainers,
+		simulatedGrindingContainers,
 		simulatedCapillaryObjects,
 		simulatedSampleContainer
 	} = Download[protocolObject,
 		{
-			PreparedSampleContainers,
+			SampleContainers,
+			GrindingContainers,
 			CapillaryResource,
 			SampleContainers
 		},
@@ -5404,6 +5331,11 @@ simulateExperimentMeasureMeltingPoint[
 	];
 
 	(*Create new samples for simulating transfer*)
+	simulatedPreparedSampleContainer = If[MatchQ[myProtocolPacket, $Failed],
+		simulatedGrindingContainers,
+		MapThread[If[MatchQ[#1, ObjectP[]], #1, #2]&, {simulatedGrindingContainers, simulatedSampleContainers}]
+	];
+
 	(*Add position "A1" to destination containers to create destination locations*)
 	simulatedCapillaryDestination = Map[If[NullQ[#], Null, {"A1", #}]&, simulatedCapillaryObjects];
 
@@ -5418,16 +5350,25 @@ simulateExperimentMeasureMeltingPoint[
 	(*Models of samples that g o into the capillaries*)
 	capillarySourceSample = Flatten@MapThread[ConstantArray[#1, #2]&, {ToList[mySamples], capillaryNumbers}];
 
-	(*Sample models that should be recouped*)
-	recoupSourceSample = MapThread[If[!TrueQ[#1] && TrueQ[#2], #3, Nothing]&, {prepackedQ, recoupSampleQ, ToList[mySamples]}];
+	(* prepared samples *)
+	preparedSampleSources = MapThread[
+		If[
+			!NullQ[#1],
+			#2,
+			Nothing
+		]&,
+		{numericAmount, ToList[mySamples]}
+	];
+
+	newSampleDestinations = DeleteCases[Join[simulatedCapillaryDestination, simulatedPreparedSampleDestination], Null];
 
 	(* create sample out packets for anything that doesn't have sample in it already, this is pre-allocation for UploadSampleTransfer *)
 	newSamplePackets = UploadSample[
 		(* Note: UploadSample takes in {} if there is no Model and we have no idea what's in it, which is the case here *)
-		ConstantArray[{}, Length[DeleteCases[Join[simulatedCapillaryDestination, simulatedPreparedSampleDestination], Null]]],
-		DeleteCases[Join[simulatedCapillaryDestination, simulatedPreparedSampleDestination], Null],
-		State -> ConstantArray[Solid, Length[DeleteCases[Join[simulatedCapillaryDestination, simulatedPreparedSampleDestination], Null]]],
-		InitialAmount -> ConstantArray[Null, Length[DeleteCases[Join[simulatedCapillaryDestination, simulatedPreparedSampleDestination], Null]]],
+		ConstantArray[{}, Length[newSampleDestinations]],
+		newSampleDestinations,
+		State -> ConstantArray[Solid, Length[newSampleDestinations]],
+		InitialAmount -> ConstantArray[Null, Length[newSampleDestinations]],
 		Simulation -> currentSimulation,
 		UpdatedBy -> protocolObject,
 		FastTrack -> True,
@@ -5442,10 +5383,10 @@ simulateExperimentMeasureMeltingPoint[
 
 	(* Call UploadSampleTransfer on our source and destination samples. *)
 	uploadSampleTransferPackets = UploadSampleTransfer[
-		Join[capillarySourceSample, recoupSourceSample],
+		Join[capillarySourceSample, preparedSampleSources],
 		simulatedNewSamples,
 		(*here we assume the amount of sample in the capillary is 5 mg. can be updated to a more accurate amount if needed*)
-		Join[ConstantArray[5Milligram, Length[capillarySourceSample]], MapThread[If[!#1 && (#2 /. {Null -> False}), #3, Nothing]&, {prepackedQ, recoupSampleQ, amount}]],
+		Join[ConstantArray[5Milligram, Length[capillarySourceSample]], numericAmount /. Null -> Nothing],
 		Upload -> False,
 		FastTrack -> True,
 		Simulation -> currentSimulation,
@@ -5471,10 +5412,6 @@ simulateExperimentMeasureMeltingPoint[
 			Rule @@@ Cases[
 				Transpose[{ToList[Lookup[myResolvedOptions, PreparedSampleLabel]], preparedSampleObject}],
 				{_String, ObjectP[]}
-			],
-			Rule @@@ Cases[
-				Transpose[{ToList[Lookup[myResolvedOptions, PreparedSampleContainerLabel]], simulatedPreparedSampleContainer}],
-				{_String, ObjectP[]}
 			]
 		],
 		LabelFields -> Join[
@@ -5488,10 +5425,6 @@ simulateExperimentMeasureMeltingPoint[
 			],
 			Rule @@@ Cases[
 				Transpose[{ToList[Lookup[myResolvedOptions, PreparedSampleLabel]], (Field[PreparedSample[[#]]]&) /@ Range[Length[preparedSampleObject]]}],
-				{_String, _}
-			],
-			Rule @@@ Cases[
-				Transpose[{ToList[Lookup[myResolvedOptions, PreparedSampleContainerLabel]], (Field[PreparedSampleContainer[[#]]]&) /@ Range[Length[simulatedPreparedSampleContainer]]}],
 				{_String, _}
 			]
 		]
@@ -5508,7 +5441,7 @@ simulateExperimentMeasureMeltingPoint[
 
 (* ::Subsection::Closed:: *)
 (*Define Author for primitive head*)
-Authors[MeasureMeltingPoint] := {"Mohamad.Zandian"};
+Authors[MeasureMeltingPoint] := {"mohamad.zandian"};
 
 (* ::Subsection::Closed:: *)
 (*ExperimentMeasureMeltingPointOptions*)
@@ -5527,7 +5460,7 @@ DefineOptions[ExperimentMeasureMeltingPointOptions,
 	},
 	SharedOptions :> {ExperimentMeasureMeltingPoint}];
 
-ExperimentMeasureMeltingPointOptions[myInputs : ListableP[ObjectP[{Object[Container], Object[Sample]}] | _String], myOptions : OptionsPattern[]] := Module[
+ExperimentMeasureMeltingPointOptions[myInputs : ListableP[ObjectP[{Object[Container], Object[Sample], Model[Sample]}] | _String], myOptions : OptionsPattern[]] := Module[
 	{listedOptions, noOutputOptions, options},
 
 	(* get the options as a list *)
@@ -5560,7 +5493,7 @@ DefineOptions[ValidExperimentMeasureMeltingPointQ,
 ];
 
 
-ValidExperimentMeasureMeltingPointQ[myInputs : ListableP[ObjectP[{Object[Container], Object[Sample]}] | _String], myOptions : OptionsPattern[]] := Module[
+ValidExperimentMeasureMeltingPointQ[myInputs : ListableP[ObjectP[{Object[Container], Object[Sample], Model[Sample]}] | _String], myOptions : OptionsPattern[]] := Module[
 	{listedOptions, preparedOptions, experimentMeasureMeltingPointTests, initialTestDescription, allTests, verbose, outputFormat},
 
 	(* get the options as a list *)
@@ -5613,7 +5546,7 @@ DefineOptions[ExperimentMeasureMeltingPointPreview,
 	SharedOptions :> {ExperimentMeasureMeltingPoint}
 ];
 
-ExperimentMeasureMeltingPointPreview[myInputs : ListableP[ObjectP[{Object[Container], Object[Sample]}] | _String], myOptions : OptionsPattern[]] := Module[
+ExperimentMeasureMeltingPointPreview[myInputs : ListableP[ObjectP[{Object[Container], Object[Sample], Model[Sample]}] | _String], myOptions : OptionsPattern[]] := Module[
 	{listedOptions, noOutputOptions},
 
 	(* get the options as a list *)

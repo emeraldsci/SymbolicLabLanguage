@@ -35,7 +35,7 @@ DefineObjectType[Object[UnitOperation, SolidPhaseExtraction], {
 		SampleExpression -> {
 			Format -> Multiple,
 			Class -> Expression,
-			Pattern :> {ObjectP[{Object[Container], Object[Sample]}]..} | {_String..},
+			Pattern :> {ObjectP[{Object[Container], Object[Sample], Model[Sample]}]..} | {_String..},
 			Relation -> Null,
 			Description -> "The SampleIn that is going through sorbent to be purified.",
 			Category -> "General",

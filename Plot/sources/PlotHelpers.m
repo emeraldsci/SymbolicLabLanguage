@@ -934,7 +934,7 @@ defaultStyleColorFunction = ColorData[97];
 
 
 (* if only one primary per object, then use the normal colors, so leave as automatic *)
-resolvePlotStyle[unresolvedPlotStyle:Automatic,numObjects_,numPrimaryPer:1]:=Table[ColorData[97][index],{index,numObjects}];
+resolvePlotStyle[unresolvedPlotStyle:Automatic,numObjects_,numPrimaryPer:1]:=Table[{AbsoluteThickness[1.5], ColorData[97][index]},{index,numObjects}];
 
 (*  if more than one primary data per object, use default colors and fade them for the different primary traces *)
 resolvePlotStyle[unresolvedPlotStyle:Automatic,numObjects_,numPrimaryPer_]:=Module[{},
@@ -1834,20 +1834,37 @@ dateFrameTicksQ[frameTicks_]:=MatchQ[
 
 
 addInsetImages[fig_,{}|NullP,___]:=fig;
-addInsetImages[fig_,insetImagesList_,plotRange:{{xmin_,xmax_},{ymin_,ymax_}},imageSize_]:=Module[
+addInsetImages[fig_,insetImagesList_,plotRange:{{xmin_,xmax_},{ymin_,ymax_}},imageSize_,sizeX_,sizeY_,xPos_,yPos_]:=Module[
 	{images,pos,opos,size,ymaxNew},
 
 	(* position in outer image *)
-	pos = {xmin,ymax/1};
+	pos = Map[
+		({#,ymax/1}/.Automatic->xmin)&,
+		xPos
+	];
+	
 	(* line up this point on inset with pos *)
-	opos={0,ymax/1};
-	size=xmax-xmin;
+	opos={0,yPos}/.Automatic->(ymax/1);
+
+	size=If[MatchQ[sizeX,Automatic],
+		ConstantArray[xmax-xmin,Length[ToList[insetImagesList]]],
+		Map[
+			If[MatchQ[#,Automatic],
+				xmax-xmin,
+				#
+			]&,
+			sizeX
+		]
+	];
+	
 	(* make sure it's a list of images *)
 	images = ToList[insetImagesList];
 	images = Map[If[Less@@ImageDimensions[#],ImageRotate[#],#]&,images];
-	images = Map[ImageResize[#, {First[imageSize],Automatic}]&,images];
+	images = Map[ImageResize[#, {First[imageSize],sizeY}]&,images];
+	
+	(* Inset[image,{xpositionOnGraphic,ypositionOnGraphic},{xcoordOnInsetImage,ycoordOnInsetImage},size] : ypositionOnGraphic changes to stack up the inset images properly; xpositionOnGraphic,xcoordOnInsetImage,ycoordOnInsetImage do NOT change to keep x-alignment of figures and to use the same spot of the inset image as reference point to place on graphic *)
 	images = MapIndexed[
-		Graphics[Inset[#1,pos+{0,(0.1*(First[#2]-1))*ymax},opos+{0,(0.1*(First[#2]-1))*ymax},size]]&,
+		Graphics[Inset[#1,pos[[First[#2]]]+{0,(0.1*(First[#2]-1))*ymax},opos,size[[First[#2]]]]]&,
 		images
 	];
 	ymaxNew = ymax + 0.1*Length[images]*ymax;
@@ -2823,10 +2840,11 @@ arrowEpilog[infs:_,ops:_]:=Module[{datas,targetUnits,datasUnitless,colors,epilog
 ];
 
 
-buildArrowEpilog[datas:_,colors:_,ops:_]:=Module[{partitions,arrows},
+buildArrowEpilog[datas:_,colors:_,ops:_]:=Module[{partitions,colorsToUse,arrows},
 	(* --- Arrow epilogs: Connect pairs of data points with arrows --- *)
 	partitions=(Partition[#,2,1]&/@datas);
-	arrows=Table[{Directive[{Arrowheads[ops[ArrowheadSize]],colors[[l]]}],Arrow/@partitions[[l]]},{l,Length@datas}]
+	colorsToUse=Map[If[MatchQ[#,_RGBColor],#,Black]&,colors];
+	arrows=Table[{Directive[{Arrowheads[ops[ArrowheadSize]],colorsToUse[[l]]}],Arrow/@partitions[[l]]},{l,Length@datas}]
 ];
 
 addCoordinatesToAbsThermoPackets[pac:PacketP[Object[Data,MeltingCurve]],options:OptionsPattern[]]:=pac;

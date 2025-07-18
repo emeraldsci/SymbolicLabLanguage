@@ -145,7 +145,14 @@ DefineObjectType[Object[Container, Plate], {
 			Category -> "Operating Limits",
 			Abstract -> True
 		},
-
+		BiohazardSealed -> {
+			Format -> Single,
+			Class -> Boolean,
+			Pattern :> BooleanP,
+			Description -> "Indicates whether the plate containing solid biohazard waste has been taped and its lid has been secured to the container body by tape. If BiohazardSealed is True, the solid biohazard waste can be disposed into biohazard wastebin directly.",
+			Category -> "Container History",
+			Developer -> True
+		},
 		UsageLog -> {
 			Format -> Multiple,
 			Class -> {Expression,Link},

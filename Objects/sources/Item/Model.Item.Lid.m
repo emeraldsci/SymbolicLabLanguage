@@ -182,6 +182,13 @@ DefineObjectType[Model[Item,Lid], {
 			Headers -> {"X dimension","Y dimension"},
 			Category -> "Item Specifications"
 		},
+		RestingOrientation -> {
+			Format -> Single,
+			Class -> Expression,
+			Pattern :> FaceUp | FaceDown,
+			Description -> "Indicates how lid should be placed when it's off the container.",
+			Category -> "Storage & Handling"
+		},
 		Parameterizations -> {
 			Format -> Multiple,
 			Class -> Link,
@@ -197,6 +204,14 @@ DefineObjectType[Model[Item,Lid], {
 			Description -> "Indicates if this lid model is parameterized or if it needs to be parameterized and verified by the ECLs team.",
 			Category -> "Qualifications & Maintenance",
 			Developer -> True
+		},
+		Verified -> {
+			Format -> Single,
+			Class -> Boolean,
+			Pattern :> BooleanP,
+			Description -> "Indicates if the information in this model has been reviewed for accuracy by an ECL employee.",
+			Category -> "Organizational Information",
+			AdminWriteOnly->True
 		}
 	}
 }];

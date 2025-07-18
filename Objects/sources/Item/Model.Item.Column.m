@@ -410,8 +410,7 @@ DefineObjectType[Model[Item,Column], {
 			Pattern :> _Link,
 			Relation -> Alternatives[
 				Model[Sample],
-				Model[Sample, StockSolution],
-				Model[Sample]
+				Model[Sample, StockSolution]
 			],
 			Description -> "Chemicals that are incompatible for use with this column.",
 			Category -> "Compatibility"

@@ -4470,9 +4470,9 @@ preResolveMagneticBeadSeparationSharedOptions[
 						Null,
 					(*If any of the wash options is specified by the user, set to True*)
 					Or[
-						MemberQ[Lookup[options, $MagneticBeadSeparationWashOptions], Except[Automatic | Null]],
+						MemberQ[Lookup[options, $MagneticBeadSeparationWashOptions], Except[ListableP[Automatic | Null]]],
 						(*or if any of the wash options is specified by the method*)
-						methodSpecifiedQ && MemberQ[Lookup[methodPacket, Intersection[Keys[methodPacket], $MagneticBeadSeparationWashOptions]], Except[Automatic | Null]]
+						methodSpecifiedQ && MemberQ[Lookup[methodPacket, Intersection[Keys[methodPacket], $MagneticBeadSeparationWashOptions]], Except[ListableP[Automatic | Null]]]
 					],
 						True,
 					(*Otherwise set to False, mirroring main MBS resolution*)
@@ -4513,9 +4513,9 @@ preResolveMagneticBeadSeparationSharedOptions[
 						Null,
 					(*If any of the secondaryWash options is specified by the user, set to True*)
 					Or[
-						MemberQ[Lookup[options, $MagneticBeadSeparationSecondaryWashOptions], Except[Automatic | Null]],
+						MemberQ[Lookup[options, $MagneticBeadSeparationSecondaryWashOptions], Except[ListableP[Automatic | Null]]],
 						(*or if any of the secondaryWash options is specified by the method*)
-						methodSpecifiedQ && MemberQ[Lookup[methodPacket, Intersection[Keys[methodPacket], $MagneticBeadSeparationSecondaryWashOptions]], Except[Automatic | Null]]
+						methodSpecifiedQ && MemberQ[Lookup[methodPacket, Intersection[Keys[methodPacket], $MagneticBeadSeparationSecondaryWashOptions]], Except[ListableP[Automatic | Null]]]
 					],
 						True,
 					(*Otherwise set to False, mirroring main MBS resolution*)
@@ -4556,9 +4556,9 @@ preResolveMagneticBeadSeparationSharedOptions[
 						Null,
 					(*If any of the tertiaryWash options is specified by the user, set to True*)
 					Or[
-						MemberQ[Lookup[options, $MagneticBeadSeparationTertiaryWashOptions], Except[Automatic | Null]],
+						MemberQ[Lookup[options, $MagneticBeadSeparationTertiaryWashOptions], Except[ListableP[Automatic | Null]]],
 						(*or if any of the tertiaryWash options is specified by the method*)
-						methodSpecifiedQ && MemberQ[Lookup[methodPacket, Intersection[Keys[methodPacket], $MagneticBeadSeparationTertiaryWashOptions]], Except[Automatic | Null]]
+						methodSpecifiedQ && MemberQ[Lookup[methodPacket, Intersection[Keys[methodPacket], $MagneticBeadSeparationTertiaryWashOptions]], Except[ListableP[Automatic | Null]]]
 					],
 						True,
 					(*Otherwise set to False, mirroring main MBS resolution*)
@@ -4598,9 +4598,9 @@ preResolveMagneticBeadSeparationSharedOptions[
 						Null,
 					(*If any of the quaternaryWash options is specified by the user, set to True*)
 					Or[
-						MemberQ[Lookup[options, $MagneticBeadSeparationQuaternaryWashOptions], Except[Automatic | Null]],
+						MemberQ[Lookup[options, $MagneticBeadSeparationQuaternaryWashOptions], Except[ListableP[Automatic | Null]]],
 						(*or if any of the quaternaryWash options is specified by the method*)
-						methodSpecifiedQ && MemberQ[Lookup[methodPacket, Intersection[Keys[methodPacket], $MagneticBeadSeparationQuaternaryWashOptions]], Except[Automatic | Null]]
+						methodSpecifiedQ && MemberQ[Lookup[methodPacket, Intersection[Keys[methodPacket], $MagneticBeadSeparationQuaternaryWashOptions]], Except[ListableP[Automatic | Null]]]
 					],
 						True,
 					(*Otherwise set to False, mirroring main MBS resolution*)
@@ -4640,9 +4640,9 @@ preResolveMagneticBeadSeparationSharedOptions[
 						Null,
 					(*If any of the quinaryWash options is specified by the user, set to True*)
 					Or[
-						MemberQ[Lookup[options, $MagneticBeadSeparationQuinaryWashOptions], Except[Automatic | Null]],
+						MemberQ[Lookup[options, $MagneticBeadSeparationQuinaryWashOptions], Except[ListableP[Automatic | Null]]],
 						(*or if any of the quinaryWash options is specified by the method*)
-						methodSpecifiedQ && MemberQ[Lookup[methodPacket, Intersection[Keys[methodPacket], $MagneticBeadSeparationQuinaryWashOptions]], Except[Automatic | Null]]
+						methodSpecifiedQ && MemberQ[Lookup[methodPacket, Intersection[Keys[methodPacket], $MagneticBeadSeparationQuinaryWashOptions]], Except[ListableP[Automatic | Null]]]
 					],
 						True,
 					(*Otherwise set to False, mirroring main MBS resolution*)
@@ -4682,9 +4682,9 @@ preResolveMagneticBeadSeparationSharedOptions[
 						Null,
 					(*If any of the senaryWash options is specified by the user, set to True*)
 					Or[
-						MemberQ[Lookup[options, $MagneticBeadSeparationSenaryWashOptions], Except[Automatic | Null]],
+						MemberQ[Lookup[options, $MagneticBeadSeparationSenaryWashOptions], Except[ListableP[Automatic | Null]]],
 						(*or if any of the senaryWash options is specified by the method*)
-						methodSpecifiedQ && MemberQ[Lookup[methodPacket, Intersection[Keys[methodPacket], $MagneticBeadSeparationSenaryWashOptions]], Except[Automatic | Null]]
+						methodSpecifiedQ && MemberQ[Lookup[methodPacket, Intersection[Keys[methodPacket], $MagneticBeadSeparationSenaryWashOptions]], Except[ListableP[Automatic | Null]]]
 					],
 						True,
 					(*Otherwise set to False, mirroring main MBS resolution*)
@@ -4724,9 +4724,9 @@ preResolveMagneticBeadSeparationSharedOptions[
 						Null,
 					(*If any of the septenaryWash options is specified by the user, set to True*)
 					Or[
-						MemberQ[Lookup[options, $MagneticBeadSeparationSeptenaryWashOptions], Except[Automatic | Null]],
+						MemberQ[Lookup[options, $MagneticBeadSeparationSeptenaryWashOptions], Except[ListableP[Automatic | Null]]],
 						(*or if any of the septenaryWash options is specified by the method*)
-						methodSpecifiedQ && MemberQ[Lookup[methodPacket, Intersection[Keys[methodPacket], $MagneticBeadSeparationSeptenaryWashOptions]], Except[Automatic | Null]]
+						methodSpecifiedQ && MemberQ[Lookup[methodPacket, Intersection[Keys[methodPacket], $MagneticBeadSeparationSeptenaryWashOptions]], Except[ListableP[Automatic | Null]]]
 					],
 						True,
 					(*Otherwise set to False, mirroring main MBS resolution*)
@@ -10259,3 +10259,7 @@ magneticBeadSeparationSharedOptionsUnitTests[myFunction_Symbol, previouslyExtrac
 			]
 
 		};
+
+(* Authors definition for Experiment`Private`mbsMethodsConflictingOptionsTests *)
+Authors[Experiment`Private`mbsMethodsConflictingOptionsTests]:={"taylor.hochuli"};
+

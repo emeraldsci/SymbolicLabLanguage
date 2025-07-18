@@ -1247,7 +1247,7 @@ DefineOptions[ExperimentLyseCells,
 		RoboticInstrumentOption,
 		ProtocolOptions,
 		SimulationOption,
-		PostProcessingOptions,
+		BiologyPostProcessingOptions,
 		SubprotocolDescriptionOption,
 		SamplesInStorageOptions,
 		WorkCellOption
@@ -1373,11 +1373,11 @@ ExperimentLyseCells[myContainers:ListableP[ObjectP[{Object[Container],Object[Sam
 	gatherTests=MemberQ[output,Tests];
 
 	(* Remove temporal links and named objects. *)
-	{listedContainers, listedOptions} = removeLinks[ToList[myContainers], ToList[myOptions]];
+	{listedContainers, listedOptions} = {ToList[myContainers], ToList[myOptions]};
 
 	(* Fetch the cache from listedOptions. *)
 	cache=ToList[Lookup[listedOptions, Cache, {}]];
-	simulation=ToList[Lookup[listedOptions, Simulation, {}]];
+	simulation=Lookup[listedOptions, Simulation, Null];
 
 	(* Convert our given containers into samples and sample index-matched options. *)
 	containerToSampleResult=If[gatherTests,
@@ -1406,7 +1406,7 @@ ExperimentLyseCells[myContainers:ListableP[ObjectP[{Object[Container],Object[Sam
 				Simulation->simulation
 			],
 			$Failed,
-			{Error::EmptyContainers, Error::ContainerEmptyWells, Error::WellDoesNotExist}
+			{Download::ObjectDoesNotExist, Error::EmptyContainers, Error::ContainerEmptyWells, Error::WellDoesNotExist}
 		]
 	];
 
@@ -1458,18 +1458,13 @@ ExperimentLyseCells[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:Optio
 		SafeOptions[ExperimentLyseCells,listedOptions,AutoCorrect->False,Output->{Result,Tests}],
 		{SafeOptions[ExperimentLyseCells,listedOptions,AutoCorrect->False],{}}
 	];
+	inheritedSimulation = Lookup[safeOptions, Simulation, Null];
 
 	(* Get the number of replicates, replacing Null with 1 *)
 	numberOfReplicatesNoNull = Lookup[safeOptions, NumberOfReplicates] /. Null -> 1;
 
 	(* Call sanitize-inputs to clean any objects referenced by Name; i.e., reference them by ID instead *)
-	{listedSanitizedSamples, safeOps, listedSanitizedOptions} = sanitizeInputs[listedSamples, safeOptions, listedOptions];
-
-	(* Call ValidInputLengthsQ to make sure all options are the right length *)
-	{validLengths,validLengthTests}=If[gatherTests,
-		ValidInputLengthsQ[ExperimentLyseCells,{listedSanitizedSamples},listedSanitizedOptions,Output->{Result,Tests}],
-		{ValidInputLengthsQ[ExperimentLyseCells,{listedSanitizedSamples},listedSanitizedOptions],Null}
-	];
+	{listedSanitizedSamples, safeOps, listedSanitizedOptions} = sanitizeInputs[listedSamples, safeOptions, listedOptions, Simulation -> inheritedSimulation];
 
 	(* If the specified options don't match their patterns return $Failed *)
 	If[MatchQ[safeOps,$Failed],
@@ -1480,6 +1475,12 @@ ExperimentLyseCells[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:Optio
 			Preview -> Null,
 			Simulation -> Null
 		}]
+	];
+
+	(* Call ValidInputLengthsQ to make sure all options are the right length *)
+	{validLengths,validLengthTests}=If[gatherTests,
+		ValidInputLengthsQ[ExperimentLyseCells,{listedSanitizedSamples},listedSanitizedOptions,Output->{Result,Tests}],
+		{ValidInputLengthsQ[ExperimentLyseCells,{listedSanitizedSamples},listedSanitizedOptions],Null}
 	];
 
 	(* If option lengths are invalid return $Failed (or the tests up to this point) *)
@@ -1516,9 +1517,8 @@ ExperimentLyseCells[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:Optio
 	(* Expand index-matching options *)
 	expandedSafeOps=Last[ExpandIndexMatchedInputs[ExperimentLyseCells,{listedSanitizedSamples},inheritedOptions]];
 
-	(* Fetch the Cache and Simulation options. *)
+	(* Fetch the Cache option *)
 	cache=Lookup[expandedSafeOps, Cache, {}];
-	inheritedSimulation=Lookup[expandedSafeOps, Simulation, Null];
 
 	(* Disallow Upload->False and Confirm->True. *)
 	(* Not making a test here because Upload is a hidden option and we don't currently make tests for hidden options. *)
@@ -1883,6 +1883,7 @@ ExperimentLyseCells[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:Optio
 						Name->Lookup[safeOps,Name],
 						Upload->Lookup[safeOps,Upload],
 						Confirm->Lookup[safeOps,Confirm],
+						CanaryBranch->Lookup[safeOps,CanaryBranch],
 						ParentProtocol->Lookup[safeOps,ParentProtocol],
 						Priority->Lookup[safeOps,Priority],
 						StartDate->Lookup[safeOps,StartDate],
@@ -1920,12 +1921,16 @@ DefineOptions[resolveLyseCellsWorkCell,
 resolveLyseCellsWorkCell[
 	myContainersAndSamples:ListableP[Automatic|ObjectP[{Object[Sample], Object[Container]}]],
 	myOptions:OptionsPattern[]
-]:=Module[{mySamples, myContainers, samplePackets},
+]:=Module[{cache,simulation,mySamples, myContainers, samplePackets},
+
+	cache=Lookup[ToList[myOptions],Cache,{}];
+	simulation=Lookup[ToList[myOptions],Simulation,Null];
 
 	mySamples = Cases[myContainersAndSamples, ObjectP[Object[Sample]], Infinity];
 	myContainers = Cases[myContainersAndSamples, ObjectP[Object[Container]], Infinity];
+	simulation = Lookup[ToList[myOptions], Simulation, Null];
 
-	samplePackets = Download[mySamples, Packet[CellType]];
+	samplePackets = Download[mySamples, Packet[CellType], Cache->cache, Simulation->simulation];
 
 	(* NOTE: due to the mechanism by which the primitive framework resolves WorkCell, we can't just resolve it on our own and then tell *)
 	(* the framework what to use. So, we resolve using the CellType option if specified, or the CellType field in the input sample(s). *)
@@ -2664,10 +2669,10 @@ resolveExperimentLyseCellsOptions[mySamples:{ObjectP[Object[Sample]]...},myOptio
 				];
 
 				(* resolve an internal variable which returns the items in the sample's Composition fields for which TargetCellCount can be calculated *)
-				cellCountAccessibleComposition = Cases[Lookup[samplePacket,Composition],{GreaterEqualP[0 EmeraldCell],ObjectP[Model[Cell]]}];
+				cellCountAccessibleComposition = Cases[Lookup[samplePacket,Composition],{GreaterEqualP[0 EmeraldCell],ObjectP[Model[Cell]]}|{GreaterEqualP[0 EmeraldCell],ObjectP[Model[Cell]],_}];
 
 				(* resolve an internal variable which returns the items in the sample's Composition fields for which TargetCellCount can be calculated *)
-				cellConcentrationAccessibleComposition = Cases[Lookup[samplePacket,Composition],{GreaterEqualP[(0 EmeraldCell/Milliliter)],ObjectP[Model[Cell]]}];
+				cellConcentrationAccessibleComposition = Cases[Lookup[samplePacket,Composition],{GreaterEqualP[(0 EmeraldCell/Milliliter)],ObjectP[Model[Cell]]}|{GreaterEqualP[(0 EmeraldCell/Milliliter)],ObjectP[Model[Cell]],_}];
 
 				(* resolve an internal boolean which tells us whether there is sufficient information to do any Cell Count calculations *)
 				cellCountAvailableQ = MatchQ[Length[cellCountAccessibleComposition], GreaterP[0]];
@@ -3212,7 +3217,7 @@ resolveExperimentLyseCellsOptions[mySamples:{ObjectP[Object[Sample]]...},myOptio
 									(* Aliquot ratio times the total cell count divided by the target cell concentration gives the target volume *)
 									targetVolume = aliquotRatio * totalCellCount / Lookup[options,TargetCellConcentration];
 									(* The dilution volume is the difference between the target volume and the curent volume *)
-									targetVolume - currentVolume
+									SafeRound[targetVolume - currentVolume, $LiquidHandlerVolumeTransferPrecision]
 								],
 							cellConcentrationAvailableQ,
 								Module[{totalCellConcentration, currentVolume, targetVolume},
@@ -3223,7 +3228,7 @@ resolveExperimentLyseCellsOptions[mySamples:{ObjectP[Object[Sample]]...},myOptio
 									(* Get the target volume from the total cell concentration times the aliquot amount over the TargetCellConcentration *)
 									targetVolume = totalCellConcentration * aliquotAmount / Lookup[options,TargetCellConcentration];
 									(* The dilution volume is the difference between the target volume and the curent volume *)
-									targetVolume - currentVolume
+									SafeRound[targetVolume - currentVolume, $LiquidHandlerVolumeTransferPrecision]
 								],
 							True,
 								0 Microliter
@@ -4734,6 +4739,7 @@ resolveExperimentLyseCellsOptions[mySamples:{ObjectP[Object[Sample]]...},myOptio
 			0,
 			Cases[Flatten[Lookup[listedOptions, {AliquotContainer, PreLysisSupernatantContainer, ClarifiedLysateContainer}]], _Integer]
 		}] + 1),
+		Sterile -> True,
 		LiquidHandlerCompatible -> True
 	];
 
@@ -5001,7 +5007,8 @@ resolveExperimentLyseCellsOptions[mySamples:{ObjectP[Object[Sample]]...},myOptio
 			0,
 			Cases[Flatten[Join[{0},{resolvedAliquotContainers, resolvedPreLysisSupernatantContainers}, Lookup[listedOptions, ClarifiedLysateContainer]]], _Integer]
 		}] + 1),
-		LiquidHandlerCompatible -> True
+		LiquidHandlerCompatible -> True,
+		Sterile -> True
 	];
 
 	(* RESOLVE LABELS *)
@@ -5331,7 +5338,7 @@ resolveExperimentLyseCellsOptions[mySamples:{ObjectP[Object[Sample]]...},myOptio
 	contractedResolvedClarifiedLysateContainerWells = resolvedClarifiedLysateContainerWells[[1 ;; -1 ;; numberOfReplicatesNoNull]];
 
 	(* Resolve Post Processing Options *)
-	resolvedPostProcessingOptions = resolvePostProcessingOptions[myOptions];
+	resolvedPostProcessingOptions = resolvePostProcessingOptions[myOptions,Sterile->True];
 
 	(* get the resolved Email option; for this experiment, the default is True if it's a parent protocol, and False if it's a sub *)
 	email = Which[
@@ -8125,7 +8132,7 @@ DefineOptions[
 
 lyseCellsResourcePackets[mySamples:ListableP[ObjectP[Object[Sample]]],myTemplatedOptions:{(_Rule|_RuleDelayed)...},myResolvedOptions:{(_Rule|_RuleDelayed)..},ops:OptionsPattern[]]:=Module[
 	{
-		expandedInputs, expandedResolvedOptions, resolvedOptionsNoHidden, outputSpecification, output, gatherTests,
+		resolvedOptionsNoHidden, outputSpecification, output, gatherTests,
 		messages, inheritedCache, samplePackets, numberOfReplicatesNoNull, expandedSamplesWithNumReplicates, expandedSamplePacketsWithNumReplicates,
 		expandForNumReplicates,
 
@@ -8205,9 +8212,6 @@ lyseCellsResourcePackets[mySamples:ListableP[ObjectP[Object[Sample]]],myTemplate
 
 	(* Lookup the resolved Preparation option. *)
 	resolvedPreparation = Lookup[myResolvedOptions, Preparation];
-
-	(* expand the resolved options if they weren't expanded already *)
-	{expandedInputs, expandedResolvedOptions} = ExpandIndexMatchedInputs[ExperimentLyseCells, {mySamples}, myResolvedOptions];
 
 	(* Get the resolved collapsed index matching options that don't include hidden options *)
 	resolvedOptionsNoHidden = CollapseIndexMatchedOptions[
@@ -8325,7 +8329,7 @@ lyseCellsResourcePackets[mySamples:ListableP[ObjectP[Object[Sample]]],myTemplate
 		expandedPostClarificationPelletStorageConditions,
 		expandedSamplesOutStorageConditions
 	} = expandForNumReplicates[
-		expandedResolvedOptions,
+		myResolvedOptions,
 		{
 			Method,
 			CellType,
@@ -8393,36 +8397,35 @@ lyseCellsResourcePackets[mySamples:ListableP[ObjectP[Object[Sample]]],myTemplate
 		numberOfReplicatesNoNull
 	];
 
-	(* Expand options for number of replicates. Note that the variable name "expandedResolvedOptions" is referring to expanding/collapsing index-matched *)
-	(* options, while other references to "expanded" refer to adjusting the length of the options list according to the number of replicates *)
+	(* Expand options for number of replicates. *)
 	$ExpandedOptionsForNumReplicates = Normal @ Join[
 		(* Containers, Wells, and Label options were expanded for number of replicates during resolving, so we don't do anything special with them here. *)
 		Association@{
-			AliquotContainer -> Lookup[expandedResolvedOptions, AliquotContainer],
-			AliquotContainerWell -> Lookup[expandedResolvedOptions, AliquotContainerWell],
-			ClarifiedLysateContainer -> Lookup[expandedResolvedOptions, ClarifiedLysateContainer],
-			ClarifiedLysateContainerWell -> Lookup[expandedResolvedOptions, ClarifiedLysateContainerWell],
-			PreLysisSupernatantContainer -> Lookup[expandedResolvedOptions, PreLysisSupernatantContainer],
-			PreLysisSupernatantContainerWell -> Lookup[expandedResolvedOptions, PreLysisSupernatantContainerWell],
-			PostClarificationPelletContainer -> Lookup[expandedResolvedOptions, PostClarificationPelletContainer],
-			PostClarificationPelletContainerWell -> Lookup[expandedResolvedOptions, PostClarificationPelletContainerWell],
-			SampleOutLabel -> Lookup[expandedResolvedOptions, SampleOutLabel],
-			AliquotContainerLabel -> Lookup[expandedResolvedOptions, AliquotContainerLabel],
-			ClarifiedLysateContainerLabel -> Lookup[expandedResolvedOptions, ClarifiedLysateContainerLabel],
-			PreLysisSupernatantLabel -> Lookup[expandedResolvedOptions, PreLysisSupernatantLabel],
-			PreLysisSupernatantContainerLabel -> Lookup[expandedResolvedOptions, PreLysisSupernatantContainerLabel],
-			PostClarificationPelletLabel -> Lookup[expandedResolvedOptions, PostClarificationPelletLabel],
-			PostClarificationPelletContainerLabel -> Lookup[expandedResolvedOptions, PostClarificationPelletContainerLabel]
+			AliquotContainer -> Lookup[myResolvedOptions, AliquotContainer],
+			AliquotContainerWell -> Lookup[myResolvedOptions, AliquotContainerWell],
+			ClarifiedLysateContainer -> Lookup[myResolvedOptions, ClarifiedLysateContainer],
+			ClarifiedLysateContainerWell -> Lookup[myResolvedOptions, ClarifiedLysateContainerWell],
+			PreLysisSupernatantContainer -> Lookup[myResolvedOptions, PreLysisSupernatantContainer],
+			PreLysisSupernatantContainerWell -> Lookup[myResolvedOptions, PreLysisSupernatantContainerWell],
+			PostClarificationPelletContainer -> Lookup[myResolvedOptions, PostClarificationPelletContainer],
+			PostClarificationPelletContainerWell -> Lookup[myResolvedOptions, PostClarificationPelletContainerWell],
+			SampleOutLabel -> Lookup[myResolvedOptions, SampleOutLabel],
+			AliquotContainerLabel -> Lookup[myResolvedOptions, AliquotContainerLabel],
+			ClarifiedLysateContainerLabel -> Lookup[myResolvedOptions, ClarifiedLysateContainerLabel],
+			PreLysisSupernatantLabel -> Lookup[myResolvedOptions, PreLysisSupernatantLabel],
+			PreLysisSupernatantContainerLabel -> Lookup[myResolvedOptions, PreLysisSupernatantContainerLabel],
+			PostClarificationPelletLabel -> Lookup[myResolvedOptions, PostClarificationPelletLabel],
+			PostClarificationPelletContainerLabel -> Lookup[myResolvedOptions, PostClarificationPelletContainerLabel]
 		},
 		(* Options without index-matching do not need to be expanded for number of replicates. *)
 		Association@{
-			WorkCell -> Lookup[expandedResolvedOptions, WorkCell],
-			RoboticInstrument -> Lookup[expandedResolvedOptions, RoboticInstrument],
-			NumberOfReplicates -> Lookup[expandedResolvedOptions, NumberOfReplicates],
-			ImageSample -> Lookup[expandedResolvedOptions, ImageSample],
-			MeasureVolume -> Lookup[expandedResolvedOptions, MeasureVolume],
-			MeasureWeight -> Lookup[expandedResolvedOptions, MeasureWeight],
-			Email -> Lookup[expandedResolvedOptions, Email]
+			WorkCell -> Lookup[myResolvedOptions, WorkCell],
+			RoboticInstrument -> Lookup[myResolvedOptions, RoboticInstrument],
+			NumberOfReplicates -> Lookup[myResolvedOptions, NumberOfReplicates],
+			ImageSample -> Lookup[myResolvedOptions, ImageSample],
+			MeasureVolume -> Lookup[myResolvedOptions, MeasureVolume],
+			MeasureWeight -> Lookup[myResolvedOptions, MeasureWeight],
+			Email -> Lookup[myResolvedOptions, Email]
 		},
 		(* Remaining options were expanded for number of replicates earlier in the resource packets function *)
 		Association@{
@@ -8809,7 +8812,10 @@ lyseCellsResourcePackets[mySamples:ListableP[ObjectP[Object[Sample]]],myTemplate
 		(* Incubate the above under the resolved incubation conditions. *)
 		(* If NumberOfLysisSteps is two or three, repeat the above accordingly. *)
 		lysisUnitOperations = Module[
-			{addLysisSolution, mix, incubate, addSecondaryLysisSolution, secondaryMix, secondaryIncubate, addTertiaryLysisSolution, tertiaryMix, tertiaryIncubate},
+			{
+				addLysisSolution, mix, incubate, wait, addSecondaryLysisSolution, secondaryMix, secondaryIncubate,
+				secondaryWait, addTertiaryLysisSolution, tertiaryMix, tertiaryIncubate, tertiaryWait
+			},
 
 			(* Add lysis solution in the first lysis step *)
 			addLysisSolution = MapThread[
@@ -8848,14 +8854,27 @@ lyseCellsResourcePackets[mySamples:ListableP[ObjectP[Object[Sample]]],myTemplate
 				Nothing
 			];
 
-			(* Incubate in the first lysis step *)
-			incubate = Incubate[
-				Sample -> Transpose[{
-					PickList[workingContainerWells, expandedLysisTemperatures, (TemperatureP|Ambient)],
-					PickList[workingContainerLabels, expandedLysisTemperatures, (TemperatureP|Ambient)]
-				}],
-				Temperature -> (PickList[expandedLysisTemperatures, expandedLysisTemperatures, (TemperatureP|Ambient)]/.Ambient->$AmbientTemperature),
-				Time -> PickList[expandedLysisTimes, expandedLysisTemperatures, (TemperatureP|Ambient)]
+			(* Incubate the samples that have non Ambient temperatures *)
+			incubate = If[
+				MemberQ[expandedLysisTemperatures,NonAmbientTemperatureP],
+				Incubate[
+					Sample -> Transpose[{
+						PickList[workingContainerWells, expandedLysisTemperatures, NonAmbientTemperatureP],
+						PickList[workingContainerLabels, expandedLysisTemperatures, NonAmbientTemperatureP]
+					}],
+					Temperature -> (PickList[expandedLysisTemperatures, expandedLysisTemperatures, NonAmbientTemperatureP]),
+					Time -> PickList[expandedLysisTimes, expandedLysisTemperatures, NonAmbientTemperatureP]
+				],
+				Nothing
+			];
+
+			(* Wait for the samples that have ambient temperatures *)
+			wait = If[
+				MemberQ[expandedLysisTemperatures, AmbientTemperatureP],
+				Wait[
+					Duration -> Max[PickList[expandedLysisTimes, expandedLysisTemperatures, AmbientTemperatureP]]
+				],
+				Nothing
 			];
 
 			(* Add lysis solution in the optional second lysis step *)
@@ -8898,16 +8917,25 @@ lyseCellsResourcePackets[mySamples:ListableP[ObjectP[Object[Sample]]],myTemplate
 				Nothing
 			];
 
-			(* Incubate in the optional second lysis step *)
+			(* Incubate in the optional second lysis step the samples that have non Ambient temperatures *)
 			secondaryIncubate = If[
-				MemberQ[expandedSecondaryLysisTemperatures, (TemperatureP|Ambient)],
+				MemberQ[expandedSecondaryLysisTemperatures, NonAmbientTemperatureP],
 				Incubate[
 					Sample -> Transpose[{
-						PickList[workingContainerWells, expandedSecondaryLysisTemperatures, (TemperatureP|Ambient)],
-						PickList[workingContainerLabels, expandedSecondaryLysisTemperatures, (TemperatureP|Ambient)]
+						PickList[workingContainerWells, expandedSecondaryLysisTemperatures, NonAmbientTemperatureP],
+						PickList[workingContainerLabels, expandedSecondaryLysisTemperatures, NonAmbientTemperatureP]
 					}],
-					Temperature -> (PickList[expandedSecondaryLysisTemperatures, expandedSecondaryLysisTemperatures, (TemperatureP|Ambient)]/.Ambient->$AmbientTemperature),
-					Time -> PickList[expandedSecondaryLysisTimes, expandedSecondaryLysisTemperatures, (TemperatureP|Ambient)]
+					Temperature -> (PickList[expandedSecondaryLysisTemperatures, expandedSecondaryLysisTemperatures, NonAmbientTemperatureP]),
+					Time -> PickList[expandedSecondaryLysisTimes, expandedSecondaryLysisTemperatures, NonAmbientTemperatureP]
+				],
+				Nothing
+			];
+
+			(* Wait for the samples that have ambient temperatures *)
+			secondaryWait = If[
+				MemberQ[expandedSecondaryLysisTemperatures, AmbientTemperatureP],
+				Wait[
+					Duration -> Max[PickList[expandedSecondaryLysisTimes, expandedSecondaryLysisTemperatures, AmbientTemperatureP]]
 				],
 				Nothing
 			];
@@ -8952,16 +8980,25 @@ lyseCellsResourcePackets[mySamples:ListableP[ObjectP[Object[Sample]]],myTemplate
 				Nothing
 			];
 
-			(* Incubate in the optional third lysis step *)
+			(* Incubate in the optional third lysis step the samples that have non Ambient temperatures *)
 			tertiaryIncubate = If[
-				MemberQ[expandedTertiaryLysisTemperatures, (TemperatureP|Ambient)],
+				MemberQ[expandedTertiaryLysisTemperatures, NonAmbientTemperatureP],
 				Incubate[
 					Sample -> Transpose[{
-						PickList[workingContainerWells, expandedTertiaryLysisTemperatures, (TemperatureP|Ambient)],
-						PickList[workingContainerLabels, expandedTertiaryLysisTemperatures, (TemperatureP|Ambient)]
+						PickList[workingContainerWells, expandedTertiaryLysisTemperatures, NonAmbientTemperatureP],
+						PickList[workingContainerLabels, expandedTertiaryLysisTemperatures, NonAmbientTemperatureP]
 					}],
-					Temperature -> (PickList[expandedTertiaryLysisTemperatures, expandedTertiaryLysisTemperatures, (TemperatureP|Ambient)] /. Ambient -> $AmbientTemperature),
-					Time -> PickList[expandedTertiaryLysisTimes, expandedTertiaryLysisTemperatures, (TemperatureP|Ambient)]
+					Temperature -> (PickList[expandedTertiaryLysisTemperatures, expandedTertiaryLysisTemperatures, NonAmbientTemperatureP]),
+					Time -> PickList[expandedTertiaryLysisTimes, expandedTertiaryLysisTemperatures, NonAmbientTemperatureP]
+				],
+				Nothing
+			];
+
+			(* Wait for the samples in the optional third lysis that have ambient temperatures *)
+			tertiaryWait = If[
+				MemberQ[expandedTertiaryLysisTemperatures, AmbientTemperatureP],
+				Wait[
+					Duration -> Max[PickList[expandedTertiaryLysisTimes, expandedTertiaryLysisTemperatures, AmbientTemperatureP]]
 				],
 				Nothing
 			];
@@ -8970,12 +9007,15 @@ lyseCellsResourcePackets[mySamples:ListableP[ObjectP[Object[Sample]]],myTemplate
 				addLysisSolution,
 				mix,
 				incubate,
+				wait,
 				addSecondaryLysisSolution,
 				secondaryMix,
 				secondaryIncubate,
+				secondaryWait,
 				addTertiaryLysisSolution,
 				tertiaryMix,
-				tertiaryIncubate
+				tertiaryIncubate,
+				tertiaryWait
 			}]
 
 		];
@@ -9133,18 +9173,18 @@ lyseCellsResourcePackets[mySamples:ListableP[ObjectP[Object[Sample]]],myTemplate
 				primitives,
 				UnitOperationPackets -> True,
 				Output -> {Result, Simulation},
-				FastTrack -> Lookup[expandedResolvedOptions, FastTrack],
-				ParentProtocol -> Lookup[expandedResolvedOptions, ParentProtocol],
-				Name -> Lookup[expandedResolvedOptions, Name],
+				FastTrack -> Lookup[myResolvedOptions, FastTrack],
+				ParentProtocol -> Lookup[myResolvedOptions, ParentProtocol],
+				Name -> Lookup[myResolvedOptions, Name],
 				Simulation -> currentSimulation,
 				Upload -> False,
-				ImageSample -> Lookup[expandedResolvedOptions, ImageSample],
-				MeasureVolume -> Lookup[expandedResolvedOptions, MeasureVolume],
-				MeasureWeight -> Lookup[expandedResolvedOptions, MeasureWeight],
-				Priority -> Lookup[expandedResolvedOptions, Priority],
-				StartDate -> Lookup[expandedResolvedOptions, StartDate],
-				HoldOrder -> Lookup[expandedResolvedOptions, HoldOrder],
-				QueuePosition -> Lookup[expandedResolvedOptions, QueuePosition],
+				ImageSample -> Lookup[myResolvedOptions, ImageSample],
+				MeasureVolume -> Lookup[myResolvedOptions, MeasureVolume],
+				MeasureWeight -> Lookup[myResolvedOptions, MeasureWeight],
+				Priority -> Lookup[myResolvedOptions, Priority],
+				StartDate -> Lookup[myResolvedOptions, StartDate],
+				HoldOrder -> Lookup[myResolvedOptions, HoldOrder],
+				QueuePosition -> Lookup[myResolvedOptions, QueuePosition],
 				CoverAtEnd -> False
 			];
 
@@ -9174,6 +9214,12 @@ lyseCellsResourcePackets[mySamples:ListableP[ObjectP[Object[Sample]]],myTemplate
 		roboticSimulation = UpdateSimulation[
 			roboticSimulation,
 			Simulation[<|Object -> Lookup[outputUnitOperationPacket, Object], Sample -> (Link /@ expandedSamplesWithNumReplicates)|>]
+		];
+
+		(* since we are putting this UO inside RSP, we should re-do the LabelFields so they link via RoboticUnitOperations *)
+		roboticSimulation=If[Length[roboticUnitOperationPackets]==0,
+			roboticSimulation,
+			updateLabelFieldReferences[roboticSimulation,RoboticUnitOperations]
 		];
 
 		(* Return back our packets and simulation. *)

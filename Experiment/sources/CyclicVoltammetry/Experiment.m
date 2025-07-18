@@ -109,7 +109,7 @@ DefineOptions[ExperimentCyclicVoltammetry,
 				Default -> Automatic,
 				Description -> "Specify the electrolyte chemical added into the Solvent to prepare the ElectrolyteSolution and the LoadingSample (including a solvent, an electrolyte, the target analyte, and an optional internal standard), if the ElectrolyteSolution option is unspecified.",
 				ResolutionDescription -> "If an ElectrolyteSolution is provided, automatically resolves to the electrolyte specified in the ElectrolyteSolution. If no ElectrolyteSolution is provided and PreparedSample is False, automatically resolves to KCl if Solvent is aqueous, to NBu4PF6 is Solvent is organic. If no ElectrolyteSolution is provided and PreparedSample is True, this cannot be automatically resolved.",
-				AllowNull -> False,
+				AllowNull -> True,
 				Widget -> Widget[
 					Type -> Object,
 					Pattern :> ObjectP[{Model[Sample], Object[Sample]}]
@@ -925,7 +925,8 @@ DefineOptions[ExperimentCyclicVoltammetry,
 				Category->"Cyclic Voltammetry"
 			}
 		],
-		FuntopiaSharedOptions,
+		ModelInputOptions,
+		NonBiologyFuntopiaSharedOptions,
 		SimulationOption,
 		SamplesInStorageOptions,
 		SamplesOutStorageOptions
@@ -1049,7 +1050,7 @@ ExperimentCyclicVoltammetry[mySamples:ListableP[ObjectP[Object[Sample]]],myOptio
 		safeOpsNamed, safeOpsTests,
 		mySamplesWithPreparedSamples, safeOps, myOptionsWithPreparedSamples,
 		validLengths,validLengthTests,
-		upload, confirm, fastTrack, parentProt, inheritedCache,
+		upload, confirm, canaryBranch, fastTrack, parentProt, inheritedCache,
 		templatedOptions,templateTests,
 		inheritedOptions,expandedSafeOps,
 
@@ -1114,7 +1115,7 @@ ExperimentCyclicVoltammetry[mySamples:ListableP[ObjectP[Object[Sample]]],myOptio
 			listedOptions
 		],
 		$Failed,
-		{Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
+		{Download::ObjectDoesNotExist, Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
 	];
 
 	(* If we are given an invalid define name, return early. *)
@@ -1131,7 +1132,7 @@ ExperimentCyclicVoltammetry[mySamples:ListableP[ObjectP[Object[Sample]]],myOptio
 	];
 
 	(* Sanitize Inputs *)
-	{mySamplesWithPreparedSamples, safeOps, myOptionsWithPreparedSamples} = sanitizeInputs[mySamplesWithPreparedSamplesNamed, safeOpsNamed, myOptionsWithPreparedSamplesNamed];
+	{mySamplesWithPreparedSamples, safeOps, myOptionsWithPreparedSamples} = sanitizeInputs[mySamplesWithPreparedSamplesNamed, safeOpsNamed, myOptionsWithPreparedSamplesNamed,Simulation->updatedSimulation];
 
 	(* If the specified options don't match their patterns or if option lengths are invalid return $Failed *)
 	If[MatchQ[safeOps,$Failed],
@@ -1160,7 +1161,7 @@ ExperimentCyclicVoltammetry[mySamples:ListableP[ObjectP[Object[Sample]]],myOptio
 	];
 
 	(* get assorted hidden options *)
-	{upload, confirm, fastTrack, parentProt, inheritedCache} = Lookup[safeOps, {Upload, Confirm, FastTrack, ParentProtocol, Cache}];
+	{upload, confirm, canaryBranch, fastTrack, parentProt, inheritedCache} = Lookup[safeOps, {Upload, Confirm, CanaryBranch, FastTrack, ParentProtocol, Cache}];
 
 	(* Use any template options to get values for options not specified in myOptions *)
 	{templatedOptions,templateTests}=If[gatherTests,
@@ -1183,48 +1184,6 @@ ExperimentCyclicVoltammetry[mySamples:ListableP[ObjectP[Object[Sample]]],myOptio
 
 	(* Expand index-matching options *)
 	expandedSafeOps=Last[ExpandIndexMatchedInputs[ExperimentCyclicVoltammetry,{mySamplesWithPreparedSamples},inheritedOptions]];
-
-
-	(* ---------------------------------------------------- *)
-	(* -- Check for Objects that are not in the database -- *)
-	(* ---------------------------------------------------- *)
-
-	(* Any options whose values _could_ be an object *)
-	optionsWithObjects = Cases[Values[ToList[myOptions]], ObjectP[]];
-
-	(* Extract any objects that the user has explicitly specified *)
-	userSpecifiedObjects = DeleteDuplicates@Cases[
-		Flatten[{ToList[mySamples],optionsWithObjects}],
-		ObjectP[]
-	];
-
-	(* Check that the specified objects exist or are visible to the current user *)
-	simulatedSampleQ = MemberQ[Download[Lookup[updatedSimulation[[1]], Packets],Object], #] &/@userSpecifiedObjects;
-	objectsExistQs = DatabaseMemberQ[PickList[userSpecifiedObjects,simulatedSampleQ,False]];
-
-	(* Build tests for object existence *)
-	objectsExistTests = If[gatherTests,
-		MapThread[
-			Test[StringTemplate["Specified object `1` exists in the database:"][#1],#2,True]&,
-			{PickList[userSpecifiedObjects,simulatedSampleQ,False],objectsExistQs}
-		],
-		{}
-	];
-
-	(* If objects do not exist, return failure *)
-	If[!(And@@objectsExistQs),
-		If[!gatherTests,
-			Message[Error::ObjectDoesNotExist,PickList[PickList[userSpecifiedObjects,simulatedSampleQ,False],objectsExistQs,False]];
-			Message[Error::InvalidInput,PickList[PickList[userSpecifiedObjects,simulatedSampleQ,False],objectsExistQs,False]]
-		];
-
-		Return[outputSpecification/.{
-			Result -> $Failed,
-			Tests -> Join[safeOpsTests,validLengthTests,templateTests,objectsExistTests],
-			Options -> $Failed,
-			Preview -> Null
-		}]
-	];
 
 
 	(* ----------------------------------------------------------------------------------- *)
@@ -1636,6 +1595,7 @@ ExperimentCyclicVoltammetry[mySamples:ListableP[ObjectP[Object[Sample]]],myOptio
 				resourcePackets,
 				Upload->Lookup[safeOps,Upload],
 				Confirm->Lookup[safeOps,Confirm],
+				CanaryBranch->Lookup[safeOps,CanaryBranch],
 				ParentProtocol->Lookup[safeOps,ParentProtocol],
 				Priority->Lookup[safeOps,Priority],
 				StartDate->Lookup[safeOps,StartDate],
@@ -1663,7 +1623,7 @@ ExperimentCyclicVoltammetry[mySamples:ListableP[ObjectP[Object[Sample]]],myOptio
 (* --- CONTAINER OVERLOAD --- *)
 (* -------------------------- *)
 
-ExperimentCyclicVoltammetry[myContainers:ListableP[ObjectP[{Object[Container],Object[Sample]}]|_String|{LocationPositionP,_String|ObjectP[Object[Container]]}],myOptions:OptionsPattern[]]:=Module[
+ExperimentCyclicVoltammetry[myContainers:ListableP[ObjectP[{Object[Container],Object[Sample], Model[Sample]}]|_String|{LocationPositionP,_String|ObjectP[Object[Container]]}],myOptions:OptionsPattern[]]:=Module[
 	{
 		outputSpecification,output,gatherTests,
 		listedContainers, listedOptions,
@@ -1686,7 +1646,7 @@ ExperimentCyclicVoltammetry[myContainers:ListableP[ObjectP[{Object[Container],Ob
 	gatherTests=MemberQ[output,Tests];
 
 	(* Remove temporal links. *)
-	{listedContainers, listedOptions}=removeLinks[ToList[myContainers], ToList[myOptions]];
+	{listedContainers, listedOptions}={ToList[myContainers], ToList[myOptions]};
 
 	(* First, simulate our sample preparation. *)
 	validSamplePreparationResult=Check[
@@ -1697,7 +1657,7 @@ ExperimentCyclicVoltammetry[myContainers:ListableP[ObjectP[{Object[Container],Ob
 			listedOptions
 		],
 		$Failed,
-		{Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
+		{Download::ObjectDoesNotExist, Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
 	];
 
 	(* If we are given an invalid define name, return early. *)
@@ -2759,7 +2719,7 @@ resolveExperimentCyclicVoltammetryOptions[
 	(*MapThreadFriendlyOptions have the Key value pairs expanded to index match, such that if you call Lookup[options, OptionName], it gives the Option value at the index we are interested in*)
 	mapThreadFriendlyOptions = OptionsHandling`Private`mapThreadOptions[ExperimentCyclicVoltammetry, roundedOptions];
 
-	(* since this is a fairly heavy map thread, the output will be an association of the form <|OptionName -> resolvedOptionValue|> so that it is easy to look up aht teh end *)
+	(* since this is a fairly heavy map thread, the output will be an association of the form <|OptionName -> resolvedOptionValue|> so that it is easy to look up at the end *)
 	(* the error trackers will come out the same way as <|<ErrorTrackerName> -> <tracker value>|> *)
 	{mapThreadResolvedOptionAssociations, mapThreadErrorTrackingAssociations, mapThreadWarningTrackingAssociations} = Transpose[
 		MapThread[
@@ -2793,7 +2753,7 @@ resolveExperimentCyclicVoltammetryOptions[
 
 					sampleSolvent, sampleSolventModelSample, sampleSolventMolecule, electrolyteSolutionSolventLink, electrolyteSolutionSolventSampleModel, electrolyteSolutionSolventMolecule, solventMolecule, resolvedSolventMolecule,
 
-					electrolyteSolutionState, electrolyteSolutionComposition, electrolyteSolutionAnalyteLink, electrolyteSolutionAnalyteList, electrolyteSolutionElectrolyteMolecule, electrolyteSolutionElectrolyteMoleculeConcentrationInMillimolar, electrolyteSolutionElectrolyteMoleculeConcentrationInMilligramPerMilliliter, electrolyteSolutionElectrolyteMoleculeModelSample, sampleElectrolyteMoleculeModelSample, sampleElectrolyteMolecule, sampleElectrolyteMoleculeConcentrationInMillimolar, sampleElectrolyteMoleculeConcentrationInMilligramPerMilliliter,
+					electrolyteSolutionState, electrolyteSolutionComposition, electrolyteSolutionAnalyteLink, electrolyteSolutionSolvent, electrolyteSolutionAnalyteList, electrolyteSolutionElectrolyteMolecule, electrolyteSolutionElectrolyteMoleculeConcentrationInMillimolar, electrolyteSolutionElectrolyteMoleculeConcentrationInMilligramPerMilliliter, electrolyteSolutionElectrolyteMoleculeModelSample, sampleElectrolyteMoleculeModelSample, sampleElectrolyteMolecule, sampleElectrolyteMoleculeConcentrationInMillimolar, sampleElectrolyteMoleculeConcentrationInMilligramPerMilliliter,
 
 					(* reference electrode and reference solution *)
 					referenceElectrode, resolvedReferenceElectrode, refreshReferenceElectrode, referenceElectrodeSoakTime,
@@ -3490,7 +3450,8 @@ resolveExperimentCyclicVoltammetryOptions[
 					(* Get analyte and composition information from current sample *)
 
 					sampleAnalyteLinks = Lookup[fetchPacketFromCache[sample, newCache], Analytes];
-					sampleComposition = Lookup[fetchPacketFromCache[sample, newCache], Composition];
+					(* Note: the 3rd element of composition entry is time, which is not relevant here. remove it. *)
+					sampleComposition = Lookup[fetchPacketFromCache[sample, newCache], Composition][[All, {1, 2}]];
 					sampleAnalytes = sampleAnalyteLinks/.{x:ObjectP[]:>Download[x, Object]};
 
 					{analyteOptionsAssociation, analyteOptionsErrorTrackingAssociation} = Module[{
@@ -9068,7 +9029,7 @@ resolveExperimentCyclicVoltammetryOptions[
 	If[!MatchQ[samplePacketsWithElectrolyteSolutionElectrolyteMoleculeWithUnresolvableCompositionUnit, {}]&&!gatherTests,
 		Message[Error::UnresolvableUnit, "The electrolyte molecule has a concentration unit that is not of molar units or mass concentration units in the Composition field of the ElectrolyteSolution", "make sure the composition unit of the electrolyte molecule is specified in Molar units or Mass/Volume units in the Composition field for corresponding ElectrolyteSolution(s)", ObjectToString[samplePacketsWithElectrolyteSolutionElectrolyteMoleculeWithUnresolvableCompositionUnit, Cache -> newCache]]];
 
-	(* error message for electrolytes that don't match teh specified molecule  *)
+	(* error message for electrolytes that don't match the specified molecule  *)
 	If[!MatchQ[samplePacketsWithElectrolyteSolutionElectrolyteMoleculeMismatchElectrolyteMolecule, {}]&&!gatherTests,
 		Message[Error::MismatchingMolecules, "The electrolyte molecule specified by the ElectrolyteSolution is not the same with the resolved electrolyte molecule", "make sure that all electrolyte-related error are addressed and the electrolyte molecule in the ElectrolyteSolution and the Electrolyte chemical are the same", ObjectToString[samplePacketsWithElectrolyteSolutionElectrolyteMoleculeMismatchElectrolyteMolecule, Cache -> newCache]]];
 
@@ -9130,7 +9091,7 @@ resolveExperimentCyclicVoltammetryOptions[
 	If[!MatchQ[samplePacketsWithElectrolyteTargetConcentrationMismatchPreparedSample, {}]&&!gatherTests,
 		Message[Error::IncompatibleOptions, "The electrolyte concentration specified by the ElectrolyteTargetConcentration option does not match with the input sample's electrolyte concentration", "make sure the ElectrolyteTargetConcentration matches with the input prepared samples", ObjectToString[samplePacketsWithElectrolyteTargetConcentrationMismatchPreparedSample, Cache -> newCache]]];
 
-	(* error message for electrolytes where the loading amount is inconsistent with teh target concentration *)
+	(* error message for electrolytes where the loading amount is inconsistent with the target concentration *)
 	If[!MatchQ[samplePacketsWithLoadingSampleElectrolyteAmountMismatchElectrolyteTargetConcentration, {}]&&!gatherTests,
 		Message[Error::IncompatibleOptions, "The electrolyte concentration specified by LoadingSampleElectrolyteAmount option does not match with the concentration specified by the ElectrolyteTargetConcentration option", "make sure the LoadingSampleElectrolyteAmount option agrees with the ElectrolyteTargetConcentration", ObjectToString[samplePacketsWithLoadingSampleElectrolyteAmountMismatchElectrolyteTargetConcentration, Cache -> newCache]]];
 
@@ -12674,31 +12635,31 @@ cyclicVoltammetryResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresol
 				"Preparing Samples",
 				5 Minute,
 				"Preprocessing, such as incubation/mixing, and aliquotting, is performed.",
-				Resource[Operator->Model[User,Emerald,Operator,"Trainee"],Time->5 Minute]
+				Resource[Operator->$BaselineOperator,Time->5 Minute]
 			},
 			{
 				"Picking Resources",
 				gatherResourcesTime,
 				"Samples and items required to execute this protocol are gathered from storage.",
-				Resource[Operator->Model[User,Emerald,Operator,"Trainee"],Time->gatherResourcesTime]
+				Resource[Operator->$BaselineOperator,Time->gatherResourcesTime]
 			},
 			{
 				"Experiment Preparation",
 				gatherResourcesTime,
 				"Solid samples are dissolved in the solvents. Loading samples are transferred into the reaction vessels. Electrolyte solutions (if any) are transferred into pretreatment reaction vessels.",
-				Resource[Operator->Model[User,Emerald,Operator,"Trainee"],Time->experimentPreparationTime]
+				Resource[Operator->$BaselineOperator,Time->experimentPreparationTime]
 			},
 			{
 				"Experiment Execution",
 				experimentTime,
 				"Execute the electrode preparations and cyclic voltammetry measurements.",
-				Resource[Operator->Model[User,Emerald,Operator,"Trainee"],Time->experimentTime]
+				Resource[Operator->$BaselineOperator,Time->experimentTime]
 			},
 			{
 				"Sample Postprocessing",
 				0 Minute,
 				"The samples are imaged and volumes are measured.",
-				Resource[Operator->Model[User,Emerald,Operator,"Trainee"],Time->0 Minute]
+				Resource[Operator->$BaselineOperator,Time->0 Minute]
 			}
 		},
 		ResolvedOptions->myCollapsedResolvedOptions,
@@ -13080,7 +13041,7 @@ simulateExperimentCyclicVoltammetry[
 
 						(* sample UploadSample *)
 						sampleUploadToPrepContainerPackets = UploadSample[
-							currentSampleComposition,
+							currentSampleComposition[[All, {1, 2}]],
 							{"A1", preparationContainer},
 							Simulation -> updatedSimulation,
 							Upload -> False,
@@ -13174,7 +13135,7 @@ simulateExperimentCyclicVoltammetry[
 
 						(* sample UploadSample *)
 						sampleUploadToReactionVesselPackets = UploadSample[
-							currentSampleComposition,
+							currentSampleComposition[[All, {1, 2}]],
 							{"A1", reactionVessel},
 							Simulation -> updatedSimulation,
 							Upload -> False,
@@ -13328,7 +13289,7 @@ simulateExperimentCyclicVoltammetry[
 
 						(* sample UploadSample *)
 						sampleUploadToReactionVesselPackets = UploadSample[
-							currentSampleComposition,
+							currentSampleComposition[[All, {1, 2}]],
 							{"A1", reactionVessel},
 							Simulation -> updatedSimulation,
 							Upload -> False,
@@ -13660,7 +13621,7 @@ DefineOptions[ExperimentCyclicVoltammetryOptions,
 ];
 
 ExperimentCyclicVoltammetryOptions[
-	myInput:ListableP[ObjectP[{Object[Sample],Object[Container]}]|_String],
+	myInput:ListableP[ObjectP[{Object[Sample],Object[Container], Model[Sample]}]|_String],
 	myOptions:OptionsPattern[ExperimentCyclicVoltammetryOptions]
 ]:=Module[
 	{listedOptions,preparedOptions,resolvedOptions},
@@ -13687,7 +13648,7 @@ DefineOptions[ExperimentCyclicVoltammetryPreview,
 ];
 
 ExperimentCyclicVoltammetryPreview[
-	myInput:ListableP[ObjectP[{Object[Sample],Object[Container]}]|_String],
+	myInput:ListableP[ObjectP[{Object[Sample],Object[Container], Model[Sample]}]|_String],
 	myOptions:OptionsPattern[ExperimentCyclicVoltammetryPreview]
 ]:=Module[
 	{listedOptions},
@@ -13709,7 +13670,7 @@ DefineOptions[ValidExperimentCyclicVoltammetryQ,
 ];
 
 ValidExperimentCyclicVoltammetryQ[
-	myInput:ListableP[ObjectP[{Object[Sample],Object[Container]}]|_String],
+	myInput:ListableP[ObjectP[{Object[Sample],Object[Container], Model[Sample]}]|_String],
 	myOptions:OptionsPattern[ValidExperimentCyclicVoltammetryQ]
 ]:=Module[
 	{listedInput,listedOptions,preparedOptions,functionTests,initialTestDescription,allTests,safeOps,verbose,outputFormat,result},
@@ -14026,10 +13987,11 @@ getMoleculeCompositionInformation[mySample:ObjectP[{Model[Sample], Object[Sample
 	];
 
 	(* get the composition field of mySample *)
-	composition = Lookup[fetchPacketFromCache[mySample, myCache], Composition];
+	(* Note: the 3rd element of composition is time, it is not relevant here. *)
+	composition = Lookup[fetchPacketFromCache[mySample, myCache], Composition][[All, {1, 2}]];
 
 	(* Get all the entries non-Null molecules *)
-	moleculeCompositionEntry = Select[composition, MatchQ[Download[Last[#], Object, Cache -> newCache], myMolecule]&];
+	moleculeCompositionEntry = Select[composition, MatchQ[Download[Last[#], Object, Cache -> myCache], myMolecule]&];
 
 	(* If moleculeCompositionEntry has a length of 0, we set moleculeNotFoundBool to True *)
 	moleculeNotFoundBool = If[MatchQ[Length[moleculeCompositionEntry], 0],
@@ -14115,7 +14077,8 @@ getLastMoleculeInformationFromSampleComposition[mySample:ObjectP[{Model[Sample],
 	},
 
 	(* get the composition field of mySample *)
-	composition = Lookup[fetchPacketFromCache[mySample, myCache], Composition];
+	(* Note: the 3rd element of composition is time, it is not relevant here. *)
+	composition = Lookup[fetchPacketFromCache[mySample, myCache], Composition][[All, {1, 2}]];
 
 	(* Get all the entries non-Null molecules *)
 	moleculeCompositionEntry = Select[composition, !MatchQ[Download[Last[#], Object, Cache -> myCache], Alternatives[Sequence@@myKnownMolecules, Null]]&];
@@ -14229,7 +14192,8 @@ getSolutionInformation[mySolution:ObjectP[{Model[Sample], Object[Sample]}], myCa
 	(* -- Get basic information -- *)
 
 	(* Get the solution composition field *)
-	compositionField = Lookup[fetchPacketFromCache[mySolution, myCache], Composition] /. {{_, Null} -> Nothing};
+	(* Note: if either Model[Sample] or Object[Sample] has an entry of composition without identity model, remove that entry *)
+	compositionField = Lookup[fetchPacketFromCache[mySolution, myCache], Composition] /. {{_, Null, _} -> Nothing, {_, Null} -> Nothing};
 
 	(* Get the composition molecules *)
 	compositionMoleculeList = Download[compositionField[[All, 2]], Object, Cache -> myCache];

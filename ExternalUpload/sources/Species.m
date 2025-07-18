@@ -49,7 +49,7 @@ DefineOptions[UploadSpecies,
 				Default -> Null,
 				AllowNull -> True,
 				Widget -> Adder[Widget[Type -> Object, Pattern :> ObjectP[Model[Cell]]]],
-				Description -> "The cells that comprise this specices.",
+				Description -> "The cells that comprise this species.",
 				Category -> "Organizational Information"
 			},
 			{

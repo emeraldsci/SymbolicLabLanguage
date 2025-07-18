@@ -32,8 +32,17 @@ DefineObjectType[Model[Qualification,ConductivityMeter], {
 			Pattern :> _Link,
 			Relation->Object[Sample]|Model[Sample],
 			Description -> "The standard sample which is used to calibrate the conductivity meter before we perform the measurements of ConductivityStandards.",
-			Category -> "General",
+			Category -> "Calibration",
 			Abstract -> True
+		},
+		SecondaryCalibrationStandard ->{
+			Format->Single,
+			Class->Link,
+			Pattern:>_Link,
+			Relation->Object[Sample]|Model[Sample],
+			Description->"A secondary calibration standard used to calibrate probes of the conductivity meter that require two-point calibration before we perform the measurements of ConductivityStandards.",
+			Category->"Calibration",
+			Abstract->True
 		}
 	}
 }];

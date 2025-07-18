@@ -31,12 +31,36 @@ DefineObjectType[Object[Qualification,Training,WasteNeutralization], {
             Description -> "The waste sample used to be neutralized in this training qualification.",
             Category -> "General"
         },
+        WasteSampleContainer -> {
+            Format -> Single,
+            Class -> Link,
+            Pattern :> _Link,
+            Relation -> Alternatives[Object[Container], Model[Container]],
+            Description -> "The container of the waste sample to be neutralized in this training qualification.",
+            Category -> "General"
+        },
         WasteNeutralizationSolution -> {
             Format -> Single,
             Class -> Link,
             Pattern :> _Link,
             Relation -> Alternatives[Object[Sample], Model[Sample]],
             Description -> "The solution used to neutralize the waste sample in this training qualification.",
+            Category -> "General"
+        },
+        WasteNeutralizationSolutionContainer -> {
+            Format -> Single,
+            Class -> Link,
+            Pattern :> _Link,
+            Relation -> Alternatives[Object[Container], Model[Container]],
+            Description -> "The container of the solution used to neutralize the waste sample in this training qualification.",
+            Category -> "General"
+        },
+        WasteVolume -> {
+            Format -> Single,
+            Class -> Real,
+            Pattern :> GreaterP[0*Liter],
+            Units -> Milliliter,
+            Description -> "The volume of waste sample used in the waste neutralization training.",
             Category -> "General"
         },
         WasteNeutralizationContainer -> {

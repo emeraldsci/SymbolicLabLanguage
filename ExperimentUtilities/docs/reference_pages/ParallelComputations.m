@@ -25,6 +25,6 @@ DefineUsage[
 			"ProcedureFramework`Private`parallelExecuteAssociation",
 			"CreateAsanaTask"
 		},
-		Author -> {"waseem.vali", "malav.desai", "steven"}
+		Author -> {"xu.yi", "waseem.vali", "malav.desai", "steven"}
 	}
 ];

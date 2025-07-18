@@ -23,7 +23,7 @@ ExperimentLyseCellsOptions[samplesIn:{(ObjectP[{Object[Container],Object[Sample]
   (* get the options as a list *)
   listedOptions = ToList[myOptions];
 
-  (* remove the Output option before passing to the core function because it doens't make sense here *)
+  (* remove the Output option before passing to the core function because it doesn't make sense here *)
   noOutputOptions = DeleteCases[listedOptions, Alternatives[Output -> _, OutputFormat -> _]];
 
   (* return only the options for ExperimentLyseCells *)
@@ -100,5 +100,22 @@ ValidExperimentLyseCellsQ[myInput:ListableP[ObjectP[{Object[Container],Object[Sa
 
 
 
+(* ::Subsection:: *)
+(* ExperimentLyseCellsPreview *)
+DefineOptions[ExperimentLyseCellsPreview,
+  SharedOptions :> {ExperimentLyseCells}
+];
+
+ExperimentLyseCellsPreview[myInputs : ListableP[ObjectP[{Object[Container],Object[Sample]}]|_String], myOptions : OptionsPattern[]] := Module[
+  {listedOptions, noOutputOptions},
+
+  (* get the options as a list *)
+  listedOptions = ToList[myOptions];
+
+  (* remove the Output option before passing to the core function because it doesn't make sense here *)
+  noOutputOptions = DeleteCases[listedOptions, Output -> _];
+
+  (* return only the options for ExperimentLyseCells *)
+  ExperimentLyseCells[myInputs, Append[noOutputOptions, Output -> Preview]]];
 (* ::Section:: *)
 (*End Private*)

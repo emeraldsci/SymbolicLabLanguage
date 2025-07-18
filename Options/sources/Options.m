@@ -585,7 +585,7 @@ defineOption[mySymbol_Symbol,Hold[myOptionsList:List[(_Rule|_RuleDelayed)..]],al
 	myAssociation=Association[myOptionsList];
 
 	(* Define a list of valid keys that can exist in this options list. *)
-	validKeys={OptionName,Default,AllowNull,Description,ResolutionDescription,Category,IndexMatchingInput,IndexMatchingParent,IndexMatchingOptions,IndexMatching,Expandable,Pattern,PatternTooltip,SingletonPattern,Widget,Pooled,Required,UnitOperation,NestedIndexMatching};
+	validKeys={OptionName,Default,AllowNull,Description,ResolutionDescription,Category,IndexMatchingInput,IndexMatchingParent,IndexMatchingOptions,IndexMatching,Expandable,Pattern,PatternTooltip,SingletonPattern,Widget,Pooled,Required,UnitOperation,NestedIndexMatching,HideNull};
 
 	(* Get the set difference between the valid keys and the keys in the given options list. This gives us the invalid keys in the association. *)
 	invalidKeys=Complement[Keys[myAssociation],validKeys];
@@ -769,6 +769,9 @@ defineOption[mySymbol_Symbol,Hold[myOptionsList:List[(_Rule|_RuleDelayed)..]],al
 
 			(* AllowNull defaults to True. *)
 			"AllowNull"->Lookup[myAssociation,AllowNull,True],
+
+			(* AllowNull defaults to True. *)
+			"HideNull"->Lookup[myAssociation,HideNull,True],
 
 			(* IndexMatching is a list of strings and symbols. This is an optional key so default it to Null. *)
 			"IndexMatching"->If[MatchQ[Lookup[myAssociation,Key[IndexMatching],Null],Null],

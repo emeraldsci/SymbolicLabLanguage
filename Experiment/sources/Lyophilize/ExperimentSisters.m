@@ -9,14 +9,14 @@ DefineOptions[ExperimentLyophilizePreview,
 ];
 
 
-ExperimentLyophilizePreview[sampleIn:(ObjectP[{Object[Container],Object[Sample]}]|_String),myOptions:OptionsPattern[]]:=ExperimentLyophilizePreview[{sampleIn},myOptions];
-ExperimentLyophilizePreview[samplesIn:{(ObjectP[{Object[Container],Object[Sample]}]|_String)..},myOptions:OptionsPattern[]]:=Module[
+ExperimentLyophilizePreview[sampleIn:(ObjectP[{Object[Container],Object[Sample],Model[Sample]}]|_String),myOptions:OptionsPattern[]]:=ExperimentLyophilizePreview[{sampleIn},myOptions];
+ExperimentLyophilizePreview[samplesIn:{(ObjectP[{Object[Container],Object[Sample],Model[Sample]}]|_String)..},myOptions:OptionsPattern[]]:=Module[
 	{listedOptions, noOutputOptions},
 
 (* get the options as a list *)
 	listedOptions = ToList[myOptions];
 
-	(* remove the Output option before passing to the core function because it doens't make sense here *)
+	(* remove the Output option before passing to the core function because it doesn't make sense here *)
 	noOutputOptions = DeleteCases[listedOptions, Output -> _];
 
 	(* return only the preview for ExperimentLyophilize *)
@@ -41,14 +41,14 @@ DefineOptions[ExperimentLyophilizeOptions,
 ];
 
 
-ExperimentLyophilizeOptions[sampleIn:(ObjectP[{Object[Container],Object[Sample]}]|_String),myOptions:OptionsPattern[]]:=ExperimentLyophilizeOptions[{sampleIn},myOptions];
-ExperimentLyophilizeOptions[samplesIn:{(ObjectP[{Object[Container],Object[Sample]}]|_String)..},myOptions:OptionsPattern[]]:=Module[
+ExperimentLyophilizeOptions[sampleIn:(ObjectP[{Object[Container],Object[Sample],Model[Sample]}]|_String),myOptions:OptionsPattern[]]:=ExperimentLyophilizeOptions[{sampleIn},myOptions];
+ExperimentLyophilizeOptions[samplesIn:{(ObjectP[{Object[Container],Object[Sample],Model[Sample]}]|_String)..},myOptions:OptionsPattern[]]:=Module[
 	{listedOptions, noOutputOptions, options},
 
 (* get the options as a list *)
 	listedOptions = ToList[myOptions];
 
-	(* remove the Output option before passing to the core function because it doens't make sense here *)
+	(* remove the Output option before passing to the core function because it doesn't make sense here *)
 	noOutputOptions = DeleteCases[listedOptions, Alternatives[Output -> _, OutputFormat -> _]];
 
 	(* return only the options for ExperimentLyophilize *)
@@ -75,14 +75,14 @@ DefineOptions[ValidExperimentLyophilizeQ,
 ];
 
 
-ValidExperimentLyophilizeQ[sampleIn:(ObjectP[{Object[Container],Object[Sample]}]|_String),myOptions:OptionsPattern[]]:=ValidExperimentLyophilizeQ[{sampleIn},myOptions];
-ValidExperimentLyophilizeQ[samplesIn:{(ObjectP[{Object[Container],Object[Sample]}]|_String)..},myOptions:OptionsPattern[]]:=Module[
+ValidExperimentLyophilizeQ[sampleIn:(ObjectP[{Object[Container],Object[Sample],Model[Sample]}]|_String),myOptions:OptionsPattern[]]:=ValidExperimentLyophilizeQ[{sampleIn},myOptions];
+ValidExperimentLyophilizeQ[samplesIn:{(ObjectP[{Object[Container],Object[Sample],Model[Sample]}]|_String)..},myOptions:OptionsPattern[]]:=Module[
 	{listedOptions, noOutputOptions, preparedOptions, massSpecTests, initialTestDescription, allTests, verbose, outputFormat},
 
 (* get the options as a list *)
 	listedOptions = ToList[myOptions];
 
-	(* remove the Output option before passing to the core function because it doens't make sense here *)
+	(* remove the Output option before passing to the core function because it doesn't make sense here *)
 	preparedOptions = DeleteCases[listedOptions, (Output | Verbose | OutputFormat) -> _];
 
 	(* return only the tests for ExperimentLyophilize *)

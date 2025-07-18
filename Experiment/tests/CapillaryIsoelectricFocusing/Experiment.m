@@ -878,7 +878,7 @@ DefineTests[ExperimentCapillaryIsoelectricFocusing,
 			Variables:>{options}
 		],
 		Example[
-			{Options,StandardFrequency,"Standards: Specify how many injections per standard should be included in this experiment. Sample, Standard, and Blank injection order are resolved according to InjectoinTable:"},
+			{Options,StandardFrequency,"Standards: Specify how many injections per standard should be included in this experiment. Sample, Standard, and Blank injection order are resolved according to InjectionTable:"},
 			options=ExperimentCapillaryIsoelectricFocusing[{Object[Sample, "ExperimentCIEF Test sample 1 (100 uL) "<>$SessionUUID], Object[Sample, "ExperimentCIEF Test sample 2 (100 uL) "<>$SessionUUID]},
 				IncludeStandards->True, StandardFrequency->FirstAndLast,
 				Output->Options];
@@ -1504,7 +1504,7 @@ DefineTests[ExperimentCapillaryIsoelectricFocusing,
 			Variables:>{options}
 		],
 		Example[
-			{Options,BlankFrequency,"Blanks: Specify how many injections per standard should be included in this experiment. Sample, Blank, and Blank injection order are resolved according to InjectoinTable:"},
+			{Options,BlankFrequency,"Blanks: Specify how many injections per standard should be included in this experiment. Sample, Blank, and Blank injection order are resolved according to InjectionTable:"},
 			options=ExperimentCapillaryIsoelectricFocusing[{Object[Sample, "ExperimentCIEF Test sample 1 (100 uL) "<>$SessionUUID], Object[Sample, "ExperimentCIEF Test sample 2 (100 uL) "<>$SessionUUID]},
 				IncludeBlanks->True, BlankFrequency->FirstAndLast,
 				Output->Options];
@@ -2045,6 +2045,78 @@ DefineTests[ExperimentCapillaryIsoelectricFocusing,
 			Variables:>{options}
 		],
 		(* --- Messages tests --- *)
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a sample that does not exist (name form):"},
+			ExperimentCapillaryIsoelectricFocusing[Object[Sample, "Nonexistent sample"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a container that does not exist (name form):"},
+			ExperimentCapillaryIsoelectricFocusing[Object[Container, Vessel, "Nonexistent container"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a sample that does not exist (ID form):"},
+			ExperimentCapillaryIsoelectricFocusing[Object[Sample, "id:12345678"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a container that does not exist (ID form):"},
+			ExperimentCapillaryIsoelectricFocusing[Object[Container, Vessel, "id:12345678"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Do NOT throw a message if we have a simulated sample but a simulation is specified that indicates that it is simulated:"},
+			Module[{containerPackets, containerID, sampleID, samplePackets, simulationToPassIn},
+				containerPackets = UploadSample[
+					Model[Container, Vessel, "New 0.5mL Tube with 2mL Tube Skirt"],
+					{"Work Surface", Object[Container, Bench, "Unit test bench for ExperimentCIEF tests " <> $SessionUUID]},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True
+				];
+				simulationToPassIn = Simulation[containerPackets];
+				containerID = Lookup[First[containerPackets], Object];
+				samplePackets = UploadSample[
+					Model[Sample,"10 mg/mL BSA Fraction V for cIEF tests "<>$SessionUUID],
+					{"A1", containerID},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True,
+					Simulation -> simulationToPassIn
+				];
+				sampleID = Lookup[First[samplePackets], Object];
+				simulationToPassIn = UpdateSimulation[simulationToPassIn, Simulation[samplePackets]];
+
+				ExperimentCapillaryIsoelectricFocusing[sampleID, Simulation -> simulationToPassIn, Output -> Options]
+			],
+			{__Rule}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Do NOT throw a message if we have a simulated container but a simulation is specified that indicates that it is simulated:"},
+			Module[{containerPackets, containerID, sampleID, samplePackets, simulationToPassIn},
+				containerPackets = UploadSample[
+					Model[Container, Vessel, "New 0.5mL Tube with 2mL Tube Skirt"],
+					{"Work Surface", Object[Container, Bench, "Unit test bench for ExperimentCIEF tests " <> $SessionUUID]},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True
+				];
+				simulationToPassIn = Simulation[containerPackets];
+				containerID = Lookup[First[containerPackets], Object];
+				samplePackets = UploadSample[
+					Model[Sample,"10 mg/mL BSA Fraction V for cIEF tests "<>$SessionUUID],
+					{"A1", containerID},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True,
+					Simulation -> simulationToPassIn
+				];
+				sampleID = Lookup[First[samplePackets], Object];
+				simulationToPassIn = UpdateSimulation[simulationToPassIn, Simulation[samplePackets]];
+
+				ExperimentCapillaryIsoelectricFocusing[containerID, Simulation -> simulationToPassIn, Output -> Options]
+			],
+			{__Rule}
+		],
 		Example[{Messages,"InputContainsTemporalLinks","Throw a message if given a temporal link:"},
 			ExperimentCapillaryIsoelectricFocusing[Link[Object[Sample, "ExperimentCIEF Test sample 1 (100 uL) "<>$SessionUUID],
 				Now - 1 Minute], Output->Options],
@@ -2110,7 +2182,7 @@ DefineTests[ExperimentCapillaryIsoelectricFocusing,
 				Error::InvalidOption
 			}
 		],
-		Example[{Messages, "CIEFInjectionTableMismatch","If an injectionTable is set but is not copacetic with samples, ladders, blanks, and standards, raise an error:"},
+		Example[{Messages, "CIEFInjectionTableMismatch","If an injectionTable is set but is not compatible with samples, ladders, blanks, and standards, raise an error:"},
 			ExperimentCapillaryIsoelectricFocusing[Object[Sample,"ExperimentCIEF Test sample 1 (100 uL) "<>$SessionUUID],
 				Blanks -> Model[Sample, "Milli-Q water"],
 				InjectionTable ->
@@ -2175,16 +2247,6 @@ DefineTests[ExperimentCapillaryIsoelectricFocusing,
 				Error::NotEnoughUsesLeftOnCIEFCartridge,
 				Error::InvalidOption
 			}
-		],
-		Example[{Messages, "NotEnoughOptimalUsesLeftOnCIEFCartridge","If the cartridge object does not have enough optimal uses for the stated samples, blanks, and standards, raise an error:"},
-			ExperimentCapillaryIsoelectricFocusing[
-				{Object[Sample,"ExperimentCIEF Test sample 1 (100 uL) "<>$SessionUUID],Object[Sample,"ExperimentCIEF Test sample 2 (100 uL) "<>$SessionUUID]}, NumberOfReplicates->40,
-				Blanks -> Model[Sample, "Milli-Q water"],BlankFrequency->FirstAndLast,
-				Cartridge-> Object[Container,ProteinCapillaryElectrophoresisCartridge,"cIEF Cartridge test Object 1 for ExperimentCIEF "<>$SessionUUID],
-				Output->Options
-			],
-			_List,
-			Messages:>{Warning::NotEnoughOptimalUsesLeftOnCIEFCartridge}
 		],
 		Example[{Messages, "CIEFPreMadeMasterMixWithMakeOwnOptions","When options for both PremadeMasterMix and Make-Ones-Own mastermix are passed, raise warning and follow PremadeMaterMix:"},
 			ExperimentCapillaryIsoelectricFocusing[Object[Sample,"ExperimentCIEF Test sample 1 (100 uL) "<>$SessionUUID],
@@ -2277,7 +2339,7 @@ DefineTests[ExperimentCapillaryIsoelectricFocusing,
 				Error::InvalidOption
 			}
 		],
-		Example[{Messages, "CIEFimagingMethodMismatch","When both ImagingMethods and NativeFluorescenceExposureTimes are specified, raise an error if they are not copacetic:"},
+		Example[{Messages, "CIEFimagingMethodMismatch","When both ImagingMethods and NativeFluorescenceExposureTimes are specified, raise an error if they are not compatible:"},
 			ExperimentCapillaryIsoelectricFocusing[Object[Sample,"ExperimentCIEF Test sample 1 (100 uL) "<>$SessionUUID],
 				ImagingMethods -> Absorbance, NativeFluorescenceExposureTime -> {3 Second}, Output -> Options
 			],
@@ -2390,25 +2452,25 @@ DefineTests[ExperimentCapillaryIsoelectricFocusing,
 				Error::InvalidOption
 			}
 		],
-		Example[{Messages, "CIEFMakeMasterMixAmpholyteOptionLengthsNotCopacetic","When PremadeMasterMix is False, raise an error if the lengths of ampholytes matched options are not the same length:"},
+		Example[{Messages, "CIEFMakeMasterMixAmpholyteOptionLengthsNotCompatible","When PremadeMasterMix is False, raise an error if the lengths of ampholytes matched options are not the same length:"},
 			ExperimentCapillaryIsoelectricFocusing[Object[Sample,"ExperimentCIEF Test sample 1 (100 uL) "<>$SessionUUID],
 				Ampholytes->{{Model[Sample,"Pharmalyte pH 3-10"]}}, AmpholyteVolume->{{10Microliter,5Microliter}},
 				Output -> Options
 			],
 			_List,
 			Messages:>{
-				Error::CIEFMakeMasterMixAmpholyteOptionLengthsNotCopacetic,
+				Error::CIEFMakeMasterMixAmpholyteOptionLengthsNotCompatible,
 				Error::InvalidOption
 			}
 		],
-		Example[{Messages, "CIEFMakeMasterMixAmpholyteOptionLengthsNotCopacetic","When PremadeMasterMix is False, raise an error if the lengths of ampholytes matched options are not the same length:"},
+		Example[{Messages, "CIEFMakeMasterMixAmpholyteOptionLengthsNotCompatible","When PremadeMasterMix is False, raise an error if the lengths of ampholytes matched options are not the same length:"},
 			ExperimentCapillaryIsoelectricFocusing[Object[Sample,"ExperimentCIEF Test sample 1 (100 uL) "<>$SessionUUID],
 				Ampholytes->{{Model[Sample,"Pharmalyte pH 3-10"]}}, AmpholyteTargetConcentrations->{{2VolumePercent,5VolumePercent}},
 				Output -> Options
 			],
 			_List,
 			Messages:>{
-				Error::CIEFMakeMasterMixAmpholyteOptionLengthsNotCopacetic,
+				Error::CIEFMakeMasterMixAmpholyteOptionLengthsNotCompatible,
 				Error::InvalidOption
 			}
 		],
@@ -2456,25 +2518,25 @@ DefineTests[ExperimentCapillaryIsoelectricFocusing,
 				Error::InvalidOption
 			}
 		],
-		Example[{Messages, "CIEFMakeMasterMixIsoelectricPointMarkerOptionLengthsNotCopacetic","When PremadeMasterMix is False, raise an error if the lengths of IsoelectricPointMarkers matched options are not the same length:"},
+		Example[{Messages, "CIEFMakeMasterMixIsoelectricPointMarkerOptionLengthsNotCompatible","When PremadeMasterMix is False, raise an error if the lengths of IsoelectricPointMarkers matched options are not the same length:"},
 			ExperimentCapillaryIsoelectricFocusing[Object[Sample,"ExperimentCIEF Test sample 1 (100 uL) "<>$SessionUUID],
 				IsoelectricPointMarkers->{{Model[Sample,"Pharmalyte pH 3-10"]}}, IsoelectricPointMarkersVolume->{{10Microliter,5Microliter}},
 				Output -> Options
 			],
 			_List,
 			Messages:>{
-				Error::CIEFMakeMasterMixIsoelectricPointMarkerOptionLengthsNotCopacetic,
+				Error::CIEFMakeMasterMixIsoelectricPointMarkerOptionLengthsNotCompatible,
 				Error::InvalidOption
 			}
 		],
-		Example[{Messages, "CIEFMakeMasterMixIsoelectricPointMarkerOptionLengthsNotCopacetic","When PremadeMasterMix is False, raise an error if the lengths of IsoelectricPointMarkers matched options are not the same length:"},
+		Example[{Messages, "CIEFMakeMasterMixIsoelectricPointMarkerOptionLengthsNotCompatible","When PremadeMasterMix is False, raise an error if the lengths of IsoelectricPointMarkers matched options are not the same length:"},
 			ExperimentCapillaryIsoelectricFocusing[Object[Sample,"ExperimentCIEF Test sample 1 (100 uL) "<>$SessionUUID],
 				IsoelectricPointMarkers->{{Model[Sample,"Pharmalyte pH 3-10"]}}, IsoelectricPointMarkersTargetConcentrations->{{2VolumePercent,5VolumePercent}},
 				Output -> Options
 			],
 			_List,
 			Messages:>{
-				Error::CIEFMakeMasterMixIsoelectricPointMarkerOptionLengthsNotCopacetic,
+				Error::CIEFMakeMasterMixIsoelectricPointMarkerOptionLengthsNotCompatible,
 				Error::InvalidOption
 			}
 		],
@@ -2867,6 +2929,31 @@ DefineTests[ExperimentCapillaryIsoelectricFocusing,
 			Variables :> {options}
 		],
 		(* --- Sample prep option tests --- *)
+		Example[{Options, {PreparedModelContainer, PreparedModelAmount}, "Specify the container in which an input Model[Sample] should be prepared:"},
+			options = ExperimentCapillaryIsoelectricFocusing[
+				{Model[Sample, "Milli-Q water"], Model[Sample, "Milli-Q water"]},
+				PreparedModelContainer -> Model[Container,Vessel,"New 0.5mL Tube with 2mL Tube Skirt"],
+				PreparedModelAmount -> 100 Microliter,
+				Output -> Options
+			];
+			prepUOs = Lookup[options, PreparatoryUnitOperations];
+			{
+				prepUOs[[-1, 1]][Sample],
+				prepUOs[[-1, 1]][Container],
+				prepUOs[[-1, 1]][Amount],
+				prepUOs[[-1, 1]][Well],
+				prepUOs[[-1, 1]][ContainerLabel]
+			},
+			{
+				{ObjectP[Model[Sample, "id:8qZ1VWNmdLBD"]]..},
+				{ObjectP[Model[Container,Vessel,"New 0.5mL Tube with 2mL Tube Skirt"]]..},
+				{EqualP[100 Microliter]..},
+				{"A1", "A1"},
+				{_String, _String}
+			},
+			Variables :> {options, prepUOs},
+			Messages:>{Warning::CIEFMissingSampleComposition}
+		],
 		Example[{Options, PreparatoryUnitOperations, "Use the PreparatoryUnitOperations option to prepare samples from models before the experiment is run:"},
 			options = ExperimentCapillaryIsoelectricFocusing["MyProteinMix",
 				PreparatoryUnitOperations -> {
@@ -2878,20 +2965,6 @@ DefineTests[ExperimentCapillaryIsoelectricFocusing,
 			{SamplePreparationP..},
 			Variables :> {options},
 			Messages:>{Warning::CIEFMissingSampleComposition}
-		],
-		Example[{Options, PreparatoryPrimitives, "Use the PreparatoryPrimitives option to prepare samples from models before the experiment is run:"},
-			options = ExperimentCapillaryIsoelectricFocusing[
-				"MyProteinMix",
-				PreparatoryPrimitives -> {
-					Define[Name -> "MyProteinMix",Sample -> {Model[Container,Vessel,"New 0.5mL Tube with 2mL Tube Skirt"], "A1"}],
-					Transfer[Source -> Model[Sample, "Milli-Q water"],Destination -> "MyProteinMix", Amount -> 90 Microliter],
-					Transfer[Source -> Model[Sample, "10 mg/mL BSA Fraction V for cIEF tests"],Destination -> "MyProteinMix", Amount -> 5 Microliter],
-					Transfer[Source -> Model[Sample, "10 mg/mL bActin for cIEF tests"],Destination -> "MyProteinMix", Amount -> 5 Microliter]},
-				Output -> Options
-			];
-			Lookup[options, PreparatoryPrimitives],
-			{SampleManipulationP..},
-			Variables :> {options}
 		],
 		Example[{Options, Incubate, "Set the Incubate option:"},
 			options = ExperimentCapillaryIsoelectricFocusing[Object[Sample,"ExperimentCIEF Test sample 3 (100 uL) "<>$SessionUUID],
@@ -3291,14 +3364,14 @@ DefineTests[ExperimentCapillaryIsoelectricFocusing,
 				AliquotContainer -> Model[Container, Vessel, "New 0.5mL Tube with 2mL Tube Skirt"],
 				Output -> Options];
 			Lookup[options, AliquotContainer],
-			{1, ObjectReferenceP[Model[Container, Vessel, "New 0.5mL Tube with 2mL Tube Skirt"]]},
+			{{1, ObjectReferenceP[Model[Container, Vessel, "New 0.5mL Tube with 2mL Tube Skirt"]]}},
 			Variables :> {options}
 		],
 		Example[{Options, DestinationWell, "Set the DestinationWell option:"},
 			options = ExperimentCapillaryIsoelectricFocusing[Object[Sample,"ExperimentCIEF Test sample 3 (100 uL) "<>$SessionUUID],
 				DestinationWell -> "A1", Output -> Options];
 			Lookup[options, DestinationWell],
-			"A1",
+			{"A1"},
 			Variables :> {options}
 		],
 		Example[{Options, ImageSample, "Set the ImageSample option:"},
@@ -3352,6 +3425,24 @@ DefineTests[ExperimentCapillaryIsoelectricFocusing,
 			},
 			Variables:>{protocol},
 			EquivalenceFunction->MatchQ
+		],
+		Test["Deal with Nulls with correct listiness for Ampholytes and IsoelectricPointMarkers:",
+			Download[
+				ExperimentCapillaryIsoelectricFocusing[{Object[Sample,
+					"ExperimentCIEF Test sample 1 (100 uL) " <> $SessionUUID],
+					Object[Sample,
+						"ExperimentCIEF Test sample 2 (100 uL) " <> $SessionUUID]},
+					PremadeMasterMix -> True,
+					PremadeMasterMixReagent ->
+						Object[Sample, "ExperimentCIEF Test reagent " <> $SessionUUID],
+					Ampholytes -> {Null, Null},
+					IsoelectricPointMarkers -> {Null, Null}],
+				{Ampholytes, IsoelectricPointMarkers}
+			],
+			{
+				{{Null}, {Null}},
+				{{Null}, {Null}}
+			}
 		]
 	},
 	Parallel->True,
@@ -3825,12 +3916,12 @@ DefineTests[ExperimentCapillaryIsoelectricFocusing,
 
 				Upload[<|Object->#,DeveloperObject->True,AwaitingStorageUpdate->Null|> &/@allObjects];
 				Upload[Cases[Flatten[{
-					<|Object->sample2, Replace[Composition]->{{10 Milligram/Milliliter,Link[Model[Molecule,Protein,"id:n0k9mG8npLLw"]]}}|>,
+					<|Object->sample2, Replace[Composition]->{{10 Milligram/Milliliter,Link[Model[Molecule,Protein,"id:n0k9mG8npLLw"]],Now}}|>,
 					<|Object->sample3,Status->Discarded,Model->Null|>,
 					<|Object->sampleModel,Deprecated->True,DeveloperObject->True|>,
 					<|Object->sample10modelless,Model->Null,DeveloperObject->True|>,
 					<|Object->container4a,Replace[Contents]->{}, Status->Available, Product->Link[Object[Product, "id:8qZ1VWNwNNAn"], Samples],DeveloperObject->True|>,
-					<|Object->sample7,DeveloperObject->True,Replace[Composition]->{{10 Milligram/Milliliter,Link[Model[Molecule,Protein,"id:n0k9mG8npLLw"]]}}|>
+					<|Object->sample7,DeveloperObject->True,Replace[Composition]->{{10 Milligram/Milliliter,Link[Model[Molecule,Protein,"id:n0k9mG8npLLw"]],Now}}|>
 				}],PacketP[]]];
 
 				(* template option sets options from previous protocol *)
@@ -4527,7 +4618,7 @@ DefineTests[
 			ExperimentCapillaryIsoelectricFocusingPreview[Object[Sample,"ExperimentCIEFPreview Test sample 1 (100 uL) "<>$SessionUUID]],
 			Null
 		],
-		Example[{Basic,"Return Null for mulitple samples:"},
+		Example[{Basic,"Return Null for multiple samples:"},
 			ExperimentCapillaryIsoelectricFocusingPreview[{Object[Sample,"ExperimentCIEFPreview Test sample 1 (100 uL) "<>$SessionUUID],Object[Sample,"ExperimentCIEFPreview Test sample 1 (100 uL) "<>$SessionUUID]}],
 			Null
 		],

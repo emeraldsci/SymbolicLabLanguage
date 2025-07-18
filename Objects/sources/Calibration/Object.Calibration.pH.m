@@ -14,7 +14,9 @@ DefineObjectType[Object[Calibration, pH], {
 			Class -> Link,
 			Pattern :> _Link,
 			Relation -> Alternatives[
-				Object[Protocol,MeasurepH][CalibrationData]
+				Object[Protocol,MeasurepH][CalibrationData],
+				Object[Protocol,AdjustpH][CalibrationData],
+				Object[Qualification,pHMeter][CalibrationData]
 			],
 			Description -> "The protocol that generated this data.",
 			Category -> "General",

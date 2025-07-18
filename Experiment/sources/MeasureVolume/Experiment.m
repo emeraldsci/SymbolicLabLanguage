@@ -31,16 +31,6 @@ DefineOptions[
 			],
 			Category -> "Hidden"
 		},
-		{
-			OptionName -> NumberOfReplicates,
-			Default -> 1,
-			Description -> "The number of times each volume measurement will be replicated.",
-			AllowNull -> False,
-			Widget -> Widget[
-				Type -> Number,
-				Pattern :> GreaterP[0,1]
-			]
-		},
 		IndexMatching[
 			IndexMatchingInput->"experiment samples",
 			{
@@ -81,7 +71,7 @@ DefineOptions[
 			{
 				OptionName -> RecoupSample,
 				Default -> Automatic,
-				Description -> "Indicates if the transferred liquid used for density measurement will be recouped or transfered back into the original container.",
+				Description -> "Indicates if the transferred liquid used for density measurement will be recouped or transferred back into the original container.",
 				AllowNull -> True,
 				Widget -> Widget[
 					Type -> Enumeration,
@@ -115,9 +105,21 @@ DefineOptions[
 			Category -> "PostProcessing",
 			Widget -> Widget[Type->Enumeration,Pattern:>BooleanP]
 		},
+		{
+			OptionName -> StorageMeasurements,
+			Default -> False,
+			Description -> "Indicates if this protocol is being enqueued in order to measure the volume of samples before storage.",
+			AllowNull -> True,
+			Category -> "Hidden",
+			Widget -> Widget[Type -> Enumeration, Pattern :> BooleanP]
+		},
 		ProtocolOptions,
+		SimulationOption,
+		PreparationOption,
 		SamplePrepOptions,
 		AliquotOptions,
+		ModelInputOptions,
+		SampleLabelOptions,
 		SubprotocolDescriptionOption,
 		InSituOption,
 		PriorityOption,
@@ -143,6 +145,7 @@ Warning::CentrifugeRecommended = "Because the following samples will have their 
 Error::InvalidInSituMethod = "With InSitu -> True, the measurement methods, `1`, aren't compatible with the location and state of the samples `2`.";
 Error::InvalidInSituMeasureDensity = "With InSitu -> True, you may not set MeasureDensity -> True.";
 Error::InSituImpossible = "Because of the location of the sample, InSitu measurement is not possible. Please make sure the samples `1` are on the appropriate instruments and in compatible racks if necessary.";
+Warning::LivingOrSterileSamplesQueuedForMeasureVolume = "The following samples,`1`, are marked Living->True, and the following samples, `2`, are marked Sterile->True. MeasureVolume on these samples will require opening the cover and therefore pose contamination risks. We recommend removing these samples from input list.";
 
 (* TODO: This is a temporary feature flag allowing us to quickly turn container exempting on or off based on the UltrasonicIncompatible flag added to Model[Container] *)
 containerExemptionCheckFlag = False;
@@ -154,14 +157,17 @@ containerExemptionCheckFlag = False;
 
 
 ExperimentMeasureVolume[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:OptionsPattern[]]:=Module[
-	{listedOptions,outputSpecification,output,listedSamples,gatherTests,validSamplePreparationResult,mySamplesWithPreparedSamples,
-		myOptionsWithPreparedSamples,samplePreparationCache,safeOps,safeOpsTests,validLengths,validLengthTests,
+	{
+		listedOptions,outputSpecification,output,listedSamples,gatherTests,validSamplePreparationResult,mySamplesWithPreparedSamples,
+		myOptionsWithPreparedSamples,updatedSimulation,safeOps,safeOpsTests,validLengths,validLengthTests,
 		templatedOptions,templateTests,inheritedOptions,expandedSafeOps,cacheBall,resolvedOptionsResult,parentProtocol,
-		resolvedOptions,resolvedOptionsTests,collapsedResolvedOptions,protocolObject,protocolPacket,resourcePacketTests,
-		aliquotAdjustedOptions,cache,inSituOp,metaContainers,metaContainerParents,samplePackets,sampleModels,containerPackets,
-		containerModels,volumeCalibrations,filteredSamplesIn,filteredExpandedOptions,metaMetaContainerParents,
+		resolvedOptions,resolvedOptionsTests,collapsedResolvedOptions,resolvedPreparation, optionsResolverOnly,
+		returnEarlyBecauseOptionsResolverOnly,returnEarlyBecauseFailuresQ,performSimulationQ, protocolObject,protocolPacket,resourcePacketTests,
+		simulatedProtocol,finalSimulation,aliquotAdjustedOptions,cache,inSituOp,packets,metaContainers,metaContainerParents,
+		samplePackets,sampleModels,containerPackets, containerModels,volumeCalibrations,filteredSamplesIn,filteredExpandedOptions,metaMetaContainerParents,
 		objectSampleFields,modelSampleFields,containerFields,modelContainerFields,rackPackets,mySamplesWithPreparedSamplesNamed,
-		myOptionsWithPreparedSamplesNamed,safeOptionsNamed},
+		myOptionsWithPreparedSamplesNamed,safeOptionsNamed, numberOfReplicates,parentProtocolPacket,parentPostProcessingBool
+	},
 
 	(* Determine the requested return value from the function *)
 	outputSpecification = Quiet[OptionValue[Output]];
@@ -176,20 +182,20 @@ ExperimentMeasureVolume[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:O
 	(* Simulate our sample preparation. *)
 	validSamplePreparationResult=Check[
 		(* Simulate sample preparation. *)
-		{mySamplesWithPreparedSamplesNamed,myOptionsWithPreparedSamplesNamed,samplePreparationCache}=simulateSamplePreparationPackets[
+		{mySamplesWithPreparedSamplesNamed,myOptionsWithPreparedSamplesNamed,updatedSimulation}=simulateSamplePreparationPacketsNew[
 			ExperimentMeasureVolume,
 			listedSamples,
 			listedOptions
 		],
 		$Failed,
-	 	{Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
+	 	{Download::ObjectDoesNotExist, Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
 	];
 
 	(* If we are given an invalid define name, return early. *)
 	If[MatchQ[validSamplePreparationResult,$Failed],
 		(* Return early. *)
 		(* Note: We've already thrown a message above in simulateSamplePreparationPackets. *)
-		ClearMemoization[Experiment`Private`simulateSamplePreparationPackets];Return[$Failed]
+		Return[$Failed]
 	];
 
 	(* Call SafeOptions to make sure all options match pattern *)
@@ -199,16 +205,7 @@ ExperimentMeasureVolume[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:O
 	];
 
 	(*change all Names to objects *)
-	{mySamplesWithPreparedSamples,safeOps,myOptionsWithPreparedSamples}=sanitizeInputs[mySamplesWithPreparedSamplesNamed,safeOptionsNamed,myOptionsWithPreparedSamplesNamed];
-
-	(* Determine whether this should be an InSitu protocol *)
-	inSituOp = Lookup[safeOps,InSitu];
-
-	(* Call ValidInputLengthsQ to make sure all options are the right length *)
-	{validLengths,validLengthTests} = If[gatherTests,
-		ValidInputLengthsQ[ExperimentMeasureVolume,{mySamplesWithPreparedSamples},myOptionsWithPreparedSamples,Output->{Result,Tests}],
-		{ValidInputLengthsQ[ExperimentMeasureVolume,{mySamplesWithPreparedSamples},myOptionsWithPreparedSamples],Null}
-	];
+	{mySamplesWithPreparedSamples,safeOps,myOptionsWithPreparedSamples}=sanitizeInputs[mySamplesWithPreparedSamplesNamed,safeOptionsNamed,myOptionsWithPreparedSamplesNamed, Simulation -> updatedSimulation];
 
 	(* If the specified options don't match their patterns or if option lengths are invalid return $Failed *)
 	If[MatchQ[safeOps,$Failed],
@@ -216,8 +213,15 @@ ExperimentMeasureVolume[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:O
 			Result -> $Failed,
 			Tests -> safeOpsTests,
 			Options -> $Failed,
-			Preview -> Null
+			Preview -> Null,
+			Simulation -> Null
 		}]
+	];
+
+	(* Call ValidInputLengthsQ to make sure all options are the right length *)
+	{validLengths,validLengthTests} = If[gatherTests,
+		ValidInputLengthsQ[ExperimentMeasureVolume,{mySamplesWithPreparedSamples},myOptionsWithPreparedSamples,Output->{Result,Tests}],
+		{ValidInputLengthsQ[ExperimentMeasureVolume,{mySamplesWithPreparedSamples},myOptionsWithPreparedSamples],Null}
 	];
 
 	(* If option lengths are invalid return $Failed (or the tests up to this point) *)
@@ -226,9 +230,13 @@ ExperimentMeasureVolume[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:O
 			Result -> $Failed,
 			Tests -> Join[safeOpsTests,validLengthTests],
 			Options -> $Failed,
-			Preview -> Null
+			Preview -> Null,
+			Simulation -> Null
 		}]
 	];
+
+	(* Determine whether this should be an InSitu protocol *)
+	inSituOp = Lookup[safeOps,InSitu];
 
 	(* Use any template options to get values for options not specified in myOptions *)
 	{templatedOptions,templateTests} = If[!inSituOp,
@@ -245,7 +253,8 @@ ExperimentMeasureVolume[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:O
 			Result -> $Failed,
 			Tests -> Join[safeOpsTests,validLengthTests,templateTests],
 			Options -> $Failed,
-			Preview -> Null
+			Preview -> Null,
+			Simulation -> Null
 		}]
 	];
 
@@ -261,7 +270,7 @@ ExperimentMeasureVolume[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:O
 	(* Sample fields*)
 	objectSampleFields = Packet@@Flatten[{
 		(* Necessary for MeasureVol *)
-		Status,Volume,Density,Container,UltrasonicIncompatible,LightSensitive,Sterile,Density,State,
+		Status,Volume,Density,Container,UltrasonicIncompatible,LightSensitive,Sterile,Density,State,Living,Sterile,
 		(* Cache required *)
 		SamplePreparationCacheFields[Object[Sample]]
 	}];
@@ -291,44 +300,86 @@ ExperimentMeasureVolume[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:O
 	}]]];
 
 	(* --- DOWNLOAD THE INFORMATION THAT WE NEED FOR OUR OPTION RESOLVER AND RESOURCE PACKET FUNCTION --- *)
-	cacheBall = FlattenCachePackets[{
-		samplePreparationCache,
-		Quiet[
-		{samplePackets,sampleModels,containerPackets,containerModels,volumeCalibrations,rackPackets,metaContainers,metaContainerParents,metaMetaContainerParents} = Transpose@Download[
-			mySamplesWithPreparedSamples,
-			{
-				(* Sample packet information *)
-				objectSampleFields,
+	packets = Quiet[Download[
+		{
+			(*1*)mySamplesWithPreparedSamples,
+			(*2*)mySamplesWithPreparedSamples,
+			(*3*)mySamplesWithPreparedSamples,
+			(*4*)mySamplesWithPreparedSamples,
+			(*5*)mySamplesWithPreparedSamples,
+			(*6*)mySamplesWithPreparedSamples,
+			(*7*)mySamplesWithPreparedSamples,
+			(*8*)mySamplesWithPreparedSamples,
+			(*9*)mySamplesWithPreparedSamples,
+			(*10*){parentProtocol}
+		},
+		{
+			(* 1. Sample packet information *)
+			{objectSampleFields},
 
-				(* Light Sensitive and Sterile used for PreferredContainer options *)
-				modelSampleFields,
+			(* 2. Light Sensitive and Sterile used for PreferredContainer options *)
+			{modelSampleFields},
 
-				(* Sample's Container packet information *)
-				containerFields,
+			(* 3. Sample's Container packet information *)
+			{containerFields},
 
-				(* Container Model Packet *)
-				modelContainerFields,
+			(* 4. Container Model Packet *)
+			{modelContainerFields},
 
-				(* Volume Calibration Packets *)
-				Packet[Container[Model][VolumeCalibrations][{LiquidLevelDetectorModel,Anomalous,Deprecated,DeveloperObject,SensorArmHeight,RackModel,LayoutFileName}]],
+			(* 5. Volume Calibration Packets *)
+			{Packet[Container[Model][VolumeCalibrations][{LiquidLevelDetectorModel, LiquidLevelDetector, Anomalous, Deprecated, DeveloperObject, SensorArmHeight, RackModel, LayoutFileName}]]},
 
-				(* TubeRack and PlateRack packets*)
-				Packet[Container[Model][VolumeCalibrations][RackModel][{AvailableLayouts,TareWeight,Positions,Footprint,Name,Dimensions}]],
+			(* 6. TubeRack and PlateRack packets*)
+			{Packet[Container[Model][VolumeCalibrations][RackModel][{AvailableLayouts, TareWeight, Positions, Footprint, Name, Dimensions}]]},
 
-				(* Meta Container - Used to determine if In Situ is possible *)
-				Packet[Container[Container][{Model,Container,Position}]],
+			(* 7. Meta Container - Used to determine if In Situ is possible *)
+			{Packet[Container[Container][{Model, Container, Position}]]},
 
-				(* Meta Container Parent - Used to determine if In Situ is possible *)
-				Packet[Container[Container][Container][{Model,Container,Position}]],
+			(* 8. Meta Container Parent - Used to determine if In Situ is possible *)
+			{Packet[Container[Container][Container][{Model, Container, Position}]]},
 
-				(* Container of the Container's Container's Container - Used for InSitu *)
-				Packet[Container[Container][Container][Container][{Model,Container,Position}]]
-			},
-			Date->Now,
-			Cache -> Flatten[{cache,samplePreparationCache}]
-		],
+			(* 9. Container of the Container's Container's Container - Used for InSitu *)
+			{Packet[Container[Container][Container][Container][{Model, Container, Position}]]},
+
+			(* 10. Parent protocol packet*)
+			{Packet[MeasureVolume,Target,ParentProtocol]}
+		},
+		Date->Now,
+		Cache -> cache,
+		Simulation -> updatedSimulation
+	],
 		{Download::FieldDoesntExist,Download::NotLinkField}
-	]}];
+	];
+
+	{
+		(*1*)samplePackets,
+		(*2*)sampleModels,
+		(*3*)containerPackets,
+		(*4*)containerModels,
+		(*5*)volumeCalibrations,
+		(*6*)rackPackets,
+		(*7*)metaContainers,
+		(*8*)metaContainerParents,
+		(*9*)metaMetaContainerParents,
+		(*10*)parentProtocolPacket
+	} = Flatten[#,1]&/@packets;
+
+	cacheBall = FlattenCachePackets[{cache, packets}];
+
+	(*This section will also check the Living/Sterile field of the samples and parent protocol to throw warning accordingly. If experiment is called directly, we throw a warning without filtering any sample out. Otherwise (i.e. we are in a subprotocol while Sterile -> True or sample is marked Living ->True), we filter the samples out in the next section without throwing any warning *)
+	Module[{livings,steriles,sampleObjects},
+		{livings,steriles,sampleObjects}=Transpose[Lookup[samplePackets,{Living,Sterile,Object}]];
+		(*We are called directly, if there is living or sterile sample, will not filter, just a warning*)
+		If[!MatchQ[parentProtocol,ObjectP[]]&&MemberQ[Flatten[{livings,steriles}],True] && !gatherTests && !MatchQ[$ECLApplication, Engine],
+			Message[Warning::LivingOrSterileSamplesQueuedForMeasureVolume,
+				ObjectToString[PickList[sampleObjects,livings,True], Cache -> cacheBall, Simulation->updatedSimulation],
+				ObjectToString[PickList[sampleObjects,steriles,True], Cache -> cacheBall, Simulation->updatedSimulation]
+			]
+		]
+	];
+
+	(*Check if the parent protocol specified ImageSample -> True. If parent protocol called for MeasureVolume, we will not filter it out for living/sterile*)
+	parentPostProcessingBool = Lookup[Replace[fetchPacketFromCache[parentProtocol,cacheBall],{Null -> <||>}],MeasureVolume,Null];
 
 	(* IF we are in a Subprotocol, this section will filter out samples that are incapable of being volume measured *)
 	{filteredSamplesIn,filteredExpandedOptions} = If[MatchQ[parentProtocol,ObjectP[]],
@@ -371,50 +422,14 @@ ExperimentMeasureVolume[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:O
 						(* If the sample is in an Ampoule *)
 						TrueQ[Lookup[containerMod,Ampoule]],
 
-						(* If the sample is UltrasonicIncompatible but cannot be measured gravimetrically (in a plate, does not have density and cannot measure density due to volume, or does not have tare weight) *)
+						(* The sample cannot be measured gravimetrically or ultrasonically *)
 						And[
-							TrueQ[Lookup[samplePack,UltrasonicIncompatible,Null]],
+							(* Cannot be measured ultrasonically *)
 							Or[
-								MatchQ[containerMod,ObjectP[Model[Container,Plate]]],
-								And[
-									NullQ[Lookup[samplePack,Density,Null]],
-									Or[
-										NullQ[sampleModPack],
-										(!NullQ[sampleModPack]&&NullQ[Lookup[sampleModPack,Density,Null]])
-									],
-									MatchQ[Lookup[samplePack,Volume],LessP[50Microliter]]
-								],
-								!Or[
-									MatchQ[Lookup[containerPack,TareWeight],MassP],
-									MatchQ[Lookup[containerMod,TareWeight],MassP]
-								]
-							]
-						],
-
-						(* If the sample is in a basic, unmeasurable state for ultrasonic case *)
-						And[
-
-							Or[
-								(* If the container is plate but has no valid VolumeCalibrations *)
-								MatchQ[containerMod,ObjectP[Model[Container,Plate]]],
-
-								(* If the sample, which has no density and cannot measure density due to volume, is in a tube that has no valid VolumeCalibrations *)
-								And[
-									NullQ[Lookup[samplePack,Density,Null]],
-									Or[
-										NullQ[sampleModPack],
-										(!NullQ[sampleModPack]&&NullQ[Lookup[sampleModPack,Density,Null]])
-									],
-									MatchQ[Lookup[samplePack,Volume],LessP[50Microliter]]
-								]
-							],
-
-							(* This part checks there are valid calibrations tied to the container model *)
-							Or[
-								(* Either there are no calibrations *)
+								(* the sample is UltrasonicIncompatible *)
+								TrueQ[Lookup[samplePack,UltrasonicIncompatible,Null]],
+								(* no volume calibrations *)
 								MatchQ[volumeCals,{}|$Failed|Null],
-								(* If the Container is exempt from Ultrasonic measurement due to being incompatible with our liquid level detectors *)
-								TrueQ[Lookup[containerMod,UltrasonicIncompatible]],
 								(* Or every calibration is anomalous, deprecated or a dev object *)
 								And@@(MatchQ[
 									#,
@@ -423,33 +438,35 @@ ExperimentMeasureVolume[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:O
 										KeyValuePattern[Deprecated->True],
 										KeyValuePattern[DeveloperObject->True]
 									]
-								]&/@volumeCals)
+								]&/@volumeCals),
+								(* If the Container is exempt from Ultrasonic measurement due to being incompatible with our liquid level detectors *)
+								TrueQ[Lookup[containerMod,UltrasonicIncompatible]]
+							],
+							(* Cannot be measured gravimetrically *)
+							Or[
+								(* in a plate or other multi-position fluid containers *)
+								MatchQ[containerMod,ObjectP[{Model[Container,Plate],Model[Container, MicrofluidicChip], Model[Container,ProteinCapillaryElectrophoresisCartridge]}]],
+								(* If the sample, which has no density and cannot measure density due to volume, is in a tube that has no valid VolumeCalibrations *)
+								And[
+									NullQ[Lookup[samplePack,Density,Null]],
+									Or[
+										NullQ[sampleModPack],
+										(!NullQ[sampleModPack]&&NullQ[Lookup[sampleModPack,Density,Null]])
+									],
+									MatchQ[Lookup[samplePack,Volume],LessP[50Microliter]]
+								],
+								(* container has tare weight *)
+								!Or[
+									MatchQ[Lookup[containerPack,TareWeight],MassP],
+									MatchQ[Lookup[containerMod,TareWeight],MassP]
+								]
 							]
 						],
-						(* If the sample is in a basic, unmeasurable state for Gravimetric case *)
-						And[
-
-							And[
-								(* If the container is vessel *)
-								MatchQ[containerMod,Except[ObjectP[Model[Container,Plate]]]],
-
-								(* And the sample has density or can measure density *)
-								Or[
-									!NullQ[Lookup[samplePack,Density,Null]],
-									And[
-										!NullQ[sampleModPack],
-										!NullQ[Lookup[sampleModPack,Density,Null]]
-									],
-									MatchQ[Lookup[samplePack,Volume],GreaterEqualP[50Microliter]]
-								]
-							],
-
-							(* This part checks there are tare weights tied to the container *)
-							!Or[
-								MatchQ[Lookup[containerPack,TareWeight],MassP],
-								MatchQ[Lookup[containerMod,TareWeight],MassP]
-							]
-						]
+						(*If the sample is living or sterile while the parent does not directly call for MeasureVolume*)
+						Or[
+							TrueQ[Lookup[samplePack,Living,Null]],
+							TrueQ[Lookup[samplePack,Sterile,Null]]
+						]&&!TrueQ[parentPostProcessingBool]
 					]
 				],
 				{samplePackets,sampleModels,containerPackets,containerModels,volumeCalibrations}
@@ -485,19 +502,23 @@ ExperimentMeasureVolume[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:O
 				{indexMatchedOptions,Lookup[expandedSafeOps,indexMatchedOptions]}
 			];
 
+			(* Temporarily setting this to 1. When we fix the procedure and parser will add it back to what it should be *)
+			(* numberOfReplicates = Lookup[expandedSafeOps,NumberOfReplicates]; *)
+			numberOfReplicates = 1;
+
 			(*	The option AliquotContainers is NOT Index-Matched to Samples in so we need to trim it as a special case
-					Length[AliquotContainers] = 1 OR Length[mySamples] OR (Length[mySamples]*NumberOfReplicates)
+					Length[AliquotContainers] = 1 OR Length[mySamples])
 					We have to handle each of those cases and trim the indexes associated with samples being filtered out
 			*)
 			aliquotRaw = Lookup[expandedSafeOps,AliquotContainer];
 			trimmedAliquotOption = Flatten@Delete[
-				Partition[aliquotRaw, Lookup[expandedSafeOps,NumberOfReplicates]],
+				Partition[aliquotRaw, numberOfReplicates],
 				invalidPositions
 			];
 
 			aliquotDestinationWellRaw = Lookup[expandedSafeOps,DestinationWell];
 			trimmedAliquotDestinationWellOption = Flatten@Delete[
-				Partition[aliquotDestinationWellRaw, Lookup[expandedSafeOps,NumberOfReplicates]],
+				Partition[aliquotDestinationWellRaw, numberOfReplicates],
 				invalidPositions
 			];
 
@@ -515,7 +536,13 @@ ExperimentMeasureVolume[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:O
 			SameQ[filteredSamplesIn,{}],
 			MatchQ[parentProtocol,ObjectP[Object[]]]
 		],
-		Return[$Failed]
+		Return[outputSpecification/.{
+			Result -> $Failed,
+			Tests->Flatten[Join[safeOpsTests,validLengthTests,templateTests]],
+			Options->$Failed,
+			Preview->Null,
+			Simulation -> Null
+		}]
 	];
 
 	(* If ParentProtocol != Null, we refuse to move the samples. Set Aliquot -> False *)
@@ -527,7 +554,7 @@ ExperimentMeasureVolume[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:O
 	(* Build the resolved options *)
 	resolvedOptionsResult = If[gatherTests,
 		(* We are gathering tests. This silences any messages being thrown. *)
-		{resolvedOptions,resolvedOptionsTests} = resolveExperimentMeasureVolumeOptions[filteredSamplesIn,aliquotAdjustedOptions,Cache->cacheBall,Output->{Result,Tests}];
+		{resolvedOptions,resolvedOptionsTests} = resolveExperimentMeasureVolumeOptions[filteredSamplesIn,aliquotAdjustedOptions,Cache->cacheBall,Simulation->updatedSimulation,Output->{Result,Tests}];
 
 		(* Therefore, we have to run the tests to see if we encountered a failure. *)
 		If[RunUnitTest[<|"Tests"->resolvedOptionsTests|>,OutputFormat->SingleBoolean,Verbose->False],
@@ -537,10 +564,7 @@ ExperimentMeasureVolume[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:O
 
 		(* We are not gathering tests. Simply check for Error::InvalidInput and Error::InvalidOption. *)
 		Check[
-			{resolvedOptions,resolvedOptionsTests} = If[gatherTests,
-				resolveExperimentMeasureVolumeOptions[filteredSamplesIn, filteredExpandedOptions, Output -> {Result, Tests}, Cache -> cacheBall],
-				{resolveExperimentMeasureVolumeOptions[filteredSamplesIn, filteredExpandedOptions, Output -> Result, Cache -> cacheBall], Null}
-			],
+			{resolvedOptions,resolvedOptionsTests} = {resolveExperimentMeasureVolumeOptions[filteredSamplesIn, filteredExpandedOptions, Output -> Result, Cache -> cacheBall, Simulation -> updatedSimulation], {}},
 			$Failed,
 			{Error::InvalidInput,Error::InvalidOption}
 		]
@@ -554,20 +578,79 @@ ExperimentMeasureVolume[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:O
 		Messages->False
 	];
 
-	(* If option resolution failed, return early. *)
-	If[MatchQ[resolvedOptionsResult,$Failed],
-		Return[outputSpecification/.{
+	(* Lookup our resolved Preparation option. *)
+	resolvedPreparation = Lookup[resolvedOptions, Preparation];
+
+	(* Lookup our OptionsResolverOnly option.  This will determine if we skip the resource packets and simulation functions *)
+	(* If Output contains Result or Simulation, then we can't do this *)
+	optionsResolverOnly = Lookup[resolvedOptions, OptionsResolverOnly];
+	returnEarlyBecauseOptionsResolverOnly = TrueQ[optionsResolverOnly] && Not[MemberQ[output, Result|Simulation]];
+
+	(* Run all the tests from the resolution; if any of them were False, then we should return early here *)
+	(* need to do this because if we are collecting tests then the Check wouldn't have caught it *)
+	(* basically, if _not_ all the tests are passing, then we do need to return early *)
+	returnEarlyBecauseFailuresQ = Which[
+		MatchQ[resolvedOptionsResult, $Failed], True,
+		gatherTests, Not[RunUnitTest[<|"Tests" -> resolvedOptionsTests|>, Verbose -> False, OutputFormat -> SingleBoolean]],
+		True, False
+	];
+
+	(* Figure out if we need to perform our simulation. If so, we can't return early even though we want to because we *)
+	(* need to return some type of simulation to our parent function that called us. *)
+	performSimulationQ = MemberQ[output, Simulation];
+
+	(* If option resolution failed (or if we have all hazardous inputs/options) and we aren't asked for the simulation or output, return early. *)
+	If[!performSimulationQ && (returnEarlyBecauseFailuresQ || returnEarlyBecauseOptionsResolverOnly),
+		Return[outputSpecification /. {
 			Result -> $Failed,
-			Tests->Join[safeOpsTests,validLengthTests,templateTests,resolvedOptionsTests],
-			Options->RemoveHiddenOptions[ExperimentMeasureVolume,collapsedResolvedOptions],
-			Preview->Null
+			Tests -> Flatten[{safeOpsTests, validLengthTests, templateTests, resolvedOptionsTests}],
+			Options -> RemoveHiddenOptions[ExperimentMeasureVolume, collapsedResolvedOptions],
+			Preview -> Null,
+			Simulation -> updatedSimulation
 		}]
 	];
 
 	(* Build packets with resources *)
-	{protocolPacket,resourcePacketTests} = If[gatherTests,
-		measureVolumeResourcePackets[filteredSamplesIn,templatedOptions,resolvedOptions,Cache->cacheBall,Output->{Result,Tests}],
-		{measureVolumeResourcePackets[filteredSamplesIn,templatedOptions,resolvedOptions,Cache->cacheBall,Output->Result],{}}
+	{protocolPacket,resourcePacketTests} = Which[
+		returnEarlyBecauseOptionsResolverOnly || returnEarlyBecauseFailuresQ,
+			{$Failed, {}},
+		gatherTests,
+			measureVolumeResourcePackets[
+				filteredSamplesIn,
+				templatedOptions,
+				resolvedOptions,
+				Cache->cacheBall,
+				Simulation->updatedSimulation,
+				Output->{Result,Tests}
+			],
+		True,
+			{
+				measureVolumeResourcePackets[
+					filteredSamplesIn,
+					templatedOptions,
+					resolvedOptions,
+					Cache->cacheBall,
+					Simulation->updatedSimulation,
+					Output->Result],
+				{}
+			}
+	];
+
+	(* If we were asked for a simulation, also return a simulation. *)
+	{simulatedProtocol, finalSimulation} = Which[
+		MatchQ[protocolPacket, $Failed],
+			{$Failed, updatedSimulation},
+		performSimulationQ,
+			simulateExperimentMeasureVolume[
+				protocolPacket,
+				(* NOTE: This is unusual, but here filteredSamplesIn is Packets *)
+				Lookup[ToList[filteredSamplesIn],Object],
+				resolvedOptions,
+				Cache -> cacheBall,
+				Simulation -> updatedSimulation
+			],
+		True,
+			{Null, updatedSimulation}
 	];
 
 	(* If we don't have to return the Result, don't bother calling UploadProtocol[...]. *)
@@ -576,7 +659,8 @@ ExperimentMeasureVolume[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:O
 			Result -> Null,
 			Tests -> Flatten[{safeOpsTests,validLengthTests,templateTests,resolvedOptionsTests,resourcePacketTests}],
 			Options -> RemoveHiddenOptions[ExperimentMeasureVolume,collapsedResolvedOptions],
-			Preview -> Null
+			Preview -> Null,
+			Simulation -> finalSimulation
 		}]
 	];
 
@@ -586,6 +670,7 @@ ExperimentMeasureVolume[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:O
 			protocolPacket,
 			Upload->Lookup[safeOps,Upload],
 			Confirm->Lookup[safeOps,Confirm],
+			CanaryBranch->Lookup[safeOps,CanaryBranch],
 			ParentProtocol->Lookup[safeOps,ParentProtocol],
 
 			Priority -> Lookup[safeOps,Priority],
@@ -594,7 +679,8 @@ ExperimentMeasureVolume[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:O
 			QueuePosition -> Lookup[safeOps,QueuePosition],
 
 			ConstellationMessage->Object[Protocol,MeasureVolume],
-			Cache->samplePreparationCache
+			Cache->cacheBall,
+			Simulation -> finalSimulation
 		],
 		$Failed
 	];
@@ -604,7 +690,8 @@ ExperimentMeasureVolume[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:O
 		Result -> protocolObject,
 		Tests -> Flatten[{safeOpsTests,validLengthTests,templateTests,resolvedOptionsTests,resourcePacketTests}],
 		Options -> RemoveHiddenOptions[ExperimentMeasureVolume,collapsedResolvedOptions],
-		Preview -> Null
+		Preview -> Null,
+		Simulation -> finalSimulation
 	}
 ];
 
@@ -613,15 +700,11 @@ ExperimentMeasureVolume[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:O
 (*ExperimentMeasureVolume - Container Overload*)
 
 
-ExperimentMeasureVolume[myContainers:ListableP[ObjectP[{Object[Container],Object[Sample]}]|_String|{LocationPositionP,_String|ObjectP[Object[Container]]}],myOptions:OptionsPattern[]]:=Module[
+ExperimentMeasureVolume[myContainers:ListableP[ObjectP[{Object[Container],Object[Sample],Model[Sample]}]|_String|{LocationPositionP,_String|ObjectP[Object[Container]]}],myOptions:OptionsPattern[]]:=Module[
 	{
-		listedOptions,outputSpecification,output,gatherTests,validSamplePreparationResult,mySamplesWithPreparedSamples,myOptionsWithPreparedSamples,
-		samplePreparationCache,containerToSampleResult,containerToSampleOutput,samples,sampleOptions,containerToSampleTests,sampleCache,
-		updatedCache
+		outputSpecification,output,gatherTests,listedOptions,listedContainers,validSamplePreparationResult,mySamplesWithPreparedSamples,myOptionsWithPreparedSamples,
+		updatedSimulation,containerToSampleResult,containerToSampleOutput,samples,sampleOptions,containerToSampleTests,containerToSampleSimulation
 	},
-
-	(* Make sure we're working with a list of options *)
-	listedOptions = ToList[myOptions];
 
 	(* Determine the requested return value from the function *)
 	outputSpecification = Quiet[OptionValue[Output]];
@@ -630,34 +713,37 @@ ExperimentMeasureVolume[myContainers:ListableP[ObjectP[{Object[Container],Object
 	(* Determine if we should keep a running list of tests *)
 	gatherTests = MemberQ[output,Tests];
 
+	(* Make sure we're working with a list of inputs and options *)
+	{listedContainers, listedOptions}={ToList[myContainers], ToList[myOptions]};
+
 	(* First, simulate our sample preparation. *)
 	validSamplePreparationResult=Check[
 		(* Simulate sample preparation. *)
-		{mySamplesWithPreparedSamples,myOptionsWithPreparedSamples,samplePreparationCache}=simulateSamplePreparationPackets[
+		{mySamplesWithPreparedSamples,myOptionsWithPreparedSamples,updatedSimulation}=simulateSamplePreparationPacketsNew[
 			ExperimentMeasureVolume,
-			ToList[myContainers],
-			ToList[myOptions]
+			listedContainers,
+			listedOptions
 		],
 		$Failed,
-		{Error::MissingDefineNames,Error::InvalidInput,Error::InvalidOption}
+		{Download::ObjectDoesNotExist, Error::MissingDefineNames,Error::InvalidInput,Error::InvalidOption}
 	];
 
 	(* If we are given an invalid define name, return early. *)
 	If[MatchQ[validSamplePreparationResult,$Failed],
 		(* Return early. *)
 		(* Note: We've already thrown a message above in simulateSamplePreparationPackets. *)
-		ClearMemoization[Experiment`Private`simulateSamplePreparationPackets];Return[$Failed]
+		Return[$Failed]
 	];
 
 	(* Convert our given containers into samples and sample index-matched options. *)
 	containerToSampleResult = If[gatherTests,
 		(* We are gathering tests. This silences any messages being thrown. *)
-		{containerToSampleOutput,containerToSampleTests} = containerToSampleOptions[
+		{containerToSampleOutput,containerToSampleTests,containerToSampleSimulation} = containerToSampleOptions[
 			ExperimentMeasureVolume,
 			mySamplesWithPreparedSamples,
 			myOptionsWithPreparedSamples,
-			Output->{Result,Tests},
-			Cache->samplePreparationCache
+			Output->{Result,Tests,Simulation},
+			Simulation -> updatedSimulation
 		];
 
 		(* Therefore, we have to run the tests to see if we encountered a failure. *)
@@ -669,36 +755,30 @@ ExperimentMeasureVolume[myContainers:ListableP[ObjectP[{Object[Container],Object
 		(* We are not gathering tests. Simply check for Error::InvalidInput and Error::InvalidOption. *)
 		If[NullQ[Lookup[listedOptions,ParentProtocol,Null]],
 			Check[
-				containerToSampleOutput = containerToSampleOptions[
+				{containerToSampleOutput,containerToSampleSimulation} = containerToSampleOptions[
 					ExperimentMeasureVolume,
 					mySamplesWithPreparedSamples,
 					myOptionsWithPreparedSamples,
-					Output->Result,
-					Cache->samplePreparationCache
+					Output-> {Result,Simulation},
+					Simulation -> updatedSimulation
 				],
 				$Failed,
 				{Error::EmptyContainers, Error::ContainerEmptyWells, Error::WellDoesNotExist}
 			],
 
 			(* However, if we are in a Subprotocol, silence the empty container errors *)
-			containerToSampleOutput = Quiet[
+			{containerToSampleOutput,containerToSampleSimulation} = Quiet[
 				containerToSampleOptions[
 					ExperimentMeasureVolume,
 					mySamplesWithPreparedSamples,
 					myOptionsWithPreparedSamples,
-					Output->Result,
-					Cache->samplePreparationCache
+					Output-> {Result,Simulation},
+					Simulation -> updatedSimulation
 				],
 				{Error::EmptyContainers, Error::ContainerEmptyWells, Error::WellDoesNotExist}
 			]
 		]
 	];
-
-	(* Update our cache with our new simulated values. *)
-	updatedCache=Flatten[{
-		samplePreparationCache,
-		Lookup[listedOptions,Cache,{}]
-	}];
 
 	(* If we were given an empty container, return early. *)
 	If[MatchQ[containerToSampleResult,$Failed],
@@ -708,14 +788,17 @@ ExperimentMeasureVolume[myContainers:ListableP[ObjectP[{Object[Container],Object
 			Result -> $Failed,
 			Tests -> containerToSampleTests,
 			Options -> $Failed,
-			Preview -> Null
+			Preview -> Null,
+			Simulation -> Null,
+			InvalidInputs -> {},
+			InvalidOptions -> {}
 		},
 
 		(* Split up our containerToSample result into the samples and sampleOptions. *)
-		{samples,sampleOptions,sampleCache} = containerToSampleOutput;
+		{samples,sampleOptions} = containerToSampleOutput;
 
 		(* Call our main function with our samples and converted options. *)
-		ExperimentMeasureVolume[samples,ReplaceRule[sampleOptions, {Cache -> Flatten[{updatedCache,sampleCache}]}]]
+		ExperimentMeasureVolume[samples, ReplaceRule[sampleOptions, {Simulation -> containerToSampleSimulation}]]
 	]
 ];
 
@@ -733,7 +816,8 @@ DefineOptions[
 	resolveExperimentMeasureVolumeOptions,
 	Options:>{
 		CacheOption,
-		OutputOption
+		OutputOption,
+		SimulationOption
 	}
 ];
 
@@ -743,8 +827,9 @@ DefineOptions[
 
 
 resolveExperimentMeasureVolumeOptions[mySamples:{ObjectP[Object[Sample]]..},myOptions:{_Rule...},myResolutionOptions:OptionsPattern[resolveExperimentMeasureVolumeOptions]]:=Module[
-	{outputSpecification,output,fastTrack,gatherTests,cache,samplePrepOptions,measureVolumeOptions,simulatedSamples,
-		resolvedSamplePrepOptions,simulatedCache,measureVolumeOptionsAssociation,fullCache,samplePackets,sampleModelPackets,
+	{
+		outputSpecification,output,listedInputs,fastTrack,gatherTests,cache,simulation,samplePrepOptions,measureVolumeOptions,simulatedSamples,
+		resolvedSamplePrepOptions,updatedSimulation,measureVolumeOptionsAssociation,fullCache,samplePackets,sampleModelPackets,
 		containerPackets,modelContainerPackets,parentProtocol,discardedSamplePackets,discardedInvalidInputs,discardedTests,
 		solidSamplePackets,solidInvalidInputs,solidSampleTests,immobileSamplePackets,immobileInvalidInputs,immobileSampleTests,
 		(*numMeasureDensityReplicatesMismatchOptions,numMeasureDensityReplicatesMismatchInputs,*)numMeasureDensityMismatches,numMeasureDensityInvalidOptions,
@@ -753,6 +838,7 @@ resolveExperimentMeasureVolumeOptions[mySamples:{ObjectP[Object[Sample]]..},myOp
 		numMeasureDensityTest,recoupSampleTest,measurementVolumeTest,mapThreadFriendlyOptions,samplePrepTests,
 		measurementVolumeOptionWithRoundedVolumes,measurementVolumePrecisionTests,ultrasonicCompatibleContainerModels,
 		imageSample,methods,measureDensityOps,measurementVolumes,recoupSampleOps,(*numMeasureDensityReplicatesOps,*)
+		sampleLabels,sampleContainerLabels,
 		unmeasurableSampleErrors,unmeasurableContainerErrors,measureDensityRequiredErrors,sampleUltrasonicIncompatibleErrors,
 		centrifugeRecommendedWarnings,insufficientMeasureDensityVolumeErrors,lookupP,resolvedAliquotOptions,aliquotTests,
 		unmeasurableContainerInvalidOptions,insufficientMeasureDensityVolumeInvalidInputs,inSitu,
@@ -763,13 +849,19 @@ resolveExperimentMeasureVolumeOptions[mySamples:{ObjectP[Object[Sample]]..},myOp
 		inSituMethodErrors,inSituMeasureDensityError,inSituQ,inSituInvalidOptions,inSituMethodInvalidOptions,
 		inSituMeasureDensityInvalidOptions,inSituMeasureDensityErrors,uncalibratedContainerErrors,metaMetaContainerParents,
 		requiredAliquotAmounts,sampleComps,matchedIntensiveProperties,compositionDensities,uncalibratedContainerInvalidInputs,
-		uncalibratedContainerTest,sameContainerStorageConditionConflictBooleans,sameContainerStorageConditionConflictTest,sameContainerStorageConditionConflictOption,suppliedSampleInStorageCondition},
+		uncalibratedContainerTest,sameContainerStorageConditionConflictBooleans,sameContainerStorageConditionConflictTest,
+		sameContainerStorageConditionConflictOption,suppliedSampleInStorageCondition, storageMeasurements, estimatedDensities, allMolecules,
+		resolvedPreparation
+	},
 
 	(*-- SETUP OUR USER SPECIFIED OPTIONS AND CACHE --*)
 
 	(* Determine the requested output format of this function. *)
 	outputSpecification = Quiet[OptionValue[Output]];
 	output = ToList[outputSpecification];
+
+	(* Make sure we are dealing with a list of inputs rather than a singleton *)
+	listedInputs = ToList[mySamples];
 
 	(* Stash the FastTrack option *)
 	fastTrack = Lookup[myOptions,FastTrack];
@@ -779,8 +871,9 @@ resolveExperimentMeasureVolumeOptions[mySamples:{ObjectP[Object[Sample]]..},myOp
 
 	(* Fetch our cache from the parent function. *)
 	cache = Lookup[ToList[myResolutionOptions],Cache];
+	simulation = Lookup[ToList[myResolutionOptions],Simulation];
 
-	(* Seperate out our MeasureVolume options from our Sample Prep options. *)
+	(* Separate out our MeasureVolume options from our Sample Prep options. *)
 	{samplePrepOptions,measureVolumeOptions} = splitPrepOptions[myOptions];
 
 	(* Determine if the protocol wants to be conducted In Situ *)
@@ -789,10 +882,13 @@ resolveExperimentMeasureVolumeOptions[mySamples:{ObjectP[Object[Sample]]..},myOp
 	(* Determine if there's a parent protocol. If there is, our behavior (particularly around errors) will be change *)
 	parentProtocol = Lookup[measureVolumeOptions,ParentProtocol];
 
+	(* Determine if we are doing storage measurements *)
+	storageMeasurements = Lookup[measureVolumeOptions, StorageMeasurements];
+
 	(* Resolve our sample prep options *)
-	{{simulatedSamples, resolvedSamplePrepOptions, simulatedCache}, samplePrepTests} = If[gatherTests,
-		resolveSamplePrepOptions[ExperimentMeasureVolume, Lookup[mySamples,Object], samplePrepOptions, Cache -> cache, Output -> {Result, Tests}],
-		{resolveSamplePrepOptions[ExperimentMeasureVolume, Lookup[mySamples,Object], samplePrepOptions, Cache -> cache, Output -> Result], {}}
+	{{simulatedSamples, resolvedSamplePrepOptions, updatedSimulation}, samplePrepTests} = If[gatherTests,
+		resolveSamplePrepOptionsNew[ExperimentMeasureVolume, listedInputs, samplePrepOptions, Cache -> cache, Simulation -> simulation, Output -> {Result, Tests}],
+		{resolveSamplePrepOptionsNew[ExperimentMeasureVolume, listedInputs, samplePrepOptions, Cache -> cache, Simulation -> simulation, Output -> Result], {}}
 	];
 
 	(* Convert list of rules to Association so we can Lookup, Append, Join as usual. *)
@@ -808,12 +904,12 @@ resolveExperimentMeasureVolumeOptions[mySamples:{ObjectP[Object[Sample]]..},myOp
 			{
 				(* Sample packet information *)
 				(* Light Sensitive and Sterile used for PreferredContainer options *)
-				Packet[Name,Status,Volume,Density,Container,Position,Composition,Count,State,UltrasonicIncompatible,LightSensitive,Sterile],
+				Packet[Name,Status,Volume,Density,Container,Position,Composition,Count,State,UltrasonicIncompatible,LightSensitive,Sterile, StorageCondition],
 
 				Packet[Model[{Density}]],
 
 				(* Sample's Container packet information *)
-				Packet[Container[{Model,Status,TareWeight,Contents,Container,Position}]],
+				Packet[Container[{Model,Status,TareWeight,Contents,Container,Position, StorageCondition}]],
 
 				(* Model information of the Sample's Container*)
 				Packet[Container[Model][{TareWeight,Immobile}]],
@@ -828,15 +924,16 @@ resolveExperimentMeasureVolumeOptions[mySamples:{ObjectP[Object[Sample]]..},myOp
 				Packet[Container[Container][Container][Container][{Model,Container,Position}]],
 
 				(* Volume Calibrations *)
-				Packet[Container[Model][VolumeCalibrations][{LiquidLevelDetectorModel,Anomalous,Deprecated,DeveloperObject}]]
+				Packet[Container[Model][VolumeCalibrations][{LiquidLevelDetectorModel,LiquidLevelDetector,Anomalous,Deprecated,DeveloperObject}]]
 			},
-			Cache -> simulatedCache
+			Cache -> cache,
+			Simulation -> updatedSimulation
 		],
 		Download::FieldDoesntExist
 	];
 
 	(* Store the full cache so lower functions (like PreferredContainer) don't need to go to the DB *)
-	fullCache = FlattenCachePackets[Join[simulatedCache,{samplePackets,sampleModelPackets,containerPackets,modelContainerPackets,metaContainers,metaContainerParents,metaMetaContainerParents,volCals}]];
+	fullCache = FlattenCachePackets[Join[cache,{samplePackets,sampleModelPackets,containerPackets,modelContainerPackets,metaContainers,metaContainerParents,metaMetaContainerParents,volCals}]];
 
 	(*-- INPUT VALIDATION CHECKS --*)
 	(* Get the samples from mySamples that are discarded. *)
@@ -850,7 +947,7 @@ resolveExperimentMeasureVolumeOptions[mySamples:{ObjectP[Object[Sample]]..},myOp
 
 	(* If there are discard samples in the inputs and we are throwing messages, throw an error message and keep track of the invalid inputs. *)
 	If[Length[discardedInvalidInputs]>0&&!gatherTests,
-		Message[Error::DiscardedSamples,ObjectToString[discardedInvalidInputs,Cache->simulatedCache]]
+		Message[Error::DiscardedSamples,ObjectToString[discardedInvalidInputs,Cache->fullCache,Simulation->updatedSimulation]]
 	];
 
 	(* If we are gathering tests, create a passing and/or failing test with the appropriate result. *)
@@ -858,12 +955,12 @@ resolveExperimentMeasureVolumeOptions[mySamples:{ObjectP[Object[Sample]]..},myOp
 		Module[{failingTest,passingTest},
 			failingTest=If[Length[discardedInvalidInputs]==0,
 				Nothing,
-				Test["Our input samples "<>ObjectToString[discardedInvalidInputs,Cache->simulatedCache]<>" are not discarded:",True,False]
+				Test["Our input samples "<>ObjectToString[discardedInvalidInputs,Cache->fullCache,Simulation->updatedSimulation]<>" are not discarded:",True,False]
 			];
 
 			passingTest=If[Length[discardedInvalidInputs]==Length[mySamples],
 				Nothing,
-				Test["Our input samples "<>ObjectToString[Complement[mySamples,discardedInvalidInputs],Cache->simulatedCache]<>" are not discarded:",True,True]
+				Test["Our input samples "<>ObjectToString[Complement[mySamples,discardedInvalidInputs],Cache->fullCache,Simulation->updatedSimulation]<>" are not discarded:",True,True]
 			];
 
 			{failingTest,passingTest}
@@ -905,12 +1002,12 @@ resolveExperimentMeasureVolumeOptions[mySamples:{ObjectP[Object[Sample]]..},myOp
 		Module[{failingTest,passingTest},
 			failingTest=If[Length[immobileInvalidInputs]==0,
 				Nothing,
-				Test["The input sample(s) "<>ObjectToString[immobileInvalidInputs]<>" can be moved to a volume checking instrument:",True,False]
+				Test["The input sample(s) "<>ObjectToString[immobileInvalidInputs,Cache->fullCache,Simulation->updatedSimulation]<>" can be moved to a volume checking instrument:",True,False]
 			];
 
 			passingTest=If[Length[immobileInvalidInputs]==Length[mySamples],
 				Nothing,
-				Test["The input sample(s) "<>ObjectToString[Complement[mySamples,immobileInvalidInputs]]<>" can be moved to a volume checking instrument:",True,True]
+				Test["The input sample(s) "<>ObjectToString[Complement[mySamples,immobileInvalidInputs],Cache->fullCache,Simulation->updatedSimulation]<>" can be moved to a volume checking instrument:",True,True]
 			];
 
 			{failingTest,passingTest}
@@ -932,8 +1029,8 @@ resolveExperimentMeasureVolumeOptions[mySamples:{ObjectP[Object[Sample]]..},myOp
 
 	(* call ValidContainerStorageConditionQ. message will be thrown by the helper function if not gathering tests *)
 	{sameContainerStorageConditionConflictBooleans,sameContainerStorageConditionConflictTest}=If[gatherTests,
-		ValidContainerStorageConditionQ[ToList[mySamples],suppliedSampleInStorageCondition,Output->{Result,Tests},Cache->simulatedCache],
-		{ValidContainerStorageConditionQ[ToList[mySamples],suppliedSampleInStorageCondition,Output->Result,Cache->simulatedCache],{}}
+		ValidContainerStorageConditionQ[ToList[mySamples],suppliedSampleInStorageCondition,Output->{Result,Tests},Cache->fullCache,Simulation->updatedSimulation],
+		{ValidContainerStorageConditionQ[ToList[mySamples],suppliedSampleInStorageCondition,Output->Result,Cache->fullCache,Simulation->updatedSimulation],{}}
 	];
 
 	(*Collect Invalid options SamplesInStorageCondition*)
@@ -967,7 +1064,7 @@ resolveExperimentMeasureVolumeOptions[mySamples:{ObjectP[Object[Sample]]..},myOp
 	(* If there are invalid options and we are throwing messages, throw an error message and keep track of our invalid options for Error::InvalidOptions. *)
 	recoupSampleInvalidOptions = If[Length[recoupSampleMismatchOptions]>0,
 		If[!gatherTests,
-			Message[Error::DensityRecoupSampleMismatch,recoupSampleMismatchOptions,ObjectToString[recoupSampleMismatchInputs,Cache->simulatedCache]]
+			Message[Error::DensityRecoupSampleMismatch,recoupSampleMismatchOptions,ObjectToString[recoupSampleMismatchInputs,Cache->fullCache,Simulation->updatedSimulation]]
 		];
 
 		(* Store the errant options for later InvalidOption checks *)
@@ -1011,7 +1108,7 @@ resolveExperimentMeasureVolumeOptions[mySamples:{ObjectP[Object[Sample]]..},myOp
 	(* If there are invalid options and we are throwing messages, throw an error message and keep track of our invalid options for Error::InvalidOptions. *)
 	measurementVolInvalidOptions = If[Length[measurementVolMismatchOptions]>0,
 		If[!gatherTests,
-			Message[Error::DensityMeasurementVolumeMismatch,measurementVolMismatchOptions,ObjectToString[measurementVolMismatchInputs,Cache->simulatedCache]]
+			Message[Error::DensityMeasurementVolumeMismatch,measurementVolMismatchOptions,ObjectToString[measurementVolMismatchInputs,Cache->fullCache,Simulation->updatedSimulation]]
 		];
 
 		(* Store the errant options for later InvalidOption checks *)
@@ -1175,7 +1272,67 @@ resolveExperimentMeasureVolumeOptions[mySamples:{ObjectP[Object[Sample]]..},myOp
 	(* The helper here works off of memoization so call it ONCE and DO NOT PUT THIS in the Mapthread *)
 	compositionDensities = mvCompositionDensities[];
 
+	(* If we are doing storage measurements, we want to avoid MeasureDensity altogether. However, since we need some kind of density for Gravimetric method to work *)
+	(* We'll make some guess here. It will be less accurate but more robust, guaranteed to return some numeric value *)
+	(* Define a memoized function to do the work *)
+
+	allMolecules = DeleteDuplicates[Download[Cases[Flatten[sampleComps], ObjectP[Model[Molecule]]], Object]];
+	ClearAll[solventEstimatedDensities];
+	solventEstimatedDensities[] := solventEstimatedDensities[] = Module[
+		{
+			densityAssociation
+		},
+
+		densityAssociation = findCommonSolventDensities[allMolecules];
+
+		Map[
+			Function[{sampleComposition},
+				Module[
+					{majorCompositions, majorCompositionsCleaned, countedVolumePercent, uncountedVolumePercent, percentAndDensityList, estimatedDensity},
+					(* First, find all components that's >5 VolumePercent *)
+					majorCompositions = Cases[sampleComposition, {GreaterEqualP[5 VolumePercent], LinkP[], _}];
+
+					(* Do some clean up for to speed up downstream calculations*)
+					majorCompositionsCleaned = majorCompositions /. {x:VolumePercentP :> Unitless[x, VolumePercent], y:ObjectP[] :> Download[y, Object]};
+
+					(* Find the total counted volume percentage *)
+					countedVolumePercent = Total[majorCompositionsCleaned[[All,1]]];
+					(* Find the remaining uncounted volume percentage. Make sure it's non-negative *)
+					uncountedVolumePercent = Max[0, 100 - countedVolumePercent];
+					(* Construct a list of {volume percent, density}. Use 1 g/ml for all compositions with unknown densities *)
+					percentAndDensityList = (majorCompositionsCleaned /. densityAssociation) /. {ObjectP[] -> 1 Gram/Milliliter};
+					(* estimate the density using weighted average. Use 1g/ml for unaccounted volume percent *)
+					estimatedDensity = Total[
+						(* If the total counted volume percent somehow exceeds 100%, use that value instead of 100% *)
+						Map[#[[1]] * #[[2]] / Max[{countedVolumePercent, 100}] &, Join[percentAndDensityList, {{uncountedVolumePercent, 1 Gram/Milliliter, Null}}]]
+					];
+
+					(* Finally for the sake of robustness, make sure the output is within 0.5 to 3 g/ml *)
+					If[MatchQ[estimatedDensity, DensityP],
+						Max[Min[3 Gram/Milliliter, estimatedDensity], 0.5 Gram/Milliliter],
+						(* If for whatever reason we did not get a numeric value, don't error out, use 1g/ml as default value *)
+						1 Gram/Milliliter
+					]
+				]
+			],
+			sampleComps
+		]
+	];
+
+	(* Store the function value into a local variable. Note we only do this estimate if we are doing storage measurement *)
+	(* If not, then we make a list of Nulls for pattern matching purpose *)
+	estimatedDensities = If[TrueQ[storageMeasurements],
+		solventEstimatedDensities[],
+		ConstantArray[Null, Length[sampleComps]]
+	];
+
 	(*-- RESOLVE EXPERIMENT OPTIONS --*)
+
+	(* Resolve the preparation option *)
+	resolvedPreparation = If[MatchQ[Lookup[measureVolumeOptionsAssociation,Preparation],Except[Automatic]],
+		Lookup[measureVolumeOptionsAssociation,Preparation],
+		Manual
+	];
 
 	(* Resolve the InSitu option *)
 	inSituBools = If[inSitu,
@@ -1231,7 +1388,7 @@ resolveExperimentMeasureVolumeOptions[mySamples:{ObjectP[Object[Sample]]..},myOp
 	];
 
 	inSituInvalidOptions = If[!gatherTests&&inSitu&&MemberQ[inSituBools,False],
-		Message[Error::InSituImpossible,ObjectToString[PickList[simulatedSamples,inSituBools,False],Cache->simulatedCache]];
+		Message[Error::InSituImpossible,ObjectToString[PickList[simulatedSamples,inSituBools,False],Cache->fullCache,Simulation->updatedSimulation]];
 
 		(* Store the errant options for later InvalidOption checks *)
 		{InSitu},
@@ -1274,6 +1431,8 @@ resolveExperimentMeasureVolumeOptions[mySamples:{ObjectP[Object[Sample]]..},myOp
 		measurementVolumes,
 		recoupSampleOps,
 		(*numMeasureDensityReplicatesOps,*)
+		sampleLabels,
+		sampleContainerLabels,
 		unmeasurableSampleErrors,
 		unmeasurableContainerErrors,
 		measureDensityRequiredErrors,
@@ -1285,10 +1444,12 @@ resolveExperimentMeasureVolumeOptions[mySamples:{ObjectP[Object[Sample]]..},myOp
 		uncalibratedContainerErrors
 	} = Transpose[
 		MapThread[
-			Function[{mySample,mySampleModel,myContainer,compositionDensity,myContainerModel,inSituQ,myMetaContainer,myMetaMetaContainer,myMetaMetaMetaContainer,myMapThreadOptions},
+			Function[{mySample,mySampleModel,myContainer,compositionDensity, solventDensity, myContainerModel,inSituQ,myMetaContainer,myMetaMetaContainer,myMetaMetaMetaContainer,myMapThreadOptions},
 				Module[{
 					solidOrDiscardedSample,
 					method,measureDensity,centrifuge,measurementVolume,recoupSample,(*numMeasureDensityReplicates,*)
+					unresolvedSampleLabel,unresolvedSampleContainerLabel,
+					sampleLabel,myContainerNoNull,sampleContainerLabel,
 					unmeasurableSampleError,
 					unmeasurableContainerError,
 					measureDensityRequiredError,
@@ -1307,7 +1468,28 @@ resolveExperimentMeasureVolumeOptions[mySamples:{ObjectP[Object[Sample]]..},myOp
 					{unmeasurableSampleError,unmeasurableContainerError,uncalibratedContainerError,measureDensityRequiredError,sampleUltrasonicIncompatibleError,insufficientMeasureDensityVolumeError,centrifugeRecommendedWarning,inSituMethodError,inSituMeasureDensityError}=ConstantArray[False,9];
 
 					(* Store our SafeOps options in their variables *)
-					{method,measureDensity,centrifuge,measurementVolume,recoupSample(*numMeasureDensityReplicates*)} = Lookup[myMapThreadOptions, {Method,MeasureDensity,Centrifuge,MeasurementVolume,RecoupSample(*NumberOfMeasureDensityReplicates*)}];
+					{
+						method,
+						measureDensity,
+						centrifuge,
+						measurementVolume,
+						recoupSample,
+						unresolvedSampleLabel,
+						unresolvedSampleContainerLabel
+						(*numMeasureDensityReplicates*)
+					} = Lookup[
+						myMapThreadOptions,
+						{
+							Method,
+							MeasureDensity,
+							Centrifuge,
+							MeasurementVolume,
+							RecoupSample,
+							SampleLabel,
+							SampleContainerLabel
+							(*NumberOfMeasureDensityReplicates*)
+						}
+					];
 
 					(* If the sample is a solid or discarded, we circumvent everything and ignore it *)
 					(* Note: an error would have been thrown above if this was a User protocol, and this will silently pass through if it's a *)
@@ -1655,7 +1837,8 @@ resolveExperimentMeasureVolumeOptions[mySamples:{ObjectP[Object[Sample]]..},myOp
 									Or[
 										MatchQ[Lookup[mySample,Density],DensityP],
 										!NullQ[mySampleModel]&&MatchQ[Lookup[mySampleModel,Density],DensityP],
-										MatchQ[compositionDensity,DensityP]
+										MatchQ[compositionDensity,DensityP],
+										MatchQ[solventDensity, DensityP]
 									],
 
 									(* MeasureDensity -> False *)
@@ -1704,12 +1887,38 @@ resolveExperimentMeasureVolumeOptions[mySamples:{ObjectP[Object[Sample]]..},myOp
 						}
 					];
 
+					(* Resolve the label options *)
+					(* for Sample/ContainerLabel options, automatically resolve to Null *)
+					(* NOTE: We use the simulated object IDs here to help generate the labels so we don't spin off a million *)
+					(* labels if we have duplicates. *)
+					sampleLabel = Which[
+						Not[MatchQ[unresolvedSampleLabel, Automatic]],
+						unresolvedSampleLabel,
+						MatchQ[updatedSimulation, SimulationP] && MemberQ[Lookup[updatedSimulation[[1]], Labels][[All,2]], Lookup[mySample, Object]],
+						Lookup[Reverse /@ Lookup[simulation[[1]], Labels], Lookup[mySample, Object]],
+						True,
+						"measure volume sample " <> StringDrop[Lookup[mySample, ID], 3]
+					];
+					(* If we don't have a container, need to not use Null *)
+					myContainerNoNull = myContainer /. {Null -> {}};
+					sampleContainerLabel = Which[
+						Not[MatchQ[unresolvedSampleContainerLabel, Automatic]],
+						unresolvedSampleContainerLabel,
+						MatchQ[updatedSimulation, SimulationP] && MemberQ[Lookup[updatedSimulation[[1]], Labels][[All, 2]], Lookup[myContainerNoNull, Object,Null]],
+						Lookup[Reverse /@ Lookup[updatedSimulation[[1]], Labels], Lookup[myContainerNoNull, Object]],
+						(* In case we have a container-less sample, use sample ID *)
+						True,
+						"measure volume container " <> StringDrop[Lookup[myContainerNoNull, ID, Lookup[mySample, ID]], 3]
+					];
+
 					(* Gather MapThread results *)
 					{
 						method,
 						measureDensity,
 						measurementVolume,
 						recoupSample,
+						sampleLabel,
+						sampleContainerLabel,
 						(*numMeasureDensityReplicates,*)
 						unmeasurableSampleError,
 						unmeasurableContainerError,
@@ -1725,7 +1934,7 @@ resolveExperimentMeasureVolumeOptions[mySamples:{ObjectP[Object[Sample]]..},myOp
 			],
 
 			(* MapThread over our index-matched lists *)
-			{samplePackets,sampleModelPackets,containerPackets,compositionDensities,modelContainerPackets,inSituBools,metaContainers,metaContainerParents,metaMetaContainerParents,mapThreadFriendlyOptions}
+			{samplePackets,sampleModelPackets,containerPackets,compositionDensities, estimatedDensities, modelContainerPackets,inSituBools,metaContainers,metaContainerParents,metaMetaContainerParents,mapThreadFriendlyOptions}
 		]
 	];
 
@@ -1750,7 +1959,7 @@ resolveExperimentMeasureVolumeOptions[mySamples:{ObjectP[Object[Sample]]..},myOp
 			invalidSamples=PickList[simulatedSamples,unmeasurableSampleErrors];
 
 			(* Throw the corresopnding error. *)
-			Message[Error::UnmeasurableSample,ObjectToString[invalidSamples,Cache->simulatedCache]];
+			Message[Error::UnmeasurableSample,ObjectToString[invalidSamples,Cache->fullCache,Simulation->updatedSimulation]];
 
 			(* Return our invalid options. *)
 			invalidSamples
@@ -1770,13 +1979,13 @@ resolveExperimentMeasureVolumeOptions[mySamples:{ObjectP[Object[Sample]]..},myOp
 
 			(* Create a test for the non-passing inputs. *)
 			failingInputTest=If[Length[failingInputs]>0,
-				Test["The following samples, "<>ObjectToString[failingInputs,Cache->simulatedCache]<>", are measurable by volume measurement methods in the lab:",True,False],
+				Test["The following samples, "<>ObjectToString[failingInputs,Cache->fullCache,Simulation->updatedSimulation]<>", are measurable by volume measurement methods in the lab:",True,False],
 				Nothing
 			];
 
 			(* Create a test for the passing inputs. *)
 			passingInputsTest=If[Length[passingInputs]>0,
-				Test["The following samples, "<>ObjectToString[passingInputs,Cache->simulatedCache]<>", are measurable by volume measurement methods in the lab:",True,True],
+				Test["The following samples, "<>ObjectToString[passingInputs,Cache->fullCache,Simulation->updatedSimulation]<>", are measurable by volume measurement methods in the lab:",True,True],
 				Nothing
 			];
 
@@ -1800,7 +2009,7 @@ resolveExperimentMeasureVolumeOptions[mySamples:{ObjectP[Object[Sample]]..},myOp
 			sampleMethods=PickList[methods,unmeasurableContainerErrors];
 
 			(* Throw the corresopnding error. *)
-			Message[Error::UnmeasurableContainer,ToString[sampleMethods],ObjectToString[invalidSamples,Cache->simulatedCache]];
+			Message[Error::UnmeasurableContainer,ToString[sampleMethods],ObjectToString[invalidSamples,Cache->fullCache,Simulation->updatedSimulation]];
 
 			(* Return our invalid options. *)
 			{Method}
@@ -1815,7 +2024,7 @@ resolveExperimentMeasureVolumeOptions[mySamples:{ObjectP[Object[Sample]]..},myOp
 			invalidSamples = PickList[simulatedSamples,uncalibratedContainerErrors];
 
 			(* Throw the corresopnding error. *)
-			Message[Error::VolumeCalibrationsMissing,ObjectToString[invalidSamples,Cache->simulatedCache]];
+			Message[Error::VolumeCalibrationsMissing,ObjectToString[invalidSamples,Cache->fullCache,Simulation->updatedSimulation]];
 
 			(* Return our invalid options. *)
 			{invalidSamples}
@@ -1835,13 +2044,13 @@ resolveExperimentMeasureVolumeOptions[mySamples:{ObjectP[Object[Sample]]..},myOp
 
 			(* Create a test for the non-passing inputs. *)
 			failingInputTest=If[Length[failingInputs]>0,
-				Test["The containers of the following samples, "<>ObjectToString[failingInputs,Cache->simulatedCache]<>", have valid volume calibrations associated with them:",True,False],
+				Test["The containers of the following samples, "<>ObjectToString[failingInputs,Cache->fullCache,Simulation->updatedSimulation]<>", have valid volume calibrations associated with them:",True,False],
 				Nothing
 			];
 
 			(* Create a test for the passing inputs. *)
 			passingInputsTest=If[Length[passingInputs]>0,
-				Test["The containers of the following samples, "<>ObjectToString[passingInputs,Cache->simulatedCache]<>", have valid volume calibrations associated with them:",True,True],
+				Test["The containers of the following samples, "<>ObjectToString[passingInputs,Cache->fullCache,Simulation->updatedSimulation]<>", have valid volume calibrations associated with them:",True,True],
 				Nothing
 			];
 
@@ -1867,13 +2076,13 @@ resolveExperimentMeasureVolumeOptions[mySamples:{ObjectP[Object[Sample]]..},myOp
 
 			(* Create a test for the non-passing inputs. *)
 			failingInputTest=If[Length[failingInputs]>0,
-				Test["The containers of the following samples, "<>ObjectToString[failingInputs,Cache->simulatedCache]<>", are measurable with their specified Method:",True,False],
+				Test["The containers of the following samples, "<>ObjectToString[failingInputs,Cache->fullCache,Simulation->updatedSimulation]<>", are measurable with their specified Method:",True,False],
 				Nothing
 			];
 
 			(* Create a test for the passing inputs. *)
 			passingInputsTest=If[Length[passingInputs]>0,
-				Test["The containers of the following samples, "<>ObjectToString[passingInputs,Cache->simulatedCache]<>", are measurable with their specified Method:",True,True],
+				Test["The containers of the following samples, "<>ObjectToString[passingInputs,Cache->fullCache,Simulation->updatedSimulation]<>", are measurable with their specified Method:",True,True],
 				Nothing
 			];
 
@@ -1894,7 +2103,7 @@ resolveExperimentMeasureVolumeOptions[mySamples:{ObjectP[Object[Sample]]..},myOp
 			invalidSamples=PickList[simulatedSamples,measureDensityRequiredErrors];
 
 			(* Throw the corresopnding error. *)
-			Message[Error::MeasureDensityRequired,ObjectToString[invalidSamples,Cache->simulatedCache]];
+			Message[Error::MeasureDensityRequired,ObjectToString[invalidSamples,Cache->fullCache,Simulation->updatedSimulation]];
 
 			(* Return our invalid options. *)
 			{MeasureDensity}
@@ -1914,13 +2123,13 @@ resolveExperimentMeasureVolumeOptions[mySamples:{ObjectP[Object[Sample]]..},myOp
 
 			(* Create a test for the non-passing inputs. *)
 			failingInputTest=If[Length[failingInputs]>0,
-				Test["The following samples, "<>ObjectToString[failingInputs,Cache->simulatedCache]<>", do not need their Density measured prior to their Volume being Gravimetrically measured:",True,False],
+				Test["The following samples, "<>ObjectToString[failingInputs,Cache->fullCache,Simulation->updatedSimulation]<>", do not need their Density measured prior to their Volume being Gravimetrically measured:",True,False],
 				Nothing
 			];
 
 			(* Create a test for the passing inputs. *)
 			passingInputsTest=If[Length[passingInputs]>0,
-				Test["The following samples, "<>ObjectToString[passingInputs,Cache->simulatedCache]<>", do not need their Density measured prior to their Volume being Gravimetrically measured:",True,True],
+				Test["The following samples, "<>ObjectToString[passingInputs,Cache->fullCache,Simulation->updatedSimulation]<>", do not need their Density measured prior to their Volume being Gravimetrically measured:",True,True],
 				Nothing
 			];
 
@@ -1941,7 +2150,7 @@ resolveExperimentMeasureVolumeOptions[mySamples:{ObjectP[Object[Sample]]..},myOp
 			invalidSamples=PickList[simulatedSamples,sampleUltrasonicIncompatibleErrors];
 
 			(* Throw the corresopnding error. *)
-			Message[Error::SampleUltrasonicIncompatible,ObjectToString[invalidSamples,Cache->simulatedCache]];
+			Message[Error::SampleUltrasonicIncompatible,ObjectToString[invalidSamples,Cache->fullCache,Simulation->updatedSimulation]];
 
 			(* Return our invalid options. *)
 			{Method}
@@ -1961,13 +2170,13 @@ resolveExperimentMeasureVolumeOptions[mySamples:{ObjectP[Object[Sample]]..},myOp
 
 			(* Create a test for the non-passing inputs. *)
 			failingInputTest=If[Length[failingInputs]>0,
-				Test["Samples that are being Ultrasonically volume measured ("<>ObjectToString[failingInputs,Cache->simulatedCache]<>") are compatible with Ultrasonic volume measurement:",True,False],
+				Test["Samples that are being Ultrasonically volume measured ("<>ObjectToString[failingInputs,Cache->fullCache,Simulation->updatedSimulation]<>") are compatible with Ultrasonic volume measurement:",True,False],
 				Nothing
 			];
 
 			(* Create a test for the passing inputs. *)
 			passingInputsTest=If[Length[passingInputs]>0,
-				Test["The following samples, "<>ObjectToString[passingInputs,Cache->simulatedCache]<>", are either being measured Gravimetrically or are compatible with Ultrasonic volume measurement:",True,True],
+				Test["The following samples, "<>ObjectToString[passingInputs,Cache->fullCache,Simulation->updatedSimulation]<>", are either being measured Gravimetrically or are compatible with Ultrasonic volume measurement:",True,True],
 				Nothing
 			];
 
@@ -1985,7 +2194,7 @@ resolveExperimentMeasureVolumeOptions[mySamples:{ObjectP[Object[Sample]]..},myOp
 	insufficientMeasureDensityVolumeInvalidInputs=If[Or@@insufficientMeasureDensityVolumeErrors&&!gatherTests,
 		Module[{invalidSamples,lookupPatterns,sampleVolumes},
 		(* Get the samples that correspond to this error. *)
-			invalidSamples = PickList[simulatedSamples,insufficientMeasureDensityVolumeErrors];
+			invalidSamples = Lookup[PickList[simulatedSamples,insufficientMeasureDensityVolumeErrors],Object];
 
 			(* Store the lookup patterns for our failing samples *)
 			lookupPatterns = lookupP[invalidSamples];
@@ -1994,7 +2203,7 @@ resolveExperimentMeasureVolumeOptions[mySamples:{ObjectP[Object[Sample]]..},myOp
 			sampleVolumes = Lookup[FirstCase[samplePackets,KeyValuePattern[#]],Volume,0 Liter]&/@lookupPatterns;
 
 			(* Throw the corresopnding error. *)
-			Message[Error::InsufficientMeasureDensityVolume,sampleVolumes,ObjectToString[invalidSamples,Cache->simulatedCache]];
+			Message[Error::InsufficientMeasureDensityVolume,sampleVolumes,ObjectToString[invalidSamples,Cache->fullCache,Simulation->updatedSimulation]];
 
 			(* Return our invalid samples. *)
 			invalidSamples
@@ -2014,13 +2223,13 @@ resolveExperimentMeasureVolumeOptions[mySamples:{ObjectP[Object[Sample]]..},myOp
 
 			(* Create a test for the non-passing inputs. *)
 			failingInputTest=If[Length[failingInputs]>0,
-				Test["The following samples, "<>ObjectToString[failingInputs,Cache->simulatedCache]<>", have enough volume to have their Density measured:",True,False],
+				Test["The following samples, "<>ObjectToString[failingInputs,Cache->fullCache,Simulation->updatedSimulation]<>", have enough volume to have their Density measured:",True,False],
 				Nothing
 			];
 
 			(* Create a test for the passing inputs. *)
 			passingInputsTest=If[Length[passingInputs]>0,
-				Test["The following samples, "<>ObjectToString[failingInputs,Cache->simulatedCache]<>", have enough volume to have their Density measured or aren't going to have their Density measured:",True,True],
+				Test["The following samples, "<>ObjectToString[failingInputs,Cache->fullCache,Simulation->updatedSimulation]<>", have enough volume to have their Density measured or aren't going to have their Density measured:",True,True],
 				Nothing
 			];
 
@@ -2041,7 +2250,7 @@ resolveExperimentMeasureVolumeOptions[mySamples:{ObjectP[Object[Sample]]..},myOp
 			invalidSamples=PickList[simulatedSamples,centrifugeRecommendedWarnings];
 
 			(* Throw the corresopnding error. *)
-			Message[Warning::CentrifugeRecommended,ObjectToString[invalidSamples,Cache->simulatedCache]]
+			Message[Warning::CentrifugeRecommended,ObjectToString[invalidSamples,Cache->fullCache,Simulation->updatedSimulation]]
 		],
 
 		{}
@@ -2059,13 +2268,13 @@ resolveExperimentMeasureVolumeOptions[mySamples:{ObjectP[Object[Sample]]..},myOp
 
 			(* Create a test for the non-passing inputs. *)
 			failingInputTest=If[Length[failingInputs]>0,
-				Warning["The following samples, "<>ObjectToString[failingInputs,Cache->simulatedCache]<>", will not be Centrifuged, even though they will have their volume Ultrasonically measured:",True,False],
+				Warning["The following samples, "<>ObjectToString[failingInputs,Cache->fullCache,Simulation->updatedSimulation]<>", will not be Centrifuged, even though they will have their volume Ultrasonically measured:",True,False],
 				Nothing
 			];
 
 			(* Create a test for the passing inputs. *)
 			passingInputsTest=If[Length[passingInputs]>0,
-				Test["The following samples, "<>ObjectToString[failingInputs,Cache->simulatedCache]<>", may be centrifuged, if needed, for Ultrasonic volume measurement:",True,True],
+				Test["The following samples, "<>ObjectToString[failingInputs,Cache->fullCache,Simulation->updatedSimulation]<>", may be centrifuged, if needed, for Ultrasonic volume measurement:",True,True],
 				Nothing
 			];
 
@@ -2089,7 +2298,7 @@ resolveExperimentMeasureVolumeOptions[mySamples:{ObjectP[Object[Sample]]..},myOp
 			invalidMethods = ToString/@PickList[methods,inSituMethodErrors];
 
 			(* Throw the corresopnding error. *)
-			Message[Error::InvalidInSituMethod,invalidMethods,ObjectToString[invalidSamples,Cache->simulatedCache]];
+			Message[Error::InvalidInSituMethod,invalidMethods,ObjectToString[invalidSamples,Cache->fullCache,Simulation->updatedSimulation]];
 
 			{InSitu,Method}
 		],
@@ -2103,7 +2312,7 @@ resolveExperimentMeasureVolumeOptions[mySamples:{ObjectP[Object[Sample]]..},myOp
 			invalidSamples = PickList[simulatedSamples,inSituMeasureDensityErrors];
 
 			(* Throw the corresopnding error. *)
-			Message[Error::InvalidInSituMeasureDensity,ObjectToString[invalidSamples,Cache->simulatedCache]];
+			Message[Error::InvalidInSituMeasureDensity,ObjectToString[invalidSamples,Cache->fullCache,Simulation->updatedSimulation]];
 
 			{InSitu,MeasureDensity}
 		],
@@ -2170,7 +2379,8 @@ resolveExperimentMeasureVolumeOptions[mySamples:{ObjectP[Object[Sample]]..},myOp
 			ReplaceRule[myOptions, resolvedSamplePrepOptions],
 			RequiredAliquotAmounts -> requiredAliquotAmounts,
 			AliquotWarningMessage -> Null,(* This warning only applies to mismatched container options *)
-			Cache->simulatedCache,
+			Cache->fullCache,
+			Simulation->updatedSimulation,
 			Output->{Result,Tests}
 		],
 
@@ -2182,7 +2392,8 @@ resolveExperimentMeasureVolumeOptions[mySamples:{ObjectP[Object[Sample]]..},myOp
 				ReplaceRule[myOptions, resolvedSamplePrepOptions],
 				RequiredAliquotAmounts -> requiredAliquotAmounts,
 				AliquotWarningMessage -> Null,(* This warning only applies to mismatched container options *)
-				Cache -> simulatedCache,
+				Cache -> fullCache,
+				Simulation->updatedSimulation,
 				Output -> Result
 			],
 			{}
@@ -2199,18 +2410,23 @@ resolveExperimentMeasureVolumeOptions[mySamples:{ObjectP[Object[Sample]]..},myOp
 				MeasureDensity -> measureDensityOps,
 				MeasurementVolume -> measurementVolumes,
 				RecoupSample -> recoupSampleOps,
+				SampleLabel -> sampleLabels,
+				SampleContainerLabel -> sampleContainerLabels,
+				Preparation -> resolvedPreparation,
 				(*NumberOfMeasureDensityReplicates -> numMeasureDensityReplicatesOps,*)
 				ErrorTolerance -> Lookup[measurementVolumeOptionWithRoundedVolumes,ErrorTolerance],
 				ParentProtocol -> Lookup[measurementVolumeOptionWithRoundedVolumes,ParentProtocol],
 				PreparatoryUnitOperations->Lookup[myOptions,PreparatoryUnitOperations],
-				PreparatoryPrimitives->Lookup[myOptions,PreparatoryPrimitives],
 				Confirm -> Lookup[myOptions,Confirm],
+				CanaryBranch -> Lookup[myOptions,CanaryBranch],
 				Template -> Lookup[myOptions,Template],
 				Name -> Lookup[myOptions,Name],
+				OptionsResolverOnly -> Lookup[myOptions,OptionsResolverOnly],
 				ImageSample -> imageSample,
 				InSitu -> inSitu,
-				SamplesInStorageCondition->suppliedSampleInStorageCondition,
-				NumberOfReplicates->Lookup[measurementVolumeOptionWithRoundedVolumes,NumberOfReplicates]
+				SamplesInStorageCondition->suppliedSampleInStorageCondition (*,
+				NumberOfReplicates->numberOfReplicates
+				*)
 			}
 		],
 
@@ -2244,13 +2460,14 @@ DefineOptions[
 	measureVolumeResourcePackets,
 	Options :>{
 		CacheOption,
-		OutputOption
+		OutputOption,
+		SimulationOption
 	}
 ];
 
 measureVolumeResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresolvedOptions:Alternatives[{_Rule..},{}],myResolvedOptions:{_Rule..},myOptions:OptionsPattern[]]:=Module[
 	{
-		safeOps,outputSpecification,output,gatherTests,messages,inheritedCache,parentProtocol,
+		safeOps,outputSpecification,output,gatherTests,messages,inheritedCache,simulation,parentProtocol,maintenanceQ,qualificationQ,
 		resolvedOptionsNoHidden,inSitu,
 		lookupObjID,dupeFreeResources,resourcesToSampleMap,
 		containerPackets,containerModelPackets,volCalibrationPackets,
@@ -2262,7 +2479,7 @@ measureVolumeResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresolvedO
 		tubeRackResourceLookup,uniquePlatePlatforms,platePlatformResources,platePlatformResourceLookup,
 		liquidLevelDetectorSets,collapseLiquidLevelDetectorSetsFunction,liquidLevelDetectorResourceSets,
 		liquidLevelDetectorResources,allObjectIDs,protocolID,sonicDistancePacketsWithResources,
-		simulatedSampObjects,simulatedSamps,simulatedCache,numberOfReplicates,workingContainers,sampleReplicateRules,containerReplicateRules,
+		simulatedSampObjects,simulatedSamps,allSamplePackets,parentTargetListed,simulatedSampsListed,updatedSimulation,workingContainers,sampleReplicateRules,containerReplicateRules,
 		replicatedContainers,myExpandedSimulatedSamples,unsortedSonicContainers,unsortedWeightContainers,
 		orderedSonicAssociations,sonicDistanceContainersIn,sonicDistanceSamplesIn,weightContainerPositions,
 		weightContainerContents,containersIn,samplesInResources,measureDensity,samplesToDensityMeasure,
@@ -2274,8 +2491,8 @@ measureVolumeResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresolvedO
 		frqTests,previewRule,optionsRule,testsRule,resultRule,containerLookup,metaContainerPackets,metaMetaContainerPackets,
 		groupedMetaContainers,groupedMetaMetaContainers,groupedMetaMetaMetaContainers,metaMetaMetaContainerPackets,
 		liquidLevelDetectors,duplicateFreeDetectors,sonicAssociations,reverseContainerLookup,knownDensities,samplePackets,sampleModelPackets,
-		rackModelPacks,cleanedVolCalPackets,sensorArmHeightLookup,layoutFileNameLookup,sonicRackModelLookup,sonicRackPacketLookup,
-		modelFormFactorIdentifiersWithCalibration
+		rackModelPacks,parentTarget,cleanedVolCalPackets,sensorArmHeightLookup,layoutFileNameLookup,sonicRackModelLookup,sonicRackPacketLookup,
+		modelFormFactorIdentifiersWithCalibration, numberOfReplicates, batchedVolumeCalibrations, containerCache, batchedVolumeCalibrationsObject
 	},
 
 	(* Stash safe options *)
@@ -2290,10 +2507,17 @@ measureVolumeResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresolvedO
 	messages = Not[gatherTests];
 
 	(* get the cache that was passed from the main function *)
-	inheritedCache= Lookup[safeOps,Cache,{}];
+	inheritedCache = Lookup[safeOps, Cache, {}];
+	simulation  = Lookup[safeOps, Simulation, Simulation[]];
 
 	(* Store the ParentProtocol of the protocol being created *)
 	parentProtocol = Lookup[myResolvedOptions,ParentProtocol];
+
+	(* Figure out if this function is being called as part of an Object[Maintenance, CalibrateVolume]. *)
+	maintenanceQ = MatchQ[parentProtocol, ObjectP[Object[Maintenance, CalibrateVolume]]];
+
+	(* Figure out if this function is being called as part of an Object[Qualification, LiquidLevelDetector]. *)
+	qualificationQ = MatchQ[parentProtocol, ObjectP[Object[Qualification, LiquidLevelDetector]]];
 
 	(* Determine if we expect this to be an InSitu protocol *)
 	inSitu = Lookup[myResolvedOptions,InSitu];
@@ -2307,26 +2531,39 @@ measureVolumeResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresolvedO
 	];
 
 	(* Regenerate the simulations done in the option resolver *)
-	{simulatedSampObjects,simulatedCache} = simulateSamplesResourcePackets[ExperimentMeasureVolume,Download[mySamples,Object],myResolvedOptions,Cache->inheritedCache];
+	{simulatedSampObjects,updatedSimulation} = simulateSamplesResourcePacketsNew[ExperimentMeasureVolume,Download[mySamples,Object],myResolvedOptions,Cache->inheritedCache,Simulation->simulation];
 
-	(* Pull the sample packets from the simulated cache *)
-	simulatedSamps = FirstCase[simulatedCache,KeyValuePattern[Object->#]]&/@simulatedSampObjects;
-
-	{samplePackets,sampleModelPackets,containerPackets,containerModelPackets,metaContainerPackets,metaMetaContainerPackets,metaMetaMetaContainerPackets,volCalibrationPackets,rackModelPacks} = Transpose[Download[
-		simulatedSamps,
+	{allSamplePackets, parentTargetListed, simulatedSampsListed} = Quiet[Download[
 		{
-		(* Sample Packets *)Packet[Density],
-		(* Sample Model Packets *)Packet[Model[{Density}]],
-		(* Container Packet *)Packet[Container[{Model,Contents,Container,Position}]],
-		(* Container Model Packet *)Packet[Container[Model][{VolumeCalibrations,Dimensions}]],
-		(* Container's Container Packet *)Packet[Container[Container][{Model,Position,Container}]],
-		(* Container's Container's Container Packet *)Packet[Container[Container][Container][{Model,Position,Container}]],
-		(* Container's Container's Container's Container Packet *)Packet[Container[Container][Container][Container][{Model,Position,Container}]],
-		(* Volume Calibration Packets *)Packet[Container[Model][VolumeCalibrations][{LiquidLevelDetectorModel,Anomalous,Deprecated,DeveloperObject,RackModel,LayoutFileName,SensorArmHeight}]],
-		(* Volume Calibration Packets *)Packet[Container[Model][VolumeCalibrations][RackModel][{Positions,Footprint}]]
+			simulatedSampObjects,
+			{parentProtocol},
+			simulatedSampObjects
 		},
-		Cache->simulatedCache
-	]];
+		{
+			{
+				(* Sample Packets *)Packet[Density],
+				(* Sample Model Packets *)Packet[Model[{Density}]],
+				(* Container Packet *)Packet[Container[{Model, Contents, Container, Position}]],
+				(* Container Model Packet *)Packet[Container[Model][{VolumeCalibrations, Dimensions}]],
+				(* Container's Container Packet *)Packet[Container[Container][{Model, Position, Container}]],
+				(* Container's Container's Container Packet *)Packet[Container[Container][Container][{Model, Position, Container}]],
+				(* Container's Container's Container's Container Packet *)Packet[Container[Container][Container][Container][{Model, Position, Container}]],
+				(* Volume Calibration Packets *)Packet[Container[Model][VolumeCalibrations][{LiquidLevelDetectorModel, LiquidLevelDetector, Anomalous, Deprecated, DeveloperObject, RackModel, LayoutFileName, SensorArmHeight, Name}]],
+				(* Rack Model Packets *)Packet[Container[Model][VolumeCalibrations][RackModel][{Positions, Footprint}]]
+			},
+			{
+				Target
+			},
+			{All}
+		},
+		Cache -> inheritedCache,
+		Simulation -> updatedSimulation
+	], {Download::FieldDoesntExist}];
+
+	(* Pull values out of the downloaded packets *)
+	{samplePackets,sampleModelPackets,containerPackets,containerModelPackets,metaContainerPackets,metaMetaContainerPackets,metaMetaMetaContainerPackets,volCalibrationPackets,rackModelPacks}=Transpose[allSamplePackets];
+	parentTarget=FirstOrDefault[Flatten[parentTargetListed]];
+	simulatedSamps = Flatten[simulatedSampsListed];
 
 	(* Build a sample to simulated sample lookup. Then convert that to a Container to SimulatedContainer lookup *)
 	containerLookup = DeleteDuplicates@MapThread[Rule,
@@ -2340,7 +2577,10 @@ measureVolumeResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresolvedO
 	reverseContainerLookup=Reverse/@containerLookup;
 
 	(* Get our NumberOfReplicates option. *)
-	numberOfReplicates=Lookup[myResolvedOptions,NumberOfReplicates,1]/.{Null->1};
+	(* numberOfReplicates=Lookup[myResolvedOptions,NumberOfReplicates,1]/.{Null->1}; *)
+
+	(* For now set this option to 1 *)
+	numberOfReplicates = 1;
 
 	(* Expand our input samples and resolved options. *)
 	myExpandedSamples=Flatten[(ConstantArray[#,numberOfReplicates]&)/@mySamples];
@@ -2375,7 +2615,14 @@ measureVolumeResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresolvedO
 					Anomalous->Except[True],
 					Deprecated->Except[True],
 					DeveloperObject->Except[True],
-					LiquidLevelDetectorModel->Except[Null]
+					LiquidLevelDetectorModel->Except[Null],
+					(* If we are in a calibrate volume maintenance, we need a calibration from the target (it can be a placeholder or not) *)
+					If[
+						maintenanceQ,
+						LiquidLevelDetector->ObjectP[parentTarget],
+						(* If we are not in a calibrate volume maintenance, then we cannot use a placeholder calibration *)
+						Name->_?(Not[StringContainsQ[#/.Null->"","Placeholder calibration for "~~__~~uuid_/;MatchQ[uuid, UUIDP]]]&)
+					]
 				|>,
 				AllowForeignKeys->True],
 			<||>],
@@ -2683,13 +2930,45 @@ measureVolumeResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresolvedO
 				containerCalibrationPackets = FirstCase[Flatten[volCalibrationPackets],KeyValuePattern[Object->#]]&/@Download[Lookup[containerModel,VolumeCalibrations,{}],Object];
 
 				(* pull out the valid calibrations from the container model calibration list *)
-				validCalibrations = Select[containerCalibrationPackets,!NullQ[Lookup[#,LiquidLevelDetectorModel]]&&!TrueQ[#[Anomalous]]&&!TrueQ[#[Deprecated]]&&!TrueQ[#[DeveloperObject]]&];
+				validCalibrations = Select[
+					containerCalibrationPackets,
+					And[
+						!NullQ[Lookup[#,LiquidLevelDetectorModel]],
+						!TrueQ[#[Anomalous]],
+						!TrueQ[#[Deprecated]],
+						!TrueQ[#[DeveloperObject]],
+						(* If we are in a calibrate volume maintenance, we need a calibration from the target (it can be a placeholder or not) *)
+						If[
+							maintenanceQ,
+							MatchQ[Lookup[#,LiquidLevelDetector],ObjectP[parentTarget]],
+							(* If we are not in a calibrate volume maintenance, then we cannot use a placeholder calibration *)
+							!StringContainsQ[#[Name]/.Null->"","Placeholder calibration for "~~__~~uuid_/;MatchQ[uuid, UUIDP]]
+						]
+					]&
+				];
 
 				(* get the liquid level detector models that have valid calibrations for this container model *)
 				uniqueLiquidLevelDetectorModels = If[!inSitu,
 
 					(* get the list of LLD devices *)
-					DeleteDuplicates[Download[Lookup[validCalibrations,LiquidLevelDetectorModel],Object]],
+					Module[{validCalibrationLiquidLevelDetectorModels},
+						validCalibrationLiquidLevelDetectorModels = Download[Lookup[validCalibrations,LiquidLevelDetectorModel],Object];
+						(* If there is only one calibrationPacket and it is for VC 50/100/384, we expect any instrument of VC 50/100/384 will work *)
+						If[Length[validCalibrationLiquidLevelDetectorModels] == 1 &&
+								MatchQ[
+										First[validCalibrationLiquidLevelDetectorModels],
+										Alternatives[
+											Model[Instrument, LiquidLevelDetector, "id:8qZ1VW0VaMVD"], (*Model[Instrument, LiquidLevelDetector, "VolumeCheck 384"]*)
+											Model[Instrument, LiquidLevelDetector, "id:zGj91aR3d5b6"], (*Model[Instrument, LiquidLevelDetector, "VolumeCheck 100"]*)
+											Model[Instrument, LiquidLevelDetector, "id:9RdZXvKBee8x"]] (*Model[Instrument, LiquidLevelDetector, "VolumeCheck 50"]*)
+									],
+							{Model[Instrument, LiquidLevelDetector, "id:8qZ1VW0VaMVD"], (*Model[Instrument, LiquidLevelDetector, "VolumeCheck 384"]*)
+								Model[Instrument, LiquidLevelDetector, "id:zGj91aR3d5b6"], (*Model[Instrument, LiquidLevelDetector, "VolumeCheck 100"]*)
+								Model[Instrument, LiquidLevelDetector, "id:9RdZXvKBee8x"]}, (*Model[Instrument, LiquidLevelDetector, "VolumeCheck 50"]*)
+							(*Otherwise, we can only use the LLD whose calibration is recorded*)
+							DeleteDuplicates[Download[Lookup[validCalibrations,LiquidLevelDetectorModel],Object]]
+						]
+					],
 
 					(* Otherwise we're in the InSitu case so pick the first instrument we see *)
 					(* We can pick the first because the Options resolver would already have thrown an error if InSitu wasn't valid *)
@@ -2802,7 +3081,11 @@ measureVolumeResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresolvedO
 	];
 
 	(* use the function defined in the previous block to determined the LLD model sets for which we want to create individual resources *)
-	liquidLevelDetectorResourceSets = collapseLiquidLevelDetectorSetsFunction[liquidLevelDetectorSets];
+	(* But if we are in a volume calibration maintenance or a liquid level detector qualification, we must use the target *)
+	liquidLevelDetectorResourceSets = If[Or[maintenanceQ,qualificationQ],
+		{parentTarget},
+		collapseLiquidLevelDetectorSetsFunction[liquidLevelDetectorSets]
+	];
 
 	(* Create a single resource for each unique liquid level detector set. If it's a list of models leave it be
 		If it's a single instrument remove it from the list. *)
@@ -2932,16 +3215,21 @@ measureVolumeResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresolvedO
 				];
 
 				(* determine which liquid level detector resource to use; the correct choice is the one with the longest intersection between the resource's models and this program's models*)
-				liquidLevelDetectorResource = Last[
-					SortBy[
-						Select[
-							liquidLevelDetectorResources,
-							ContainsAll[
-								Lookup[sonicDistanceAssoc,LiquidLevelDetector],
-								ToList[#[Instrument]] (* This is ToList'd because models will be in lists but objects must be singular in the resource blob *)
-							]
-						&],
-						Length
+				(* If we are in a maintenance calibrate volume or a liquid level detector qualification, we just have a resource for the target *)
+				liquidLevelDetectorResource = If[
+					Or[maintenanceQ,qualificationQ],
+					FirstOrDefault[liquidLevelDetectorResources],
+					Last[
+						SortBy[
+							Select[
+								liquidLevelDetectorResources,
+								ContainsAll[
+									Lookup[sonicDistanceAssoc,LiquidLevelDetector],
+									ToList[#[Instrument]] (* This is ToList'd because models will be in lists but objects must be singular in the resource blob *)
+								]
+									&],
+							Length
+						]
 					]
 				];
 
@@ -3113,17 +3401,17 @@ measureVolumeResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresolvedO
 	(* In the resolve were memoized a function to store the densities found for each of our samples and their compositions. *)
 	(* Set a local value that stashes the memoized values until we upload them in our protocol object *)
 	knownDensities = MapThread[
-		Function[{sampleDensity,sampleModelPacket,compDensity},
+		Function[{sampleDensity,sampleModelPacket,compDensity, estimateDensity},
 			Module[
 				{modelDensity},
 				modelDensity=If[NullQ[sampleModelPacket],
 					Null,
 					Lookup[sampleModelPacket,Density,Null]
 				];
-				FirstCase[{sampleDensity,compDensity,modelDensity},DensityP,Null]
+				FirstCase[{sampleDensity,compDensity,modelDensity, estimateDensity},DensityP,Null]
 			]
 		],
-		{Lookup[samplePackets,Density],sampleModelPackets,mvCompositionDensities[]}
+		{Lookup[samplePackets,Density],sampleModelPackets,mvCompositionDensities[], solventEstimatedDensities[]}
 	];
 
 	(* construct the final protocol packet *)
@@ -3147,6 +3435,7 @@ measureVolumeResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresolvedO
 		Replace[BatchLengths]->batchLengthsContainers,
 		Replace[BatchedMeasurementDevices]->batchedMeasurementDevices,
 		Replace[BatchedContainerIndexes]->sonicDistanceContainerIndexes,
+		Replace[BatchedVolumeCalibrations]->ConstantArray[Null,Length[sonicDistanceContainerIndexes]],
 		Replace[DensityMeasurementSamples]->(Resource[Sample->#]&/@samplesToDensityMeasure),
 		Replace[Densities] -> knownDensities,
 		If[NullQ[measureDensityParameters],
@@ -3160,9 +3449,9 @@ measureVolumeResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresolvedO
 		ErrorTolerance->Lookup[myResolvedOptions,ErrorTolerance],
 		InSitu->Lookup[myResolvedOptions,InSitu],
 		Replace[Checkpoints]->{
-			{"Picking Resources",If[NullQ[parentProtocol],5 Minute,1 Minute],"Samples required to execute this protocol are gathered from storage.",Link[Resource[Operator -> Model[User, Emerald, Operator, "Trainee"], Time -> If[NullQ[parentProtocol],5 Minute,1 Minute]]]},
-			{"Measuring Volume",Length[containersIn]*7 Minute,"Volume measurements of the provided samples are made.",Link[Resource[Operator -> Model[User, Emerald, Operator, "Trainee"], Time -> Length[containersIn]*7 Minute]]},
-			{"Returning Materials",5 Minute,"Samples are returned to storage.",Link[Resource[Operator -> Model[User, Emerald, Operator, "Trainee"], Time -> 5 Minute]]}
+			{"Picking Resources",If[NullQ[parentProtocol],5 Minute,1 Minute],"Samples required to execute this protocol are gathered from storage.",Link[Resource[Operator -> $BaselineOperator, Time -> If[NullQ[parentProtocol],5 Minute,1 Minute]]]},
+			{"Measuring Volume",Length[containersIn]*7 Minute,"Volume measurements of the provided samples are made.",Link[Resource[Operator -> $BaselineOperator, Time -> Length[containersIn]*7 Minute]]},
+			{"Returning Materials",5 Minute,"Samples are returned to storage.",Link[Resource[Operator -> $BaselineOperator, Time -> 5 Minute]]}
 		}
 	|>;
 
@@ -3178,8 +3467,8 @@ measureVolumeResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresolvedO
 	(* call fulfillableResourceQ on all resources we created *)
 	{fulfillable,frqTests}=Which[
 		MatchQ[$ECLApplication, Engine], {True, {}},
-		gatherTests, Resources`Private`fulfillableResourceQ[allResourceBlobs,Output->{Result,Tests},FastTrack->Lookup[myResolvedOptions,FastTrack],Site->Lookup[myResolvedOptions,Site],Cache->inheritedCache],
-		True, {Resources`Private`fulfillableResourceQ[allResourceBlobs,Output->Result,FastTrack->Lookup[myResolvedOptions,FastTrack],Site->Lookup[myResolvedOptions,Site],Messages->messages,Cache->inheritedCache],Null}
+		gatherTests, Resources`Private`fulfillableResourceQ[allResourceBlobs,Output->{Result,Tests},FastTrack->Lookup[myResolvedOptions,FastTrack],Site->Lookup[myResolvedOptions,Site],Cache->inheritedCache, Simulation -> updatedSimulation],
+		True, {Resources`Private`fulfillableResourceQ[allResourceBlobs,Output->Result,FastTrack->Lookup[myResolvedOptions,FastTrack],Site->Lookup[myResolvedOptions,Site],Messages->messages,Cache->inheritedCache, Simulation -> updatedSimulation],Null}
 	];
 
 	(* generate the Preview option; that is always Null *)
@@ -3209,6 +3498,161 @@ measureVolumeResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresolvedO
 ];
 
 
+(* ::Subsubsection:: *)
+(* simulateExperimentMeasureVolume *)
+DefineOptions[simulateExperimentMeasureVolume,
+	Options :> {
+		CacheOption,
+		SimulationOption
+	}
+];
+
+simulateExperimentMeasureVolume[
+	myProtocolPacket: PacketP[Object[Protocol, MeasureVolume]],
+	mySamples: {ObjectP[Object[Sample]]..},
+	myResolvedOptions: {_Rule...},
+	myResolutionOptions: OptionsPattern[simulateExperimentMeasureVolume]
+] := Module[
+	{
+		cache, simulation, protocolObject, currentSimulation, downloadInfo, samplePackets,
+		densityMeasurementSamples, densityMeasurementParameters, transferSamplesAndVolumes, simulationWithLabels
+	},
+
+	(* Lookup the cache and simulation *)
+	cache = Lookup[ToList[myResolutionOptions],Cache,{}];
+	simulation = Lookup[ToList[myResolutionOptions],Simulation,Simulation[]];
+
+	(* Get our protocol ID. This should already be in our protocol packet, unless the resource packets failed *)
+	protocolObject = Lookup[myProtocolPacket, Object];
+
+	(* Simulate the fulfillment of all resources by the procedure *)
+	currentSimulation = SimulateResources[
+		myProtocolPacket,
+		Cache -> cache,
+		Simulation -> simulation
+	];
+
+	(* Make sample packets so we know our containers and density measurements. *)
+	downloadInfo=Download[
+		{
+			mySamples,
+			{protocolObject},
+			{protocolObject}
+		},
+		{
+			{Packet[Container]},
+			{DensityMeasurementSamples[Object]},
+			{DensityMeasurementParameters}
+		},
+		Cache->cache,
+		Simulation->currentSimulation
+	];
+
+	(* Parse the download *)
+	samplePackets = Flatten[First[downloadInfo]];
+	densityMeasurementSamples = Flatten[downloadInfo[[2]]];
+	densityMeasurementParameters = Flatten[Last[downloadInfo]];
+
+	(* Create transfer tuples for any density measurements where we are not recouping our sample *)
+	transferSamplesAndVolumes = MapThread[
+		Function[{sample,parameters},
+			If[!Lookup[parameters,RecoupSample],
+				{
+					sample,
+					Lookup[parameters,FixedVolume] * Lookup[parameters,NumberOfReplicates]
+				},
+				Nothing
+			]
+		],
+		{
+			densityMeasurementSamples,
+			densityMeasurementParameters
+		}
+	];
+
+	(* Do any Transfers if we have any. If sample is not recouped from MeasureDensity, it goes into waste. *)
+	(* Simulate that here by putting it in new waste container *)
+	(* If we don't have any samples we are losing, skip this and move on *)
+	If[!MatchQ[transferSamplesAndVolumes,{}],
+		Module[{wasteContainerPackets,wasteContainerSampleContainerObject,wasteSamplePackets,wasteSampleObject,ustPackets},
+
+			(* Create the simulated waste container *)
+			wasteContainerPackets = UploadSample[
+				Model[Container, Vessel, "id:3em6Zv9NjjkY"],
+				{"A1", Object[Container, Room, "id:AEqRl9KmEAz5"]} (* Object[Container, Room, "Empty Room for Simulated Objects"] *),
+				FastTrack -> True,
+				SimulationMode -> True,
+				Upload -> False
+			];
+			wasteContainerSampleContainerObject = Lookup[First[wasteContainerPackets], Object];
+
+			(* Update the simulation with the container packets. *)
+			currentSimulation = UpdateSimulation[currentSimulation,Simulation[wasteContainerPackets]];
+
+			(* Put some water in our simulated waste container. *)
+			wasteSamplePackets = UploadSample[
+				Model[Sample, "id:8qZ1VWNmdLBD"],
+				{"A1", wasteContainerSampleContainerObject},
+				State->Liquid,
+				InitialAmount->$MaxTransferVolume,
+				Simulation -> currentSimulation,
+				SimulationMode -> True,
+				FastTrack -> True,
+				Upload -> False
+			];
+			wasteSampleObject = Lookup[First[wasteSamplePackets], Object];
+
+			(* Update the simulation with the sample packets. *)
+			currentSimulation = UpdateSimulation[currentSimulation, Simulation[wasteSamplePackets]];
+
+
+			(* Do the sample transfer *)
+			ustPackets = UploadSampleTransfer[
+				transferSamplesAndVolumes[[All,1]],
+				ConstantArray[wasteSampleObject,Length[transferSamplesAndVolumes]],
+				transferSamplesAndVolumes[[All,2]],
+				Upload->False,
+				FastTrack->True,
+				Simulation->currentSimulation
+			];
+
+			(* Add the packets to the simulation *)
+			(* Update the simulation with the sample packets. *)
+			currentSimulation = UpdateSimulation[currentSimulation, Simulation[ustPackets]];
+		]
+	];
+
+	(* We don't have any SamplesOut for our protocol object, so right now, just tell the simulation where to find the *)
+	(* SamplesIn field. *)
+	simulationWithLabels=Simulation[
+		Labels->Join[
+			Rule@@@Cases[
+				Transpose[{Lookup[myResolvedOptions, SampleLabel], mySamples}],
+				{_String, ObjectP[]}
+			],
+			Rule@@@Cases[
+				Transpose[{Lookup[myResolvedOptions, SampleContainerLabel], Lookup[samplePackets, Container]}],
+				{_String, ObjectP[]}
+			]
+		],
+		LabelFields->Join[
+			Rule@@@Cases[
+				Transpose[{Lookup[myResolvedOptions, SampleLabel], (Field[SampleLink[[#]]]&)/@Range[Length[mySamples]]}],
+				{_String, _}
+			],
+			Rule@@@Cases[
+				Transpose[{Lookup[myResolvedOptions, SampleContainerLabel], (Field[SampleLink[[#]][Container]]&)/@Range[Length[mySamples]]}],
+				{_String, _}
+			]
+		]
+	];
+
+	(* Merge our packets with our labels. *)
+	{
+		protocolObject,
+		UpdateSimulation[currentSimulation, simulationWithLabels]
+	}
+];
 
 (* ::Subsubsection:: *)
 (*VolumeMeasurementDevices*)
@@ -3237,7 +3681,13 @@ DefineOptions[
 			Description -> "Determines which Types of compatible Objects are returned by the function.",
 			ResolutionDescription -> "Will resolve to return all instruments and their compatible racks if no types are specified.",
 			AllowNull -> False,
-			Widget -> Adder[
+			Widget -> Alternatives[
+				Adder[
+					Widget[
+						Type -> Enumeration,
+						Pattern :> Alternatives[All,Model[Instrument,LiquidLevelDetector],Model[Instrument,Balance],Model[Container,Rack]]
+					]
+				],
 				Widget[
 					Type -> Enumeration,
 					Pattern :> Alternatives[All,Model[Instrument,LiquidLevelDetector],Model[Instrument,Balance],Model[Container,Rack]]
@@ -3418,7 +3868,7 @@ VolumeMeasurementDevices[samplesIn:{ObjectP[Object[Sample]]..},ops:OptionsPatter
 					Packet[Container[Model][{VolumeCalibrations,MinVolume,TareWeight}]],
 
 					(* Volume Calibration Packets *)
-					Packet[Container[Model][VolumeCalibrations][{LiquidLevelDetectorModel,Anomalous,Deprecated,DeveloperObject}]],
+					Packet[Container[Model][VolumeCalibrations][{LiquidLevelDetectorModel,LiquidLevelDetector,Anomalous,Deprecated,DeveloperObject}]],
 
 					(* Meta Container - Used to determine if In Situ is possible *)
 					Packet[Container[Container][{Model,Container,Position}]],
@@ -3811,7 +4261,7 @@ pickVolumeMeasurementRack[containerModelObj:ObjectP[Model[Container]],TubeRack]:
 (* ========================= *)
 
 (* a helper function to find a single position rack to hold a Model[Container, Vessel] *)
-(* it first looks at the SelfStandingContainers field, then checks for Model[Container, Rack] with a single position with teh right footprint *)
+(* it first looks at the SelfStandingContainers field, then checks for Model[Container, Rack] with a single position with the right footprint *)
 (* if that doesnt work, it will check for a single position rack of the right dimensions *)
 (* there is an overload that will run this in turbo mode - passing in some choices will skip a search *)
 (* this is designed to run on a ton of containers at once and eliminates containers it has already found a rack for as it passes to the next search *)
@@ -3865,7 +4315,7 @@ findContainerStands[containers:{ObjectP[Model[Container]]..}, possibleRacks:{Obj
 		Download::FieldDoesntExist
 	];
 
-	(*lookup things that we dont want to map Lookup on*)
+	(*lookup things that we don't want to map Lookup on*)
 	{containerObjects,footprints, dimensions, selfStandingBools}=Transpose[
 		Lookup[
 			containerPackets,
@@ -3881,11 +4331,11 @@ findContainerStands[containers:{ObjectP[Model[Container]]..}, possibleRacks:{Obj
 	(* -- Search for Racks -- *)
 	(* ---------------------- *)
 
-	(*in this section, always return Rules so we can exclude the container from the next map if we dont find anything*)
+	(*in this section, always return Rules so we can exclude the container from the next map if we don't find anything*)
 
 	(* -- (1) check if there is a rack that is a member of self-standing containers -- *)
 	(* remove any rules for cases where the container is already self standing or there are no self standing containers *)
-	(* some types dont have this field so we need to also exclude $Failed *)
+	(* some types don't have this field so we need to also exclude $Failed *)
 	racksFromSSCRules = DeleteCases[
 		Normal[AssociationThread[filteredContainerObjects -> (FirstOrDefault/@selfStandingContainers)]],
 		Alternatives[(_->(Null|$Failed))|(Null -> _)]
@@ -3961,7 +4411,7 @@ findContainerStands[containers:{ObjectP[Model[Container]]..}, possibleRacks:{Obj
 				{depth, width} = #2[[;;2]];
 
 				(* find any rack that has a single position of the correct dimensions - return {Null} if we cant find one *)
-				(* as with similar instances where we try to do this, there is a little wiggle room, we dont want to be too restrictive *)
+				(* as with similar instances where we try to do this, there is a little wiggle room, we don't want to be too restrictive *)
 				(* also be flexible interchanging width/depth since it may be arbitrary anyway *)
 				(*TODO: this could be an option indicating how restrictive we want to be on upper an lower bounds*)
 				possibleRacksFromDimensions = FirstOrDefault[
@@ -3994,6 +4444,24 @@ findContainerStands[containers:{ObjectP[Model[Container]]..}, possibleRacks:{Obj
 	Replace[dimensionsReplacedList,(Except[ObjectP[Model[Container, Rack]]]-> Null), 1]
 ];
 
+(* ========================= *)
+(* == findCommonSolventDensities == *)
+(* ========================= *)
+
+(* findCommonSolventDensities is a helper function to construct a dictionary of Model[Molecule] -> Density *)
+findCommonSolventDensities[myMolecules:{ObjectReferenceP[Model[Molecule]]...}] := findCommonSolventDensities[myMolecules] = Module[{allCommonSolventMolecules, densities, nonNullDensity, nonNullDensityMolecules},
+	If[!MemberQ[$Memoization, Experiment`Private`findCommonSolventDensities],
+		AppendTo[$Memoization, Experiment`Private`findCommonSolventDensities]
+	];
+
+	densities = Download[myMolecules, Density];
+
+	nonNullDensityMolecules = PickList[myMolecules, densities, DensityP];
+	nonNullDensity = PickList[densities, densities, DensityP];
+
+	AssociationThread[nonNullDensityMolecules -> nonNullDensity]
+];
+
 
 (* ::Subsection::Closed:: *)
 (*ValidExperimentMeasureVolumeQ*)
@@ -4008,88 +4476,34 @@ DefineOptions[ValidExperimentMeasureVolumeQ,
 ];
 
 
-(* --- Overloads --- *)
-ValidExperimentMeasureVolumeQ[mySample:_String|ObjectP[Object[Sample]], myOptions:OptionsPattern[ValidExperimentMeasureVolumeQ]] := ValidExperimentMeasureVolumeQ[{mySample}, myOptions];
-
-ValidExperimentMeasureVolumeQ[myContainer:_String|ObjectP[Object[Container]], myOptions:OptionsPattern[ValidExperimentMeasureVolumeQ]] := ValidExperimentMeasureVolumeQ[{myContainer}, myOptions];
-
-ValidExperimentMeasureVolumeQ[myContainers : {(_String|ObjectP[Object[Container]])..}, myOptions : OptionsPattern[ValidExperimentMeasureVolumeQ]] := Module[
-	{listedOptions, preparedOptions, nmrTests, initialTestDescription, allTests, verbose, outputFormat},
+ValidExperimentMeasureVolumeQ[myObjects : ListableP[ObjectP[Object[Container]]] | ListableP[(ObjectP[{Object[Sample], Model[Sample]}] | _String)],myOptions:OptionsPattern[ValidExperimentMeasureVolumeQ]]:=Module[
+	{listedOptions, preparedOptions, measureVolumeTests, allTests, verbose,outputFormat},
 
 	(* get the options as a list *)
 	listedOptions = ToList[myOptions];
 
-	(* remove the Output option before passing to the core function because it doens't make sense here *)
+	(* remove the Output option before passing to the core function because it doesn't make sense here *)
 	preparedOptions = DeleteCases[listedOptions, (Output | Verbose | OutputFormat) -> _];
 
 	(* return only the tests for ExperimentMeasureVolume *)
-	nmrTests = ExperimentMeasureVolume[myContainers, Append[preparedOptions, Output -> Tests]];
-
-	(* define the general test description *)
-	initialTestDescription = "All provided options and inputs match their provided patterns (no further testing can proceed if this test fails):";
-
-	(* make a list of all the tests, including the blanket test *)
-	allTests = If[MatchQ[nmrTests, $Failed],
-		{Test[initialTestDescription, False, True]},
-		Module[
-			{initialTest, validObjectBooleans, voqWarnings},
-
-			(* generate the initial test, which we know will pass if we got this far (?) *)
-			initialTest = Test[initialTestDescription, True, True];
-
-			(* create warnings for invalid objects *)
-			validObjectBooleans = ValidObjectQ[Download[DeleteCases[myContainers, _String], Object], OutputFormat -> Boolean];
-			voqWarnings = MapThread[
-				Warning[StringJoin[ToString[#1, InputForm], " is valid (run ValidObjectQ for more detailed information):"],
-					#2,
-					True
-				]&,
-				{Download[DeleteCases[myContainers, _String], Object], validObjectBooleans}
-			];
-
-			(* get all the tests/warnings *)
-			Flatten[{initialTest, nmrTests, voqWarnings}]
-		]
-	];
-
-	(* determine the Verbose and OutputFormat options; quiet the OptionValue::nodef message in case someone just passed nonsense *)
-	(* like if I ran OptionDefault[OptionValue[ValidExperimentMeasureVolumeQ, {Horse -> Zebra, Verbose -> True, OutputFormat -> Boolean}, {Verbose, OutputFormat}]], it would throw a message for the Horse -> Zebra option not existing, even if I am not actually pulling that one out *)
-	{verbose, outputFormat} = Quiet[OptionDefault[OptionValue[{Verbose, OutputFormat}]], OptionValue::nodef];
-
-	(* run all the tests as requested *)
-	Lookup[RunUnitTest[<|"ValidExperimentMeasureVolumeQ" -> allTests|>, OutputFormat -> outputFormat, Verbose -> verbose], "ValidExperimentMeasureVolumeQ"]
-
-];
-
-(* --- Core Function --- *)
-ValidExperimentMeasureVolumeQ[mySamples:{(_String|ObjectP[Object[Sample]])..},myOptions:OptionsPattern[ValidExperimentMeasureVolumeQ]]:=Module[
-	{listedOptions, preparedOptions, nmrTests, allTests, verbose,outputFormat},
-
-	(* get the options as a list *)
-	listedOptions = ToList[myOptions];
-
-	(* remove the Output option before passing to the core function because it doens't make sense here *)
-	preparedOptions = DeleteCases[listedOptions, (Output | Verbose | OutputFormat) -> _];
-
-	(* return only the tests for ExperimentMeasureVolume *)
-	nmrTests = ExperimentMeasureVolume[mySamples, Append[preparedOptions, Output -> Tests]];
+	measureVolumeTests = ExperimentMeasureVolume[myObjects, Append[preparedOptions, Output -> Tests]];
 
 	(* make a list of all the tests, including the blanket test *)
 	allTests = Module[
 		{validObjectBooleans, voqWarnings},
 
 		(* create warnings for invalid objects *)
-		validObjectBooleans = ValidObjectQ[DeleteCases[mySamples, _String], OutputFormat -> Boolean];
+		validObjectBooleans = ValidObjectQ[DeleteCases[ToList[myObjects], _String], OutputFormat -> Boolean];
 		voqWarnings = MapThread[
 			Warning[StringJoin[ToString[#1, InputForm], " is valid (run ValidObjectQ for more detailed information):"],
 				#2,
 				True
 			]&,
-			{DeleteCases[mySamples, _String], validObjectBooleans}
+			{DeleteCases[ToList[myObjects], _String], validObjectBooleans}
 		];
 
 		(* get all the tests/warnings *)
-		Flatten[{nmrTests, voqWarnings}]
+		Flatten[{measureVolumeTests, voqWarnings}]
 	];
 
 	(* determine the Verbose and OutputFormat options; quiet the OptionValue::nodef message in case someone just passed nonsense *)
@@ -4122,45 +4536,18 @@ DefineOptions[ExperimentMeasureVolumeOptions,
 	SharedOptions:>{ExperimentMeasureVolume}
 ];
 
-(* --- Overloads --- *)
-ExperimentMeasureVolumeOptions[mySample:_String|ObjectP[Object[Sample]], myOptions:OptionsPattern[ExperimentMeasureVolumeOptions]] := ExperimentMeasureVolumeOptions[{mySample}, myOptions];
 
-ExperimentMeasureVolumeOptions[myContainer:_String|ObjectP[Object[Container]], myOptions:OptionsPattern[ExperimentMeasureVolumeOptions]] := ExperimentMeasureVolumeOptions[{myContainer}, myOptions];
-
-ExperimentMeasureVolumeOptions[myContainers : {(_String|ObjectP[Object[Container]])..}, myOptions : OptionsPattern[ExperimentMeasureVolumeOptions]] := Module[
-	{listedOptions, noOutputOptions, options},
-
-	(* get the options as a list *)
-	listedOptions = ToList[myOptions];
-
-	(* remove the Output option before passing to the core function because it doens't make sense here *)
-	noOutputOptions = DeleteCases[listedOptions, Alternatives[Output -> _, OutputFormat -> _]];
-
-	(* return only the options for ExperimentMeasureVolume *)
-	options = ExperimentMeasureVolume[myContainers, Append[noOutputOptions, Output -> Options]];
-
-	(* Return the option as a list or table *)
-	If[MatchQ[Lookup[listedOptions, OutputFormat, Table], Table],
-		LegacySLL`Private`optionsToTable[options, ExperimentMeasureVolume],
-		options
-	]
-
-];
-
-
-
-(* --- Core Function --- *)
-ExperimentMeasureVolumeOptions[mySamples:{(_String|ObjectP[Object[Sample]])..},myOptions:OptionsPattern[ExperimentMeasureVolumeOptions]]:=Module[
+ExperimentMeasureVolumeOptions[myObjects : ListableP[ObjectP[Object[Container]]] | ListableP[(ObjectP[{Object[Sample], Model[Sample]}] | _String)],myOptions:OptionsPattern[ExperimentMeasureVolumeOptions]]:=Module[
 	{listedOptions,noOutputOptions,options},
 
 	(* get the options as a list *)
 	listedOptions=ToList[myOptions];
 
-	(* remove the Output option before passing to the core function because it doens't make sense here *)
+	(* remove the Output option before passing to the core function because it doesn't make sense here *)
 	noOutputOptions=DeleteCases[listedOptions,Alternatives[Output->_,OutputFormat->_]];
 
 	(* return only the options for ExperimentMeasureVolume *)
-	options=ExperimentMeasureVolume[mySamples,Append[noOutputOptions,Output->Options]];
+	options=ExperimentMeasureVolume[myObjects,Append[noOutputOptions,Output->Options]];
 
 	(* Return the option as a list or table *)
 	If[MatchQ[Lookup[listedOptions,OutputFormat,Table],Table],
@@ -4178,35 +4565,16 @@ DefineOptions[ExperimentMeasureVolumePreview,
 	SharedOptions:>{ExperimentMeasureVolume}
 ];
 
-(* --- Overloads --- *)
-ExperimentMeasureVolumePreview[mySample:_String|ObjectP[Object[Sample]], myOptions:OptionsPattern[ExperimentMeasureVolumePreview]] := ExperimentMeasureVolumePreview[{mySample}, myOptions];
 
-ExperimentMeasureVolumePreview[myContainer:_String|ObjectP[Object[Container]], myOptions:OptionsPattern[ExperimentMeasureVolumePreview]] := ExperimentMeasureVolumePreview[{myContainer}, myOptions];
-
-ExperimentMeasureVolumePreview[myContainers : {(_String|ObjectP[Object[Container]])..}, myOptions : OptionsPattern[ExperimentMeasureVolumePreview]] := Module[
-	{listedOptions, noOutputOptions},
-
-	(* get the options as a list *)
-	listedOptions = ToList[myOptions];
-
-	(* remove the Output option before passing to the core function because it doens't make sense here *)
-	noOutputOptions = DeleteCases[listedOptions, Alternatives[Output -> _]];
-
-	(* return only the preview for ExperimentMeasureVolume *)
-	ExperimentMeasureVolume[myContainers, Append[noOutputOptions, Output -> Preview]]
-
-];
-
-(* --- Core Function --- *)
-ExperimentMeasureVolumePreview[mySamples:{(_String|ObjectP[Object[Sample]])..},myOptions:OptionsPattern[ExperimentMeasureVolumePreview]]:=Module[
+ExperimentMeasureVolumePreview[myObjects : ListableP[ObjectP[Object[Container]]] | ListableP[(ObjectP[{Object[Sample], Model[Sample]}] | _String)],myOptions:OptionsPattern[ExperimentMeasureVolumePreview]]:=Module[
 	{listedOptions,noOutputOptions},
 
 	(* get the options as a list *)
 	listedOptions = ToList[myOptions];
 
-	(* remove the Output option before passing to the core function because it doens't make sense here *)
+	(* remove the Output option before passing to the core function because it doesn't make sense here *)
 	noOutputOptions = DeleteCases[listedOptions, Alternatives[Output -> _]];
 
 	(* return only the preview for ExperimentMeasureVolume *)
-	ExperimentMeasureVolume[mySamples, Append[noOutputOptions, Output -> Preview]]
+	ExperimentMeasureVolume[myObjects, Append[noOutputOptions, Output -> Preview]]
 ];

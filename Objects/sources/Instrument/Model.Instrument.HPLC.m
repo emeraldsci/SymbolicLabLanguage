@@ -452,6 +452,20 @@ DefineObjectType[Model[Instrument, HPLC], {
 			Headers -> {"Connector Type", "Thread Type", "Material", "Gender", "Inner Diameter", "Outer Diameter"},
 			Category -> "Instrument Specifications"
 		},
+		ColumnPreheater -> {
+			Format -> Single,
+			Class -> Boolean,
+			Pattern :> BooleanP,
+			Description -> "Indicates whether the instrument is equipped with an electric heating element inside the column compartment that directly heats the column inlet tubing. The rapid heating, low volume design reduces gradient delay and extra-column bandspreading.",
+			Category -> "Instrument Specifications"
+		},
+		ColumnCompartmentOrientation -> {
+			Format -> Single,
+			Class -> Expression,
+			Pattern :> ColumnCompartmentOrientationP,
+			Description -> "Indicates whether the instrument is plumbed to use the vertical or horizontal column compartment.",
+			Category -> "Instrument Specifications"
+		},
 		TubingInnerDiameter -> {
 			Format -> Single,
 			Class -> Real,
@@ -469,13 +483,6 @@ DefineObjectType[Model[Instrument, HPLC], {
 			Headers -> {"Filename","Cloud File"},
 			Category -> "Instrument Specifications",
 			Developer -> True
-		},
-		ColumnPreheater -> {
-			Format -> Single,
-			Class -> Boolean,
-			Pattern :> BooleanP,
-			Description -> "Whether the instrument is equipped with a preheater in the column compartment.",
-			Category -> "Instrument Specifications"
 		},
 		SyringeVolume -> {
 			Format -> Single,

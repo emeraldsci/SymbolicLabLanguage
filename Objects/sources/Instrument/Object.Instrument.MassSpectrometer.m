@@ -101,6 +101,37 @@ DefineObjectType[Object[Instrument, MassSpectrometer], {
 			Category -> "Instrument Specifications",
 			Developer -> True
 		},
+		VialAdapter -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[Part],
+			Description -> "The adapter used to connect any sample vials to this mass spectrometer during direct infusion experiments.",
+			Category -> "Instrument Specifications",
+			Developer -> True
+		},
+		WashBufferCap -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[
+				Object[Item, Cap][MassSpectrometer],
+				Object[Plumbing, AspirationCap][MassSpectrometer]
+			],
+			Description -> "The aspiration cap used to take up wash buffer from the container to the mass spectrometer's fluidics system.",
+			Category -> "Instrument Specifications"
+		},
+		LockMassCap -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[
+				Object[Item, Cap][MassSpectrometer],
+				Object[Plumbing, AspirationCap][MassSpectrometer]
+			],
+			Description -> "The aspiration cap used to take up lock mass solution from the container to the mass spectrometer's fluidics system.",
+			Category -> "Instrument Specifications"
+		},
 		MinMass -> {
 			Format -> Computable,
 			Expression :> SafeEvaluate[{Field[Model]}, Download[Field[Model],MinMass]],
@@ -332,7 +363,7 @@ DefineObjectType[Object[Instrument, MassSpectrometer], {
 			Format->Computable,
 			Expression :> SafeEvaluate[{Field[Model]}, Download[Field[Model],TandemMassSpectrometry]],
 			Pattern:>BooleanP,
-			Description->"Indicate if this intrument can achieve tandem mass spectrometry features.",
+			Description->"Indicate if this instrument can achieve tandem mass spectrometry features.",
 			Category->"Operating Limits",
 			Abstract-> True
 		},
@@ -646,6 +677,15 @@ DefineObjectType[Object[Instrument, MassSpectrometer], {
 			Description -> "The HPLC system that is connected to this mass spectrometer such that the analytes in the samples may be separated prior to injection and data acquisition.",
 			Category -> "Integrations"
 		},
+		IntegratedHPLCTubing -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[Plumbing, Tubing],
+			Description -> "The accessory that conencts the outlet of the IntegratedHPLC system to the inlet of the MassSpectrometer such the output flow of the HPLC is supplied as an input flow to the mass spectrometer.",
+			Category -> "Integrations",
+   			Developer -> True
+		},
 		IntegratedGC -> {
 			Format -> Single,
 			Class -> Link,
@@ -683,7 +723,7 @@ DefineObjectType[Object[Instrument, MassSpectrometer], {
 			Format -> Single,
 			Class -> Link,
 			Pattern :> _Link,
-			Relation -> ObjectP[Object[Container, Vessel]],
+			Relation -> Object[Container, Vessel],
 			Description -> "A secondary waste container to hold waste from rinsing, currently specific to ICP-MS.",
 			Category -> "Instrument Specifications"
 		},
@@ -742,6 +782,15 @@ DefineObjectType[Object[Instrument, MassSpectrometer], {
 			Relation -> Object[Part, PressureRegulator],
 			Description -> "The regulator that controls the pressure supplied to the instrument which is used to nebulize and desolvate the samples.",
 			Category -> "Sensor Information"
+		},
+		InfusionSyringeTubing -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[Plumbing, Tubing],
+			Description -> "The accessory used to connect a syringe to the mass spectrometer during direct infusion of sample by syringe pump.",
+			Category -> "Plumbing Information",
+   			Developer -> True
 		}
 	}
 }];

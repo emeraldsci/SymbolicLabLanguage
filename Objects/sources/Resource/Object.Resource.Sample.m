@@ -264,6 +264,13 @@ DefineObjectType[Object[Resource, Sample], {
 			],
 			Description -> "The fulfilled resource of the container or instrument used to transport the sample at a certain temperature.",
 			Category -> "Resources"
+		},
+		Sterile -> {
+			Format -> Single,
+			Class -> Boolean,
+			Pattern :> BooleanP,
+			Description -> "Indicates that the sample fulfilling this resources should be should be free of microbial contamination. If the sample contains living microbial cell components, it must be free of non-sample microbial contamination. Otherwise, the sample must be either certified by manufactures without microbial life forms, or handled with AsepticHandling which includes sanitization, autoclaving, sterile filtration, or transferring in biosafety cabinet during the course of experiments, as well as during sample storage and handling.",
+			Category -> "Resources"
 		}
 	}
 }];

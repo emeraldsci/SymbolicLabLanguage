@@ -74,13 +74,81 @@ DefineTests[ExperimentAgaroseGelElectrophoresis,
 
 		(* -- Message tests -- *)
 		(* Error Messages before option resolution *)
-		Example[{Messages,"ObjectDoesNotExist","Any specified input samples or options which are Objects must exist in the database:"},
-			ExperimentAgaroseGelElectrophoresis[Object[Sample,"Test nonexistent sample for ExperimentAgaroseGelElectrophoresis tests"]],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a sample that does not exist (name form):"},
+			ExperimentAgaroseGelElectrophoresis[Object[Sample, "Nonexistent sample"]],
 			$Failed,
-			Messages:>{
-				Error::ObjectDoesNotExist,
-				Error::InvalidInput
-			}
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a container that does not exist (name form):"},
+			ExperimentAgaroseGelElectrophoresis[Object[Container, Vessel, "Nonexistent container"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a sample that does not exist (ID form):"},
+			ExperimentAgaroseGelElectrophoresis[Object[Sample, "id:12345678"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a container that does not exist (ID form):"},
+			ExperimentAgaroseGelElectrophoresis[Object[Container, Vessel, "id:12345678"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Do NOT throw a message if we have a simulated sample but a simulation is specified that indicates that it is simulated:"},
+			Module[{containerPackets, containerID, sampleID, samplePackets, simulationToPassIn},
+				containerPackets = UploadSample[
+					Model[Container,Vessel,"50mL Tube"],
+					{"Work Surface", Object[Container, Bench, "The Bench of Testing"]},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True
+				];
+				simulationToPassIn = Simulation[containerPackets];
+				containerID = Lookup[First[containerPackets], Object];
+				samplePackets = UploadSample[
+					Model[Sample, "Milli-Q water"],
+					{"A1", containerID},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True,
+					Simulation -> simulationToPassIn,
+					InitialAmount -> 25 Milliliter
+				];
+				sampleID = Lookup[First[samplePackets], Object];
+				simulationToPassIn = UpdateSimulation[simulationToPassIn, Simulation[samplePackets]];
+
+				ExperimentAgaroseGelElectrophoresis[sampleID, Simulation -> simulationToPassIn, Output -> Options]
+			],
+			{__Rule},
+			Messages :> {Error::UnableToDetermineAgarosePeakDetectionRange,Error::InvalidOption}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Do NOT throw a message if we have a simulated container but a simulation is specified that indicates that it is simulated:"},
+			Module[{containerPackets, containerID, sampleID, samplePackets, simulationToPassIn},
+				containerPackets = UploadSample[
+					Model[Container,Vessel,"50mL Tube"],
+					{"Work Surface", Object[Container, Bench, "The Bench of Testing"]},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True
+				];
+				simulationToPassIn = Simulation[containerPackets];
+				containerID = Lookup[First[containerPackets], Object];
+				samplePackets = UploadSample[
+					Model[Sample, "Milli-Q water"],
+					{"A1", containerID},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True,
+					Simulation -> simulationToPassIn,
+					InitialAmount -> 25 Milliliter
+				];
+				sampleID = Lookup[First[samplePackets], Object];
+				simulationToPassIn = UpdateSimulation[simulationToPassIn, Simulation[samplePackets]];
+
+				ExperimentAgaroseGelElectrophoresis[containerID, Simulation -> simulationToPassIn, Output -> Options]
+			],
+			{__Rule},
+			Messages :> {Error::UnableToDetermineAgarosePeakDetectionRange,Error::InvalidOption}
 		],
 		Example[{Messages,"DiscardedSamples","If the provided sample is discarded, an error will be thrown:"},
 			ExperimentAgaroseGelElectrophoresis[Object[Sample,"Discarded 1600mer DNA oligomer for ExperimentAgaroseGelElectrophoresis tests" <> $SessionUUID]],
@@ -1204,32 +1272,6 @@ DefineTests[ExperimentAgaroseGelElectrophoresis,
 			Variables:>{options}
 		],
 
-		Example[{Options,PreparatoryPrimitives,"Specify prepared samples to be run on a Preparative or Analytical Scale agarose gel:"},
-			options=ExperimentAgaroseGelElectrophoresis["Oligomer Container",
-				PreparatoryPrimitives->{
-					Define[
-						Name->"Oligomer Container",
-						Container->Model[Container, Vessel, "id:3em6Zv9NjjN8"]
-					],
-					Transfer[
-						Source->Object[Sample,"100mer DNA oligomer for ExperimentAgaroseGelElectrophoresis tests" <> $SessionUUID],
-						Amount->100*Microliter,
-						Destination->{"Oligomer Container","A1"}
-					],
-					Transfer[
-						Source->Object[Sample,"200 and 800mer DNA oligomer mixture with 200mer Analyte for ExperimentAgaroseGelElectrophoresis tests" <> $SessionUUID],
-						Amount->100*Microliter,
-						Destination->{"Oligomer Container","A1"}
-					]
-				},
-				Scale->Preparative,
-				Output->Options
-			];
-			Lookup[options,AgarosePercentage],
-			2*Percent,
-			Variables:>{options}
-		],
-
 		(* Incubate Options *)
 		Example[{Options, Incubate, "Indicates if the SamplesIn should be incubated at a fixed temperature prior to starting the experiment or any aliquoting. Incubate->True indicates that all SamplesIn should be incubated. Sample Preparation occurs in the order of Incubation, Centrifugation, Filtration, and then Aliquoting (if specified):"},
 			options = ExperimentAgaroseGelElectrophoresis[Object[Sample,"1600mer DNA oligomer for ExperimentAgaroseGelElectrophoresis tests" <> $SessionUUID], Incubate -> True, Output -> Options];
@@ -1500,7 +1542,7 @@ DefineTests[ExperimentAgaroseGelElectrophoresis,
 				Output->Options
 			];
 			Lookup[options,AliquotSampleLabel],
-			"Test Label for ExperimentAgaroseGelElectrophoresis sample 1",
+			{"Test Label for ExperimentAgaroseGelElectrophoresis sample 1"},
 			Variables :> {options}
 		],	
 		Example[{Options, AliquotAmount, "The amount of each sample that should be transferred from the SamplesIn into the AliquotSamples which should be used in lieu of the SamplesIn for the experiment:"},
@@ -1597,16 +1639,43 @@ DefineTests[ExperimentAgaroseGelElectrophoresis,
 		Example[{Options, AliquotContainer, "The desired type of container that should be used to prepare and house the aliquot samples, with indices indicating grouping of samples in the same plates, if desired:"},
 			options = ExperimentAgaroseGelElectrophoresis[Object[Sample,"1600mer DNA oligomer for ExperimentAgaroseGelElectrophoresis tests" <> $SessionUUID], AliquotContainer -> Model[Container, Vessel, "2mL Tube"], Output -> Options];
 			Lookup[options, AliquotContainer],
-			{1, ObjectP[Model[Container, Vessel, "2mL Tube"]]},
+			{{1, ObjectP[Model[Container, Vessel, "2mL Tube"]]}},
 			Variables :> {options}
 		],
 		Example[{Options,DestinationWell,"Indicates the desired position in the corresponding AliquotContainer in which the aliquot samples will be placed:"},
 			options=ExperimentAgaroseGelElectrophoresis[Object[Sample,"1600mer DNA oligomer for ExperimentAgaroseGelElectrophoresis tests" <> $SessionUUID],DestinationWell -> "A1", Output -> Options];
 			Lookup[options,DestinationWell],
-			"A1",
+			{"A1"},
 			Variables :> {options}
+		],
+		Example[{Options, {PreparedModelContainer, PreparedModelAmount}, "Specify the container in which an input Model[Sample] should be prepared:"},
+			options = ExperimentAgaroseGelElectrophoresis[
+				ConstantArray[Model[Sample, StockSolution, Standard, "id:9RdZXv1KzGOK"](* GeneRuler dsDNA 10-300 bp, 11 bands, 167 ng/uL *),2],
+				PreparedModelContainer -> Model[Container, Vessel, "id:bq9LA0dBGGR6"](* 50mL Tube *),
+				PreparedModelAmount -> 1 Milliliter,
+				Output -> Options
+			];
+			prepUOs = Lookup[options, PreparatoryUnitOperations];
+			{
+				prepUOs[[-1, 1]][Sample],
+				prepUOs[[-1, 1]][Container],
+				prepUOs[[-1, 1]][Amount],
+				prepUOs[[-1, 1]][Well],
+				prepUOs[[-1, 1]][ContainerLabel]
+			},
+			{
+				{ObjectP[Model[Sample, StockSolution, Standard, "id:9RdZXv1KzGOK"]]..},
+				{ObjectP[Model[Container, Vessel, "id:bq9LA0dBGGR6"]]..},
+				{EqualP[1 Milliliter]..},
+				{"A1", "A1"},
+				{_String, _String}
+			},
+			Variables :> {options, prepUOs}
+		],
+		Example[{Options, PreparedModelAmount, "If using model input, the sample preparation options can also be specified:"},
+			ExperimentAgaroseGelElectrophoresis[Model[Sample, StockSolution, Standard, "id:9RdZXv1KzGOK"], PreparedModelAmount -> 1 Milliliter, Aliquot -> True, Mix -> True],
+			ObjectP[Object[Protocol, AgaroseGelElectrophoresis]]
 		]
-
 	},
 	Stubs:>{
 		$EmailEnabled=False,

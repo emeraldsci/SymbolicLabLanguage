@@ -688,7 +688,7 @@ DefineObjectType[Object[Data, ChromatographyMassSpectra], {
 		LowCollisionEnergies -> {
 			Format -> Multiple,
 			Class -> Real,
-			Pattern :> GreaterP[0*Volt],
+			Pattern :> GreaterEqualP[0*Volt],
 			Units -> Volt,
 			Description -> "For each member of AcquisitionWindows, the lowest value of the linear function for applied potential as mapped to the MinMass.",
 			IndexMatching -> AcquisitionWindows,
@@ -697,7 +697,7 @@ DefineObjectType[Object[Data, ChromatographyMassSpectra], {
 		HighCollisionEnergies -> {
 			Format -> Multiple,
 			Class -> Real,
-			Pattern :> GreaterP[0*Volt],
+			Pattern :> GreaterEqualP[0*Volt],
 			Units -> Volt,
 			Description -> "For each member of AcquisitionWindows, the highest value of the linear function for applied potential as mapped to the MinMass.",
 			IndexMatching -> AcquisitionWindows,
@@ -1159,6 +1159,15 @@ DefineObjectType[Object[Data, ChromatographyMassSpectra], {
 			Category -> "Experimental Results",
 			Abstract -> True
 		},
+		TotalFragragmentationIonAbundance -> {
+			Format -> Single,
+			Class -> QuantityArray,
+			Pattern :> QuantityCoordinatesP[{Minute, ArbitraryUnit}],
+			Units -> {Minute, ArbitraryUnit},
+			Description -> "The chromatogram of counts for the sum of all m/z measured during a single collection cycle vs. time during the course of the experiment for the MassSpectrometry detector from the Scan 2 of DataIndependent acquisition.",
+			Category -> "Experimental Results",
+			Abstract -> True
+		},
 		IonAbundance3D -> {
 			Format -> Single,
 			Class -> BigQuantityArray,
@@ -1363,6 +1372,14 @@ DefineObjectType[Object[Data, ChromatographyMassSpectra], {
 			Pattern :> _Link,
 			Relation -> Object[Analysis][Reference],
 			Description -> "Smoothing analysis performed on this data.",
+			Category -> "Analysis & Reports"
+		},
+		AirBubbleLikelihood -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> RangeP[0*Percent,100*Percent],
+			Units -> Percent,
+			Description -> "The probability of air bubble existing in the pressure trace of the chromatograph assigned to this data by a liquid chromatography air bubble anomaly detector machine learning model (unpublished result).",
 			Category -> "Analysis & Reports"
 		},
 		DownsamplingAnalyses -> {

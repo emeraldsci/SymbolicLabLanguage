@@ -23,9 +23,13 @@ DefineConstant[
 	20 Milliliter,
 	"The minimum volume of a stock solution that can be pH titrated using the available pH probes."
 ];
-
 DefineConstant[
 	$MinStockSolutionSolventVolume,
+	2 Milliliter,
+	"The minimum total volume a fill-to-volume stock solution can have to ensure accurate volumetric measurement during filling to volume."
+];
+DefineConstant[
+	$MinStockSolutionUltrasonicSolventVolume,
 	5 Milliliter,
 	"The minimum total volume a fill-to-volume stock solution can have to ensure accurate ultrasonic distance measurements during filling to volume."
 ];
@@ -239,18 +243,6 @@ DefineOptions[UploadStockSolution,
 			Category->"Incubation"
 		},
 		{
-			OptionName->PostAutoclaveIncubator,
-			Default->Automatic,
-			AllowNull->True,
-			Widget->Widget[
-				Type->Object,
-				Pattern:>ObjectP[Join[MixInstrumentModels,MixInstrumentObjects]]
-			],
-			Description->"The instrument that should be used to treat the stock solution at a specified temperature following component combination and filling to volume with solvent.",
-			ResolutionDescription->"Automatically resolves to an appropriate instrument based on container model, or Null if Incubate is set to False.",
-			Category->"Incubation"
-		},
-		{
 			OptionName->PostAutoclaveIncubationTemperature,
 			Default->Automatic,
 			AllowNull->True,
@@ -274,19 +266,6 @@ DefineOptions[UploadStockSolution,
 			],
 			Description->"Duration for which the stock solution should be treated at the IncubationTemperature following component combination and filling to volume with solvent.  Note that if you are mixing AND incubating and this option is specified, it must be the same as the specified value of the MixTime option.",
 			ResolutionDescription->"Automatically resolves to 0.5 Hour if Incubate is set to True and Mix is set to False, or Null otherwise.",
-			Category->"Incubation"
-		},
-		{
-			OptionName->PostAutoclaveAnnealingTime,
-			Default->Automatic,
-			AllowNull->True,
-			Widget -> Widget[
-				Type->Quantity,
-				Pattern:>RangeP[0 Minute, $MaxExperimentTime],
-				Units->{1,{Minute,{Minute,Hour}}}
-			],
-			Description->"Minimum duration for which the stock solution should remain in the incubator allowing the solution and incubator to return to room temperature after the MixTime has passed if mixing while incubating.",
-			ResolutionDescription->"Automatically resolves to 0 Minute, or Null if Incubate is set to False.",
 			Category->"Incubation"
 		},
 
@@ -505,19 +484,6 @@ DefineOptions[UploadStockSolution,
 			ResolutionDescription->"Automatically resolves based on the MixType if MixUntilDissolved is set to True, and to Null otherwise.",
 			Category->"Mixing"
 		},
-		{
-			OptionName->PostAutoclaveMixPipettingVolume,
-			Default->Automatic,
-			AllowNull->True,
-			Widget -> Widget[
-				Type->Quantity,
-				Pattern:>RangeP[1 Microliter, 5 Milliliter],
-				Units :> {1,{Milliliter,{Microliter,Milliliter}}}
-			],
-			Description->"The volume of the stock solution that should be aspirated and dispensed with a pipette to mix the solution following component combination and filling to volume with solvent.",
-			ResolutionDescription->"Automatically resolves to 50% of the total stock solution volume if MixType is Pipette, and Null otherwise.",
-			Category->"Mixing"
-		},
 
 		(* --- pH Titration ---  *)
 		{
@@ -607,7 +573,7 @@ DefineOptions[UploadStockSolution,
 		{
 			OptionName->MaxpHingAdditionVolume,
 			Default->Automatic,
-			Description->"Indicates the maximum volume of pHingAcid and pHingBase that can be added during the course of titration before the experiment will continue, even if the nominalpH is not reached.",
+			Description->"Indicates the maximum volume of pHingAcid and pHingBase that can be added during the course of titration before the experiment will continue, even if the NominalpH is not reached.",
 			ResolutionDescription -> "Automatically resolves to Null for a new formula, or to the same as the MaxpHingAdditionVolume of a provided template model.",
 			AllowNull->True,
 			Category->"pHing Limits",
@@ -739,7 +705,7 @@ DefineOptions[UploadStockSolution,
 				Pattern :> FillToVolumeMethodP
 			],
 			Description -> "The method by which to add the Solvent to the bring the stock solution up to the TotalVolume.",
-			ResolutionDescription -> "Resolves to Null if there is no Solvent/TotalVolume. Resolves to Ultrasonic if the Solvent is not UltrasonicIncompatible. Otherwise, will resolve to Volumetric. If Ultrasonic measurment is not possible, the solution will be prepared via VolumetricFlask.",
+			ResolutionDescription -> "Resolves to Null if there is no Solvent/TotalVolume. Resolves to Ultrasonic if the Solvent is not UltrasonicIncompatible. Otherwise, will resolve to Volumetric. If Ultrasonic measurement is not possible, the solution will be prepared via VolumetricFlask.",
 			Category -> "Preparation Information"
 		},
 		{
@@ -861,6 +827,17 @@ DefineOptions[UploadStockSolution,
 			Category->"Storage Information"
 		},
 		{
+			OptionName -> DiscardThreshold,
+			Default -> 5 Percent,
+			AllowNull -> False,
+			Widget -> Widget[
+				Type -> Quantity,
+				Pattern :> RangeP[0 Percent, 100 Percent], Units -> {1, {Percent, {Percent}}}
+			],
+			Description -> "The percent of the total initial volume of samples of this stock solution below which the stock solution will automatically marked as AwaitingDisposal.  For instance, if DiscardThreshold is set to 5% and the initial volume of the stock solution was set to 100 mL, that stock solution sample is automatically marked as AwaitingDisposal once its volume is below 5mL.",
+			Category -> "Storage Information"
+		},
+		{
 			OptionName->ShelfLife,
 			Default->Automatic,
 			AllowNull->True,
@@ -900,27 +877,15 @@ DefineOptions[UploadStockSolution,
 			Category->"Storage Information"
 		},
 		{
-			OptionName -> TransportChilled,
+			OptionName -> TransportTemperature,
 			Default -> Automatic,
-			AllowNull -> False,
-			Widget -> Widget[
-				Type -> Enumeration,
-				Pattern :> BooleanP
-			],
-			Description -> "Indicates if stock solutions of this model should be refrigerated during transport when used in experiments.",
-			ResolutionDescription -> "Automatically resolves to False for a new formula, or to the same as the TransportChilled property of a provided template model.",
-			Category->"Storage Information"
-		},
-		{
-			OptionName -> TransportWarmed,
-			Default -> Null,
 			AllowNull -> True,
-			Widget -> Widget[
-				Type -> Quantity,
-				Pattern :> RangeP[27*Celsius, 105*Celsius],
-				Units -> {1, {Celsius, {Celsius, Fahrenheit, Kelvin}}}
+			Widget -> Alternatives[
+				"Transport Cold" -> Widget[Type -> Quantity, Pattern :> RangeP[-86 Celsius, 10 Celsius],Units -> {1, {Celsius, {Celsius, Fahrenheit, Kelvin}}}],
+				"Transport Warmed" -> Widget[Type -> Quantity, Pattern :> RangeP[27 Celsius, 105 Celsius],Units -> {1, {Celsius, {Celsius, Fahrenheit, Kelvin}}}]
 			],
-			Description -> "Indicates the temperature by which stock solutions prepared according to the provided formula should be heated during transport when used in experiments.",
+			Description -> "Indicates the temperature by which stock solutions of this model should be heated or chilled during transport when used in experiments.",
+			ResolutionDescription -> "Automatically resolves to False for a new formula, or to the same as the TransportTemperature property of a provided template model.",
 			Category->"Storage Information"
 		},
 		(* ExperimentPlateMedia options *)
@@ -938,7 +903,7 @@ DefineOptions[UploadStockSolution,
 		},
 		{
 			OptionName -> HeatSensitiveReagents,
-			Default -> Automatic,
+			Default -> Null,
 			AllowNull -> True,
 			Widget -> Alternatives[
 				Adder[
@@ -1021,19 +986,35 @@ DefineOptions[UploadStockSolution,
 		},
 		{
 			OptionName->GellingAgents,
-			Default->Automatic,
+			Default->Null,
 			Description->"The types and amount by weight volume percentages of substances added to solidify the prepared media.",
 			AllowNull->True,
 			Category->"Preparation",
 			Widget->Alternatives[
 				Adder[
 					{
-						"Amount"->Widget[
-							Type->Quantity,
-							Pattern:>RangeP[0*Gram/Milliliter,100*Gram/Milliliter],
-							Units->CompoundUnit[
-								{1,{Gram,{Milligram,Gram,Kilogram}}},
-								{-1,{Liter,{Milliliter,Liter}}}
+						"Amount"->Alternatives[
+							Widget[
+								Type->Quantity,
+								Pattern:>RangeP[0.1*Microliter,20*Liter],
+								Units->{1,{Microliter,{Microliter,Milliliter,Liter}}}
+							],
+							Widget[
+								Type->Quantity,
+								Pattern:>RangeP[1*Milligram,20*Kilogram],
+								Units->{1,{Milligram,{Milligram,Gram,Kilogram}}}
+							],
+							Widget[
+								Type->Quantity,
+								Pattern:>RangeP[10*Milligram/Liter,10*Kilogram/Liter],
+								Units->CompoundUnit[
+									{1,{Milligram,{Microgram,Milligram,Gram,Kilogram}}},
+									{-1,{Milliliter,{Microliter,Milliliter,Liter}}}
+								]
+							],
+							Widget[
+								Type->Number,
+								Pattern:>GreaterP[0., 1.]
 							]
 						],
 						"GellingAgent"->Widget[
@@ -1051,7 +1032,7 @@ DefineOptions[UploadStockSolution,
 		},
 		{
 			OptionName->MediaPhase,
-			Default->Automatic,
+			Default->Null,
 			Description->"The physical state of the prepared media at ambient temperature and pressure." (*TODO update description to explain SemiSolid *),
 			AllowNull->True,
 			Category->"Preparation",
@@ -1175,7 +1156,10 @@ DefineOptions[UploadStockSolution,
 			OptionName->IncompatibleMaterials,
 			Default->Automatic,
 			AllowNull->True,
-			Widget->With[{insertMe=Flatten[Append[MaterialP,None]]},Widget[Type->MultiSelect,Pattern:>DuplicateFreeListableP[insertMe]]],
+			Widget->Alternatives[
+				With[{insertMe=Flatten[MaterialP]},Widget[Type->MultiSelect,Pattern:>DuplicateFreeListableP[insertMe]]],
+				Widget[Type->Enumeration, Pattern:>Alternatives[{None}]]
+			],
 			Description->"A list of materials that would be damaged if contacted by this model.",
 			ResolutionDescription -> "Automatically resolves to None for a new formula, or to the same as the IncompatibleMaterials listing of a provided template model.",
 			Category->"Compatibility"
@@ -1225,7 +1209,7 @@ DefineOptions[UploadStockSolution,
 			Category->"Hidden"
 		},
 
-		(* Hidden option for when called via ExperimentStockSolution via Engine to ensure that a newly-genereated model gets the author of the protocol *)
+		(* Hidden option for when called via ExperimentStockSolution via Engine to ensure that a newly-generated model gets the author of the protocol *)
 		{
 			OptionName->Author,
 			Default->Null,
@@ -1255,11 +1239,11 @@ Error::StockSolutionNameInUse="The provided Name `1` is already in use in Conste
 Error::NoNominalpH="The MinpH, MaxpH, pHingAcid, and/or pHingBase options were specified, but no NominalpH was provided. Please explicitly provide a NominalpH in order to define these additional pHing options.";
 Error::pHOrderInvalidUSS="The provided MinpH, NominalpH, and MaxpH options are not in increasing order. Please ensure that, when providing 2 or more of MinpH, NominalpH, and MaxpH, the ordering MinpH < NominalpH < MaxpH is followed.";
 Error::FilterOptionConflictUSS="The Filter parameters `1` are specified; however, the overall Filter boolean was not set to True. Please either do not specify any filtration parameters if Filter is not set to True, or set Filter to True to enable specification of filtration parameters.";
-Error::StorageCombinationUnsuppported="The DefaultStorageCondition resolved to `1`; however, in combination with the provided Flammable, Acid, and Base options, this storage condition combination is not currently supported by ECL. Please contact ECL to inquire as to when this combination of storage conditions will be available";
-Warning::ComponentOrder="The provided formula adds an acid before the rest of the liquid components. Without a manual override, the component addition order will be changed to `1` such that the acids are added after other liquid components. If you are certain that adding the components in the order you have specified will not present a safety hazard, you may certify that this is a true statement using the  SafetyOverride->True argument, which will then revert bask to the order of additions as you have specified it.";
+Error::StorageCombinationUnsupported="The DefaultStorageCondition resolved to `1`; however, in combination with the provided Flammable, Acid, and Base options, this storage condition combination is not currently supported by ECL. Please contact ECL to inquire as to when this combination of storage conditions will be available";
+Warning::ComponentOrder="In the provided formula, at the time of addition of the acids, `1`, the combined acid volumes are `2` of the combined volume of solvents already added, which are above 20%. Without a manual override, the component addition order will be changed to `3` such that the acids are added after other liquid components. If you are certain that adding the components in the order you have specified will not present a safety hazard, you may certify that this is a true statement using the SafetyOverride->True argument, which will then revert back to the order of additions as you have specified it.";
 Error::MixTypeRequired="If any of the following option(s) are provided: `1`, MixType must also be provided.  Please specify MixType or leave MixType, Mixer, MixRate, NumberOfMixes, and MaxNumberOfMixes all as their default values.";
 Error::InvalidUltrasonicFillToVolumeMethod = "The given FillToVolumeMethod option is invalid for the input(s)`1`. Fill to volume stock solutions cannot be generated via Ultrasonic measurement if the resulting stock solution is UltrasonicIncompatible.  Please change FillToVolumeMethod, or use a stock solution that is not ultrasonic incompatible.";
-Error::InvalidVolumetricFillToVolumeMethod = "The given FillToVolumeMethod option is invalid for the input(s)`1`. Stock solutions cannot be generated via Volumetric measurement if the requested volume is over `2` (the largest volumetric flask). Please change this option to create a valid stock solution.";
+Error::InvalidVolumetricFillToVolumeMethod = "The given FillToVolumeMethod option is invalid for the input(s)`1`. Stock solutions cannot be generated via Volumetric measurement if the requested volume is over `2` (the largest volumetric flask`3`). Please change this option to create a valid stock solution.";
 Error::InvalidFillToVolumeMethodNoSolvent = "The given FillToVolumeMethod option is invalid for the input(s)`1`. Fill to volume stock solutions must specify a fill to volume solvent in the input.  Please specify one to create a valid stock solution.";
 Error::InvalidOrderOfOperations="The given option OrderOfOperations is not valid for the given input(s). FixedReagentAddition must occur first. Incubation (if present) must occur after any pHTitration/FillToVolume and Filtration must occur last (if present). Steps may not be repeated. Please fix the order of this option in order to generate a valid stock solution.";
 Error::ConflictingUnitOperationsOptions="The following option(s), `1`, are set to a value that is not Null or False. The UnitOperations input cannot be specified with other formula preparation options. Please allow these formula options to automatically resolve to False or Null in order for the UnitOperations input to be used.";
@@ -1269,6 +1253,7 @@ Error::InvalidOrderOfOperationsForpH="The given option OrderOfOperations is not 
 Warning::NewModelCreation="A new model (`3`) will be created when using `2` as input template model, because the options `1` are different from the ones in the input template model `2`.";
 Warning::ExistingModelReplacesInput="An existing model (`1`) fulfills the input template model (`2`) with specified options. The existing model (`1`) will be used as the alternative preparation template for this stock solution.";
 Error::UnitOperationInvalidVolumeIncrement="The specified VolumeIncrement(s) (`1`) is not compatible with the total volume (`2`) made by this stock solution. Please consider setting VolumeIncrement to Automatic, or to the total volume made by this set of UnitOperations.";
+Warning::SpecifedMixRateNotSafe = "The specified mix rate exceeds the MaxOverheadMixRate of the resolved ContainerOut (`1`). Please consider about using a smaller mix rate to avoid overflow or spillage during mixing.";
 
 (* ::Subsubsection::Closed:: *)
 (*UploadStockSolution*)
@@ -1311,7 +1296,8 @@ UploadStockSolution[
 		allComponentAndSolventSCPackets,fastTrack,templateOption,templateWarnings,templateDeprecated,templateDeprecatedTests,resolvedOptions,
 		optionResolutionTests,defaultStorageConditionObject,defaultSCObjectTests,optionsRule,previewRule,testsRule,
 		resultRule, unitOpsSimulation, simulation, templateTotalVolume, allTestTestResults, optionResolutionResult, allTests, defaultSCBool, allEHSFields,
-		allComponentFields, allPreparatoryFormulaPackets, allPreparatoryFormulaPacketsWithFailed, safeOptionsWithTemplate},
+		allComponentFields, allPreparatoryFormulaPackets, allPreparatoryFormulaPacketsWithFailed, safeOptionsWithTemplate, potentialContainerDownload, potentialContainers,
+		volumetricFlasks, volumetricFlaskPackets},
 
 	(* get the listed form of the options provided, for option helpers to chew on *)
 	listedOptions = ToList[myOptions];
@@ -1385,6 +1371,10 @@ UploadStockSolution[
 	(* Get all of the EHS fields that need to be updated. *)
 	allEHSFields=ToExpression/@Options[ExternalUpload`Private`ObjectSampleHealthAndSafetyOptions][[All,1]]/.{StorageCondition->DefaultStorageCondition};
 	allComponentFields=DeleteDuplicates[Flatten[{Name, Deprecated, State, DefaultStorageCondition, ShelfLife, UnsealedShelfLife, LightSensitive, Tablet, FixedAmounts, UltrasonicIncompatible, CentrifugeIncompatible, Acid, Base, Composition, Density, Solvent, allEHSFields}]];
+	potentialContainers=Intersection[Search[Model[Container, Vessel], Deprecated != True && DeveloperObject != True], PreferredContainer[All]];
+
+	(* find all the volumetric flasks if we have at least one volumetric fill to volume*)
+	volumetricFlasks = Search[Model[Container, Vessel, VolumetricFlask], Deprecated != True && MaxVolume != Null && DeveloperObject != True];
 
 	(* download required information from the template model input and author; Quiet is JUST for the Tablet field from formula components (only in ObjectP[{Model[Sample],Object[Sample]}]) *)
 	{
@@ -1399,11 +1389,15 @@ UploadStockSolution[
 			solventPacketOrNull,
 			solventSCPacketOrNull
 		}},
-		notebookDownload
+		notebookDownload,
+		potentialContainerDownload,
+		volumetricFlaskPackets
 	} = Quiet[Download[
 		{
 			{myTemplateModel},
-			{author}
+			{author},
+			potentialContainers,
+			volumetricFlasks
 		},
 		{
 			{
@@ -1420,8 +1414,8 @@ UploadStockSolution[
 
 					PreferredContainers, VolumeIncrements, FulfillmentScale, Preparable, Resuspension,
 
-					LightSensitive, Expires, ShelfLife, UnsealedShelfLife, DefaultStorageCondition,
-					TransportChilled, TransportWarmed, Density, ExtinctionCoefficients, Ventilated, Flammable, Acid, Base, Pyrophoric,
+					LightSensitive, Expires, ShelfLife, UnsealedShelfLife, DefaultStorageCondition, DiscardThreshold,
+					TransportTemperature, Density, ExtinctionCoefficients, Ventilated, Flammable, Acid, Base, Pyrophoric,
 					Fuming, IncompatibleMaterials, UltrasonicIncompatible, CentrifugeIncompatible,
 
 					Autoclave, AutoclaveProgram,
@@ -1440,6 +1434,12 @@ UploadStockSolution[
 			{
 				FinancingTeams[Notebooks][Object],
 				SharingTeams[Notebooks][Object]
+			},
+			{
+				Packet[MaxOverheadMixRate]
+			},
+			{
+				Packet[Object, MaxVolume, ContainerMaterials, Opaque]
 			}
 		},
 		Cache->Lookup[safeOptions,Cache,{}],
@@ -1566,7 +1566,9 @@ UploadStockSolution[
 			If[unitOperationsQ,
 				ReplaceRule[safeOptionsWithTemplate, Simulation->simulation],
 				safeOptionsWithTemplate
-			]
+			],
+			Flatten[potentialContainerDownload],
+			Flatten[volumetricFlaskPackets]
 		],
 		$Failed,
 		{Error::InvalidInput, Error::InvalidOption}
@@ -1631,7 +1633,7 @@ UploadStockSolution[
 
 		(* yell if we didn't get one *)
 		If[!gatherTests && MatchQ[scObjectToUseOrFailed, $Failed],
-			Message[Error::StorageCombinationUnsuppported, Lookup[resolvedOptions, DefaultStorageCondition]];
+			Message[Error::StorageCombinationUnsupported, Lookup[resolvedOptions, DefaultStorageCondition]];
 			Message[Error::InvalidOption, {DefaultStorageCondition, Flammable, Acid, Base}]
 		];
 
@@ -1642,7 +1644,7 @@ UploadStockSolution[
 	(* gather all the tests we've generated together *)
 	allTests = Join[safeOptionTests, templateWarnings, templateDeprecatedTests, optionResolutionTests, defaultSCObjectTests];
 
-	(* run the tests taht we have generated to make sure we can go on *)
+	(* run the tests that we have generated to make sure we can go on *)
 	allTestTestResults = If[gatherTests,
 		RunUnitTest[<|"Tests" -> allTests|>, OutputFormat -> SingleBoolean, Verbose -> False],
 		Not[TrueQ[templateDeprecated]] && TrueQ[defaultSCBool] && MatchQ[optionResolutionResult, Except[$Failed]]
@@ -1881,14 +1883,18 @@ UploadStockSolution[
 	(* see if we got a composition, if not simulate the samples and grab whatever's in the first container so the sample composition *)
 	{sampleComposition, finalVolume} = If[MatchQ[Lookup[safeOptions, Composition], Except[Automatic]],
 		{Lookup[safeOptions, Composition],Null},
-		Module[{labelOfInterest, simulatedContainer,simulatedSampleComposition, sanitizedSimulatedSampleComposition, volume},
+		Module[{labelOfInterest, simulatedContainer,simulatedSampleComposition, sanitizedSimulatedSampleComposition, volume, updatedSimulation},
 			(*simulate*)
 			(*get the first label container unit operation,it should be the very first*)
 			labelOfInterest = First[Cases[myUnitOperations, _LabelContainer]][Label];
 			(*figure out what is the container that was simulated for it and whats in it*)
 			simulatedContainer =Lookup[Lookup[First[simulatedSamplePackets], Labels],labelOfInterest];
+			(* Here we need to do a work-around for CCD. In CCD user has to add UOs one by one and so when they add the first LabelSample UO, they have to calculate and verify *)
+			(* However, that will break because there's transfer into that labeled container, thus there's no Contents in this simulatedContainer *)
+			(* Use the helper below to make a dummy sample *)
+			updatedSimulation = stockSolutionCreateDummySamples[simulatedContainer, simulatedSamplePackets];
 			(*get the sample in that container and its volume*)
-			{simulatedSampleComposition,volume} =  Download[simulatedContainer, {Contents[[1, 2]][Composition], Contents[[1, 2]][Volume]},Simulation -> simulatedSamplePackets];
+			{simulatedSampleComposition,volume} =  Download[simulatedContainer, {Contents[[1, 2]][Composition], Contents[[1, 2]][Volume]},Simulation -> updatedSimulation];
 			(* make sure we're not dealing with links *)
 			sanitizedSimulatedSampleComposition = {#[[1]], Download[#[[2]], Object]}& /@ simulatedSampleComposition;
 
@@ -1897,7 +1903,7 @@ UploadStockSolution[
 		]
 	];
 
-	(* now that we've simulated we can check if the VolumeIncrement, if specified, is copacetic with the total volume *)
+	(* now that we've simulated we can check if the VolumeIncrement, if specified, is compatible with the total volume *)
 	volumeIncrements = ToList[Lookup[safeOptions,VolumeIncrements, {}]/. {Automatic->{}, Null->{}}];
 	validVolumeIncrementsQ = Map[Function[increment, Mod[increment,finalVolume]<1Microliter], volumeIncrements];
 
@@ -1993,8 +1999,10 @@ uploadStockSolutionModel[
 		templateOptionDeprecated,templateOptionWarnings,resolvedOptions,optionResolutionTests,defaultStorageConditionObject,
 		defaultSCObjectTests,optionsRule,previewRule,testsRule,resultRule, allTests,
 		allTestTestResults, optionResolutionResult, defaultSCBool, formulaBeforeReorder, liquidAcidFormulaEntries,
+		usedAsSolventComponentBool, allComponentVolumes, allAcidPositions, acidAdditionVolumePercents, liquidAfterAcidQs, componentOrderWarnings,
 		reorderedFormula, componentVolumes, predictedFillToVolumeAmount, solventFormulaComponent, reorderedFormulaTests,
-		allEHSFields, allComponentFields, componentsAndSolventFields, finalFormula, solventIsFormulaComponentQ},
+		allEHSFields, allComponentFields, componentsAndSolventFields, finalFormula, solventIsFormulaComponentQ, potentialContainers, potentialContainerDownload,
+		volumetricFlasks, volumetricFlaskPackets},
 
 	(* get the listed form of the options provided, for option helpers to chew on *)
 	listedOptions = ToList[myOptions];
@@ -2083,7 +2091,7 @@ uploadStockSolutionModel[
 	(* add the solvent onto the components list for Downloading (okay if solvent is Null, Download handles that) *)
 	componentsAndSolvent = Append[components, mySolvent];
 
-	(* determine if we have a template to deal with; we want to download from this tempalte to get defaultingh information *)
+	(* determine if we have a template to deal with; we want to download from this template to get defaultingh information *)
 	templateOption = Lookup[safeOptions, StockSolutionTemplate];
 
 	(* pseudo-resolve the hidden Author option; either it's Null (meaning we're being called by a User, so they are the author); or it's passed via Engine, and is a root protocol Author *)
@@ -2094,7 +2102,7 @@ uploadStockSolutionModel[
 
 	(* Get all of the EHS fields that need to be updated. *)
 	allEHSFields=ToExpression/@Options[ExternalUpload`Private`ObjectSampleHealthAndSafetyOptions][[All,1]]/.{StorageCondition->DefaultStorageCondition};
-	allComponentFields=Packet@@DeleteDuplicates[Flatten[{Name, Deprecated, State, DefaultStorageCondition, StorageCondition, ShelfLife, UnsealedShelfLife, LightSensitive, Tablet, FixedAmounts, UltrasonicIncompatible, CentrifugeIncompatible, Acid, Base, Composition, Density, Solvent, allEHSFields}]];
+	allComponentFields=Packet@@DeleteDuplicates[Flatten[{Name, Deprecated, State, DefaultStorageCondition, StorageCondition, ShelfLife, UnsealedShelfLife, LightSensitive, Tablet, FixedAmounts, UltrasonicIncompatible, CentrifugeIncompatible, Acid, Base, UsedAsSolvent, Composition, Density, Solvent, allEHSFields}]];
 	componentsAndSolventFields = {Evaluate[Sequence@@If[!unitOperationsQ,
 		{
 			allComponentFields,
@@ -2105,16 +2113,23 @@ uploadStockSolutionModel[
 			Nothing
 		}
 	]]};
+	potentialContainers=Intersection[Search[Model[Container, Vessel], Deprecated != True && DeveloperObject != True], PreferredContainer[All]];
+
+	(* find all the volumetric flasks if we have at least one volumetric fill to volume*)
+	volumetricFlasks = Search[Model[Container, Vessel, VolumetricFlask], Deprecated != True && MaxVolume != Null && DeveloperObject != True];
 
 	(* download the required information from the formula components/solvent; may have a Null if the solvent is Null;
 	 	Quiet is specifically for the Tablet field, which is ONLY in ObjectP[{Model[Sample],Object[Sample]}] *)
-	{componentAndSolventDownloadTuples, {templateModelDownloadTuple}, notebookDownload} = Quiet[Download[
+	{volumetricFlaskPackets, componentAndSolventDownloadTuples, {templateModelDownloadTuple}, notebookDownload, potentialContainerDownload} = Quiet[Download[
 		{
+			volumetricFlasks,
 			componentsAndSolvent,
 			{templateOption},
-			{author}
+			{author},
+			potentialContainers
 		},
 		{
+			{Packet[Object, MaxVolume, ContainerMaterials, Opaque]},
 			componentsAndSolventFields,
 			{
 				Packet[
@@ -2131,7 +2146,7 @@ uploadStockSolutionModel[
 					PreferredContainers, VolumeIncrements,FulfillmentScale, Preparable, Resuspension,
 
 					LightSensitive, Expires, ShelfLife, UnsealedShelfLife, DefaultStorageCondition,
-					TransportChilled, TransportWarmed, Density, ExtinctionCoefficients, Ventilated, Flammable, Acid, Base, Fuming, IncompatibleMaterials,
+					TransportTemperature, Density, ExtinctionCoefficients, Ventilated, Flammable, Acid, Base, Fuming, IncompatibleMaterials,
 					UltrasonicIncompatible, CentrifugeIncompatible, FillToVolumeMethod,
 
 					Autoclave, AutoclaveProgram,
@@ -2142,24 +2157,28 @@ uploadStockSolutionModel[
 			{
 				FinancingTeams[Notebooks][Object],
 				SharingTeams[Notebooks][Object]
+			},
+			{
+				Packet[MaxOverheadMixRate]
 			}
 		},
 		Cache->cache,
 		Simulation->simulation
 	], {Download::FieldDoesntExist,Download::MissingField,Download::MissingCacheField}];
 
-	(* if we're using unit operations, we will infer the storage conditions based on the simulated resulting samples, so get these. we assume the first labeled container is the contianer out *)
+	(* if we're using unit operations, we will infer the storage conditions based on the simulated resulting samples, so get these. we assume the first labeled container is the container out *)
 	storageConditionsFromUnitOps = If[unitOperationsQ,
 		Module[
 			{
-				labelOfInterest,simulatedContainer,simulatedSampleSC,defaultAmbient
+				labelOfInterest,simulatedContainer,simulatedSampleSC,defaultAmbient, updatedSimulation
 			},
 			(*get the first label container unit operation,it should be the very first*)
 			labelOfInterest = First[Cases[myUnitOperations, _LabelContainer]][Label];
 			(*figure out what is the container that was simulated for it and whats in it*)
 			simulatedContainer =Lookup[Lookup[First[Lookup[listedOptions, Simulation]], Labels],labelOfInterest];
+			updatedSimulation = stockSolutionCreateDummySamples[simulatedContainer, Lookup[listedOptions, Simulation]];
 			(*get the sample in that container and its volume*)
-			simulatedSampleSC =  Download[simulatedContainer, Packet[Contents[[1, 2]][Model][DefaultStorageCondition][StorageCondition]],Simulation -> Lookup[listedOptions, Simulation]];
+			simulatedSampleSC =  Download[simulatedContainer, Packet[Contents[[1, 2]][Model][DefaultStorageCondition][StorageCondition]],Simulation -> updatedSimulation];
 			(* if there's no default storage condition, replace it with ambient *)
 			defaultAmbient = Download[Model[StorageCondition, "Ambient Storage"], Packet[StorageCondition]];
 			(* replace any nulls with the default *)
@@ -2257,6 +2276,81 @@ uploadStockSolutionModel[
 		False,
 		MemberQ[formulaBeforeReorder[[All, 2]], ObjectP[Lookup[solventPacketOrNull, Object]]]
 	];
+	(* Grab all packets of the components, including the supplied solvent, that can possibly be considered as solvent, for calculating potential reordering for acid dilution *)
+	usedAsSolventComponentBool = Lookup[allComponentAndSolventPackets, UsedAsSolvent, Null];
+
+	(* Construct a list of the amount of all components in VolumeP or Null, this should be the same length as allComponentsPackets *)
+	(* Solvent packet and predicted FTV amount does not matter here as it will not be added before the acid without reordering, if it is not also part of the component *)
+	allComponentVolumes = MapThread[
+		Function[{packet, amount},
+			Module[{density, waterDensity, volume},
+				(* Get the density of the component *)
+				density = Lookup[packet, Density, Null];
+				(* Define water density as a backup *)
+				waterDensity = 0.997 Gram / Milliliter;
+				(* If a Volume is provided, keep it, if a mass is provided use density to convert (default to water density) *)
+				volume = Which[
+					MatchQ[amount, VolumeP],
+					amount,
+					MatchQ[amount, MassP] && MatchQ[density, DensityP],
+					amount / density,
+					MatchQ[amount, MassP],
+					amount / waterDensity,
+					True,
+					0 Liter
+				];
+
+				If[MatchQ[Lookup[packet, State, Null], Liquid],
+					volume,
+					Null
+				]
+			]
+		],
+		{componentPackets, componentAmounts}
+	];
+
+	(* Calculate the volume percent of acid/combinedSolventComponents, at the time of the each acid addition *)
+	allAcidPositions = If[!NullQ[liquidAcidFormulaEntries],
+		Flatten[(Position[allComponentAndSolventPackets, #]& /@ liquidAcidFormulaEntries[[All, 2]])],
+		(* If we don't have an acid, leave it blank *)
+		{}
+	];
+	{acidAdditionVolumePercents, liquidAfterAcidQs} = If[Length[allAcidPositions] > 0,
+		Transpose@Map[
+			Function[acidIndex,
+				Module[{acidVolumes, volumesAtAcidAddition, solventVolumesAtAcidAddition,
+					totalAcidVolumesAtAcidAddition, totalSolventVolumesAtAcidAddition,
+					acidVolumePercent,liquidAfterAcidQ
+				},
+					acidVolumes = Extract[allComponentVolumes, #] &/@ Flatten[TakeList[allAcidPositions, ToList@acidIndex]];
+					(* Get a truncated list of component volumes at the time of this acid addition*)
+					volumesAtAcidAddition = Flatten[TakeList[allComponentVolumes, ToList@allAcidPositions[[acidIndex]]]];
+					(* Get a list of volumes of only those used as solvent *)
+					solventVolumesAtAcidAddition = PickList[
+						PadRight[volumesAtAcidAddition, Length[usedAsSolventComponentBool], Null],
+						usedAsSolventComponentBool, True
+					];
+					(* Sum up the solvent volume at this addition *)
+					totalSolventVolumesAtAcidAddition = Total[Cases[solventVolumesAtAcidAddition, VolumeP]];
+					(* Sum up the acid volume at this addition *)
+					totalAcidVolumesAtAcidAddition = Total[Cases[acidVolumes, VolumeP]];
+					(* Calculate the ratio *)
+					acidVolumePercent = totalAcidVolumesAtAcidAddition / (totalAcidVolumesAtAcidAddition + totalSolventVolumesAtAcidAddition) * 100. Percent;
+					(* Bool indicating whether there is more liquid component to add after this acid*)
+					liquidAfterAcidQ = MemberQ[
+						Flatten[Position[allComponentAndSolventPackets, KeyValuePattern[State -> Liquid]]],
+						GreaterP[allAcidPositions[[acidIndex]]]
+					];
+					(* Return the calculated pair*)
+					{acidVolumePercent, liquidAfterAcidQ}
+				]
+			],
+			Range[Length@allAcidPositions]
+		],
+		(* Not applicable since we don't have acid *)
+		{{},{}}
+	];
+	componentOrderWarnings = MatchQ[#, {GreaterP[0.2], True}]& /@ Transpose[{acidAdditionVolumePercents, liquidAfterAcidQs}];
 
 	(* reorder the formula with the acids and bases at the end *)
 	(* for non-fill-to-volume, join all the formula entries that are NOT acids with the acid entries *)
@@ -2269,7 +2363,14 @@ uploadStockSolutionModel[
 				Select[formulaBeforeReorder, Not[MemberQ[liquidAcidFormulaEntries, #]]&],
 				liquidAcidFormulaEntries
 			],
-		Not[NullQ[solventPacketOrNull]] && (solventIsFormulaComponentQ || MatchQ[liquidAcidFormulaEntries, {}]),
+		(* Conditions that we are okay not to re-order: *)
+		(* 1. We don't have liquid acid entry *)
+		(* 2. We have liquid acid entry but our all of the acidAdditionVolumePercents are no greater than 20% *)
+		(* 3. We have liquid acid entry, there is acidAdditionVolumePercent greater than 20%, but we are not adding more liquid to it afterwards *)
+		Or[
+			MatchQ[liquidAcidFormulaEntries, {}],
+			Length[liquidAcidFormulaEntries] > 0 && !MemberQ[componentOrderWarnings, True]
+		],
 			formulaBeforeReorder,
 		True,
 			Join[
@@ -2297,7 +2398,11 @@ uploadStockSolutionModel[
 
 		(* throw a message if not gathering tests *)
 		If[!gatherTests && differentFormula && !MatchQ[$ECLApplication,Engine],
-			Message[Warning::ComponentOrder,(reorderedFormula/.{packet:PacketP[]:>Lookup[packet,Object]})];
+			Message[
+				Warning::ComponentOrder,
+				ObjectToString[Lookup[PickList[liquidAcidFormulaEntries[[All,2]], componentOrderWarnings], Object]],
+				PickList[acidAdditionVolumePercents, componentOrderWarnings],
+				(reorderedFormula/.{packet:PacketP[]:>Lookup[packet,Object]})];
 		];
 
 		(* return the test as a list*)
@@ -2324,7 +2429,9 @@ uploadStockSolutionModel[
 				templateModelPacket
 			],
 			{},
-			safeOptions
+			safeOptions,
+			Flatten[potentialContainerDownload],
+			Flatten[volumetricFlaskPackets]
 		],
 		$Failed,
 		{Error::InvalidInput, Error::InvalidOption}
@@ -2377,7 +2484,7 @@ uploadStockSolutionModel[
 
 		(* yell if we didn't get one *)
 		If[!gatherTests && MatchQ[scObjectToUseOrFailed, $Failed],
-			Message[Error::StorageCombinationUnsuppported, Lookup[resolvedOptions, DefaultStorageCondition]];
+			Message[Error::StorageCombinationUnsupported, Lookup[resolvedOptions, DefaultStorageCondition]];
 			Message[Error::InvalidOption, {DefaultStorageCondition, Flammable, Acid, Base}]
 		];
 
@@ -2469,27 +2576,37 @@ resolveUploadStockSolutionOptions[
 	myUnitOperations:({SamplePreparationP...}|Null),
 	myTemplateModelPacket:(PacketP[{Model[Sample,StockSolution],Model[Sample,Media],Model[Sample,Matrix]}]|Null),
 	myPreparatoryFormulaPackets:{PacketP[]...},
-	mySafeOptions:{_Rule..}
+	mySafeOptions:{_Rule..},
+	myContainerPackets:{PacketP[Model[Container]]...},
+	myVolumetricFlaskPackets:{PacketP[Model[Container]]...}
 ]:=Module[
-	{gatherTests,fastTrack,unitOpsQ,componentPackets,componentAmounts,effectiveStockSolutionVolume,allComponentAndSolventPackets,safeOptionsTemplateReplaced,
-		resolvedType, mixSubOptionNames, incubateSubOptionsSetIncorrectly, incubateSubOptionsSetIncorrectlyTests, resolvedAdjustpHBool,
-		mixSubOptionsSetIncorrectly,mixSubOptionsSetIncorrectlyTests,resolvedMixBool,resolvedMixOptions,mixResolutionInvalid,mixOptionResolutionTests,
-		nominalpH,volumeTooLowForpHing,pHVolumeTooLowTests,resolvedMinpH,resolvedMaxpH,resolvedPreferredpHingAcid,resolvedPreferredpHingBase,resolvedMaxNumberOfpHingCycles, resolvedMaxpHingAdditionVolume, resolvedMaxAcidAmountPerCycle,resolvedMaxBaseAmountPerCycle,
-		pHOptionsInvalid,pHOptionValidityTests,filterSubOptionNames,filterSubOptionsSetIncorrectly,filterSubOptionsSetIncorrectlyTests,
-		volumeTooLowForFiltration,filtrationVolumeTooLowTests,resolvedFilterBool,resolvedFilterOptions,filterResolutionInvalid,filterOptionResolutionTests,
-		resolvedLightSensitive, resolvedPreferredContainers, relevantErrorCheckingMixOptions, mixAndIncubateSubOptionNames,
-		resolvedOptions,allOptionResolutionTests, mixTypeRequiredError, mixTypeRequiredTests, fakePreferredContainerVolume,
+	{
+		gatherTests,fastTrack,unitOpsQ,componentPackets,componentAmounts,effectiveStockSolutionVolume,allComponentAndSolventPackets,safeOptionsTemplateReplaced,
+		resolvedType, mixSubOptionNames, incubateSubOptionsSetIncorrectlyTests, resolvedAdjustpHBool,mixSubOptionsSetIncorrectlyTests,
+		resolvedMixBool,resolvedMixOptions,mixOptionResolutionTests,nominalpH,volumeTooLowForpHing,pHVolumeTooLowTests,resolvedMinpH,
+		resolvedMaxpH,resolvedPreferredpHingAcid,resolvedPreferredpHingBase,resolvedMaxNumberOfpHingCycles,resolvedMaxpHingAdditionVolume,
+		resolvedMaxAcidAmountPerCycle,resolvedMaxBaseAmountPerCycle,pHOptionsInvalid,pHOptionValidityTests,filterSubOptionNames,
+		filterSubOptionsSetIncorrectly,filterSubOptionsSetIncorrectlyTests,volumeTooLowForFiltration,filtrationVolumeTooLowTests,
+		resolvedFilterBool,resolvedFilterOptions,filterResolutionInvalid,filterOptionResolutionTests,resolvedLightSensitive,resolvedIncompatibleMaterials,
+		resolvedPreferredContainers, mixAndIncubateSubOptionNames,resolvedOptions,allOptionResolutionTests, fakePreferredContainerVolume,
 		resolvedIncubateBool, incubateSubOptionNames, resolvedContainerOut, componentDensity,fakeTotalVolume, preparableQ,
 		resolvedUltrasonicIncompatible, formulaOnlyOptionNames, formulaOnlyOptions, formulaOnlyOptionsExpSSNames, resolvedFormulaOnlyOptions,
-		resolvedFormulaOnlyOptionsExpSSNames, formulaOnlyTests, preResolvedMixTime, preResolvedIncubationTime,
-		safeOptionsTemplateWithMixAndIncubateTimes, mixIncubateTimeMismatchTests, invalidPreparationTests,invalidResuspensionAmountsTests, roundedOptions, precisionTests,
+		resolvedFormulaOnlyOptionsExpSSNames, formulaOnlyTests, preResolvedMixTime, preResolvedIncubationTime, preferredContainerIncompatibleMaterials, safeOptionsTemplateWithMixAndIncubateTimes, mixIncubateTimeMismatchTests, invalidPreparationTests,invalidResuspensionAmountsTests, roundedOptions, precisionTests,
 		collapsedResolvedFormulaOnlyOptionsExpSSNames, preResolvedVolumeIncrements,preResolvedFulfillmentScale, resolvedFulfillmentScale,
-		fixedAmountsBool, resolvedResuspension, invalidResuspensionBool, invalidResuspensionTest, resolvedPrepareInResuspensionContainer,prepareInResuspensionContainerQ,fixedAmountInfo,numberOfFixedAmountComponents,specifiedFixedAmounts,allowedFixedAmounts,fixedAmountsComponents,invalidPreparationBool,invalidResuspensionAmountBool, resolvedVolumeIncrements,fulfillmentScaleVolIncrementsMismatchTests,
-		resolvedComposition,preResolvedComposition,preResolvedSafetyPacket, resolvedFillToVolumeMethod, invalidFillToVolumeMethod, validOrderOfOperations, orderOfOperationsTest, validOrderOfOperationsForpH, orderOfOperationsForpHTest,
-		invalidFillToVolumeMethodUltrasonic, invalidFillToVolumeMethodVolumetric, invalidFillToVolumeMethodNoSolvent,
-		resolvedOrderOfOperations, effectiveStockSolutionVolumeConsideringAutoclaving, resolvedAutoclaveProgram, resolvedAutoclaveBoolean,
-		volumetricFlasks,volumetricFlaskPackets,volumetricFlaskVolumes,maxVolumetricFlaskVolume,
-		specifiedNominalpH, specifiedMinpH, specifiedMaxpH,invalidPrimitivesOptions,invalidPrimitivesOptionsTest,specifiedPreferredContainers},
+		fixedAmountsBool, resolvedResuspension, invalidResuspensionBool, invalidResuspensionTest, resolvedPrepareInResuspensionContainer,
+		prepareInResuspensionContainerQ,fixedAmountInfo,numberOfFixedAmountComponents,specifiedFixedAmounts,allowedFixedAmounts,
+		fixedAmountsComponents,invalidPreparationBool,invalidResuspensionAmountBool,resolvedVolumeIncrements,fulfillmentScaleVolIncrementsMismatchTests,
+		resolvedComposition,preResolvedComposition,preResolvedSafetyPacket, resolvedFillToVolumeMethod,
+		validOrderOfOperations,orderOfOperationsTest, validOrderOfOperationsForpH,orderOfOperationsForpHTest,invalidFillToVolumeMethodUltrasonic,
+		invalidFillToVolumeMethodVolumetric, invalidFillToVolumeMethodNoSolvent,resolvedOrderOfOperations, effectiveStockSolutionVolumeConsideringAutoclaving,
+		resolvedAutoclaveProgram, resolvedAutoclaveBoolean,compatibleVolumetricFlaskPackets,volumetricFlaskVolumes,maxVolumetricFlaskVolume,
+		specifiedNominalpH, specifiedMinpH, specifiedMaxpH,invalidPrimitivesOptions,invalidPrimitivesOptionsTest,specifiedPreferredContainers,
+		postAutoclaveMixIncubateTimeMismatchTests,postAutoclaveMixSubOptionsSetIncorrectlyTests,postAutoclaveIncubateSubOptionsSetIncorrectlyTests,
+		postAutoclaveResolvedMixOptions,postAutoclaveMixOptionResolutionTests,postAutoclaveResolvedMixBool,postAutoclaveResolvedIncubateBool,
+		postAutoclavePreResolvedMixTime,postAutoclavePreResolvedIncubationTime,postAutoclaveMixAndIncubateSubOptionNames,postAutoclaveMixSubOptionNames,
+		postAutoclaveIncubateSubOptionNames, preResolvedMixRate, postAutoclavePreResolvedMixRate, preResolvedMixRateReplaceQ, postAutoclavePreResolvedMixRateReplaceQ, specifiedMixRate, specifiedPostAutoclaveMixRate, preResolvedMixOptions, postAutoclavePreResolvedMixOptions,
+		resolvedPrepContainer
+	},
 
 	(* determine if we should keep a running list of tests *)
 	gatherTests = MemberQ[ToList[Lookup[mySafeOptions, Output]], Tests];
@@ -2503,18 +2620,18 @@ resolveUploadStockSolutionOptions[
 	(* re-separate the formula into component packets and amounts *)
 	componentAmounts = myFormulaSpecWithPackets[[All, 1]]/.{unit : UnitsP[Unit] :> QuantityMagnitude[unit]};
 	componentPackets = myFormulaSpecWithPackets[[All, 2]];
-	
+
 	(* Fetch the PreferredContainers option *)
 	specifiedPreferredContainers=Lookup[mySafeOptions,PreferredContainers];
-	
-	(* set the effective volume of this solution; the fill-to volume if we have it, or the sum of volume components (be conscious that we might have a fucked formula without any volumes) *)
+
+	(* set the effective volume of this solution; the fill-to volume if we have it, or the sum of volume components (be conscious that we might have a humorous formula without any volumes) *)
 	effectiveStockSolutionVolume = Which[
 		MatchQ[myFinalVolume, VolumeP], myFinalVolume,
 		MemberQ[componentAmounts, VolumeP], Total[Cases[componentAmounts, VolumeP]],
 		MatchQ[specifiedPreferredContainers,ListableP[ObjectP[Model[Container,Vessel]]]],First[ToList[Download[specifiedPreferredContainers,MaxVolume]]],
 		True, 1 Liter
 	];
-	
+
 	(* also for convenience staple together the component and solvent packets if the solvent packet is a thing *)
 	allComponentAndSolventPackets = If[MatchQ[mySolventPacket, PacketP[]],
 		Append[componentPackets, mySolventPacket],
@@ -2578,17 +2695,17 @@ resolveUploadStockSolutionOptions[
 						applyTemplateOption[Type, Last[Lookup[myTemplateModelPacket, Type]]],
 						applyTemplateOption[Mix, MemberQ[Lookup[myTemplateModelPacket, {MixTime, MaxMixTime}], TimeP] || MatchQ[Lookup[myTemplateModelPacket, MixType], MixTypeP]],
 						applyTemplateOption[Filter, MatchQ[Lookup[myTemplateModelPacket, FilterMaterial], FilterMembraneMaterialP] || MatchQ[Lookup[myTemplateModelPacket, FilterSize], FilterSizeP]],
-						applyTemplateOption[TransportChilled, Lookup[myTemplateModelPacket, TransportChilled]],
-						applyTemplateOption[PrepareInResuspensionContainer, Lookup[myTemplateModelPacket, PrepareInResuspensionContainer]]
+						applyTemplateOption[PrepareInResuspensionContainer, Lookup[myTemplateModelPacket, PrepareInResuspensionContainer]],
+						applyTemplateOption[TransportTemperature, Lookup[myTemplateModelPacket, TransportTemperature]]
 					},
 					applyTemplateOption /@ {
 						MixUntilDissolved, MixTime, MaxMixTime, MixType, Mixer, MixRate, NumberOfMixes, MaxNumberOfMixes,
 						NominalpH, MinpH, MaxpH, pHingAcid, pHingBase,
 						MaxNumberOfpHingCycles, MaxpHingAdditionVolume, MaxAcidAmountPerCycle, MaxBaseAmountPerCycle,
 						FilterMaterial, FilterSize,
-						LightSensitive, Expires, ShelfLife,
+						LightSensitive, Expires, ShelfLife, DiscardThreshold,
 						IncubationTime, IncubationTemperature,
-						UnsealedShelfLife, TransportWarmed, Density, ExtinctionCoefficients, Ventilated, Flammable,
+						UnsealedShelfLife, Density, ExtinctionCoefficients, Ventilated, Flammable,
 						Acid, Base, Fuming, IncompatibleMaterials, UltrasonicIncompatible, CentrifugeIncompatible,
 						PreferredContainers, VolumeIncrements, Preparable, FillToVolumeMethod,
 						Autoclave, AutoclaveProgram,
@@ -2605,8 +2722,9 @@ resolveUploadStockSolutionOptions[
 
 	(* these are the list of option names that UploadStockSolution resolves in exactly the same way as ExperimentStockSolution *)
 	formulaOnlyOptionNames = {
-		Name, Synonyms, LightSensitive, Expires, ShelfLife, UnsealedShelfLife, DefaultStorageCondition,
-		TransportChilled, TransportWarmed, Density, ExtinctionCoefficients, Ventilated, Flammable, Acid, Base, Fuming, IncompatibleMaterials
+		Name, Synonyms, LightSensitive, Expires, DiscardThreshold, ShelfLife, UnsealedShelfLife, DefaultStorageCondition,
+		TransportTemperature, Density, ExtinctionCoefficients, Ventilated, Flammable, Acid, Base, Fuming, IncompatibleMaterials,
+		FillToVolumeMethod
 	};
 
 	(* get the options that we are going to resolve in the exact same way as ExperimentStockSolution does for its formula overload *)
@@ -2651,8 +2769,10 @@ resolveUploadStockSolutionOptions[
 		collapsedResolvedFormulaOnlyOptionsExpSSNames
 	];
 
-	(* pull out the light sensitivity from the resolved options above *)
+	(* pull out the light sensitivity and incompatible materials from the resolved options above *)
 	resolvedLightSensitive = Lookup[resolvedFormulaOnlyOptions, LightSensitive];
+	resolvedIncompatibleMaterials = DeleteCases[ToList[Lookup[resolvedFormulaOnlyOptions, IncompatibleMaterials]],None];
+
 
 	(* Pull out and resolve the PreferredContainers option *)
 	(* NOTE: Resolve PreferredContainers to the LabelContainer primitive, if given primitives. *)
@@ -2923,6 +3043,12 @@ resolveUploadStockSolutionOptions[
 		_, effectiveStockSolutionVolumeConsideringAutoclaving
 	];
 
+	(* pull out the specified incompatible materials and convert them to a format for PreferredContainer *)
+	preferredContainerIncompatibleMaterials = If[MatchQ[resolvedIncompatibleMaterials, {(MaterialP|None)..}],
+		resolvedIncompatibleMaterials,
+		Automatic
+	];
+
 	(* get the preferred container for the given effective volume AND whether the thing is light sensitive*)
 	resolvedContainerOut = FirstOrDefault[ToList[PreferredContainer[
 		fakePreferredContainerVolume,
@@ -2933,7 +3059,8 @@ resolveUploadStockSolutionOptions[
 			Automatic
 		],
 		Type->Vessel,
-		All->True
+		All->True,
+		IncompatibleMaterials -> preferredContainerIncompatibleMaterials
 	]]];
 
 	(* figure out what the type should be for the new stock solution; first go with what was specified, then go with what the template model was, then resolve to StockSolution if still nothing *)
@@ -2953,6 +3080,17 @@ resolveUploadStockSolutionOptions[
 	(* get all the mix and incubate sub option names *)
 	mixAndIncubateSubOptionNames = {MixUntilDissolved, MixTime, MaxMixTime, IncubationTemperature, IncubationTime, MixType, Mixer, MixRate, NumberOfMixes, MaxNumberOfMixes};
 
+	(* Now do the same for PostAutoclave versions of above *)
+	postAutoclaveMixSubOptionNames = {
+		PostAutoclaveMixUntilDissolved, PostAutoclaveMixTime, PostAutoclaveMaxMixTime, PostAutoclaveMixType, PostAutoclaveMixer,
+		PostAutoclaveMixRate, PostAutoclaveNumberOfMixes, PostAutoclaveMaxNumberOfMixes
+	};
+	postAutoclaveIncubateSubOptionNames = {PostAutoclaveIncubationTemperature};
+	postAutoclaveMixAndIncubateSubOptionNames = {
+		PostAutoclaveMixUntilDissolved, PostAutoclaveMixTime, PostAutoclaveMaxMixTime, PostAutoclaveIncubationTemperature, PostAutoclaveIncubationTime,
+		PostAutoclaveMixType, PostAutoclaveMixer, PostAutoclaveMixRate, PostAutoclaveNumberOfMixes, PostAutoclaveMaxNumberOfMixes
+	};
+
 	(* resolve the mix boolean *)
 	resolvedMixBool = Which[
 		(* If mix is specified, use that *)
@@ -2965,6 +3103,29 @@ resolveUploadStockSolutionOptions[
 
 		True,
 			True
+	];
+
+	(* Resolve the PostAutoclaveMix boolean. Not just a copy paste. *)
+	postAutoclaveResolvedMixBool = Which[
+		(* If mix is specified, use that *)
+		!MatchQ[Lookup[safeOptionsTemplateReplaced, PostAutoclaveMix], Automatic],
+			Lookup[safeOptionsTemplateReplaced, PostAutoclaveMix],
+
+		(* If given primitives, set it to False. *)
+		MatchQ[myUnitOperations, {SamplePreparationP..}],
+			False,
+
+		(* If HeatSensitiveReagents is populated, we should be doing a post-autoclave mix *)
+		MatchQ[Lookup[safeOptionsTemplateReplaced,HeatSensitiveReagents], Except[{}|Null|Automatic]],
+			True,
+
+		(* If any PostAutoclave options are specified, we should do the post-autoclave mix *)
+		MemberQ[Lookup[safeOptionsTemplateReplaced, postAutoclaveMixSubOptionNames], Except[{}|Null|Automatic]],
+			True,
+
+		(* Standard position is to not do this *)
+		True,
+			False
 	];
 
 	(* Resolve the incubate bool to False unless any of the incubation options are specified *)
@@ -2986,6 +3147,29 @@ resolveUploadStockSolutionOptions[
 			True
 	];
 
+	(* Resolve the PostAutoclaveIncubate bool. This is also not just a copy-paste. *)
+	postAutoclaveResolvedIncubateBool = Which[
+		(* If incubate is specified, use that *)
+		MatchQ[Lookup[safeOptionsTemplateReplaced, {PostAutoclaveIncubate, PostAutoclaveIncubationTemperature, PostAutoclaveIncubationTime}], {BooleanP, _, _}],
+			Lookup[safeOptionsTemplateReplaced, PostAutoclaveIncubate],
+
+		(* If given primitives, set it to False. *)
+		MatchQ[myUnitOperations, {SamplePreparationP..}],
+			False,
+
+		(* If no incubate options are specified, false *)
+		MatchQ[Lookup[safeOptionsTemplateReplaced, {PostAutoclaveIncubate, PostAutoclaveIncubationTemperature, PostAutoclaveIncubationTime}], {(Automatic | Null)..}],
+			False,
+
+		(* If HeatSensitiveReagents is not populated, we should not be doing a post-autoclave mix *)
+		MatchQ[Lookup[safeOptionsTemplateReplaced,HeatSensitiveReagents], {}|Null|Automatic],
+			False,
+
+		(* True otherwise *)
+		True,
+			True
+	];
+
 	(* get the pre-resolved MixTime *)
 	(* if Mix -> True, Incubate -> True, IncubationTime is specified, and MixTime is Automatic, then resolve to the IncubationTime; otherwise just stick with what we have *)
 	preResolvedMixTime = If[resolvedMixBool && resolvedIncubateBool && TimeQ[Lookup[safeOptionsTemplateReplaced, IncubationTime]] && MatchQ[Lookup[safeOptionsTemplateReplaced, MixTime], Automatic],
@@ -3000,305 +3184,188 @@ resolveUploadStockSolutionOptions[
 		Lookup[safeOptionsTemplateReplaced, IncubationTime]
 	];
 
+	(* Now do the same for the post-autoclave versions *)
+	postAutoclavePreResolvedMixTime = If[postAutoclaveResolvedMixBool && postAutoclaveResolvedIncubateBool &&
+     TimeQ[Lookup[safeOptionsTemplateReplaced, PostAutoclaveIncubationTime]] && MatchQ[Lookup[safeOptionsTemplateReplaced, PostAutoclaveMixTime], Automatic],
+		Lookup[safeOptionsTemplateReplaced, PostAutoclaveIncubationTime],
+		Lookup[safeOptionsTemplateReplaced, PostAutoclaveMixTime]
+	];
+	postAutoclavePreResolvedIncubationTime = If[postAutoclaveResolvedMixBool && postAutoclaveResolvedIncubateBool &&
+     TimeQ[Lookup[safeOptionsTemplateReplaced, PostAutoclaveMixTime]] && MatchQ[Lookup[safeOptionsTemplateReplaced, PostAutoclaveIncubationTime], Automatic],
+		Lookup[safeOptionsTemplateReplaced, PostAutoclaveMixTime],
+		Lookup[safeOptionsTemplateReplaced, PostAutoclaveIncubationTime]
+	];
+
+	(* if mix rate exceeds the safe mix rate of resolvedContainerOut, replace it to Automatic otherwise it will fail ExperimentIncubate *)
+	(* get the pre-resolved MixRate *)
+	(* if Mix -> True, and MixType is Stir, check if the specified rate is safe *)
+	{preResolvedMixRate, preResolvedMixRateReplaceQ} = If[resolvedMixBool && MatchQ[Lookup[safeOptionsTemplateReplaced, MixRate], Except[Automatic|Null]] && MatchQ[Lookup[safeOptionsTemplateReplaced, MixType], Stir],
+		Module[{safeMixRate},
+			(* get the safe mix rate of container model. *)
+			safeMixRate = Lookup[fetchPacketFromCache[resolvedContainerOut, myContainerPackets], MaxOverheadMixRate];
+			specifiedMixRate = Lookup[safeOptionsTemplateReplaced, MixRate];
+			(* safeMixRate is very unlikely to be Null since resolvedContainerOut is from PreferredContainer[]. Give this NullQ check just in case *)
+			If[NullQ[safeMixRate]||(safeMixRate > specifiedMixRate),
+				(* if specified mix rate is safe, take it and do not need to update after ExperimentIncubate *)
+				(* or if safeMixRate is not populated, a hard error will be thrown in ExperimentIncubate so take the specified mix rate *)
+				{specifiedMixRate, False},
+				(* otherwise, give a warning and resolve to Automatic so ExperimentIncubate will not error out for the specified mix rate *)
+				Message[Warning::SpecifedMixRateNotSafe, ObjectToString[resolvedContainerOut]];
+				(* we need to update the mix rate to use specified value *)
+				{Automatic, True}
+			]
+		],
+		(* keep Null or Automatic *)
+		{Lookup[safeOptionsTemplateReplaced, MixRate], False}
+	];
+	(*do the same thing for post autoclave mix rate*)
+	{postAutoclavePreResolvedMixRate, postAutoclavePreResolvedMixRateReplaceQ} = If[postAutoclaveResolvedMixBool && MatchQ[Lookup[safeOptionsTemplateReplaced, PostAutoclaveMixRate], Except[Automatic|Null]] && MatchQ[Lookup[safeOptionsTemplateReplaced, PostAutoclaveMixType], Stir],
+		Module[{safeMixRate},
+			(* get the safe mix rate of container model. *)
+			safeMixRate = Lookup[fetchPacketFromCache[resolvedContainerOut, myContainerPackets], MaxOverheadMixRate];
+			specifiedPostAutoclaveMixRate = Lookup[safeOptionsTemplateReplaced, PostAutoclaveMixRate];
+			(* safeMixRate is very unlikely to be Null since resolvedContainerOut is from PreferredContainer[]. Give this NullQ check just in case *)
+			If[NullQ[safeMixRate]||(safeMixRate > specifiedMixRate),
+				(* if specified mix rate is safe, take it and do not need to update after ExperimentIncubate *)
+				(* or if safeMixRate is not populated, a hard error will be thrown in ExperimentIncubate so take the specified mix rate *)
+				{specifiedMixRate, False},
+				(* otherwise, give a warning and resolve to Automatic so ExperimentIncubate will not error out for the specified mix rate *)
+				Message[Warning::SpecifedMixRateNotSafe, ObjectToString[resolvedContainerOut]];
+				(* we need to update the mix rate to use specified value *)
+				{Automatic, True}
+			]
+		],
+		(* keep Null or Automatic *)
+		{Lookup[safeOptionsTemplateReplaced, PostAutoclaveMixRate], False}
+	];
+
 	(* get the safe options template replaced except with the pre-resolved incubation options *)
-	safeOptionsTemplateWithMixAndIncubateTimes = ReplaceRule[safeOptionsTemplateReplaced, {MixTime -> preResolvedMixTime, IncubationTime -> preResolvedIncubationTime}];
+	safeOptionsTemplateWithMixAndIncubateTimes = ReplaceRule[safeOptionsTemplateReplaced, {
+		MixTime -> preResolvedMixTime, IncubationTime -> preResolvedIncubationTime,
+		PostAutoclaveMixTime -> postAutoclavePreResolvedMixTime, PostAutoclaveIncubationTime -> postAutoclavePreResolvedIncubationTime,
+		MixRate -> preResolvedMixRate, PostAutoclaveMixRate -> postAutoclavePreResolvedMixRate
+	}];
 
-	(* make tests and throw an error if there is a mismatch in the Times *)
-	mixIncubateTimeMismatchTests = If[!fastTrack,
-		Module[{mixAndIncubationTimeMismatchQ, test},
-
-			(* figure out if MixTime and IncubationTime are both specified, and if so, whether they are the same *)
-			(* if True, then there is a mismatch for which we are throwing an error *)
-			mixAndIncubationTimeMismatchQ = If[resolvedMixBool && resolvedIncubateBool && TimeQ[preResolvedMixTime] && TimeQ[preResolvedIncubationTime],
-				preResolvedMixTime != preResolvedIncubationTime,
-				False
-			];
-
-			(* make a test for this mismatch *)
-			test = If[gatherTests,
-				Test["If Incubate -> True and Mix -> True, if IncubationTime and MixTime are specified, they are the same:",
-					mixAndIncubationTimeMismatchQ,
-					False
-				]
-			];
-
-			(* throw an error about this *)
-			If[Not[gatherTests] && mixAndIncubationTimeMismatchQ,
-				Message[Error::MixTimeIncubateTimeMismatch, preResolvedMixTime, preResolvedIncubationTime, "the input"];
-				Message[Error::InvalidOption, {MixTime, IncubationTime}]
-			];
-
-			{test}
-		],
-		{}
-	];
-
-	(* get the relevant option names we need to check depending on whether we are incubating, mixing, both at the same time, or neither *)
-	relevantErrorCheckingMixOptions = Which[
-		(* if Mix -> False and Incubate -> False, then we need to check all the options *)
-		MatchQ[resolvedMixBool, False] && MatchQ[resolvedIncubateBool, False], Select[safeOptionsTemplateWithMixAndIncubateTimes, MemberQ[mixAndIncubateSubOptionNames, Keys[#]]&],
-		(* if Mix -> False but Incubate -> True, then only the mix-specific options are what we want to check below *)
-		MatchQ[resolvedMixBool, False] && TrueQ[resolvedIncubateBool], Select[safeOptionsTemplateWithMixAndIncubateTimes, MemberQ[mixSubOptionNames, Keys[#]]&],
-		(* if Mix -> True and Incubate -> False, then the incubate-specific options are the ones we want to check *)
-		TrueQ[resolvedMixBool] && MatchQ[resolvedIncubateBool, False], Select[safeOptionsTemplateWithMixAndIncubateTimes, MemberQ[incubateSubOptionNames, Keys[#]]&],
-		(* if Mix -> True AND Incubate -> True, then we're not actually going to check anything because all of them should be specified*)
-		TrueQ[resolvedMixBool] && TrueQ[resolvedIncubateBool], {}
-	];
-
-	(* now resolve the Mix options; if Mix controlling boolean is set to False but any sub-options are non-Automatic/Null, we can yell about that *)
-	{mixSubOptionsSetIncorrectly, mixSubOptionsSetIncorrectlyTests} = If[!fastTrack,
-		Module[{incorrectMixSubOptions, invalidBool, test},
-
-			(* identify incorrectly-specified sub options *)
-			incorrectMixSubOptions = PickList[mixSubOptionNames, Lookup[relevantErrorCheckingMixOptions, mixSubOptionNames, Null], Except[Automatic|Null]];
-
-			(* we will re-use the boolean check if there are symbols in here; make a variable for that *)
-			invalidBool = MatchQ[incorrectMixSubOptions, {_Symbol..}];
-
-			(* make a test for reporting mix options that are set without the parent bool *)
-			test = If[gatherTests,
-				Test["Mixing preparation options are not specified if Mix is set to False:",
-					invalidBool,
-					False
-				],
-				Nothing
-			];
-
-			(* throw an error about this *)
-			If[!gatherTests && invalidBool,
-				(* MixOptionConflict is also a message for ExperimentStockSolution where the second input is the stock solution being made; since we can only make one at a time here anyway, we can just say "the input" *)
-				Message[Error::MixOptionConflict, incorrectMixSubOptions, "the input"];
-				Message[Error::InvalidOption, incorrectMixSubOptions]
-			];
-
-			(* report a boolean indicating if we tripped this check, and the test *)
-			{invalidBool, {test}}
-		],
-		{False, {}}
-	];
-
-	(* If Mixer, MixRate, NumberOfMixes, or MaxNumberOfMixes are specified, MixType must be specified *)
-	{mixTypeRequiredError, mixTypeRequiredTests} = If[!fastTrack,
-		Module[{mixer, mixRate, mixType, invalidOptions, invalidBool, test, numMixes, maxNumMixes},
-
-			(*  pull out the Mixer/MixRate/MixType options *)
-			{mixer, mixRate, mixType, numMixes, maxNumMixes} = Lookup[safeOptionsTemplateWithMixAndIncubateTimes, {Mixer, MixRate, MixType, NumberOfMixes, MaxNumberOfMixes}];
-
-			(* if Mixer or MixRate or NumberOfMixes or MaxNumberOfMixes is specified, MixType must be specified *)
-			invalidBool = If[MatchQ[mixer, ObjectP[Model[Instrument]]] || RPMQ[mixRate] || MatchQ[numMixes, Except[Null|Automatic]] || MatchQ[maxNumMixes, Except[Null|Automatic]],
-				Not[MatchQ[mixType, MixTypeP]],
-				False
-			];
-
-			(* get the invalid options *)
-			invalidOptions = If[invalidBool,
-				Flatten[{MixType, PickList[{Mixer, MixRate, NumberOfMixes, MaxNumberOfMixes}, {mixer, mixRate, numMixes, maxNumMixes}, Except[Null]]}],
-				{}
-			];
-
-			(* make a test for reporting mix options that are set without the parent bool *)
-			test = If[gatherTests,
-				Test["If Mixer, MixRate, NumberOfMixes, or MaxNumberOfMixes is specified, MixType is also specified:",
-					invalidBool,
-					False
-				],
-				Nothing
-			];
-
-			(* throw an error about this *)
-			If[!gatherTests && invalidBool,
-				Message[Error::MixTypeRequired, invalidOptions];
-				Message[Error::InvalidOption, invalidOptions]
-			];
-
-			(* report a boolean indicating if we tripped this check, and the test *)
-			{invalidBool, {test}}
-		],
-		{False, {}}
-	];
-
-
-	(* if the resolved Incubate controlling boolean is set to False but any incubation sub options are set we yell (or if Mix -> False, there are more we can yell about) *)
-	{incubateSubOptionsSetIncorrectly, incubateSubOptionsSetIncorrectlyTests} = If[!fastTrack,
-		Module[{incorrectIncubateSubOptions, invalidBool, test},
-
-			(* identify incorrectly-specified sub options *)
-			incorrectIncubateSubOptions = PickList[incubateSubOptionNames, Lookup[relevantErrorCheckingMixOptions, incubateSubOptionNames, Null], Except[Automatic|Null]];
-
-			(* we will re-use the boolean check if there are symbols in here; make a variable for that *)
-			invalidBool = MatchQ[incorrectIncubateSubOptions, {_Symbol..}];
-
-			(* make a test for reporting mix options that are set without the parent bool *)
-			test = If[gatherTests,
-				Test["Incubation preparation options are not specified if Incubate is set to False:",
-					invalidBool,
-					False
-				],
-				Nothing
-			];
-
-			(* throw an error about this *)
-			If[!gatherTests && invalidBool,
-				(* IncubateOptionConflict is also a message for ExperimentStockSolution where the second input is the stock solution being made; since we can only make one at a time here anyway, we can just say "the input" *)
-				Message[Error::IncubateOptionConflict, incorrectIncubateSubOptions, "the input"];
-				Message[Error::InvalidOption, incorrectIncubateSubOptions]
-			];
-
-			(* report a boolean indicating if we tripped this check, and the test *)
-			{invalidBool, {test}}
-		],
-		{False, {}}
-	];
-
-	(* resolve the mix options; need to use SimulateSample to pass into the ExperimentIncubate; if Mix is False AND Incubate is False, just set all the options to Null *)
-	{resolvedMixOptions, mixResolutionInvalid, mixOptionResolutionTests} = If[resolvedMixBool || resolvedIncubateBool,
+	(* UltrasonicIncompatible resolves based on whether 50% or more of the volume is comprised of the UltrasonicIncompatible components *)
+	resolvedUltrasonicIncompatible = If[MatchQ[Lookup[safeOptionsTemplateWithMixAndIncubateTimes, UltrasonicIncompatible], BooleanP|Null],
+		Lookup[safeOptionsTemplateWithMixAndIncubateTimes, UltrasonicIncompatible],
 		Module[
-			{simulatedSamplePackets, simulatedContainer, sampleModelForSimulation, justMixOptions,
-				ussmToMixOptionNameMap, renamedMixOptions, mixResolveFailure, resMixOptions,
-				mixResolvingTests, mixToUSSMOptionNameMap, resolvedUSSMMixOptionAssociation, resolvedUSSMMixOptionsSingleValues,
-				expandedMixOptionsWithSafeOptions, resolvedUSSMmixOptionsWithIncubationTime, renamedMixOptionsOptionalsRemoved,
-				preResolvedMixType, preResolvedMixRate, preResolvedMixer, resolvedUSSMMixOptionsOptionalsRemoved,
-				incubateSafeOps, allSimulatedPackets
-			},
+			{ultrasonicIncompatibleFormula, expectedSolventVolume, solventUltrasonicIncompatibleQ,
+				ultrasonicIncompatibleVolume, ultrasonicIncompatibleRatio},
 
-			(* set a model to use as the "fake" model for Mix; want it to be a liquid, so either use the solvent model, or Milli-Q water if we don't have that *)
-			sampleModelForSimulation = If[MatchQ[mySolventPacket, PacketP[]],
-				Lookup[mySolventPacket, Object],
-				Model[Sample, "Milli-Q water"]
+			(* get the Formula entries for UltrasonicIncompatible items *)
+			ultrasonicIncompatibleFormula = Select[myFormulaSpecWithPackets, TrueQ[Lookup[#[[2]], UltrasonicIncompatible]] && MatchQ[#[[1]], VolumeP]&];
+
+			(* get the expected FillToVolumeSolvent volume *)
+			expectedSolventVolume = If[NullQ[mySolventPacket],
+				0,
+				myFinalVolume - Total[Cases[componentAmounts,VolumeP]]
 			];
 
-			(* need to make a simulated sample to give to mix for resolution; we don't even have a stock solution model yet though; just send Mix the solvent, or water *)
-			(* need to quiet the SimulateSample error that tells me I can't pass MolecularWeight in things that don't have that field (like StockSolution etc).  However I need to simulate with it for now because Aliquot downloads it in either case  *)
-			{simulatedSamplePackets, simulatedContainer} = Quiet[
-				SimulateSample[{sampleModelForSimulation}, "stock solution sample 1", {"A1"}, resolvedContainerOut, {State -> Liquid, LightSensitive -> resolvedLightSensitive, Volume -> effectiveStockSolutionVolume, Mass -> Null, Count -> Null}],
-				SimulateSample::InvalidPacket
+			(* figure out if the solvent is UltrasonicIncompatible *)
+			solventUltrasonicIncompatibleQ = If[NullQ[mySolventPacket],
+				False,
+				TrueQ[Lookup[mySolventPacket, UltrasonicIncompatible]]
 			];
 
-			(* take JUST the mix options (and the incubate options because they are together); BEWARE this output is an association not a list of rules; turn to list of rules for easy replacing *)
-			justMixOptions = Normal@KeyTake[safeOptionsTemplateWithMixAndIncubateTimes, mixAndIncubateSubOptionNames];
-
-			(* get the pre-resolved MixType/MixRate/Mixer *)
-			(* need to change the Automatics to Null if they haven't already been template-replaced *)
-			{preResolvedMixType, preResolvedMixRate, preResolvedMixer} = Lookup[justMixOptions, {MixType, MixRate, Mixer}] /. {Automatic -> Null};
-
-			(* define a mapping between this function's mix option names and ExperimentIncubate option names THAT ARE DIFFERENT *)
-			ussmToMixOptionNameMap = {
-				MixTime -> Time,
-				MaxMixTime -> MaxTime,
-				Mixer -> Instrument,
-				IncubationTemperature -> Temperature
-			};
-
-			(* rename the mix options as ExperimentMix knows them all by different names *)
-			(* also remove all instances of the IncubationTime option; we can put it back after the resolution *)
-			renamedMixOptions = Select[justMixOptions /. ussmToMixOptionNameMap, Not[MatchQ[Keys[#], IncubationTime]]&];
-
-			(* remove the Mixer/MixType/MixRate options if they are not specified because they will resolve automatically *)
-			(* also remove MixTime or IncubateTime since we already have Time *)
-			renamedMixOptionsOptionalsRemoved = Map[
-				Which[
-					MatchQ[#[[1]], Rate|Type|Instrument] && NullQ[#[[2]]], Nothing,
-					MatchQ[#1[[1]], MixTime|IncubationTime], Nothing,
-					True, #[[1]] -> #[[2]]
-				]&,
-				renamedMixOptions
+			(* get the total volume of the UltrasonicIncompatible components; need to account for the FillToVolumeSolvent if that is a factor *)
+			ultrasonicIncompatibleVolume = If[solventUltrasonicIncompatibleQ,
+				expectedSolventVolume + Total[ultrasonicIncompatibleFormula[[All, 1]]],
+				Total[ultrasonicIncompatibleFormula[[All, 1]]]
 			];
 
-			(* get the safe options that we are going to expand/replace below  *)
-			incubateSafeOps = SafeOptions[ExperimentIncubate, renamedMixOptionsOptionalsRemoved];
-
-			(* need to add all the other option names too with SafeOptions here (and also expand the options) *)
-			expandedMixOptionsWithSafeOptions = Last[ExpandIndexMatchedInputs[
-				ExperimentIncubate,
-				{simulatedSamplePackets},
-				ReplaceRule[
-					incubateSafeOps,
-					{
-						Mix -> resolvedMixBool,
-						(* if we are NOT mixing then auto-resolve Type to Null; otherwise it should be Automatic *)
-						MixType -> Which[
-							resolvedMixBool && MatchQ[preResolvedMixType, MixTypeP], preResolvedMixType,
-							resolvedMixBool, Automatic,
-							True, Null
-						],
-						(* need to set the Time to be the pre-resolved Mix time *)
-						(* note that this will only really be an issue if they explicitly set these values to be different but this way it fails more sensibly *)
-						Time -> If[resolvedIncubateBool,
-							preResolvedIncubationTime,
-							preResolvedMixTime
-						],
-						(* if Incubate -> True and Temperature is Automatic, pre-resolve it to 30*Celsius because it will get resolved to Null by ExperimentIncubate otherwise since it doesn't have its own Incubate option *)
-						If[resolvedIncubateBool && MatchQ[Lookup[incubateSafeOps, Temperature], Automatic],
-							Temperature -> 30*Celsius,
-							Nothing
-						]
-					}]
-			]];
-
-			(* group the simulated packets together *)
-			allSimulatedPackets = Flatten[{simulatedSamplePackets, simulatedContainer}];
-
-			(* use Check to see if we got an error from mix options; still throw those message;
-			 	ALWAYS assign the results even if messages are thrown  *)
-			mixResolveFailure = Check[
-				{resMixOptions, mixResolvingTests} = If[gatherTests,
-					ExperimentIncubate[Lookup[simulatedSamplePackets, Object], ReplaceRule[expandedMixOptionsWithSafeOptions, {Cache -> allSimulatedPackets, Simulation -> Simulation[allSimulatedPackets], OptionsResolverOnly -> True, Output -> {Options, Tests}}]],
-					{ExperimentIncubate[Lookup[simulatedSamplePackets, Object], ReplaceRule[expandedMixOptionsWithSafeOptions, {Cache -> allSimulatedPackets, Simulation -> Simulation[allSimulatedPackets], OptionsResolverOnly -> True, Output -> Options}]], {}}
-				],
-				$Failed,
-				{Error::InvalidInput, Error::InvalidOption}
+			(* get the ratio of the ultrasonic incompatible volume and the total volume *)
+			(* need to watch out for if ultrasonicIncompatibleVolume is 0 because then what we really want is 0*Milliliter *)
+			ultrasonicIncompatibleRatio = If[MatchQ[ultrasonicIncompatibleVolume, UnitsP[Milliliter]],
+				ultrasonicIncompatibleVolume / effectiveStockSolutionVolume,
+				(ultrasonicIncompatibleVolume*Milliliter) / effectiveStockSolutionVolume
 			];
 
-			(* reverse our earlier lookup to get a map back to our USSM option names *)
-			mixToUSSMOptionNameMap = Reverse /@ ussmToMixOptionNameMap;
+			(* if the ratio is 0.5 or greater, then UltrasonicIncompatible -> True, otherwise UltrasonicIncompatible -> Null *)
+			If[ultrasonicIncompatibleRatio >= 0.5,
+				True,
+				Null
+			]
+		]
+	];
 
-			(* we are assuming that this resolver ALWAYS returns resolved options; get those back; resolveMixOptions spits out list of rules, make association for next step *)
-			resolvedUSSMMixOptionAssociation = Association[KeyValueMap[
-				(#1 /. mixToUSSMOptionNameMap) -> #2&,
-				KeySelect[resMixOptions, MemberQ[Keys[renamedMixOptions], #]&]
-			]];
+	(* Figure out the compatible volumetric flasks to prepare for FTV resolution, considering the light sensitive requirement and incompatible materials *)
+	compatibleVolumetricFlaskPackets=If[TrueQ[resolvedLightSensitive],
+		(* When the stock solution is light sensitive, require Opaque->True and no incompatible materials *)
+		Cases[Flatten@myVolumetricFlaskPackets,KeyValuePattern[{Opaque->True,ContainerMaterials->Except[{___,Alternatives@@resolvedIncompatibleMaterials,___}]}]],
+		(* Otherwise just require no incompatible materials *)
+		Cases[Flatten@myVolumetricFlaskPackets,KeyValuePattern[{ContainerMaterials->Except[{___,Alternatives@@resolvedIncompatibleMaterials,___}]}]]
+	];
 
-			(* the mix resolve gives us listed options; we want the first of any list since we for sure gave just one sample blob *)
-			resolvedUSSMMixOptionsSingleValues = Association[KeyValueMap[
-				#1 -> If[ListQ[#2] && Length[#2] == 1,
-					First[#2],
-					#2
-				]&,
-				resolvedUSSMMixOptionAssociation
-			]];
+	(* Pull out volumetric flask volumes *)
+	volumetricFlaskVolumes = Cases[Lookup[compatibleVolumetricFlaskPackets,MaxVolume],VolumeP];
 
-			(* change the MixType/MixRate/Mixer back to what was specified because they are optional and can be Null otherwise *)
-			resolvedUSSMMixOptionsOptionalsRemoved = KeyValueMap[
-				Which[
-					MatchQ[#1, MixType], #1 -> preResolvedMixType,
-					MatchQ[#1, MixRate], #1 -> preResolvedMixRate,
-					MatchQ[#1, Mixer], #1 -> preResolvedMixer,
-					True, #1 -> #2
-				]&,
-				resolvedUSSMMixOptionsSingleValues
-			];
+	(* Determine max volumetric flask volume *)
+	maxVolumetricFlaskVolume = If[MatchQ[volumetricFlaskVolumes,{VolumeP..}],
+		Max[volumetricFlaskVolumes],
+		0*Liter
+	];
 
-			(* add the IncubationTime option back in if necessary *)
-			resolvedUSSMmixOptionsWithIncubationTime = Which[
-				(* if IncubationTime was set, then just use what it was set to *)
-				MatchQ[Lookup[safeOptionsTemplateWithMixAndIncubateTimes, IncubationTime], Except[Automatic]], Append[resolvedUSSMMixOptionsOptionalsRemoved, IncubationTime -> Lookup[safeOptionsTemplateWithMixAndIncubateTimes, IncubationTime]],
-				(* if we are mixing and incubating (and IncubationTime was set to Automatic), resolve it to whatever MixTime was resolved to *)
-				resolvedMixBool && resolvedIncubateBool, Append[resolvedUSSMMixOptionsOptionalsRemoved, IncubationTime -> Lookup[resolvedUSSMMixOptionsOptionalsRemoved, MixTime]],
-				(* if we are mixing and NOT incubating, IncubationTime resolves to Null*)
-				resolvedMixBool && Not[resolvedIncubateBool], Append[resolvedUSSMMixOptionsOptionalsRemoved, IncubationTime -> Null],
-				(* if we are not mixing but we ARE incubating, then Time actually corresponds to IncubationTime, and MixTime should be or whatever was specified before *)
-				Not[resolvedMixBool] && resolvedIncubateBool, ReplaceRule[resolvedUSSMMixOptionsOptionalsRemoved, {MixTime -> (Lookup[safeOptionsTemplateWithMixAndIncubateTimes, MixTime] /. {Automatic -> Null}), IncubationTime -> Lookup[resolvedUSSMMixOptionsOptionalsRemoved, MixTime]}],
-				(* if we are not mixing or incubating (or however we got here), IncubationTime resolves to Null *)
-				True, Append[resolvedUSSMMixOptionsOptionalsRemoved, IncubationTime -> Null]
-			];
+	(* Resolve our FillToVolumeMethod if we aren't given a method already. *)
+	resolvedFillToVolumeMethod = Which[
+		MatchQ[Lookup[safeOptionsTemplateWithMixAndIncubateTimes, FillToVolumeMethod], FillToVolumeMethodP],
+			Lookup[safeOptionsTemplateWithMixAndIncubateTimes, FillToVolumeMethod],
 
-			(* we're ready to spit back out the resolve mix options with the right names, whether the resolving went smoothly, and thet tests generated *)
-			(* need to add Incubate back in because we kind of replaced it before the ExperimentIncubate call *)
-			{ReplaceRule[resolvedUSSMmixOptionsWithIncubationTime, Incubate -> resolvedIncubateBool], MatchQ[mixResolveFailure, $Failed], mixResolvingTests}
-		],
+		(* If given primitives, set it to Null. *)
+		MatchQ[myUnitOperations, {SamplePreparationP..}],
+			Null,
 
-		(* otherwise we're not mixing; everything is Null (if it was specified, we already yelled about it above, so claim that this resolution was fine) *)
-		{Normal[KeyTake[<|safeOptionsTemplateWithMixAndIncubateTimes|>, mixAndIncubateSubOptionNames]] /. {Automatic -> Null}, False, {}}
+		(* Do we have a FillToVolumeSolvent? *)
+		MatchQ[mySolventPacket, ObjectP[]],
+			If[!TrueQ[resolvedUltrasonicIncompatible],
+				Ultrasonic,
+				Volumetric
+			],
+
+		True,
+			Null
+	];
+
+	(* figure out the preparatory container as this is the container that would be in during mixing - definitely not the final container *)
+	resolvedPrepContainer = FirstOrDefault[ToList[resolveStockSolutionPrepContainer[
+		{IncompatibleMaterials -> preferredContainerIncompatibleMaterials},
+		fakePreferredContainerVolume,
+		resolvedLightSensitive,
+		resolvedAutoclaveBoolean,
+		resolvedFillToVolumeMethod,
+		resolvedContainerOut,
+		compatibleVolumetricFlaskPackets,
+		Experiment`Private`makeFastAssocFromCache[myContainerPackets],
+		PreferredContainers -> resolvedPreferredContainers
+	]]];
+
+	{
+		mixIncubateTimeMismatchTests,mixSubOptionsSetIncorrectlyTests,incubateSubOptionsSetIncorrectlyTests,preResolvedMixOptions,
+		mixOptionResolutionTests
+	}=resolveMixIncubateUSSOptions[
+		Mix,resolvedMixBool,resolvedIncubateBool,preResolvedMixTime,preResolvedIncubationTime,gatherTests,safeOptionsTemplateWithMixAndIncubateTimes,
+		mixAndIncubateSubOptionNames,mixSubOptionNames,incubateSubOptionNames,fastTrack,mySolventPacket,resolvedPrepContainer,resolvedLightSensitive,
+		effectiveStockSolutionVolume
+	];
+
+	{
+		postAutoclaveMixIncubateTimeMismatchTests,postAutoclaveMixSubOptionsSetIncorrectlyTests,postAutoclaveIncubateSubOptionsSetIncorrectlyTests,
+		postAutoclavePreResolvedMixOptions,postAutoclaveMixOptionResolutionTests
+	}=resolveMixIncubateUSSOptions[
+		PostAutoclaveMix,postAutoclaveResolvedMixBool,postAutoclaveResolvedIncubateBool,postAutoclavePreResolvedMixTime,postAutoclavePreResolvedIncubationTime,
+		gatherTests,safeOptionsTemplateWithMixAndIncubateTimes,postAutoclaveMixAndIncubateSubOptionNames,postAutoclaveMixSubOptionNames,
+		postAutoclaveIncubateSubOptionNames,fastTrack,mySolventPacket,resolvedPrepContainer,resolvedLightSensitive,effectiveStockSolutionVolume
+	];
+
+	(* replace the MixRate in resolvedMixOptions if specified rate is over safe rates *)
+	resolvedMixOptions = If[preResolvedMixRateReplaceQ,
+		ReplaceRule[preResolvedMixOptions, MixRate -> specifiedMixRate],
+		preResolvedMixOptions
+	];
+	(* replace the PostAutoclaveMixRate in postAutoclaveResolvedMixOptions if specified rate is over safe rates *)
+	postAutoclaveResolvedMixOptions = If[postAutoclavePreResolvedMixRateReplaceQ,
+		ReplaceRule[postAutoclavePreResolvedMixOptions, PostAutoclaveMixRate -> specifiedPostAutoclaveMixRate],
+		postAutoclavePreResolvedMixOptions
 	];
 
 	(* resolve the pH boolean *)
@@ -3455,13 +3522,13 @@ resolveUploadStockSolutionOptions[
 						Nothing
 					];
 
-					(* yell a message if this ordering got fucked up *)
+					(* yell a message if this ordering got messed up *)
 					If[!fastTrack && !gatherTests && pHOrderInvalid,
 						Message[Error::pHOrderInvalidUSS];
 						Message[Error::InvalidOption, {MinpH, MaxpH}]
 					];
 
-					(* if the order is not fucked up, we can resolve in the case where one or the other was unspecified *)
+					(* if the order is not in shambles, we can resolve in the case where one or the other was unspecified *)
 					{resMin, resMax} = Switch[{providedMinpH, providedMaxpH},
 						{NumericP, NumericP}, {providedMinpH, providedMaxpH},
 						{Automatic, NumericP}, {nominalpH - 0.1, providedMaxpH},
@@ -3629,7 +3696,7 @@ resolveUploadStockSolutionOptions[
 			(* need to make a simulated sample to give to mix for resolution; we don't even have a stock solution model yet though; just send Mix the solvent, or water *)
 			(* need to quiet the SimulateSample error that tells me I can't pass MolecularWeight in things that don't have that field (like StockSolution etc).  However I need to simulate with it for now because Aliquot downloads it in either case  *)
 			{simulatedSamplePackets, simulatedContainer} = Quiet[
-				SimulateSample[{sampleModelForSimulation}, "stock solution sample 1", {"A1"}, resolvedContainerOut, {State -> Liquid, LightSensitive -> resolvedLightSensitive, Volume -> effectiveStockSolutionVolume, Mass -> Null, Count -> Null}],
+				SimulateSample[{sampleModelForSimulation}, "stock solution sample 1", {"A1"}, resolvedPrepContainer, {State -> Liquid, LightSensitive -> resolvedLightSensitive, Volume -> effectiveStockSolutionVolume, Mass -> Null, Count -> Null}],
 				SimulateSample::InvalidPacket
 			];
 
@@ -3691,85 +3758,8 @@ resolveUploadStockSolutionOptions[
 		{Normal[KeyTake[<|safeOptionsTemplateWithMixAndIncubateTimes|>, filterSubOptionNames]] /. {Automatic -> Null}, False, {}}
 	];
 
-	(* UltrasonicIncompatible resolves based on whether 50% or more of the volume is comprised of the UltrasonicIncompatible components *)
-	resolvedUltrasonicIncompatible = If[MatchQ[Lookup[safeOptionsTemplateWithMixAndIncubateTimes, UltrasonicIncompatible], BooleanP|Null],
-		Lookup[safeOptionsTemplateWithMixAndIncubateTimes, UltrasonicIncompatible],
-		Module[
-			{ultrasonicIncompatibleFormula, expectedSolventVolume, solventUltrasonicIncompatibleQ,
-				ultrasonicIncompatibleVolume, ultrasonicIncompatibleRatio},
 
-			(* get the Formula entries for UltrasonicIncompatible items *)
-			ultrasonicIncompatibleFormula = Select[myFormulaSpecWithPackets, TrueQ[Lookup[#[[2]], UltrasonicIncompatible]] && MatchQ[#[[1]], VolumeP]&];
 
-			(* get the expected FillToVolumeSolvent volume *)
-			expectedSolventVolume = If[NullQ[mySolventPacket],
-				0,
-				myFinalVolume - Total[Cases[componentAmounts,VolumeP]]
-			];
-
-			(* figure out if the solvent is UltrasonicIncompatible *)
-			solventUltrasonicIncompatibleQ = If[NullQ[mySolventPacket],
-				False,
-				TrueQ[Lookup[mySolventPacket, UltrasonicIncompatible]]
-			];
-
-			(* get the total volume of the UltrasonicIncompatible components; need to account for the FillToVolumeSolvent if that is a factor *)
-			(* doing the ReplaceAll converting 0 to 0*Milliliter because that will make the math below work and Total[{}] will just be 0 and not have units *)
-			ultrasonicIncompatibleVolume = If[solventUltrasonicIncompatibleQ,
-				expectedSolventVolume + Total[ultrasonicIncompatibleFormula[[All, 1]]],
-				Total[ultrasonicIncompatibleFormula[[All, 1]]]
-			];
-
-			(* get the ratio of the ultrasonic incompatible volume and the total volume *)
-			(* need to watch out for if ultrasonicIncompatibleVolume is 0 because then what we really want is 0*Milliliter *)
-			ultrasonicIncompatibleRatio = If[MatchQ[ultrasonicIncompatibleVolume, UnitsP[Milliliter]],
-				ultrasonicIncompatibleVolume / effectiveStockSolutionVolume,
-				(ultrasonicIncompatibleVolume*Milliliter) / effectiveStockSolutionVolume
-			];
-
-			(* if the ratio is 0.5 or greater, then UltrasonicIncompatible -> True, otherwise UltrasonicIncompatible -> Null *)
-			If[ultrasonicIncompatibleRatio >= 0.5,
-				True,
-				Null
-			]
-		]
-	];
-
-	(* This is relatively fast code (0.2s), despite it being an additional download. This resolver has no Cache option to gather this info from so we require this download here *)
-	(* find all the volumetric flasks if we have at least one volumetric fill to volume*)
-	volumetricFlasks = Search[Model[Container, Vessel, VolumetricFlask], Deprecated != True && MaxVolume != Null && DeveloperObject != True];
-
-	(* Download the volumetric flask packets but only if we are doing that (otherwise we will be Downloading from {} anyway)*)
-	volumetricFlaskPackets = Download[volumetricFlasks, Packet[Object, MaxVolume]];
-
-	(* Pull out volumetric flask volumes *)
-	volumetricFlaskVolumes = Cases[Download[volumetricFlaskPackets,MaxVolume],VolumeP];
-
-	(* Determine max volumetric flask volume *)
-	maxVolumetricFlaskVolume = If[MatchQ[volumetricFlaskVolumes,{VolumeP..}],
-		Max[volumetricFlaskVolumes],
-		0*Liter
-	];
-
-	(* Resolve our FillToVolumeMethod if we aren't given a method already. *)
-	resolvedFillToVolumeMethod = Which[
-		MatchQ[Lookup[safeOptionsTemplateWithMixAndIncubateTimes, FillToVolumeMethod], FillToVolumeMethodP],
-			Lookup[safeOptionsTemplateWithMixAndIncubateTimes, FillToVolumeMethod],
-
-		(* If given primitives, set it to Null. *)
-		MatchQ[myUnitOperations, {SamplePreparationP..}],
-			Null,
-
-		(* Do we have a FillToVolumeSolvent? *)
-		MatchQ[mySolventPacket, ObjectP[]],
-			If[!TrueQ[resolvedUltrasonicIncompatible],
-				Ultrasonic,
-				Volumetric
-			],
-
-		True,
-			Null
-	];
 
 	(* If we were given our FillToVolumeMethod, check it. *)
 	(* have different error booleans for if we're invalid with ultrasonics and if we're invalid because of fill to volume *)
@@ -3796,8 +3786,26 @@ resolveUploadStockSolutionOptions[
 		Message[Error::InvalidOption, FillToVolumeMethod]
 	];
 	If[!gatherTests && invalidFillToVolumeMethodVolumetric,
-		Message[Error::InvalidVolumetricFillToVolumeMethod, "", ObjectToString[maxVolumetricFlaskVolume]];
-		Message[Error::InvalidOption, FillToVolumeMethod]
+		Module[
+			{lightSensitiveString,incompatibleMaterialsString,volumetricFlaskString},
+			(* Provide a string for how volumetric flasks are being selected *)
+			lightSensitiveString=If[TrueQ[resolvedLightSensitive],
+				"Opaque -> True (for light-sensitive stock solution model)",
+				""
+			];
+			incompatibleMaterialsString=If[MatchQ[resolvedIncompatibleMaterials,{}],
+				"",
+				"not made from the stock solution model's incompatible materials "<>ToString[resolvedIncompatibleMaterials]
+			];
+			volumetricFlaskString=Switch[
+				{lightSensitiveString,incompatibleMaterialsString},
+				{"",""},"",
+				{Except[""],Except[""]},"that are "<>lightSensitiveString<>" and "<>incompatibleMaterialsString,
+				_,"that are "<>lightSensitiveString<>incompatibleMaterialsString
+			];
+			Message[Error::InvalidVolumetricFillToVolumeMethod, "", ObjectToString[maxVolumetricFlaskVolume],volumetricFlaskString];
+			Message[Error::InvalidOption, FillToVolumeMethod]
+		]
 	];
 	If[!gatherTests && invalidFillToVolumeMethodNoSolvent,
 		Message[Error::InvalidFillToVolumeMethodNoSolvent, ""];
@@ -3818,14 +3826,16 @@ resolveUploadStockSolutionOptions[
 		Module[
 			{
 				labelOfInterest,simulatedContainer,simulatedSampleComposition,sanitizedSimulatedSampleComposition,
-				allEHSFields,simulatedSamples,safetyPacket
+				allEHSFields,simulatedSamples,safetyPacket, updatedSimulation
 			},
 			(*get the first label container unit operation,it should be the very first*)
 			labelOfInterest = First[Cases[myUnitOperations, _LabelContainer]][Label];
 			(*figure out what is the container that was simulated for it and whats in it*)
 			simulatedContainer =Lookup[Lookup[First[Lookup[mySafeOptions, Simulation]], Labels],labelOfInterest];
+			updatedSimulation = stockSolutionCreateDummySamples[simulatedContainer, Lookup[mySafeOptions, Simulation]];
+
 			(*get the sample in that container and its volume*)
-			simulatedSampleComposition =  Download[simulatedContainer, Contents[[1, 2]][Composition],Simulation -> Lookup[mySafeOptions, Simulation]];
+			simulatedSampleComposition =  Download[simulatedContainer, Contents[[1, 2]][Composition],Simulation -> updatedSimulation];
 			(* make sure we're not dealing with links *)
 			sanitizedSimulatedSampleComposition = {#[[1]], Download[#[[2]], Object]}& /@ simulatedSampleComposition;
 
@@ -3833,8 +3843,8 @@ resolveUploadStockSolutionOptions[
 			allEHSFields=Cases[ToExpression/@Options[ExternalUpload`Private`ObjectSampleHealthAndSafetyOptions][[All,1]],Except[StorageCondition]];
 
 			(* safety packet *)
-			simulatedSamples = Download[simulatedContainer, Contents[[1, 2]],Simulation -> Lookup[mySafeOptions, Simulation]];
-			safetyPacket = KeyValueMap[#1->#2&,Download[Download[simulatedSamples,Object], Evaluate[Packet[Sequence@@allEHSFields]],Simulation -> Lookup[mySafeOptions, Simulation]]/. {link_Link :> Download[link, Object]}];
+			simulatedSamples = Download[simulatedContainer, Contents[[1, 2]],Simulation -> updatedSimulation];
+			safetyPacket = KeyValueMap[#1->#2&,Download[Download[simulatedSamples,Object], Evaluate[Packet[Sequence@@allEHSFields]],Simulation -> updatedSimulation]/. {link_Link :> Download[link, Object]}];
 
 			(* return values *)
 			{sanitizedSimulatedSampleComposition,safetyPacket}
@@ -3844,7 +3854,8 @@ resolveUploadStockSolutionOptions[
 	(* Resolve our full formula if the user hasn't given it to us. *)
 	resolvedComposition=If[MatchQ[Lookup[safeOptionsTemplateWithMixAndIncubateTimes,Composition],Except[Automatic]],
 		Lookup[safeOptionsTemplateWithMixAndIncubateTimes,Composition],
-		preResolvedComposition
+		(* The automatically calculated composition might container very long numbers, that roundPrecisionBeforeFinalJSON will throw a warning *)
+		preResolvedComposition /. value_Quantity :> SafeRound[value, 10^-3]
 	];
 
 	(* Resolve our order of operations based on if our prep stages are toggled. *)
@@ -3859,7 +3870,7 @@ resolveUploadStockSolutionOptions[
 				(* Always present *)
 				FixedReagentAddition,
 
-				(* dont resolve to FTV if the formula already specified the whole volume.  *)
+				(* don't resolve to FTV if the formula already specified the whole volume.  *)
 				If[MatchQ[myFinalVolume, VolumeP]&&!NullQ[mySolventPacket],
 					FillToVolume,
 					Nothing
@@ -4001,10 +4012,13 @@ resolveUploadStockSolutionOptions[
 				MaxAcidAmountPerCycle->resolvedMaxAcidAmountPerCycle,
 				MaxBaseAmountPerCycle->resolvedMaxBaseAmountPerCycle,
 				MaxNumberOfpHingCycles->resolvedMaxNumberOfpHingCycles,
-				MaxpHingAdditionVolume->resolvedMaxpHingAdditionVolume
+				MaxpHingAdditionVolume->resolvedMaxpHingAdditionVolume,
+				PostAutoclaveMix->postAutoclaveResolvedMixBool,
+				PostAutoclaveIncubate->postAutoclaveResolvedIncubateBool
 			},
 			(* only want the options from here that we even have *)
 			Normal@KeyTake[<|resolvedMixOptions|>, mixAndIncubateSubOptionNames],
+			Normal@KeyTake[<|postAutoclaveResolvedMixOptions|>, postAutoclaveMixAndIncubateSubOptionNames],
 			Normal@KeyTake[<|resolvedFilterOptions|>, filterSubOptionNames],
 			resolvedFormulaOnlyOptions
 		]
@@ -4039,14 +4053,18 @@ resolveUploadStockSolutionOptions[
 		formulaOnlyTests,
 		invalidResuspensionTest,
 		mixSubOptionsSetIncorrectlyTests,
+		postAutoclaveMixSubOptionsSetIncorrectlyTests,
 		incubateSubOptionsSetIncorrectlyTests,
+		postAutoclaveIncubateSubOptionsSetIncorrectlyTests,
 		mixOptionResolutionTests,
+		postAutoclaveMixOptionResolutionTests,
 		pHVolumeTooLowTests,
 		pHOptionValidityTests,
 		filterSubOptionsSetIncorrectlyTests,
 		filtrationVolumeTooLowTests,
 		filterOptionResolutionTests,
 		mixIncubateTimeMismatchTests,
+		postAutoclaveMixIncubateTimeMismatchTests,
 		invalidPreparationTests,
 		invalidResuspensionAmountsTests,
 		fulfillmentScaleVolIncrementsMismatchTests,
@@ -4248,10 +4266,18 @@ flattenFormula[
 			{{Null, Null}},
 			<||>
 		},
-		{
-			Lookup[resultPacket, Replace[Composition]] /. {link_Link :> Download[link, Object]},
-			resultSafetyPacket /. {link_Link :> Download[link, Object]}
-		}
+		(* the resulted composition need to be sanitized to 1) remove link, and 2) not include the date object *)
+		Module[{resultedComposition, sanitizedDestinationComposition},
+			(* Look up the composition from the result packet *)
+			resultedComposition = Lookup[resultPacket, Replace[Composition]];
+			(* Only the include the amount and link-ripped object *)
+			sanitizedDestinationComposition = {#[[1]], Download[#[[2]], Object]}& /@ resultedComposition;
+			(* Return the sanitized composition and safety packet *)
+			{
+				sanitizedDestinationComposition,
+				resultSafetyPacket /. {link_Link :> Download[link, Object]}
+			}
+		]
 	]
 ];
 
@@ -4277,10 +4303,14 @@ newStockSolution[
 	myAuthorNotebooks:{ObjectReferenceP[Object[LaboratoryNotebook]]...},
 	myResolvedOptions:{_Rule..}
 ]:=Module[
-	{componentTuples,components,componentAmounts,componentsStates,newModelType,altPrepSearchConditions,sameFormulaComponentModels,sameFormulaComponentModelPackets,myModelTemplateInputPacket,
-		alternativePreparationPackets,uploadReadyFormula,fieldRule,checkFieldsList,newStockSolutionPacket,existingMatchingModel,modelTemplateInputObject,mismatchFields,
-		upload, resolvedOptionsNoAmbient, state, gatherTests, fastTrack, sameFormulaComponentDownloadValues, sameFormulaComponentModelPacketsWithObjects,
-		sameFormulaComponentComponentModelPackets, massFormulas, componentMassAmounts},
+	{
+		componentTuples, components, componentAmounts, componentsStates, componentsSteriles, solventTuple, solventSterile,
+		newModelType, altPrepSearchConditions, sameFormulaComponentModels,
+		alternativePreparationPackets, uploadReadyFormula, fieldRule, checkFieldsList, newStockSolutionPacket, existingMatchingModel,
+		modelTemplateInputObject, mismatchFields, resolvedSterile, resolvedAsepticHandling, upload, resolvedOptionsNoAmbient,
+		state, gatherTests, fastTrack, sameFormulaComponentDownloadValues, sameFormulaComponentModelPacketsWithObjects,
+		sameFormulaComponentComponentModelPackets, massFormulas, componentMassAmounts
+	},
 
 	(* pull out the Upload option *)
 	upload = Lookup[myResolvedOptions,Upload];
@@ -4303,9 +4333,23 @@ newStockSolution[
 	];
 
 	(* we download the component object and state in one download call *)
-	componentTuples=Download[myFormulaSpec[[All,2]], {Object,State}];
-	components=componentTuples[[All,1]];
-	componentsStates=componentTuples[[All,2]];
+	{componentTuples, solventTuple}=Quiet[
+		Download[
+			{
+				myFormulaSpec[[All, 2]],
+				ToList[mySolvent]
+			},
+			{
+				{Object, State, Sterile},
+				{Object, Sterile}
+			}
+		],
+		{Download::FieldDoesNotExist}
+	];
+
+	components = componentTuples[[All, 1]];
+	componentsStates = componentTuples[[All, 2]];
+	componentsSteriles = componentTuples[[All, 3]];
 
 	(* generate the full type we're going to make; standard is a subtype of StockSolution so needs to be handled a little differently *)
 	newModelType = If[MatchQ[Lookup[resolvedOptionsNoAmbient,Type], Standard],
@@ -4314,7 +4358,7 @@ newStockSolution[
 	];
 
 	(* we need to find all the AlternativePreparations of the stock solution we are making
-	 	Search is fucked and doesn't let you use just one And to see if a Formula has model A AND model B; use map-thread search to do this in one db hit;
+	 	Search is rather a bore and doesn't let you use just one And to see if a Formula has model A AND model B; use map-thread search to do this in one db hit;
 		include all notebooks of the "author" (either the $PersonID, or, if we're in Engine, the root prot author) and public stuff *)
 	altPrepSearchConditions=And[
 		Field[Formula[[2]]]==#,
@@ -4404,7 +4448,13 @@ newStockSolution[
 				FilterMaterial, FilterSize,
 				IncubationTime, IncubationTemperature,
 				OrderOfOperations, Autoclave, AutoclaveProgram,
-				FillToVolumeMethod, UnitOperations, TransportChilled, PrepareInResuspensionContainer
+				FillToVolumeMethod, UnitOperations, TransportTemperature, PrepareInResuspensionContainer,
+				TransportTemperature, PostAutoclaveMixUntilDissolved,
+				PostAutoclaveMixTime, PostAutoclaveMaxMixTime, PostAutoclaveMixType,
+				PostAutoclaveMixer, PostAutoclaveMixRate, PostAutoclaveNumberOfMixes,
+				PostAutoclaveMaxNumberOfMixes, PostAutoclaveIncubationTime,
+				PostAutoclaveIncubationTemperature,
+				Expires, ShelfLife, UnsealedShelfLife
 			],
 			Packet[Formula[[All, 2]][Density]]
 		}
@@ -4489,20 +4539,19 @@ newStockSolution[
 					Download[Lookup[possibleModelPacket, pHingAcid], Object] === Download[Lookup[resolvedOptionsNoAmbient, pHingAcid], Object],
 					Download[Lookup[possibleModelPacket, pHingBase], Object] === Download[Lookup[resolvedOptionsNoAmbient, pHingBase], Object],
 
-					Lookup[possibleModelPacket, MaxNumberOfpHingCycles] === Lookup[resolvedOptionsNoAmbient, MaxNumberOfpHingCycles],
-					Lookup[possibleModelPacket, MaxpHingAdditionVolume] === Lookup[resolvedOptionsNoAmbient, MaxpHingAdditionVolume],
-					Lookup[possibleModelPacket, MaxAcidAmountPerCycle] === Lookup[resolvedOptionsNoAmbient, MaxAcidAmountPerCycle],
-					Lookup[possibleModelPacket, MaxBaseAmountPerCycle] === Lookup[resolvedOptionsNoAmbient, MaxBaseAmountPerCycle],
+					TrueQ[Lookup[possibleModelPacket, MaxNumberOfpHingCycles] == Lookup[resolvedOptionsNoAmbient, MaxNumberOfpHingCycles]],
+					TrueQ[Lookup[possibleModelPacket, MaxpHingAdditionVolume] == Lookup[resolvedOptionsNoAmbient, MaxpHingAdditionVolume]],
+					TrueQ[Lookup[possibleModelPacket, MaxAcidAmountPerCycle] == Lookup[resolvedOptionsNoAmbient, MaxAcidAmountPerCycle]],
+					TrueQ[Lookup[possibleModelPacket, MaxBaseAmountPerCycle] == Lookup[resolvedOptionsNoAmbient, MaxBaseAmountPerCycle]],
 
-					(* TransportChilled: Null is like False *)
-					TrueQ[Lookup[possibleModelPacket, TransportChilled]]===TrueQ[TrueQ[Lookup[resolvedOptionsNoAmbient, TransportChilled]]],
+					TrueQ[Lookup[possibleModelPacket, TransportTemperature]==Lookup[resolvedOptionsNoAmbient, TransportTemperature]],
 
 					(* PrepareInResuspensionContainer: Null is like False *)
 					TrueQ[Lookup[possibleModelPacket, PrepareInResuspensionContainer]]===TrueQ[TrueQ[Lookup[resolvedOptionsNoAmbient, PrepareInResuspensionContainer]]],
 
 					(* filter options *)
 					Lookup[possibleModelPacket, FilterMaterial] === Lookup[resolvedOptionsNoAmbient, FilterMaterial],
-					Lookup[possibleModelPacket, FilterSize] === Lookup[resolvedOptionsNoAmbient, FilterSize],
+					TrueQ[Lookup[possibleModelPacket, FilterSize] == Lookup[resolvedOptionsNoAmbient, FilterSize]],
 
 					(* incubation options *)
 					TrueQ[Lookup[possibleModelPacket, IncubationTime] == Lookup[resolvedOptionsNoAmbient, IncubationTime]],
@@ -4515,9 +4564,27 @@ newStockSolution[
 						Lookup[possibleModelPacket, Preparable] === Lookup[resolvedOptionsNoAmbient, Preparable]
 					],
 
+					(* Expiration options *)
+					Lookup[possibleModelPacket, Expires] === Lookup[resolvedOptionsNoAmbient, Expires],
+					TrueQ[Lookup[possibleModelPacket, ShelfLife] == Lookup[resolvedOptionsNoAmbient, ShelfLife]],
+					TrueQ[Lookup[possibleModelPacket, UnsealedShelfLife] == Lookup[resolvedOptionsNoAmbient, UnsealedShelfLife]],
+
 					(* Autoclaving *)
 					TrueQ[Lookup[possibleModelPacket, Autoclave]] === TrueQ[Lookup[resolvedOptionsNoAmbient, Autoclave]],
-					Lookup[possibleModelPacket, AutoclaveProgram] === Lookup[resolvedOptionsNoAmbient, AutoclaveProgram]
+					Lookup[possibleModelPacket, AutoclaveProgram] === Lookup[resolvedOptionsNoAmbient, AutoclaveProgram],
+
+					(* PostAutoclave stuff *)
+					TrueQ[Lookup[possibleModelPacket, PostAutoclaveMixUntilDissolved]] === TrueQ[Lookup[resolvedOptionsNoAmbient, PostAutoclaveMixUntilDissolved]],
+					Lookup[possibleModelPacket, PostAutoclaveMixType] === Lookup[resolvedOptionsNoAmbient, PostAutoclaveMixType],
+					Download[Lookup[possibleModelPacket, Mixer], Object] === Download[Lookup[resolvedOptionsNoAmbient, Mixer], Object],
+					(* need to use TrueQ around the whole thing because we're using == which we have to use for numbers/units *)
+					TrueQ[Lookup[possibleModelPacket, PostAutoclaveMixTime] == Lookup[resolvedOptionsNoAmbient, PostAutoclaveMixTime]],
+					TrueQ[Lookup[possibleModelPacket, PostAutoclaveMaxMixTime] == Lookup[resolvedOptionsNoAmbient, PostAutoclaveMaxMixTime]],
+					TrueQ[Lookup[possibleModelPacket, PostAutoclaveMixRate] == Lookup[resolvedOptionsNoAmbient, PostAutoclaveMixRate]],
+					TrueQ[Lookup[possibleModelPacket, PostAutoclaveNumberOfMixes] == Lookup[resolvedOptionsNoAmbient, PostAutoclaveNumberOfMixes]],
+					TrueQ[Lookup[possibleModelPacket, PostAutoclaveMaxNumberOfMixes] == Lookup[resolvedOptionsNoAmbient, PostAutoclaveMaxNumberOfMixes]],
+					TrueQ[Lookup[possibleModelPacket, PostAutoclaveIncubationTime] == Lookup[resolvedOptionsNoAmbient, PostAutoclaveIncubationTime]],
+					TrueQ[Lookup[possibleModelPacket, PostAutoclaveIncubationTemperature] == Lookup[resolvedOptionsNoAmbient, PostAutoclaveIncubationTemperature]]
 				];
 
 				(* if the formulas are the same (but different absolute amounts), then the ratios for each component will all agree *)
@@ -4581,9 +4648,37 @@ newStockSolution[
 		(*In case that any State field is Null, if all the component amounts are mass, then it is a solid*)
 		NullQ[mySolvent] && MatchQ[componentAmounts, {MassP..}], Solid,
 
+		(*For media: if MediaPhase is specified, use it*)
+		!MatchQ[Lookup[myResolvedOptions,MediaPhase], Null|Automatic], Lookup[myResolvedOptions,MediaPhase],
+
 		(*Otherwise, it is a liquid*)
 		True, Liquid
 	];
+
+	(* figure out whether the new stock solution is sterile based on Autoclave and Filtersize options, or all components are sterile *)
+	(* If we have a solvent, check if it is sterile. If theres no solvent, put true as it does not affect final sterility *)
+	solventSterile = If[MatchQ[solventTuple,{{ObjectP[],_}}],
+		solventTuple[[1,2]],
+		True
+	];
+
+	resolvedSterile = If[Or[
+		TrueQ[Lookup[resolvedOptionsNoAmbient, Autoclave]],
+		MatchQ[Lookup[resolvedOptionsNoAmbient, FilterSize], LessEqualP[0.22 * Micrometer]],
+		AllTrue[Flatten[{componentsSteriles,solventSterile}],TrueQ]
+	],
+		(* The stock solution is sterile if it is autoclaved, or filtered with pores at or below 0.22 microns *)
+		True,
+		Null
+	];
+
+	(* figure out whether the new stock solution requires AsepticHandling based on Sterile options *)
+	resolvedAsepticHandling = If[TrueQ[resolvedSterile],
+		(* The stock solution is AsepticHandling->True if it is sterile *)
+		True,
+		Null
+	];
+
 
 	(* prepare the upload packet for the new stock solution *)
 	newStockSolutionPacket=KeyDrop[<|Join[
@@ -4657,8 +4752,9 @@ newStockSolution[
 			(* currently we don't have a way to mark something as Pyrophoric, possibly (?) by design since we don't have a reliable way to store it *)
 			(* also need to directly specify this because ValidStorageConditionQ needs it *)
 			Pyrophoric -> Null,
-			(* need to specify this directly because PreferredContainer needs it *)
-			Sterile -> Null
+			(* need to specify this directly because PreferredContainer needs it. Also need to resolve it correctly based on Autoclave and FilterSize *)
+			Sterile -> resolvedSterile,
+			AsepticHandling -> resolvedAsepticHandling
 		},
 
 		(* for ALL of these options, the field name is the same as the option name; use a helper to churn out rules  *)
@@ -4666,10 +4762,13 @@ newStockSolution[
 			Name, MixUntilDissolved, MixTime, MaxMixTime, MixType, Mixer, MixRate, NumberOfMixes, MaxNumberOfMixes,
 			NominalpH, MinpH, MaxpH, pHingAcid, pHingBase, MaxNumberOfpHingCycles, MaxpHingAdditionVolume, MaxAcidAmountPerCycle, MaxBaseAmountPerCycle,
 			FilterMaterial, FilterSize,
-			LightSensitive, ShelfLife, UnsealedShelfLife, TransportChilled, TransportWarmed, Density, ExtinctionCoefficients, Ventilated, Flammable, Acid, Base, Fuming,
+			LightSensitive, ShelfLife, UnsealedShelfLife, TransportTemperature, Density, ExtinctionCoefficients, Ventilated, Flammable, Acid, Base, Fuming,
 			IncubationTime, IncubationTemperature,
+			DiscardThreshold,
 			UltrasonicIncompatible, CentrifugeIncompatible,
-			Resuspension, PrepareInResuspensionContainer
+			Resuspension, PrepareInResuspensionContainer,
+			PostAutoclaveMixUntilDissolved, PostAutoclaveMixTime, PostAutoclaveMaxMixTime, PostAutoclaveMixType, PostAutoclaveMixer,
+			PostAutoclaveMixRate, PostAutoclaveNumberOfMixes, PostAutoclaveMaxNumberOfMixes, PostAutoclaveIncubationTime, PostAutoclaveIncubationTemperature
 		}
 	]|>,
 		If[MatchQ[newModelType, Model[Sample, StockSolution]], Nothing, PrepareInResuspensionContainer]];
@@ -4683,11 +4782,15 @@ newStockSolution[
 		{MixUntilDissolved,MixTime,MaxMixTime,MixType,Mixer,MixRate,NumberOfMixes, MaxNumberOfMixes,
 		NominalpH,MinpH,MaxpH,pHingAcid,pHingBase,
 		FilterMaterial,FilterSize,
-		IncubationTime,IncubationTemperature,PrepareInResuspensionContainer},
+		IncubationTime,IncubationTemperature,PrepareInResuspensionContainer,TransportTemperature,PostAutoclaveMixUntilDissolved, PostAutoclaveMixTime,
+			PostAutoclaveMaxMixTime, PostAutoclaveMixType, PostAutoclaveMixer,PostAutoclaveMixRate, PostAutoclaveNumberOfMixes,
+			PostAutoclaveMaxNumberOfMixes, PostAutoclaveIncubationTime, PostAutoclaveIncubationTemperature},
 		{MixUntilDissolved,MixTime,MaxMixTime,MixType,Mixer,MixRate,NumberOfMixes, MaxNumberOfMixes,
 			NominalpH,MinpH,MaxpH,pHingAcid,pHingBase,
 			FilterMaterial,FilterSize,
-			IncubationTime,IncubationTemperature}
+			IncubationTime,IncubationTemperature,TransportTemperature,
+			PostAutoclaveMixUntilDissolved, PostAutoclaveMixTime, PostAutoclaveMaxMixTime, PostAutoclaveMixType, PostAutoclaveMixer,
+			PostAutoclaveMixRate, PostAutoclaveNumberOfMixes, PostAutoclaveMaxNumberOfMixes, PostAutoclaveIncubationTime, PostAutoclaveIncubationTemperature}
 	];
 
 	existingMatchingModel=If[myReturnExistingModelBool,
@@ -4830,8 +4933,7 @@ newStockSolution[
 			];
 
 			(* download our template model input packet *)
-			(* we cannot assume it is included in the sameFormulaComponentModelPackets because of the same components during the search? The assumption is not valid somehow in a unit test with input model Model[Sample, StockSolution, "Existing Solution of 10% v/v Methanol \
-in Water"]. *)
+			(* we cannot assume it is included in the sameFormulaComponentModelPackets because of the same components during the search? The assumption is not valid somehow in a unit test with input model Model[Sample, StockSolution, "Existing Solution of 10% v/v Methanol in Water"]. *)
 			modelTemplateInputPacket=Quiet[Download[myModelTemplateInput,
 				Packet[
 					Formula,FillToVolumeSolvent,TotalVolume,MixUntilDissolved,Preparable,
@@ -4960,7 +5062,8 @@ newStockSolution[
 	{newModelType,simulatedSampleLookupPackets,simulatedSampleCompositionComponents,altPrepSearchConditions,
 		sameFormulaComponentModels,sameFormulaComponentModelPackets,alternativePreparationPackets,fieldRule,
 		checkFieldsList,newStockSolutionPacket,existingMatchingModel,templateModel,
-		upload, resolvedOptionsNoAmbient, state, gatherTests, fastTrack,modelTemplateInputObject,mismatchFields},
+		upload, resolvedOptionsNoAmbient, state, resolvedSterile, resolvedAsepticHandling,
+		gatherTests, fastTrack,modelTemplateInputObject,mismatchFields},
 
 	(* pull out the Upload option *)
 	upload = Lookup[myResolvedOptions,Upload];
@@ -4975,15 +5078,16 @@ newStockSolution[
 	];
 
 	(* grab the simulated sample out of simulation and make a packet for lookups *)
-	simulatedSampleLookupPackets = Module[{labelOfInterest,simulatedContainer,simulatedSample,packets},
+	simulatedSampleLookupPackets = Module[{labelOfInterest,simulatedContainer,simulatedSample,packets, updatedSimulation},
 		(*get the first label container unit operation,it should be the very first*)
 		labelOfInterest = First[Cases[myUnitOperations, _LabelContainer]][Label];
 		(*figure out what is the container that was simulated for it and whats in it*)
 		simulatedContainer =Lookup[Lookup[First[mySampleSimulation], Labels],labelOfInterest];
+		updatedSimulation = stockSolutionCreateDummySamples[simulatedContainer, mySampleSimulation];
 		(*get the sample in that container and its volume*)
-		simulatedSample =  Download[simulatedContainer, Contents[[1, 2]],Simulation -> mySampleSimulation];
+		simulatedSample =  Download[simulatedContainer, Contents[[1, 2]],Simulation -> updatedSimulation];
 		(* This gives us all samples in the unitOperations. we're assuming the first one is the one we're interested in so will return that one only*)
-		packets = Download[simulatedSample, All, Simulation->mySampleSimulation]
+		packets = Download[simulatedSample, All, Simulation->updatedSimulation]
 	];
 
 	simulatedSampleCompositionComponents = Lookup[simulatedSampleLookupPackets, Composition][[All,2]];
@@ -5026,7 +5130,7 @@ newStockSolution[
 			FilterMaterial,FilterSize,
 			IncubationTime,IncubationTemperature,
 			OrderOfOperations,Autoclave,AutoclaveProgram,
-			FillToVolumeMethod,UnitOperations, TransportChilled,PrepareInResuspensionContainer
+			FillToVolumeMethod,UnitOperations, TransportTemperature,PrepareInResuspensionContainer
 		]
 	], {Download::FieldDoesntExist}];
 
@@ -5069,8 +5173,7 @@ newStockSolution[
 					Lookup[possibleModelPacket, MaxAcidAmountPerCycle] === Lookup[resolvedOptionsNoAmbient, MaxAcidAmountPerCycle],
 					Lookup[possibleModelPacket, MaxBaseAmountPerCycle] === Lookup[resolvedOptionsNoAmbient, MaxBaseAmountPerCycle],
 
-					(* TransportChilled: Null is like False *)
-					TrueQ[Lookup[possibleModelPacket, TransportChilled]]===TrueQ[TrueQ[Lookup[resolvedOptionsNoAmbient, TransportChilled]]],
+					Lookup[possibleModelPacket, TransportTemperature]===Lookup[resolvedOptionsNoAmbient, TransportTemperature],
 
 					(* PrepareInResuspensionContainer: Null is like False *)
 					TrueQ[Lookup[possibleModelPacket, PrepareInResuspensionContainer]]===TrueQ[TrueQ[Lookup[resolvedOptionsNoAmbient, PrepareInResuspensionContainer]]],
@@ -5134,6 +5237,24 @@ newStockSolution[
 		True, Liquid
 	];
 
+	(* figure out whether the new stock solution is sterile based on Autoclave and Filtersize options, or if simulated sample is sterile *)
+	resolvedSterile = If[Or[
+		TrueQ[Lookup[myResolvedOptions, Autoclave]],
+		MatchQ[Lookup[resolvedOptionsNoAmbient, FilterSize], LessEqualP[0.22 * Micrometer]],
+		TrueQ[Lookup[simulatedSampleLookupPackets, Sterile]]
+	],
+		(* The stock solution is sterile if it is autoclaved, or filtered with pores at or below 0.22 microns *)
+		True,
+		Null
+	];
+
+	(* figure out whether the new stock solution requires AsepticHandling based on Sterile options *)
+	resolvedAsepticHandling = If[TrueQ[resolvedSterile],
+		(* The stock solution is AsepticHandling->True if it is sterile *)
+		True,
+		Null
+	];
+
 	(* prepare the upload packet for the new stock solution *)
 	newStockSolutionPacket=KeyDrop[<|Join[
 		{
@@ -5162,12 +5283,12 @@ newStockSolution[
 			Replace[Autoclave] -> Lookup[myResolvedOptions,Autoclave],
 			Replace[AutoclaveProgram] -> Lookup[myResolvedOptions,AutoclaveProgram],
 
-			(* --- based on options and not EXACT match betwen field name and option --- *)
+			(* --- based on options and not EXACT match between field name and option --- *)
 			Replace[Synonyms]->If[MatchQ[Lookup[resolvedOptionsNoAmbient,Synonyms],{_String..}],
 				Lookup[resolvedOptionsNoAmbient,Synonyms],
 				{}
 			],
-			Replace[IncompatibleMaterials]->If[MatchQ[Lookup[resolvedOptionsNoAmbient,IncompatibleMaterials],Null],
+			Replace[IncompatibleMaterials]->If[MatchQ[Lookup[resolvedOptionsNoAmbient,IncompatibleMaterials],ListableP[Null]],
 				{None},
 				ToList[Lookup[resolvedOptionsNoAmbient,IncompatibleMaterials]]
 			],
@@ -5196,8 +5317,9 @@ newStockSolution[
 			(* currently we don't have a way to mark something as Pyrophoric, possibly (?) by design since we don't have a reliable way to store it *)
 			(* also need to directly specify this because ValidStorageConditionQ needs it *)
 			Pyrophoric -> Null,
-			(* need to specify this directly because PreferredContainer needs it *)
-			Sterile -> Null
+			(* need to specify this directly because PreferredContainer needs it. Also need to resolve it correctly based on Autoclave and FilterSize *)
+			Sterile -> resolvedSterile,
+			AsepticHandling -> resolvedAsepticHandling
 		},
 
 		(* for ALL of these options, the field name is the same as the option name; use a helper to churn out rules  *)
@@ -5205,8 +5327,9 @@ newStockSolution[
 			Name, MixUntilDissolved, MixTime, MaxMixTime, MixType, Mixer, MixRate, NumberOfMixes, MaxNumberOfMixes,
 			NominalpH, MinpH, MaxpH, pHingAcid, pHingBase, MaxNumberOfpHingCycles, MaxpHingAdditionVolume, MaxAcidAmountPerCycle, MaxBaseAmountPerCycle,
 			FilterMaterial, FilterSize,
-			LightSensitive, ShelfLife, UnsealedShelfLife, TransportChilled, TransportWarmed, Density, ExtinctionCoefficients, Ventilated, Flammable, Acid, Base, Fuming,
+			LightSensitive, ShelfLife, UnsealedShelfLife, TransportTemperature, Density, ExtinctionCoefficients, Ventilated, Flammable, Acid, Base, Fuming,
 			IncubationTime, IncubationTemperature,
+			DiscardThreshold,
 			UltrasonicIncompatible, CentrifugeIncompatible,
 			Resuspension, PrepareInResuspensionContainer
 		}
@@ -5518,20 +5641,21 @@ UploadStockSolutionOptions[
 	(* see if we got a composition, if not simulate the samples and grab whatever's in the first container so the sample composition *)
 	{sampleComposition, simulatedSamplePackets, finalVolume} = If[MatchQ[Lookup[safeOptions, Composition], Except[Automatic]],
 		{Lookup[safeOptions, Composition],Null,Null},
-		Module[{mspSimulatedPackets, labelOfInterest, simulatedContainer,simulatedSampleComposition, sanitizedSimulatedSampleComposition, volume},
+		Module[{mspSimulatedPackets, labelOfInterest, simulatedContainer,simulatedSampleComposition, sanitizedSimulatedSampleComposition, volume, updatedSimulation},
 			(*simulate*)
 			mspSimulatedPackets =ExperimentManualSamplePreparation[myUnitOperations, Output -> Simulation];
 			(*get the first label container unit operation,it should be the very first*)
 			labelOfInterest = First[Cases[myUnitOperations, _LabelContainer]][Label];
 			(*figure out what is the container that was simulated for it and whats in it*)
 			simulatedContainer =Lookup[Lookup[First[mspSimulatedPackets], Labels],labelOfInterest];
+			updatedSimulation = stockSolutionCreateDummySamples[simulatedContainer, mspSimulatedPackets];
 			(*get the sample in that container and its volume*)
-			{simulatedSampleComposition,volume} =  Download[simulatedContainer, {Contents[[1, 2]][Composition],Contents[[1, 2]][Volume]},Simulation -> mspSimulatedPackets];
+			{simulatedSampleComposition,volume} =  Download[simulatedContainer, {Contents[[1, 2]][Composition],Contents[[1, 2]][Volume]},Simulation -> updatedSimulation];
 			(* make sure we're not dealing with links *)
 			sanitizedSimulatedSampleComposition = {#[[1]], Download[#[[2]], Object]}& /@ simulatedSampleComposition;
 
 			(* return composition and volume *)
-			{sanitizedSimulatedSampleComposition,mspSimulatedPackets,volume}
+			{sanitizedSimulatedSampleComposition,updatedSimulation,volume}
 		]
 	];
 
@@ -5682,4 +5806,353 @@ ValidUploadStockSolutionQ[
 
 	(* Run the tests as requested *)
 	Lookup[RunUnitTest[<|"ValidUploadStockSolutionQ" -> tests|>, OutputFormat -> outputFormat, Verbose -> verbose], "ValidUploadStockSolutionQ"]
+];
+
+(* --- Helper function to resolve mix and incubate options, whether pre- or post-autoclave --- *)
+resolveMixIncubateUSSOptions[
+	mixOrPost:(Mix|PostAutoclaveMix),
+	resolvedMixBool:(BooleanP|Null),
+	resolvedIncubateBool:(BooleanP|Null),
+	preResolvedMixTime:(TimeP|Null|Automatic),
+	preResolvedIncubationTime:(TimeP|Null|Automatic),
+	gatherTests:(BooleanP|Null),
+	safeOptionsTemplateWithMixAndIncubateTimes:OptionsPattern[resolveUploadStockSolutionOptions],
+	mixAndIncubateSubOptionNames:{_Symbol...},
+	mixSubOptionNames:{_Symbol...},
+	incubateSubOptionNames:{_Symbol...},
+	fastTrack:(BooleanP|Null),
+	mySolventPacket:(PacketP[]|Null),
+	resolvedPrepContainer:(ObjectP[]|Null),
+	resolvedLightSensitive:(BooleanP|Null),
+	effectiveStockSolutionVolume:(VolumeP|Null)
+]:=Module[{
+	mixIncubateTimeMismatchTests,relevantErrorCheckingMixOptions,mixSubOptionsSetIncorrectly,mixSubOptionsSetIncorrectlyTests,
+	mixTypeRequiredError,mixTypeRequiredTests,incubateSubOptionsSetIncorrectly,incubateSubOptionsSetIncorrectlyTests,resolvedMixOptions,
+	mixResolutionInvalid,mixOptionResolutionTests,mixTimeOption,incubationTimeOption,mixerOption,mixRateOption,mixTypeOption,
+	numMixesOption,maxNumMixesOption,maxMixTimeOption,incubationTemperatureOption,mixUntilDissolvedOption,
+	incubateOption
+},
+	(* To start off, we need to key relevant option names off of whether we're dealing with pre- or post-autoclave *)
+	{
+		mixTimeOption,incubationTimeOption,mixerOption,mixRateOption,mixTypeOption,numMixesOption,maxNumMixesOption,maxMixTimeOption,
+		incubationTemperatureOption,mixUntilDissolvedOption,incubateOption
+	}=If[MatchQ[mixOrPost,Mix],
+		{
+			MixTime,IncubationTime,Mixer,MixRate,MixType,NumberOfMixes,MaxNumberOfMixes,MaxMixTime,IncubationTemperature,MixUntilDissolved,Incubate
+		},
+		{
+			PostAutoclaveMixTime,PostAutoclaveIncubationTime,PostAutoclaveMixer,PostAutoclaveMixRate,PostAutoclaveMixType,PostAutoclaveNumberOfMixes,
+			PostAutoclaveMaxNumberOfMixes,PostAutoclaveMaxMixTime,PostAutoclaveIncubationTemperature,PostAutoclaveMixUntilDissolved,PostAutoclaveIncubate
+		}
+	];
+
+
+	(* make tests and throw an error if there is a mismatch in the Times *)
+	mixIncubateTimeMismatchTests = If[!fastTrack,
+		Module[{mixAndIncubationTimeMismatchQ, test},
+
+			(* figure out if MixTime and IncubationTime are both specified, and if so, whether they are the same *)
+			(* if True, then there is a mismatch for which we are throwing an error *)
+			mixAndIncubationTimeMismatchQ = If[resolvedMixBool && resolvedIncubateBool && TimeQ[preResolvedMixTime] && TimeQ[preResolvedIncubationTime],
+				preResolvedMixTime != preResolvedIncubationTime,
+				False
+			];
+
+			(* make a test for this mismatch *)
+			test = If[gatherTests,
+				Test["If " <> ToString@incubateOption <> " -> True and " <> ToString@mixOrPost <> " -> True, if " <> ToString@incubationTimeOption <> " and " <> ToString@mixTimeOption <> " are specified, they are the same:",
+					mixAndIncubationTimeMismatchQ,
+					False
+				]
+			];
+
+			(* throw an error about this *)
+			If[Not[gatherTests] && mixAndIncubationTimeMismatchQ,
+				Message[Error::MixTimeIncubateTimeMismatch, preResolvedMixTime, preResolvedIncubationTime, "the input"];
+				Message[Error::InvalidOption, {mixTimeOption, incubationTimeOption}]
+			];
+
+			{test}
+		],
+		{}
+	];
+
+	(* get the relevant option names we need to check depending on whether we are incubating, mixing, both at the same time, or neither *)
+	relevantErrorCheckingMixOptions = Which[
+		(* if Mix -> False and Incubate -> False, then we need to check all the options *)
+		MatchQ[resolvedMixBool, False] && MatchQ[resolvedIncubateBool, False], Select[safeOptionsTemplateWithMixAndIncubateTimes, MemberQ[mixAndIncubateSubOptionNames, Keys[#]]&],
+		(* if Mix -> False but Incubate -> True, then only the mix-specific options are what we want to check below *)
+		MatchQ[resolvedMixBool, False] && TrueQ[resolvedIncubateBool], Select[safeOptionsTemplateWithMixAndIncubateTimes, MemberQ[mixSubOptionNames, Keys[#]]&],
+		(* if Mix -> True and Incubate -> False, then the incubate-specific options are the ones we want to check *)
+		TrueQ[resolvedMixBool] && MatchQ[resolvedIncubateBool, False], Select[safeOptionsTemplateWithMixAndIncubateTimes, MemberQ[incubateSubOptionNames, Keys[#]]&],
+		(* if Mix -> True AND Incubate -> True, then we're not actually going to check anything because all of them should be specified*)
+		TrueQ[resolvedMixBool] && TrueQ[resolvedIncubateBool], {}
+	];
+
+	(* now resolve the Mix options; if Mix controlling boolean is set to False but any sub-options are non-Automatic/Null, we can yell about that *)
+	{mixSubOptionsSetIncorrectly, mixSubOptionsSetIncorrectlyTests} = If[!fastTrack,
+		Module[{incorrectMixSubOptions, invalidBool, test},
+
+			(* identify incorrectly-specified sub options *)
+			incorrectMixSubOptions = PickList[mixSubOptionNames, Lookup[relevantErrorCheckingMixOptions, mixSubOptionNames, Null], Except[Automatic|Null]];
+
+			(* we will re-use the boolean check if there are symbols in here; make a variable for that *)
+			invalidBool = MatchQ[incorrectMixSubOptions, {_Symbol..}];
+
+			(* make a test for reporting mix options that are set without the parent bool *)
+			test = If[gatherTests,
+				Test[ToString@mixOrPost<>"ing preparation options are not specified if "<>ToString@mixOrPost<>" is set to False:",
+					invalidBool,
+					False
+				],
+				Nothing
+			];
+
+			(* throw an error about this *)
+			If[!gatherTests && invalidBool,
+				(* MixOptionConflict is also a message for ExperimentStockSolution where the second input is the stock solution being made; since we can only make one at a time here anyway, we can just say "the input" *)
+				Message[Error::MixOptionConflict, incorrectMixSubOptions, "the input"];
+				Message[Error::InvalidOption, incorrectMixSubOptions]
+			];
+
+			(* report a boolean indicating if we tripped this check, and the test *)
+			{invalidBool, {test}}
+		],
+		{False, {}}
+	];
+
+	(* If Mixer, MixRate, NumberOfMixes, or MaxNumberOfMixes are specified, MixType must be specified *)
+	{mixTypeRequiredError, mixTypeRequiredTests} = If[!fastTrack,
+		Module[{mixer, mixRate, mixType, invalidOptions, invalidBool, test, numMixes, maxNumMixes},
+
+			(*  pull out the Mixer/MixRate/MixType options *)
+			{mixer, mixRate, mixType, numMixes, maxNumMixes} = Lookup[safeOptionsTemplateWithMixAndIncubateTimes, {mixerOption,mixRateOption,mixTypeOption,numMixesOption,maxNumMixesOption}];
+
+			(* if Mixer or MixRate or NumberOfMixes or MaxNumberOfMixes is specified, MixType must be specified *)
+			invalidBool = If[MatchQ[mixer, ObjectP[Model[Instrument]]] || RPMQ[mixRate] || MatchQ[numMixes, Except[Null|Automatic]] || MatchQ[maxNumMixes, Except[Null|Automatic]],
+				Not[MatchQ[mixType, MixTypeP]],
+				False
+			];
+
+			(* get the invalid options *)
+			invalidOptions = If[invalidBool,
+				Flatten[{mixTypeOption, PickList[{mixerOption, mixRateOption, numMixesOption, maxNumMixesOption}, {mixer, mixRate, numMixes, maxNumMixes}, Except[Null]]}],
+				{}
+			];
+
+			(* make a test for reporting mix options that are set without the parent bool *)
+			test = If[gatherTests,
+				Test["If "<>ToString@mixerOption<>", "<>ToString@mixRateOption<>", "<>ToString@numMixesOption<>", or "<>ToString@maxNumMixesOption<>" is specified, "<>ToString@mixTypeOption<>" is also specified:",
+					invalidBool,
+					False
+				],
+				Nothing
+			];
+
+			(* throw an error about this *)
+			If[!gatherTests && invalidBool,
+				Message[Error::MixTypeRequired, invalidOptions];
+				Message[Error::InvalidOption, invalidOptions]
+			];
+
+			(* report a boolean indicating if we tripped this check, and the test *)
+			{invalidBool, {test}}
+		],
+		{False, {}}
+	];
+
+
+	(* if the resolved Incubate controlling boolean is set to False but any incubation sub options are set we yell (or if Mix -> False, there are more we can yell about) *)
+	{incubateSubOptionsSetIncorrectly, incubateSubOptionsSetIncorrectlyTests} = If[!fastTrack,
+		Module[{incorrectIncubateSubOptions, invalidBool, test},
+
+			(* identify incorrectly-specified sub options *)
+			incorrectIncubateSubOptions = PickList[incubateSubOptionNames, Lookup[relevantErrorCheckingMixOptions, incubateSubOptionNames, Null], Except[Automatic|Null]];
+
+			(* we will re-use the boolean check if there are symbols in here; make a variable for that *)
+			invalidBool = MatchQ[incorrectIncubateSubOptions, {_Symbol..}];
+
+			(* make a test for reporting mix options that are set without the parent bool *)
+			test = If[gatherTests,
+				Test["Relevant incubation preparation options are not specified if "<>ToString@incubateOption<>" is set to False:",
+					invalidBool,
+					False
+				],
+				Nothing
+			];
+
+			(* throw an error about this *)
+			If[!gatherTests && invalidBool,
+				(* IncubateOptionConflict is also a message for ExperimentStockSolution where the second input is the stock solution being made; since we can only make one at a time here anyway, we can just say "the input" *)
+				Message[Error::IncubateOptionConflict, incorrectIncubateSubOptions, "the input"];
+				Message[Error::InvalidOption, incorrectIncubateSubOptions]
+			];
+
+			(* report a boolean indicating if we tripped this check, and the test *)
+			{invalidBool, {test}}
+		],
+		{False, {}}
+	];
+
+	(* resolve the mix options; need to use SimulateSample to pass into the ExperimentIncubate; if Mix is False AND Incubate is False, just set all the options to Null *)
+	{resolvedMixOptions, mixResolutionInvalid, mixOptionResolutionTests} = If[resolvedMixBool || resolvedIncubateBool,
+		Module[
+			{simulatedSamplePackets, simulatedContainer, sampleModelForSimulation, justMixOptions,
+				ussmToMixOptionNameMap, renamedMixOptions, mixResolveFailure, resMixOptions,
+				mixResolvingTests, mixToUSSMOptionNameMap, resolvedUSSMMixOptionAssociation, resolvedUSSMMixOptionsSingleValues,
+				expandedMixOptionsWithSafeOptions, resolvedUSSMmixOptionsWithIncubationTime, renamedMixOptionsOptionalsRemoved,
+				preResolvedMixType, preResolvedMixRate, preResolvedMixer, resolvedUSSMMixOptionsOptionalsRemoved,
+				incubateSafeOps, allSimulatedPackets
+			},
+
+			(* set a model to use as the "fake" model for Mix; want it to be a liquid, so either use the solvent model, or Milli-Q water if we don't have that *)
+			sampleModelForSimulation = If[MatchQ[mySolventPacket, PacketP[]],
+				Lookup[mySolventPacket, Object],
+				Model[Sample, "Milli-Q water"]
+			];
+
+			(* need to make a simulated sample to give to mix for resolution; we don't even have a stock solution model yet though; just send Mix the solvent, or water *)
+			(* need to quiet the SimulateSample error that tells me I can't pass MolecularWeight in things that don't have that field (like StockSolution etc).  However I need to simulate with it for now because Aliquot downloads it in either case  *)
+			{simulatedSamplePackets, simulatedContainer} = Quiet[
+				SimulateSample[{sampleModelForSimulation}, "stock solution sample 1", {"A1"}, resolvedPrepContainer, {State -> Liquid, LightSensitive -> resolvedLightSensitive, Volume -> effectiveStockSolutionVolume, Mass -> Null, Count -> Null}],
+				SimulateSample::InvalidPacket
+			];
+
+			(* take JUST the mix options (and the incubate options because they are together); BEWARE this output is an association not a list of rules; turn to list of rules for easy replacing *)
+			justMixOptions = Normal[KeyTake[safeOptionsTemplateWithMixAndIncubateTimes, mixAndIncubateSubOptionNames], Association];
+
+			(* get the pre-resolved MixType/MixRate/Mixer *)
+			(* need to change the Automatics to Null if they haven't already been template-replaced *)
+			{preResolvedMixType, preResolvedMixRate, preResolvedMixer} = Lookup[justMixOptions, {mixTypeOption, mixRateOption, mixerOption}] /. {Automatic -> Null};
+
+			(* define a mapping between this function's mix option names and ExperimentIncubate option names THAT ARE DIFFERENT *)
+			ussmToMixOptionNameMap = {
+				mixTimeOption -> Time,
+				maxMixTimeOption -> MaxTime,
+				mixerOption -> Instrument,
+				incubationTemperatureOption -> Temperature,
+				mixRateOption -> MixRate,
+				mixTypeOption -> MixType,
+				mixUntilDissolvedOption -> MixUntilDissolved,
+				numMixesOption -> NumberOfMixes,
+				maxNumMixesOption -> MaxNumberOfMixes,
+				incubationTimeOption -> IncubationTime
+			};
+
+			(* rename the mix options as ExperimentMix knows them all by different names *)
+			(* also remove all instances of the IncubationTime option; we can put it back after the resolution *)
+			renamedMixOptions = Select[justMixOptions /. ussmToMixOptionNameMap, Not[MatchQ[Keys[#], IncubationTime]]&];
+
+			(* remove the Mixer/MixType/MixRate options if they are not specified because they will resolve automatically *)
+			(* also remove MixTime or IncubateTime since we already have Time *)
+			renamedMixOptionsOptionalsRemoved = Map[
+				Which[
+					MatchQ[#[[1]], Rate|Type|Instrument] && NullQ[#[[2]]], Nothing,
+					MatchQ[#1[[1]], mixTimeOption|incubationTimeOption], Nothing,
+					True, #[[1]] -> #[[2]]
+				]&,
+				renamedMixOptions
+			];
+
+			(* get the safe options that we are going to expand/replace below  *)
+			incubateSafeOps = SafeOptions[ExperimentIncubate, renamedMixOptionsOptionalsRemoved];
+
+			(* need to add all the other option names too with SafeOptions here (and also expand the options) *)
+			expandedMixOptionsWithSafeOptions = Last[ExpandIndexMatchedInputs[
+				ExperimentIncubate,
+				{simulatedSamplePackets},
+				ReplaceRule[
+					incubateSafeOps,
+					{
+						Mix -> resolvedMixBool,
+						(* if we are NOT mixing then auto-resolve Type to Null; otherwise it should be Automatic *)
+						MixType -> Which[
+							resolvedMixBool && MatchQ[preResolvedMixType, MixTypeP], preResolvedMixType,
+							resolvedMixBool, Automatic,
+							True, Null
+						],
+						(* need to set the Time to be the pre-resolved Mix time *)
+						(* note that this will only really be an issue if they explicitly set these values to be different but this way it fails more sensibly *)
+						Time -> If[resolvedIncubateBool,
+							preResolvedIncubationTime,
+							preResolvedMixTime
+						],
+						(* if Incubate -> True and Temperature is Automatic, pre-resolve it to 30*Celsius because it will get resolved to Null by ExperimentIncubate otherwise since it doesn't have its own Incubate option *)
+						If[resolvedIncubateBool && MatchQ[Lookup[incubateSafeOps, Temperature], Automatic],
+							Temperature -> 30*Celsius,
+							Nothing
+						]
+					}]
+			]];
+
+			(* group the simulated packets together *)
+			allSimulatedPackets = Flatten[{simulatedSamplePackets, simulatedContainer}];
+
+			(* use Check to see if we got an error from mix options; still throw those message;
+			 	ALWAYS assign the results even if messages are thrown  *)
+			mixResolveFailure = Check[
+				{resMixOptions, mixResolvingTests} = If[gatherTests,
+					ExperimentIncubate[Lookup[simulatedSamplePackets, Object], ReplaceRule[expandedMixOptionsWithSafeOptions, {Cache -> allSimulatedPackets, Simulation -> Simulation[allSimulatedPackets], OptionsResolverOnly -> True, Output -> {Options, Tests}}]],
+					{ExperimentIncubate[Lookup[simulatedSamplePackets, Object], ReplaceRule[expandedMixOptionsWithSafeOptions, {Cache -> allSimulatedPackets, Simulation -> Simulation[allSimulatedPackets], OptionsResolverOnly -> True, Output -> Options}]], {}}
+				],
+				$Failed,
+				{Error::InvalidInput, Error::InvalidOption}
+			];
+
+			(* reverse our earlier lookup to get a map back to our USSM option names *)
+			mixToUSSMOptionNameMap = Reverse /@ ussmToMixOptionNameMap;
+
+			(* we are assuming that this resolver ALWAYS returns resolved options; get those back; resolveMixOptions spits out list of rules, make association for next step *)
+			resolvedUSSMMixOptionAssociation = Association[KeyValueMap[
+				(#1 /. mixToUSSMOptionNameMap) -> #2&,
+				KeySelect[resMixOptions, MemberQ[Keys[renamedMixOptions], #]&]
+			]];
+
+			(* the mix resolve gives us listed options; we want the first of any list since we for sure gave just one sample blob *)
+			resolvedUSSMMixOptionsSingleValues = Association[KeyValueMap[
+				#1 -> If[ListQ[#2] && Length[#2] == 1,
+					First[#2],
+					#2
+				]&,
+				resolvedUSSMMixOptionAssociation
+			]];
+
+			(* change the MixType/MixRate/Mixer back to what was specified because they are optional and can be Null otherwise *)
+			resolvedUSSMMixOptionsOptionalsRemoved = KeyValueMap[
+				Which[
+					MatchQ[#1, mixTypeOption], #1 -> preResolvedMixType,
+					MatchQ[#1, mixRateOption], #1 -> preResolvedMixRate,
+					MatchQ[#1, mixerOption], #1 -> preResolvedMixer,
+					True, #1 -> #2
+				]&,
+				resolvedUSSMMixOptionsSingleValues
+			];
+
+			(* add the IncubationTime option back in if necessary *)
+			resolvedUSSMmixOptionsWithIncubationTime = Which[
+				(* if IncubationTime was set, then just use what it was set to *)
+				MatchQ[Lookup[safeOptionsTemplateWithMixAndIncubateTimes, incubationTimeOption], Except[Automatic]], Append[resolvedUSSMMixOptionsOptionalsRemoved,
+					incubationTimeOption -> Lookup[safeOptionsTemplateWithMixAndIncubateTimes, incubationTimeOption]],
+				(* if we are mixing and incubating (and IncubationTime was set to Automatic), resolve it to whatever MixTime was resolved to *)
+				resolvedMixBool && resolvedIncubateBool, Append[resolvedUSSMMixOptionsOptionalsRemoved,
+					incubationTimeOption -> Lookup[resolvedUSSMMixOptionsOptionalsRemoved, mixTimeOption]],
+				(* if we are mixing and NOT incubating, IncubationTime resolves to Null*)
+				resolvedMixBool && Not[resolvedIncubateBool], Append[resolvedUSSMMixOptionsOptionalsRemoved, incubationTimeOption -> Null],
+				(* if we are not mixing but we ARE incubating, then Time actually corresponds to IncubationTime, and MixTime should be or whatever was specified before *)
+				Not[resolvedMixBool] && resolvedIncubateBool, ReplaceRule[resolvedUSSMMixOptionsOptionalsRemoved, {MixTime -> (Lookup[safeOptionsTemplateWithMixAndIncubateTimes, mixTimeOption] /. {Automatic -> Null}), incubationTimeOption -> Lookup[resolvedUSSMMixOptionsOptionalsRemoved, mixTimeOption]}],
+				(* if we are not mixing or incubating (or however we got here), IncubationTime resolves to Null *)
+				True, Append[resolvedUSSMMixOptionsOptionalsRemoved, incubationTimeOption -> Null]
+			];
+
+			(* we're ready to spit back out the resolve mix options with the right names, whether the resolving went smoothly, and thet tests generated *)
+			(* need to add Incubate back in because we kind of replaced it before the ExperimentIncubate call *)
+			{ReplaceRule[resolvedUSSMmixOptionsWithIncubationTime, incubateOption -> resolvedIncubateBool], MatchQ[mixResolveFailure, $Failed], mixResolvingTests}
+		],
+
+		(* otherwise we're not mixing; everything is Null (if it was specified, we already yelled about it above, so claim that this resolution was fine) *)
+		{Normal[KeyTake[<|safeOptionsTemplateWithMixAndIncubateTimes|>, mixAndIncubateSubOptionNames]] /. {Automatic -> Null}, False, {}}
+	];
+
+	(* Finally, return what we came here to do *)
+	{mixIncubateTimeMismatchTests,mixSubOptionsSetIncorrectlyTests,incubateSubOptionsSetIncorrectlyTests,resolvedMixOptions,mixOptionResolutionTests}
 ];

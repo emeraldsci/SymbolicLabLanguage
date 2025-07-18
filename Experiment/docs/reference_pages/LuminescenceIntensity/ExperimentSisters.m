@@ -46,7 +46,12 @@ DefineUsage[ExperimentLuminescenceIntensityOptions,
 										Type -> Object,
 										Pattern :> ObjectP[{Object[Container]}]
 									]
-								}
+								},
+								"Model Sample"->Widget[
+									Type -> Object,
+									Pattern :> ObjectP[Model[Sample]],
+									ObjectTypes -> {Model[Sample]}
+								]
 							]
 						},
 						IndexName->"experiment samples"
@@ -116,7 +121,12 @@ DefineUsage[ExperimentLuminescenceIntensityPreview,
 										Type -> Object,
 										Pattern :> ObjectP[{Object[Container]}]
 									]
-								}
+								},
+								"Model Sample"->Widget[
+									Type -> Object,
+									Pattern :> ObjectP[Model[Sample]],
+									ObjectTypes -> {Model[Sample]}
+								]
 							]
 						},
 						IndexName->"experiment samples"
@@ -186,7 +196,12 @@ DefineUsage[ValidExperimentLuminescenceIntensityQ,
 										Type -> Object,
 										Pattern :> ObjectP[{Object[Container]}]
 									]
-								}
+								},
+								"Model Sample"->Widget[
+									Type -> Object,
+									Pattern :> ObjectP[Model[Sample]],
+									ObjectTypes -> {Model[Sample]}
+								]
 							]
 						},
 						IndexName->"experiment samples"

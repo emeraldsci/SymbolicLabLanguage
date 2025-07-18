@@ -293,8 +293,8 @@ validModelPartCameraQTests[packet:PacketP[Model[Part,Camera]]]:={
 
 	(* Test for Sensor Array Cameras*)
 	Test[
-		"If the model instument is a Sensor Array Camera, TargetSize must be informed:",
-		If[MemberQ[{Model[Part, Camera, "id:o1k9jAGlvqRx"], Model[Part, Camera, "id:KBL5DvwA0mWa"], Model[Part, Camera, "id:M8n3rx0dZmWM"]},Lookup[packet,Object]],
+		"If the model instrument is a Sensor Array Camera, TargetSize must be informed:",
+		If[MemberQ[{Model[Part, Camera, "id:o1k9jAGlvqRx"], Model[Part, Camera, "id:KBL5DvwA0mWa"], Model[Part, Camera, "id:BYDOjvGp9Zlm"], Model[Part, Camera, "id:vXl9j5WmejzD"], Model[Part, Camera, "id:M8n3rx0dZmWM"], Model[Part, Camera, "id:9RdZXv1e3dAl"]},Lookup[packet,Object]],
 			!NullQ[Lookup[packet,TargetSize]],
 			True
 		],
@@ -430,7 +430,15 @@ validModelPartChillerQTests[packet:PacketP[Model[Part,Chiller]]] := {
 validModelPartComputerQTests[packet:PacketP[Model[Part,Computer]]] := {
 	Test["Is ComputerType informed?", MatchQ[Lookup[packet, ComputerType], ComputerTypeP], True],
 
-	Test["Is OS informed?", MatchQ[Lookup[packet, OperatingSystem], OperatingSystemP], True]
+	Test["Is OS informed?", MatchQ[Lookup[packet, OperatingSystem], OperatingSystemP], True],
+
+	Test["If the model is a TabletComputer, is WiringConnectors populated?",
+		If[MatchQ[Lookup[packet,ComputerType],TabletComputer],
+			MatchQ[Lookup[packet,WiringConnectors,{}],Except[{}]],
+			Null
+		],
+		(True|Null)
+	]
 };
 
 
@@ -471,6 +479,34 @@ validModelPartConductivitySensorQTests[packet:PacketP[Model[Part,ConductivitySen
 	RequiredTogetherTest[packet,{MinTemperature,MaxTemperature}],
 	FieldComparisonTest[packet,{MinTemperature,MaxTemperature},LessEqual]
 
+};
+
+
+(* ::Subsection::Closed:: *)
+(*validModelPartDecrimperQTests*)
+
+
+validModelPartDecrimperQTests[packet:PacketP[Model[Part, Decrimper]]]:={
+	NotNullFieldTest[
+		packet,
+		{
+			CapDiameter,
+			CoverFootprint
+		}
+	]
+};
+
+(* ::Subsection::Closed:: *)
+(*validModelPartDeionizerQTests*)
+
+
+validModelPartDeionizerQTests[packet:PacketP[Model[Part,Deionizer]]]:={
+	NotNullFieldTest[
+		packet,
+		{
+			DeionizationTechnique
+		}
+	]
 };
 
 
@@ -704,7 +740,15 @@ validModelPartInformationTechnologyQTests[packet:PacketP[Model[Part,InformationT
 
 
 validModelPartHandPumpQTests[packet:PacketP[Model[Part,HandPump]]]:={
-	NotNullFieldTest[packet,{DispenseHeight,WettedMaterials}]
+	NotNullFieldTest[packet,{DispenseHeight,WettedMaterials,IntakeTubeLength}]
+};
+
+(* ::Subsection::Closed:: *)
+(*validModelPartHandPumpAdapterQTests*)
+
+
+validModelPartHandPumpAdapterQTests[packet:PacketP[Model[Part,HandPumpAdapter]]]:={
+	NotNullFieldTest[packet,{Dimensions}]
 };
 
 
@@ -1524,6 +1568,13 @@ validModelPartFoamImagingModuleQTests[packet:PacketP[Model[Part,FoamImagingModul
 };
 
 
+(* ::Subsection::Closed:: *)
+(*validModelPartFootPedalQTests*)
+
+
+validModelPartFootPedalQTests[packet:PacketP[Model[Part,FootPedal]]]:={};
+
+
 
 (* ::Subsection::Closed:: *)
 (*validModelPartLiquidConductivityModuleQTests*)
@@ -1548,6 +1599,13 @@ validModelPartDiodeArrayModuleQTests[packet:PacketP[Model[Part,DiodeArrayModule]
 	(*fields that should be informed*)
 	NotNullFieldTest[packet,IlluminationWavelength]
 };
+
+
+(* ::Subsection::Closed:: *)
+(*validModelPartDockingStationQTests*)
+
+
+validModelPartDockingStationQTests[packet:PacketP[Model[Part,DockingStation]]]:={};
 
 
 
@@ -1910,8 +1968,11 @@ registerValidQTestFunction[Model[Part, Chiller],validModelPartChillerQTests];
 registerValidQTestFunction[Model[Part, Computer],validModelPartComputerQTests];
 registerValidQTestFunction[Model[Part, ConductivityProbe],validModelPartConductivityProbeQTests];
 registerValidQTestFunction[Model[Part, ConductivitySensor],validModelPartConductivitySensorQTests];
+registerValidQTestFunction[Model[Part, Decrimper],validModelPartDecrimperQTests];
+registerValidQTestFunction[Model[Part, Deionizer],validModelPartDeionizerQTests];
 registerValidQTestFunction[Model[Part, DialysisClip],validModelPartDialysisClipQTests];
 registerValidQTestFunction[Model[Part, DiodeArrayModule],validModelPartDiodeArrayModuleQTests];
+registerValidQTestFunction[Model[Part, DockingStation],validModelPartDockingStationQTests];
 registerValidQTestFunction[Model[Part, ElectrochemicalReactionVesselHolder],validModelPartElectrochemicalReactionVesselHolderQTests];
 registerValidQTestFunction[Model[Part, ElectrodePolishingPlate],validModelPartElectrodePolishingPlateQTests];
 registerValidQTestFunction[Model[Part, ElectrodeRack],validModelPartElectrodeRackQTests];
@@ -1926,11 +1987,13 @@ registerValidQTestFunction[Model[Part, Ferrule],validModelPartFerruleQTests];
 registerValidQTestFunction[Model[Part, FlowCell],validModelPartFlowCellQTests];
 registerValidQTestFunction[Model[Part, FlowRestrictor],validModelPartFlowRestrictorQTests];
 registerValidQTestFunction[Model[Part, FoamImagingModule],validModelPartFoamImagingModuleQTests];
+registerValidQTestFunction[Model[Part, FootPedal],validModelPartFootPedalQTests];
 registerValidQTestFunction[Model[Part, Funnel],validModelPartFunnelQTests];
 registerValidQTestFunction[Model[Part, FurnitureEquipment],validModelPartFurnitureEquipmentQTests];
 registerValidQTestFunction[Model[Part, GauzeHolder],validModelPartGauzeHolderQTests];
 registerValidQTestFunction[Model[Part, GrinderClampAssembly],validModelPartGrinderClampAssemblyQTests];
 registerValidQTestFunction[Model[Part, HandPump],validModelPartHandPumpQTests];
+registerValidQTestFunction[Model[Part, HandPumpAdapter],validModelPartHandPumpAdapterQTests];
 registerValidQTestFunction[Model[Part, HeatExchanger],validModelPartHeatExchangerQTests];
 registerValidQTestFunction[Model[Part, HeatSink],validModelPartHeatSinkQTests];
 registerValidQTestFunction[Model[Part, HexKey],validModelPartHexKeyQTests];

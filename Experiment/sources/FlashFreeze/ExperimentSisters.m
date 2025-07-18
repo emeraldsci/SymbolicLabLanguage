@@ -1,4 +1,5 @@
-(* ::Package:: *)
+(* ::Text:: *)
+(*\[Copyright] 2011-2024 Emerald Cloud Lab, Inc.*)
 
 (* ::Subsection::Closed:: *)
 (*ExperimentFlashFreezePreview*)
@@ -9,14 +10,14 @@ DefineOptions[ExperimentFlashFreezePreview,
 ];
 
 
-ExperimentFlashFreezePreview[sampleIn:(ObjectP[{Object[Container],Object[Sample]}]|_String),myOptions:OptionsPattern[]]:=ExperimentFlashFreezePreview[{sampleIn},myOptions];
+ExperimentFlashFreezePreview[sampleIn:(ObjectP[{Object[Container],Object[Sample],Model[Sample]}]|_String),myOptions:OptionsPattern[]]:=ExperimentFlashFreezePreview[{sampleIn},myOptions];
 ExperimentFlashFreezePreview[samplesIn:{(ObjectP[{Object[Container],Object[Sample]}]|_String)..},myOptions:OptionsPattern[]]:=Module[
 	{listedOptions,noOutputOptions},
 
 	(* get the options as a list *)
 	listedOptions=ToList[myOptions];
 
-	(* remove the Output option before passing to the core function because it doens't make sense here *)
+	(* remove the Output option before passing to the core function because it doesn't make sense here *)
 	noOutputOptions=DeleteCases[listedOptions,Output->_];
 
 	(* return only the preview for ExperimentFlashFreeze *)
@@ -40,14 +41,14 @@ DefineOptions[ExperimentFlashFreezeOptions,
 	}
 ];
 
-ExperimentFlashFreezeOptions[sampleIn:(ObjectP[{Object[Container],Object[Sample]}]|_String),myOptions:OptionsPattern[]]:=ExperimentFlashFreezeOptions[{sampleIn},myOptions];
-ExperimentFlashFreezeOptions[samplesIn:{(ObjectP[{Object[Container],Object[Sample]}]|_String)..},myOptions:OptionsPattern[]]:=Module[
+ExperimentFlashFreezeOptions[sampleIn:(ObjectP[{Object[Container],Object[Sample],Model[Sample]}]|_String),myOptions:OptionsPattern[]]:=ExperimentFlashFreezeOptions[{sampleIn},myOptions];
+ExperimentFlashFreezeOptions[samplesIn:{(ObjectP[{Object[Container],Object[Sample],Model[Sample]}]|_String)..},myOptions:OptionsPattern[]]:=Module[
 	{listedOptions,noOutputOptions,options},
 
 	(* get the options as a list *)
 	listedOptions=ToList[myOptions];
 
-	(* remove the Output option before passing to the core function because it doens't make sense here *)
+	(* remove the Output option before passing to the core function because it doesn't make sense here *)
 	noOutputOptions=DeleteCases[listedOptions,Alternatives[Output->_,OutputFormat->_]];
 
 	(* return only the options for ExperimentFlashFreeze *)
@@ -74,8 +75,8 @@ DefineOptions[ValidExperimentFlashFreezeQ,
 ];
 
 
-ValidExperimentFlashFreezeQ[myInput:ListableP[ObjectP[{Object[Container],Object[Sample]}]|_String],myOptions:OptionsPattern[ValidExperimentFlashFreezeQ]]:=Module[
-	{listedInput,listedOptions,preparedOptions,functionTests,initialTestDescription,allTests,safeOps,verbose,outputFormat,result},
+ValidExperimentFlashFreezeQ[myInput:ListableP[ObjectP[{Object[Container],Object[Sample],Model[Sample]}]|_String],myOptions:OptionsPattern[ValidExperimentFlashFreezeQ]]:=Module[
+	{listedInput,listedOptions,preparedOptions,functionTests,initialTestDescription,allTests,safeOps,verbose,outputFormat},
 
 	listedInput=ToList[myInput];
 	listedOptions=ToList[myOptions];
@@ -90,7 +91,7 @@ ValidExperimentFlashFreezeQ[myInput:ListableP[ObjectP[{Object[Container],Object[
 
 	allTests=If[MatchQ[functionTests,$Failed],
 		{Test[initialTestDescription,False,True]},
-		Module[{initialTest,validObjectBooleans,voqWarnings,testResults},
+		Module[{initialTest,validObjectBooleans,voqWarnings},
 			initialTest=Test[initialTestDescription,True,True];
 
 			(* Create warnings for invalid objects *)
@@ -123,7 +124,3 @@ ValidExperimentFlashFreezeQ[myInput:ListableP[ObjectP[{Object[Container],Object[
 	]
 ];
 
-
-
-(* ::Section:: *)
-(*End Private*)

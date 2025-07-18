@@ -22,45 +22,59 @@ DefineTests[PlotProtocolTimeline,
 			],
 			_DynamicModule
 		],
-		Example[{Options,Output,"Specify the output format of the plot function. Preview will still return a plot:"},
-			PlotProtocolTimeline[
-				Object[Protocol, ImageSample, "id:AEqRl9qdZ7Lw"],
-				Output->Preview
-			],
-			_?ValidGraphicsQ
-		],
-		Example[{Options,Output,"Use Output->Options to return a list of all calculated options used to create the plot:"},
-			PlotProtocolTimeline[
-				Object[Protocol, FluorescenceIntensity, "id:bq9LA0JWxb1e"],
-				Output->Options
-			],
-			_List
-		],
-		Example[{Options,DeveloperDisplay,"Show all internal details on the plot including ready check information, task starts, tickets and operator interrupts:"},
-			PlotProtocolTimeline[
-				Object[Protocol, MeasureVolume, "id:mnk9jORVbplw"],
-				DeveloperDisplay->All
-			],
-			_DynamicModule
-		],
-		Example[{Options,DeveloperDisplay,"Specify if more details, such as priority check-ins and delays in instrument processing check-ins, should be displayed:"},
-			PlotProtocolTimeline[
-				Object[Protocol, RoboticSamplePreparation, "id:Y0lXejlMZj9V"],
-				DeveloperDisplay->{InstrumentCheckIns,OperatorInterrupts}
-			],
-			_DynamicModule
-		],
-		Example[{Options,DeveloperDisplay,"Hover over the 'ResourceLimitation' label to see what was unavailable:"},
+		Example[{Options,ReadyCheck,"Show periods of ReadyCheck->False with any instrument and/or materials limitations displayed on hover:"},
 			PlotProtocolTimeline[
 				Object[Protocol, qPCR, "id:O81aEB1lBlvO"],
-				DeveloperDisplay->{ReadyCheck}
+				ReadyCheck->True
 			],
 			_DynamicModule
 		],
-		Example[{Options,DeveloperDisplay,"Hover over a point representing a ticket or a task to see brief details. Click on the point to print the underlying object (ticket or task log) below the plot:"},
+		Example[{Options,OperatorInterrupts,"Show priority check-ins that the operator was pulled into:"},
+			PlotProtocolTimeline[
+				Object[Protocol,StockSolution,"id:zGj91a7DDZNj"],
+				OperatorInterrupts->True
+			],
+			_DynamicModule
+		],
+		Example[{Options,Tasks,"Display every Engine task using the creation date of all TaskStart events:"},
 			PlotProtocolTimeline[
 				Object[Protocol, MeasureVolume, "id:mnk9jORVbplw"],
-				DeveloperDisplay->{Tickets,Tasks}
+				Tasks->True
+			],
+			_DynamicModule
+		],
+		Example[{Options,Tickets,"Tickets are displayed as red dots on the x-axis. Click on the point to print the underlying ticket below the plot:"},
+			PlotProtocolTimeline[
+				Object[Protocol, AbsorbanceSpectroscopy, "id:KBL5DvPYWO0d"],
+				Tickets -> True
+			],
+			_DynamicModule
+		],
+		Example[{Options,InstrumentCheckIns,"Show each time the operator performed a check-in during instrument processing:"},
+			PlotProtocolTimeline[
+				Object[Protocol, RoboticSamplePreparation, "id:Y0lXejlMZj9V"],
+				InstrumentCheckIns->True
+			],
+			_DynamicModule
+		],
+		Example[{Options,Subprotocols,"Displays the DateStarted and DateCompleted of all subprotocols completed by the protocol:"},
+			PlotProtocolTimeline[
+				Object[Protocol, PAGE, "id:xRO9n3EeWa4q"],
+				Subprotocols->True
+			],
+			_DynamicModule
+		],
+		Example[{Options,Repairs,"Display any repairs needed for the protocol to move forward. Click on the point to print the underlying object below the plot:"},
+			PlotProtocolTimeline[
+				Object[Qualification, HPLC, "id:xRO9n3EWJVWY"],
+				Repairs->True
+			],
+			_DynamicModule
+		],
+		Example[{Options,Title,"Provide a specific name for the plot. All plot titles copy themselves to your clipboard on click:"},
+			PlotProtocolTimeline[
+				Object[Protocol,StockSolution,"id:zGj91a7DDZNj"],
+				Title->"My Stock Solution"
 			],
 			_DynamicModule
 		],

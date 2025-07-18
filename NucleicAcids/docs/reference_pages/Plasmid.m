@@ -20,8 +20,6 @@ DefineUsage[PlotPlasmid,
     SeeAlso -> {
       "Plot"
     },
-    Author -> {
-      "brian.day"
-    }
+    Author -> {"steven", "brian.day"}
   }
 ];

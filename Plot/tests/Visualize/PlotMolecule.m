@@ -27,8 +27,7 @@ DefineTests[PlotMolecule,{
 	],
 	Example[{Options,PlotLabel,"Add a plot label to the molecule plot:"},
 		PlotMolecule[Molecule["Tyrosine"],PlotLabel->Style["Tyrosine", Directive[24, Black]]],
-		(* in 13.2 the location of the PlotLabel changes *)
-		x:ValidGraphicsP[]/;Or[MatchQ[Part[x,-2],Rule[PlotLabel,_Style]], MatchQ[x[[-1, -2]], PlotLabel -> _Style]]
+		_?(Not[FreeQ[#, PlotLabel -> Style["Tyrosine", Directive[24, GrayLevel[0]]]]] &)
 	],
 	Example[{Options,AtomFontSize,"Change the font size of non-carbon atoms in the molecule:"},
 		Table[
@@ -53,16 +52,7 @@ DefineTests[PlotMolecule,{
 			PlotMolecule[Molecule["coronene"],
 				LineWidth->th
 			],
-			{th,{0.1,0.6,1.2}}
-		],
-		{ValidGraphicsP[]..}
-	],
-	Example[{Options,MarginWidth,"Set the amount of whitespace between atom letters and bond lines in units of points:"},
-		Table[
-			PlotMolecule[Molecule["COC(C)(C)(C)"],
-				MarginWidth->m
-			],
-			{m,{0.05,1.6,3.0}}
+			{th,{1.5,2.0,2.5}}
 		],
 		{ValidGraphicsP[]..}
 	],
@@ -70,30 +60,6 @@ DefineTests[PlotMolecule,{
 		PlotMolecule[Molecule["taco"]],
 		$Failed,
 		Messages:>{Molecule::nintrp}
-	],
-	Example[{Issues,"Disconnected structures cannot be modified by styling options:"},
-		{
-			PlotMolecule[Molecule["O=P([O-])([O-])O.[Na+].[Na+]"]],
-			PlotMolecule[Molecule["O=P([O-])([O-])O.[Na+].[Na+]"],
-				AtomFontSize->15,
-				MarginWidth->20.0
-			]
-		},
-		{ValidGraphicsP[]..}
-	],
-	Example[{Issues,"Non-standard isotopes cannot be modified by styling options:"},
-		{
-			PlotMolecule[Molecule["[2H]C([2H])([2H])S(=O)C([2H])([2H])[2H]"]],
-			PlotMolecule[Molecule["[2H]C([2H])([2H])S(=O)C([2H])([2H])[2H]"],
-				AtomFontSize->15,
-				MarginWidth->20.0
-			]
-		},
-		{ValidGraphicsP[]..}
-	],
-	Example[{Issues,"Bond lines may render incorrectly if styling options are set to extremes, e.g. very large font sizes and margins:"},
-		PlotMolecule[Molecule["Caffeine"],AtomFontSize->15,MarginWidth->5],
-		ValidGraphicsP[]
 	],
 
 	Test["Make sure Molecule[] typesets to ECL's PlotMolecule instead of something else",

@@ -27,7 +27,7 @@ DefineOptions[ExperimentRNASynthesis,
 		HoldOrderOption,
 		QueuePositionOption,
 		ProtocolOptions,
-		PostProcessingOptions,
+		NonBiologyPostProcessingOptions,
 		SamplesOutStorageOptions
 	}
 ];

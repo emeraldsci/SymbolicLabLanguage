@@ -87,7 +87,7 @@ DefineOptions[PlotMassSpectrometry,
 		ModifyOptions[ListPlotOptions,
 			{
 				{OptionName->Frame,Default->{True,False,False,False}},
-				{OptionName->LabelStyle,Default->{Bold, 12, FontFamily -> "Arial"}},
+				{OptionName->LabelStyle,Default->{12, Bold, FontFamily -> "Arial"}},
 				{OptionName->Filling,Default->Bottom}
 			}
 		],
@@ -96,6 +96,8 @@ DefineOptions[PlotMassSpectrometry,
 	}
 ];
 
+Error::NoMassSpectrometryDataToPlot = "The protocol object does not contain any associated mass spectrometry data.";
+Error::MassSpectrometryProtocolDataNotPlotted = "The data objects linked to the input protocol were not able to be plotted. The data objects may be missing field values that are required for plotting. Please inspect the data objects to ensure that they contain the data to be plotted, and call PlotMassSpectrometry or PlotObject on an individual data object to identify the missing values.";
 
 (* ::Section:: *)
 (* PlotMassSpectrometry Primary Definitions *)
@@ -125,6 +127,77 @@ PlotMassSpectrometry[myInput:rawPlotInputP, myOps:OptionsPattern[PlotMassSpectro
 	(* Use the processELLPOutput helper *)
 	processELLPOutput[plotOutputs,safeOps,specificOptions]
 
+];
+
+(* Protocol Overload *)
+PlotMassSpectrometry[
+	obj: Alternatives[ObjectP[Object[Protocol, MassSpectrometry]], ObjectP[Object[Protocol, LCMS]], ObjectP[Object[Protocol, TotalProteinDetection]]],
+	ops: OptionsPattern[PlotMassSpectrometry]
+] := Module[{safeOps, output, data, previewPlot, plots, resolvedOptions, finalResult, outputPlot, outputOptions},
+
+	(* Check the options pattern and return a list of all options, using defaults for unspecified or invalid options *)
+	safeOps=SafeOptions[PlotMassSpectrometry, ToList[ops]];
+
+	(* Requested output, either a single value or list of Alternatives[Result,Options,Preview,Tests] *)
+	output = ToList[Lookup[safeOps, Output]];
+
+	(* Download the data from the input protocol *)
+	data = Download[obj, Data];
+
+	(* Return an error if there is no data or it is not the correct data type *)
+	If[!MatchQ[data, Alternatives[{ObjectP[Object[Data, MassSpectrometry]]..}, {ObjectP[Object[Data, ChromatographyMassSpectra]]..}, {ObjectP[Object[Data, LCMS]]..}, {ObjectP[Object[Data, TotalProteinDetection]]..}]],
+		Message[Error::NoMassSpectrometryDataToPlot];
+		Return[$Failed]
+	];
+
+	(* If Preview is requested, return a plot with all of the data objects in the protocol overlaid in one plot *)
+	previewPlot = If[MemberQ[output, Preview],
+		PlotMassSpectrometry[data, Sequence @@ ReplaceRule[safeOps, Output -> Preview]],
+		Null
+	];
+
+	(* If either Result or Options are requested, map over the data objects. Remove anything that failed from the list of plots to be displayed*)
+	{plots, resolvedOptions} = If[MemberQ[output, (Result | Options)],
+		Transpose[
+			(PlotMassSpectrometry[#, Sequence @@ ReplaceRule[safeOps, Output -> {Result, Options}]]& /@ data) /. $Failed -> Nothing
+		],
+		{{}, {}}
+	];
+
+	(* If all of the data objects failed to plot, return an error *)
+	If[MatchQ[plots, (ListableP[{}] | ListableP[Null])] && MatchQ[previewPlot, (Null | $Failed)],
+		Message[Error::MassSpectrometryProtocolDataNotPlotted];
+		Return[$Failed],
+		Nothing
+	];
+
+	(* If Result was requested, output the plots in slide view, unless there is only one plot then we can just show it not in slide view. *)
+	outputPlot = If[MemberQ[output, Result],
+		If[Length[plots] > 1,
+			SlideView[plots],
+			First[plots]
+		]
+	];
+
+	(* If Options were requested, just take the first set of options since they are the same for all plots. Make it a List first just in case there is only one option set. *)
+	outputOptions = If[MemberQ[output, Options],
+		First[ToList[resolvedOptions]]
+	];
+
+	(* Prepare our final result *)
+	finalResult = output /. {
+		Result -> outputPlot,
+		Options -> outputOptions,
+		Preview -> previewPlot,
+		Tests -> {}
+	};
+
+	(* Return the result *)
+	If[
+		Length[finalResult] == 1,
+		First[finalResult],
+		finalResult
+	]
 ];
 
 (* Replace EmeraldPlotBlah with the name of your plot function *)
@@ -338,6 +411,7 @@ resolveAnalyteWeights[analyteObjects_, analyteMolecularWeights_, truncs_] := Mod
 
 resolveCompositionWeights[$Failed, truncs_] := {{{$Failed}}};
 resolveCompositionWeights[{$Failed..}, truncs_] := {{{{$Failed}}}};
+resolveCompositionWeights[{{Null...}..}, truncs_] := {{{{$Failed}}}};
 resolveCompositionWeights[compositionObjects_, truncs_] := Module[
 	{
 		compositionMolecules, compositionMolecularWeights,

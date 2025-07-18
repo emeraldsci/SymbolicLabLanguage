@@ -245,6 +245,13 @@ DefineObjectType[Object[UnitOperation,PCR],
 				Description->"The total volume of the reaction including the template, primers, master mix, and buffer.",
 				Category->"Sample Preparation"
 			},
+			PreparedPlate -> {
+				Format -> Single,
+				Class -> Boolean,
+				Pattern :> BooleanP,
+				Description -> "Indicates if the input sample is already prepared and is used as is without adding buffer or master mix.",
+				Category -> "Sample Preparation"
+			},
 			MasterMixLink->{
 				Format->Single,
 				Class->Link,

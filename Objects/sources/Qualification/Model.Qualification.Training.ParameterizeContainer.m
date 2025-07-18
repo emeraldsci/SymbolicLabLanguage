@@ -15,6 +15,14 @@ DefineObjectType[Model[Qualification,Training,ParameterizeContainer], {
       Relation -> Model[Container]|Object[Container],
       Description -> "The part or container that an operator will parameterize for training.",
       Category -> "General"
+    },
+    Caliper -> {
+      Format -> Single,
+      Class -> Link,
+      Pattern :> _Link,
+      Relation -> Alternatives[Object[Instrument, DistanceGauge], Model[Instrument, DistanceGauge]],
+      Description -> "The model of the distance measurement device used to perform measurements in this protocol.",
+      Category -> "General"
     }
   }
 }]

@@ -527,6 +527,48 @@ DefineObjectType[Object[UnitOperation,Mix],
 				Developer->True
 			},
 
+			(* Transform fields *)
+			Transform->{
+				Format->Multiple,
+				Class->Boolean,
+				Pattern:>BooleanP,
+				IndexMatching->SampleLink,
+				Description->"For each member of SampleLink, indicates if SampleLink are heat-shocked in order to disrupt the cell membrane and allow the plasmid to be taken up and incorporated into the cell.",
+				Category->"Incubation"
+			},
+			TransformHeatShockTemperature->{
+				Format->Multiple,
+				Class->Real,
+				Pattern:>GreaterEqualP[0 Kelvin],
+				Units->Celsius,
+				Description->"For each member of SampleLink, the temperature at which the cells are heat-shocked in order to disrupt the cell membrane and allow the plasmid to be taken up and incorporated into the cell.",
+				Category->"Incubation"
+			},
+			TransformHeatShockTime->{
+				Format->Multiple,
+				Class->Real,
+				Pattern:>GreaterEqualP[0 Second],
+				Units->Second,
+				Description->"For each member of SampleLink, the length of time for which the cells are heat-shocked in order to disrupt the cell membrane and allow the plasmid to be taken up and incorporated into the cell.",
+				Category->"Incubation"
+			},
+			TransformPreHeatCoolingTime->{
+				Format->Multiple,
+				Class->Real,
+				Pattern:>GreaterEqualP[0 Second],
+				Units->Minute,
+				Description->"For each member of SampleLink, the length of time for which the cells are cooled prior to heat shocking.",
+				Category->"Incubation"
+			},
+			TransformPostHeatCoolingTime->{
+				Format->Multiple,
+				Class->Real,
+				Pattern:>GreaterEqualP[0 Second],
+				Units->Second,
+				Description->"For each member of SampleLink, the length of time for which the cells are cooled after heat shocking.",
+				Category->"Incubation"
+			},
+
 			AspirationDate->{
 				Format->Multiple,
 				Class->Date,

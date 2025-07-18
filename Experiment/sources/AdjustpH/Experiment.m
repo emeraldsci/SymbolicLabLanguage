@@ -48,7 +48,7 @@ DefineOptions[ExperimentAdjustpH,
 				],
 				Description->"The pH adjustment data used to determine the fixed additions in this protocol. The fixed additions and the titrant reflected in the data will be added as fixed additions in this protocol.",
 				ResolutionDescription->"Automatically set to use data for an aliquot of the sample whose pH is being adjusted. If no aliquot pHing data exists, data from a sample with the same model or composition will be used. Data for an adjustment that didn't overshoot will be used first. Otherwise, data from the adjustment which got closest to the target pH before overshooting will be used and the amount of titrant added before the overshoot event will be added in this protocol.",
-				Category->"Pre-Tritrated Additions"
+				Category->"Pre-Titrated Additions"
 			},
 
 			(* Check if this agrees with Historical data, otherwise throw a warning *)
@@ -80,7 +80,13 @@ DefineOptions[ExperimentAdjustpH,
 							],
 							"Sample"->Widget[
 								Type->Object,
-								Pattern :> ObjectP[{Model[Sample], Object[Sample]}]
+								Pattern :> ObjectP[{Model[Sample], Object[Sample]}],
+								OpenPaths -> {
+									{
+										Object[Catalog, "Root"],
+										"Materials"
+									}
+								}
 							]
 						}
 					],
@@ -91,6 +97,42 @@ DefineOptions[ExperimentAdjustpH,
 				]
 			},
 
+			{
+				OptionName->TitrationMethod,
+				Default->Automatic,
+				Widget->Widget[Type->Enumeration,Pattern :> Manual|Robotic],
+				Description->"For each member of the input samples, if the transfer of acid and base for pH adjustment is manual or robotic. For each input sample, if TitrationMethod is Robotic, the pH adjustment will be performed by pHTitrator and the pH measurement will be performed by SevenExcellence pH Meter with remote control.",
+				ResolutionDescription->"For each input sample, TitrationMethod is Manual if Aliquot is True, or either of TitratingAcid and TitratingBase is not liquid, or pHMixType is not Stir, or pHMeter is not SevenExcellence. Otherwise, TitrationMethod is Robotic.",
+				AllowNull->False,
+				Category->"General"
+			},
+			{
+				OptionName->TitrationInstrument,
+				Default->Automatic,
+				AllowNull->True,
+				Widget->Widget[
+					Type->Object,
+					Pattern:>ObjectP[{Model[Instrument, pHTitrator], Object[Instrument, pHTitrator]}]
+				],
+				Description->"For each member of the input samples, the instrument for making robotic transfer of acid and base in pH adjustment.",
+				ResolutionDescription->"For each input sample, if TitrationMethod is Robotic, TitrationInstrument will be Model[Instrument, pHTitrator, \"Microlab 600 (ML600) pH Titrator\"]. Otherwise, TitrationInstrument will be Null.",
+				Category->"General"
+			},
+
+			{
+				OptionName->TitrationContainerCap,
+				Default->Automatic,
+				ResolutionDescription -> "Automatically set to the compatible cap of the AliquotContainer when TitrationMethod is Robotic",
+				AllowNull->True,
+				Widget->Widget[
+					Type->Object,
+					Pattern:>ObjectP[{
+						Model[Item, Cap]
+					}]
+				],
+				Description->"The cap that is used to assemble pH probe, the overhead stirrer shaft and the acid and base addition tubings of pHTitrator when TitrationMethod is set to Robotic.",
+				Category->"Hidden" (* It is hard to pre-determine if the given cap will be compatible for Robotic Titration before TitrationMethod and titration container (aliquot contaienr or sample container) is resolved. So we do not want user to specify this option. *)
+			},
 			(* -- pH Measurement -- *)
 
 			(* Options from ExperimentMeasurepH *)
@@ -100,7 +142,16 @@ DefineOptions[ExperimentAdjustpH,
 				AllowNull->False,
 				Widget->Widget[
 					Type->Object,
-					Pattern:>ObjectP[{Object[Instrument, pHMeter], Model[Instrument, pHMeter]}]
+					Pattern:>ObjectP[{Object[Instrument, pHMeter], Model[Instrument, pHMeter]}],
+					OpenPaths -> {
+						{
+							Object[Catalog, "Root"],
+							"Instruments",
+							"Measuring Devices",
+							"pH Measurement",
+							"pH Meters"
+						}
+					}
 				],
 				Description->"For each member of the input samples, the pH meter to be used for pH measurements.",
 				ResolutionDescription->"For each input sample, the pH meter chosen is the first pH probe that fits into the container of the sample.",
@@ -179,7 +230,7 @@ DefineOptions[ExperimentAdjustpH,
 			{
 				OptionName->Titrate,
 				Default->True,
-				Description->"Indicates if titrating acid and/or base should be added until the pH is within the bounds specified by MinpH and MaxpH or until MaxNumberOfCycles or MaxAdditionVolume is reached.",
+				Description->"Indicates if titrating acid and/or base should be added until the pH is within the bounds specified by MinpH and MaxpH or until MaxNumberOfCycles or MaxAdditionVolume is reached. If Titrate is False, only FixedAdditions will be added to adjust pH.",
 				AllowNull->False,
 				Category->"pH Titration",
 				Widget->Widget[Type->Enumeration,Pattern :> BooleanP]
@@ -190,7 +241,15 @@ DefineOptions[ExperimentAdjustpH,
 				AllowNull->True,
 				Widget->Widget[
 					Type->Object,
-					Pattern :> ObjectP[{Model[Sample],Object[Sample]}]
+					Pattern :> ObjectP[{Model[Sample],Object[Sample]}],
+					OpenPaths -> {
+						{
+							Object[Catalog, "Root"],
+							"Materials",
+							"Reagents",
+							"Acids"
+						}
+					}
 				],
 				Description->"The acid used to adjust the pH of the solution.",
 				ResolutionDescription->"If Titrate is True, resolve to Model[Sample, StockSolution, \"2 M HCl\"].",
@@ -202,7 +261,15 @@ DefineOptions[ExperimentAdjustpH,
 				AllowNull->True,
 				Widget->Widget[
 					Type->Object,
-					Pattern :> ObjectP[{Model[Sample],Object[Sample]}]
+					Pattern :> ObjectP[{Model[Sample],Object[Sample]}],
+					OpenPaths -> {
+						{
+							Object[Catalog, "Root"],
+							"Materials",
+							"Reagents",
+							"Bases"
+						}
+					}
 				],
 				Description->"The base used to adjust the pH of the solution.",
 				ResolutionDescription->"If Titrate is True, resolve to Model[Sample,StockSolution,\"1.85 M NaOH\"].",
@@ -242,7 +309,14 @@ DefineOptions[ExperimentAdjustpH,
 				AllowNull->True,
 				Widget->Widget[
 					Type->Object,
-					Pattern :> ObjectP[Join[MixInstrumentModels,MixInstrumentObjects]]
+					Pattern :> ObjectP[Join[MixInstrumentModels,MixInstrumentObjects]],
+					OpenPaths -> {
+						{
+							Object[Catalog, "Root"],
+							"Instruments",
+							"Mixing Devices"
+						}
+					}
 				],
 				Description->"The instrument used to perform the Mix and/or Incubation.",
 				ResolutionDescription->"Automatically resolves based on the options Mix, Temperature, pHMixType and container of the sample.",
@@ -395,7 +469,7 @@ DefineOptions[ExperimentAdjustpH,
 				OptionName->MaxNumberOfCycles,
 				Default->Automatic,
 				Description->"Indicates the maximum number of additions to make before stopping titrations during the course of titration before the experiment will continue, even if the nominalpH is not reached (pHsAchieved->False).",
-				ResolutionDescription->"Defaults to 10 if not specified by MaxNumberOfpHingCycles in ModelOut.",
+				ResolutionDescription->"Set to the MaxNumberOfpHingCycles value in ModelOut. Otherwise, defaults to 10 if TitrationMethod is Manual or 50 if TitrationMethod is Robotic.",
 				AllowNull->False,
 				Category->"pHing Limits",
 				Widget->Widget[
@@ -407,7 +481,7 @@ DefineOptions[ExperimentAdjustpH,
 				OptionName->MaxAcidAmountPerCycle,
 				Default->Automatic,
 				Description->"Indicates the maximum amount of TitratingAcid that can be added in a single titration cycle.",
-				ResolutionDescription->"Defaults to 2.5% of the initial sample volume if titrant is liquid, 2 Grams/Liter if titrant is solid.",
+				ResolutionDescription->"Defaults to 0.5% of the initial sample volume if titration method is robotic, 2.5% of the initial sample volume if titrant is liquid and titration method is manual, 2 Grams/Liter if titrant is solid.",
 				AllowNull->True,
 				Category->"pHing Limits",
 				Widget->Alternatives[
@@ -427,7 +501,7 @@ DefineOptions[ExperimentAdjustpH,
 				OptionName->MaxBaseAmountPerCycle,
 				Default->Automatic,
 				Description->"Indicates the maximum amount of TitratingBase that can be added in a single titration cycle.",
-				ResolutionDescription->"Defaults to 2.5% of the initial sample volume if titrant is liquid, 2 Grams/Liter if titrant is solid.",
+				ResolutionDescription->"Defaults to 0.5% of the initial sample volume if titration method is robotic, 2.5% of the initial sample volume if titrant is liquid and titration method is manual, 2 Grams/Liter if titrant is solid.",
 				AllowNull->True,
 				Category->"pHing Limits",
 				Widget->Alternatives[
@@ -449,7 +523,13 @@ DefineOptions[ExperimentAdjustpH,
 				AllowNull->True,
 				Widget->Widget[
 					Type->Object,
-					Pattern :> ObjectP[{Model[Container,Vessel],Object[Container,Vessel]}]
+					Pattern :> ObjectP[{Model[Container,Vessel],Object[Container,Vessel]}],
+					OpenPaths -> {
+						{
+							Object[Catalog, "Root"],
+							"Containers"
+						}
+					}
 				],
 				Description->"The container model in which the newly pH-adjusted sample should be stored after all adjustment steps have completed. If NumberOfReplicates is not Null, each replicate will be pooled back into the same ContainerOut. Null indicates the pH-adjusted sample remains in it's current container.",
 				ResolutionDescription->"Automatically selected from ECL's stocked containers based on the volume of solution being prepared.",
@@ -486,7 +566,9 @@ DefineOptions[ExperimentAdjustpH,
 			Widget->Widget[Type->Number,Pattern:>RangeP[2,10,1]],
 			Category->"General"
 		},
-		FuntopiaSharedOptions,
+
+		ModelInputOptions,
+		NonBiologyFuntopiaSharedOptions,
 		SamplesOutStorageOptions,
 		KeepInstrumentOption,
 		SimulationOption
@@ -507,6 +589,91 @@ Error::ConflictingTitratingAcidAndAmount="TitragingAcid and MaxAcidAmountPerCycl
 Error::ConflictingTitratingBaseAndAmount="TitragingBase and MaxBaseAmountPerCycle for samples `1` do not agree.  If specified, they must be both Null or both not Null and solid TitragingBase cannot be transferred by volume.";
 Error::AdjustpHContainerTooSmall="The specified aliquot container, or sample container if Aliquot is specified as False, is not enough to contain the FixedAdditions volume, which is either specified or resolved form a historical data.
 This is likely to cause pHAdjustment to fail. Consider changing the specifications of Aliquot and AliquotContainer, or specify a smaller FixedAdditions volume with a more concentrated acid/base.";
+Error::ConflictingTitrationMethod="TitrationMethod and titrating options for samples `1` do not agree. The TitrationMethod is specified to be Robotic but incompatible options are specified. When TitrationMethod is Robotic, pHMixType must be Stir, pHMeter model must be SevenExcellence pH meter, pHProbeType must be Immersion, pHAliquot must be False, RecoupSample must be False, Titrate must be True, TitratingAcid and TritratingBase must not be Solid, pHMixUntilDissolved must be False, TitrationInstrument must not be Null and pHMixInstrument must be OverheadStirrer. Please check the titrating options and make sure they are compatible with specified TitrationMethod.";
+Error::ConflictingTitrationInstrument="TitrationInstrument and TitrationMethod for samples `1` do not agree. The TitrationInstrument Model[Instrument, pHTitrator, \"Microlab 600 (ML600) pH Titrator\"] can only be used when TitrationMethod is Robotic. Please check the specified TitrationInstrument and make sure it is not conflicting with TitrationMethod.";
+
+$DefaultRoboticMixingImpeller = Model[Part, StirrerShaft, "id:9RdZXvNroMdJ"]; (*Model[Part, StirrerShaft, "SM-4500-06 PTFEE Impeller without Tape"]*)
+
+(* Helper function that returns a list of roboticTitrationCaps packet *)
+capCandidatesInRoboticTitration[memoization_String] := capCandidatesInRoboticTitration[memoization] =
+		Module[{roboticTitrationCaps, roboticTitrationCapPackets},
+			If[!MemberQ[$Memoization, Experiment`Private`capCandidatesInRoboticTitration],
+				AppendTo[$Memoization, Experiment`Private`capCandidatesInRoboticTitration]];
+
+			roboticTitrationCaps = Search[Model[Item, Cap], pHProbe != Null && Deprecated != True && DeveloperObject != True];
+			roboticTitrationCapPackets = Quiet[Download[roboticTitrationCaps, {Packet[CoverFootprint, InternalDepth, InternalDiameter, pHProbe]}], {Download::FieldDoesntExist}];
+			{roboticTitrationCaps, Flatten[roboticTitrationCapPackets]}
+		];
+
+(* Helper function that returns a list of roboticTitrationContainers packet *)
+containerCandidatesInRoboticTitration[memoization_String] := containerCandidatesInRoboticTitration[memoization] =
+		Module[{titrationContainerModels, titrationContainerModelPackets},
+			If[!MemberQ[$Memoization, Experiment`Private`containerCandidatesInRoboticTitration],
+				AppendTo[$Memoization, Experiment`Private`containerCandidatesInRoboticTitration]];
+
+			titrationContainerModels = Intersection[Search[Model[Container, Vessel],
+				CoverFootprints == Alternatives[CapGL45, Cap83B] && Deprecated != True && DeveloperObject != True], PreferredContainer[All]];
+			titrationContainerModelPackets = Quiet[Download[titrationContainerModels,
+				{
+					Packet[Name, CoverTypes, CoverFootprints, VolumeCalibrations, MaxVolume, Aperture, InternalDiameter, Dimensions, Sterile, Deprecated, Footprint, OpenContainer, InternalDepth, InternalDimensions, Positions, RentByDefault],
+					Packet[VolumeCalibrations[{LiquidLevelDetectorModel, CalibrationFunction, EmptyDistanceDistribution, DateCreated, Deprecated, Anomalous, DeveloperObject}]]
+				}
+			], {Download::FieldDoesntExist}];
+			{titrationContainerModels, titrationContainerModelPackets}
+		];
+
+(* Helper function that returns a list of robotic titration container-cap tuples *)
+containerTuplesInRoboticTitration[memoization_String] := containerTuplesInRoboticTitration[memoization] =
+		Module[{roboticTitrationCaps, roboticTitrationCapPackets, titrationContainerModels, titrationContainerModelPackets, titrationContainerVolumeCalibrations, titrationContainerVolumeCalibrationPackets,titrationContainerCalibrationFunctions, titratorCaps, sampleVolumes, sampleAdditionVolumes, probeModel, expandTitrationContainerModels, expandTitratorCaps, capParameters, containerParameters, rawTuples, expandCalibrationFunctions, minVolume, maxVolume},
+			If[!MemberQ[$Memoization, Experiment`Private`containerTuplesInRoboticTitration],
+				AppendTo[$Memoization, Experiment`Private`containerTuplesInRoboticTitration]];
+
+			{titrationContainerModels, titrationContainerModelPackets} = containerCandidatesInRoboticTitration["Memoization"];
+			{roboticTitrationCaps, roboticTitrationCapPackets} = capCandidatesInRoboticTitration["Memoization"];
+
+			titrationContainerVolumeCalibrations = Lookup[titrationContainerModelPackets[[All, 1]], VolumeCalibrations, Null];
+			(*If there are multiple calibration functions,pick the last*)
+			titrationContainerVolumeCalibrationPackets = Map[
+				Function[{volumeCalibration},
+					If[Length[volumeCalibration]>0,
+						Module[{allVolumeCalibrationPacket, filteredVolumeCalibrationPacket},
+							allVolumeCalibrationPacket = Experiment`Private`fetchPacketFromCache[#, Flatten[titrationContainerModelPackets[[All, 2]]]]&/@ volumeCalibration;
+							filteredVolumeCalibrationPacket=Cases[allVolumeCalibrationPacket,KeyValuePattern[{Anomalous->Except[True],Deprecated->Except[True],DeveloperObject->Except[True], EmptyDistanceDistribution->Except[Null], LiquidLevelDetectorModel -> ObjectP[]}]];
+							If[Length[filteredVolumeCalibrationPacket]>0,
+								Last[filteredVolumeCalibrationPacket],
+								{}
+							]
+						],
+						{}
+					]
+			],titrationContainerVolumeCalibrations];
+
+			titrationContainerCalibrationFunctions = Lookup[titrationContainerVolumeCalibrationPackets, CalibrationFunction, Null];
+			(* To pick all the possible caps, we set sampleVolumes to be the large enough so that caps won't be filtered because of liquid height limit *)
+			sampleVolumes = ConstantArray[Max[Lookup[titrationContainerModelPackets[[All, 1]], MaxVolume]], Length[titrationContainerCalibrationFunctions]];
+			(* To pick all the possible caps, we set probeModel to be Automatic so that caps won't be filtered because of different probe models *)
+			probeModel = ConstantArray[Automatic, Length[titrationContainerCalibrationFunctions]];
+			(* To pick all the possible caps, we set sampleAdditionVolume to be Null so that caps won't be filtered because of max volume exceed *)
+			sampleAdditionVolumes = ConstantArray[Null, Length[titrationContainerCalibrationFunctions]];
+
+			titratorCaps = MapThread[findpHTitratorCaps[#1, #2, #3, #4, #5] &,
+				{titrationContainerModelPackets[[All, 1]], titrationContainerCalibrationFunctions, probeModel, sampleVolumes, sampleAdditionVolumes}];
+			(*Expand other parameters to create tuples*)
+			expandTitrationContainerModels = Flatten[MapThread[ConstantArray[#1, Length[#2]] &, {titrationContainerModels, titratorCaps}]];
+			expandCalibrationFunctions = Flatten[MapThread[ConstantArray[#1, Length[#2]] &, {titrationContainerCalibrationFunctions, titratorCaps}]];
+			expandTitratorCaps = Flatten[titratorCaps];
+			capParameters = Lookup[Experiment`Private`fetchPacketFromCache[#, roboticTitrationCapPackets], {CoverFootprint, pHProbe, InternalDepth}] & /@ expandTitratorCaps;
+			containerParameters = Lookup[Experiment`Private`fetchPacketFromCache[#, Flatten[titrationContainerModelPackets[[All, 1]]]], {InternalDepth, MaxVolume}] & /@ expandTitrationContainerModels;
+
+			(*containerModel, capModel, CalibrationFunctions, containerInternalDepth, containerMaxVolume, CoverFootprint, probeModel, capInternalDepth*)
+			rawTuples = Transpose@Join[{expandTitrationContainerModels, expandTitratorCaps, expandCalibrationFunctions}, Transpose[containerParameters], Transpose[capParameters]];
+			(*the minDepths of Model[Instrument, pHMeter, "SevenExcellence (for pH) for Robotic Titration"] is 30 mm for fully immersion, we give 50 mm for safe *)
+			minVolume = #[[3]][#[[4]] - #[[8]] + 50 Millimeter] & /@ rawTuples;
+			(*Give it a tolerance of 15 Millimeter for volume occupied by probe and stir rod *)
+			maxVolume =  #[[3]][#[[4]] - 15 Millimeter] & /@ rawTuples;
+			(*containerModel, capModel, minSampleVolume, maxSampleVolume, containerInternalDepth, containerMaxVolume, CoverFootprint, probeModel, capInternalDepth*)
+			Transpose@Join[{expandTitrationContainerModels, expandTitratorCaps, minVolume, maxVolume}, Transpose[containerParameters], Transpose[capParameters]]
+		];
 
 
 (* ::Subsection::Closed:: *)
@@ -527,11 +694,11 @@ ExperimentAdjustpH[mySamples:ListableP[ObjectP[Object[Sample]]],nominalpHs:Lista
 		potentialBeakers,possiblepHInstrumentModels,possibleMixingInstrumentModels,specifiedMixInstrumentObjects,possibleInstruments,modelOut,
 		mixingpHInstrumentLookup,mySamplesWithPreparedSamplesNamed,myOptionsWithPreparedSamplesNamed,safeOpsNamed,returnEarlyQ,
 		performSimulationQ,simulatedProtocol,simulation,thing,searchConditionsFailed,searchConditionsFailedDeNulled,pHAchievedQs,
-		allDownloadValues,modelContainerFields
+		allDownloadValues,modelContainerFields, expandedInputs,expandedNominalpHs
 	},
 
 	(* Make sure we're working with a list of options *)
-	{listedSamplesNamed,listedOptionsNamed}=removeLinks[ToList[mySamples],ToList[myOptions]];
+	{listedSamplesNamed, listedOptionsNamed} = removeLinks[ToList[mySamples], ToList[myOptions]];
 
 	(* Determine the requested return value from the function *)
 	outputSpecification=Quiet[OptionValue[Output]];
@@ -549,7 +716,7 @@ ExperimentAdjustpH[mySamples:ListableP[ObjectP[Object[Sample]]],nominalpHs:Lista
 			listedOptionsNamed
 		],
 		$Failed,
-		{Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
+		{Download::ObjectDoesNotExist, Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
 	];
 
 
@@ -566,6 +733,9 @@ ExperimentAdjustpH[mySamples:ListableP[ObjectP[Object[Sample]]],nominalpHs:Lista
 		{SafeOptions[ExperimentAdjustpH,myOptionsWithPreparedSamplesNamed,AutoCorrect->False],{}}
 	];
 
+	(* Sanitize named inputs *)
+	{mySamplesWithPreparedSamples,safeOps, myOptionsWithPreparedSamples} = sanitizeInputs[mySamplesWithPreparedSamplesNamed,safeOpsNamed, myOptionsWithPreparedSamplesNamed,Simulation->updatedSimulation];
+
 	(* If the specified options don't match their patterns or if option lengths are invalid return $Failed *)
 	If[MatchQ[safeOps,$Failed],
 		Return[outputSpecification/.{
@@ -576,8 +746,6 @@ ExperimentAdjustpH[mySamples:ListableP[ObjectP[Object[Sample]]],nominalpHs:Lista
 		}]
 	];
 
-	(* Sanitize named inputs *)
-	{mySamplesWithPreparedSamples,safeOps, myOptionsWithPreparedSamples} = sanitizeInputs[mySamplesWithPreparedSamplesNamed,safeOpsNamed, myOptionsWithPreparedSamplesNamed];
 
 	(* Call ValidInputLengthsQ to make sure all options are the right length *)
 	{validLengths,validLengthTests}=If[gatherTests,
@@ -614,12 +782,13 @@ ExperimentAdjustpH[mySamples:ListableP[ObjectP[Object[Sample]]],nominalpHs:Lista
 	(* Replace our safe options with our inherited options from our template. *)
 	inheritedOptions=ReplaceRule[safeOps,templatedOptions];
 
-	(* Expand index-matching options. This also includes the expansion of Standard and Blank related options with
+	(* Expand inputs and index-matching options. This also includes the expansion of Standard and Blank related options with
 	Standard and Blank as IndexMatchingParent *)
-	expandedSafeOps=Last[ExpandIndexMatchedInputs[ExperimentAdjustpH,{ToList[mySamplesWithPreparedSamples],ToList[nominalpHs]},inheritedOptions]];
+	{expandedInputs, expandedSafeOps}=ExpandIndexMatchedInputs[ExperimentAdjustpH,{ToList[mySamplesWithPreparedSamples],nominalpHs},inheritedOptions];
+	(* We allow multiple samples to be adjusted to a same pH; basically ExperimentAdjustpH[{a, a, a}, b] works as ExperimentAdjustpH[{a, a, a}, {b, b, b}] *)
+	expandedNominalpHs =expandedInputs[[2]];
 
-
-	(*-- DOWNLOAD THE INFORMATION THAT WE NEED FOR OUR OPTION RESOLVER AND RESOURCE PACKET FUNCTION --*)
+			(*-- DOWNLOAD THE INFORMATION THAT WE NEED FOR OUR OPTION RESOLVER AND RESOURCE PACKET FUNCTION --*)
 
 	(*All of the possible sample objects and models*)
 	fixedAdditionSampleObjects=Cases[DeleteDuplicates[Flatten[Lookup[expandedSafeOps,FixedAdditions]]],ObjectP[Object[Sample]]];
@@ -633,7 +802,7 @@ ExperimentAdjustpH[mySamples:ListableP[ObjectP[Object[Sample]]],nominalpHs:Lista
 	modelOut=Lookup[expandedSafeOps,ModelOut];
 	(*titrats,fixedadditions, calibration buffers*)
 
-	sampleModelsToDownload=Cases[{fixedAdditionSampleModels,titratingAcidSampleModels,titratingBaseSampleModels,modelOut,Model[Sample, "id:BYDOjvGjGxGr"],Model[Sample, "id:vXl9j57j7OVd"],Model[Sample, "id:n0k9mG8m8dMn"],Model[Sample, StockSolution, "2 M HCl"],Model[Sample, StockSolution, "1.85 M NaOH"],Model[Sample,"Milli-Q water"]}//Flatten//DeleteDuplicates,ObjectP[Model[Sample]]];
+	sampleModelsToDownload=Cases[{fixedAdditionSampleModels,titratingAcidSampleModels,titratingBaseSampleModels,modelOut,Model[Sample, "id:BYDOjvGjGxGr"],Model[Sample, "id:vXl9j57j7OVd"],Model[Sample, "id:n0k9mG8m8dMn"],Model[Sample, StockSolution, "id:jLq9jXY4k6ww"],Model[Sample, StockSolution, "id:BYDOjv1VA86X"],Model[Sample,"Milli-Q water"]}//Flatten//DeleteDuplicates,ObjectP[Model[Sample]]];
 
 	(* Get the mix instruments in the lab that are not deprecated. *)
 	possibleInstruments = Flatten[Search[
@@ -646,7 +815,8 @@ ExperimentAdjustpH[mySamples:ListableP[ObjectP[Object[Sample]]],nominalpHs:Lista
 			Model[Instrument, Sonicator],
 			Model[Instrument, HeatBlock],
 			Model[Instrument, Homogenizer],
-			Model[Instrument, pHMeter]
+			Model[Instrument, pHMeter],
+			Model[Instrument, pHTitrator]
 		},
 		Deprecated == (False | Null) && DeveloperObject != True
 	]];
@@ -679,8 +849,8 @@ ExperimentAdjustpH[mySamples:ListableP[ObjectP[Object[Sample]]],nominalpHs:Lista
 	specifiedAliquotContainerObjects=Cases[aliquotContainerLookup//DeleteDuplicates,ObjectP[Object[Container]]];
 
 	objectSamplePacketFields=Packet@@Union[{pH,IncompatibleMaterials,RequestedResources},SamplePreparationCacheFields[Object[Sample]]];
-	modelSamplePacketFields=Packet@@Union[{pH,TransportWarmed,Name,Deprecated,Sterile,LiquidHandlerIncompatible,Tablet,TabletWeight,State,IncompatibleMaterials,NominalpH,MinpH,MaxpH,pHingAcid,pHingBase,MaxNumberOfpHingCycles,MaxpHingAdditionVolume,MaxAcidAmountPerCycle,MaxBaseAmountPerCycle,TotalVolume},SamplePreparationCacheFields[Model[Sample]]];
-	modelContainerFields=DeleteDuplicates[Join[SamplePreparationCacheFields[Model[Container]],{Immobile,CoverFootprints,AluminumFoil,Ampoule,BuiltInCover, CoverTypes,Counterweights,EngineDefault,Hermetic,Opaque, Parafilm,RequestedResources,Reusability,RNaseFree,Squeezable, StorageBuffer,StorageBufferVolume,TareWeight,Name, VolumeCalibrations, MaxVolume, Aperture, InternalDiameter, Dimensions, Sterile, Deprecated, Footprint, OpenContainer,InternalDepth,InternalDimensions,Positions,RentByDefault}]];
+	modelSamplePacketFields=Packet@@Union[{pH,TransportTemperature,Name,Deprecated,Sterile,LiquidHandlerIncompatible,Tablet,SolidUnitWeight,State,IncompatibleMaterials,NominalpH,MinpH,MaxpH,pHingAcid,pHingBase,MaxNumberOfpHingCycles,MaxpHingAdditionVolume,MaxAcidAmountPerCycle,MaxBaseAmountPerCycle,TotalVolume},SamplePreparationCacheFields[Model[Sample]]];
+	modelContainerFields=DeleteDuplicates[Join[SamplePreparationCacheFields[Model[Container]],{Immobile,CoverFootprints,AluminumFoil,Ampoule,BuiltInCover, CoverTypes,Counterweights,EngineDefault,Hermetic,Opaque, Parafilm,RequestedResources,Reusable,RNaseFree,Squeezable, StorageBuffer,StorageBufferVolume,TareWeight,Name, VolumeCalibrations, MaxVolume, Aperture, InternalDiameter, Dimensions, Sterile, Deprecated, Footprint, OpenContainer,InternalDepth,InternalDimensions,Positions,RentByDefault, MaxOverheadMixRate}]];
 
 	(* Download our information. *)
 	allDownloadValues = Quiet[Download[
@@ -701,10 +871,11 @@ ExperimentAdjustpH[mySamples:ListableP[ObjectP[Object[Sample]]],nominalpHs:Lista
 			(*1.sampleObjectsToDownload*)
 			{
 				objectSamplePacketFields,
-				Packet[Model[Evaluate[Union[{pH,TransportWarmed,Name,Deprecated,Sterile,LiquidHandlerIncompatible,Tablet,TabletWeight,State,NominalpH,MinpH,MaxpH,IncompatibleMaterials},Evaluate[SamplePreparationCacheFields[Model[Sample]]]]]]],
+				Packet[Model[Evaluate[Union[{pH,TransportTemperature,Name,Deprecated,Sterile,LiquidHandlerIncompatible,Tablet,SolidUnitWeight,State,NominalpH,MinpH,MaxpH,IncompatibleMaterials},Evaluate[SamplePreparationCacheFields[Model[Sample]]]]]]],
 				Packet[Container[Evaluate[SamplePreparationCacheFields[Object[Container]]]]],
 				Packet[Container[Model][modelContainerFields]],
-				Packet[Container[Model][VolumeCalibrations][{LiquidLevelDetectorModel,CalibrationFunction,EmptyDistanceDistribution,DateCreated}]]
+				Packet[Container[Model][VolumeCalibrations][{LiquidLevelDetectorModel,CalibrationFunction,EmptyDistanceDistribution,DateCreated}]],
+				Packet[Composition[[All,2]][MolecularWeight]]
 			},
 			(*2.sampleModelsToDownload*)
 			{
@@ -725,7 +896,7 @@ ExperimentAdjustpH[mySamples:ListableP[ObjectP[Object[Sample]]],nominalpHs:Lista
 				Packet[Name, Objects, WettedMaterials, Positions, MaxRotationRate, MinRotationRate, Model, MinTemperature, MaxTemperature,
 					RollerSpacing, CompatibleImpellers, InternalDimensions, CompatibleSonicationHorns, ProgrammableTemperatureControl,
 					ProgrammableMixControl, MaxOscillationAngle, MinOscillationAngle, GripperDiameter, CompatibleAdapters, MaxStirBarRotationRate,
-					MinStirBarRotationRate, MaxForce, MinForce, IntegratedLiquidHandlers],
+					MinStirBarRotationRate, MaxForce, MinForce, IntegratedLiquidHandlers, MinDispenseVolume, StirBarControl, MaxWeight, CompatibleRacks, CompatibleAdapters],
 				Packet[CompatibleImpellers[{Name,StirrerLength,MaxDiameter,ImpellerDiameter}]]
 			},
 			(*4-1:specifiedMixInstrumentObjects*)
@@ -773,7 +944,7 @@ ExperimentAdjustpH[mySamples:ListableP[ObjectP[Object[Sample]]],nominalpHs:Lista
 	(* Build the resolved options *)
 	resolvedOptionsResult=If[gatherTests,
 		(* We are gathering tests. This silences any messages being thrown. *)
-		{resolvedOptions,resolvedOptionsTests}=resolveExperimentAdjustpHOptions[ToList[mySamplesWithPreparedSamples],ToList[nominalpHs],ToList[expandedSafeOps],Cache->cacheBall,Simulation->updatedSimulation,Output->{Result,Tests}];
+		{resolvedOptions,resolvedOptionsTests}=resolveExperimentAdjustpHOptions[ToList[mySamplesWithPreparedSamples],ToList[expandedNominalpHs],ToList[expandedSafeOps],Cache->cacheBall,Simulation->updatedSimulation,Output->{Result,Tests}];
 
 		(* Therefore, we have to run the tests to see if we encountered a failure. *)
 		If[RunUnitTest[<|"Tests"->resolvedOptionsTests|>,OutputFormat->SingleBoolean,Verbose->False],
@@ -783,7 +954,7 @@ ExperimentAdjustpH[mySamples:ListableP[ObjectP[Object[Sample]]],nominalpHs:Lista
 
 		(* We are not gathering tests. Simply check for Error::InvalidInput and Error::InvalidOption. *)
 		Check[
-			{resolvedOptions,resolvedOptionsTests}=Append[{resolveExperimentAdjustpHOptions[ToList[mySamplesWithPreparedSamples],ToList[nominalpHs],ToList[expandedSafeOps],Cache->cacheBall,Simulation->updatedSimulation]},{}],
+			{resolvedOptions,resolvedOptionsTests}=Append[{resolveExperimentAdjustpHOptions[ToList[mySamplesWithPreparedSamples],ToList[expandedNominalpHs],ToList[expandedSafeOps],Cache->cacheBall,Simulation->updatedSimulation]},{}],
 			$Failed,
 			{Error::InvalidInput,Error::InvalidOption}
 		]
@@ -825,7 +996,7 @@ ExperimentAdjustpH[mySamples:ListableP[ObjectP[Object[Sample]]],nominalpHs:Lista
 		Return[outputSpecification/.{
 			Result->$Failed,
 			Tests->Join[safeOpsTests,validLengthTests,templateTests,resolvedOptionsTests],
-			Options->RemoveHiddenOptions[ExperimentIncubate,collapsedResolvedOptions],
+			Options->RemoveHiddenOptions[ExperimentAdjustpH, collapsedResolvedOptions],
 			Preview->Null,
 			Simulation->Simulation[]
 		}]
@@ -837,8 +1008,8 @@ ExperimentAdjustpH[mySamples:ListableP[ObjectP[Object[Sample]]],nominalpHs:Lista
 	{resourcePackets,resourcePacketTests} = If[returnEarlyQ,
 		{$Failed, {}},
 		If[gatherTests,
-			adjustpHResourcePackets[ToList[mySamplesWithPreparedSamples],ToList[nominalpHs],expandedSafeOps,resolvedOptions,Cache->cacheBall,Simulation->updatedSimulation,Output->{Result,Tests}],
-			{adjustpHResourcePackets[ToList[mySamplesWithPreparedSamples],ToList[nominalpHs],expandedSafeOps,resolvedOptions,Cache->cacheBall,Simulation->updatedSimulation],{}}
+			adjustpHResourcePackets[ToList[mySamplesWithPreparedSamples],ToList[expandedNominalpHs],expandedSafeOps,resolvedOptions,Cache->cacheBall,Simulation->updatedSimulation,Output->{Result,Tests}],
+			{adjustpHResourcePackets[ToList[mySamplesWithPreparedSamples],ToList[expandedNominalpHs],expandedSafeOps,resolvedOptions,Cache->cacheBall,Simulation->updatedSimulation],{}}
 		]
 	];
 
@@ -887,6 +1058,7 @@ ExperimentAdjustpH[mySamples:ListableP[ObjectP[Object[Sample]]],nominalpHs:Lista
 			resourcePackets,
 			Upload->Lookup[resolvedOptions,Upload],
 			Confirm->Lookup[resolvedOptions,Confirm],
+			CanaryBranch->Lookup[resolvedOptions,CanaryBranch],
 			ParentProtocol->Lookup[resolvedOptions,ParentProtocol],
 			Priority->Lookup[resolvedOptions,Priority],
 			StartDate->Lookup[resolvedOptions,StartDate],
@@ -911,12 +1083,12 @@ ExperimentAdjustpH[mySamples:ListableP[ObjectP[Object[Sample]]],nominalpHs:Lista
 (* ::Subsubsection::Closed:: *)
 (*Experiment function overload that takes container as input-- we don't accept plate.*)
 (* Note: The container overload should come after the sample overload. *)
-ExperimentAdjustpH[myContainers:ListableP[ObjectP[{Object[Container,Vessel],Object[Sample]}]|_String|{LocationPositionP,_String|ObjectP[Object[Container]]}],nominalpHs:ListableP[pHP],myOptions:OptionsPattern[]]:=Module[
+ExperimentAdjustpH[myContainers:ListableP[ObjectP[{Object[Container,Vessel],Object[Sample],Model[Sample]}]|_String|{LocationPositionP,_String|ObjectP[Object[Container]]}],nominalpHs:ListableP[pHP],myOptions:OptionsPattern[]]:=Module[
 	{listedOptions,outputSpecification,output,gatherTests,validSamplePreparationResult,objectsExistQs,objectsExistTests,mySamplesWithPreparedSamples,myOptionsWithPreparedSamples,
 		updatedSimulation,containerToSampleResult,containerToSampleOutput,updatedCache,samples,sampleOptions,containerToSampleTests,listedContainers},
 
 	(* Make sure we're working with a list of options *)
-	{listedContainers, listedOptions}=removeLinks[ToList[myContainers], ToList[myOptions]];
+	{listedContainers, listedOptions}={ToList[myContainers], ToList[myOptions]};
 
 	(* Determine the requested return value from the function *)
 	outputSpecification=Quiet[OptionValue[Output]];
@@ -934,7 +1106,7 @@ ExperimentAdjustpH[myContainers:ListableP[ObjectP[{Object[Container,Vessel],Obje
 			listedOptions
 		],
 		$Failed,
-		{Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
+		{Download::ObjectDoesNotExist, Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
 	];
 
 	(* If we are given an invalid define name, return early. *)
@@ -1040,48 +1212,7 @@ DefineOptions[
 
 resolveExperimentAdjustpHOptions[mySamples:{ObjectP[Object[Sample]]...},nominalpHs:{pHP..},myOptions:{_Rule...},myResolutionOptions:OptionsPattern[resolveExperimentAdjustpHOptions]]:=Module[
 	{
-		outputSpecification,output,gatherTests,messages,safeOps,cache,samplePrepOptions,adjustpHOptions,simulatedSamplesMain,resolvedSamplePrepOptionsMain,updatedSimulationMain,samplePrepTests,
-		adjustpHOptionsAssociation,simulatedSamplePackets,simulatedSampleContainers,simulatedSampleContainerModels,samplePackets,specifedAdditionModels,specifiedHistoricalData,specifiedFixedAdditions,
-		specifiedTitratingAcid,specifiedTitratingBase,specifiedAliquotContainers,dataFields,sampleFields,sampleModelFields,downloadData,pastData,aliquotContainerPackets,pastLogs,fullRequestedAdditions,
-		pHProbes,overheadStirrers,fixedAdditionSamples,discardedSamplePackets,discardedInvalidInputs,discardedTests,fixedAdditionsConflicts,fixedAdditionsConflictSamples,fixedAdditionsConflictOptions,
-		fixedAdditionsConflictTest,specifiedTitrate,noAdditions,noAdditionSamples,noAdditionOptions,noAdditionsTest,badTitrations,badTitrationSamples,invalidTitrateOptions,specifiedMixWhileTitrating,
-		specifiedpHMixType,validMixWhiles,invalidMixSamples,overheadMixingRequiredOptions,overheadMixingRequiredTest,specifiedMaxAdditionVolumes,validMaxVolumes,invalidMaxVolumeSamples,badMaxVolumeOptions,
-		maxVolumeTest,sampleModels,candidateSamples,candidateSampleData,specifiedMinpHs,specifiedMaxpHs,resolvedMinpHs,resolvedMaxpHs,resolvedMaxAdditionVolumes,preresolvedProbe,resolvedAliquots,
-		resolvedAliquotContainers,resolvedOutputContainers,resolvedpHOptions,resolvedMixOptions,allOptions,allTests,probePackets,targetContainers,simulatedSampleContainerModelPackets,resolvedAliquotOptions,
-		aliquotTests,optionsWithResolvedAliquots,resolvedPostProcessingOptions,targetAmounts,experimentMeasurepHPassedOptions,replacedMeasurepHOptions,experimentMixPassedOptions,replacedMixOptions,
-		resolvedHistoricalData,resolvedFixedAdditions,replacedpHNamesOptions,replacedMixNamesOptions,resolvedpHAliquotVolumes,extraneouspHOptions,extraneousMixOptions,resolvedProbe,resolvedProbeType,
-		specifiedNumberOfReplicates,fixedAdditionModels,fixedAdditionModelsNullReplaced,additionModelLookup,pastLogsNullModelReplaced,numberOfReplicatesNullToOne,specifiedAliquotAmount,candidateBeakerPackets,
-		candidateBeakers,calculatedAliquotAmounts,aliquotAmountRequired,preferredBeaker,minpHProbeDiamter,clearances,possibleImpellers,mixAliquotRequired,replicateAliquotRequired,aliquotRequired,
-		mixAliquotConflict,aliquotRequiredSamples,aliquotRequiredTest,measurepHTests,mixTests,aliquoteReplicateConflictQ,aliquoteReplicateConflictTest,invalidTitrateComboTest,resolvedOptions,resolverSafeOps,
-		specifiedAliquot,specifiedConsolidateAliquote,resolverResolvedOptions,otherExperimentOptions,searchQs,noHistoricalDataQs,searchConditionsStringent,searchConditionsLoose,searchConditionsStringentDeNulled,
-		searchConditionsLooseDeNulled,searchConditions,numberOfSearches,searchResults,searchResultsStringent,searchResultsLoose,searchResolvedHistoricalData,searchPositions,searchReplaceRules,noHistoricalDataPositions,
-		noHistoricalDataRules,combinedReplaceRules,searchResultsPackets,resolvedHistoricalDataReplacementRule,pastLogsWithResolved,pastLogsWithResolvedNullModelReplaced,fullCache,searchConditionsVeryStringent,
-		searchConditionsVeryStringentDeNulled,searchResultsVeryStringent,fullCacheWithSearchResults,historicalDataSamplesIn,historicalDataSamplesInVolume,protocolSamplesInVolume,sampleVolumeConvertingFactors,
-		calculatedAliquotContainerVolume,resolvedMixType,mixAliquotRequiredWithResolvedMix,aliquotRequiredWithConsiderations,aliquotTargetContainers,searchResultspHLogPackets,specifiedpHMixUntilDissolved,
-		specifiedpHMixInstrument,specifiedpHMixTime,specifiedMaxpHMixTime,specifiedpHMixDutyCycle,specifiedpHMixRate,specifiedNumberOfpHMixes,specifiedMaxNumberOfpHMixes,specifiedpHMixVolume,specifiedpHMixTemperature,
-		specifiedMaxpHMixTemperature,specifiedSonicationAmplitude,specifiedMixOptionsTransposed,preResolvedpHMixType,preResolvedpHMixUntilDissolved,preResolvedpHMixInstrument,preResolvedpHMixTime,preResolvedMaxpHMixTime,
-		preResolvedpHMixDutyCycle,preResolvedpHMixRate,preResolvedNumberOfpHMixes,preResolvedMaxNumberOfpHMixes,preResolvedpHMixVolume,preResolvedpHMixTemperature,preResolvedMaxpHMixTemperature,preResolvedSonicationAmplitude,
-		preResolvedMixOptions,updatedSimulatedSamplesMain,updatedresolvedSamplePrepOptionsMain,updatedSimulatedCacheMain,updatedSamplePrepTests,resolvedFixedAdditionSampleStates,resolvedFixedAdditionSamples,
-		preResolvedMixOptionsMaxTimeNull,mixingInstrumentModels,impellers,preResolvedMixOptionsMaxTempNull,preResolvedMixOptionsMaxTempTimeNull,aliquotContainerCondensed,simulatedSampleContainerPackets,
-		specifiedKeepInstruments,resolvedMaxAdditionVolumesRaw,aliquotMixConflictOptiones,invalidOptions,sampleContainers,sampleContainerModels,calculatedFixedAdditions,sampleVolumes,pHRangeConflictingTests,
-		pHRangeConflictingSamples,aliquoteReplicateConflictOptions,pHRangeConflictingOptions,resolvedTitratingAcids,resolvedTitratingBases,specifiedAsssayVolume,specifiedDestinationWell,specifiedAliquotContainer,
-		specifiedAliquotSampleStorageCondition,specifiedTargetConcentration,aliquotAmountRequiredDeList,specifiedContainerOut,historicalDataOvershotQs,sampleVolumeConvertingFactorsWithOvershot,resolvedTitratingAcidsInModel,
-		resolvedTitratingBasesInModel,simulatedSampleModels,simulatedSampleModelPackets,specifiedModelsOut,modelMinpHs,modelMaxpHs,modelNominalpHs,resolvedModelOut,titrantsModelToObjectReplacementRulesAll,
-		titrantsModelToObjectReplacementRulesSearched,searchResolvedHistoricalDataObjectified,numberSimulatedSamples,expandedMixOptions,expandedMeasurepHOptions,simulatedSampleModelPacketsToAssoc,resolvedAliquot,
-		maxAdditionVolumeAliquotRequired,resolvedMaxAdditionVolumeWithAliquot,simulation,secondUpdatedSimulationMain,thing,updatedCacheWithSecondSamplePrepSimulation,skipSecondPrepQ,specifiedSimulation,
-		specifiedPreparatoryPrimitives,prePreResolvedMixType,AliquotRequiredWithVolumetricFlasks,aliquotQ,resolvedAliquotAmountWithNumberOfReplicates,originalSampleVolumes,sameContainerQ,updatedSimulatedSamplePackets,
-		updatedSimulatedSampleContainers,updatesSimulatedSampleVolumes,maxBeakerVolume,specifiedMaxAcidAmountPerCycle,specifiedMaxBaseAmountPerCycle,resolvedTitratingAcidsStates,resolvedTitratingBasesStates,
-		simulatedSampleVolumes,resolvedMaxAcidAmountPerCycle,resolvedMaxBaseAmountPerCycle,modelsOutpHingAcid,modelsOutpHingBase,modelsOutMaxNumberOfpHingCycles,modelsOutMaxAdditionVolume,modelsOutMaxAcidAmountPerCycle,
-		modelsOutMaxBaseAmountPerCycle,modelsOutTotalVolume,resolvedMaxNumberOfCycles,modelsOutPackets,fetchModelOutValue,specifiedMaxNumberOfCycles,modelsOutMaxpHs,modelsOutMinpHs,acidStatusAmountConformQs,
-		acidStatusAmountConflictingSamples,acidAmountTest,baseStatusAmountConformQs,baseStatusAmountConflictingSamples,baseAmountTest,titratingBaseAmountConflictingOptions,titratingAcidAmountConflictingOptions,
-		samplesWithContainerTooSmall,containerTooSmallTest,samplePacketsForMaxAdditionVolumes,sampleContainerModelPacketsForMaxAdditionVolumes,resolvedMaxAdditionVolumeAliquotErrorTuple,aliquotContainerTooSmallQs,
-		sampleContainerModelPackets,searchConditionsFailedDeNulled,pHAchievedQs,containerTooSmallOptions,preResolveMixOptions,resolvedAcidStates,resolvedBasesStates,solidTitrantQs,spikedAmountsConverted,
-		searchConditionsFailed,resolvedHistoricalDataPackets,resolvedHistoricalLogs,searchResultsFailed,sampleContainerMaxVolumes,resolvedMaxAdditionVolumesWithNumberOfReplicates,totalPossibleVolumes,
-		modelContainerFields,resolvedSampleLabel,resolvedSampleContainerLabel, searchConditionsStringentNoFixedAdditions,
-		searchConditionsLooseNoFixedAdditions,searchConditionsFailedNoFixedAdditions, searchConditionsStringentNoFixedAdditionsDeNulled,
-		searchConditionsLooseNoFixedAdditionsDeNulled,searchConditionsFailedNoFixedAdditionsDeNulled,searchResultsStringentFixedAdditions,
-		searchResultsStringentNoFixedAdditions,searchResultsLooseFixedAdditions,searchResultsLooseNoFixedAdditions,
-		searchResultsFailedFixedAdditions,searchResultsFailedNoFixedAdditions
+		outputSpecification,output,gatherTests,messages,cache,samplePrepOptions,adjustpHOptions,simulatedSamplesMain,resolvedSamplePrepOptionsMain,updatedSimulationMain,samplePrepTests,simulatedSamplePackets,simulatedSampleContainers,samplePackets,specifiedHistoricalData,specifiedFixedAdditions, specifiedTitratingAcid,specifiedTitratingBase,specifiedAliquotContainers,dataFields,sampleFields,downloadData,aliquotContainerPackets, pHProbes,overheadStirrers,fixedAdditionSamples,fixedAdditionsConflicts,fixedAdditionsConflictSamples,fixedAdditionsConflictOptions, fixedAdditionsConflictTest,specifiedTitrate,noAdditions,noAdditionSamples,noAdditionOptions,noAdditionsTest,badTitrations,badTitrationSamples,invalidTitrateOptions,specifiedMixWhileTitrating, specifiedpHMixType,validMixWhiles,invalidMixSamples,overheadMixingRequiredOptions,overheadMixingRequiredTest,specifiedMaxAdditionVolumes,validMaxVolumes,invalidMaxVolumeSamples,badMaxVolumeOptions, maxVolumeTest,specifiedMinpHs,specifiedMaxpHs,resolvedMinpHs,resolvedMaxpHs,resolvedMaxAdditionVolumes,preresolvedProbe,resolvedAliquots, resolvedAliquotContainers,resolvedOutputContainers,resolvedpHOptions,resolvedMixOptions,allOptions,allTests,probePackets,simulatedSampleContainerModelPackets,resolvedAliquotOptions, aliquotTests,optionsWithResolvedAliquots,resolvedPostProcessingOptions,experimentMeasurepHPassedOptions,replacedMeasurepHOptions,experimentMixPassedOptions,replacedMixOptions, resolvedHistoricalData,resolvedFixedAdditions,replacedpHNamesOptions,replacedMixNamesOptions,resolvedProbe,resolvedProbeType, specifiedNumberOfReplicates,fixedAdditionModels,fixedAdditionModelsNullReplaced,additionModelLookup,numberOfReplicatesNullToOne,specifiedAliquotAmount,candidateBeakerPackets, candidateBeakers,calculatedAliquotAmounts,aliquotAmountRequired,preferredBeaker,minpHProbeDiamter,clearances,possibleImpellers,replicateAliquotRequired,measurepHTests,mixTests,aliquoteReplicateConflictQ,aliquoteReplicateConflictTest,invalidTitrateComboTest,resolverSafeOps, specifiedAliquot,specifiedConsolidateAliquote,resolverResolvedOptions,otherExperimentOptions,searchQs,noHistoricalDataQs,searchConditionsStringent,searchConditionsLoose,searchConditionsStringentDeNulled, searchConditionsLooseDeNulled,searchConditions,numberOfSearches,searchResults,searchResolvedHistoricalData,searchPositions,searchReplaceRules,noHistoricalDataPositions, noHistoricalDataRules,combinedReplaceRules,searchResultsPackets,pastLogsWithResolvedNullModelReplaced,fullCache,fullCacheWithSearchResults,historicalDataSamplesInVolume,protocolSamplesInVolume,sampleVolumeConvertingFactors, calculatedAliquotContainerVolume,mixAliquotRequiredWithResolvedMix,aliquotRequiredWithConsiderations,aliquotTargetContainers,specifiedpHMixUntilDissolved, specifiedpHMixInstrument,specifiedpHMixTime,specifiedMaxpHMixTime,specifiedpHMixDutyCycle,specifiedpHMixRate,specifiedNumberOfpHMixes,specifiedMaxNumberOfpHMixes,specifiedpHMixVolume,specifiedpHMixTemperature, specifiedMaxpHMixTemperature,specifiedSonicationAmplitude,specifiedMixOptionsTransposed,preResolvedpHMixType,preResolvedpHMixUntilDissolved,preResolvedpHMixInstrument,preResolvedpHMixTime,preResolvedMaxpHMixTime, preResolvedpHMixDutyCycle,preResolvedpHMixRate,preResolvedNumberOfpHMixes,preResolvedMaxNumberOfpHMixes,preResolvedpHMixVolume,preResolvedpHMixTemperature,preResolvedMaxpHMixTemperature,preResolvedSonicationAmplitude, preResolvedMixOptions,updatedSimulatedSamplesMain,updatedresolvedSamplePrepOptionsMain,updatedSamplePrepTests,resolvedFixedAdditionSampleStates,resolvedFixedAdditionSamples,mixingInstrumentModels,impellers,preResolvedMixOptionsMaxTempNull,preResolvedMixOptionsMaxTempTimeNull,aliquotContainerCondensed,simulatedSampleContainerPackets, specifiedKeepInstruments,invalidOptions,sampleContainers,sampleContainerModels,calculatedFixedAdditions,sampleVolumes,pHRangeConflictingTests, pHRangeConflictingSamples,aliquoteReplicateConflictOptions,pHRangeConflictingOptions,resolvedTitratingAcids,resolvedTitratingBases,specifiedAsssayVolume,specifiedDestinationWell,specifiedAliquotContainer, specifiedAliquotSampleStorageCondition,specifiedTargetConcentration,aliquotAmountRequiredDeList,specifiedContainerOut,historicalDataOvershotQs,resolvedTitratingAcidsInModel, resolvedTitratingBasesInModel,simulatedSampleModels,simulatedSampleModelPackets,specifiedModelsOut,modelMinpHs,modelMaxpHs,modelNominalpHs,resolvedModelOut,titrantsModelToObjectReplacementRulesAll, titrantsModelToObjectReplacementRulesSearched,searchResolvedHistoricalDataObjectified,numberSimulatedSamples,expandedMixOptions,expandedMeasurepHOptions,simulatedSampleModelPacketsToAssoc, maxAdditionVolumeAliquotRequired,simulation,secondUpdatedSimulationMain,updatedCacheWithSecondSamplePrepSimulation,skipSecondPrepQ,specifiedSimulation, specifiedPreparatoryPrimitives,prePreResolvedMixType,AliquotRequiredWithVolumetricFlasks,aliquotQ,resolvedAliquotAmountWithNumberOfReplicates,updatedSimulatedSamplePackets, updatedSimulatedSampleContainers,updatesSimulatedSampleVolumes,maxBeakerVolume,specifiedMaxAcidAmountPerCycle,specifiedMaxBaseAmountPerCycle,resolvedTitratingAcidsStates,resolvedTitratingBasesStates, simulatedSampleVolumes,resolvedMaxAcidAmountPerCycle,resolvedMaxBaseAmountPerCycle,modelsOutpHingAcid,modelsOutpHingBase,modelsOutMaxNumberOfpHingCycles,modelsOutMaxAdditionVolume,modelsOutMaxAcidAmountPerCycle, modelsOutMaxBaseAmountPerCycle,modelsOutTotalVolume,resolvedMaxNumberOfCycles,modelsOutPackets,fetchModelOutValue,specifiedMaxNumberOfCycles,modelsOutMaxpHs,modelsOutMinpHs,acidStatusAmountConformQs, acidStatusAmountConflictingSamples,acidAmountTest,baseStatusAmountConformQs,baseStatusAmountConflictingSamples,baseAmountTest,titratingBaseAmountConflictingOptions,titratingAcidAmountConflictingOptions, samplesWithContainerTooSmall,containerTooSmallTest,samplePacketsForMaxAdditionVolumes,sampleContainerModelPacketsForMaxAdditionVolumes,resolvedMaxAdditionVolumeAliquotErrorTuple,aliquotContainerTooSmallQs, sampleContainerModelPackets,searchConditionsFailedDeNulled,pHAchievedQs,containerTooSmallOptions,preResolveMixOptions,solidTitrantQs,spikedAmountsConverted, searchConditionsFailed,resolvedHistoricalDataPackets,resolvedHistoricalLogs,sampleContainerMaxVolumes,resolvedMaxAdditionVolumesWithNumberOfReplicates,totalPossibleVolumes, modelContainerFields,resolvedSampleLabel,resolvedSampleContainerLabel, searchConditionsStringentNoFixedAdditions, searchConditionsLooseNoFixedAdditions,searchConditionsFailedNoFixedAdditions, searchConditionsStringentNoFixedAdditionsDeNulled, searchConditionsLooseNoFixedAdditionsDeNulled,searchConditionsFailedNoFixedAdditionsDeNulled,searchResultsStringentFixedAdditions, searchResultsStringentNoFixedAdditions,searchResultsLooseFixedAdditions,searchResultsLooseNoFixedAdditions, searchResultsFailedFixedAdditions,searchResultsFailedNoFixedAdditions, resolvedTitrationMethod, preresolvedpHMeter, preresolvedpHAliquot, specifiedTitrationMethod, specifiedTitrationInstrument, specifiedpHMeterModel, specifiedProbeType, specifiedProbeModel, specifiedpHAliquot, specifiedpHMeter, rawpHMeterModel, specifiedProbe, rawProbeModel, specifiedpHAliquotVolume, titrationMethodConflictingSamples, titrationMethodConflictQs, titrationMethodConflictingOptions,specifiedRecoupSample, titrationMethodTest, resolvedTitrationInstrument, possibleTitratorCaps,sampleContainerCalibrationFunctions, sampleContainerVolumeCalibrationPackets, sampleContainerVolumeCalibrations, titrationContainerModels,titrationContainerModelPackets, roboticTitrationCaps, roboticTitrationCapPackets, roboticTitrationContainer, roboticTitrationContainerCap, roboticTitrationProbe, preresolvedProbeRobotic, preresolvedCapRobotic, roboticTitrationAliquotCaps, 	titrationInstrumentTest,titrationInstrumentConflictingOptions, titrationInstrumentConflictingSamples, titrationInstrumentCompatibleQs, possiblepHTitrators, rawpHTitratorsAssociate, pHTitratorspHMeters, pHTitratorsMixInstruments, validSampleContainerVolumeCalibrationPackets, updatedMaxBaseAmountPerCycle, updatedMaxAcidAmountPerCycle, updatedMaxNumberOfCycles,specifiedSite, resolvedSite, specifiedAssayVolume, specifiedTargetConcentrationAnalyte, preResolvedAnalyte, potentialAnalytesToUse, sampleCompositionPackets, potentialAnalytePackets, resolvedAssayVolumeAliquotQ, resolvedAssayVolume, workingSampleVolumes, maxSafeMixRates, safeMixRateMismatches, safeMixRateMismatchOptions, safeMixRateMismatchInputs, safeMixRateInvalidOptions, safeMixRateTest, maxSafeMixRatesMissingInvalidInputs, maxSafeMixRatesMissingTest, invalidInputs
 	},
 
 	(* Determine the requested output format of this function. *)
@@ -1099,7 +1230,7 @@ resolveExperimentAdjustpHOptions[mySamples:{ObjectP[Object[Sample]]...},nominalp
 	simulation=Lookup[ToList[myResolutionOptions],Simulation,Null];
 	cache=Lookup[ToList[myResolutionOptions],Cache,{}];
 
-	(* Seperate out our adjustpH options from our Sample Prep options. *)
+	(* Separate out our adjustpH options from our Sample Prep options. *)
 	{samplePrepOptions,adjustpHOptions}=splitPrepOptions[resolverSafeOps];
 
 	(* Resolve our sample prep options *)
@@ -1119,8 +1250,8 @@ resolveExperimentAdjustpHOptions[mySamples:{ObjectP[Object[Sample]]...},nominalp
 		specifiedMaxpHMixTime,specifiedpHMixDutyCycle,specifiedpHMixRate,specifiedNumberOfpHMixes,specifiedMaxNumberOfpHMixes,
 		specifiedpHMixVolume,specifiedpHMixTemperature,specifiedMaxpHMixTemperature,specifiedSonicationAmplitude,specifiedMinpHs,
 		specifiedMaxpHs,specifiedTitrate,specifiedMaxAdditionVolumes,specifiedKeepInstruments,specifiedAsssayVolume,specifiedDestinationWell,
-		specifiedAliquotContainer,specifiedAliquotSampleStorageCondition,specifiedTargetConcentration,specifiedContainerOut,specifiedSimulation,specifiedPreparatoryPrimitives,
-		specifiedMaxAcidAmountPerCycle,specifiedMaxBaseAmountPerCycle,specifiedModelsOut,specifiedMaxNumberOfCycles
+		specifiedAliquotContainer,specifiedAliquotSampleStorageCondition,specifiedTargetConcentration,specifiedAssayVolume, specifiedTargetConcentrationAnalyte, specifiedContainerOut,specifiedSimulation,specifiedPreparatoryPrimitives,
+		specifiedMaxAcidAmountPerCycle,specifiedMaxBaseAmountPerCycle,specifiedModelsOut,specifiedMaxNumberOfCycles, specifiedTitrationMethod, specifiedTitrationInstrument, specifiedpHMeter, specifiedProbe, specifiedProbeType, specifiedpHAliquot, specifiedpHAliquotVolume, specifiedRecoupSample, specifiedSite
 	}=Lookup[
 		resolverSafeOps,
 		{
@@ -1128,8 +1259,8 @@ resolveExperimentAdjustpHOptions[mySamples:{ObjectP[Object[Sample]]...},nominalp
 			Aliquot,ConsilidateAliquote,MixWhileTitrating,pHMixType,pHMixUntilDissolved, pHMixInstrument, pHMixTime,
 			MaxpHMixTime, pHMixDutyCycle, pHMixRate,NumberOfpHMixes, MaxNumberOfpHMixes,pHMixVolume, pHMixTemperature,
 			MaxpHMixTemperature, pHHomogenizingAmplitude,MinpH,MaxpH,Titrate,MaxAdditionVolume,KeepInstruments,AssayVolume,
-			DestinationWell,AliquotContainer,AliquotSampleStorageCondition,TargetConcentration,ContainerOut,Simulation,PreparatoryUnitOperations,
-			MaxAcidAmountPerCycle,MaxBaseAmountPerCycle,ModelOut,MaxNumberOfCycles
+			DestinationWell,AliquotContainer,AliquotSampleStorageCondition,TargetConcentration,AssayVolume,TargetConcentrationAnalyte, ContainerOut,Simulation,PreparatoryUnitOperations,
+			MaxAcidAmountPerCycle,MaxBaseAmountPerCycle,ModelOut,MaxNumberOfCycles, TitrationMethod, TitrationInstrument, pHMeter, Probe, ProbeType, pHAliquot, pHAliquotVolume, RecoupSample, Site
 		}
 	];
 	(*Replace Null to 1 for NumberOfReplicates*)
@@ -1140,8 +1271,21 @@ resolveExperimentAdjustpHOptions[mySamples:{ObjectP[Object[Sample]]...},nominalp
 		Packet[pHLog, SamplesIn, Overshot, SampleModel, SampleVolume, pHAchieved]
 	};
 	sampleFields=Packet@@Union[{pH,IncompatibleMaterials,RequestedResources},SamplePreparationCacheFields[Object[Sample]]];
-	modelContainerFields=DeleteDuplicates[Join[SamplePreparationCacheFields[Model[Container]],{Immobile,CoverFootprints,AluminumFoil,Ampoule,BuiltInCover, CoverTypes,Counterweights,EngineDefault,Hermetic,Opaque, Parafilm,RequestedResources,Reusability,RNaseFree,Squeezable, StorageBuffer,StorageBufferVolume,TareWeight,Name, VolumeCalibrations, MaxVolume, Aperture, InternalDiameter, Dimensions, Sterile, Deprecated, Footprint, OpenContainer,InternalDepth,InternalDimensions,Positions,RentByDefault}]];
-	{pHProbes,overheadStirrers,candidateBeakers}=Search[{Model[Part,pHProbe],Model[Instrument, OverheadStirrer],Model[Container, Vessel]},{Deprecated!=True && DeveloperObject != True,Deprecated!=True && DeveloperObject != True,InternalDiameter>3Centimeter&&Sterile==False&&StringContainsQ[Name,"beaker",IgnoreCase->True]&&Deprecated!=True && DeveloperObject != True}];
+	modelContainerFields=DeleteDuplicates[Join[SamplePreparationCacheFields[Model[Container]],{Immobile,CoverFootprints,AluminumFoil,Ampoule,BuiltInCover, CoverTypes,Counterweights,EngineDefault,Hermetic,Opaque, Parafilm,RequestedResources,Reusable,RNaseFree,Squeezable, StorageBuffer,StorageBufferVolume,TareWeight,Name, VolumeCalibrations, MaxVolume, Aperture, InternalDiameter, Dimensions, Sterile, Deprecated, Footprint, OpenContainer,InternalDepth,InternalDimensions,Positions,RentByDefault,SelfStanding, MaxOverheadMixRate}]];
+	{pHProbes,overheadStirrers,candidateBeakers}=Search[
+		{
+			Model[Part,pHProbe],
+			Model[Instrument, OverheadStirrer],
+			Model[Container, Vessel]
+		},
+		{
+			Deprecated!=True && DeveloperObject != True,
+			Deprecated!=True && DeveloperObject != True,
+			InternalDiameter>3Centimeter&&Sterile==False&&StringContainsQ[Name,"beaker",IgnoreCase->True]&&Deprecated!=True && DeveloperObject != True
+		}
+	];
+
+	possiblepHTitrators = Search[Object[Instrument, pHTitrator], Status != Retired];
 
 	(*get the fixed addition information to download*)
 	fixedAdditionSamples=Cases[Flatten[specifiedFixedAdditions,1],{UnitsP[],ObjectP[]}][[All,2]];
@@ -1156,13 +1300,16 @@ resolveExperimentAdjustpHOptions[mySamples:{ObjectP[Object[Sample]]...},nominalp
 				(*5*)Join[Cases[specifiedAliquotContainers, ObjectP[]], PreferredContainer[All]],
 				(*6*)pHProbes,
 				(*7*)candidateBeakers,
-				(*8*)specifiedModelsOut /. Automatic -> Null
+				(*8*)specifiedModelsOut /. Automatic -> Null,
+				(*9*)specifiedpHMeter /. Automatic -> Null,
+				(*10*)specifiedProbe /. Automatic -> Null,
+				(*11*)possiblepHTitrators
 			},
 			{
 				(*1*)
 				{
 					sampleFields,
-					Packet[Model[Evaluate[Union[{pH, TransportWarmed, Name, Deprecated, Sterile, LiquidHandlerIncompatible, Tablet, TabletWeight, State, NominalpH, MinpH, MaxpH, IncompatibleMaterials}, Evaluate[SamplePreparationCacheFields[Model[Sample]]]]]]],
+					Packet[Model[Evaluate[Union[{pH, TransportTemperature, Name, Deprecated, Sterile, LiquidHandlerIncompatible, Tablet, SolidUnitWeight, State, NominalpH, MinpH, MaxpH, IncompatibleMaterials}, Evaluate[SamplePreparationCacheFields[Model[Sample]]]]]]],
 					Packet[Container[Evaluate[SamplePreparationCacheFields[Object[Container]]]]],
 					Packet[Container[Model][modelContainerFields]],
 					Packet[Container[Model][VolumeCalibrations][{LiquidLevelDetectorModel, CalibrationFunction, DateCreated}]]
@@ -1172,8 +1319,14 @@ resolveExperimentAdjustpHOptions[mySamples:{ObjectP[Object[Sample]]...},nominalp
 				(*4*)dataFields,
 				(*5*){Evaluate[Packet @@ modelContainerFields]},
 				(*6*){Packet[ShaftLength, ShaftDiameter, ProbeType]},
-				(*7*){Packet[MaxVolume, Aperture, InternalDiameter]},
-				(*8*){Packet[MinpH, MaxpH, pHingAcid, pHingBase, MaxNumberOfpHingCycles, MaxpHingAdditionVolume, MaxAcidAmountPerCycle, MaxBaseAmountPerCycle, TotalVolume]}
+				(*7*){Packet[MaxVolume, Aperture, InternalDiameter, MaxOverheadMixRate]},
+				(*8*){Packet[MinpH, MaxpH, pHingAcid, pHingBase, MaxNumberOfpHingCycles, MaxpHingAdditionVolume, MaxAcidAmountPerCycle, MaxBaseAmountPerCycle, TotalVolume]},
+				(*9*){Model[Object]},
+				(*10*){Model[Object]},
+				(*11*){
+								Packet[MixInstrument, pHMeter],
+								Packet[Model[MinDispenseVolume]]
+							}
 			},
 			Cache -> cache,
 			Simulation -> updatedSimulationMain
@@ -1200,6 +1353,21 @@ resolveExperimentAdjustpHOptions[mySamples:{ObjectP[Object[Sample]]...},nominalp
 
 	(* Get ModelOut information on pHing *)
 	modelsOutPackets=Flatten[downloadData[[8]]];
+
+	(* Get pHMeter Model *)
+	rawpHMeterModel = Flatten[downloadData[[9]]];
+	specifiedpHMeterModel =MapThread[If[MatchQ[#1, ObjectP[Model[Instrument, pHMeter]]], #1, #2]&,{rawpHMeterModel, specifiedpHMeter}];
+
+	(* Get Probe Model *)
+	rawProbeModel = Flatten[downloadData[[10]]];
+	specifiedProbeModel = MapThread[If[MatchQ[#1, ObjectP[Model[Part, pHProbe]]], #1, #2]&,{rawProbeModel, specifiedProbe}];
+
+	(* Get pHMeter and MixInstrument for pHTitrator *)
+	rawpHTitratorsAssociate = Flatten[downloadData[[11]]];
+
+	(* Get all caps for robotic titration *)
+	{roboticTitrationCaps, roboticTitrationCapPackets} = capCandidatesInRoboticTitration["Memoization"];
+	{titrationContainerModels, titrationContainerModelPackets} = containerCandidatesInRoboticTitration["Memoization"];
 
 	(* Helper function to safely get fields out of modelsOutPackets which are index-matched to specifiedModelsOut*)
 	fetchModelOutValue[model_,field_]:=If[MatchQ[model,ObjectP[Model[Sample]]],
@@ -1240,10 +1408,28 @@ resolveExperimentAdjustpHOptions[mySamples:{ObjectP[Object[Sample]]...},nominalp
 	sampleContainerModelPackets=Experiment`Private`fetchPacketFromCache[#,fullCache]&/@sampleContainerModels;
 	sampleContainerMaxVolumes=Lookup[sampleContainerModelPackets,MaxVolume];
 
-
-
-
-
+	sampleContainerVolumeCalibrations = Lookup[sampleContainerModelPackets, VolumeCalibrations];
+	validSampleContainerVolumeCalibrationPackets = Map[
+		Function[{eachSampleContainerCalibrations},
+			Module[{eachSampleContainerCalibrationPackets},
+				eachSampleContainerCalibrationPackets = Experiment`Private`fetchPacketFromCache[#,
+					Flatten[downloadData[[1]]]] & /@ eachSampleContainerCalibrations;
+				Select[eachSampleContainerCalibrationPackets,
+					And[
+						! NullQ[Lookup[#, LiquidLevelDetectorModel]],
+						! TrueQ[Lookup[#, Anomalous]],
+						! TrueQ[Lookup[#, Deprecated]],
+						! TrueQ[Lookup[#, DeveloperObject]]]&]
+			]
+		],
+		sampleContainerVolumeCalibrations
+	];
+	(*If there are multiple calibration functions, pick the first*)
+	sampleContainerVolumeCalibrationPackets = If[Length[#]>0,
+		Last[#],
+		<||>
+	]& /@ validSampleContainerVolumeCalibrationPackets;
+	sampleContainerCalibrationFunctions = Lookup[sampleContainerVolumeCalibrationPackets, CalibrationFunction, Null];
 
 	(*-- INPUT VALIDATION CHECKS --*)
 	(* NOTE: we are leaving it to MeasurepH to check Invalid samples*)
@@ -1304,8 +1490,13 @@ resolveExperimentAdjustpHOptions[mySamples:{ObjectP[Object[Sample]]...},nominalp
 	clearances=If[#,minpHProbeDiamter+3 Centimeter,minpHProbeDiamter+1.5 Centimeter]&/@specifiedMixWhileTitrating;
 
 	possibleImpellers=MapThread[
-		compatibleImpeller[#1[Object],First[overheadStirrers],Clearance->#2,Cache->fullCache]&,
-		{simulatedSampleContainerModelPackets,clearances}
+		If[(NullQ[#3])||(LessQ[FirstCase[{#3/Lookup[#1, MaxVolume, Null], 0.39}, NumericP], 0.4]),
+			(* if the sample volume is less than 40% of the max volume, return Null to trigger aliquot for impeller *)
+			Null,
+			(* check if there is compatible impeller based on container size *)
+			compatibleImpeller[Lookup[#1, Object],First[overheadStirrers],Clearance->#2,Cache->fullCache]
+		]&,
+		{simulatedSampleContainerModelPackets,clearances, sampleVolumes}
 	];
 	(* Aliquot is required if NumberOfReplicates is larger than 1 *)
 	replicateAliquotRequired=numberOfReplicatesNullToOne>1;
@@ -1471,8 +1662,6 @@ resolveExperimentAdjustpHOptions[mySamples:{ObjectP[Object[Sample]]...},nominalp
 		{}
 	];
 
-
-
 	(*  == Resolve Automatic options ==  *)
 	(* -- Resolve Titrants -- *)
 	{resolvedTitratingAcids,resolvedTitratingBases}=MapThread[
@@ -1480,12 +1669,12 @@ resolveExperimentAdjustpHOptions[mySamples:{ObjectP[Object[Sample]]...},nominalp
 			If[#1,
 				resolvedAcid=Which[
 					MatchQ[{#2,#4},{Automatic,ObjectP[]}],#4,
-					MatchQ[#2,Automatic],Model[Sample, StockSolution, "2 M HCl"],
+					MatchQ[#2,Automatic],Model[Sample, StockSolution, "id:jLq9jXY4k6ww"],(*Model[Sample, StockSolution, "2 M HCl"]*)
 					True,#2
 				];
 				resolvedBase=Which[
 					MatchQ[{#3,#5},{Automatic,ObjectP[]}],#5,
-					MatchQ[#3,Automatic],Model[Sample,StockSolution,"1.85 M NaOH"],
+					MatchQ[#3,Automatic],Model[Sample,StockSolution,"id:BYDOjv1VA86X"],(*Model[Sample, StockSolution, "1.85 M NaOH"]*)
 					True,#3
 				];
 
@@ -1786,12 +1975,11 @@ resolveExperimentAdjustpHOptions[mySamples:{ObjectP[Object[Sample]]...},nominalp
 
 
 
-
 	(* While we are at it, we also want to figure out if historical data shows the solution is not well buffered and use it to help resolve MaxBlahAmountPerCycle and MaxNumberOfCycles *)
 	{calculatedFixedAdditions,spikedAmountsConverted}=Transpose[MapThread[
 		Function[
 			{eachHistoricalData,historicalDatapHLog,overshotQ,achievedQ,volumeConverter},
-			
+
 			(*If historical data is specified, deduct fixed additions from historical data*)
 			(*pHLog in historical data is in such form {"Addition Model", "Addition Sample", "Amount", "pH", "pH Data"}.
 			At this point, Models that are Null have been replace with Object[Sample]*)
@@ -1799,16 +1987,16 @@ resolveExperimentAdjustpHOptions[mySamples:{ObjectP[Object[Sample]]...},nominalp
 				!MatchQ[eachHistoricalData,ObjectP[]],
 				{None,Null},
 				Module[{cleanLog,trimmedLog,sample,amount,volumeList,volumeSansOvershot,calculatedFD,spikedQ,spikedAmountConverted},
-					
+
 					(*When there's no fixed additions, the first one or few entries are {Null,Null,Null,_,_}, we don't want to pick that part of the log*)
 					cleanLog=DeleteCases[historicalDatapHLog,{Null,Null,Null,_,_},1];
-					
+
 					(* There is also no fixed additions when pH just arrived at the correct range without adding acid/base last time *)
 					trimmedLog=If[MatchQ[cleanLog,{}],
 						Null,
 						First[SplitBy[cleanLog, Download[First[#], Object] &]]
 					];
-					
+
 					If[
 						NullQ[trimmedLog],
 						{None,Null},
@@ -1816,26 +2004,26 @@ resolveExperimentAdjustpHOptions[mySamples:{ObjectP[Object[Sample]]...},nominalp
 							(*Sample models are the same here. We just take the first one*)
 							sample=trimmedLog[[1,1]];
 							volumeList=trimmedLog[[All,3]];
-							
+
 							volumeSansOvershot=Switch[{overshotQ,achievedQ,Length[volumeList]},
-								
+
 								(* If no overshot, take all the entries *)
 								{False,_,_},Total[volumeList],
-								
+
 								(* Elif overshot and multiple volume additions, take all the additions except for the last *)
 								{True,_,GreaterP[1]},Total[volumeList[[;;-2]]],
-								
+
 								(* Elif overshot, pHing failed, and only one entry, take off 60% *)
 								{True,False,EqualP[1]},Total[volumeList]*0.4,
-								
+
 								(* Elif overshot but only one entry, take off 30% from the total volume *)
 								_,Total[volumeList]*0.7
 							];
-							
+
 							(*Total the amount. Because samples are the same we don't need to worry about adding a mass to a volume*)
 							amount=volumeSansOvershot*volumeConverter;
 							calculatedFD={{amount,sample}};
-							
+
 							(*spiked: in the overshot addition, pH changed 1 or more*)
 							(*NOTE: we are assuming here that the acid and base strengths are the same. If not, then lumping up acid and base is problematic.
 							but as of now we don't have reliable way to figure out the H+/OH- molarity in the titrant so we'll just make our peace with this assumption.
@@ -1845,10 +2033,10 @@ resolveExperimentAdjustpHOptions[mySamples:{ObjectP[Object[Sample]]...},nominalp
 								Abs[trimmedLog[[All,4]][[-1]]-trimmedLog[[All,4]][[-2]]]>1,
 								False
 							];
-							
+
 							(* This spiked addition amount is converted so that it is relative to our actual volume *)
 							spikedAmountConverted=If[spikedQ,(trimmedLog[[All,3]][[-1]])*volumeConverter,Null];
-							
+
 							{calculatedFD,spikedAmountConverted}
 						]
 					]
@@ -1996,10 +2184,121 @@ resolveExperimentAdjustpHOptions[mySamples:{ObjectP[Object[Sample]]...},nominalp
 		}
 	];
 
+	(* -- Resolve AssayVolume for Target concentration -- *)
+	(* This section is doing a simplified assay volume resolution in the same as that in resolveExperimentAliquotOptions (line 2816 in  where resolvedAssayVolume is resolved), except that we only consider liquid state (we consider solid and count as well in aliquot) *)
+	(* We do not include conflict checks and tests, just to figure out the assay volume if aliquot for target concentration is expected. Those checks and tests will be performed when we call aliquot resolver *)
+	preResolvedAnalyte = MapThread[
+		If[MatchQ[#1, Null|Automatic] && MatchQ[#2, Automatic],
+			Null,
+			#2]&,
+		{specifiedTargetConcentration, specifiedTargetConcentrationAnalyte}];
+
+	(*decide the potential analyte using selectAnalyteFromSample (this is defined in AbsorbanceSpectroscopy/Experiment.m)*)
+	potentialAnalytesToUse = selectAnalyteFromSample[samplePackets, Analyte -> preResolvedAnalyte, Cache -> fullCache, DetectionMethod -> Absorbance, Output -> Result];
+	(* pull out the sample composition identity model packets *)
+	sampleCompositionPackets = Map[
+		Function[{samplePacket},
+			fetchPacketFromCache[#, fullCacheWithSearchResults]& /@ Lookup[samplePacket, Composition][[All, 2]]
+		],
+		samplePackets
+	];
+	(*get the packet for each of the potential analytes*)
+	potentialAnalytePackets = Map[
+		Function[{potentialAnalyte},
+			SelectFirst[Flatten[sampleCompositionPackets], Not[NullQ[#]] && MatchQ[potentialAnalyte, ObjectReferenceP[Lookup[#, Object]]] &, Null]],
+		potentialAnalytesToUse];
+
+	(* Do a simplified aliquot resolution for assayVolume, just to get the correct volume. We do not need those tests/checks since they would be called again later in aliquot *)
+	(* Unlike ExperimentAliquot, AdjustpH does not allow pooled samples, so we only need to mapthread once to figure out the assay volume *)
+	{
+		resolvedAssayVolumeAliquotQ,
+		resolvedAssayVolume
+	} = Transpose[MapThread[
+		Function[{samplePacket, assayVolume, targetConc, potentialAnalytes},
+			Module[
+				{eitherConcP, targetConcentration, molecularWeight, sampleConc, sampleMassConc, sampleVolume, resolvedSampleConc, dilutionFactor, sampleComposition, roundedAssayVolume, assayVolumeAliquotQ, resolveAssayVolume},
+
+				(* pull out the Composition of the sample packet *)
+				sampleComposition = Lookup[samplePacket, Composition, {}];
+				(* get the volume field from the sample directly *)
+				sampleVolume = Lookup[samplePacket, Volume];
+				(* just pull out MolecularWeight directly.  Note that this could be $Failed because the field doesn't exist for everything *)
+				molecularWeight = If[NullQ[potentialAnalytes],
+					Null,
+					Lookup[potentialAnalytes, MolecularWeight, Null]
+				];
+
+				(* make a pattern that is just the combination of ConcentrationP and MassConcentrationP (since I'll be using it a lot below) *)
+				eitherConcP = ConcentrationP|MassConcentrationP;
+				(* get the TargetConcentration option; if it is Automatic, resolve to Null *)
+				targetConcentration = targetConc/. {Automatic -> Null};
+				(* pull out the concentration and mass concentration of the chosen component from the composition field *)
+				sampleConc = If[MatchQ[potentialAnalytes, PacketP[]],
+					FirstCase[sampleComposition, {conc:ConcentrationP, ObjectP[Lookup[potentialAnalytes, Object]], _?DateObjectQ | Null} :> conc, Null],
+					Null
+				];
+				sampleMassConc = If[MatchQ[potentialAnalytes, PacketP[]],
+					FirstCase[sampleComposition, {massConc:MassConcentrationP, ObjectP[Lookup[potentialAnalytes, Object]], _?DateObjectQ | Null} :> massConc, Null],
+					Null
+				];
+				(* pick the real concentration we are going to use; should mirror the units of TargetConcentration *)
+				resolvedSampleConc = Which[
+					(* If we have the same units for our target and the composition, use that unit *)
+					ConcentrationQ[targetConcentration]&&ConcentrationQ[sampleConc],sampleConc,
+					MassConcentrationQ[targetConcentration]&&MassConcentrationQ[sampleMassConc], sampleMassConc,
+					(* If we have concentration target and mass concentration composition, and the molecular weight is known, divide by the molecular weight *)
+					ConcentrationQ[targetConcentration]&&MassConcentrationQ[sampleMassConc]&&MolecularWeightQ[molecularWeight],UnitConvert[sampleMassConc/molecularWeight,Molar],
+					(* If we have mass concentration target and concentration composition, and the molecular weight is known, multiple by the molecular weight *)
+					MassConcentrationQ[targetConcentration]&&ConcentrationQ[sampleConc]&&MolecularWeightQ[molecularWeight],UnitConvert[sampleConc*molecularWeight,Gram/Liter],
+					(* Otherwise, return Null *)
+					True, Null
+				];
+
+				(* get the dilution factor, which is the ratio of the sample's target concentration to the current concentration; if target conc is Null or noConcentrationError is True, then set it as 1 *)
+				dilutionFactor = If[NullQ[resolvedSampleConc],
+					1,
+					(resolvedSampleConc / targetConcentration)
+				];
+
+				(* resolve the AssayVolume options *)
+				{
+					assayVolumeAliquotQ,
+					resolveAssayVolume
+				} = Switch[{assayVolume, targetConc},
+					(*AssayVolume is given, we will call aliquot resolver to handle the dilution *)
+					{VolumeP, _},
+					{True, assayVolume},
+					(* if we do not have a target concentration, no dilution is necessary *)
+					{_, Null},
+					{False, sampleVolume},
+					(* if we have a specified target concentration and no Volume information specified, calculate based on dilution factor*)
+					{_, eitherConcP},
+					{True, sampleVolume * dilutionFactor},
+					(* otherwise, we do not need to dilute*)
+					{_, _},
+					{False, sampleVolume}
+				];
+				roundedAssayVolume = If[NullQ[resolveAssayVolume],
+					Null,
+					Quiet[AchievableResolution[resolveAssayVolume],{Error::MinimumAmount,Warning::AmountRounded}]
+				];
+				{
+					assayVolumeAliquotQ,
+					roundedAssayVolume
+				}
+			]
+		],
+		{samplePackets, specifiedAssayVolume, specifiedTargetConcentration, potentialAnalytePackets}
+	]];
+
+	(* update the working sample volume to be the larger of assay volume and sample volume *)
+	(* Theoretically, assay volume should be equal or larger than sample volume. If an assay volume is specified and it's smaller than sample volume, aliquot resolver will deal with that conflict *)
+	workingSampleVolumes = MapThread[If[#1 > #2, #1, #2]&, {resolvedAssayVolume, sampleVolumes}];
+
 	(* -- Resolve MaxAdditionVolume -- *)
 
 	(* make sure we are in the right container:
-	if NoR==1 we want our sample to be in the aliquot conainer if sepcified. So we use simulated packets ;
+	if NoR==1 we want our sample to be in the aliquot container if specified. So we use simulated packets ;
 	if NoR>1 we want to be in the original container as we are concerned with whether the final volume is too large to pool samples back
 	*)
 	samplePacketsForMaxAdditionVolumes=If[numberOfReplicatesNullToOne>1,samplePackets,simulatedSamplePackets];
@@ -2022,7 +2321,7 @@ resolveExperimentAdjustpHOptions[mySamples:{ObjectP[Object[Sample]]...},nominalp
 			(*7*)aliquot,
 			(*8*)fixedAddition
 		},
-			Module[{emptyVolume,percent,smaller,modelPercent,preresolvedMaxVol,resolvedMaxVolume,fixedAdditionVolume,calculatedMaxAdditionVolume,
+			Module[{emptyVolume,percent,modelPercent,resolvedMaxVolume,fixedAdditionVolume,calculatedMaxAdditionVolume,
 				totalMaxVolume
 			},
 				(* prepare numbers *)
@@ -2109,6 +2408,285 @@ resolveExperimentAdjustpHOptions[mySamples:{ObjectP[Object[Sample]]...},nominalp
 		{}
 	];
 
+	(* If titrationMethod is Robotic, we have to use the pHMeter and MixInstrument that is assigned to the pH titrator *)
+	pHTitratorspHMeters = Cases[Download[Lookup[rawpHTitratorsAssociate, pHMeter, Null], Object], ObjectP[]];
+	pHTitratorsMixInstruments = Cases[Download[Lookup[rawpHTitratorsAssociate, MixInstrument, Null], Object], ObjectP[]];
+
+	(* TitrationMethod conflict check *)
+	titrationMethodConflictQs=MapThread[
+		Which[
+			(*If TitrationMethod is not resolved or is resolved to Manual, no conflicts*)
+			MatchQ[#1,Except[Robotic]],
+			True,
+			(*If TitrationMethod is resolved Robotic but associated option is not compatible, give conflicts*)
+			MatchQ[#1,Robotic]&&
+					Or@@{
+						MatchQ[#2,Except[Automatic|Stir]],
+						MatchQ[#3,Except[Alternatives[Automatic, Model[Instrument, pHMeter, "id:R8e1PjeAn4B4"], Sequence @@ pHTitratorspHMeters]]],
+						MatchQ[#4,Surface],
+						MatchQ[#5,Except[Automatic|Null|Model[Part, pHProbe, "id:jLq9jXvP7jLx"]|Model[Part, pHProbe, "id:J8AY5jDmW5BZ"]]], (*Model[Part, pHProbe, "InLab Reach Pro-225"]|Model[Part, pHProbe, "InLab Micro Pro-ISM"]*)
+						MatchQ[#6,True],
+						MatchQ[#7,False],
+						MatchQ[#8,True],
+						MatchQ[#9,Except[Alternatives[Automatic, Model[Instrument, OverheadStirrer, "id:rea9jlRRmN05"], Sequence @@ pHTitratorsMixInstruments]]],
+						MatchQ[#10,Except[Automatic|Null]],
+						MatchQ[#11,Except[Null]]&&MatchQ[Lookup[fetchPacketFromCache[#11,fullCache],State,Null],Solid],
+						MatchQ[#12,Except[Null]]&&MatchQ[Lookup[fetchPacketFromCache[#12,fullCache],State,Null],Solid],
+						MatchQ[#13,True],
+						MatchQ[#14, Except[Automatic]]||MatchQ[#15, Except[Automatic]],
+						MatchQ[#16,Null]
+					},
+			False,
+
+			True,
+			True
+		]&,
+		{
+			(*1*)specifiedTitrationMethod,
+			(*2*)specifiedpHMixType,
+			(*3*)specifiedpHMeterModel,
+			(*4*)specifiedProbeType,
+			(*5*)specifiedProbeModel,
+			(*6*)specifiedpHAliquot,
+			(*7*)specifiedTitrate,
+			(*8*)specifiedpHMixUntilDissolved,
+			(*9*)specifiedpHMixInstrument,
+			(*10*)specifiedpHAliquotVolume,
+			(*11*)resolvedTitratingBases,
+			(*12*)resolvedTitratingAcids,
+			(*13*)specifiedRecoupSample,
+			(*14*)specifiedAliquotContainer,
+			(*15*)specifiedDestinationWell,
+			(*16*)specifiedTitrationInstrument
+		}
+	];
+
+	titrationMethodConflictingSamples=PickList[mySamples,titrationMethodConflictQs,False];
+
+	titrationMethodConflictingOptions=If[!(And@@titrationMethodConflictQs),{TitrationMethod, pHMixType, pHMeter, ProbeType, Probe, pHAliquot, Titrate, pHMixUntilDissolved, pHMixInstrument, pHAliquotVolume, TitratingBase, TitratingAcid, RecoupSample},{}];
+
+
+	If[!(And@@titrationMethodConflictQs)&&!gatherTests,
+		Message[Error::ConflictingTitrationMethod,titrationMethodConflictingSamples]
+	];
+
+	titrationMethodTest=If[gatherTests,
+		Test["Specified TitrationMethod and associated options should not conflict",
+			And@@titrationMethodConflictQs,
+			True
+		],
+		{}
+	];
+
+	(* -- Resolve TitrationMethod -- *)
+
+	(* findpHTitrationCaps returns all the possible caps that can be used for the sample container in robotic titration*)
+	possibleTitratorCaps = If[replicateAliquotRequired,
+		(*If we will need to do Aliquot because numberOfReplicates >1, we won't be using the current sample container anyway, resolve to {} to trigger the consideration of preferredRoboticTitrationContainers *)
+		{{}},
+		(*Using findpHTitratorCaps to check if we can use the current sample container for robotic titration.*)
+		MapThread[findpHTitratorCaps[#1, #2, #3, #4, #5] &, {simulatedSampleContainerModelPackets, sampleContainerCalibrationFunctions, specifiedProbeModel, workingSampleVolumes, resolvedMaxAdditionVolumes}]
+	];
+
+	(*In case we need to change the container, find out the minimum volume the target container must satisfy considering the replicates*)
+	calculatedAliquotContainerVolume=MapThread[(#1/numberOfReplicatesNullToOne)+#2&,{workingSampleVolumes,resolvedMaxAdditionVolumes}];
+	(*preferredRoboticTitrationContainers returns the smallest container that can be used to Aliquot the sample into for robotic titration as well as its corresponding cap and pH probe *)
+	{roboticTitrationContainer, roboticTitrationContainerCap, roboticTitrationProbe} = Transpose[MapThread[preferredRoboticTitrationContainers[#1/.(Automatic|Null) -> #3, #2]&, {specifiedAliquotAmount, specifiedProbeModel, calculatedAliquotContainerVolume}]];
+
+	(* Todo: need site for titration method determination before CMU pHTitrator set up*)
+	resolvedSite = Which[
+		(* Use the option if already provided *)
+		!MatchQ[specifiedSite,Automatic],Download[specifiedSite,Object],
+		True, $Site
+	];
+	resolvedTitrationMethod=MapThread[
+		Which[
+			(*If specified, take it*)
+			MatchQ[#1,Except[Automatic]],#1,
+			(*If site is Object[Container, Site, "ECL-CMU"], resolve to Manual*)
+			MatchQ[resolvedSite,ObjectP[Object[Container, Site, "id:P5ZnEjZpRlK4"]]],Manual,
+			(*If pHMixType is specified but is not Stir, resolve to Manual*)
+			MatchQ[#2,Except[Automatic|Stir]],Manual,
+			(*If Titrate is specified to False, resolve to Manual*)
+			MatchQ[#3,False],Manual,
+			(*If pHMeter is specified but its Model is not SevenExcellence or the connected pHMeter of pH Titrator, resolve to Manual*)
+			MatchQ[#4,Except[Alternatives[Automatic, Model[Instrument, pHMeter, "id:R8e1PjeAn4B4"], Sequence @@ pHTitratorspHMeters]]], Manual,
+			(*If RecoupSample is specified to True, resolve to Manual*)
+			MatchQ[#5,True],Manual,
+			(*If pHAliquot is specified to True, resolve to Manual*)
+			MatchQ[#6,True],Manual,
+			(*If pHAliquotVolume is specified, resolve to Manual*)
+			MatchQ[#7,Except[Automatic|Null]],Manual,
+			(*If pHMixUntilDissolved is True, resolve to Manual*)
+			MatchQ[#8,True],Manual,
+			(*If pHMixInstrument is specified but it is not Model[Instrument, OverheadStirrer, "MINISTAR 40 with C-MAG HS 10 Hot Plate"] or the connected OverheadStirrer of pH Titrator, resolve to Manual*)
+			MatchQ[#9,Except[Alternatives[Automatic, Model[Instrument, OverheadStirrer, "id:rea9jlRRmN05"], Sequence @@ pHTitratorsMixInstruments]]],Manual,
+			(*If TitratingAcid is specified to Solid, resolve to Manual*)
+			MatchQ[#10,Except[Null]]&&MatchQ[Lookup[fetchPacketFromCache[#10,fullCache],State,Null],Solid],Manual,
+			(*If TitratingBase is specified to Solid, resolve to Manual*)
+			MatchQ[#11,Except[Null]]&&MatchQ[Lookup[fetchPacketFromCache[#11,fullCache],State,Null],Solid],Manual,
+			(*If AliquotContainer or DestinationWell is specified, resolve to Manual because we might need to aliquot to the desired containers for robotic titration. *)
+			MatchQ[#15, Except[Automatic]]||MatchQ[#16, Except[Automatic]], Manual,
+			(*If we could not find a compatible cap for sample container and (Aliquot is specified False or we could not find a container to aliquot into), resolve to Manual*)
+			MatchQ[#12, {}]&&(MatchQ[#13, False]||NullQ[#14]), Manual,
+			(*If TitrationInstrument is Null, resolve to Manual*)
+			MatchQ[#17,Null],Manual,
+			(*If ProbeType is specified to be Surface, resolve to Manual*)
+			MatchQ[#18,Surface], Manual,
+			(*If SonicationAmplitude is specified, resolve to Manual*)
+			MatchQ[#19,PercentP], Manual,
+			(*If MaxpHMixTemperature is specified, we cannot use Stir, so resolve to Manual*)
+			MatchQ[#20,TemperatureP], Manual,
+			(*Otherwise, resolve to Robotic*)
+			True, Robotic
+		]&,
+		{
+			(*1*)specifiedTitrationMethod,
+			(*2*)specifiedpHMixType,
+			(*3*)specifiedTitrate,
+			(*4*)specifiedpHMeterModel,
+			(*5*)specifiedRecoupSample,
+			(*6*)specifiedpHAliquot,
+			(*7*)specifiedpHAliquotVolume,
+			(*8*)specifiedpHMixUntilDissolved,
+			(*9*)specifiedpHMixInstrument,
+			(*10*)resolvedTitratingAcids,
+			(*11*)resolvedTitratingBases,
+			(*12*)possibleTitratorCaps,
+			(*13*)specifiedAliquot,
+			(*14*)roboticTitrationContainer,
+			(*15*)specifiedAliquotContainer,
+			(*16*)specifiedDestinationWell,
+			(*17*)specifiedTitrationInstrument,
+			(*18*)specifiedProbeType,
+			(*19*)specifiedSonicationAmplitude,
+			(*20*)specifiedMaxpHMixTemperature
+		}
+	];
+
+	(* Update MaxNumberOfCycles and MaxAcidAmountPerCycle/MaxBaseAmountPerCycle if titrationMethod is Robotic and these options were not specified*)
+	(* Originally, MaxNumberOfCycles is default to 10, MaxAcidAmountPerCycle/MaxBaseAmountPerCycle is 2.5% of initial volume. *)
+	(* After update, MaxNumberOfCycles is default to 50, MaxAcidAmountPerCycle/MaxBaseAmountPerCycle is 0.5% of initial volume. *)
+	(* So the max addition volume in total is not changed--the resolved max volume after pH adjustment is the same -- aliquot resolution and container resolution unchanged *)
+	{updatedMaxBaseAmountPerCycle, updatedMaxAcidAmountPerCycle, updatedMaxNumberOfCycles} = Transpose@MapThread[
+		Which[
+			(* If either of MaxNumberOfCycles/MaxAcidAmountPerCycle/MaxBaseAmountPerCycle is specified,	keep the original resolution *)
+			MemberQ[{#5, #6, #7}, Except[Automatic]],
+			{#1, #2, #3},
+			(* If TitrationMethod is Robotic, decrease max acid/base addition per cycle by 5 times and increase the max number of cycles by 5 times *)
+			MatchQ[#4, Robotic],
+			Module[{minVolume},
+				(* Extract the min amount that can be transferred when titration method is robotic*)
+				minVolume = First@Cases[Lookup[rawpHTitratorsAssociate, MinDispenseVolume, 0.02 Milliliter], VolumeP];
+				{Max[0.2*#1, minVolume], Max[0.2*#2, minVolume], #3 * 5}
+			],
+			(* Otherwise, do not change *)
+			True,
+			{#1, #2, #3}
+		]&,
+		{
+			(*1*)resolvedMaxBaseAmountPerCycle,
+			(*2*)resolvedMaxAcidAmountPerCycle,
+			(*3*)resolvedMaxNumberOfCycles,
+			(*4*)resolvedTitrationMethod,
+			(*5*)specifiedMaxBaseAmountPerCycle,
+			(*6*)specifiedMaxAcidAmountPerCycle,
+			(*7*)specifiedMaxNumberOfCycles
+		}
+	];
+
+	preresolvedCapRobotic = MapThread[
+		Which[
+			(* If TitrationMethod is Manual, resolve cap to Null*)
+			MatchQ[#1, Manual],
+			Null,
+			(* If TitrationMethod is Robotic, and we can find compatible caps, resolve the first of the list of caps*)
+			Length[#2]>0,
+			First[#2],
+			(* If TitrationMethod is Robotic but the sample container does not have compatible caps, resolve to the cap from preferredRoboticTitrationContainers*)
+			True,
+			#3
+		]&,
+		{
+			(*1*)resolvedTitrationMethod,
+			(*2*)possibleTitratorCaps,
+			(*3*)roboticTitrationContainerCap
+		}
+	];
+
+	preresolvedProbeRobotic = MapThread[
+		Which[
+			(*If Probe is specified, keep it*)
+			MatchQ[#2, Except[Automatic]],
+			#2,
+			(* If TitrationMethod is Manual, we do not resolve probe here*)
+			MatchQ[#1, Manual],
+			#2,
+			(* If TitrationMethod is Robotic, the probe is solved with the cap*)
+			MatchQ[#3, Except[Null]],
+			Lookup[fetchPacketFromCache[#3,roboticTitrationCapPackets],pHProbe],
+			(* If we cannot resolve a cap, resolve to Null*)
+			True,
+			Automatic
+		]&,
+		{
+			(*1*)resolvedTitrationMethod,
+			(*2*)specifiedProbe,
+			(*3*)preresolvedCapRobotic
+		}
+	];
+
+	titrationInstrumentCompatibleQs=MapThread[
+		Which[
+			(*If TitrationInstrument is not specified, no conflicts*)
+			MatchQ[#1,Automatic],
+			True,
+			(*If TitrationInstrument is not compatible with titration method, give conflicts*)
+			MatchQ[#1,ObjectP[{Object[Instrument, pHTitrator], Model[Instrument, pHTitrator]}]]&& MatchQ[#2, Manual],
+			False,
+			True,
+			True
+		]&,
+		{
+			(*1*)specifiedTitrationInstrument,
+			(*2*)resolvedTitrationMethod
+		}
+	];
+
+	titrationInstrumentConflictingSamples=PickList[mySamples,titrationInstrumentCompatibleQs,False];
+
+	titrationInstrumentConflictingOptions=If[!(And@@titrationInstrumentCompatibleQs),{TitrationInstrument, TitrationMethod},{}];
+
+
+	If[!(And@@titrationInstrumentCompatibleQs)&&!gatherTests,
+		Message[Error::ConflictingTitrationInstrument,titrationInstrumentConflictingSamples]
+	];
+
+	titrationInstrumentTest=If[gatherTests,
+		Test["Specified TitrationInstrument and TitrationMethod options should not conflict",
+			And@@titrationInstrumentCompatibleQs,
+			True
+		],
+		{}];
+
+	resolvedTitrationInstrument = MapThread[
+		Which[
+			(*If specified, take it*)
+			MatchQ[#1,Except[Automatic]],
+			#1,
+			(*If TitrationMethod is Manual, resolve to Null*)
+			MatchQ[#2,Manual],
+			Null,
+			(*Otherwise, resolve to pHTitrator*)
+			True,
+			Model[Instrument, pHTitrator, "id:WNa4Zjap6PRE"] (*Model[Instrument, pHTitrator, "Microlab 600 (ML600) pH Titrator"]*)
+		]&,
+		{
+			(*1*)specifiedTitrationInstrument,
+			(*2*)resolvedTitrationMethod
+		}
+	];
+
 
 	(* -- Pre-Pre-resolve pHMixType so that we can figure out if we must aliquot for mixing -- *)
 
@@ -2119,6 +2697,7 @@ resolveExperimentAdjustpHOptions[mySamples:{ObjectP[Object[Sample]]...},nominalp
 		(*3*)solidQ_,
 		(*4*)mixWhileTitrating_,
 		(*5*)sampleVol_,
+		(*6*)titrationMethod_,
 		cache_
 	]:=MapThread[
 		Module[{
@@ -2134,65 +2713,72 @@ resolveExperimentAdjustpHOptions[mySamples:{ObjectP[Object[Sample]]...},nominalp
 			titratingContainerLargeVolumeQ=(maxVol>50Milliliter)&&(maxVol<1Liter);
 			titratingContainerVeryLargeVolumeQ = maxVol>=1 Liter;
 			noRoomQ=1-(#5/maxVol)<0.05; (*There's always extra room since we supposedly never pass MaxVolume so this should leave about 10% of total volume room*)
-			Switch[#1,
-				{Automatic,Automatic,Automatic,Automatic,Automatic,Automatic,Automatic,Automatic,Automatic,Automatic,Automatic,Automatic,Automatic},
-				Switch[{#3,titratingContainerOpenQ,titratingContainerLargeVolumeQ,titratingContainerVeryLargeVolumeQ,#4,noRoomQ},
+			Switch[#6, (* TitrationMethod Manual, pH adjustment will be preformed manually *)
+				Manual,
+				Switch[#1,
+					{Automatic,Automatic,Automatic,Automatic,Automatic,Automatic,Automatic,Automatic,Automatic,Automatic,Automatic,Automatic,Automatic},
+					Switch[{#3,titratingContainerOpenQ,titratingContainerLargeVolumeQ,titratingContainerVeryLargeVolumeQ,#4,noRoomQ},
 
-					{True,_,_,_,True,_}, (*Solid Titrant and mix while titrating-- stir till dissolve*)
-					{Stir,True,Automatic,5Minute,14Minute,Automatic,90RPM,Automatic,Automatic,Automatic,Automatic,Null,Automatic},
+						{True,_,_,_,True,_}, (*Solid Titrant and mix while titrating-- stir till dissolve*)
+						{Stir,True,Automatic,5Minute,14Minute,Automatic,90RPM,Automatic,Automatic,Automatic,Automatic,Null,Automatic},
 
-					{_,_,_,True,_,_}, (*Very large container, Stir for 14 Minutes*)
-					{Stir,Automatic,Automatic,14Minute,Automatic,Automatic,Automatic,Automatic,Automatic,Automatic,Automatic,Null,Automatic},
+						{_,_,_,True,_,_}, (*Very large container, Stir for 14 Minutes*)
+						{Stir,Automatic,Automatic,14Minute,Automatic,Automatic,Automatic,Automatic,Automatic,Automatic,Automatic,Null,Automatic},
 
-					{True,False,True,_,_,_}, (*Solid titrant in closed large container, stir till dissolved*)
-					{Stir,True,Automatic,5Minute,14Minute,Automatic,90RPM,Automatic,Automatic,Automatic,Automatic,Null,Automatic},
+						{True,False,True,_,_,_}, (*Solid titrant in closed large container, stir till dissolved*)
+						{Stir,True,Automatic,5Minute,14Minute,Automatic,90RPM,Automatic,Automatic,Automatic,Automatic,Null,Automatic},
 
-					{_,_,True,_,_,_}, (*large container, stir for 5min*)
-					{Stir,Automatic,Automatic,5Minute,Automatic,Automatic,Automatic,Automatic,Automatic,Automatic,Automatic,Null,Automatic},
+						{_,_,True,_,_,_}, (*large container, stir for 5min*)
+						{Stir,Automatic,Automatic,5Minute,Automatic,Automatic,Automatic,Automatic,Automatic,Automatic,Automatic,Null,Automatic},
 
-					{False,_,_,_,True,_},(*Liquid Titrant and mix while titrating-- stir for 2 minuts (it's constantly stirring so going to be actually way longer than 2min)*)
-					{Stir,Automatic,Automatic,2Minute,Automatic,Automatic,90RPM,Automatic,Automatic,Automatic,Automatic,Null,Automatic},
+						{False,_,_,_,True,_},(*Liquid Titrant and mix while titrating-- stir for 2 minuts (it's constantly stirring so going to be actually way longer than 2min)*)
+						{Stir,Automatic,Automatic,2Minute,Automatic,Automatic,90RPM,Automatic,Automatic,Automatic,Automatic,Null,Automatic},
 
-					{True,True,_,_,_,_}, (*Solid Titrant in open container-- stir till dissolve*)
-					{Stir,True,Automatic,5Minute,14Minute,Automatic,90RPM,Automatic,Automatic,Automatic,Automatic,Null,Automatic},
+						{True,True,_,_,_,_}, (*Solid Titrant in open container-- stir till dissolve*)
+						{Stir,True,Automatic,5Minute,14Minute,Automatic,90RPM,Automatic,Automatic,Automatic,Automatic,Null,Automatic},
 
-					{False,True,_,_,_,_},(*Liquid Titrant in open container-- stir for 5 minuts*)
-					{Stir,Automatic,Automatic,5Minute,Automatic,Automatic,90RPM,Automatic,Automatic,Automatic,Automatic,Null,Automatic},
+						{False,True,_,_,_,_},(*Liquid Titrant in open container-- stir for 5 minuts*)
+						{Stir,Automatic,Automatic,5Minute,Automatic,Automatic,90RPM,Automatic,Automatic,Automatic,Automatic,Null,Automatic},
 
-					{True,False,False,False,_,_}, (*Solid Titrant in closed small container-- roll till dissolved*)
-					{Roll,True,Automatic,5Minute,14Minute,Automatic,30RPM,Automatic,Automatic,Automatic,Automatic,Null,Automatic},
+						{True,False,False,False,_,_}, (*Solid Titrant in closed small container-- roll till dissolved*)
+						{Roll,True,Automatic,5Minute,14Minute,Automatic,30RPM,Automatic,Automatic,Automatic,Automatic,Null,Automatic},
 
-					{_,_,_,_,_,True}, (*If mixing room is limited but otherwise not requiring stir, Invert 20 times*)
-					{Invert,Automatic,Automatic,Automatic,Automatic,Automatic,Automatic,20,Automatic,Automatic,Automatic,Null,Automatic},
+						{_,_,_,_,_,True}, (*If mixing room is limited but otherwise not requiring stir, Invert 20 times*)
+						{Invert,Automatic,Automatic,Automatic,Automatic,Automatic,Automatic,20,Automatic,Automatic,Automatic,Null,Automatic},
 
-					{False,False,False,False,_,_}, (*Liquid titrant in closed small container, invert 15 times*)
-					{Invert,Automatic,Automatic,Automatic,Automatic,Automatic,Automatic,15,Automatic,Automatic,Automatic,Null,Automatic},
+						{False,False,False,False,_,_}, (*Liquid titrant in closed small container, invert 15 times*)
+						{Invert,Automatic,Automatic,Automatic,Automatic,Automatic,Automatic,15,Automatic,Automatic,Automatic,Null,Automatic},
 
-					_, (*Any other odd incidences, invert 15 times*)
-					{Invert,Automatic,Automatic,Automatic,Automatic,Automatic,Automatic,15,Automatic,Automatic,Automatic,Null,Automatic}
+						_, (*Any other odd incidences, invert 15 times*)
+						{Invert,Automatic,Automatic,Automatic,Automatic,Automatic,Automatic,15,Automatic,Automatic,Automatic,Null,Automatic}
 
+					],
+
+					{Except[Invert|Pipette],_,_,Automatic,Automatic,_,_,_,_,_,_,_,_},
+					If[#3,
+						solidMixTimeReplaced=ReplacePart[#1,{4->5Minute,5->14Minute}];
+						If[MatchQ[#1[[2]],Automatic],ReplacePart[#1,2->True],solidMixTimeReplaced],
+						ReplacePart[#1,4->2Minute]
+					],
+
+					{(Invert|Pipette),_,_,_,_,_,_,Automatic,_,_,_,_,_},
+					ReplacePart[#1,8->10],
+
+					_,
+					#1
 				],
-
-				{Except[Invert|Pipette],_,_,Automatic,Automatic,_,_,_,_,_,_,_,_},
-				If[#3,
-					solidMixTimeReplaced=ReplacePart[#1,{4->5Minute,5->14Minute}];
-					If[Match[#1[[2]],Automatic],ReplacePart[#1,2->True],solidMixTimeReplaced],
-					ReplacePart[#1,4->2Minute]
-				],
-
-				{(Invert|Pipette),_,_,_,_,_,_,Automatic,_,_,_,_,_},
-				ReplacePart[#1,8->10],
-
-				_,
-				#1
+				Robotic, (* preResolveMixOptions with pHbot will be performed with stir*)
+				ReplacePart[#1, {1-> Stir, 2-> False, 3 -> Model[Instrument, OverheadStirrer, "id:rea9jlRRmN05"], 4-> 2Minute}] (*Model[Instrument, OverheadStirrer, "MINISTAR 40 with C-MAG HS 10 Hot Plate"]*)
 			]
+
 		]&,
 		{
 			(*1*)specifiedMixingOpts,
 			(*2*)containers,
 			(*3*)solidQ,
 			(*4*)mixWhileTitrating,
-			(*5*)sampleVol
+			(*5*)sampleVol,
+			(*6*)titrationMethod
 		}
 	];
 
@@ -2225,6 +2811,7 @@ resolveExperimentAdjustpHOptions[mySamples:{ObjectP[Object[Sample]]...},nominalp
 		(*3*)solidTitrantQs,
 		(*4*)specifiedMixWhileTitrating,
 		(*5*)protocolSamplesInVolume,
+		(*6*)resolvedTitrationMethod,
 		fullCacheWithSearchResults
 	][[All,1]];
 
@@ -2233,21 +2820,38 @@ resolveExperimentAdjustpHOptions[mySamples:{ObjectP[Object[Sample]]...},nominalp
 	(*-- CONTAINER GROUPING RESOLUTION --*)
 	(* Resolve RequiredAliquotContainers *)
 	(* Find out if mix requires us to aliquot *)
-	mixAliquotRequiredWithResolvedMix=MapThread[MatchQ[{#1,#2},{Null,Stir}]&,{possibleImpellers,prePreResolvedMixType}];
+	mixAliquotRequiredWithResolvedMix=MapThread[
+		Or[
+			MatchQ[{#1,#2,#3},{Null,Stir,Manual}],
+			MatchQ[{#2, #4}, {Stir, Null}]
+		]&,
+		{possibleImpellers,prePreResolvedMixType,resolvedTitrationMethod, Lookup[sampleContainerModelPackets, MaxOverheadMixRate, Null]}
+	];
 
 	(* Volumetric flasks tend to give us -- they can be too narrow and tall for pH probes. So we always aliquot when the original container is a volumetric flask *)
-	AliquotRequiredWithVolumetricFlasks=Map[MatchQ[#,ObjectP[{Object[Container,Vessel,VolumetricFlask],Model[Container,Vessel,VolumetricFlask]}]]&,sampleContainers];
+	AliquotRequiredWithVolumetricFlasks=MapThread[MatchQ[{#1, #2},{ObjectP[{Object[Container,Vessel,VolumetricFlask],Model[Container,Vessel,VolumetricFlask]}], Manual}]&,{sampleContainers, resolvedTitrationMethod}];
+
+	(* When resolvedTitrationMethod is Robotic, we need to do aliquot when possibleTitratorCaps is {}*)
+	roboticTitrationAliquotCaps = MapThread[MatchQ[{#1, #2}, {{},Robotic}]&, {possibleTitratorCaps, resolvedTitrationMethod}];
 
 	(* If aliquot is required for each sample *)
-	aliquotRequiredWithConsiderations=MapThread[Or[#1,#2,#3,replicateAliquotRequired]&,{mixAliquotRequiredWithResolvedMix,maxAdditionVolumeAliquotRequired,AliquotRequiredWithVolumetricFlasks}];
+	aliquotRequiredWithConsiderations=MapThread[Or[#1,#2,#3,#4,#5,replicateAliquotRequired]&,{mixAliquotRequiredWithResolvedMix,maxAdditionVolumeAliquotRequired,AliquotRequiredWithVolumetricFlasks, roboticTitrationAliquotCaps, resolvedAssayVolumeAliquotQ}];
 
 	(* Considering user specified aliquot, is aliquot required or not? *)
 	aliquotQ=Or@@#&/@Transpose[{aliquotRequiredWithConsiderations,(specifiedAliquot/.Alternatives[Automatic,Null]->False)}];
 
-	(*If sample needs to be aliquoted, find out the minimum volume the target container must satisfy*)
-	(*Round down from sensible units to avoid issues if we try to take every last dreg and subsequent experiments get confused (e.g. ExperimentAliquot has had issues here) *)
-	calculatedAliquotAmounts=Floor[UnitScale[#[Volume]/numberOfReplicatesNullToOne]]&/@samplePackets;
-	calculatedAliquotContainerVolume=MapThread[(#1[Volume]/numberOfReplicatesNullToOne)+#2&,{samplePackets,resolvedMaxAdditionVolumes}];
+	(*If the titration is Manual, round down from sensible units to avoid issues if we try to take every last dreg and subsequent experiments get confused (e.g. ExperimentAliquot has had issues here) *)
+	(*If the titration is Robotic, then aliquot is to change to use a compatible container, so will take the total amount of sample *)
+	(* This is the amount to be fed into aliquot resolver, so we should use sampleVolumes instead of workingSampleVolumes --assay volume. *)
+	calculatedAliquotAmounts= MapThread[
+		Function[{sampleVolume, titrationMethod},
+			If[MatchQ[titrationMethod, Robotic],
+				sampleVolume/numberOfReplicatesNullToOne,
+				Floor[UnitScale[sampleVolume/numberOfReplicatesNullToOne]]
+			]
+		],
+		{sampleVolumes, resolvedTitrationMethod}
+	];
 
 	(*
 		Take into consideration user specified Aliquot/AliquotAmount and check if aliquoting is considered required by the resolver
@@ -2281,15 +2885,19 @@ resolveExperimentAdjustpHOptions[mySamples:{ObjectP[Object[Sample]]...},nominalp
 
 	aliquotTargetContainers=MapThread[
 		Which[
-			(*Aliquot is required because we need an overhead stirrer and the original container is not compatible,
+			(*When TitrationMethod is Manual, Aliquot is required because we need an overhead stirrer and the original container is not compatible,
 			OR user specified aliquoting with Stirring pHMixType-- we can do beaker under a max volume (unrrently it's 2L)*)
-			MatchQ[{#1,#2,#3},{True,Stir,LessEqualP[maxBeakerVolume]}],
+			MatchQ[{#1,#2,#3, #6},{True,Stir,LessEqualP[maxBeakerVolume], Manual}],
 			#4/.Automatic->preferredBeaker[#3,#5],
 
-			(*Aliquot is required because of NumberOfReplicates, MaxAdditionVolumes, or VolumetricFlasks,
+			(*When TitrationMethod is Manual, Aliquot is required because of NumberOfReplicates, MaxAdditionVolumes, or VolumetricFlasks,
 			OR user specified aliquoting with pHMixType that is not Stirring*)
-			MatchQ[#1,True],
+			MatchQ[{#1, #6},{True, Manual}],
 			#4/.Automatic->PreferredContainer[#3],
+
+			(*When TitrationMethod is Robotic, Aliquot is required because of no compatible caps found for the sample container*)
+			MatchQ[{#1, #6}, {True, Robotic}],
+			#7, (* we do not allow user to specify AliquotContainer if titration is robotic and aliquot is required *)
 
 			True,(*Aliquot is not required and is not requested by the user*)
 			#4/.Automatic->Null
@@ -2299,9 +2907,126 @@ resolveExperimentAdjustpHOptions[mySamples:{ObjectP[Object[Sample]]...},nominalp
 			(*2*)prePreResolvedMixType,
 			(*3*)calculatedAliquotContainerVolume,
 			(*4*)specifiedAliquotContainers,
-			(*5*)clearances
+			(*5*)clearances,
+			(*6*)resolvedTitrationMethod,
+			(*7*)roboticTitrationContainer
 		}
 	];
+
+	(* Check if MixRate is safe -- These two errors won't be thrown twice in ExperimentIncubate because we do not specify StirBar option when we call incubate resolver *)
+	maxSafeMixRates = Module[{workingSampleContainerModels},
+		workingSampleContainerModels = MapThread[
+			If[!NullQ[#1],
+				(* if we need to aliquot, check if resolved aliquot container is object or model *)
+				If[MatchQ[#1, ObjectP[Object[Container]]],
+					(* get the model container if it is object*)
+					Lookup[Experiment`Private`fetchPacketFromCache[#1, fullCache], Model],
+					#1
+				],
+				#2
+			]&,
+			{aliquotTargetContainers, sampleContainerModels}];
+		(* get the safe mix rate of target container model*)
+		Lookup[Experiment`Private`fetchPacketFromCache[#, fullCache], MaxOverheadMixRate, Null]&/@ workingSampleContainerModels
+	];
+
+	(* check if the working sample container have MaxOverheadMixRate populated for Stir*)
+	maxSafeMixRatesMissingInvalidInputs = MapThread[
+		Function[{maxSafeMixRate,sample,mixType},
+			(* If mix type is specified to be Stir, but we do not have MaxOverheadMixRate field populated for the target sample container, error out as the sample is invalid input *)
+			If[MatchQ[maxSafeMixRate, Null]&&MatchQ[mixType, Stir],
+				sample,
+				Nothing
+			]
+		],
+		{
+			maxSafeMixRates,
+			simulatedSamplesMain,
+			prePreResolvedMixType
+		}
+	];
+	(* If there are invalid inputs and we are throwing messages, throw an error message and keep track of the invalid inputs.*)
+	If[Length[maxSafeMixRatesMissingInvalidInputs]>0&&!gatherTests,
+		Message[Error::SafeMixRateNotFound,ObjectToString[maxSafeMixRatesMissingInvalidInputs,Cache->fullCache]];
+	];
+	(* If we are gathering tests, create a passing and/or failing test with the appropriate result. *)
+	maxSafeMixRatesMissingTest=If[gatherTests,
+		Module[{failingTest,passingTest},
+			failingTest=If[Length[maxSafeMixRatesMissingInvalidInputs]==0,
+				Nothing,
+				Test["Our input samples "<>ObjectToString[maxSafeMixRatesMissingInvalidInputs,Cache->fullCache]<>" do not have MaxOverheadMixRate field populated for the container:",True,False]
+			];
+
+			passingTest=If[Length[maxSafeMixRatesMissingInvalidInputs]==Length[simulatedSamplesMain],
+				Nothing,
+				Test["Our input samples "<>ObjectToString[Complement[simulatedSamplesMain,maxSafeMixRatesMissingInvalidInputs],Cache->fullCache]<>" have MaxOverheadMixRate field populated for the container:",True,True]
+			];
+
+			{failingTest,passingTest}
+		],
+		Nothing
+	];
+
+	(* check if the given MixRate can be reached with the sample container. *)
+	safeMixRateMismatches=MapThread[
+		Function[{maxSafeMixRate,mixRate,sample,mixType},
+			(* If the provided mixRate is larger than the max safeMixRate we can reach *)
+			If[MatchQ[mixRate, Except[Automatic|Null]]&&MatchQ[maxSafeMixRate, Except[Null]]&&MatchQ[mixType, Stir],
+				If[!NullQ[maxSafeMixRate]&&maxSafeMixRate < mixRate,
+					{{mixRate, maxSafeMixRate},sample},
+					Nothing
+				],
+				Nothing
+			]
+		],
+		{
+			maxSafeMixRates,
+			specifiedpHMixRate,
+			simulatedSamplesMain,
+			prePreResolvedMixType
+		}
+	];
+	(* Transpose our result if there were mismatches. *)
+	{safeMixRateMismatchOptions,safeMixRateMismatchInputs}=If[MatchQ[safeMixRateMismatches,{}],
+		{{},{}},
+		Transpose[safeMixRateMismatches]
+	];
+	(* If there are invalid options and we are throwing messages, throw an error message and keep track of our invalid options for Error::InvalidOptions. *)
+	safeMixRateInvalidOptions=If[Length[safeMixRateMismatchOptions]>0&&!gatherTests,
+		Message[Error::SafeMixRateMismatch,ObjectToString[safeMixRateMismatchInputs,Cache->fullCache],safeMixRateMismatchOptions[[All, 1]], safeMixRateMismatchOptions[[All, 2]]];
+		{pHMixRate},
+		{}
+	];
+	(* If we are gathering tests, create a test with the appropriate result. *)
+	safeMixRateTest=If[gatherTests,
+		(* We're gathering tests. Create the appropriate tests. *)
+		Module[{passingInputs,passingInputsTest,nonPassingInputsTest},
+			(* Get the inputs that pass this test. *)
+			passingInputs=Complement[simulatedSamplesMain,safeMixRateMismatchInputs];
+
+			(* Create a test for the passing inputs. *)
+			passingInputsTest=If[Length[passingInputs]>0,
+				Test["The following object(s) do not have conflicting mix rate and the maximumn safe mix rate they can reach "<>ObjectToString[passingInputs,Cache->fullCache]<>":",True,True],
+				Nothing
+			];
+
+			(* Create a test for the non-passing inputs. *)
+			nonPassingInputsTest=If[Length[safeMixRateMismatchInputs]>0,
+				Test["The following object(s) do not have conflicting mix rate and the maximumn safe mix rate they can reach "<>ObjectToString[safeMixRateMismatchInputs,Cache->fullCache]<>":",True,False],
+				Nothing
+			];
+
+			(* Return our created tests. *)
+			{
+				passingInputsTest,
+				nonPassingInputsTest
+			}
+		],
+		(* We aren't gathering tests. No tests to create. *)
+		{}
+	];
+
+
 	(*resolveAliquotOptions does not like it when RequiredAliquotAmount is {Automatic} so we'll change it to Automatic*)
 	aliquotAmountRequiredDeList=If[MatchQ[aliquotAmountRequired,{Automatic}],Automatic,aliquotAmountRequired];
 
@@ -2394,9 +3119,9 @@ resolveExperimentAdjustpHOptions[mySamples:{ObjectP[Object[Sample]]...},nominalp
 					Download[updatedSimulatedSamplesMain,
 						{
 							sampleFields,
-							Packet[Model[Evaluate[Union[{pH,TransportWarmed,Name,Deprecated,Sterile,LiquidHandlerIncompatible,Tablet,TabletWeight,State,NominalpH,MinpH,MaxpH,IncompatibleMaterials},Evaluate[SamplePreparationCacheFields[Model[Sample]]]]]]],
+							Packet[Model[Evaluate[Union[{pH,TransportTemperature,Name,Deprecated,Sterile,LiquidHandlerIncompatible,Tablet,SolidUnitWeight,State,NominalpH,MinpH,MaxpH,IncompatibleMaterials},Evaluate[SamplePreparationCacheFields[Model[Sample]]]]]]],
 							Packet[Container[Evaluate[SamplePreparationCacheFields[Object[Container]]]]],
-							Packet[Container[Model][{Name, VolumeCalibrations, MaxVolume, Aperture, InternalDiameter, Dimensions, Sterile, Deprecated, Footprint, OpenContainer,InternalDepth,InternalDimensions}]],
+							Packet[Container[Model][{Name, VolumeCalibrations, MaxVolume, Aperture, InternalDiameter, Dimensions, Sterile, Deprecated, Footprint, OpenContainer,InternalDepth,InternalDimensions,SelfStanding}]],
 							Packet[Container[Model][VolumeCalibrations][{LiquidLevelDetectorModel,CalibrationFunction,DateCreated}]]
 						},
 						Cache->fullCacheWithSearchResults,
@@ -2428,6 +3153,7 @@ resolveExperimentAdjustpHOptions[mySamples:{ObjectP[Object[Sample]]...},nominalp
 		(*3*)solidTitrantQs,
 		(*4*)specifiedMixWhileTitrating,
 		(*5*)updatesSimulatedSampleVolumes,
+		(*6*)resolvedTitrationMethod,
 		updatedCacheWithSecondSamplePrepSimulation
 	];
 
@@ -2495,8 +3221,8 @@ resolveExperimentAdjustpHOptions[mySamples:{ObjectP[Object[Sample]]...},nominalp
 	(*resolve everything mix related*)
 	(*We are calling the option resolver directly instead of the whole experiment because Incubate's resource packets takes half of the time of the function. Also we are gathering all resources Mix will need upfront excepts for instruments that are not overhead stirrer.*)
 	{resolvedMixOptions,mixTests}=If[gatherTests,
-		Quiet[resolveExperimentIncubateNewOptions[simulatedSamplesMain,expandedMixOptions,Cache->fullCacheWithSearchResults,Simulation->updatedSimulationMain,Output->{Result,Tests}],{Error::DiscardedSamples,Error::InvalidInput,Error::AliquotOptionConflict}],
-		{Quiet[resolveExperimentIncubateNewOptions[simulatedSamplesMain,expandedMixOptions,Cache->fullCacheWithSearchResults,Simulation->updatedSimulationMain],{Error::DiscardedSamples,Error::InvalidInput,Error::AliquotOptionConflict}],{}}
+		Quiet[resolveExperimentIncubateNewOptions[simulatedSamplesMain,expandedMixOptions,Cache->fullCacheWithSearchResults,Simulation->updatedSimulationMain,Output->{Result,Tests}],{Error::DiscardedSamples,Error::InvalidInput,Error::AliquotOptionConflict,Error::StirIncompatibleInstruments,Error::StirNoStirBarOrImpeller,Error::VolumetricFlaskMixMismatch,Error::InvalidOption}],
+		{Quiet[resolveExperimentIncubateNewOptions[simulatedSamplesMain,expandedMixOptions,Cache->fullCacheWithSearchResults,Simulation->updatedSimulationMain],{Error::DiscardedSamples,Error::InvalidInput,Error::AliquotOptionConflict,Error::StirIncompatibleInstruments,Error::StirNoStirBarOrImpeller,Error::VolumetricFlaskMixMismatch,Error::InvalidOption}],{}}
 	];
 
 	(*now we want to convert back to the names that we use in this experiemnt function*)
@@ -2528,18 +3254,48 @@ resolveExperimentAdjustpHOptions[mySamples:{ObjectP[Object[Sample]]...},nominalp
 	(* ---- Resolve MeasurepH Options ---- *)
 	(*before passing to ExperimentpH, we want to try to resolve the probe by the probe type if need be (currently not supported measure pH)*)
 	preresolvedProbe=MapThread[
-		Function[{eachProbe,eachProbeType},
-			Switch[
-				{eachProbe,eachProbeType},
-				{Except[Automatic],_},eachProbe,
-				{_,Except[Automatic|Null]},Lookup[FirstCase[probePackets,KeyValuePattern[ProbeType->eachProbeType]],Object],
-				_,eachProbe
+		Function[{eachProbe,eachProbeType, eachTitrationMethod, eachProbeRobotic},
+			Switch[eachTitrationMethod,
+				Manual,
+				Switch[
+					{eachProbe,eachProbeType},
+					{Except[Automatic],_},eachProbe,
+					{_,Except[Automatic|Null]},Lookup[FirstCase[probePackets,KeyValuePattern[ProbeType->eachProbeType]],Object],
+					_,eachProbe
+				],
+				Robotic,
+				eachProbeRobotic
 			]
 		],
-		Lookup[resolverSafeOps,{Probe,ProbeType}]
+		Join[Lookup[resolverSafeOps,{Probe,ProbeType}],{resolvedTitrationMethod, preresolvedProbeRobotic}]
 	];
 
+	preresolvedpHMeter = MapThread[
+		Function[{eachpHMeter,eachTitrationMethod},
+			Switch[eachTitrationMethod,
+				Manual,
+				eachpHMeter,
+				Robotic,
+				If[MatchQ[eachpHMeter, Automatic],
+					Model[Instrument, pHMeter, "id:R8e1PjeAn4B4"],
+					eachpHMeter
+				]
+			]
+		],
+		{Lookup[resolverSafeOps,pHMeter],resolvedTitrationMethod}
+	];
 
+	preresolvedpHAliquot = MapThread[
+		Function[{eachpHAliquot,eachAutoTransfer},
+			Switch[eachAutoTransfer,
+				Manual,
+				eachpHAliquot,
+				Robotic,
+				False
+			]
+		],
+		{Lookup[resolverSafeOps,pHAliquot],resolvedTitrationMethod}
+	];
 
 	(* Generate the options for the ExperimentMeasurepH call. Make all of the options symbols (PassOptions converts to strings) *)
 	experimentMeasurepHPassedOptions=MapAt[ToExpression,
@@ -2555,8 +3311,8 @@ resolveExperimentAdjustpHOptions[mySamples:{ObjectP[Object[Sample]]...},nominalp
 		Normal[experimentMeasurepHPassedOptions],
 		{
 			NumberOfReplicates->Null,
-			Instrument->Lookup[resolverSafeOps,pHMeter],
-			Aliquot->Lookup[resolverSafeOps,pHAliquot],
+			Instrument->preresolvedpHMeter,
+			Aliquot->preresolvedpHAliquot,
 			AliquotAmount->Lookup[resolverSafeOps,pHAliquotVolume],
 			Probe->preresolvedProbe,
 			Output->If[gatherTests,
@@ -2572,8 +3328,8 @@ resolveExperimentAdjustpHOptions[mySamples:{ObjectP[Object[Sample]]...},nominalp
 
 	(*We are calling the option resolver directly instead of the whole experiment because MeasurepH's resource packets takes half of the time of the function. Also we are gathering all resources Mix will need upfront excepts for instruments.*)
 	{resolvedpHOptions,measurepHTests}=If[gatherTests,
-		resolveExperimentMeasurepHOptions[updatedSimulatedSamplesMain,expandedMeasurepHOptions,Cache->updatedCacheWithSecondSamplePrepSimulation,Simulation->secondUpdatedSimulationMain,Output->{Result,Tests}],
-		{resolveExperimentMeasurepHOptions[updatedSimulatedSamplesMain,expandedMeasurepHOptions,Cache->updatedCacheWithSecondSamplePrepSimulation,Simulation->secondUpdatedSimulationMain],{}}
+		resolveExperimentMeasurepHOptions[updatedSimulatedSamplesMain,expandedMeasurepHOptions,InternalUsage -> True, Cache->updatedCacheWithSecondSamplePrepSimulation,Simulation->secondUpdatedSimulationMain,Output->{Result,Tests}],
+		{resolveExperimentMeasurepHOptions[updatedSimulatedSamplesMain,expandedMeasurepHOptions,InternalUsage -> True, Cache->updatedCacheWithSecondSamplePrepSimulation,Simulation->secondUpdatedSimulationMain],{}}
 	];
 
 	(*now we want to convert back to the names that we use in this experiment function*)
@@ -2608,14 +3364,18 @@ resolveExperimentAdjustpHOptions[mySamples:{ObjectP[Object[Sample]]...},nominalp
 
 	(* Get the impellers for each overhead stirrer.*)
 	impellers=MapThread[
-		If[
-			MatchQ[#2,ObjectP[{Model[Instrument,OverheadStirrer],Object[Instrument,OverheadStirrer]}]],
-			compatibleImpeller[#1,#2,Cache->updatedCacheWithSecondSamplePrepSimulation],
-			Null
+		If[MatchQ[#3, Robotic],
+			$DefaultRoboticMixingImpeller,
+			If[
+				MatchQ[#2,ObjectP[{Model[Instrument,OverheadStirrer],Object[Instrument,OverheadStirrer]}]],
+				compatibleImpeller[#1,#2,Cache->updatedCacheWithSecondSamplePrepSimulation],
+				Null
+			]
 		]&,
 		{
 			updatedSimulatedSamplesMain,
-			mixingInstrumentModels
+			mixingInstrumentModels,
+			resolvedTitrationMethod
 		}
 	];
 
@@ -2692,19 +3452,21 @@ resolveExperimentAdjustpHOptions[mySamples:{ObjectP[Object[Sample]]...},nominalp
 			MaxpH->resolvedMaxpHs,
 			MaxAdditionVolume->resolvedMaxAdditionVolumes,
 			ContainerOut->resolvedOutputContainers,
+			TitrationMethod -> resolvedTitrationMethod,
+			TitrationInstrument -> resolvedTitrationInstrument,
+			TitrationContainerCap -> preresolvedCapRobotic,
 			ProbeType->resolvedProbeType,
 			pHMixImpeller->impellers,
 			NumberOfReplicates->specifiedNumberOfReplicates,
 			KeepInstruments->specifiedKeepInstruments,
 			TitratingAcid->resolvedTitratingAcids,
 			TitratingBase->resolvedTitratingBases,
-			MaxAcidAmountPerCycle->resolvedMaxAcidAmountPerCycle,
-			MaxBaseAmountPerCycle->resolvedMaxBaseAmountPerCycle,
+			MaxAcidAmountPerCycle->updatedMaxAcidAmountPerCycle,
+			MaxBaseAmountPerCycle->updatedMaxBaseAmountPerCycle,
 			ModelOut->resolvedModelOut,
 			NonBuffered->QuantityQ/@spikedAmountsConverted,
-			MaxNumberOfCycles->resolvedMaxNumberOfCycles,
+			MaxNumberOfCycles->updatedMaxNumberOfCycles,
 			PreparatoryUnitOperations->specifiedPreparatoryPrimitives,
-			PreparatoryPrimitives->Lookup[resolverSafeOps, PreparatoryPrimitives],
 			SampleLabel->resolvedSampleLabel,
 			SampleContainerLabel->resolvedSampleContainerLabel,
 			Simulation->specifiedSimulation (*Simulation should be returned as is*)
@@ -2716,13 +3478,19 @@ resolveExperimentAdjustpHOptions[mySamples:{ObjectP[Object[Sample]]...},nominalp
 	invalidOptions=DeleteCases[DeleteDuplicates[Flatten[{
 		noAdditionOptions,fixedAdditionsConflictOptions,fixedAdditionsConflictOptions,invalidTitrateOptions,
 		invalidTitrateOptions,overheadMixingRequiredOptions,badMaxVolumeOptions,overheadMixingRequiredOptions,badMaxVolumeOptions,pHRangeConflictingOptions,
-		titratingBaseAmountConflictingOptions,titratingAcidAmountConflictingOptions,containerTooSmallOptions
+		titratingBaseAmountConflictingOptions,titratingAcidAmountConflictingOptions,containerTooSmallOptions, titrationMethodConflictingOptions, titrationInstrumentConflictingOptions, safeMixRateInvalidOptions
 	}]],Null];
+	invalidInputs=DeleteDuplicates[Flatten[{maxSafeMixRatesMissingInvalidInputs}]];
 
 	(* Throw Error::InvalidOption if there are invalid options. *)
 	If[Length[invalidOptions]>0&&!gatherTests,
 		Message[Error::InvalidOption,invalidOptions]
 	];
+	(* Throw Error::InvalidInput if there are invalid inputs. *)
+	If[Length[invalidInputs]>0 && MatchQ[gatherTests, False],
+		Message[Error::InvalidInput,invalidInputs]
+	];
+
 
 	(* Get any other options where we're just using the defaults *)
 	(* Using Append->False will also remove any options we picked up from MeasurepH or Incubate *)
@@ -2730,7 +3498,7 @@ resolveExperimentAdjustpHOptions[mySamples:{ObjectP[Object[Sample]]...},nominalp
 
 	allTests = DeleteCases[Flatten[{measurepHTests,mixTests,maxVolumeTest,aliquoteReplicateConflictTest,invalidTitrateComboTest,
 		fixedAdditionsConflictTest,noAdditionsTest,aliquotTests,pHRangeConflictingTests,samplePrepTests,updatedSamplePrepTests,
-		acidAmountTest,baseAmountTest,containerTooSmallTest}], Null | {}];
+		acidAmountTest,baseAmountTest,containerTooSmallTest, titrationMethodTest, maxSafeMixRatesMissingTest, safeMixRateTest}], Null | {}];
 
 	outputSpecification /. {Result->allOptions, Tests->allTests}
 ];
@@ -2751,17 +3519,32 @@ DefineOptions[adjustpHResourcePackets,
 adjustpHResourcePackets[mySamples:{ObjectP[Object[Sample]]..},nominalpHs:{pHP..},templatedOptions:{(_Rule|_RuleDelayed)...},resolvedOptions:{(_Rule|_RuleDelayed)..},myOps:OptionsPattern[]]:=Module[
 	{outputSpecification,output,gatherTestsQ,protocolID,cache,numberOfReplicates,replicatedSamples,replicatedOptions,download,
 		samplePackets,requiredVolumes,sampleVolumeTuples,uniqueSampleVolumeTuples,uniqueSampleResources,sampleResourceLookup,
-		sampleResources,uniqueSampleContainers,containerResources,pHVolumeMultipler,titrantVolumeTuples,reagentSums,
+		sampleResources,uniqueSampleContainers,containerResources,titrantVolumeTuples,reagentSums,
 		uniqueReagentResources,titratingBaseResources,
-		titratingAcidResources,fixedAdditionResources,fixedAdditionRequests,fixedAdditionSamples,titratingAcid,titratingBase,resourceTime,prepTime,
+		titratingAcidResources,fixedAdditionRequests,fixedAdditionSamples,titratingAcid,titratingBase,resourceTime,prepTime,
 		additionsTime,adjustmentTime,postProcessTime,storageTime,protocolPacket,prepPacket,finalizedPacket,resources,resourcesOk,
 		resourceTests,fixedAdditionRequestsFlattened,fixedAdditionRequestsObjectsDeDup,replicatedOptionsNoneToNull,maxAdditionVolumeWithMargin,
-		allMixInstruments,mixInstrumentsResources,impellers,impellersResources,wasteBeakerResource,wasteBeaker,sampleModels,
-		resolvedContainersOut,containersOutResources,containersOutResourcesExpanded,washSolution,washSolutionModel,washSolutionResource,
+		allMixInstruments,mixInstrumentsResources,impellers,impellersResources,
+		resolvedContainersOut,containersOutResources,containersOutResourcesExpanded,washSolution,washSolutionResource,
 		sampleContainers,aliquotContainers,transferContainers,transferContainersClean,transferContainersModel,transferContainerModelDeDup,
 		transferRackDeDup,transferRackResourcesDeDup,rackReplacementRules,racks,lowCalibrationBufferResource,mediumCalibrationBufferResource,
 		highCalibrationBufferResource,allMixInstrumentsNoStir,allMixInstrumentsNoStirResources,mixInstrumentReplacementRules,phMeters,
-		phMetersDeDup,phMetersResourcesDeDup,phMetersReplacementRules,phInstrumentsResources,mixInstrumentsResourcified,simulation
+		phMetersDeDup,phMetersResourcesDeDup,phMetersReplacementRules,phInstrumentsResources,mixInstrumentsResourcified,simulation, titrationInstruments, titrationInstrumentsResourcified, manualTitrationSamples, roboticTitrationSamples, manualTitrationPositions,
+		roboticTitrationPositions, batchedTitrationMethods, batchedFixedAdditions, batchedProbeTypes, batchedAcquisitionTimes,
+		batchedTemperatureCorrections, batchedpHAliquots,
+		batchedpHAliquotVolumes, batchedTitrates, batchedMixWhileTitrating,
+		batchedpHMixTypes, batchedpHMixUntilDissolved, batchedpHMixTimes,
+		batchedMaxpHMixTimes, batchedpHMixDutyCycles, batchedpHMixRates,
+		batchedNumbersOfpHMixes, batchedMaxNumbersOfpHMixes,
+		batchedpHMixVolumes, batchedpHMixTemperatures,
+		batchedMaxpHMixTemperatures, batchedpHHomogenizingAmplitudes,
+		batchedMinpHs, batchedMaxpHs, batchedMaxAdditionVolumes,
+		batchedMaxNumbersOfCycles, batchedpHMeters, batchedProbes,
+		batchedNominalpHs, batchedTransferDestinationRacks,
+		batchedTitratingAcids, batchedTitratingBases,
+		batchedpHMixInstruments, batchedpHMixImpellers, batchLengths, replicatedNominalpHs,  batchedMaxAcidAmountsPerCycle,batchedMaxBaseAmountsPerCycle,batchedTitrationInstrument, titrationContainerCaps,titrationContainerCapsResources ,batchedTitrationContainerCaps, pHMixTimesRoboticNull, resolvedBatchingParameters, mixInstrumentResourceLookup, impellerResourceLookup,
+		titrationContainerCapLookup, titrationInstrumentsUpdated,titrationInstrumentAssociation,
+		uniqueTitrationInstruments, titrationInstrumentResourceLookup, pHMetersResourcified, allpHMeters, pHMeterResourceLookup, roboticUniqueTitrant,titrationMethods, titrationInstrumentCounts, titrationInstrumentPackets, uniqueTitrationContainerCaps
 	},
 
 	(* Determine the requested return value from the function *)
@@ -2782,16 +3565,25 @@ adjustpHResourcePackets[mySamples:{ObjectP[Object[Sample]]..},nominalpHs:{pHP..}
 
 	(* If user has asked for replicates, repeat the sample and the option that number of times *)
 	{replicatedSamples,replicatedOptions}=expandFluorescenceReplicates[ExperimentAdjustpH,mySamples,resolvedOptions,numberOfReplicates];
+	titrationInstruments = Lookup[replicatedOptions, TitrationInstrument];
 
-	download=Download[
-		{replicatedSamples},
-		{Packet[Volume,Container,Model]},
-		Cache->cache,
-		Simulation->simulation
+	download=Quiet[
+		Download[
+			{
+				replicatedSamples,
+				titrationInstruments
+			},
+			{
+				{Packet[Volume,Container,Model]},
+				{Packet[Object, Model]}
+			},
+			Cache->cache,
+			Simulation->simulation
+		],
+		{Download::FieldDoesntExist,Download::NotLinkField}
 	];
-
 	samplePackets=download[[1,All,1]];
-
+	titrationInstrumentPackets =Flatten[download[[2]]];
 
 	(*If no need to aliquot, take the volume of the sample. If aliquot, take aliquot amount*)
 	requiredVolumes=MapThread[
@@ -2843,6 +3635,35 @@ adjustpHResourcePackets[mySamples:{ObjectP[Object[Sample]]..},nominalpHs:{pHP..}
 
 	racks=transferContainersModel/.rackReplacementRules;
 
+	(* -- Make resources for robotic titration instrument -- *)
+	titrationMethods = Lookup[replicatedOptions, TitrationMethod];
+	(*Find the index positions of each titration method *)
+	manualTitrationPositions = Flatten@Position[titrationMethods, Manual];
+	roboticTitrationPositions = Flatten@Position[titrationMethods, Robotic];
+
+	(* resource pick pH titrator if needed *)
+	(* If TitrationInstrument object is specified, use that object for all the same model. *)
+	titrationInstrumentAssociation = If[MemberQ[titrationInstruments, ObjectP[Object[Instrument, pHTitrator]]],
+		Module[{titrationInstrumentObject, titrationInstrumentPacket},
+			(*We currently only have one pHTitrator model *)
+			titrationInstrumentObject=FirstCase[titrationInstruments, ObjectP[Object[Instrument, pHTitrator]]];
+			titrationInstrumentPacket = fetchPacketFromCache[titrationInstrumentObject, titrationInstrumentPackets];
+			<|Download[Lookup[titrationInstrumentPacket, Model], Object] -> titrationInstrumentObject|>
+		],
+		<||>
+	];
+	titrationInstrumentsUpdated = Download[titrationInstruments,Object]/.titrationInstrumentAssociation;
+
+	(* Create a little lookup for titrationInstruments *)
+	titrationInstrumentCounts = Tally[DeleteCases[titrationInstrumentsUpdated, Null]];
+	uniqueTitrationInstruments = titrationInstrumentCounts[[All, 1]];
+	titrationInstrumentResourceLookup = If[Length[uniqueTitrationInstruments]>0,
+		Association@@MapThread[
+			#1->Link[Resource[Instrument -> #1 , Time -> #2 * 90 Minute, Name->ToString[Unique[]]]]&,
+			Transpose[titrationInstrumentCounts]],
+		<||>
+	];
+	titrationInstrumentsResourcified=Lookup[titrationInstrumentResourceLookup,#, Null]&/@titrationInstrumentsUpdated;
 
 	(* -- Figure out how much of each acid, base to request -- *)
 	(* Combine requests because we want to use the same sample for fixed additions and titration when possible *)
@@ -2851,13 +3672,21 @@ adjustpHResourcePackets[mySamples:{ObjectP[Object[Sample]]..},nominalpHs:{pHP..}
 	{fixedAdditionRequests,titratingAcid,titratingBase}=Lookup[replicatedOptions,{FixedAdditions,TitratingAcid,TitratingBase}];
 
 	(* - Calculate the amount of volume that we should ask for for each of the pHing acids/bases - *)
-	(* the maximum amount needed for any acid or base for one replicate is the MaxAdditionVolume. Add 10% margin*)
-	maxAdditionVolumeWithMargin=1.1*Lookup[replicatedOptions,MaxAdditionVolume];
+	(* the maximum amount needed for any acid or base for one replicate is the MaxAdditionVolume. If TitrationMethod is Manual, add 10% margin; if Robotic, add 5 Milliliter more as prime volume for titrating acid and base*)
+	maxAdditionVolumeWithMargin= MapThread[
+		If[MatchQ[#1, Robotic],
+			#2 + 5 Milliliter,
+			#2 * 1.1
+		]&,
+		Lookup[replicatedOptions,{TitrationMethod, MaxAdditionVolume}]
+	];
 
 	(* For any titration requests set-up to indicate we need the MaxAdditionVolume of the volume of the sample *)
 	titrantVolumeTuples=MapThread[
-		If[MatchQ[{#2,#3},{Null,Null}],
+		Which[
+			MatchQ[{#2,#3},{Null,Null}],
 			Nothing,
+			True,
 			{{#1,#2},{#1,#3}}
 		]&,
 		{maxAdditionVolumeWithMargin,titratingAcid,titratingBase}
@@ -2875,12 +3704,18 @@ adjustpHResourcePackets[mySamples:{ObjectP[Object[Sample]]..},nominalpHs:{pHP..}
 		Total
 	];
 
+	roboticUniqueTitrant = DeleteDuplicates[Join[titratingAcid[[roboticTitrationPositions]], titratingBase[[roboticTitrationPositions]]]];
 	(* Make a lookup so we can link each sample to a resource for it *)
+
 	uniqueReagentResources=KeyValueMap[
-		#1->Link[Resource[Sample->#1,Amount->#2,Container->PreferredContainer[#2],Name->ToString[Unique[]]]]&,
+		(* If this reagent will be used for robotic titration using pHTitrator, we pick the stocked inventory in 1 L Glass Bottle *)
+		(* In pHTitrator, we need 100 Milliliter dead volume *)
+		If[MemberQ[roboticUniqueTitrant, #1],
+			#1->Link[Resource[Sample->#1,Amount->(#2 + 100 Milliliter),Container->Model[Container, Vessel, "id:zGj91aR3ddXJ"],Name->ToString[Unique[]]]], (*Model[Container, Vessel, "1L Glass Bottle"]*)
+			#1->Link[Resource[Sample->#1,Amount->#2,Container->PreferredContainer[#2],Name->ToString[Unique[]]]]
+		]&,
 		reagentSums
 	];
-
 
 	(* Replace model/sample requests for acid/base with resources for those requests *)
 	titratingBaseResources=Download[titratingBase,Object]/.uniqueReagentResources;
@@ -2911,20 +3746,116 @@ adjustpHResourcePackets[mySamples:{ObjectP[Object[Sample]]..},nominalpHs:{pHP..}
 	containersOutResourcesExpanded=ConstantArray[containersOutResources,numberOfReplicates]//Transpose//Flatten;
 
 	(* WashSolutionResource *)
-	(* We only allow Model[Sample,"Milli-Q water"] as MeasurepH WashSolution at the moment. *)
-
+	(* We only allow Model[Sample,"Milli-Q water"] as WashSolution at the moment. *)
 	washSolution=Model[Sample,"Milli-Q water"];
 	washSolutionResource=Link[Resource[Sample->washSolution,Amount->400 Milliliter,Container->Model[Container, Vessel, "id:R8e1PjRDbbOv"],RentContainer->True]
 	];
 
-
-
+	(*Go through the rest instruments.*)
+	(*If Mixer is overhead stirrer, convert to resource because we need to set it up. If not, keep as Model as Incubate will pick resource.*)
 	allMixInstruments=Lookup[replicatedOptions,pHMixInstrument];
-	(*Go Through these instruments. If one is overhead stirrer, convert to resource because we need to set it up. If not, keep as Model as Incubate will pick resource.*)
-	mixInstrumentsResourcified=Map[If[MatchQ[#,ObjectP[{Model[Instrument,OverheadStirrer],Object[Instrument,OverheadStirrer]}]],Link[Resource[Instrument->#, Time->15Minute]],Link[#]]&,allMixInstruments];
+	mixInstrumentResourceLookup=Association@@MapThread[
+		If[MatchQ[#2,ObjectP[{Model[Instrument,OverheadStirrer],Object[Instrument,OverheadStirrer]}]],
+			#1-> Link[Resource[Instrument->#2, Time->15Minute, Name->ToString[Unique[]]]],
+			#1-> Link[#2]]&,
+		{replicatedSamples, allMixInstruments}];
+	mixInstrumentsResourcified=Lookup[mixInstrumentResourceLookup,#]&/@replicatedSamples;
 
 	impellers=Lookup[replicatedOptions,pHMixImpeller];
-	impellersResources=Map[If[MatchQ[#,ObjectP[]],Link[Resource[Sample->#]],Link[#]]&,impellers];
+	impellerResourceLookup=Association@@MapThread[
+		If[MatchQ[#2,ObjectP[]],
+			#1 -> Link[Resource[Sample->#2, Name->ToString[Unique[]]]],
+			#1-> Link[#2]]&,
+		{replicatedSamples,impellers}];
+	impellersResources = Lookup[impellerResourceLookup,#]&/@replicatedSamples;
+
+	allpHMeters=Lookup[replicatedOptions,pHMeter];
+	pHMeterResourceLookup=Association@@MapThread[
+		(* We need to resource pick if titration method is robotic. If titration method is manual, pH meter will be resource picked in MeasurepH *)
+		If[MatchQ[#3, Robotic],
+			#1-> Link[Resource[Instrument->#2, Time->15Minute, Name->ToString[Unique[]]]],
+			#1-> Link[#2]]&,
+		{replicatedSamples, allpHMeters, titrationMethods}];
+	pHMetersResourcified=Lookup[pHMeterResourceLookup,#]&/@replicatedSamples;
+
+	titrationContainerCaps=Lookup[replicatedOptions,TitrationContainerCap];
+	(* TitrationContainerCap is a hidden option and should be resolved to be model *)
+	(* We will not batch or reorder sample for re-use same model of titrationContainerCap, we will clean the cap everytime after used*)
+	uniqueTitrationContainerCaps = DeleteCases[DeleteDuplicates[titrationContainerCaps], Null];
+	titrationContainerCapLookup=If[Length[uniqueTitrationContainerCaps]>0,
+		Association@@Map[
+			#1->Link[Resource[Sample->#1, Name->ToString[Unique[]]]]&,
+			uniqueTitrationContainerCaps],
+		<||>
+	];
+	titrationContainerCapsResources=Lookup[titrationContainerCapLookup,#,Null]&/@titrationContainerCaps;
+
+	(* Batching Parameters *)
+	(* Split up our samples into manual titration, robotic titration default and robotic titration customized. *)
+	manualTitrationSamples = sampleResources[[manualTitrationPositions]];
+	roboticTitrationSamples = sampleResources[[roboticTitrationPositions]];
+
+	replicatedOptionsNoneToNull=replicatedOptions/.None->Null;
+	replicatedNominalpHs = Flatten[ConstantArray[#, numberOfReplicates] & /@ nominalpHs];
+
+	{
+		batchedTitrationMethods, batchedFixedAdditions, batchedProbeTypes,  batchedAcquisitionTimes, batchedTemperatureCorrections, batchedpHAliquots, batchedpHAliquotVolumes, batchedTitrates, batchedMixWhileTitrating, batchedpHMixTypes, batchedpHMixUntilDissolved, batchedpHMixTimes, batchedMaxpHMixTimes, batchedpHMixDutyCycles, batchedpHMixRates, batchedNumbersOfpHMixes, batchedMaxNumbersOfpHMixes, batchedpHMixVolumes, batchedpHMixTemperatures, batchedMaxpHMixTemperatures, batchedpHHomogenizingAmplitudes, batchedMinpHs, batchedMaxpHs, batchedMaxAdditionVolumes, batchedMaxAcidAmountsPerCycle,batchedMaxBaseAmountsPerCycle, batchedMaxNumbersOfCycles,
+		batchedTitrationContainerCaps, batchedpHMeters, batchedProbes, batchedTitrationInstrument,
+		batchedNominalpHs, batchedTransferDestinationRacks, batchedTitratingAcids, batchedTitratingBases, batchedpHMixInstruments, batchedpHMixImpellers
+	} = Map[Join[#[[manualTitrationPositions]], #[[roboticTitrationPositions]]]&,
+		Join[Lookup[replicatedOptionsNoneToNull, {TitrationMethod, FixedAdditions, ProbeType, AcquisitionTime, TemperatureCorrection, pHAliquot, pHAliquotVolume, Titrate, MixWhileTitrating, pHMixType, pHMixUntilDissolved, pHMixTime, MaxpHMixTime, pHMixDutyCycle, pHMixRate, NumberOfpHMixes, MaxNumberOfpHMixes, pHMixVolume, pHMixTemperature, MaxpHMixTemperature, pHHomogenizingAmplitude, MinpH, MaxpH, MaxAdditionVolume, MaxAcidAmountPerCycle, MaxBaseAmountPerCycle, MaxNumberOfCycles}],
+			{titrationContainerCapsResources, pHMetersResourcified, Link[Lookup[replicatedOptionsNoneToNull, Probe]], titrationInstrumentsResourcified,
+				replicatedNominalpHs, racks, titratingAcidResources, titratingBaseResources, mixInstrumentsResourcified, impellersResources}]];
+
+	(*get batchLengths for the batching based on the number of samples for each titration method *)
+	batchLengths = Cases[{Length[manualTitrationSamples], Length[roboticTitrationSamples]}, GreaterP[0]];
+
+	resolvedBatchingParameters = MapThread[
+		Function[{titrationMethod, fixedAddition, probeType, acquisitionTime, temperatureCorrection, aliquotpH, aliquotVolumepH, titrate, mixWhileTitratingpH, mixType, mixUntilDissolvedpH, mixTime, maxpHMixTime, mixDutyCycle, mixRate, numbersOfpHMix, maxNumbersOfpHMix, mixVolume, mixTemperature, maxpHMixTemperature, homogenizingAmplitude, minpH, maxpH, maxAdditionVolume,maxAcidAmountPerCycle, maxBaseAmountPerCycle, maxNumbersOfCycle, pHMeterInstrument, probe, nominalpH, transferDestinationRack, titratingAcid, titratingBase, mixInstrument, mixImpeller, titrationInstrument, titrationContainerCap},
+			<|
+				TitrationMethod -> titrationMethod,
+				FixedAddition -> fixedAddition,
+				ProbeType -> probeType,
+				AcquisitionTime->acquisitionTime,
+				TemperatureCorrection->temperatureCorrection,
+				pHAliquot->aliquotpH,
+				pHAliquotVolume->aliquotVolumepH,
+				Titrate->titrate,
+				MixWhileTitrating->mixWhileTitratingpH,
+				pHMixType->mixType,
+				MixUntilDissolved->mixUntilDissolvedpH,
+				pHMixTime->mixTime,
+				MaxpHMixTime->maxpHMixTime,
+				pHMixDutyCycle->mixDutyCycle,
+				pHMixRate->mixRate,
+				NumberOfpHMixes->numbersOfpHMix,
+				MaxNumberOfpHMixes->maxNumbersOfpHMix,
+				pHMixVolume->mixVolume,
+				pHMixTemperature->mixTemperature,
+				MaxpHMixTemperature->maxpHMixTemperature,
+				pHHomogenizingAmplitude->homogenizingAmplitude,
+				MinpH->minpH,
+				MaxpH->maxpH,
+				MaxAdditionVolume->maxAdditionVolume,
+				MaxAcidAmountPerCycle -> maxAcidAmountPerCycle,
+				MaxBaseAmountPerCycle -> maxBaseAmountPerCycle,
+				MaxNumberOfCycles->maxNumbersOfCycle,
+				pHMeter->pHMeterInstrument,
+				Probe->probe,
+				NominalpH->nominalpH,
+				TransferDestinationRack->transferDestinationRack,
+				TitratingAcid->titratingAcid,
+				TitratingBase->titratingBase,
+				pHMixInstrument->mixInstrument,
+				pHMixImpeller->mixImpeller,
+				TitrationInstrument -> titrationInstrument,
+				TitrationContainerCap -> titrationContainerCap
+			|>
+		],
+		{
+			batchedTitrationMethods, batchedFixedAdditions, batchedProbeTypes, batchedAcquisitionTimes, batchedTemperatureCorrections, batchedpHAliquots, batchedpHAliquotVolumes, batchedTitrates, batchedMixWhileTitrating, batchedpHMixTypes, batchedpHMixUntilDissolved, batchedpHMixTimes, batchedMaxpHMixTimes, batchedpHMixDutyCycles, batchedpHMixRates, batchedNumbersOfpHMixes, batchedMaxNumbersOfpHMixes, batchedpHMixVolumes, batchedpHMixTemperatures, batchedMaxpHMixTemperatures, batchedpHHomogenizingAmplitudes, batchedMinpHs, batchedMaxpHs, batchedMaxAdditionVolumes,batchedMaxAcidAmountsPerCycle,batchedMaxBaseAmountsPerCycle, batchedMaxNumbersOfCycles, batchedpHMeters, batchedProbes, batchedNominalpHs, batchedTransferDestinationRacks, batchedTitratingAcids, batchedTitratingBases, batchedpHMixInstruments, batchedpHMixImpellers, batchedTitrationInstrument, batchedTitrationContainerCaps
+		}
+	];
 
 	(* - Calculate timings for checkpoints - *)
 	resourceTime=Length[containerResources]*Length[uniqueReagentResources];
@@ -2937,7 +3868,6 @@ adjustpHResourcePackets[mySamples:{ObjectP[Object[Sample]]..},nominalpHs:{pHP..}
 	postProcessTime=1 Minute;
 	storageTime=Length[uniqueReagentResources]*3 Minute;
 
-	replicatedOptionsNoneToNull=replicatedOptions/.None->Null;
 
 	protocolPacket=<|
 		Type->Object[Protocol,AdjustpH],
@@ -2953,19 +3883,19 @@ adjustpHResourcePackets[mySamples:{ObjectP[Object[Sample]]..},nominalpHs:{pHP..}
 
 		Replace[Checkpoints]->{
 			{"Preparing Samples", prepTime,"Preprocessing, such as mixing, centrifuging, thermal incubation, and aliquoting, is performed.",
-				Link[Resource[Operator->Model[User, Emerald, Operator, "Trainee"],Time->45 Minute]]
+				Link[Resource[Operator->$BaselineOperator,Time->45 Minute]]
 			},
 			{"Fixed Additions", additionsTime,"Set amounts of samples are added before titration.",
-				Link[Resource[Operator->Model[User, Emerald, Operator, "Trainee"],Time->additionsTime]]
+				Link[Resource[Operator->$BaselineOperator,Time->additionsTime]]
 			},
 			{"Adjusting pH", adjustmentTime,"Acid or base is added incrementally, mixing as specified until the desired pHs are reached.",
-				Link[Resource[Operator->Model[User, Emerald, Operator, "Trainee"],Time->adjustmentTime]]
+				Link[Resource[Operator->$BaselineOperator,Time->adjustmentTime]]
 			},
 			{"Sample Post-Processing", postProcessTime,"Any measuring of volume, weight, or sample imaging post experiment is performed.",
-				Link[Resource[Operator->Model[User, Emerald, Operator, "Trainee"],Time->15 Minute]]
+				Link[Resource[Operator->$BaselineOperator,Time->15 Minute]]
 			},
 			{"Returning Materials", storageTime,"Samples are returned to storage.",
-				Link[Resource[Operator->Model[User, Emerald, Operator, "Trainee"],Time->15 Minute]]
+				Link[Resource[Operator->$BaselineOperator,Time->15 Minute]]
 			}
 		},
 
@@ -3035,7 +3965,7 @@ adjustpHResourcePackets[mySamples:{ObjectP[Object[Sample]]..},nominalpHs:{pHP..}
 
 		Replace[pHAliquotVolumes]->Lookup[replicatedOptionsNoneToNull,pHAliquotVolume],
 
-		Replace[pHMeters]-> Link[Lookup[replicatedOptionsNoneToNull,pHMeter]],
+		Replace[pHMeters]-> pHMetersResourcified,
 
 		LowCalibrationBuffer->Link[lowCalibrationBufferResource],
 
@@ -3044,6 +3974,10 @@ adjustpHResourcePackets[mySamples:{ObjectP[Object[Sample]]..},nominalpHs:{pHP..}
 		HighCalibrationBuffer->Link[highCalibrationBufferResource],
 
 		WasteBeaker -> Resource[Sample->Model[Container,Vessel,"id:O81aEB4kJJJo"], Rent -> True],
+
+		AcidPrimeVolume -> 10 Milliliter,
+
+		BasePrimeVolume -> 10 Milliliter,
 
 		Replace[Probes]->Link[Lookup[replicatedOptionsNoneToNull,Probe]],
 
@@ -3067,9 +4001,19 @@ adjustpHResourcePackets[mySamples:{ObjectP[Object[Sample]]..},nominalpHs:{pHP..}
 
 		Replace[MaxAcidAmountsPerCycle]-> Lookup[replicatedOptionsNoneToNull,MaxAcidAmountPerCycle],
 
-		Replace[MaxBaseAmountsPerCycle]-> Lookup[replicatedOptionsNoneToNull,MaxBaseAmountPerCycle]
+		Replace[MaxBaseAmountsPerCycle]-> Lookup[replicatedOptionsNoneToNull,MaxBaseAmountPerCycle],
 
+		Replace[TitrationMethods] -> Lookup[replicatedOptionsNoneToNull,TitrationMethod],
 
+		Replace[TitrationInstruments] -> titrationInstrumentsResourcified,
+
+		Replace[TitrationContainerCaps] -> titrationContainerCapsResources,
+
+		Replace[BatchLengths] -> batchLengths,
+		Replace[BatchingParameters] -> resolvedBatchingParameters,
+
+		Replace[ManualTitrationIndices] -> manualTitrationPositions,
+		Replace[RoboticTitrationIndices] -> roboticTitrationPositions
 	|>;
 
 	(* Populate prep fields - send in initial samples and options since this handles NumberOfReplicates on its own *)
@@ -3121,15 +4065,6 @@ adjustpHResourcePackets[mySamples:{ObjectP[Object[Sample]]..},nominalpHs:{pHP..}
 		Tests->resourceTests
 	}
 ];
-
-
-
-
-
-
-
-
-
 
 
 (* ::Subsection::Closed:: *)
@@ -3212,9 +4147,6 @@ simulateExperimentAdjustpH[
 				TitratingAcids[Volume],
 				TitratingBases[Volume],
 				SamplesIn[Containers]
-
-
-
 			},
 			Cache->cache,
 			Simulation->currentSimulation
@@ -3337,4 +4269,90 @@ simulateExperimentAdjustpH[
 		protocolObject,
 		UpdateSimulation[currentSimulation, simulationWithLabels]
 	}
+];
+
+(*  == Resolve TitrationMethod options ==  *)
+(* ::Subsection::Closed:: *)
+DefineOptions[
+	findpHTitratorCaps,
+	Options:>{
+		{Messages->True,BooleanP,"Indicates if messages should be thrown."},
+		CacheOption
+	}
+];
+(* helper function to find suitable caps for robotic titration with sample container *)
+findpHTitratorCaps[modelContainerPacket : PacketP[], calibrationFunction : (_QuantityFunction|Null), probeModel : (ObjectP[Model[Part, pHProbe]] | Automatic), sampleVolume : VolumeP,  additionVolume : (VolumeP|Null)] := Module[{roboticTitrationCaps, roboticTitrationCapPackets, internalDiameter, internalDepth, coverFootprints, maxVolume, probe, capsCandidates, possibleCaps, additionVolumeTooLargeQ},
+
+	{roboticTitrationCaps, roboticTitrationCapPackets} = capCandidatesInRoboticTitration["Memoization"];
+
+	{internalDiameter, internalDepth, coverFootprints} = Lookup[modelContainerPacket, {InternalDiameter, InternalDepth, CoverFootprints}, Null];
+
+	maxVolume = If[NullQ[calibrationFunction], Lookup[modelContainerPacket, MaxVolume], calibrationFunction[internalDepth]];
+
+	(*If we need to aliquot because of the current sample container is too small, we will return {} as possibleCaps since we won't use the current container anyway *)
+	additionVolumeTooLargeQ=(!NullQ[additionVolume]) && MatchQ[additionVolume + sampleVolume, GreaterEqualP[maxVolume]];
+
+	probe = If[MatchQ[probeModel, Automatic],
+		Model[Part, pHProbe, "id:jLq9jXvP7jLx"]|Model[Part, pHProbe, "id:J8AY5jDmW5BZ"],
+		Download[probeModel, Object]
+	];
+	capsCandidates = If[MatchQ[internalDiameter, Except[Null]] && MatchQ[internalDepth, Except[Null]] && Length[coverFootprints] > 0,
+		Select[roboticTitrationCapPackets,
+			Lookup[#, InternalDiameter] <= internalDiameter && Lookup[#, InternalDepth] <= internalDepth &&
+       MatchQ[Download[Lookup[#, pHProbe], Object], probe] &&
+			 MatchQ[Lookup[#, CoverFootprint], Alternatives[Sequence @@ coverFootprints]] &],
+		{}
+	];
+
+	possibleCaps = If[Length[capsCandidates] > 0 && (!additionVolumeTooLargeQ)&& (!NullQ[calibrationFunction]),
+		Module[{minHeight,minVolume},
+			(* Calculate the required min liquid height/volume to reach the probe *)
+			minHeight = internalDepth - Lookup[capsCandidates, InternalDepth];
+			minVolume = calibrationFunction[#]&/@minHeight;
+			PickList[capsCandidates[Object], minVolume, LessP[sampleVolume]]
+		],
+		{}
+	]
+];
+
+
+(* ::Subsection::Closed:: *)
+(*preferredRoboticTitrationContainers*)
+DefineOptions[
+	preferredRoboticTitrationContainers,
+	Options:>{
+		{Messages->True,BooleanP,"Indicates if messages should be thrown."},
+		CacheOption
+	}
+];
+
+
+preferredRoboticTitrationContainers[myVolume:GreaterEqualP[0 Milliliter], myProbe:(ObjectP[Model[Part, pHProbe]]|Automatic), myOptions:OptionsPattern[]]:=Module[
+	{
+		safeOptions,containerCapTuples, probeModel, possibleContainerCapTuples, sortedContainerCapTuples, roboticTitrationContainer, roboticTitrationContainerCap, roboticTitrationProbe
+	},
+
+	(* Validate input options *)
+	safeOptions=SafeOptions[preferredRoboticTitrationContainers, ToList[myOptions]];
+	(*containerModel,capModel,minVolume, maxVolume, containerInternalDepth,containerMaxVolume,CoverFootprint,probeModel,capInternalDepth*)
+	containerCapTuples = Experiment`Private`containerTuplesInRoboticTitration["Memoization"];
+	probeModel = Which[
+		MatchQ[myProbe, Automatic],
+		ObjectP[Model[Part, pHProbe, "id:jLq9jXvP7jLx"]]|ObjectP[Model[Part, pHProbe, "id:J8AY5jDmW5BZ"]], (*Model[Part, pHProbe, "InLab Reach Pro-225"]|Model[Part, pHProbe, "InLab Micro Pro-ISM"]*)
+		True,
+		ObjectP[myProbe]
+	];
+	(*containerModel, capModel, minSampleVolume, maxSampleVolume, containerInternalDepth, containerMaxVolume, CoverFootprint, probeModel, capInternalDepth*)
+  possibleContainerCapTuples = Cases[containerCapTuples, {_, _, LessP[myVolume], GreaterP[myVolume], _, GreaterP[myVolume], _, probeModel, _}];
+
+	sortedContainerCapTuples = SortBy[possibleContainerCapTuples, (#[[6]] &)];
+
+	{roboticTitrationContainer, roboticTitrationContainerCap, roboticTitrationProbe} = If[Length[sortedContainerCapTuples]>0,
+		{
+			First[sortedContainerCapTuples][[1]],
+			First[sortedContainerCapTuples][[2]],
+			If[MatchQ[myProbe, ObjectP[Object[Part, pHProbe]]], myProbe, First[sortedContainerCapTuples][[8]]]
+		},
+		{Null, Null, Null}
+	]
 ];

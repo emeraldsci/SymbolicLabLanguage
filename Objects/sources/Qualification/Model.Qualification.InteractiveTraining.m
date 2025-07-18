@@ -50,15 +50,6 @@ DefineObjectType[Model[Qualification,InteractiveTraining],{
 			Description->"The percentage of correct answers that a candidate must equal, or exceed to pass this interactive training.",
 			Category->"Quiz Information"
 		},
-		InteractiveTrainingFrequency->{
-			Format->Multiple,
-			Class->Real,
-			Pattern:>GreaterEqualP[0 Week],
-			Units->Week,
-			Description->"For each member of Targets, how often this interactive training is designed to be taken by the candidate.",
-			Category->"Quiz Information",
-			IndexMatching->Targets
-		},
 		(* This should trigger conditional procedures in the qualification to enter and exit a DZ *)
 		Interruptible->{
 			Format->Single,

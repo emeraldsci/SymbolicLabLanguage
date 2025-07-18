@@ -495,7 +495,7 @@ RunScriptDemoDOE[script:ObjectP[Object[Notebook, Script]], ops:OptionsPattern[]]
 		(*plot design of experiment, this is only done in the demo*)
 		doePlot = ECL`PlotDesignOfExperiment[anaObj];
 		PrintTemporary[Dynamic[doePlot,TrackedSymbols:>{doePlot}]];
-	]
+	];
 
 	(*Over write down values to redirect to the simulation*)
 	PrependTo[DownValues[ExperimentHPLC],HoldPattern[ExperimentHPLC[args___]] :> DesignOfExperiment`Private`SimulateHPLC[args]];

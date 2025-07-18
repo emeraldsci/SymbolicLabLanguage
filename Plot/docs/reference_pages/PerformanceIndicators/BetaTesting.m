@@ -31,3 +31,26 @@ DefineUsage[
 		Author->{"hayley", "mohamad.zandian"}
 	}
 ];
+
+
+DefineUsage[
+	PlotBetaTestingSupportRate,
+	{
+		BasicDefinitions->{
+			{"PlotBetaTestingSupportRate[function]","plot","creates a plot indicating the support ticket rate per protocol as a function of number of protocols since the start date."}
+		},
+		MoreInformation->{
+		},
+		Input:>{
+			{"function",_Symbol,"An experiment, qualification or maintenance function."}
+		},
+		Output:>{
+			{"plot",_DynamicModule,"A plot displaying the support ticket rate as a function of protocol number since the specified start date."}
+		},
+		SeeAlso->{
+			"PlotBetaTesting",
+			"EmeraldListLinePlot"
+		},
+		Author->{"steven"}
+	}
+];

@@ -375,6 +375,90 @@ DefineTests[ExperimentPrepareReferenceElectrode,
 		(* ============== *)
 		(* == MESSAGES == *)
 		(* ============== *)
+		(* source only, source and target, {source, target}, {{source, target}..}*)
+		(* -- ObjectDoesNotExist --*)
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a source electrode that does not exist (name form):"},
+			ExperimentPrepareReferenceElectrode[Model[Item, Electrode, ReferenceElectrode,"Nonexist sample"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a source electrode that does not exist (id form):"},
+			ExperimentPrepareReferenceElectrode[Model[Item, Electrode, ReferenceElectrode,"id: 128043287"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a electrode that does not exist (sources and targets overload, name form):"},
+			ExperimentPrepareReferenceElectrode[
+				Model[Item, Electrode, ReferenceElectrode, "Example Reference Electrode Model for PrepareReferenceElectrode tests " <> $SessionUUID],
+				Model[Item, Electrode, ReferenceElectrode,"Nonexist sample"]
+			],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a electrode that does not exist (sources and targets overload, id form):"},
+			ExperimentPrepareReferenceElectrode[
+				Model[Item, Electrode, ReferenceElectrode, "Example Reference Electrode Model for PrepareReferenceElectrode tests " <> $SessionUUID],
+				Model[Item, Electrode, ReferenceElectrode,"id: 128043287"]
+			],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a electrode that does not exist (source and target pair overload, name form):"},
+			ExperimentPrepareReferenceElectrode[
+				{Model[Item, Electrode, ReferenceElectrode, "Example Reference Electrode Model for PrepareReferenceElectrode tests " <> $SessionUUID],
+					Model[Item, Electrode, ReferenceElectrode, "Nonexist sample"]}
+			],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a electrode that does not exist (source and target pair overload, id form):"},
+			ExperimentPrepareReferenceElectrode[
+				{Model[Item, Electrode, ReferenceElectrode, "Example Reference Electrode Model for PrepareReferenceElectrode tests " <> $SessionUUID],
+					Model[Item, Electrode, ReferenceElectrode, "id: 128043287"]}
+			],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a electrode that does not exist (list of source and target pair overload, name form):"},
+			ExperimentPrepareReferenceElectrode[
+				{
+					{Model[Item, Electrode, ReferenceElectrode, "Example Reference Electrode Model for PrepareReferenceElectrode tests " <> $SessionUUID],
+					Model[Item, Electrode, ReferenceElectrode, "Nonexist sample"]},
+					{Model[Item, Electrode, ReferenceElectrode, "Another nonexistent sample"],
+					Model[Item, Electrode, ReferenceElectrode, "Yet another nonexistent sample"]}
+				}
+			],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a electrode that does not exist (list of source and target pair overload, id form):"},
+			ExperimentPrepareReferenceElectrode[
+				{
+					{Model[Item, Electrode, ReferenceElectrode, "Example Reference Electrode Model for PrepareReferenceElectrode tests " <> $SessionUUID],
+						Model[Item, Electrode, ReferenceElectrode, "id:19782934"]},
+					{Model[Item, Electrode, ReferenceElectrode, "id:21904666"],
+						Model[Item, Electrode, ReferenceElectrode, "id:10q8264908"]}
+				}
+			],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a container that does not exist (name form):"},
+			ExperimentPrepareReferenceElectrode[
+				Object[Container,"Nonexistent container"],
+				Model[Item, Electrode, ReferenceElectrode, "Example Reference Electrode Model for PrepareReferenceElectrode tests " <> $SessionUUID]
+			],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist,Error::PRENoReferenceElectrodeInContainer, Error::InvalidInput}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a container that does not exist (id form):"},
+			ExperimentPrepareReferenceElectrode[
+				Object[Container,"id:12345678"],
+				Model[Item, Electrode, ReferenceElectrode, "Example Reference Electrode Model for PrepareReferenceElectrode tests " <> $SessionUUID]
+			],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist,Error::PRENoReferenceElectrodeInContainer, Error::InvalidInput}
+		],
 
 		(* -- PREInputListsConflictingLength -- *)
 		Example[{Messages, "Mismatching Lengths of source electrodes and target reference electrode models", "If the input source reference electrode list and the target reference electrode model list do have have the same length, an error will be thrown:"},

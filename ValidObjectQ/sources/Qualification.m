@@ -84,7 +84,7 @@ validQualificationQTests[packet:PacketP[Object[Qualification]]]:= Module[
 				{InCart,_,Null},
 				{Backlogged,_,Null},
 				{Canceled,_,Null},
-				{Processing, Alternatives[OperatorProcessing, InstrumentProcessing, OperatorReady, Troubleshooting], Except[Null]},
+				{Processing, Alternatives[OperatorProcessing, InstrumentProcessing, OperatorReady, ScientificSupport], Except[Null]},
 				(* a protocol is allowed to have DateStarted populated if in ShippingMaterials (or even Backlogged) (could have been started but then needed to wait) *)
 				{ShippingMaterials, _, _},
 				{Backlogged,_,_},
@@ -125,9 +125,9 @@ validQualificationQTests[packet:PacketP[Object[Qualification]]]:= Module[
 
 	(* CHILD/PARENT PROTOCOLS *)
 		Test[
-			"If the qualification is Status->Troubleshooting, its parent protocol must be Status->Troubleshooting as well:",
+			"If the qualification is Status->ScientificSupport, its parent protocol must be Status->ScientificSupport as well:",
 			{Lookup[packet, ParentProtocol], parentProtocolOperationStatus, Lookup[packet, OperationStatus]},
-			{ObjectP[], Troubleshooting, Troubleshooting} | {NullP, NullP, Troubleshooting} | {_, _, Except[Troubleshooting]}
+			{ObjectP[], ScientificSupport, ScientificSupport} | {NullP, NullP, ScientificSupport} | {_, _, Except[ScientificSupport]}
 		],
 
 		Test[
@@ -151,7 +151,7 @@ validQualificationQTests[packet:PacketP[Object[Qualification]]]:= Module[
 
 	(* EXECUTION FIELDS *)
 		Test[
-			"If the qualification has not been started, the following fields must be Null: Data, Figures, and Troubleshooting Reports:",
+			"If the qualification has not been started, the following fields must be Null: Data, Figures, and ScientificSupport Reports:",
 			Lookup[packet, {Status, Data, UserCommunications}],
 			Alternatives[
 				{Alternatives[InCart, Canceled], {}, {}},
@@ -179,16 +179,16 @@ validQualificationQTests[packet:PacketP[Object[Qualification]]]:= Module[
 
 	(* OPERATION STATUS *)
 		Test[
-			"If the qualification Status is Processing, then OperationStatus is OperatorProcessing, InstrumentProcessing, Troubleshooting, or OperatorReady. If the qualification Status is not running, OperationStatus must be Null or None:",
+			"If the qualification Status is Processing, then OperationStatus is OperatorProcessing, InstrumentProcessing, ScientificSupport, or OperatorReady. If the qualification Status is not running, OperationStatus must be Null or None:",
 			Lookup[packet,{Status,OperationStatus}],
 			Alternatives[
-				{Processing,OperatorStart|OperatorProcessing|InstrumentProcessing|OperatorReady|Troubleshooting},
+				{Processing,OperatorStart|OperatorProcessing|InstrumentProcessing|OperatorReady|ScientificSupport},
 				{Except[Processing],NullP|None}
 			]
 		],
 
-	(* TROUBLESHOOTING *)
-	Test["Troubleshooting fields are not populated if a qualification is not currently executing or it has been started but is ShippingMaterials:",
+	(* ScientificSupport *)
+	Test["ScientificSupport fields are not populated if a qualification is not currently executing or it has been started but is ShippingMaterials:",
 		(* If the protocol is Processing or has started and is ShippingMaterials, it may have CartResources populated,
 		otherwise it should be empty *)
 		If[
@@ -279,6 +279,42 @@ validQualificationAutoclaveQTests[packet:PacketP[Object[Qualification,Autoclave]
 
 
 (* ::Subsection::Closed:: *)
+(*validQualificationBiosafetyCabinetQTests*)
+
+
+validQualificationBiosafetyCabinetQTests[packet:PacketP[Object[Qualification,BiosafetyCabinet]]]:={
+	(* required fields *)
+	NotNullFieldTest[
+		packet,
+		{TestLight, TestUVLight, TestAlarm, RecordFlowSpeed, RecordLaminarFlowSpeed, ImageCertification}
+	],
+
+	Test["At least one test must be performed:",
+		Lookup[packet,{TestLight, TestUVLight, TestAlarm, RecordFlowSpeed, RecordLaminarFlowSpeed, ImageCertification}],
+		{___, True, ___}
+	]
+};
+
+
+(* ::Subsection::Closed:: *)
+(*validQualificationFlashChromatographyQTests*)
+
+
+validQualificationFlashChromatographyQTests[packet:PacketP[Object[Qualification,FlashChromatography]]]:={
+	(* required fields *)
+	NotNullFieldTest[
+		packet,
+		{Target, Author, Model, Checkpoints}
+	],
+
+	RequiredWhenCompleted[
+		packet,
+		{QualificationProtocols}
+	]
+};
+
+
+(* ::Subsection::Closed:: *)
 (*validQualificationBottleRollerQTests*)
 
 
@@ -365,12 +401,28 @@ validQualificationCentrifugeQTests[packet:PacketP[Object[Qualification,Centrifug
 
 };
 
+(* ::Subsection::Closed:: *)
+(*validQualificationColonyHandlerQTests*)
+
+
+validQualificationColonyHandlerQTests[packet:PacketP[Object[Qualification, ColonyHandler]]] := {
+	RequiredWhenCompleted[packet, {QualificationSamples, ImagingSample, ImagingProtocol}]
+};
+
 
 (* ::Subsection::Closed:: *)
 (*validQualificationConductivityMeterQTests*)
 
 
 validQualificationConductivityMeterQTests[packet:PacketP[Object[Qualification, ConductivityMeter]]]:= {
+
+};
+
+(* ::Subsection::Closed:: *)
+(*validQualificationControlledRateFreezerQTests*)
+
+
+validQualificationControlledRateFreezerQTests[packet:PacketP[Object[Qualification, ControlledRateFreezer]]]:= {
 
 };
 
@@ -408,6 +460,21 @@ validQualificationCrossFlowFiltrationQTests[packet:PacketP[Object[Qualification,
 	}]
 };
 
+
+(* ::Subsection::Closed:: *)
+(*validQualificationCryogenicFreezerQTests*)
+
+
+validQualificationCryogenicFreezerQTests[packet:PacketP[Object[Qualification,CryogenicFreezer]]]:={
+
+	NotNullFieldTest[packet,{
+		TimePeriod,
+		SamplingRate
+	}]
+
+};
+
+
 (* ::Subsection::Closed:: *)
 (*validQualificationCrystalIncubatorQTests*)
 
@@ -415,6 +482,39 @@ validQualificationCrossFlowFiltrationQTests[packet:PacketP[Object[Qualification,
 validQualificationCrystalIncubatorQTests[packet:PacketP[Object[Qualification,CrystalIncubator]]]:={
 	NotNullFieldTest[packet,{PreparatoryUnitOperations,CrystallizationCover,MaxCrystallizationTime,VerificationDataFileName,VerificationDataFilePath}],
 	RequiredWhenCompleted[packet,{QualificationSamples,QualificationProtocols,VerificationDataFile}]
+};
+
+(* ::Subsection::Closed:: *)
+(* validQualificationDesiccatorQTests *)
+
+
+validQualificationDesiccatorQTests[packet : PacketP[Object[Qualification, Desiccator]]] := {
+	(* required fields *)
+	NotNullFieldTest[
+		packet,
+		{
+			QualificationSample,
+			Amount,
+			Method,
+			Time
+		}
+	],
+
+	RequiredTogetherTest[packet, {Desiccant, DesiccantAmount}],
+
+	RequiredWhenCompleted[packet, DesiccationImages],
+
+	Test["Desiccant and DesiccantAmount must be informed only if Method is StandardDesiccant or DesiccantUnderVacuum:",
+		If[
+			Or[
+				NullQ[Lookup[packet, Desiccant]],
+				NullQ[Lookup[packet, DesiccantAmount]]
+			],
+			MatchQ[Lookup[packet, Method], Vacuum],
+			MatchQ[Lookup[packet, Method], StandardDesiccant | DesiccantUnderVacuum]
+		],
+		True
+	]
 };
 
 (* ::Subsection:: *)
@@ -674,6 +774,41 @@ validQualificationFreezePumpThawApparatusQTests[packet:PacketP[Object[Qualificat
 	RequiredWhenCompleted[packet,{SamplePreparationProtocol,InitialDissolvedOxygenConcentration,FinalDissolvedOxygenConcentration}]
 };
 
+(* ::Subsection::Closed:: *)
+(*validQualificationWaterPurifierQTests*)
+
+
+validQualificationWaterPurifierQTests[packet:PacketP[Object[Qualification,WaterPurifier]]]:={
+	(* required fields *)
+	NotNullFieldTest[
+		packet,
+		{Target, Model}
+	],
+
+	RequiredWhenCompleted[
+		packet,
+		{Alarm, WaterDispensed, QualityReportImage, Resistivity, TotalOrganicCarbon, Temperature}
+	]
+};
+
+
+(* ::Subsection::Closed:: *)
+(*validQualificationFumeHoodQTests*)
+
+
+validQualificationFumeHoodQTests[packet:PacketP[Object[Qualification,FumeHood]]]:={
+	(* required fields *)
+	NotNullFieldTest[
+		packet,
+		{TestLight, TestAlarm, RecordFlowSpeed, ImageCertification}
+	],
+
+	Test["At least one test must be performed:",
+		Lookup[packet,{TestLight, TestAlarm, RecordFlowSpeed, ImageCertification}],
+		{___, True, ___}
+	]
+};
+
 
 
 (* ::Subsection::Closed:: *)
@@ -683,6 +818,39 @@ validQualificationFreezePumpThawApparatusQTests[packet:PacketP[Object[Qualificat
 validQualificationGasChromatographyQTests[packet:PacketP[Object[Qualification,GasChromatography]]]:= {
 
 };
+
+(* ::Subsection::Closed:: *)
+(* validQualificationGrinderQTests *)
+
+
+validQualificationGrinderQTests[packet : PacketP[Object[Qualification, Grinder]]] := {
+	(* required fields *)
+	NotNullFieldTest[
+		packet,
+		{
+			QualificationSample,
+			Amount,
+			BulkDensity,
+			GrindingRate,
+			Time,
+			NumberOfGrindingSteps,
+			ImagingDirection
+		}
+	],
+
+	(* CoolingTime must be informed if NumberOfGrindingSteps is greater than 1 *)
+	Test["CoolingTime must be informed if NumberOfGrindingSteps is greater than 1:",
+		If[
+			GreaterQ[Lookup[packet, NumberOfGrindingSteps], 1],
+			MatchQ[CoolingTime, TimeP],
+			True
+		],
+		True
+	],
+
+	RequiredWhenCompleted[packet, {CoarsePowderImage, FinePowderImage}]
+};
+
 
 
 (* ::Subsection::Closed:: *)
@@ -907,18 +1075,13 @@ validQualificationHPLCQTests[packet:PacketP[Object[Qualification,HPLC]]]:=Module
 
 
 validQualificationIncubatorQTests[packet:PacketP[Object[Qualification,Incubator]]]:={
-	(* Fields filled in all the time from moment of creation*)
-	NotNullFieldTest[packet,
-		{
-			PreparatoryUnitOperations
-		}
-	],
 
 	(* results should be informed when qualification is done *)
 	RequiredWhenCompleted[packet,
 		{
 			QualificationNotebook,
-			FullyDissolved
+			FullyDissolved,
+			EnvironmentalData
 		}
 	]
 };
@@ -1533,36 +1696,13 @@ validQualificationLiquidLevelDetectionQTests[packet:PacketP[Object[Qualification
 	NotNullFieldTest[packet,
 		{
 			LiquidHandler,
-			Sterile,
 			WashSolution,
 			CottonTipApplicators
 		}
 	],
 
 	(* Field filled in after checkpoint *)
-	RequiredAfterCheckpoint[packet, "Cleaning Needles", {CarrierPlacements}],
-
-	Test[
-		"If Sterile->True, the LiquidHandler specified has HandlingCategory->Sterile:",
-		(* Figure out whether Sterile is a member of the HandlingCategories of the instrument's model *)
-		With[
-			{
-				inst = Lookup[packet, LiquidHandler],
-				sterile = Lookup[packet, Sterile]
-			},
-
-			If[
-				TrueQ[sterile],
-				If[
-					MemberQ[Download[inst, SampleHandlingCategories],Sterile],
-					True,
-					False
-				],
-				True
-			]
-		],
-		True
-	]
+	RequiredAfterCheckpoint[packet, "Cleaning Needles", {CarrierPlacements}]
 };
 
 
@@ -1872,6 +2012,35 @@ validQualificationPlateReaderQTests[packet:PacketP[Object[Qualification,PlateRea
 
 
 (* ::Subsection::Closed:: *)
+(*validQualificationDLSPlateReaderQTests*)
+
+
+validQualificationDLSPlateReaderQTests[packet:PacketP[Object[Qualification,DLSPlateReader]]]:={
+	(* the target should be of the right instrument type *)
+	Test["The target must be a Object[Instrument,DLSPlateReader]:",
+		Lookup[packet,Target],
+		LinkP[Object[Instrument,DLSPlateReader]]
+	],
+
+	(*required fields*)
+	NotNullFieldTest[
+		packet,
+		{
+			LightScatteringValidationSamples,
+			LightScatteringIndependentReplicates,
+			LightScatteringWellReplicates
+		}
+	],
+
+	(* required when completed *)
+	RequiredWhenCompleted[packet,{LightScatteringQualificationProtocol}],
+
+	(* results should be informed when qualification is done *)
+	RequiredWhenCompleted[packet, {QualificationNotebook}]
+};
+
+
+(* ::Subsection::Closed:: *)
 (*validQualificationPHMeterQTests*)
 
 
@@ -1881,6 +2050,20 @@ validQualificationpHMeterQTests[packet:PacketP[Object[Qualification,pHMeter]]]:=
 	RequiredWhenCompleted[packet,
 		{
 		Target, QualificationProtocols, QualificationSamples, MeasurementAccuracy, MeasurementPrecision, Slope, Offset
+		}
+	]
+};
+
+(* ::Subsection::Closed:: *)
+(*validQualificationpHTitratorQTests*)
+
+
+validQualificationpHTitratorQTests[packet:PacketP[Object[Qualification,pHTitrator]]]:= {
+
+	(*required when completed*)
+	RequiredWhenCompleted[packet,
+		{
+			Target, QualificationProtocols, QualificationSamples
 		}
 	]
 };
@@ -2438,14 +2621,9 @@ validQualificationInteractiveTrainingQTests[packet:PacketP[Object[Qualification,
 	NullFieldTest[packet,{
 		Aliquot,
 		AliquotAmounts,
-		AliquotCentrifugePreparation,
 		AliquotContainers,
-		AliquotFilterPreparation,
-		AliquotIncubatePreparation,
 		AliquotLiquidHandlingScale,
 		AliquotMasses,
-		AliquotMixPreparation,
-		AliquotPreparationProtocols,
 		AliquotProtocols,
 		AliquotSamplePreparation,
 		AliquotSamples,
@@ -2506,7 +2684,6 @@ validQualificationInteractiveTrainingQTests[packet:PacketP[Object[Qualification,
 		SecondaryWasteWeight,
 		SecondaryWasteWeightTare,
 		ShippingMaterials,
-		Sterile,
 		Storage,
 		StoragePrice,
 		StoragePrices,
@@ -2550,14 +2727,20 @@ registerValidQTestFunction[Object[Qualification],validQualificationQTests];
 registerValidQTestFunction[Object[Qualification, AcousticLiquidHandler],validQualificationAcousticLiquidHandlerQTests];
 registerValidQTestFunction[Object[Qualification, MeasureLiquidHandlerDevicePrecision], validQualificationMeasureLiquidHandlerDevicePrecisionQTests];
 registerValidQTestFunction[Object[Qualification, Autoclave],validQualificationAutoclaveQTests];
+registerValidQTestFunction[Object[Qualification, BiosafetyCabinet],validQualificationBiosafetyCabinetQTests];
+registerValidQTestFunction[Object[Qualification, FlashChromatography],validQualificationFlashChromatographyQTests];
 registerValidQTestFunction[Object[Qualification, BottleRoller],validQualificationBottleRollerQTests];
 registerValidQTestFunction[Object[Qualification, Balance],validQualificationBalanceQTests];
 registerValidQTestFunction[Object[Qualification, CapillaryELISA],validQualificationCapillaryELISAQTests];
 registerValidQTestFunction[Object[Qualification, Centrifuge],validQualificationCentrifugeQTests];
+registerValidQTestFunction[Object[Qualification, ColonyHandler],validQualificationColonyHandlerQTests];
 registerValidQTestFunction[Object[Qualification, ConductivityMeter],validQualificationConductivityMeterQTests];
+registerValidQTestFunction[Object[Qualification, ControlledRateFreezer],validQualificationControlledRateFreezerQTests];
 registerValidQTestFunction[Object[Qualification, CoulterCounter],validQualificationCoulterCounterQTests];
 registerValidQTestFunction[Object[Qualification, CrossFlowFiltration],validQualificationCrossFlowFiltrationQTests];
+registerValidQTestFunction[Object[Qualification, CryogenicFreezer],validQualificationCryogenicFreezerQTests];
 registerValidQTestFunction[Object[Qualification, CrystalIncubator],validQualificationCrystalIncubatorQTests];
+registerValidQTestFunction[Object[Qualification, Desiccator],validQualificationDesiccatorQTests];
 registerValidQTestFunction[Object[Qualification, Dewar],validQualificationDewarQTests];
 registerValidQTestFunction[Object[Qualification, Dialyzer],validQualificationDialyzerQTests];
 registerValidQTestFunction[Object[Qualification, DifferentialScanningCalorimeter],validQualificationDifferentialScanningCalorimeterQTests];
@@ -2574,10 +2757,13 @@ registerValidQTestFunction[Object[Qualification, Evaporator],validQualificationE
 registerValidQTestFunction[Object[Qualification, FilterBlock],validQualificationFilterBlockQTests];
 registerValidQTestFunction[Object[Qualification, FilterHousing],validQualificationFilterHousingQTests];
 registerValidQTestFunction[Object[Qualification, FreezePumpThawApparatus],validQualificationFreezePumpThawApparatusQTests];
+registerValidQTestFunction[Object[Qualification, FumeHood],validQualificationFumeHoodQTests];
 registerValidQTestFunction[Object[Qualification, GasChromatography],validQualificationGasChromatographyQTests];
+registerValidQTestFunction[Object[Qualification, Grinder],validQualificationGrinderQTests];
 registerValidQTestFunction[Object[Qualification, HeatBlock],validQualificationHeatBlockQTests];
 registerValidQTestFunction[Object[Qualification, Homogenizer],validQualificationHomogenizerQTests];
 registerValidQTestFunction[Object[Qualification, HPLC],validQualificationHPLCQTests];
+registerValidQTestFunction[Object[Qualification, Incubator],validQualificationIncubatorQTests];
 registerValidQTestFunction[Object[Qualification, IonChromatography],validQualificationIonChromatographyQTests];
 registerValidQTestFunction[Object[Qualification, LCMS],validQualificationLCMSQTests];
 registerValidQTestFunction[Object[Qualification, LiquidHandler],validQualificationLiquidHandlerQTests];
@@ -2593,9 +2779,11 @@ registerValidQTestFunction[Object[Qualification, Osmometer],validQualificationOs
 registerValidQTestFunction[Object[Qualification, PCR],validQualificationPCRQTests];
 registerValidQTestFunction[Object[Qualification, PeristalticPump],validQualificationPeristalticPumpQTests];
 registerValidQTestFunction[Object[Qualification, pHMeter],validQualificationpHMeterQTests];
+registerValidQTestFunction[Object[Qualification, pHTitrator],validQualificationpHTitratorQTests];
 registerValidQTestFunction[Object[Qualification, PipettingLinearity],validQualificationPipettingLinearityQTests];
 registerValidQTestFunction[Object[Qualification, PlateImager],validQualificationPlateImagerQTests];
 registerValidQTestFunction[Object[Qualification, PlateReader],validQualificationPlateReaderQTests];
+registerValidQTestFunction[Object[Qualification, DLSPlateReader], validQualificationDLSPlateReaderQTests];
 registerValidQTestFunction[Object[Qualification, PlateSealer],validQualificationPlateSealerQTests];
 registerValidQTestFunction[Object[Qualification, PressureManifold],validQualificationPressureManifoldQTests];
 registerValidQTestFunction[Object[Qualification, ProteinCapillaryElectrophoresis],validQualificationProteinCapillaryElectrophoresisQTests];
@@ -2614,6 +2802,7 @@ registerValidQTestFunction[Object[Qualification, VacuumDegasser],validQualificat
 registerValidQTestFunction[Object[Qualification, Ventilation],validQualificationVentilationQTests];
 registerValidQTestFunction[Object[Qualification, Viscometer],validQualificationViscometerQTests];
 registerValidQTestFunction[Object[Qualification, Vortex],validQualificationVortexQTests];
+registerValidQTestFunction[Object[Qualification, WaterPurifier],validQualificationWaterPurifierQTests];
 registerValidQTestFunction[Object[Qualification, Western],validQualificationWesternQTests];
 registerValidQTestFunction[Object[Qualification, Tensiometer], validQualificationTensiometerQTests];
 registerValidQTestFunction[Object[Qualification, BioLayerInterferometer],validQualificationBioLayerInterferometerQTests];

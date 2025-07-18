@@ -28,6 +28,26 @@ DefineUsage[PlotFragmentAnalysis,
 						Pattern:>ValidGraphicsP[]
 					}
 				}
+			},
+			{
+				Definition -> {"PlotFragmentAnalysis[protocol]", "plot"},
+				Description -> "creates a 'plot' of the FragmentAnalysis data objects found in the Data field of 'protocol'.",
+				Inputs :> {
+					{
+						InputName -> "protocol",
+						Description -> "The protocol object containing fragment analysis data objects.",
+						Widget -> Alternatives[
+							Widget[Type -> Object, Pattern :> ObjectP[Object[Protocol, FragmentAnalysis]]]
+						]
+					}
+				},
+				Outputs :> {
+					{
+						OutputName -> "plot",
+						Description -> "The figure generated from data found in the fragment analysis protocol.",
+						Pattern :> ValidGraphicsP[]
+					}
+				}
 			}
 		},
 		SeeAlso -> {

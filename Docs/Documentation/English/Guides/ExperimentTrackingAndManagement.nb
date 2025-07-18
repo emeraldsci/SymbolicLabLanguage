@@ -1,3 +1,473 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:5febea6735bb7aed6e4f29a47488bc0e8a769172af34f5dda113ce5f76dcd868
-size 19566
+(* Content-type: application/vnd.wolfram.mathematica *)
+
+(*** Wolfram Notebook File ***)
+(* http://www.wolfram.com/nb *)
+
+(* CreatedBy='Mathematica 12.0' *)
+
+(*CacheID: 234*)
+(* Internal cache information:
+NotebookFileLineBreakTest
+NotebookFileLineBreakTest
+NotebookDataPosition[       158,          7]
+NotebookDataLength[     18893,        463]
+NotebookOptionsPosition[     13985,        372]
+NotebookOutlinePosition[     15593,        410]
+CellTagsIndexPosition[     15550,        407]
+WindowTitle->ExperimentTrackingAndManagement
+WindowFrame->Normal*)
+
+(* Beginning of Notebook Content *)
+Notebook[{
+Cell[BoxData[GridBox[{
+   {GridBox[{
+      {
+       ItemBox[Cell[BoxData[
+         RowBox[{
+          InterpretationBox[
+           StyleBox[
+            GraphicsBox[{},
+             BaselinePosition->Baseline,
+             ImageSize->{8, 0}],
+            CacheGraphics->False],
+           Spacer[8],
+           Selectable->False], Cell["EMERALD GUIDE", "PacletNameCell",
+           TextAlignment->Center,ExpressionUUID->
+           "7908e89f-b893-47ac-459a-a815c351d89e"], 
+          InterpretationBox[
+           StyleBox[
+            GraphicsBox[{},
+             BaselinePosition->Baseline,
+             ImageSize->{8, 0}],
+            CacheGraphics->False],
+           Spacer[8],
+           Selectable->False]}]],
+         TextAlignment->Center,ExpressionUUID->
+         "867f6861-a9ab-4486-7f3f-3ad8f927adfb"],
+        Background->RGBColor[
+         0.24313725490196078`, 0.27058823529411763`, 0.2980392156862745],
+        ItemSize->Full], ""}
+     },
+     GridBoxAlignment->{"Rows" -> {{Center}}},
+     GridBoxItemSize->{"Columns" -> {Full, 
+         Scaled[0.02]}, "Rows" -> {{2.5}}}], Cell[TextData[{
+     Cell[BoxData[
+      ActionMenuBox[
+       FrameBox[Cell[TextData[{
+         "Functions",
+         " ",
+         Cell[BoxData[
+          GraphicsBox[
+           {RGBColor[183/256., 197/256., 211/256.], Thickness[0.13], 
+            LineBox[{{-1.8, 0.5}, {0, 0}, {1.8, 0.5}}]},
+           AspectRatio->1,
+           ImageSize->20,
+           PlotRange->{{-3, 4}, {-1, 1}}]],ExpressionUUID->
+          "ddd4f656-8b89-4d5a-8904-8ca4f04464d8"]
+        }],ExpressionUUID->"cb85a0c7-721f-4ceb-ae6b-6f535a14d847"],
+        StripOnInput->False], {"\<\"AvailableThreads\"\>":>
+       Documentation`HelpLookup[
+       "paclet:ExperimentUtilities/ref/AvailableThreads"], "\<\"BacklogTime\"\
+\>":>Documentation`HelpLookup[
+       "paclet:ExperimentUtilities/ref/BacklogTime"], \
+"\<\"CancelProtocol\"\>":>Documentation`HelpLookup[
+       "paclet:Protocol/ref/CancelProtocol"], "\<\"ConfirmProtocol\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Protocol/ref/ConfirmProtocol"], "\<\"OpenThreads\"\>":>
+       Documentation`HelpLookup[
+       "paclet:ExperimentUtilities/ref/OpenThreads"], "\<\"ParseLog\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Core/ref/ParseLog"], "\<\"PrioritizeBacklog\"\>":>
+       Documentation`HelpLookup[
+       "paclet:ExperimentUtilities/ref/PrioritizeBacklog"], \
+"\<\"ProtocolDelayTime\"\>":>Documentation`HelpLookup[
+       "paclet:Plot/ref/ProtocolDelayTime"], "\<\"QueueTime\"\>":>
+       Documentation`HelpLookup[
+       "paclet:ExperimentUtilities/ref/QueueTime"], \
+"\<\"ReportTroubleshooting\"\>":>Documentation`HelpLookup[
+       "paclet:Troubleshooting/ref/ReportTroubleshooting"], \
+"\<\"UnconfirmProtocol\"\>":>Documentation`HelpLookup[
+       "paclet:Protocol/ref/UnconfirmProtocol"], \
+"\<\"UploadProtocolPriority\"\>":>Documentation`HelpLookup[
+       "paclet:ExperimentUtilities/ref/UploadProtocolPriority"]},
+       LineSpacing -> {1.4, 0},
+       Appearance->None,
+       MenuAppearance->Automatic,
+       MenuStyle->"GuideFunction"]],ExpressionUUID->
+      "04484075-ffff-431f-9868-f2c699b91ada"],
+     "\[ThickSpace]\[ThickSpace]\[ThickSpace]\[ThickSpace]\[ThickSpace]\
+\[ThickSpace]",
+     Cell[BoxData[
+      ActionMenuBox[
+       FrameBox[Cell[TextData[{
+         "Related Guides",
+         " ",
+         Cell[BoxData[
+          GraphicsBox[
+           {RGBColor[183/256., 197/256., 211/256.], Thickness[0.13], 
+            LineBox[{{-1.8, 0.5}, {0, 0}, {1.8, 0.5}}]},
+           AspectRatio->1,
+           ImageSize->20,
+           PlotRange->{{-3, 4}, {-1, 1}}]],ExpressionUUID->
+          "6fffa680-a8f8-44c9-9cca-5180f114e1d9"]
+        }],ExpressionUUID->"d3e38703-f8a7-4271-8154-60d53f63f297"],
+        StripOnInput->False], {"\<\"FacilitiesCapabilitiesAndLimitations\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Docs/guide/FacilitiesCapabilitiesAndLimitations"], \
+"\<\"PricingFunctions\"\>":>Documentation`HelpLookup[
+       "paclet:Docs/guide/PricingFunctions"], "\<\"RunningExperiments\"\>":>
+       Documentation`HelpLookup["paclet:Docs/guide/RunningExperiments"]},
+       LineSpacing -> {1.4, 0},
+       Appearance->None,
+       MenuAppearance->Automatic,
+       MenuStyle->"GuideFunction"]],ExpressionUUID->
+      "09527d2d-eeb5-4dd4-ba98-9df9dc98fda7"]
+    }], "AnchorBar",ExpressionUUID->"dc05ae71-8a49-4cf6-b26f-bd5220e316d9"]}
+  }]], "AnchorBarGrid",
+ CellID->1,ExpressionUUID->"e952078a-cd56-42ec-bb5e-ccf6a6b33548"],
+
+Cell["Experiment Tracking And Management", "GuideTitle",
+ CellID->127068733,ExpressionUUID->"1f6e8763-1d78-4530-a852-e0062ec94d82"],
+
+Cell["\<\
+Collection of functions use to track and control the flow of experiments in \
+an ECL facility.\
+\>", "GuideAbstract",
+ CellID->510471579,ExpressionUUID->"c1af884d-580f-40f6-9130-8d216688e37b"],
+
+Cell["\t", "GuideDelimiterSubsection",
+ CellID->169081627,ExpressionUUID->"9861c922-6013-4651-a0dc-ece0cce9e4a6"],
+
+Cell["Managing Protocols", "GuideFunctionsSubsection",
+ CellID->468272445,ExpressionUUID->"b60f74b7-880b-4022-93f4-d4fc8e5bedbf"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["ConfirmProtocol"]],"paclet:Protocol/ref/ConfirmProtocol"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "460624fa-4d2b-43da-bc2c-0cc072b505bd"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Directs the ECL to confirm an experimental protocol that is InCart to \
+begin running in the lab."
+}], "GuideText",
+ CellID->80372462,ExpressionUUID->"46f77171-cffd-4c56-b235-3c58552665ff"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["UnconfirmProtocol"]],"paclet:Protocol/ref/UnconfirmProtocol"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "9345d6c6-6e4b-4ea3-b9e9-0fe33e0cccda"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Directs the ECL to cancel conformation of an experimental protocol and \
+return a protocol to the Cart."
+}], "GuideText",
+ CellID->374681237,ExpressionUUID->"f3fbc60b-9e47-4a32-9bb8-8be1f718905e"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["CancelProtocol"]],"paclet:Protocol/ref/CancelProtocol"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "5de1942d-4d2e-402d-8607-04ebeef96f21"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Permanently cancels an experimental protocol, removing it from processing \
+or the cart."
+}], "GuideText",
+ CellID->7000323,ExpressionUUID->"5fc2a089-997d-4eb5-8750-6638288d649c"],
+
+Cell["\t", "GuideDelimiterSubsection",
+ CellID->22829060,ExpressionUUID->"6e4fdb95-22ff-43e5-aa3e-98198cb92fba"],
+
+Cell["Threading and Queues", "GuideFunctionsSubsection",
+ CellID->231760198,ExpressionUUID->"b2ad5245-8848-4409-89e3-497901a73096"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["PrioritizeBacklog"]],
+    "paclet:ExperimentUtilities/ref/PrioritizeBacklog"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "d31dfb80-fcf7-47af-b279-7db5b8ceb0ea"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Sets the order in which experimental protocols should be taken from the \
+backlog into processing when more threads become available."
+}], "GuideText",
+ CellID->666205306,ExpressionUUID->"2b3f451b-7e27-4ea7-966f-5cc6bf7723bb"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["OpenThreads"]],"paclet:ExperimentUtilities/ref/OpenThreads"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "480c1b63-2090-4655-adf9-240c8a9c45e7"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Returns a list of protocols that are currently occupying lab threads."
+}], "GuideText",
+ CellID->197394592,ExpressionUUID->"65d710e9-cf30-4733-b5f5-a8263af01c8a"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["AvailableThreads"]],
+    "paclet:ExperimentUtilities/ref/AvailableThreads"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "88553c95-4964-474e-9a54-ec1e91c6bd31"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Returns the number of remaining threads that are available to run \
+additional experimental protocols simultaneously."
+}], "GuideText",
+ CellID->159173158,ExpressionUUID->"34c69035-5eff-43bc-99a9-35e8e51a4dd7"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["BacklogTime"]],"paclet:ExperimentUtilities/ref/BacklogTime"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "bd288d13-393b-4982-9736-36a6331e16a2"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Estimates the amount of time an experimental protocol will remain in the \
+backlog before processing has begun based on the number of threads and the \
+state of the experiments currently processing."
+}], "GuideText",
+ CellID->317154032,ExpressionUUID->"2c77931d-bb36-444b-a7cb-6a828e6e8f1c"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["QueueTime"]],"paclet:ExperimentUtilities/ref/QueueTime"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "5bcc4b9b-d104-4a32-8383-df6a31374951"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Estimates the amount of time a processing experiment will be awaiting \
+available resources by looking at recent historic usage data from the \
+facility."
+}], "GuideText",
+ CellID->130498444,ExpressionUUID->"a22effd0-8ff6-45ed-b0e0-a729f4facded"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["UploadProtocolPriority"]],
+    "paclet:ExperimentUtilities/ref/UploadProtocolPriority"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "fbb37d53-5d47-4fbc-862e-3bd1d43b6a54"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Modifies the priority of the input protocol that will run in the lab."
+}], "GuideText",
+ CellID->119685282,ExpressionUUID->"058a05f7-8cfb-4a02-9b0e-d6b329e45a57"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["ParseLog"]],"paclet:Core/ref/ParseLog"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "4b2576b0-76c3-47fb-85c5-8ec42e5e3514"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Parses and returns useful information for the the objects from the \
+specified log field."
+}], "GuideText",
+ CellID->392234007,ExpressionUUID->"2a3451f6-e0ec-4866-84a0-da016b1920b6"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["ProtocolDelayTime"]],"paclet:Plot/ref/ProtocolDelayTime"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "d30b5f8b-bfb1-4ae7-b8df-ae7e0d920bf9"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Estimates the total amount of time a protocol was delayed beyond our \
+Estimate."
+}], "GuideText",
+ CellID->9064191,ExpressionUUID->"acfb6c0b-7a63-45e0-820e-14bbd409440a"],
+
+Cell["\t", "GuideDelimiterSubsection",
+ CellID->580763886,ExpressionUUID->"48ab9db0-3483-4b8b-a311-aaad59c258df"],
+
+Cell["Troubleshooting", "GuideFunctionsSubsection",
+ CellID->297807566,ExpressionUUID->"3498714f-4b2e-4ff3-9b4b-18bd8825a2ac"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["ReportTroubleshooting"]],
+    "paclet:Troubleshooting/ref/ReportTroubleshooting"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "df64b999-fd4e-4144-8ff9-e4a923187bf4"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Facilitates communication with ECL's System Diagnostics team in dealing \
+with any unexpected behavior encountered with the system."
+}], "GuideText",
+ CellID->611855831,ExpressionUUID->"d560adb0-4d35-4bbc-83a9-4ed6ec291cf4"],
+
+Cell["", "SectionFooterSpacer",
+ CellID->24510633,ExpressionUUID->"7d317f58-6db7-46da-9573-2f25dc146518"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  InterpretationBox[
+   StyleBox[
+    GraphicsBox[{},
+     BaselinePosition->Baseline,
+     ImageSize->{6, 0}],
+    CacheGraphics->False],
+   Spacer[6]]],ExpressionUUID->"2cdcc6dc-7c26-4845-8820-c155b02cbfb6"],
+ "Related Guides"
+}], "GuideMoreAboutSection",
+ WholeCellGroupOpener->True,
+ CellID->307591263,ExpressionUUID->"e40a3eb9-ce3e-4721-8ab9-1cbc6379b0c1"],
+
+Cell["", "SectionHeaderSpacer",
+ CellID->158024030,ExpressionUUID->"f71a0296-7abd-4ce9-b694-23de6ac1f6b2"],
+
+Cell[BoxData[
+ TemplateBox[{Cell[
+    TextData["RunningExperiments"]],"paclet:Docs/guide/RunningExperiments"},
+  "RefLink",
+  BaseStyle->"GuideMoreAboutSub"]], "GuideMoreAboutSub",
+ CellID->268803597,ExpressionUUID->"8dd6d77e-e7c0-415e-8e06-7cdfad3ae4dc"],
+
+Cell[BoxData[
+ TemplateBox[{Cell[
+    TextData["FacilitiesCapabilitiesAndLimitations"]],
+   "paclet:Docs/guide/FacilitiesCapabilitiesAndLimitations"},
+  "RefLink",
+  BaseStyle->"GuideMoreAboutSub"]], "GuideMoreAboutSub",
+ CellID->28167430,ExpressionUUID->"94840c1a-75d1-4137-9bb1-96f287d8be24"],
+
+Cell[BoxData[
+ TemplateBox[{Cell[
+    TextData["PricingFunctions"]],"paclet:Docs/guide/PricingFunctions"},
+  "RefLink",
+  BaseStyle->"GuideMoreAboutSub"]], "GuideMoreAboutSub",
+ CellID->287214575,ExpressionUUID->"bff60cca-3660-4646-8c23-24044fa6a3ce"],
+
+Cell["", "FooterCell",
+ CellID->48104349,ExpressionUUID->"317d945c-3d30-42cb-ab73-6674f6a2d197"]
+},
+Saveable->False,
+ScreenStyleEnvironment->"Working",
+WindowSize->{775, 872},
+WindowMargins->{{564, Automatic}, {Automatic, 54}},
+WindowTitle->"ExperimentTrackingAndManagement",
+Visible->False,
+TaggingRules->{
+ "ModificationHighlight" -> False, "ColorType" -> "GuideColor", 
+  "ExampleCounter" -> 1, "NeedPlatMsgIn" -> None, "RootCaptions" -> "", 
+  "Metadata" -> {
+   "built" -> "Mon 14 Nov 2022 14:28:51", "context" -> "Docs`", 
+    "keywords" -> {
+     "ConfirmProtocol", "UnconfirmProtocol", "CancelProtocol", 
+      "PrioritizeBacklog", "OpenThreads", "AvailableThreads", "BacklogTime", 
+      "QueueTime", "UploadProtocolPriority", "ParseLog", "ProtocolDelayTime", 
+      "ReportTroubleshooting"}, "specialkeywords" -> {}, 
+    "tutorialcollectionlinks" -> {}, "index" -> True, "label" -> "ECL Guide", 
+    "language" -> "en", "paclet" -> "Docs", "status" -> "None", "summary" -> 
+    "Collection of functions use to track and control the flow of experiments \
+in an ECL facility.", "synonyms" -> {}, "titlemodifier" -> "", "Windowtitle" -> 
+    "ExperimentTrackingAndManagement", "title" -> 
+    "ExperimentTrackingAndManagement", "type" -> "Guide", "uri" -> 
+    "Docs/guide/ExperimentTrackingAndManagement", "WorkflowDockedCell" -> ""},
+   "SearchTextTranslated" -> "", "LinkTrails" -> ""},
+FrontEndVersion->"12.0 for Microsoft Windows (64-bit) (September 6, 2019)",
+StyleDefinitions->"EmeraldReference.nb",
+CharacterEncoding -> "UTF-8"
+]
+(* End of Notebook Content *)
+
+(* Internal cache information *)
+(*CellTagsOutline
+CellTagsIndex->{}
+*)
+(*CellTagsIndex
+CellTagsIndex->{}
+*)
+(*NotebookFileOutline
+Notebook[{
+Cell[603, 21, 4514, 105, 56, "AnchorBarGrid",ExpressionUUID->"e952078a-cd56-42ec-bb5e-ccf6a6b33548",
+ CellID->1],
+Cell[5120, 128, 131, 1, 50, "GuideTitle",ExpressionUUID->"1f6e8763-1d78-4530-a852-e0062ec94d82",
+ CellID->127068733],
+Cell[5254, 131, 202, 4, 31, "GuideAbstract",ExpressionUUID->"c1af884d-580f-40f6-9130-8d216688e37b",
+ CellID->510471579],
+Cell[5459, 137, 113, 1, 22, "GuideDelimiterSubsection",ExpressionUUID->"9861c922-6013-4651-a0dc-ece0cce9e4a6",
+ CellID->169081627],
+Cell[5575, 140, 129, 1, 36, "GuideFunctionsSubsection",ExpressionUUID->"b60f74b7-880b-4022-93f4-d4fc8e5bedbf",
+ CellID->468272445],
+Cell[5707, 143, 498, 12, 53, "GuideText",ExpressionUUID->"46f77171-cffd-4c56-b235-3c58552665ff",
+ CellID->80372462],
+Cell[6208, 157, 509, 12, 59, "GuideText",ExpressionUUID->"f3fbc60b-9e47-4a32-9bb8-8be1f718905e",
+ CellID->374681237],
+Cell[6720, 171, 486, 12, 59, "GuideText",ExpressionUUID->"5fc2a089-997d-4eb5-8750-6638288d649c",
+ CellID->7000323],
+Cell[7209, 185, 112, 1, 22, "GuideDelimiterSubsection",ExpressionUUID->"6e4fdb95-22ff-43e5-aa3e-98198cb92fba",
+ CellID->22829060],
+Cell[7324, 188, 131, 1, 36, "GuideFunctionsSubsection",ExpressionUUID->"b2ad5245-8848-4409-89e3-497901a73096",
+ CellID->231760198],
+Cell[7458, 191, 555, 13, 53, "GuideText",ExpressionUUID->"2b3f451b-7e27-4ea7-966f-5cc6bf7723bb",
+ CellID->666205306],
+Cell[8016, 206, 474, 11, 38, "GuideText",ExpressionUUID->"65d710e9-cf30-4733-b5f5-a8263af01c8a",
+ CellID->197394592],
+Cell[8493, 219, 537, 13, 59, "GuideText",ExpressionUUID->"34c69035-5eff-43bc-99a9-35e8e51a4dd7",
+ CellID->159173158],
+Cell[9033, 234, 603, 13, 80, "GuideText",ExpressionUUID->"2c77931d-bb36-444b-a7cb-6a828e6e8f1c",
+ CellID->317154032],
+Cell[9639, 249, 554, 13, 59, "GuideText",ExpressionUUID->"a22effd0-8ff6-45ed-b0e0-a729f4facded",
+ CellID->130498444],
+Cell[10196, 264, 501, 12, 38, "GuideText",ExpressionUUID->"058a05f7-8cfb-4a02-9b0e-d6b329e45a57",
+ CellID->119685282],
+Cell[10700, 278, 473, 12, 38, "GuideText",ExpressionUUID->"2a3451f6-e0ec-4866-84a0-da016b1920b6",
+ CellID->392234007],
+Cell[11176, 292, 480, 12, 38, "GuideText",ExpressionUUID->"acfb6c0b-7a63-45e0-820e-14bbd409440a",
+ CellID->9064191],
+Cell[11659, 306, 113, 1, 22, "GuideDelimiterSubsection",ExpressionUUID->"48ab9db0-3483-4b8b-a311-aaad59c258df",
+ CellID->580763886],
+Cell[11775, 309, 126, 1, 36, "GuideFunctionsSubsection",ExpressionUUID->"3498714f-4b2e-4ff3-9b4b-18bd8825a2ac",
+ CellID->297807566],
+Cell[11904, 312, 557, 13, 53, "GuideText",ExpressionUUID->"d560adb0-4d35-4bbc-83a9-4ed6ec291cf4",
+ CellID->611855831],
+Cell[12464, 327, 105, 1, 29, "SectionFooterSpacer",ExpressionUUID->"7d317f58-6db7-46da-9573-2f25dc146518",
+ CellID->24510633],
+Cell[12572, 330, 392, 12, 72, "GuideMoreAboutSection",ExpressionUUID->"e40a3eb9-ce3e-4721-8ab9-1cbc6379b0c1",
+ CellID->307591263],
+Cell[12967, 344, 106, 1, 14, "SectionHeaderSpacer",ExpressionUUID->"f71a0296-7abd-4ce9-b694-23de6ac1f6b2",
+ CellID->158024030],
+Cell[13076, 347, 255, 5, 24, "GuideMoreAboutSub",ExpressionUUID->"8dd6d77e-e7c0-415e-8e06-7cdfad3ae4dc",
+ CellID->268803597],
+Cell[13334, 354, 294, 6, 24, "GuideMoreAboutSub",ExpressionUUID->"94840c1a-75d1-4137-9bb1-96f287d8be24",
+ CellID->28167430],
+Cell[13631, 362, 251, 5, 24, "GuideMoreAboutSub",ExpressionUUID->"bff60cca-3660-4646-8c23-24044fa6a3ce",
+ CellID->287214575],
+Cell[13885, 369, 96, 1, 41, "FooterCell",ExpressionUUID->"317d945c-3d30-42cb-ab73-6674f6a2d197",
+ CellID->48104349]
+}
+]
+*)
+
+(* End of internal cache information *)
+

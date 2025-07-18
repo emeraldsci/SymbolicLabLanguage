@@ -7,7 +7,7 @@ DefineTests[ExperimentNephelometryKineticsOptions,
 	{
 		Example[{Basic,"Returns the options in table form given a sample:"},
 			ExperimentNephelometryKineticsOptions[
-				Object[Sample,"ExperimentNephelometryKineticsOptions test sample 1"],
+				Object[Sample,"ExperimentNephelometryKineticsOptions test sample 1"<>$SessionUUID],
 				BlankMeasurement->False
 			],
 			_Grid,
@@ -19,7 +19,7 @@ DefineTests[ExperimentNephelometryKineticsOptions,
 		],
 		Example[{Options,OutputFormat,"If OutputFormat -> List, returns the options as a list of rules:"},
 			ExperimentNephelometryKineticsOptions[
-				Object[Sample,"ExperimentNephelometryKineticsOptions test sample 1"],
+				Object[Sample,"ExperimentNephelometryKineticsOptions test sample 1"<>$SessionUUID],
 				BlankMeasurement->False,
 				OutputFormat->List
 			],
@@ -32,7 +32,7 @@ DefineTests[ExperimentNephelometryKineticsOptions,
 		],
 		Example[{Basic, "View any potential issues with provided inputs/options displayed:"},
 			ExperimentNephelometryKineticsOptions[
-				Object[Sample,"ExperimentNephelometryKineticsOptions test sample 1"],
+				Object[Sample,"ExperimentNephelometryKineticsOptions test sample 1"<>$SessionUUID],
 				PreparedPlate -> True,
 				BlankMeasurement->False,
 				MoatSize->1
@@ -63,12 +63,12 @@ DefineTests[ExperimentNephelometryKineticsOptions,
 
 			(*Gather all the objects and models created in SymbolSetUp*)
 			allObjects=Cases[Flatten[{
-				Object[Container, Bench, "Fake bench for ExperimentNephelometryKineticsOptions tests"],
-				Object[Container,Plate,"ExperimentNephelometryKineticsOptions test plate 1"],
-				Model[Molecule,Oligomer,"ExperimentNephelometryKineticsOptions test DNA molecule"],
-				Model[Sample,"ExperimentNephelometryKineticsOptions test DNA sample"],
-				Object[Sample,"ExperimentNephelometryKineticsOptions test sample 1"],
-				Object[Sample,"ExperimentNephelometryKineticsOptions test sample 2"]
+				Object[Container, Bench, "Fake bench for ExperimentNephelometryKineticsOptions tests"<>$SessionUUID],
+				Object[Container,Plate,"ExperimentNephelometryKineticsOptions test plate 1"<>$SessionUUID],
+				Model[Molecule,Oligomer,"ExperimentNephelometryKineticsOptions test DNA molecule"<>$SessionUUID],
+				Model[Sample,"ExperimentNephelometryKineticsOptions test DNA sample"<>$SessionUUID],
+				Object[Sample,"ExperimentNephelometryKineticsOptions test sample 1"<>$SessionUUID],
+				Object[Sample,"ExperimentNephelometryKineticsOptions test sample 2"<>$SessionUUID]
 
 			}],ObjectP[]];
 
@@ -88,7 +88,7 @@ DefineTests[ExperimentNephelometryKineticsOptions,
 				fakeBench = Upload[<|
 					Type -> Object[Container, Bench],
 					Model -> Link[Model[Container, Bench, "The Bench of Testing"], Objects],
-					Name -> "Fake bench for ExperimentNephelometryKineticsOptions tests",
+					Name -> "Fake bench for ExperimentNephelometryKineticsOptions tests"<>$SessionUUID,
 					DeveloperObject -> True,
 					StorageCondition -> Link[Model[StorageCondition, "Ambient Storage"]]
 				|>];
@@ -98,20 +98,20 @@ DefineTests[ExperimentNephelometryKineticsOptions,
 					{Model[Container, Plate, "96-well UV-Star Plate"]},
 					{{"Work Surface", fakeBench}},
 					Status -> {Available},
-					Name -> {"ExperimentNephelometryKineticsOptions test plate 1"}
+					Name -> {"ExperimentNephelometryKineticsOptions test plate 1"<>$SessionUUID}
 				];
 
 				(*Make a test DNA identity model*)
-				testOligomer=UploadOligomer["ExperimentNephelometryKineticsOptions test DNA molecule",Molecule->Strand[RandomSequence[100]],PolymerType->DNA];
+				testOligomer=UploadOligomer["ExperimentNephelometryKineticsOptions test DNA molecule"<>$SessionUUID,Molecule->Strand[RandomSequence[100]],PolymerType->DNA];
 
 				(*Make some test sample models*)
 				testSampleModels=UploadSampleModel[
 					{
-						"ExperimentNephelometryKineticsOptions test DNA sample"
+						"ExperimentNephelometryKineticsOptions test DNA sample"<>$SessionUUID
 					},
 					Composition->
 						{
-							{{10 Micromolar,Model[Molecule,Oligomer,"ExperimentNephelometryKineticsOptions test DNA molecule"]},{100 VolumePercent,Model[Molecule,"Water"]}}
+							{{10 Micromolar,Model[Molecule,Oligomer,"ExperimentNephelometryKineticsOptions test DNA molecule"<>$SessionUUID]},{100 VolumePercent,Model[Molecule,"Water"]}}
 						},
 					IncompatibleMaterials->ConstantArray[{None},1],
 					Expires->ConstantArray[True,1],
@@ -126,16 +126,16 @@ DefineTests[ExperimentNephelometryKineticsOptions,
 				(*Make some test sample objects in the test container objects*)
 				testSampleContainerObjects=UploadSample[
 					Join[
-						ConstantArray[Model[Sample,"ExperimentNephelometryKineticsOptions test DNA sample"],2]
+						ConstantArray[Model[Sample,"ExperimentNephelometryKineticsOptions test DNA sample"<>$SessionUUID],2]
 					],
 					{
-						{"A1",Object[Container,Plate,"ExperimentNephelometryKineticsOptions test plate 1"]},
-						{"A2",Object[Container,Plate,"ExperimentNephelometryKineticsOptions test plate 1"]}
+						{"A1",Object[Container,Plate,"ExperimentNephelometryKineticsOptions test plate 1"<>$SessionUUID]},
+						{"A2",Object[Container,Plate,"ExperimentNephelometryKineticsOptions test plate 1"<>$SessionUUID]}
 					},
 					Name->
 						{
-							"ExperimentNephelometryKineticsOptions test sample 1",
-							"ExperimentNephelometryKineticsOptions test sample 2"
+							"ExperimentNephelometryKineticsOptions test sample 1"<>$SessionUUID,
+							"ExperimentNephelometryKineticsOptions test sample 2"<>$SessionUUID
 						},
 					InitialAmount->ConstantArray[0.5 Milliliter, 2]
 				];
@@ -161,12 +161,12 @@ DefineTests[ExperimentNephelometryKineticsOptions,
 
 			(*Gather all the objects and models created in SymbolSetUp*)
 			allObjects=Cases[Flatten[{
-				Object[Container, Bench, "Fake bench for ExperimentNephelometryKineticsOptions tests"],
-				Object[Container,Plate,"ExperimentNephelometryKineticsOptions test plate 1"],
-				Model[Molecule,Oligomer,"ExperimentNephelometryKineticsOptions test DNA molecule"],
-				Model[Sample,"ExperimentNephelometryKineticsOptions test DNA sample"],
-				Object[Sample,"ExperimentNephelometryKineticsOptions test sample 1"],
-				Object[Sample,"ExperimentNephelometryKineticsOptions test sample 2"]
+				Object[Container, Bench, "Fake bench for ExperimentNephelometryKineticsOptions tests"<>$SessionUUID],
+				Object[Container,Plate,"ExperimentNephelometryKineticsOptions test plate 1"<>$SessionUUID],
+				Model[Molecule,Oligomer,"ExperimentNephelometryKineticsOptions test DNA molecule"<>$SessionUUID],
+				Model[Sample,"ExperimentNephelometryKineticsOptions test DNA sample"<>$SessionUUID],
+				Object[Sample,"ExperimentNephelometryKineticsOptions test sample 1"<>$SessionUUID],
+				Object[Sample,"ExperimentNephelometryKineticsOptions test sample 2"<>$SessionUUID]
 
 			}],ObjectP[]];
 
@@ -186,7 +186,7 @@ DefineTests[ExperimentNephelometryKineticsPreview,
 	{
 		Example[{Basic,"No preview is currently available for ExperimentNephelometryKinetics:"},
 			ExperimentNephelometryKineticsPreview[
-				Object[Sample,"ExperimentNephelometryKineticsPreview test sample 1"],
+				Object[Sample,"ExperimentNephelometryKineticsPreview test sample 1"<>$SessionUUID],
 				BlankMeasurement->False
 			],
 			Null,
@@ -198,7 +198,7 @@ DefineTests[ExperimentNephelometryKineticsPreview,
 		],
 		Example[{Additional, "If you wish to understand how the experiment will be performed, try using ExperimentNephelometryKineticsOptions:"},
 			ExperimentNephelometryKineticsOptions[
-				Object[Sample,"ExperimentNephelometryKineticsPreview test sample 1"],
+				Object[Sample,"ExperimentNephelometryKineticsPreview test sample 1"<>$SessionUUID],
 				BlankMeasurement->False
 			],
 			_Grid,
@@ -210,7 +210,7 @@ DefineTests[ExperimentNephelometryKineticsPreview,
 		],
 		Example[{Additional, "The inputs and options can also be checked to verify that the experiment can be safely run using ValidExperimentNephelometryKineticsQ:"},
 			ValidExperimentNephelometryKineticsQ[
-				Object[Sample,"ExperimentNephelometryKineticsPreview test sample 1"],
+				Object[Sample,"ExperimentNephelometryKineticsPreview test sample 1"<>$SessionUUID],
 				BlankMeasurement->False
 			],
 			True,
@@ -238,12 +238,12 @@ DefineTests[ExperimentNephelometryKineticsPreview,
 
 			(*Gather all the objects and models created in SymbolSetUp*)
 			allObjects=Cases[Flatten[{
-				Object[Container, Bench, "Fake bench for ExperimentNephelometryKineticsPreview tests"],
-				Object[Container,Plate,"ExperimentNephelometryKineticsPreview test plate 1"],
-				Model[Molecule,Oligomer,"ExperimentNephelometryKineticsPreview test DNA molecule"],
-				Model[Sample,"ExperimentNephelometryKineticsPreview test DNA sample"],
-				Object[Sample,"ExperimentNephelometryKineticsPreview test sample 1"],
-				Object[Sample,"ExperimentNephelometryKineticsPreview test sample 2"]
+				Object[Container, Bench, "Fake bench for ExperimentNephelometryKineticsPreview tests"<>$SessionUUID],
+				Object[Container,Plate,"ExperimentNephelometryKineticsPreview test plate 1"<>$SessionUUID],
+				Model[Molecule,Oligomer,"ExperimentNephelometryKineticsPreview test DNA molecule"<>$SessionUUID],
+				Model[Sample,"ExperimentNephelometryKineticsPreview test DNA sample"<>$SessionUUID],
+				Object[Sample,"ExperimentNephelometryKineticsPreview test sample 1"<>$SessionUUID],
+				Object[Sample,"ExperimentNephelometryKineticsPreview test sample 2"<>$SessionUUID]
 
 			}],ObjectP[]];
 
@@ -263,7 +263,7 @@ DefineTests[ExperimentNephelometryKineticsPreview,
 				fakeBench = Upload[<|
 					Type -> Object[Container, Bench],
 					Model -> Link[Model[Container, Bench, "The Bench of Testing"], Objects],
-					Name -> "Fake bench for ExperimentNephelometryKineticsPreview tests",
+					Name -> "Fake bench for ExperimentNephelometryKineticsPreview tests"<>$SessionUUID,
 					DeveloperObject -> True,
 					StorageCondition -> Link[Model[StorageCondition, "Ambient Storage"]]
 				|>];
@@ -273,20 +273,20 @@ DefineTests[ExperimentNephelometryKineticsPreview,
 					{Model[Container, Plate, "96-well UV-Star Plate"]},
 					{{"Work Surface", fakeBench}},
 					Status -> {Available},
-					Name -> {"ExperimentNephelometryKineticsPreview test plate 1"}
+					Name -> {"ExperimentNephelometryKineticsPreview test plate 1"<>$SessionUUID}
 				];
 
 				(*Make a test DNA identity model*)
-				testOligomer=UploadOligomer["ExperimentNephelometryKineticsPreview test DNA molecule",Molecule->Strand[RandomSequence[100]],PolymerType->DNA];
+				testOligomer=UploadOligomer["ExperimentNephelometryKineticsPreview test DNA molecule"<>$SessionUUID,Molecule->Strand[RandomSequence[100]],PolymerType->DNA];
 
 				(*Make some test sample models*)
 				testSampleModels=UploadSampleModel[
 					{
-						"ExperimentNephelometryKineticsPreview test DNA sample"
+						"ExperimentNephelometryKineticsPreview test DNA sample"<>$SessionUUID
 					},
 					Composition->
 						{
-							{{10 Micromolar,Model[Molecule,Oligomer,"ExperimentNephelometryKineticsPreview test DNA molecule"]},{100 VolumePercent,Model[Molecule,"Water"]}}
+							{{10 Micromolar,Model[Molecule,Oligomer,"ExperimentNephelometryKineticsPreview test DNA molecule"<>$SessionUUID]},{100 VolumePercent,Model[Molecule,"Water"]}}
 						},
 					IncompatibleMaterials->ConstantArray[{None},1],
 					Expires->ConstantArray[True,1],
@@ -301,16 +301,16 @@ DefineTests[ExperimentNephelometryKineticsPreview,
 				(*Make some test sample objects in the test container objects*)
 				testSampleContainerObjects=UploadSample[
 					Join[
-						ConstantArray[Model[Sample,"ExperimentNephelometryKineticsPreview test DNA sample"],2]
+						ConstantArray[Model[Sample,"ExperimentNephelometryKineticsPreview test DNA sample"<>$SessionUUID],2]
 					],
 					{
-						{"A1",Object[Container,Plate,"ExperimentNephelometryKineticsPreview test plate 1"]},
-						{"A2",Object[Container,Plate,"ExperimentNephelometryKineticsPreview test plate 1"]}
+						{"A1",Object[Container,Plate,"ExperimentNephelometryKineticsPreview test plate 1"<>$SessionUUID]},
+						{"A2",Object[Container,Plate,"ExperimentNephelometryKineticsPreview test plate 1"<>$SessionUUID]}
 					},
 					Name->
 						{
-							"ExperimentNephelometryKineticsPreview test sample 1",
-							"ExperimentNephelometryKineticsPreview test sample 2"
+							"ExperimentNephelometryKineticsPreview test sample 1"<>$SessionUUID,
+							"ExperimentNephelometryKineticsPreview test sample 2"<>$SessionUUID
 						},
 					InitialAmount->ConstantArray[0.5 Milliliter, 2]
 				];
@@ -336,12 +336,12 @@ DefineTests[ExperimentNephelometryKineticsPreview,
 
 			(*Gather all the objects and models created in SymbolSetUp*)
 			allObjects=Cases[Flatten[{
-				Object[Container, Bench, "Fake bench for ExperimentNephelometryKineticsPreview tests"],
-				Object[Container,Plate,"ExperimentNephelometryKineticsPreview test plate 1"],
-				Model[Molecule,Oligomer,"ExperimentNephelometryKineticsPreview test DNA molecule"],
-				Model[Sample,"ExperimentNephelometryKineticsPreview test DNA sample"],
-				Object[Sample,"ExperimentNephelometryKineticsPreview test sample 1"],
-				Object[Sample,"ExperimentNephelometryKineticsPreview test sample 2"]
+				Object[Container, Bench, "Fake bench for ExperimentNephelometryKineticsPreview tests"<>$SessionUUID],
+				Object[Container,Plate,"ExperimentNephelometryKineticsPreview test plate 1"<>$SessionUUID],
+				Model[Molecule,Oligomer,"ExperimentNephelometryKineticsPreview test DNA molecule"<>$SessionUUID],
+				Model[Sample,"ExperimentNephelometryKineticsPreview test DNA sample"<>$SessionUUID],
+				Object[Sample,"ExperimentNephelometryKineticsPreview test sample 1"<>$SessionUUID],
+				Object[Sample,"ExperimentNephelometryKineticsPreview test sample 2"<>$SessionUUID]
 
 			}],ObjectP[]];
 

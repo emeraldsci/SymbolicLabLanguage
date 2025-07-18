@@ -559,25 +559,52 @@ DefineTests[PreferredContainer,
 		Example[{Additional,"Return all vessels that may be selected for a given option combination:"},
 			PreferredContainer[All],
 			{
-				Model[Container,Vessel,"id:o1k9jAG00e3N"],
-				Model[Container,Vessel,"id:eGakld01zzpq"],
-				Model[Container,Vessel,"id:3em6Zv9NjjN8"],
-				Model[Container,Vessel,"id:bq9LA0dBGGR6"],
-				Model[Container,Vessel,"id:jLq9jXvA8ewR"],
-				Model[Container,Vessel,"id:01G6nvwPempK"],
-				Model[Container,Vessel,"id:J8AY5jwzPPR7"],
-				Model[Container,Vessel,"id:aXRlGnZmOONB"],
-				Model[Container,Vessel,"id:zGj91aR3ddXJ"],
-				Model[Container,Vessel,"id:3em6Zv9Njjbv"],
-				Model[Container,Vessel,"id:Vrbp1jG800Zm"],
-				Model[Container,Vessel,"id:dORYzZJpO79e"],
-				Model[Container,Vessel,"id:aXRlGnZmOOB9"],
-				Model[Container,Vessel,"id:3em6Zv9NjjkY"]
-			}	
+				Model[Container, Vessel, "id:o1k9jAG00e3N"],
+				Model[Container, Vessel, "id:eGakld01zzpq"],
+				Model[Container, Vessel, "id:3em6Zv9NjjN8"],
+				Model[Container, Vessel, "id:bq9LA0dBGGR6"],
+				Model[Container, Vessel, "id:jLq9jXvA8ewR"],
+				Model[Container, Vessel, "id:01G6nvwPempK"],
+				Model[Container, Vessel, "id:J8AY5jwzPPR7"],
+				Model[Container, Vessel, "id:aXRlGnZmOONB"],
+				Model[Container, Vessel, "id:zGj91aR3ddXJ"],
+				Model[Container, Vessel, "id:3em6Zv9Njjbv"],
+				Model[Container, Vessel, "id:Vrbp1jG800Zm"],
+				Model[Container, Vessel, "id:dORYzZJpO79e"],
+				Model[Container, Vessel, "id:mnk9jOkn6oMZ"],
+				Model[Container, Vessel, "id:Vrbp1jG800lE"],
+				Model[Container, Vessel, "id:aXRlGnZmOOB9"],
+				Model[Container, Vessel, "id:3em6Zv9NjjkY"]
+			}
 		],
 		Example[{Additional,"Returns the most suitable container to contain a mass:"},
 			PreferredContainer[1 Kilogram],
 			ObjectP[Model[Container,Vessel]]
+		],
+		(* Example and tests for Model and Sample overload with or without IncompatibleMaterial option *)
+		Example[{Additional, "Function takes single Object[Sample] as input:"},
+			PreferredContainer[Object[Sample, "Test sample for PreferredContainers"<>$SessionUUID], 30 Milliliter],
+			ObjectP[Model[Container, Vessel, "id:jLq9jXvA8ewR"]] (* "100 mL Glass Bottle" *)
+		],
+		Example[{Additional, "Function takes a list of Object[Sample] as input:"},
+			PreferredContainer[{Object[Sample, "Test sample for PreferredContainers"<>$SessionUUID], Object[Sample, "Test sample for PreferredContainers"<>$SessionUUID]}, 30 Milliliter],
+			{ObjectP[Model[Container, Vessel, "id:jLq9jXvA8ewR"]], ObjectP[Model[Container, Vessel, "id:jLq9jXvA8ewR"]]}
+		],
+		Example[{Additional, "If IncompatibleMaterials option is not specified for Model[Sample] input, it will read from the IncompatibleMaterials field of the Model[Sample] input:"},
+			PreferredContainer[Model[Sample, "id:eGakld01zzZn"], 30 Milliliter, IncompatibleMaterials -> Automatic], (* Model[Sample, "Nitric Acid 70%"] *)
+			ObjectP[Model[Container, Vessel, "id:jLq9jXvA8ewR"]] (* "100 mL Glass Bottle" *)
+		],
+		Example[{Additional, "If IncompatibleMaterials option is specified for Model[Sample] input, it will be combined with the IncompatibleMaterials field from the input Model[Sample] to determine the final container:"},
+			PreferredContainer[Model[Sample, "id:eGakld01zzZn"], 30 Milliliter, IncompatibleMaterials -> {None}], (* Model[Sample, "Nitric Acid 70%"] *)
+			ObjectP[Model[Container, Vessel, "id:jLq9jXvA8ewR"]] (* "100 mL Glass Bottle" *)
+		],
+		Example[{Additional, "If IncompatibleMaterials option is not specified for Object[Sample] input, it will read from the IncompatibleMaterials field of the Object[Sample] input:"},
+			PreferredContainer[Object[Sample, "Test sample for PreferredContainers"<>$SessionUUID], 30 Milliliter, IncompatibleMaterials -> Automatic], (* Model[Sample, "Nitric Acid 70%"] *)
+			ObjectP[Model[Container, Vessel, "id:jLq9jXvA8ewR"]] (* "100 mL Glass Bottle" *)
+		],
+		Test["If input is a list of Model[Sample] while IncompatibleMaterials is a single List, function can automatically expand to index-match",
+			PreferredContainer[{Model[Sample, "id:8qZ1VWNmdLBD"], Model[Sample, "id:8qZ1VWNmdLBD"]}, 20 Milliliter, IncompatibleMaterials -> {Polystyrene, Polypropylene}, CellType -> Bacterial],
+			{ObjectP[Model[Container, Vessel, "id:N80DNjlYwwjo"]], ObjectP[Model[Container, Vessel, "id:N80DNjlYwwjo"]]}
 		],
 		(* Basic example for a hidden overload using Volume and a list of desired containers *)
 		Test["When given a volume and a list of compatible containers, it picks the first non-deprecated container provided with the lowest usable MaxVolume:",
@@ -640,24 +667,27 @@ DefineTests[PreferredContainer,
 		],
 		Example[{Options,Type,"Specify that a list of plates and vessels should be returned:"},
 			PreferredContainer[1 Milliliter, Type->All, All->True],
-				{
-					Model[Container, Vessel, "id:eGakld01zzpq"],
-					Model[Container, Vessel, "id:3em6Zv9NjjN8"],
-					Model[Container, Plate, "id:L8kPEjkmLbvW"],
-					Model[Container, Plate, "id:E8zoYveRllM7"],
-					Model[Container, Vessel, "id:bq9LA0dBGGR6"],
-					Model[Container, Vessel, "id:jLq9jXvA8ewR"],
-					Model[Container, Vessel, "id:01G6nvwPempK"],
-					Model[Container, Vessel, "id:J8AY5jwzPPR7"],
-					Model[Container, Vessel, "id:aXRlGnZmOONB"],
-					Model[Container, Vessel, "id:zGj91aR3ddXJ"],
-					Model[Container, Vessel, "id:3em6Zv9Njjbv"],
-					Model[Container, Vessel, "id:Vrbp1jG800Zm"],
-					Model[Container, Vessel, "id:dORYzZJpO79e"],
-					Model[Container, Vessel, "id:aXRlGnZmOOB9"],
-					Model[Container, Vessel, "id:3em6Zv9NjjkY"]
-				}
-		],
+			{
+				Model[Container, Vessel, "id:eGakld01zzpq"],
+				Model[Container, Vessel, "id:3em6Zv9NjjN8"],
+				Model[Container, Vessel, "id:bq9LA0dBGGR6"],
+				Model[Container, Vessel, "id:jLq9jXvA8ewR"],
+				Model[Container, Vessel, "id:01G6nvwPempK"],
+				Model[Container, Vessel, "id:J8AY5jwzPPR7"],
+				Model[Container, Vessel, "id:aXRlGnZmOONB"],
+				Model[Container, Vessel, "id:zGj91aR3ddXJ"],
+				Model[Container, Vessel, "id:3em6Zv9Njjbv"],
+				Model[Container, Vessel, "id:Vrbp1jG800Zm"],
+				Model[Container, Vessel, "id:dORYzZJpO79e"],
+				Model[Container, Vessel, "id:mnk9jOkn6oMZ"],
+				Model[Container, Vessel, "id:Vrbp1jG800lE"],
+				Model[Container, Vessel, "id:aXRlGnZmOOB9"],
+				Model[Container, Vessel, "id:3em6Zv9NjjkY"],
+				Model[Container, Plate, "id:L8kPEjkmLbvW"],
+				Model[Container, Plate, "id:E8zoYveRllM7"],
+				Model[Container, Plate, "id:lYq9jRqw70m4"],
+				Model[Container, Plate, "id:AEqRl9qmr111"]
+			}],
 		Example[{Options, VacuumFlask, "Specify that a vacuum flask that supports the given volume should be returned:"},
 			PreferredContainer[50 Milliliter, VacuumFlask -> True],
 			ObjectP[Model[Container, Vessel, "125 mL Filter Flask"]]
@@ -665,6 +695,10 @@ DefineTests[PreferredContainer,
 		Example[{Options, CultureAdhesion, "Specify a Bacterial CellType and a SolidMedia CultureAdhesion :"},
 			PreferredContainer[35 Milliliter, Type->Plate, CellType->Bacterial, CultureAdhesion->SolidMedia],
 			ObjectP[Model[Container, Plate, "id:O81aEBZjRXvx"]] (* Model[Container, Plate, "Omni Tray Sterile Media Plate"] *)
+		],
+		Example[{Options, IncompatibleMaterials, "Specify a list of incompatible materials that container should avoid:"},
+			PreferredContainer[1 Milliliter, IncompatibleMaterials -> {Polypropylene}],
+			ObjectP[Model[Container, Vessel, "id:jLq9jXvA8ewR"]] (* "100 mL Glass Bottle" *)
 		],
 		Test["When given a volume and a list of compatible containers and VacuumFlask is set to True, then filter out the non-vacuum flasks before returning the smallest usable one:",
 			PreferredContainer[10*Milliliter,{Model[Container, Vessel, "id:M8n3rxYE55b5"],Model[Container, Vessel, "id:9RdZXvKBeeqL"],Model[Container, Vessel, "id:n0k9mGzRaa3r"], Model[Container, Vessel, "125 mL Filter Flask"], Model[Container, Vessel, "500 mL Filter Flask"]}, VacuumFlask -> True],
@@ -733,5 +767,24 @@ DefineTests[PreferredContainer,
 			PreferredContainer[Model[Sample, StockSolution, "id:L8kPEjnN3zww"],0.9 Milliliter],
 			PreferredContainer[0.9 Milliliter]
 		]
-	}
+	},
+	SymbolSetUp :> Module[{allObjects, existingObjects},
+		allObjects = {
+			Object[Sample, "Test sample for PreferredContainers"<>$SessionUUID]
+		};
+		existingObjects = PickList[allObjects, DatabaseMemberQ[allObjects], True];
+		EraseObject[existingObjects, Verbose -> False, Force -> True];
+		$CreatedObjects = {};
+		(* Cannot use UploadSample to create test sample, because LegacySLL package load before InternalUpload *)
+		Upload[<|
+			Type -> Object[Sample],
+			Name -> "Test sample for PreferredContainers"<>$SessionUUID,
+			Replace[IncompatibleMaterials] -> {Polypropylene},
+			DeveloperObject -> True
+		|>]
+	],
+	SymbolTearDown :> (
+		EraseObject[PickList[$CreatedObjects, DatabaseMemberQ[$CreatedObjects], True], Force -> True, Verbose -> False];
+		Unset[$CreatedObjects]
+	)
 ];

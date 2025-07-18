@@ -275,8 +275,8 @@ DefineObjectType[Object[Data, Nephelometry], {
 		CellCount -> {
 			Format -> Single,
 			Class -> Real,
-			Pattern :> GreaterP[0 * Cell],
-			Units -> Cell/Milliliter,
+			Pattern :> GreaterEqualP[0 * EmeraldCell],
+			Units -> EmeraldCell,
 			Description -> "The number of cells in the original source sample.",
 			Category -> "Analysis & Reports",
 			Abstract -> True
@@ -284,8 +284,8 @@ DefineObjectType[Object[Data, Nephelometry], {
 		DilutedCellCounts -> {
 			Format -> Multiple,
 			Class -> Real,
-			Pattern :> GreaterP[0*Cell],
-			Units -> Cell/Milliliter,
+			Pattern :> GreaterEqualP[0*EmeraldCell],
+			Units -> EmeraldCell,
 			Description -> "For each member of Dilutions, the number of cells in the diluted sample in the read plate.",
 			IndexMatching -> Dilutions,
 			Category -> "Analysis & Reports",

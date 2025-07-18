@@ -99,6 +99,80 @@ DefineTests[ExperimentSolidPhaseExtraction,
 			}
 		],
 		(* ---  Message Unit Tests --- *)
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a sample that does not exist (name form):"},
+			ExperimentSolidPhaseExtraction[Object[Sample, "Nonexistent sample"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a container that does not exist (name form):"},
+			ExperimentSolidPhaseExtraction[Object[Container, Vessel, "Nonexistent container"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a sample that does not exist (ID form):"},
+			ExperimentSolidPhaseExtraction[Object[Sample, "id:12345678"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a container that does not exist (ID form):"},
+			ExperimentSolidPhaseExtraction[Object[Container, Vessel, "id:12345678"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Do NOT throw a message if we have a simulated sample but a simulation is specified that indicates that it is simulated:"},
+			Module[{containerPackets, containerID, sampleID, samplePackets, simulationToPassIn},
+				containerPackets = UploadSample[
+					Model[Container,Vessel,"50mL Tube"],
+					{"Work Surface", Object[Container, Bench, "The Bench of Testing"]},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True
+				];
+				simulationToPassIn = Simulation[containerPackets];
+				containerID = Lookup[First[containerPackets], Object];
+				samplePackets = UploadSample[
+					Model[Sample, "Milli-Q water"],
+					{"A1", containerID},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True,
+					Simulation -> simulationToPassIn,
+					InitialAmount -> 25 Milliliter
+				];
+				sampleID = Lookup[First[samplePackets], Object];
+				simulationToPassIn = UpdateSimulation[simulationToPassIn, Simulation[samplePackets]];
+
+				ExperimentSolidPhaseExtraction[sampleID, Simulation -> simulationToPassIn, Output -> Options]
+			],
+			{__Rule}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Do NOT throw a message if we have a simulated container but a simulation is specified that indicates that it is simulated:"},
+			Module[{containerPackets, containerID, sampleID, samplePackets, simulationToPassIn},
+				containerPackets = UploadSample[
+					Model[Container,Vessel,"50mL Tube"],
+					{"Work Surface", Object[Container, Bench, "The Bench of Testing"]},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True
+				];
+				simulationToPassIn = Simulation[containerPackets];
+				containerID = Lookup[First[containerPackets], Object];
+				samplePackets = UploadSample[
+					Model[Sample, "Milli-Q water"],
+					{"A1", containerID},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True,
+					Simulation -> simulationToPassIn,
+					InitialAmount -> 25 Milliliter
+				];
+				sampleID = Lookup[First[samplePackets], Object];
+				simulationToPassIn = UpdateSimulation[simulationToPassIn, Simulation[samplePackets]];
+
+				ExperimentSolidPhaseExtraction[containerID, Simulation -> simulationToPassIn, Output -> Options]
+			],
+			{__Rule}
+		],
 		Example[{Messages, "mtwarningExtractionStrategyElutingIncompatible", "ExtractionStrategy Negative should not have any MobileOptions step after LoadingSample:"},
 			ExperimentSolidPhaseExtraction[
 				{
@@ -294,7 +368,7 @@ DefineTests[ExperimentSolidPhaseExtraction,
 			}
 		],
 
-		Example[{Messages, "PressureMustBeBoolean", "Instrument FilterBlock cannot regulate pressure, thuse Pressure options will be converted to boolean:"},
+		Example[{Messages, "PressureMustBeBoolean", "Instrument FilterBlock cannot regulate pressure, thus Pressure options will be converted to boolean:"},
 			ExperimentSolidPhaseExtraction[
 				{
 					Object[Sample, "Test Sample 1 - 2 mL in Plate 1 (ExperimentSolidPhaseExtraction)" <> $SessionUUID],
@@ -601,7 +675,6 @@ DefineTests[ExperimentSolidPhaseExtraction,
 			],
 			$Failed,
 			Messages :> {
-				Error::ConflictingUnitOperationMethodRequirements,
 				Error::SPEInputLiquidHandlerIncompatible,
 				Error::InvalidInput
 			}
@@ -616,9 +689,7 @@ DefineTests[ExperimentSolidPhaseExtraction,
 			$Failed,
 			Messages :> {
 				Error::SPESolutionsLiquidHandlerIncompatible,
-				Error::InvalidOption,
-				Error::ConflictingUnitOperationMethodRequirements,
-				Error::InvalidInput
+				Error::InvalidOption
 			}
 		],
 		Example[{Messages, "SPEManualCurrentlyNotSupported", "Don't allow Manual SPE for the time being:"},
@@ -2684,6 +2755,66 @@ DefineTests[ExperimentSolidPhaseExtraction,
 		],
 
 		(* Unit Operation Options Test *)
+		Example[
+			{Options, {PreparedModelContainer, PreparedModelAmount}, "Specify the container in which an input Model[Sample] should be prepared:"},
+			options = ExperimentSolidPhaseExtraction[
+				{
+					{
+						Model[Sample, "Milli-Q water"],
+						Model[Sample, StockSolution, "NaCl Solution in Water"]
+					},
+					{
+						Model[Sample, "Milli-Q water"],
+						Model[Sample, StockSolution, "NaCl Solution in Water"]
+					}
+				},
+				PreparedModelContainer -> Model[Container, Vessel, "2mL Tube"],
+				PreparedModelAmount -> 0.5 Milliliter,
+				Output -> Options
+			];
+			prepUOs = Lookup[options, PreparatoryUnitOperations];
+			{
+				prepUOs[[-1, 1]][Sample],
+				prepUOs[[-1, 1]][Container],
+				prepUOs[[-1, 1]][Amount],
+				prepUOs[[-1, 1]][Well],
+				prepUOs[[-1, 1]][ContainerLabel]
+			},
+			{
+				{ObjectP[{Model[Sample, "id:8qZ1VWNmdLBD"], Model[Sample, StockSolution, "id:WNa4ZjKR9wpV"]}]..},
+				{ObjectP[Model[Container, Vessel, "2mL Tube"]]..},
+				{EqualP[0.5 Milliliter]..},
+				{"A1"..},
+				{_String, _String, _String, _String}
+			},
+			Variables :> {options, prepUOs}
+		],
+		Example[
+			{Options, {PreparedModelContainer, PreparedModelAmount}, "Specify the container in which an input Model[Sample] should be prepared (robotic):"},
+			protocol = ExperimentSolidPhaseExtraction[
+				{
+					{
+						Model[Sample, "Milli-Q water"],
+						Model[Sample, StockSolution, "NaCl Solution in Water"]
+					}
+				},
+				PreparedModelContainer -> Model[Container, Vessel, "2mL Tube"],
+				PreparedModelAmount -> 0.5 Milliliter,
+				Preparation -> Robotic
+			];
+			outputUOs = Download[protocol, OutputUnitOperations];
+			robotUOs = Download[outputUOs[[1]], RoboticUnitOperations];
+			{
+				Download[outputUOs[[1]], SampleExpression],
+				robotUOs
+			},
+			{
+				{{ObjectP[Model[Sample, "Milli-Q water"]], ObjectP[Model[Sample, StockSolution, "NaCl Solution in Water"]]}},
+				{ObjectP[Object[UnitOperation, LabelSample]], ObjectP[Object[UnitOperation, LabelSample]], ObjectP[Object[UnitOperation, Filter]]}
+			},
+			Variables :> {options, prepUOs},
+			TimeConstraint -> 1000
+		],
 		Example[
 			{Options, PreparatoryUnitOperations, "Use PreparatoryUnitOperations option to prepare samples from models before the experiment is run:"},
 			protocol = ExperimentSolidPhaseExtraction[
@@ -5028,4 +5159,300 @@ DefineTests[resolveSolidPhaseExtractionMethod,
 		]
 	)
 ];
+
+
+(* ::Subsection::Closed:: *)
+(*SolidPhaseExtraction*)
+DefineTests[SolidPhaseExtraction,
+	{
+		Example[{Basic, "Return options for each sample used in solid phase extraction:"},
+			Experiment[{
+				SolidPhaseExtraction[
+					Sample -> Object[Sample, "Test Sample 1 - 2 mL in Plate 1 (SolidPhaseExtraction)"<>$SessionUUID]
+				]
+			}],
+			ObjectP[Object[Protocol]]
+		]
+	},
+	Stubs :> {
+		$PersonID = Object[User, "Test user for notebook-less test protocols"],
+		(* want the manual tests to still pass even if we're not yet supporting in lab *)
+		$SPERoboticOnly = False
+	},
+	SetUp :> (ClearMemoization[]),
+	SymbolSetUp :> (
+		Off[Warning::SamplesOutOfStock];
+		Module[{objs, existingObjs},
+			objs = Quiet[Cases[DeleteDuplicates[Flatten[{
+				Model[Container, ExtractionCartridge, "Test Model ExtractionCartridge (SolidPhaseExtraction)" <> $SessionUUID],
+				Model[Container, ExtractionCartridge, "Test Model ExtractionCartridge 6 mL (SolidPhaseExtraction)" <> $SessionUUID],
+				Object[Container, ExtractionCartridge, "Test Object ExtractionCartridge 1 (SolidPhaseExtraction)" <> $SessionUUID],
+				Object[Container, ExtractionCartridge, "Test Object ExtractionCartridge 2 (SolidPhaseExtraction)" <> $SessionUUID],
+				Object[Container, ExtractionCartridge, "Test Object ExtractionCartridge 3 (SolidPhaseExtraction)" <> $SessionUUID],
+				Object[Container, Room, "Test Room (SolidPhaseExtraction)" <> $SessionUUID],
+				Object[Container, Bench, "Test Bench (SolidPhaseExtraction)" <> $SessionUUID],
+				Object[Sample, "Test Sample 1 - 2 mL in Plate 1 (SolidPhaseExtraction)" <> $SessionUUID],
+				Object[Sample, "Test Sample 2 - 2 mL in Plate 1 (SolidPhaseExtraction)" <> $SessionUUID],
+				Object[Sample, "Test Sample 3 - 2 mL in Plate 2 (SolidPhaseExtraction)" <> $SessionUUID],
+				Object[Sample, "Test Sample 4 - 2 mL in Tube 1 (SolidPhaseExtraction)" <> $SessionUUID],
+				Object[Sample, "Test Sample 5 - 8 mL in Tube 2 (SolidPhaseExtraction)" <> $SessionUUID],
+				Object[Sample, "Test Sample 6 - 2 mL in Plate 1 (SolidPhaseExtraction)" <> $SessionUUID],
+				Object[Sample, "Test Sample 7 - 2 mL in Plate 1 (SolidPhaseExtraction)" <> $SessionUUID],
+				Object[Container, Plate, "Test Plate 1 - 96 well dwp (SolidPhaseExtraction)" <> $SessionUUID],
+				Object[Container, Plate, "Test Plate 2 - 96 well dwp (SolidPhaseExtraction)" <> $SessionUUID],
+				Object[Container, Vessel, "Test Tube 1 - 50 mL (SolidPhaseExtraction)" <> $SessionUUID],
+				Object[Container, Vessel, "Test Tube 2 - 50 mL (SolidPhaseExtraction)" <> $SessionUUID],
+				Object[Container, Vessel, "Test Tube 3 - 50 mL (SolidPhaseExtraction)" <> $SessionUUID],
+				Object[Sample, "Test Sample 8 - 500 mL in Bottle 1 (SolidPhaseExtraction)" <> $SessionUUID],
+				Object[Container, Vessel, "Test Bottle 1 - 1L Glass Bottle (SolidPhaseExtraction)" <> $SessionUUID],
+				Object[Container, Plate, Filter, "Test Plate SPE 1 (SolidPhaseExtraction)" <> $SessionUUID],
+				Model[Container, Plate, Filter, "Test Plate SPE Model (SolidPhaseExtraction)" <> $SessionUUID],
+				Object[Instrument, LiquidHandler, "Test Gilson LiquidHandler 1 (SolidPhaseExtraction)" <> $SessionUUID],
+				Object[Container, Vessel, "Test Gilson Waste Container (SolidPhaseExtraction)" <> $SessionUUID]
+			}]], ObjectP[]]];
+
+			(* Check whether the names we want to give below already exist in the database *)
+			existingObjs = PickList[objs, DatabaseMemberQ[objs]];
+
+			(* Erase any objects that we failed to erase in the last unit test. *)
+			Quiet[EraseObject[existingObjs, Force -> True, Verbose -> False]];
+
+		];
+		Module[
+			{
+				modelCartridge,
+				modelCartridge6mL,
+				objectCartridge1,
+				objectCartridge2,
+				objectCartridge3,
+				room, bench,
+				sample1, sample2, sample3, sample4, sample5, sample6, sample7,
+				plate1, plate2, tube1, tube2, tube3,
+				sample8, bottle1,
+				plateFilter, plateFilterModel,
+				instrumentGilson, gilsonWasteContainer
+			},
+
+			{
+				(*1*)modelCartridge,
+				(*2*)modelCartridge6mL,
+				(*3*)room,
+				(*4*)plateFilterModel,
+				(*5*)instrumentGilson
+			} = CreateID[{
+				(*1*)Model[Container, ExtractionCartridge],
+				(*2*)Model[Container, ExtractionCartridge],
+				(*3*)Object[Container, Room],
+				(*4*)Model[Container, Plate, Filter],
+				(*5*)Object[Instrument, LiquidHandler]
+			}];
+
+			(* upload room and bench *)
+			Upload[<|
+				Object -> room,
+				DeveloperObject -> True,
+				Model -> Link[Model[Container, Room, "Chemistry Lab"], Objects],
+				Name -> "Test Room (SolidPhaseExtraction)" <> $SessionUUID
+			|>];
+			bench = UploadSample[
+				Model[Container, Bench, "The Bench of Testing"],
+				{"Bench Slot 4", room},
+				Name -> "Test Bench (SolidPhaseExtraction)" <> $SessionUUID,
+				FastTrack -> True
+			];
+
+			(* upload the model cartridge we're using to make containers *)
+			Upload[<|
+				Object -> modelCartridge,
+				DeveloperObject -> True,
+				Name -> "Test Model ExtractionCartridge (SolidPhaseExtraction)" <> $SessionUUID,
+				MaxVolume -> 3 Milliliter,
+				FunctionalGroup -> C18,
+				SeparationMode -> ReversePhase,
+				DefaultStorageCondition -> Link[Model[StorageCondition, "Ambient Storage"]]
+			|>];
+
+			{
+				plate1,
+				plate2,
+				tube1,
+				tube2,
+				tube3,
+				objectCartridge1,
+				objectCartridge2,
+				objectCartridge3,
+				bottle1,
+				plateFilter,
+				gilsonWasteContainer
+			} = UploadSample[
+				{
+					Model[Container, Plate, "96-well 2mL Deep Well Plate"],
+					Model[Container, Plate, "96-well 2mL Deep Well Plate"],
+					Model[Container, Vessel, "50mL Tube"],
+					Model[Container, Vessel, "50mL Tube"],
+					Model[Container, Vessel, "50mL Tube"],
+					modelCartridge,
+					modelCartridge,
+					modelCartridge,
+					Model[Container, Vessel, "1L Glass Bottle"],
+					Model[Container, Plate, Filter, "Sep-Pak C18 96-well Plate, 40 mg, Plate extraction cartridge"],
+					Model[Container, Vessel, "10L Polypropylene Carboy"]
+
+				},
+				{
+					{"Work Surface", bench},
+					{"Work Surface", bench},
+					{"Work Surface", bench},
+					{"Work Surface", bench},
+					{"Work Surface", bench},
+					{"Work Surface", bench},
+					{"Work Surface", bench},
+					{"Work Surface", bench},
+					{"Work Surface", bench},
+					{"Work Surface", bench},
+					{"Work Surface", bench}
+				},
+				Name -> {
+					"Test Plate 1 - 96 well dwp (SolidPhaseExtraction)" <> $SessionUUID,
+					"Test Plate 2 - 96 well dwp (SolidPhaseExtraction)" <> $SessionUUID,
+					"Test Tube 1 - 50 mL (SolidPhaseExtraction)" <> $SessionUUID,
+					"Test Tube 2 - 50 mL (SolidPhaseExtraction)" <> $SessionUUID,
+					"Test Tube 3 - 50 mL (SolidPhaseExtraction)" <> $SessionUUID,
+					"Test Object ExtractionCartridge 1 (SolidPhaseExtraction)" <> $SessionUUID,
+					"Test Object ExtractionCartridge 2 (SolidPhaseExtraction)" <> $SessionUUID,
+					"Test Object ExtractionCartridge 3 (SolidPhaseExtraction)" <> $SessionUUID,
+					"Test Bottle 1 - 1L Glass Bottle (SolidPhaseExtraction)" <> $SessionUUID,
+					"Test Plate SPE 1 (SolidPhaseExtraction)" <> $SessionUUID,
+					"Test Gilson Waste Container (SolidPhaseExtraction)" <> $SessionUUID
+				}
+			];
+
+
+			(*instruments, cartridge models, cartridge model plates*)
+			Upload[{
+				<|
+					Object -> instrumentGilson,
+					DeveloperObject -> True,
+					Model -> Link[Model[Instrument, LiquidHandler, "id:o1k9jAKOwLl8"], Objects],
+					Container -> Link[bench, Contents, 2],
+					Name -> "Test Gilson LiquidHandler 1 (SolidPhaseExtraction)" <> $SessionUUID,
+					WasteContainer -> Link[gilsonWasteContainer]
+				|>,
+				<|
+					Object -> modelCartridge6mL,
+					DeveloperObject -> True,
+					Name -> "Test Model ExtractionCartridge 6 mL (SolidPhaseExtraction)" <> $SessionUUID,
+					MaxVolume -> 6 Milliliter,
+					FunctionalGroup -> C18,
+					SeparationMode -> ReversePhase,
+					DefaultStorageCondition -> Link[Model[StorageCondition, "Ambient Storage"]]
+				|>,
+				<|
+					Object -> plateFilterModel,
+					DeveloperObject -> True,
+					Name -> "Test Plate SPE Model (SolidPhaseExtraction)" <> $SessionUUID,
+					MaxVolume -> 1.1 Milliliter,
+					FunctionalGroup -> C18,
+					SeparationMode -> ReversePhase,
+					DefaultStorageCondition -> Link[Model[StorageCondition, "Ambient Storage"]],
+					NumberOfWells -> 96
+				|>
+			}];
+
+			{
+				sample4, sample5, sample1, sample2, sample3, sample6, sample7, sample8
+			} = UploadSample[
+				{
+					Model[Sample, "Milli-Q water"],
+					Model[Sample, "Milli-Q water"],
+					Model[Sample, "Milli-Q water"],
+					Model[Sample, "Milli-Q water"],
+					Model[Sample, "Milli-Q water"],
+					Model[Sample, "Milli-Q water"],
+					Model[Sample, "Milli-Q water"],
+					Model[Sample, "Milli-Q water"]
+				},
+				{
+					{"A1", tube1},
+					{"A1", tube2},
+					{"A1", plate1},
+					{"A2", plate1},
+					{"A1", plate2},
+					{"A3", plate1},
+					{"A4", plate1},
+					{"A1", bottle1}
+				},
+				Name -> {
+					"Test Sample 4 - 2 mL in Tube 1 (SolidPhaseExtraction)" <> $SessionUUID,
+					"Test Sample 5 - 8 mL in Tube 2 (SolidPhaseExtraction)" <> $SessionUUID,
+					"Test Sample 1 - 2 mL in Plate 1 (SolidPhaseExtraction)" <> $SessionUUID,
+					"Test Sample 2 - 2 mL in Plate 1 (SolidPhaseExtraction)" <> $SessionUUID,
+					"Test Sample 3 - 2 mL in Plate 2 (SolidPhaseExtraction)" <> $SessionUUID,
+					"Test Sample 6 - 2 mL in Plate 1 (SolidPhaseExtraction)" <> $SessionUUID,
+					"Test Sample 7 - 2 mL in Plate 1 (SolidPhaseExtraction)" <> $SessionUUID,
+					"Test Sample 8 - 500 mL in Bottle 1 (SolidPhaseExtraction)" <> $SessionUUID
+				},
+				InitialAmount -> {
+					2 Milliliter,
+					8 Milliliter,
+					2 Milliliter,
+					2 Milliliter,
+					2 Milliliter,
+					2 Milliliter,
+					2 Milliliter,
+					500 Milliliter
+				}
+			];
+
+			Upload[<|Object -> #, DeveloperObject -> True|>& /@ {
+				bench,
+				plate1, plate2, tube1, tube2, tube3, objectCartridge1, objectCartridge2, objectCartridge3, bottle1, plateFilter, gilsonWasteContainer,
+				sample4, sample5, sample1, sample2, sample3, sample6, sample7, sample8
+			}]
+		]
+	),
+	SymbolTearDown :> {
+		On[Warning::SamplesOutOfStock];
+		Module[{objs, existingObjs},
+			objs = Quiet[Cases[DeleteDuplicates[Flatten[{
+				Model[Container, ExtractionCartridge, "Test Model ExtractionCartridge (SolidPhaseExtraction)" <> $SessionUUID],
+				Model[Container, ExtractionCartridge, "Test Model ExtractionCartridge 6 mL (SolidPhaseExtraction)" <> $SessionUUID],
+				Object[Container, ExtractionCartridge, "Test Object ExtractionCartridge 1 (SolidPhaseExtraction)" <> $SessionUUID],
+				Object[Container, ExtractionCartridge, "Test Object ExtractionCartridge 2 (SolidPhaseExtraction)" <> $SessionUUID],
+				Object[Container, ExtractionCartridge, "Test Object ExtractionCartridge 3 (SolidPhaseExtraction)" <> $SessionUUID],
+				Object[Container, Room, "Test Room (SolidPhaseExtraction)" <> $SessionUUID],
+				Object[Container, Bench, "Test Bench (SolidPhaseExtraction)" <> $SessionUUID],
+				Object[Sample, "Test Sample 1 - 2 mL in Plate 1 (SolidPhaseExtraction)" <> $SessionUUID],
+				Object[Sample, "Test Sample 2 - 2 mL in Plate 1 (SolidPhaseExtraction)" <> $SessionUUID],
+				Object[Sample, "Test Sample 3 - 2 mL in Plate 2 (SolidPhaseExtraction)" <> $SessionUUID],
+				Object[Sample, "Test Sample 4 - 2 mL in Tube 1 (SolidPhaseExtraction)" <> $SessionUUID],
+				Object[Sample, "Test Sample 5 - 8 mL in Tube 2 (SolidPhaseExtraction)" <> $SessionUUID],
+				Object[Sample, "Test Sample 6 - 2 mL in Plate 1 (SolidPhaseExtraction)" <> $SessionUUID],
+				Object[Sample, "Test Sample 7 - 2 mL in Plate 1 (SolidPhaseExtraction)" <> $SessionUUID],
+				Object[Container, Plate, "Test Plate 1 - 96 well dwp (SolidPhaseExtraction)" <> $SessionUUID],
+				Object[Container, Plate, "Test Plate 2 - 96 well dwp (SolidPhaseExtraction)" <> $SessionUUID],
+				Object[Container, Vessel, "Test Tube 1 - 50 mL (SolidPhaseExtraction)" <> $SessionUUID],
+				Object[Container, Vessel, "Test Tube 2 - 50 mL (SolidPhaseExtraction)" <> $SessionUUID],
+				Object[Container, Vessel, "Test Tube 3 - 50 mL (SolidPhaseExtraction)" <> $SessionUUID],
+				Object[Sample, "Test Sample 8 - 500 mL in Bottle 1 (SolidPhaseExtraction)" <> $SessionUUID],
+				Object[Container, Vessel, "Test Bottle 1 - 1L Glass Bottle (SolidPhaseExtraction)" <> $SessionUUID],
+				Object[Container, Plate, Filter, "Test Plate SPE 1 (SolidPhaseExtraction)" <> $SessionUUID],
+				Model[Container, Plate, Filter, "Test Plate SPE Model (SolidPhaseExtraction)" <> $SessionUUID],
+				Object[Instrument, LiquidHandler, "Test Gilson LiquidHandler 1 (SolidPhaseExtraction)" <> $SessionUUID],
+				Object[Container, Vessel, "Test Gilson Waste Container (SolidPhaseExtraction)" <> $SessionUUID]
+			}]], ObjectP[]]];
+
+			(* Check whether the names we want to give below already exist in the database *)
+			existingObjs = PickList[objs, DatabaseMemberQ[objs]];
+
+			(* Erase any objects that we failed to erase in the last unit test. *)
+			Quiet[EraseObject[existingObjs, Force -> True, Verbose -> False]];
+
+		]
+	}
+];
+
+
+
+
 

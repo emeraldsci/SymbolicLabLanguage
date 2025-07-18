@@ -45,7 +45,12 @@ DefineUsage[ExperimentPAGE,
 										Type -> Object,
 										Pattern :> ObjectP[{Object[Container]}]
 									]
-								}
+								},
+								"Model Sample"->Widget[
+									Type -> Object,
+									Pattern :> ObjectP[Model[Sample]],
+									ObjectTypes -> {Model[Sample]}
+								]
 							],
 							Expandable -> False
 						},
@@ -75,6 +80,6 @@ DefineUsage[ExperimentPAGE,
 		Tutorials->{
 			"Sample Preparation"
 		},
-		Author->{"hanming.yang", "nont.kosaisawe", "xiwei.shan", "spencer.clark"}
+		Author->{"ryan.bisbey", "hanming.yang", "nont.kosaisawe", "xiwei.shan", "spencer.clark"}
 	}
 ];

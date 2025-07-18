@@ -45,7 +45,12 @@ DefineUsage[ExperimentIRSpectroscopy,
 										Type -> Object,
 										Pattern :> ObjectP[{Object[Container]}]
 									]
-								}
+								},
+								"Model Sample"->Widget[
+									Type -> Object,
+									Pattern :> ObjectP[Model[Sample]],
+									ObjectTypes -> {Model[Sample]}
+								]
 							],
 							Expandable -> False
 						},
@@ -117,7 +122,12 @@ DefineUsage[ExperimentIRSpectroscopyOptions,
 										Type -> Object,
 										Pattern :> ObjectP[{Object[Container]}]
 									]
-								}
+								},
+								"Model Sample"->Widget[
+									Type -> Object,
+									Pattern :> ObjectP[Model[Sample]],
+									ObjectTypes -> {Model[Sample]}
+								]
 							],
 							Expandable -> False
 						},
@@ -189,7 +199,12 @@ DefineUsage[ExperimentIRSpectroscopyPreview,
 										Type -> Object,
 										Pattern :> ObjectP[{Object[Container]}]
 									]
-								}
+								},
+								"Model Sample"->Widget[
+									Type -> Object,
+									Pattern :> ObjectP[Model[Sample]],
+									ObjectTypes -> {Model[Sample]}
+								]
 							],
 							Expandable -> False
 						},
@@ -259,7 +274,12 @@ DefineUsage[ValidExperimentIRSpectroscopyQ,
 										Type -> Object,
 										Pattern :> ObjectP[{Object[Container]}]
 									]
-								}
+								},
+								"Model Sample"->Widget[
+									Type -> Object,
+									Pattern :> ObjectP[Model[Sample]],
+									ObjectTypes -> {Model[Sample]}
+								]
 							],
 							Expandable -> False
 						},

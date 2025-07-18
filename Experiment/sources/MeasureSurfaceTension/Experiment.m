@@ -144,7 +144,7 @@ DefineOptions[ExperimentMeasureSurfaceTension,
 								],
 								Widget[
 									Type -> Enumeration,
-									Pattern :> Alternatives[Automatic]
+									Pattern :> Alternatives[Automatic, Null]
 								]
 							],
 							"Container" -> Alternatives[
@@ -155,7 +155,7 @@ DefineOptions[ExperimentMeasureSurfaceTension,
 								],
 								Widget[
 									Type -> Enumeration,
-									Pattern :> Alternatives[Automatic]
+									Pattern :> Alternatives[Automatic, Null]
 								]
 							]
 						}
@@ -195,7 +195,7 @@ DefineOptions[ExperimentMeasureSurfaceTension,
 						Pattern :> RangeP[0,20,1]
 						],
 					Description -> "The number of pipette out and in cycles that is used to mix the sample with the Diluent to make the DilutionCurve.",
-					ResolutionDescription->"Automatically set 5 if the sample is diluted and Null otherwise.",
+					ResolutionDescription->"Automatically set to 10 if the sample is diluted and Null otherwise.",
 					Category -> "Sample Preparation"
 				},
 				{
@@ -208,7 +208,7 @@ DefineOptions[ExperimentMeasureSurfaceTension,
 						Units->CompoundUnit[{1, {Microliter, {Microliter}}}, {-1, {Second, {Second}}}]
 						],
 					Description -> "The speed at which the DilutionMixVolume is pipetted out and in of the dilution to mix the sample with the Diluent to make the DilutionCurve.",
-					ResolutionDescription->"Automatically set to 100 Microliter/Second if the sample is diluted and Null otherwise.",
+					ResolutionDescription->"Automatically set to 250 Microliter/Second if the sample is diluted and Null otherwise.",
 					Category -> "Sample Preparation"
 				}
 		],
@@ -319,12 +319,21 @@ DefineOptions[ExperimentMeasureSurfaceTension,
 			OptionName -> Calibrant,
 			Default -> Automatic,
 			AllowNull -> False,
-			Widget -> Widget[
-				Type -> Object,
-				Pattern :> ObjectP[{Model[Sample],Object[Sample]}],
-				ObjectTypes->{Model[Sample],Object[Sample]}
+			Widget -> Alternatives[
+				Widget[
+					Type -> Object,
+					Pattern :> ObjectP[{Model[Sample],Object[Sample]}],
+					ObjectTypes->{Model[Sample],Object[Sample]}
+				],
+				Adder[
+					Widget[
+						Type -> Object,
+						Pattern :> ObjectP[{Model[Sample],Object[Sample]}],
+						ObjectTypes->{Model[Sample],Object[Sample]}
+					]
+				]
 			],
-			Description -> "The sample that is used to measure a calibration factor used to convert the readings from the balances to surface tension values. Each probe is calibrated before the surface tensions of a sample's dilution curve is measured. A sample with a known surface tension is needed for this calibration.",
+			Description -> "The sample that is used to measure a calibration factor used to convert the readings from the balances to surface tension values. Each probe is calibrated before the surface tensions of a sample's dilution curve is measured. A sample with a known surface tension is needed for this calibration. Note that if a prepared plate is specified, this option consists of all samples in columns ending with 12.",
 			ResolutionDescription->"Automatically set to the Diluent if the Diluent has a populated SurfaceTension field or Model[Sample, \"Milli-Q water\"] in all other cases.",
 			Category -> "Calibration"
 		},
@@ -508,8 +517,20 @@ DefineOptions[ExperimentMeasureSurfaceTension,
 			Description -> "The maximum noise accepted before the probes are brought into contact with the instrument's internal probe cleaner.",
 			Category -> "Cleaning"
 		},
-		FuntopiaSharedOptions,
-		SamplesInStorageOptions
+		ModifyOptions[
+			ModelInputOptions,
+			OptionName -> PreparedModelAmount
+		],
+		ModifyOptions[
+			ModelInputOptions,
+			PreparedModelContainer,
+			{
+				ResolutionDescription -> "If PreparedModelAmount is set to All and the input model has a product associated with both Amount and DefaultContainerModel populated, automatically set to the DefaultContainerModel value in the product. Otherwise, automatically set to Model[Container, Plate, \"96-well 2mL Deep Well Plate\"]."
+			}
+		],
+		NonBiologyFuntopiaSharedOptions,
+		SamplesInStorageOptions,
+		SimulationOption
 	}
 ];
 
@@ -549,14 +570,13 @@ Error::IncompatableDilutionContainer= "The containers `1` are not compatible wit
 
 
 ExperimentMeasureSurfaceTension[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:OptionsPattern[]]:=Module[
-	{listedOptions,outputSpecification,output,gatherTests,validSamplePreparationResult,mySamplesWithPreparedSamples,myOptionsWithPreparedSamples,samplePreparationCache,safeOps,safeOpsTests,validLengths,validLengthTests,
+	{
+		listedOptions,outputSpecification,output,gatherTests,validSamplePreparationResult,mySamplesWithPreparedSamples,myOptionsWithPreparedSamples,updatedSimulation,safeOps,safeOpsTests,validLengths,validLengthTests,
 		templatedOptions,templateTests,inheritedOptions,expandedSafeOps,cacheBall,resolvedOptionsResult, resolvedOptions,resolvedOptionsTests,collapsedResolvedOptions,protocolObject,resourcePackets,resourcePacketTests,
-		 optionsWithObjects, allObjects, objectSamplePacketFields, modelSamplePacketFields, modelContainerObjects, instrumentObjects, modelSampleObjects, sampleObjects, modelInstrumentObjects, containerObjects,
+		optionsWithObjects, allObjects, objectSamplePacketFields, modelSamplePacketFields, modelContainerObjects, instrumentObjects, modelSampleObjects, sampleObjects, modelInstrumentObjects, containerObjects,
 		objectContainerFields,modelContainerFields,messages,listedSamples,
-		mySamplesWithPreparedSamplesNamed,myOptionsWithPreparedSamplesNamed,safeOpsNamed
+		mySamplesWithPreparedSamplesNamed,myOptionsWithPreparedSamplesNamed,safeOpsNamed,postResourcePacketsSimulation
 	},
-
-
 
 	(* Determine the requested return value from the function *)
 	outputSpecification=Quiet[OptionValue[Output]];
@@ -571,20 +591,19 @@ ExperimentMeasureSurfaceTension[mySamples:ListableP[ObjectP[Object[Sample]]],myO
 	(* Simulate our sample preparation. *)
 	validSamplePreparationResult=Check[
 		(* Simulate sample preparation. *)
-		{mySamplesWithPreparedSamplesNamed,myOptionsWithPreparedSamplesNamed,samplePreparationCache}=simulateSamplePreparationPackets[
+		{mySamplesWithPreparedSamplesNamed,myOptionsWithPreparedSamplesNamed,updatedSimulation}=simulateSamplePreparationPacketsNew[
 			ExperimentMeasureSurfaceTension,
 			listedSamples,
 			listedOptions
 		],
 		$Failed,
-		{Error::MissingDefineNames}
+		{Download::ObjectDoesNotExist, Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
 	];
 
 	(* If we are given an invalid define name, return early. *)
 	If[MatchQ[validSamplePreparationResult,$Failed],
 		(* Return early. *)
-		(* Note: We've already thrown a message above in simulateSamplePreparationPackets. *)
-		ClearMemoization[Experiment`Private`simulateSamplePreparationPackets];Return[$Failed]
+		Return[$Failed]
 	];
 
 	(* Call SafeOptions to make sure all options match pattern *)
@@ -594,15 +613,9 @@ ExperimentMeasureSurfaceTension[mySamples:ListableP[ObjectP[Object[Sample]]],myO
 	];
 
 	(* Call sanitize-inputs to clean any named objects *)
-	{mySamplesWithPreparedSamples,safeOps, myOptionsWithPreparedSamples} = sanitizeInputs[mySamplesWithPreparedSamplesNamed,safeOpsNamed, myOptionsWithPreparedSamplesNamed];
+	{mySamplesWithPreparedSamples,safeOps, myOptionsWithPreparedSamples} = sanitizeInputs[mySamplesWithPreparedSamplesNamed,safeOpsNamed, myOptionsWithPreparedSamplesNamed,Simulation->updatedSimulation];
 
-	(* Call ValidInputLengthsQ to make sure all options are the right length *)
-	{validLengths,validLengthTests}=If[gatherTests,
-		ValidInputLengthsQ[ExperimentMeasureSurfaceTension,{mySamplesWithPreparedSamples},myOptionsWithPreparedSamples,Output->{Result,Tests}],
-		{ValidInputLengthsQ[ExperimentMeasureSurfaceTension,{mySamplesWithPreparedSamples},myOptionsWithPreparedSamples],Null}
-	];
-
-	(* If the specified options don't match their patterns or if option lengths are invalid return $Failed *)
+	(* If the specified options don't match their patterns return $Failed *)
 	If[MatchQ[safeOps,$Failed],
 		Return[outputSpecification/.{
 			Result -> $Failed,
@@ -610,6 +623,12 @@ ExperimentMeasureSurfaceTension[mySamples:ListableP[ObjectP[Object[Sample]]],myO
 			Options -> $Failed,
 			Preview -> Null
 		}]
+	];
+
+	(* Call ValidInputLengthsQ to make sure all options are the right length *)
+	{validLengths,validLengthTests}=If[gatherTests,
+		ValidInputLengthsQ[ExperimentMeasureSurfaceTension,{mySamplesWithPreparedSamples},myOptionsWithPreparedSamples,Output->{Result,Tests}],
+		{ValidInputLengthsQ[ExperimentMeasureSurfaceTension,{mySamplesWithPreparedSamples},myOptionsWithPreparedSamples],Null}
 	];
 
 	(* If option lengths are invalid return $Failed (or the tests up to this point) *)
@@ -671,7 +690,8 @@ ExperimentMeasureSurfaceTension[mySamples:ListableP[ObjectP[Object[Sample]]],myO
 			ObjectP[]
 		],
 		Object,
-		Date->Now
+		Simulation -> updatedSimulation,
+		Date -> Now
 	];
 
 	(* Create the Packet Download syntax for our Object and Model samples. *)
@@ -686,7 +706,7 @@ ExperimentMeasureSurfaceTension[mySamples:ListableP[ObjectP[Object[Sample]]],myO
 	modelSampleObjects=Cases[allObjects,ObjectP[Model[Sample]]];
 	sampleObjects=Cases[allObjects,ObjectP[Object[Sample]]];
 
-	cacheBall=Quiet[FlattenCachePackets[{samplePreparationCache,Download[
+	cacheBall=Quiet[FlattenCachePackets[{Download[
 		{sampleObjects,
 			modelSampleObjects,
 			instrumentObjects,
@@ -712,12 +732,13 @@ ExperimentMeasureSurfaceTension[mySamples:ListableP[ObjectP[Object[Sample]]],myO
 			},
 			{
 			Packet[Object,MinVolume,MaxVolume,AspectRatio,NumberOfWells,Name,Deprecated,Sterile,Footprint,OpenContainer,Dimensions,
-				MaxTemperature,Positions,TransportWarmed,Sterile,
-				LiquidHandlerIncompatible,Tablet,TabletWeight,State]
+				MaxTemperature,Positions,TransportTemperature,Sterile,
+				LiquidHandlerIncompatible,Tablet,SolidUnitWeight,State]
 			}
 		},
-		Cache->samplePreparationCache,
-		Date->Now
+		Cache -> Lookup[inheritedOptions, Cache, {}],
+		Simulation -> updatedSimulation,
+		Date -> Now
 	]}],Download::FieldDoesntExist];
 
 
@@ -725,7 +746,7 @@ ExperimentMeasureSurfaceTension[mySamples:ListableP[ObjectP[Object[Sample]]],myO
 	resolvedOptionsResult=If[gatherTests,
 		(* We are gathering tests. This silences any messages being thrown. *)
 
-		{resolvedOptions,resolvedOptionsTests}=resolveExperimentMeasureSurfaceTensionOptions[ToList[listedSamples],expandedSafeOps,Cache->cacheBall,Output->{Result,Tests}];
+		{resolvedOptions,resolvedOptionsTests}=resolveExperimentMeasureSurfaceTensionOptions[ToList[listedSamples],expandedSafeOps,Cache->cacheBall,Simulation -> updatedSimulation,Output->{Result,Tests}];
 
 		(* Therefore, we have to run the tests to see if we encountered a failure. *)
 		If[RunUnitTest[<|"Tests"->resolvedOptionsTests|>,OutputFormat->SingleBoolean,Verbose->False],
@@ -735,7 +756,7 @@ ExperimentMeasureSurfaceTension[mySamples:ListableP[ObjectP[Object[Sample]]],myO
 
 		(* We are not gathering tests. Simply check for Error::InvalidInput and Error::InvalidOption. *)
 		Check[
-			{resolvedOptions,resolvedOptionsTests}={resolveExperimentMeasureSurfaceTensionOptions[ToList[listedSamples],expandedSafeOps,Cache->cacheBall],{}},
+			{resolvedOptions,resolvedOptionsTests}={resolveExperimentMeasureSurfaceTensionOptions[ToList[listedSamples],expandedSafeOps,Cache->cacheBall,Simulation -> updatedSimulation],{}},
 			$Failed,
 			{Error::InvalidInput,Error::InvalidOption}
 		]
@@ -761,9 +782,26 @@ ExperimentMeasureSurfaceTension[mySamples:ListableP[ObjectP[Object[Sample]]],myO
 
 	(* Build packets with resources *)
 
-	{resourcePackets,resourcePacketTests} = If[gatherTests,
-		mstResourcePackets[ToList[mySamplesWithPreparedSamples],expandedSafeOps,resolvedOptions,Cache->cacheBall,Output->{Result,Tests}],
-		{mstResourcePackets[ToList[mySamplesWithPreparedSamples],expandedSafeOps,resolvedOptions,Cache->cacheBall],{}}
+	{resourcePackets,postResourcePacketsSimulation,resourcePacketTests} = If[gatherTests,
+		mstResourcePackets[
+			ToList[mySamplesWithPreparedSamples],
+			expandedSafeOps,
+			resolvedOptions,
+			Cache->cacheBall,
+			Simulation -> updatedSimulation,
+			Output->{Result,Simulation,Tests}
+		],
+		Append[
+			mstResourcePackets[
+				ToList[mySamplesWithPreparedSamples],
+				expandedSafeOps,
+				resolvedOptions,
+				Cache->cacheBall,
+				Simulation -> updatedSimulation,
+				Output->{Result,Simulation}
+			],
+			{}
+		]
 	];
 
 	(* If we don't have to return the Result, don't bother calling UploadProtocol[...]. *)
@@ -782,13 +820,15 @@ ExperimentMeasureSurfaceTension[mySamples:ListableP[ObjectP[Object[Sample]]],myO
 			resourcePackets,
 			Upload->Lookup[safeOps,Upload],
 			Confirm->Lookup[safeOps,Confirm],
+			CanaryBranch->Lookup[safeOps,CanaryBranch],
 			ParentProtocol->Lookup[safeOps,ParentProtocol],
 			Priority->Lookup[safeOps,Priority],
 			StartDate->Lookup[safeOps,StartDate],
 			HoldOrder->Lookup[safeOps,HoldOrder],
 			QueuePosition->Lookup[safeOps,QueuePosition],
 			ConstellationMessage->Object[Protocol,MeasureSurfaceTension],
-			Cache->samplePreparationCache
+			Cache -> cacheBall,
+			Simulation->postResourcePacketsSimulation
 		],
 		$Failed
 	];
@@ -803,93 +843,89 @@ ExperimentMeasureSurfaceTension[mySamples:ListableP[ObjectP[Object[Sample]]],myO
 ];
 
 (* container overload *)
-ExperimentMeasureSurfaceTension[myContainers:ListableP[ObjectP[{Object[Container],Object[Sample]}]|_String|{LocationPositionP,_String|ObjectP[Object[Container]]}],myOptions:OptionsPattern[]]:=Module[
-		{listedOptions,outputSpecification,output,gatherTests,validSamplePreparationResult,mySamplesWithPreparedSamples,myOptionsWithPreparedSamples,sampleCache,
-		samplePreparationCache,containerToSampleResult,containerToSampleOutput,updatedCache,samples,sampleOptions,containerToSampleTests, safeOptions, safeOptionTests,listedContainers},
+ExperimentMeasureSurfaceTension[myContainers:ListableP[ObjectP[{Object[Container],Object[Sample],Model[Sample]}]|_String|{LocationPositionP,_String|ObjectP[Object[Container]]}],myOptions:OptionsPattern[]]:=Module[
+	{
+		listedOptions,outputSpecification,output,gatherTests,validSamplePreparationResult,mySamplesWithPreparedSamples,myOptionsWithPreparedSamples,sampleCache, containerToSampleSimulation,
+		updatedSimulation,containerToSampleResult,containerToSampleOutput,updatedCache,samples,sampleOptions,containerToSampleTests, safeOptions, safeOptionTests,listedContainers
+	},
 
 
-		(* Determine the requested return value from the function *)
-		outputSpecification=Quiet[OptionValue[Output]];
-		output=ToList[outputSpecification];
+	(* Determine the requested return value from the function *)
+	outputSpecification=Quiet[OptionValue[Output]];
+	output=ToList[outputSpecification];
 
-		(* Determine if we should keep a running list of tests *)
-		gatherTests=MemberQ[output,Tests];
+	(* Determine if we should keep a running list of tests *)
+	gatherTests=MemberQ[output,Tests];
 
-		{listedContainers, listedOptions}=removeLinks[ToList[myContainers], ToList[myOptions]];
+	{listedContainers, listedOptions}= {ToList[myContainers], ToList[myOptions]};
 
-		(* First, simulate our sample preparation. *)
-		validSamplePreparationResult=Check[
-			(* Simulate sample preparation. *)
-			{mySamplesWithPreparedSamples,myOptionsWithPreparedSamples,samplePreparationCache}=simulateSamplePreparationPackets[
-				ExperimentMeasureSurfaceTension,
-				ToList[listedContainers],
-				ToList[listedOptions]
-			],
-			$Failed,
-			{Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
+	(* First, simulate our sample preparation. *)
+	validSamplePreparationResult=Check[
+		(* Simulate sample preparation. *)
+		{mySamplesWithPreparedSamples,myOptionsWithPreparedSamples,updatedSimulation}=simulateSamplePreparationPacketsNew[
+			ExperimentMeasureSurfaceTension,
+			ToList[listedContainers],
+			ToList[listedOptions],
+			DefaultPreparedModelContainer -> Model[Container, Plate, "96-well 2mL Deep Well Plate"]
+		],
+		$Failed,
+		{Download::ObjectDoesNotExist,Error::MissingDefineNames,Error::InvalidInput,Error::InvalidOption}
+	];
+
+	(* If we are given an invalid define name, return early. *)
+	If[MatchQ[validSamplePreparationResult,$Failed],
+		(* Return early. *)
+		Return[$Failed]
+	];
+
+
+	(* Convert our given containers into samples and sample index-matched options. *)
+	containerToSampleResult=If[gatherTests,
+		(* We are gathering tests. This silences any messages being thrown. *)
+		{containerToSampleOutput, containerToSampleTests, containerToSampleSimulation} = containerToSampleOptions[
+			ExperimentMeasureSurfaceTension,
+			mySamplesWithPreparedSamples,
+			myOptionsWithPreparedSamples,
+			Output -> {Result, Tests, Simulation},
+			Simulation -> updatedSimulation
 		];
 
-		(* If we are given an invalid define name, return early. *)
-		If[MatchQ[validSamplePreparationResult,$Failed],
-			(* Return early. *)
-			(* Note: We've already thrown a message above in simulateSamplePreparationPackets. *)
-			ClearMemoization[Experiment`Private`simulateSamplePreparationPackets];Return[$Failed]
-		];
+		(* Therefore, we have to run the tests to see if we encountered a failure. *)
+		If[RunUnitTest[<|"Tests"->containerToSampleTests|>,OutputFormat->SingleBoolean,Verbose->False],
+			Null,
+			$Failed
+		],
 
-
-		(* Convert our given containers into samples and sample index-matched options. *)
-		containerToSampleResult=If[gatherTests,
-			(* We are gathering tests. This silences any messages being thrown. *)
-			{containerToSampleOutput,containerToSampleTests}=containerToSampleOptions[
+		(* We are not gathering tests. Simply check for Error::InvalidInput and Error::InvalidOption. *)
+		Check[
+			{containerToSampleOutput, containerToSampleSimulation} = containerToSampleOptions[
 				ExperimentMeasureSurfaceTension,
 				mySamplesWithPreparedSamples,
 				myOptionsWithPreparedSamples,
-				Output->{Result,Tests},
-				Cache->samplePreparationCache
-			];
-
-			(* Therefore, we have to run the tests to see if we encountered a failure. *)
-			If[RunUnitTest[<|"Tests"->containerToSampleTests|>,OutputFormat->SingleBoolean,Verbose->False],
-				Null,
-				$Failed
+				Output -> {Result, Simulation},
+				Simulation -> updatedSimulation
 			],
-
-			(* We are not gathering tests. Simply check for Error::InvalidInput and Error::InvalidOption. *)
-			Check[
-				containerToSampleOutput=containerToSampleOptions[
-					ExperimentMeasureSurfaceTension,
-					mySamplesWithPreparedSamples,
-					myOptionsWithPreparedSamples,
-					Output->Result,
-					Cache->samplePreparationCache
-				],
-				$Failed,
-				{Error::EmptyContainers, Error::ContainerEmptyWells, Error::WellDoesNotExist}
-			]
-		];
-
-		(* Update our cache with our new simulated values. *)
-		(* It is important the sample preparation cache appears first in the cache ball. *)
-		updatedCache=Flatten[{
-			samplePreparationCache,
-			Lookup[listedOptions,Cache,{}]
-		}];
-
-		(* If we were given an empty container, return early. *)
-		If[MatchQ[containerToSampleResult,$Failed],
-			(* containerToSampleOptions failed - return $Failed *)
-			outputSpecification/.{
-				Result -> $Failed,
-				Tests -> containerToSampleTests,
-				Options -> $Failed,
-				Preview -> Null
-			},
-			(* Split up our containerToSample result into the samples and sampleOptions. *)
-			{samples,sampleOptions, sampleCache}=containerToSampleOutput;
-
-			(* Call our main function with our samples and converted options. *)
-			ExperimentMeasureSurfaceTension[samples,ReplaceRule[sampleOptions,Cache->Flatten[{updatedCache,sampleCache}]]]
+			$Failed,
+			{Error::EmptyContainers, Error::ContainerEmptyWells, Error::WellDoesNotExist}
 		]
+	];
+
+	(* If we were given an empty container, return early. *)
+	If[MatchQ[containerToSampleResult,$Failed],
+		(* containerToSampleOptions failed - return $Failed *)
+		outputSpecification/.{
+			Result -> $Failed,
+			Tests -> containerToSampleTests,
+			Options -> $Failed,
+			Preview -> Null
+		},
+
+		(* Split up our containerToSample result into the samples and sampleOptions. *)
+		{samples, sampleOptions} = containerToSampleOutput;
+
+		(* Call our main function with our samples and converted options. *)
+		ExperimentMeasureSurfaceTension[samples, ReplaceRule[sampleOptions, Simulation -> containerToSampleSimulation]]
+	]
 ];
 
 
@@ -900,42 +936,43 @@ ExperimentMeasureSurfaceTension[myContainers:ListableP[ObjectP[{Object[Container
 
 DefineOptions[
 	resolveExperimentMeasureSurfaceTensionOptions,
-	Options:>{HelperOutputOption,CacheOption}
+	Options:>{HelperOutputOption,CacheOption,SimulationOption}
 ];
 
 resolveExperimentMeasureSurfaceTensionOptions[mySamples:{ObjectP[Object[Sample]]...},myOptions:{_Rule...},myResolutionOptions:OptionsPattern[resolveExperimentMeasureSurfaceTensionOptions]]:=Module[
-		{outputSpecification,output,gatherTests,cache,samplePrepOptions,measureSurfaceTensionOptions,simulatedSamples,resolvedSamplePrepOptions,simulatedCache,samplePrepTests,
-	measureSurfaceTensionOptionsAssociation,invalidInputs,invalidOptions,targetContainers,resolvedAliquotOptions,aliquotTests, samplePackets,sampleModelPackets, preparedPlateFalseOptions,
-	discardedSamplePackets,discardedInvalidInputs,discardedTest,missingDiluent,missingDiluentOptions,missingDiluentInputs, missingDiluentInvalidOptions,missingDiluentTest,missingDilutionCurve,missingDilutionCurveOptions,missingDilutionCurveInputs,missingDilutionCurveTest,missingDilutionMixVolumeOptions,missingDilutionMixVolumeInputs,
-	missingDilutionMixVolume,missingDilutionMixVolumeTest,conflictingDilutionMixVolumeOptions, conflictingDilutionMixVolumeInputs,conflictingDilutionMixVolume, conflictingDilutionMixVolumeTest,
-	missingDilutionNumberofMixesOptions,missingDilutionNumberofMixesInputs,missingDilutionNumberofMixes,missingDilutionNumberofMixesTest, missingDilutionMixRateOptions,missingDilutionMixRateInputs,missingDilutionMixRate,missingDilutionMixRateTest,
-	calibrantSurfaceTensionMismatch,calibrantSurfaceTensionMismatchTest,missingDilutionContainerOptions,missingDilutionContainerInputs,missingDilutionContainer, assayStorageCondition, dilutionStorageCondition,
-	missingDilutionContainerTest,missingDilutionContainerInvalidOptions,roundedMeasureSurfaceTensionOptions,mapThreadFriendlyOptions,resolveddiluents,resolvedCalibrant,missingCalibrantSurfaceTensionError,
-	resolvedcalibrantSurfaceTension,allDownloadValues,resolveddilutionCurve,dilutionCurveVolumeErrors,dilutionCurveExcessVolumeWarnings, resolveddilutionMixVolume,requiredSampleVolumes, missingCalibrantSurfaceTensionInvalidOptions,missingCalibrantSurfaceTensionTest,
-	dilutionCurveVolumeInvalidOptions,dilutionCurveVolumeTest,dilutionCurveExcessVolumeTest,hamiltonCompatibleContainers,resolvedPostProcessingOptions, resolvedOptions,allTests,simulatedSampleContainers,
-	resolvedcalibrantSTfield,precisionTests,calibrantinput,calibrantinputST,potentialCalibrant,potentialCalibrantST,allDiluents,simulatedContainersPackets,instrument, dilutionNumberOfMixes, dilutionMixRate,
-	dilutionContainer, numberOfReplicates,  numberOfCalibrationMeasurements, maxCalibrationNoise, equilibrationTime, numberOfSampleMeasurements, probeSpeed, maxDryNoise, cleaningMethod,
-	maxWetNoise, preCleaningMethod, cleaningSolution, preheatingTime, burningTime, coolingTime, betweenMeasurementBurningTime, betweenMeasurementCoolingTime, maxCleaningNoise,name,template, containersOutMismatch, containersOutMismatchTest,
-			confirm, samplesInStorage, upload,email, fastTrack, operator, parentProtocol, outputOption,resolvedserialdilutionCurve, missingCleaningSolutionInvalidOptions, resolvedcontainersOut,
-			conflictingDilutionCurveInvalidOptions,missingCleaningSolutionOptions,conflictingDilutionCurveOptions,conflictingDilutionCurveInputs,conflictingDilutionCurveTest,conflictingDilutionCurve,missingCleaningSolutionTest,dilutionsamplevolumes,
-			compatibleMaterialsInvalidInputs,singleSamplePerProbe,dilutionContainerInvalidOptions,dilutionContainerTest,dilutionContainerErrors,maxvolumes, resolvedcleaningMethod, missingCleaningMethodTest, missingCleaningMethodOptions,
-			uniqueCalibrantObjects, downloadedSurfaceTensions, calibrantSurfaceTensionReplaceRules, uniqueDilutionContainersObjects,  downloadedDilutionContainerFields, dilutionContainerReplaceRules, numberOfDilutionWells,
-			 dilutionContainerGrouping,mergedContainerOptions,gatheredmergedContainerOptions,newgroupingindices,newgroupings,newGroupingRules,resolveddilutionContainerGrouping, containersOutTest,
-			indexedStorageConditions, dilutionContainerStorageTest, dilutioncontainerStorageInValidOptions, dilutionContainerWellsInValidOptions, dilutionContainerWellsTest, calibrantCompositionReplaceRules, downloadedCompositions,
-			mismatchedDilutionContainerStorage, groupedStorageConditions, halfresolveddilutionContainer, dilutionContainerObjects, conflictingCleaningSolutionInvalidOptions, conflictingCleaningSolutionTest, conflictingCleaningSolutionOptions,
-			safeIndex, resolveddilutionContainer, requiredWells, availableWells, groupedContainerOptions, filledUpContainers, unresolvedDilutionContainerGrouping, insufficientDilutionContainerWells, unresolvedDilutionContainer,
-			roundedOtherMeasureSurfaceTensionOptions, roundedDilutionCurveOptions, roundedDilutionCurveOption, separatedUnroundedDilutionCurve, unroundedDilutionCurve, halfroundedSerialDilutionCurveOption,
-			roundedSerialDilutionCurveOptions, roundedSerialDilutionCurveOption, separatedUnroundedSerialDilutionCurve, unroundedSerialDilutionCurve, halfroundedSerialDilutionCurveOptions,
-			otherprecisionTests, serialDilutionprecisionTests, dilutionprecisionTests, preparedPlate, conflictingPreparedPlateDilutionInvalidOptions, conflictingPreparedPlateDilution, simulatedSampleWells, invalidAssayPlateOptions,
-			invalidAssayPlateTest, noCalibrantProvidedInvalidOptions, noCalibrantProvidedTest, conflictingPreparedPlateDilutionTest, sampleLoadingVolume, imageDilutionContainers, samplesOutMismatch, samplesOutMismatchTest,
-			samplesInCalibrantWells, invalidPreparedPlateCleaningSolutionOptions, invalidPreparedPlateCleaningSolutionTest, preparedPlateCleaningSolutionOptions, assayPlateOptions, requiredRows,
-			noCalibrantProvidedOptions, samplesInCalibrantWellsComposition, conflictingPreparedPlateCalibrantsOptions, preparatoryPrimitives, conflictingDilutionMixInvalidOptions, conflictingDilutionMixOptions, conflictingDilutionMixInputs,
-			conflictingDilutionMix, conflictingDilutionMixTest, multipleAssayPatesTest, multipleAssayPatesOptions, primaryCleaningSolution, secondaryCleaningSolution, containerObjects, containersOutWells,
-			tertiaryCleaningSolution, resolvedsingleSamplePerProbe, containersOutMismatchInvalidOptions,resolveddilutionMixRate,resolvednumberOfMixes,resolveddilutionStorageCondition, conflictingDilutionContainers,
-      conflictingDilutionContainerInValidOptions, conflictingDilutionContainerTest, simulatedSampleContainerObjects,  preResolvedAliquotBool, liquidHandlingWarningContainers, liquidHandlingWarningContainersTest,
-			incompatibleDilutionContainers, incompatibleDilutionContainersOptions, incompatibleDilutionContainersTest, compatibleMaterialsBool, compatibleMaterialsTests,messages,mismatchedContainerOutStorage,
-			containerOutStorageInValidOptions,containerOutStorageTest,calibrantWells,targetVolumes
-		},
+	{
+		outputSpecification,output,gatherTests,cache,simulation,samplePrepOptions,measureSurfaceTensionOptions,simulatedSamples,resolvedSamplePrepOptions,updatedSimulation,samplePrepTests,
+		measureSurfaceTensionOptionsAssociation,invalidInputs,invalidOptions,targetContainers,resolvedAliquotOptions,aliquotTests, samplePackets,sampleModelPackets, preparedPlateFalseOptions,
+		discardedSamplePackets,discardedInvalidInputs,discardedTest,missingDiluent,missingDiluentOptions,missingDiluentInputs, missingDiluentInvalidOptions,missingDiluentTest,missingDilutionCurve,missingDilutionCurveOptions,missingDilutionCurveInputs,missingDilutionCurveTest,missingDilutionMixVolumeOptions,missingDilutionMixVolumeInputs,
+		missingDilutionMixVolume,missingDilutionMixVolumeTest,conflictingDilutionMixVolumeOptions, conflictingDilutionMixVolumeInputs,conflictingDilutionMixVolume, conflictingDilutionMixVolumeTest,
+		missingDilutionNumberofMixesOptions,missingDilutionNumberofMixesInputs,missingDilutionNumberofMixes,missingDilutionNumberofMixesTest, missingDilutionMixRateOptions,missingDilutionMixRateInputs,missingDilutionMixRate,missingDilutionMixRateTest,
+		calibrantSurfaceTensionMismatch,calibrantSurfaceTensionMismatchTest,missingDilutionContainerOptions,missingDilutionContainerInputs,missingDilutionContainer, assayStorageCondition, dilutionStorageCondition,
+		missingDilutionContainerTest,missingDilutionContainerInvalidOptions,roundedMeasureSurfaceTensionOptions,mapThreadFriendlyOptions,resolveddiluents,resolvedCalibrant,missingCalibrantSurfaceTensionError,
+		resolvedcalibrantSurfaceTension,allDownloadValues,resolveddilutionCurve,dilutionCurveVolumeErrors,dilutionCurveExcessVolumeWarnings, resolveddilutionMixVolume,requiredSampleVolumes, missingCalibrantSurfaceTensionInvalidOptions,missingCalibrantSurfaceTensionTest,
+		dilutionCurveVolumeInvalidOptions,dilutionCurveVolumeTest,dilutionCurveExcessVolumeTest,hamiltonCompatibleContainers,resolvedPostProcessingOptions, resolvedOptions,allTests,simulatedSampleContainers,
+		resolvedcalibrantSTfield,precisionTests,calibrantinput,calibrantinputST,potentialCalibrant,potentialCalibrantST,allDiluents,simulatedContainersPackets,instrument, dilutionNumberOfMixes, dilutionMixRate,
+		dilutionContainer, numberOfReplicates,  numberOfCalibrationMeasurements, maxCalibrationNoise, equilibrationTime, numberOfSampleMeasurements, probeSpeed, maxDryNoise, cleaningMethod,
+		maxWetNoise, preCleaningMethod, cleaningSolution, preheatingTime, burningTime, coolingTime, betweenMeasurementBurningTime, betweenMeasurementCoolingTime, maxCleaningNoise,name,template, containersOutMismatch, containersOutMismatchTest,
+		confirm, canaryBranch, samplesInStorage, upload,email, fastTrack, operator, parentProtocol, outputOption,resolvedserialdilutionCurve, missingCleaningSolutionInvalidOptions, resolvedcontainersOut,
+		conflictingDilutionCurveInvalidOptions,missingCleaningSolutionOptions,conflictingDilutionCurveOptions,conflictingDilutionCurveInputs,conflictingDilutionCurveTest,conflictingDilutionCurve,missingCleaningSolutionTest,dilutionsamplevolumes,
+		compatibleMaterialsInvalidInputs,singleSamplePerProbe,dilutionContainerInvalidOptions,dilutionContainerTest,dilutionContainerErrors,maxvolumes, resolvedcleaningMethod, missingCleaningMethodTest, missingCleaningMethodOptions,
+		uniqueCalibrantObjects, downloadedSurfaceTensions, calibrantSurfaceTensionReplaceRules, uniqueDilutionContainersObjects,  downloadedDilutionContainerFields, dilutionContainerReplaceRules, numberOfDilutionWells,
+		dilutionContainerGrouping,mergedContainerOptions,gatheredmergedContainerOptions,newgroupingindices,newgroupings,newGroupingRules,resolveddilutionContainerGrouping, containersOutTest,
+		indexedStorageConditions, dilutionContainerStorageTest, dilutioncontainerStorageInValidOptions, dilutionContainerWellsInValidOptions, dilutionContainerWellsTest, calibrantCompositionReplaceRules, downloadedCompositions,
+		mismatchedDilutionContainerStorage, groupedStorageConditions, halfresolveddilutionContainer, dilutionContainerObjects, conflictingCleaningSolutionInvalidOptions, conflictingCleaningSolutionTest, conflictingCleaningSolutionOptions,
+		safeIndex, resolveddilutionContainer, requiredWells, availableWells, groupedContainerOptions, filledUpContainers, unresolvedDilutionContainerGrouping, insufficientDilutionContainerWells, unresolvedDilutionContainer,
+		roundedOtherMeasureSurfaceTensionOptions, roundedDilutionCurveOptions, roundedDilutionCurveOption, separatedUnroundedDilutionCurve, unroundedDilutionCurve, halfroundedSerialDilutionCurveOption,
+		roundedSerialDilutionCurveOptions, roundedSerialDilutionCurveOption, separatedUnroundedSerialDilutionCurve, unroundedSerialDilutionCurve, halfroundedSerialDilutionCurveOptions,
+		otherprecisionTests, serialDilutionprecisionTests, dilutionprecisionTests, preparedPlate, conflictingPreparedPlateDilutionInvalidOptions, conflictingPreparedPlateDilution, simulatedSampleWells, invalidAssayPlateOptions,
+		invalidAssayPlateTest, noCalibrantProvidedInvalidOptions, noCalibrantProvidedTest, conflictingPreparedPlateDilutionTest, sampleLoadingVolume, imageDilutionContainers, samplesOutMismatch, samplesOutMismatchTest,
+		samplesInCalibrantWells, invalidPreparedPlateCleaningSolutionOptions, invalidPreparedPlateCleaningSolutionTest, preparedPlateCleaningSolutionOptions, assayPlateOptions, requiredRows,
+		noCalibrantProvidedOptions, samplesInCalibrantWellsComposition, conflictingPreparedPlateCalibrantsOptions, conflictingDilutionMixInvalidOptions, conflictingDilutionMixOptions, conflictingDilutionMixInputs,
+		conflictingDilutionMix, conflictingDilutionMixTest, multipleAssayPatesTest, multipleAssayPatesOptions, primaryCleaningSolution, secondaryCleaningSolution, containerObjects, containersOutWells,
+		tertiaryCleaningSolution, resolvedsingleSamplePerProbe, containersOutMismatchInvalidOptions,resolveddilutionMixRate,resolvednumberOfMixes,resolveddilutionStorageCondition, conflictingDilutionContainers,
+		conflictingDilutionContainerInValidOptions, conflictingDilutionContainerTest, simulatedSampleContainerObjects,  preResolvedAliquotBool, liquidHandlingWarningContainers, liquidHandlingWarningContainersTest,
+		incompatibleDilutionContainers, incompatibleDilutionContainersOptions, incompatibleDilutionContainersTest, compatibleMaterialsBool, compatibleMaterialsTests,messages,mismatchedContainerOutStorage,
+		containerOutStorageInValidOptions,containerOutStorageTest,calibrantWells,targetVolumes
+	},
 
 	(*-- SETUP OUR USER SPECIFIED OPTIONS AND CACHE --*)
 
@@ -949,14 +986,15 @@ resolveExperimentMeasureSurfaceTensionOptions[mySamples:{ObjectP[Object[Sample]]
 
 	(* Fetch our cache from the parent function. *)
 	cache = Lookup[ToList[myResolutionOptions], Cache, {}];
+	simulation = Lookup[ToList[myResolutionOptions], Simulation, Simulation[]];
 
-	(* Seperate out our MeasureSurfaceTension options from our Sample Prep options. *)
+	(* Separate out our MeasureSurfaceTension options from our Sample Prep options. *)
 	{samplePrepOptions,measureSurfaceTensionOptions}=splitPrepOptions[myOptions];
 
 	(* Resolve our sample prep options *)
-	{{simulatedSamples,resolvedSamplePrepOptions,simulatedCache},samplePrepTests}=If[gatherTests,
-		resolveSamplePrepOptions[ExperimentMeasureSurfaceTension,mySamples,samplePrepOptions,Cache->cache,Output->{Result,Tests}],
-		{resolveSamplePrepOptions[ExperimentMeasureSurfaceTension,mySamples,samplePrepOptions,Cache->cache,Output->Result],{}}
+	{{simulatedSamples,resolvedSamplePrepOptions,updatedSimulation},samplePrepTests}=If[gatherTests,
+		resolveSamplePrepOptionsNew[ExperimentMeasureSurfaceTension,mySamples,samplePrepOptions,Cache->cache,Simulation -> simulation, Output->{Result,Tests}],
+		{resolveSamplePrepOptionsNew[ExperimentMeasureSurfaceTension,mySamples,samplePrepOptions,Cache->cache,Simulation -> simulation, Output->Result],{}}
 	];
 
 
@@ -971,28 +1009,28 @@ resolveExperimentMeasureSurfaceTensionOptions[mySamples:{ObjectP[Object[Sample]]
 	]];
 
 	(* Extract the packets that we need from our downloaded cache. *)
-	(* Remember to download from simulatedSamples, using our simulatedCache *)
 	{
-		allDownloadValues, downloadedSurfaceTensions,  downloadedDilutionContainerFields, downloadedCompositions
+		allDownloadValues, downloadedSurfaceTensions, downloadedDilutionContainerFields, downloadedCompositions
 	} = Quiet[Download[
 		{ (*Inputs*)
 			simulatedSamples,
 			uniqueCalibrantObjects,
 			uniqueDilutionContainersObjects,
-      uniqueCalibrantObjects
+			uniqueCalibrantObjects
 		},
 		{
 			{
-			Packet[Model,Status,Container,Well],
-			Packet[Model[{Deprecated, Name}]],
-			Packet[Container[{Model}]]
+				Packet[Model, Status, Container, Well],
+				Packet[Model[{Deprecated, Name}]],
+				Packet[Container[{Model}]]
 			},
 			{SurfaceTension},
 			{MaxVolume, NumberOfWells},
-      {Composition}
+			{Composition}
 		},
-		Cache -> simulatedCache,
-		Date->Now
+		Cache -> cache,
+		Simulation -> updatedSimulation,
+		Date -> Now
 	], Download::FieldDoesntExist];
 
 
@@ -1002,17 +1040,18 @@ resolveExperimentMeasureSurfaceTensionOptions[mySamples:{ObjectP[Object[Sample]]
 	simulatedContainersPackets=allDownloadValues[[All, 3]];
 	simulatedSampleContainers=Lookup[simulatedContainersPackets,Model];
 	simulatedSampleWells=Lookup[samplePackets,Well];
-  	simulatedSampleContainerObjects=Lookup[samplePackets,Container];
+	simulatedSampleContainerObjects=Lookup[samplePackets,Container];
 
 	calibrantSurfaceTensionReplaceRules=MapThread[
 		(#1->#2)&,
 		{uniqueCalibrantObjects,Flatten[downloadedSurfaceTensions]}
 	];
 
-  calibrantCompositionReplaceRules=MapThread[
-    (#1->#2)&,
-    {uniqueCalibrantObjects,downloadedCompositions}
-  ];
+	(* Note: we are replace Object/Model sample to their composition without time *)
+	calibrantCompositionReplaceRules=MapThread[
+		(#1->{FirstOrDefault[#2][[All, {1, 2}]]})&,
+		{uniqueCalibrantObjects,downloadedCompositions}
+	];
 
 	(*Some of the containers will by vessels with no NumberOfWellsFields*)
 	dilutionContainerReplaceRules=MapThread[
@@ -1034,7 +1073,7 @@ resolveExperimentMeasureSurfaceTensionOptions[mySamples:{ObjectP[Object[Sample]]
 
 	(* If there are invalid inputs and we are throwing messages, throw an error message and keep track of the invalid inputs.*)
 	If[Length[discardedInvalidInputs]>0&&!gatherTests,
-		Message[Error::DiscardedSamples,ObjectToString[discardedInvalidInputs,Cache->simulatedCache]];
+		Message[Error::DiscardedSamples,ObjectToString[discardedInvalidInputs,Simulation -> updatedSimulation]];
 	];
 
 	(* If we are gathering tests, create a passing and/or failing test with the appropriate result. *)
@@ -1042,12 +1081,12 @@ resolveExperimentMeasureSurfaceTensionOptions[mySamples:{ObjectP[Object[Sample]]
 		Module[{failingTest,passingTest},
 			failingTest=If[Length[discardedInvalidInputs]==0,
 				Nothing,
-				Test["Our input samples "<>ObjectToString[discardedInvalidInputs,Cache->simulatedCache]<>" are not discarded:",True,False]
+				Test["Our input samples "<>ObjectToString[discardedInvalidInputs,Simulation -> updatedSimulation]<>" are not discarded:",True,False]
 			];
 
 			passingTest=If[Length[discardedInvalidInputs]==Length[mySamples],
 				Nothing,
-				Test["Our input samples "<>ObjectToString[Complement[mySamples,discardedInvalidInputs],Cache->simulatedCache]<>" are not discarded:",True,True]
+				Test["Our input samples "<>ObjectToString[Complement[mySamples,discardedInvalidInputs],Simulation -> updatedSimulation]<>" are not discarded:",True,True]
 			];
 
 			{failingTest,passingTest}
@@ -1072,7 +1111,7 @@ resolveExperimentMeasureSurfaceTensionOptions[mySamples:{ObjectP[Object[Sample]]
 	]];
 
 
-	(*put them back togeather*)
+	(*put them back together*)
 	roundedDilutionCurveOptions = Which[
 		MatchQ[Flatten[Values[#], 1],{Automatic}], Automatic,
 		MatchQ[Flatten[Values[#], 1],{Null}], Null,
@@ -1114,7 +1153,7 @@ resolveExperimentMeasureSurfaceTensionOptions[mySamples:{ObjectP[Object[Sample]]
 			{10^-2Milli Newton/Meter,10^-2Milli Newton/Meter,10^-2Milli Newton/Meter,10^-2Milli Newton/Meter,10^-2Milli Newton/Meter,1 Minute, 10^-1 Second, 10^-1 Second, 10^-1 Second, 10^-1 Second, 10^-1 Second, 10^-1Microliter,10^-1 Microliter/Second,1Percent, 10^-1Microliter}], {}}
 	];
 
-	(*all the rounding togeather*)
+	(*all the rounding together*)
 	roundedMeasureSurfaceTensionOptions=Join[roundedOtherMeasureSurfaceTensionOptions,<|DilutionCurve->roundedDilutionCurveOptions|>,<|SerialDilutionCurve->roundedSerialDilutionCurveOptions|>];
 
 
@@ -1149,6 +1188,7 @@ resolveExperimentMeasureSurfaceTensionOptions[mySamples:{ObjectP[Object[Sample]]
 		name,
 		template,
 		confirm,
+		canaryBranch,
 		samplesInStorage,
 		upload,
 		email,
@@ -1160,12 +1200,47 @@ resolveExperimentMeasureSurfaceTensionOptions[mySamples:{ObjectP[Object[Sample]]
 		dilutionContainer,
 		preparedPlate,
 		sampleLoadingVolume,
-		imageDilutionContainers,
-		preparatoryPrimitives
-	} = Lookup[roundedMeasureSurfaceTensionOptions, {Instrument, NumberOfReplicates, SamplesOutStorageCondition, NumberOfCalibrationMeasurements,
-		MaxCalibrationNoise, EquilibrationTime, NumberOfSampleMeasurements, ProbeSpeed, MaxDryNoise, MaxWetNoise, PreCleaningMethod, CleaningMethod, TertiaryCleaningSolution, PreheatingTime, BurningTime, CoolingTime,
-		BetweenMeasurementBurningTime, BetweenMeasurementCoolingTime, MaxCleaningNoise,Name,Template,Confirm,SamplesInStorageCondition,Upload,Email, FastTrack, Operator, ParentProtocol,
-		Output,SingleSamplePerProbe,DilutionContainer,PreparedPlate, SampleLoadingVolume,ImageDilutionContainers, PreparatoryUnitOperations}];
+		imageDilutionContainers
+	} = Lookup[
+		roundedMeasureSurfaceTensionOptions,
+		{
+			Instrument,
+			NumberOfReplicates,
+			SamplesOutStorageCondition,
+			NumberOfCalibrationMeasurements,
+			MaxCalibrationNoise,
+			EquilibrationTime,
+			NumberOfSampleMeasurements,
+			ProbeSpeed,
+			MaxDryNoise,
+			MaxWetNoise,
+			PreCleaningMethod,
+			CleaningMethod,
+			TertiaryCleaningSolution,
+			PreheatingTime,
+			BurningTime,
+			CoolingTime,
+			BetweenMeasurementBurningTime,
+			BetweenMeasurementCoolingTime,
+			MaxCleaningNoise,
+			Name,
+			Template,
+			Confirm,
+			CanaryBranch,
+			SamplesInStorageCondition,
+			Upload,
+			Email,
+			FastTrack,
+			Operator,
+			ParentProtocol,
+			Output,
+			SingleSamplePerProbe,
+			DilutionContainer,
+			PreparedPlate,
+			SampleLoadingVolume,
+			ImageDilutionContainers
+		}
+	];
 
 
 	(*-- CONFLICTING OPTIONS CHECKS --*)
@@ -1350,7 +1425,7 @@ resolveExperimentMeasureSurfaceTensionOptions[mySamples:{ObjectP[Object[Sample]]
 
 	(* If there are invalid options and we are throwing messages, throw an error message and keep track of our invalid options for Error::InvalidOptions. *)
 	missingDiluentInvalidOptions=If[Length[missingDiluentOptions]>0&&!gatherTests &&!MatchQ[$ECLApplication, Engine],
-		Message[Error::MustSpecifyDiluent,Join[missingDiluentOptions[[All,1]],missingDiluentOptions[[All,2]]],missingDiluentOptions[[All,3]],ObjectToString[missingDiluentInputs,Cache->simulatedCache]];
+		Message[Error::MustSpecifyDiluent,Join[missingDiluentOptions[[All,1]],missingDiluentOptions[[All,2]]],missingDiluentOptions[[All,3]],ObjectToString[missingDiluentInputs,Simulation -> updatedSimulation]];
 		{DilutionCurve,SerialDilutionCurve, Diluent},
 		{}
 	];
@@ -1364,13 +1439,13 @@ resolveExperimentMeasureSurfaceTensionOptions[mySamples:{ObjectP[Object[Sample]]
 
 			(* Create a test for the passing inputs. *)
 			passingInputsTest=If[Length[passingInputs]>0,
-				Test["If a Dilution is specified, Diluent is not Null, for the inputs "<>ObjectToString[passingInputs,Cache->simulatedCache]<>":",True,True],
+				Test["If a Dilution is specified, Diluent is not Null, for the inputs "<>ObjectToString[passingInputs,Simulation -> updatedSimulation]<>":",True,True],
 				Nothing
 			];
 
 			(* Create a test for the non-passing inputs. *)
 			failingInputsTest=If[Length[missingDiluentInputs]>0,
-				Test["If a Dilution is specified, Diluent is not Null, for the inputs "<>ObjectToString[missingDiluentInputs,Cache->simulatedCache]<>" :",True,False],
+				Test["If a Dilution is specified, Diluent is not Null, for the inputs "<>ObjectToString[missingDiluentInputs,Simulation -> updatedSimulation]<>" :",True,False],
 				Nothing
 			];
 
@@ -1385,13 +1460,16 @@ resolveExperimentMeasureSurfaceTensionOptions[mySamples:{ObjectP[Object[Sample]]
 	];
 
 	(*Warning::MultipleAssayPlates="Samples `1` with no dilution `2`,`3` are specified with a True SingleSamplePerProbe `4`. Since there are more than 8 samples, this will take multiple assay plates. If you would like then to all be on the same plate set SingleSamplePerProbe to False."*)
-	multipleAssayPatesOptions=If[MatchQ[Lookup[roundedMeasureSurfaceTensionOptions,SingleSamplePerProbe],True]
-			&&MatchQ[Lookup[roundedMeasureSurfaceTensionOptions,PreparedPlate],False]
-			&&Or[
-		!MemberQ[Lookup[roundedMeasureSurfaceTensionOptions,SerialDilutionCurve],Except[Null]]&&!MemberQ[Lookup[roundedMeasureSurfaceTensionOptions,DilutionCurve],Except[Null|Automatic]],
-		!MemberQ[Lookup[roundedMeasureSurfaceTensionOptions,Diluent],Except[Null|Automatic]],
-		!MemberQ[Lookup[roundedMeasureSurfaceTensionOptions,DilutionContainer],Except[Null|Automatic]]
-	] &&Length[simulatedSamples]>8,
+	multipleAssayPatesOptions=If[And[
+		MatchQ[Lookup[roundedMeasureSurfaceTensionOptions,SingleSamplePerProbe],True],
+		MatchQ[Lookup[roundedMeasureSurfaceTensionOptions,PreparedPlate],False],
+		Or[
+			!MemberQ[Lookup[roundedMeasureSurfaceTensionOptions,SerialDilutionCurve],Except[Null]]&&!MemberQ[Lookup[roundedMeasureSurfaceTensionOptions,DilutionCurve],Except[Null|Automatic]],
+			!MemberQ[Lookup[roundedMeasureSurfaceTensionOptions,Diluent],Except[Null|Automatic]],
+			!MemberQ[Lookup[roundedMeasureSurfaceTensionOptions,DilutionContainer],Except[Null|Automatic]]
+		],
+		Length[simulatedSamples]>8
+	],
 		{simulatedSamples,Lookup[roundedMeasureSurfaceTensionOptions,SerialDilutionCurve],Lookup[roundedMeasureSurfaceTensionOptions,DilutionCurve],Lookup[roundedMeasureSurfaceTensionOptions,SingleSamplePerProbe]},
 		Nothing
 	];
@@ -1399,7 +1477,7 @@ resolveExperimentMeasureSurfaceTensionOptions[mySamples:{ObjectP[Object[Sample]]
 
 	(* If there are invalid options and we are throwing messages, throw an error message*)
 	If[Length[multipleAssayPatesOptions]>0&&!gatherTests&& Not[MatchQ[$ECLApplication, Engine]],
-		Message[Warning::MultipleAssayPlates,ObjectToString[multipleAssayPatesOptions[[1]],Cache->simulatedCache],multipleAssayPatesOptions[[2]],multipleAssayPatesOptions[[3]],multipleAssayPatesOptions[[4]]]
+		Message[Warning::MultipleAssayPlates,ObjectToString[multipleAssayPatesOptions[[1]],Simulation -> updatedSimulation],multipleAssayPatesOptions[[2]],multipleAssayPatesOptions[[3]],multipleAssayPatesOptions[[4]]]
 		];
 
 	(* If we are gathering tests, create tests with the appropriate results. *)
@@ -1536,7 +1614,7 @@ resolveExperimentMeasureSurfaceTensionOptions[mySamples:{ObjectP[Object[Sample]]
 
 	(* If there are invalid options and we are throwing messages, throw an error message and keep track of our invalid options for Error::InvalidOptions. *)
 	conflictingDilutionCurveInvalidOptions=If[Length[conflictingDilutionCurveOptions]>0&&!gatherTests &&!MatchQ[$ECLApplication, Engine],
-		Message[Error::CannotSpecifyBothDilutionCurveAndSerialDilutionCurve,First[#]&/@conflictingDilutionCurveOptions,Last[#]&/@conflictingDilutionCurveOptions,ObjectToString[conflictingDilutionCurveInputs,Cache->simulatedCache]];
+		Message[Error::CannotSpecifyBothDilutionCurveAndSerialDilutionCurve,First[#]&/@conflictingDilutionCurveOptions,Last[#]&/@conflictingDilutionCurveOptions,ObjectToString[conflictingDilutionCurveInputs,Simulation -> updatedSimulation]];
 		{DilutionCurve, SerialDilutionCurve},
 		{}
 	];
@@ -1550,13 +1628,13 @@ conflictingDilutionCurveTest=If[gatherTests,
 
 			(* Create a test for the passing inputs. *)
 			passingInputsTest=If[Length[passingInputs]>0,
-				Test["If a DilutionCurve is specified, SerialDilutionCurve is not specified, for the inputs "<>ObjectToString[passingInputs,Cache->simulatedCache]<>":",True,True],
+				Test["If a DilutionCurve is specified, SerialDilutionCurve is not specified, for the inputs "<>ObjectToString[passingInputs,Simulation -> updatedSimulation]<>":",True,True],
 				Nothing
 			];
 
 			(* Create a test for the non-passing inputs. *)
 			failingInputsTest=If[Length[missingDiluentInputs]>0,
-				Test["If a DilutionCurve is specified, SerialDilutionCurve is not specified, for the inputs "<>ObjectToString[missingDiluentInputs,Cache->simulatedCache]<>" :",True,False],
+				Test["If a DilutionCurve is specified, SerialDilutionCurve is not specified, for the inputs "<>ObjectToString[missingDiluentInputs,Simulation -> updatedSimulation]<>" :",True,False],
 				Nothing
 			];
 
@@ -1589,7 +1667,7 @@ conflictingDilutionCurveTest=If[gatherTests,
 	];
 	(* If there are invalid options and we are throwing messages, throw an error message and keep track of our invalid options for Error::InvalidOptions. *)
 	If[Length[missingDilutionCurveOptions]>0&&!gatherTests &&!MatchQ[$ECLApplication, Engine],
-		Message[Warning::MissingDilutionCurve,Last[#]&/@missingDilutionCurveOptions,Most[#]&/@missingDilutionCurveOptions,ObjectToString[missingDilutionCurveInputs,Cache->simulatedCache]]
+		Message[Warning::MissingDilutionCurve,Last[#]&/@missingDilutionCurveOptions,Most[#]&/@missingDilutionCurveOptions,ObjectToString[missingDilutionCurveInputs,Simulation -> updatedSimulation]]
 	];
 	(* If we are gathering tests, create tests with the appropriate results. *)
 	missingDilutionCurveTest=If[gatherTests,
@@ -1600,13 +1678,13 @@ conflictingDilutionCurveTest=If[gatherTests,
 
 			(* Create a test for the passing inputs. *)
 			passingInputsTest=If[Length[passingInputs]>0,
-				Warning["If a Diluent is specified, DilutionCurve is not Null, for the inputs "<>ObjectToString[passingInputs,Cache->simulatedCache]<>":",True,True],
+				Warning["If a Diluent is specified, DilutionCurve is not Null, for the inputs "<>ObjectToString[passingInputs,Simulation -> updatedSimulation]<>":",True,True],
 				Nothing
 			];
 
 			(* Create a test for the non-passing inputs. *)
 			failingInputsTest=If[Length[missingDilutionCurveInputs]>0,
-				Warning["If a Diluent is specified, DilutionCurve is not Null, for the inputs "<>ObjectToString[missingDilutionCurveInputs,Cache->simulatedCache]<>" :",True,False],
+				Warning["If a Diluent is specified, DilutionCurve is not Null, for the inputs "<>ObjectToString[missingDilutionCurveInputs,Simulation -> updatedSimulation]<>" :",True,False],
 				Nothing
 			];
 
@@ -1643,7 +1721,7 @@ conflictingDilutionCurveTest=If[gatherTests,
 	(* If there are invalid options and we are throwing messages, throw an error message and keep track of our invalid options for Error::InvalidOptions. *)
 	conflictingDilutionMixInvalidOptions=If[
 		Length[conflictingDilutionMixOptions]>0&&!gatherTests &&!MatchQ[$ECLApplication, Engine],
-		Message[Error::ConflictingDilutionMixSettings,#[[1]]&/@conflictingDilutionMixOptions, #[[2]]&/@conflictingDilutionMixOptions, #[[3]]&/@conflictingDilutionMixOptions,ObjectToString[conflictingDilutionMixInputs,Cache->simulatedCache]];
+		Message[Error::ConflictingDilutionMixSettings,#[[1]]&/@conflictingDilutionMixOptions, #[[2]]&/@conflictingDilutionMixOptions, #[[3]]&/@conflictingDilutionMixOptions,ObjectToString[conflictingDilutionMixInputs,Simulation -> updatedSimulation]];
 		{DilutionMixVolume,DilutionNumberOfMixes, DilutionMixRate},
 		{}
 	];
@@ -1657,13 +1735,13 @@ conflictingDilutionCurveTest=If[gatherTests,
 
 			(* Create a test for the passing inputs. *)
 			passingInputsTest=If[Length[passingInputs]>0,
-				Test["If at least one but not all of DilutionMixVolume , DilutionNumberOfMixes or DilutionMixRate  is Null, all must be Null, for the inputs "<>ObjectToString[passingInputs,Cache->simulatedCache]<>":",True,True],
+				Test["If at least one but not all of DilutionMixVolume , DilutionNumberOfMixes or DilutionMixRate  is Null, all must be Null, for the inputs "<>ObjectToString[passingInputs,Simulation -> updatedSimulation]<>":",True,True],
 				Nothing
 			];
 
 			(* Create a test for the non-passing inputs. *)
 			failingInputsTest=If[Length[missingDilutionCurveInputs]>0,
-				Test["If at least one but not all of DilutionMixVolume , DilutionNumberOfMixes or DilutionMixRate  is Null, all must be Null, for the inputs "<>ObjectToString[missingDilutionCurveInputs,Cache->simulatedCache]<>" :",True,False],
+				Test["If at least one but not all of DilutionMixVolume , DilutionNumberOfMixes or DilutionMixRate  is Null, all must be Null, for the inputs "<>ObjectToString[missingDilutionCurveInputs,Simulation -> updatedSimulation]<>" :",True,False],
 				Nothing
 			];
 
@@ -1698,7 +1776,7 @@ conflictingDilutionCurveTest=If[gatherTests,
 
 	(* If there are invalid options and we are throwing messages, throw an error message and keep track of our invalid options for Error::InvalidOptions. *)
 	If[Length[missingDilutionMixVolumeOptions]>0&&!gatherTests &&!MatchQ[$ECLApplication, Engine],
-		Message[Warning::MissingDilutionMixVolume,Most[#]&/@missingDilutionMixVolumeOptions,Last[#]&/@missingDilutionMixVolumeOptions,ObjectToString[missingDilutionMixVolumeInputs,Cache->simulatedCache]]
+		Message[Warning::MissingDilutionMixVolume,Most[#]&/@missingDilutionMixVolumeOptions,Last[#]&/@missingDilutionMixVolumeOptions,ObjectToString[missingDilutionMixVolumeInputs,Simulation -> updatedSimulation]]
 	];
 
 	(* If we are gathering tests, create tests with the appropriate results. *)
@@ -1710,13 +1788,13 @@ conflictingDilutionCurveTest=If[gatherTests,
 
 			(* Create a test for the passing inputs. *)
 			passingInputsTest=If[Length[passingInputs]>0,
-				Warning["If there is diluting in DilutionCurve, DilutionMixVolume is not Null, for the inputs "<>ObjectToString[passingInputs,Cache->simulatedCache]<>":",True,True],
+				Warning["If there is diluting in DilutionCurve, DilutionMixVolume is not Null, for the inputs "<>ObjectToString[passingInputs,Simulation -> updatedSimulation]<>":",True,True],
 				Nothing
 			];
 
 			(* Create a test for the non-passing inputs. *)
 			failingInputsTest=If[Length[missingDilutionCurveInputs]>0,
-				Warning["If there is diluting in DilutionCurve, DilutionMixVolume is not Null, for the inputs "<>ObjectToString[missingDilutionCurveInputs,Cache->simulatedCache]<>" :",True,False],
+				Warning["If there is diluting in DilutionCurve, DilutionMixVolume is not Null, for the inputs "<>ObjectToString[missingDilutionCurveInputs,Simulation -> updatedSimulation]<>" :",True,False],
 				Nothing
 			];
 
@@ -1750,7 +1828,7 @@ conflictingDilutionCurveTest=If[gatherTests,
 
 	(* If there are invalid options and we are throwing messages, throw an error message and keep track of our invalid options for Error::InvalidOptions. *)
 	If[Length[conflictingDilutionMixVolume]>0&&!gatherTests &&!MatchQ[$ECLApplication, Engine],
-		Message[Warning::ConflictingDilutionMixVolume,Last[#]&/@conflictingDilutionMixVolumeOptions,Most[#]&/@conflictingDilutionMixVolumeOptions,ObjectToString[conflictingDilutionMixVolumeInputs,Cache->simulatedCache]]
+		Message[Warning::ConflictingDilutionMixVolume,Last[#]&/@conflictingDilutionMixVolumeOptions,Most[#]&/@conflictingDilutionMixVolumeOptions,ObjectToString[conflictingDilutionMixVolumeInputs,Simulation -> updatedSimulation]]
 	];
 
 	(* If we are gathering tests, create tests with the appropriate results. *)
@@ -1762,13 +1840,13 @@ conflictingDilutionCurveTest=If[gatherTests,
 
 			(* Create a test for the passing inputs. *)
 			passingInputsTest=If[Length[passingInputs]>0,
-				Warning["If there is no diluting in  DilutionCurve, DilutionMixVolume is Null: for the inputs "<>ObjectToString[passingInputs,Cache->simulatedCache]<>":",True,True],
+				Warning["If there is no diluting in  DilutionCurve, DilutionMixVolume is Null: for the inputs "<>ObjectToString[passingInputs,Simulation -> updatedSimulation]<>":",True,True],
 				Nothing
 			];
 
 			(* Create a test for the non-passing inputs. *)
 			failingInputsTest=If[Length[conflictingDilutionMixVolumeInputs]>0,
-				Warning["If there is no diluting in  DilutionCurve, DilutionMixVolume is Null: for the inputs "<>ObjectToString[conflictingDilutionMixVolumeInputs,Cache->simulatedCache]<>" :",True,False],
+				Warning["If there is no diluting in  DilutionCurve, DilutionMixVolume is Null: for the inputs "<>ObjectToString[conflictingDilutionMixVolumeInputs,Simulation -> updatedSimulation]<>" :",True,False],
 				Nothing
 			];
 
@@ -1802,7 +1880,7 @@ conflictingDilutionCurveTest=If[gatherTests,
 
 	(* If there are invalid options and we are throwing messages, throw an error message and keep track of our invalid options for Error::InvalidOptions. *)
 	If[Length[missingDilutionNumberofMixesOptions]>0&&!gatherTests &&!MatchQ[$ECLApplication, Engine],
-		Message[Warning::MissingDilutionNumberOfMixes,Most[#]&/@missingDilutionNumberofMixesOptions,Last[#]&/@missingDilutionNumberofMixesOptions,ObjectToString[missingDilutionNumberofMixesInputs,Cache->simulatedCache]]
+		Message[Warning::MissingDilutionNumberOfMixes,Most[#]&/@missingDilutionNumberofMixesOptions,Last[#]&/@missingDilutionNumberofMixesOptions,ObjectToString[missingDilutionNumberofMixesInputs,Simulation -> updatedSimulation]]
 	];
 
 	(* If we are gathering tests, create tests with the appropriate results. *)
@@ -1814,13 +1892,13 @@ conflictingDilutionCurveTest=If[gatherTests,
 
 			(* Create a test for the passing inputs. *)
 			passingInputsTest=If[Length[passingInputs]>0,
-				Warning["If there is diluting in DilutionCurve, DilutionNumberOfMixes is not Null, for the inputs "<>ObjectToString[passingInputs,Cache->simulatedCache]<>":",True,True],
+				Warning["If there is diluting in DilutionCurve, DilutionNumberOfMixes is not Null, for the inputs "<>ObjectToString[passingInputs,Simulation -> updatedSimulation]<>":",True,True],
 				Nothing
 			];
 
 			(* Create a test for the non-passing inputs. *)
 			failingInputsTest=If[Length[missingDilutionNumberofMixesInputs]>0,
-				Warning["If there is diluting in DilutionCurve, DilutionNumberOfMixes is not Null, for the inputs "<>ObjectToString[missingDilutionNumberofMixesInputs,Cache->simulatedCache]<>" :",True,False],
+				Warning["If there is diluting in DilutionCurve, DilutionNumberOfMixes is not Null, for the inputs "<>ObjectToString[missingDilutionNumberofMixesInputs,Simulation -> updatedSimulation]<>" :",True,False],
 				Nothing
 			];
 
@@ -1854,7 +1932,7 @@ conflictingDilutionCurveTest=If[gatherTests,
 
 	(* If there are invalid options and we are throwing messages, throw an error message and keep track of our invalid options for Error::InvalidOptions. *)
 	If[Length[missingDilutionMixRateOptions]>0&&!gatherTests &&!MatchQ[$ECLApplication, Engine],
-		Message[Warning::MissingDilutionMixRate,Most[#]&/@missingDilutionMixRateOptions,Last[#]&/@missingDilutionMixRateOptions,ObjectToString[missingDilutionMixRateInputs,Cache->simulatedCache]]
+		Message[Warning::MissingDilutionMixRate,Most[#]&/@missingDilutionMixRateOptions,Last[#]&/@missingDilutionMixRateOptions,ObjectToString[missingDilutionMixRateInputs,Simulation -> updatedSimulation]]
 	];
 
 	(* If we are gathering tests, create tests with the appropriate results. *)
@@ -1866,13 +1944,13 @@ conflictingDilutionCurveTest=If[gatherTests,
 
 			(* Create a test for the passing inputs. *)
 			passingInputsTest=If[Length[passingInputs]>0,
-				Warning["If there is diluting in DilutionCurve, DilutionMixRate is not Null, for the inputs "<>ObjectToString[passingInputs,Cache->simulatedCache]<>":",True,True],
+				Warning["If there is diluting in DilutionCurve, DilutionMixRate is not Null, for the inputs "<>ObjectToString[passingInputs,Simulation -> updatedSimulation]<>":",True,True],
 				Nothing
 			];
 
 			(* Create a test for the non-passing inputs. *)
 			failingInputsTest=If[Length[missingDilutionMixRateInputs]>0,
-				Warning["If there is diluting in DilutionCurve, DilutionMixRate is not Null, for the inputs "<>ObjectToString[missingDilutionMixRateInputs,Cache->simulatedCache]<>" :",True,False],
+				Warning["If there is diluting in DilutionCurve, DilutionMixRate is not Null, for the inputs "<>ObjectToString[missingDilutionMixRateInputs,Simulation -> updatedSimulation]<>" :",True,False],
 				Nothing
 			];
 
@@ -1979,13 +2057,13 @@ conflictingDilutionCurveTest=If[gatherTests,
 		Module[{passingInputsTest,failingInputsTest},
 			(* Create a test for the passing inputs. *)
 			passingInputsTest=If[Length[calibrantSurfaceTensionMismatch]>0,
-				Warning["If a Calibrant and CalibrantSurfaceTension are specified, the value Calibrant's SurfaceTension Field matches the CalibrantSurfaceTension "<>ObjectToString[calibrantSurfaceTensionMismatch,Cache->simulatedCache]<>":",True,True],
+				Warning["If a Calibrant and CalibrantSurfaceTension are specified, the value Calibrant's SurfaceTension Field matches the CalibrantSurfaceTension "<>ObjectToString[calibrantSurfaceTensionMismatch,Simulation -> updatedSimulation]<>":",True,True],
 				Nothing
 			];
 
 			(* Create a test for the non-passing inputs. *)
 			failingInputsTest=If[Length[calibrantSurfaceTensionMismatch]>0,
-				Warning["If a Calibrant and CalibrantSurfaceTension are specified, the value Calibrant's SurfaceTension Field matches the CalibrantSurfaceTension "<>ObjectToString[calibrantSurfaceTensionMismatch,Cache->simulatedCache]<>" :",True,False],
+				Warning["If a Calibrant and CalibrantSurfaceTension are specified, the value Calibrant's SurfaceTension Field matches the CalibrantSurfaceTension "<>ObjectToString[calibrantSurfaceTensionMismatch,Simulation -> updatedSimulation]<>" :",True,False],
 				Nothing
 			];
 
@@ -2017,13 +2095,13 @@ conflictingDilutionCurveTest=If[gatherTests,
 		Module[{passingInputsTest,failingInputsTest},
 			(* Create a test for the passing inputs. *)
 			passingInputsTest=If[Length[samplesOutMismatch]>0,
-				Warning["If a ContainersOut is provided, SamplesOutStorageCondition is not disposal "<>ObjectToString[containersOutMismatch,Cache->simulatedCache]<>":",True,True],
+				Warning["If a ContainersOut is provided, SamplesOutStorageCondition is not disposal "<>ObjectToString[containersOutMismatch,Simulation -> updatedSimulation]<>":",True,True],
 				Nothing
 			];
 
 			(* Create a test for the non-passing inputs. *)
 			failingInputsTest=If[Length[samplesOutMismatch]>0,
-				Warning["If a ContainersOut is provided, SamplesOutStorageCondition is not disposal "<>ObjectToString[containersOutMismatch,Cache->simulatedCache]<>":",True,False],
+				Warning["If a ContainersOut is provided, SamplesOutStorageCondition is not disposal "<>ObjectToString[containersOutMismatch,Simulation -> updatedSimulation]<>":",True,False],
 				Nothing
 			];
 
@@ -2055,13 +2133,13 @@ conflictingDilutionCurveTest=If[gatherTests,
 		Module[{passingInputsTest,failingInputsTest},
 			(* Create a test for the passing inputs. *)
 			passingInputsTest=If[Length[containersOutMismatch]>0,
-				Test["If a ContainersOut is set to Null, SamplesOutStorageCondition is disposal "<>ObjectToString[containersOutMismatch,Cache->simulatedCache]<>":",True,True],
+				Test["If a ContainersOut is set to Null, SamplesOutStorageCondition is disposal "<>ObjectToString[containersOutMismatch,Simulation -> updatedSimulation]<>":",True,True],
 				Nothing
 			];
 
 			(* Create a test for the non-passing inputs. *)
 			failingInputsTest=If[Length[containersOutMismatch]>0,
-				Test["If a ContainersOut is set to Null, SamplesOutStorageCondition is disposal "<>ObjectToString[containersOutMismatch,Cache->simulatedCache]<>":",True,False],
+				Test["If a ContainersOut is set to Null, SamplesOutStorageCondition is disposal "<>ObjectToString[containersOutMismatch,Simulation -> updatedSimulation]<>":",True,False],
 				Nothing
 			];
 
@@ -2096,7 +2174,7 @@ conflictingDilutionCurveTest=If[gatherTests,
 
 	(* If there are invalid options and we are throwing messages, throw an error message and keep track of our invalid options for Error::InvalidOptions. *)
 	missingDilutionContainerInvalidOptions=If[Length[missingDilutionContainerOptions]>0&&!gatherTests &&!MatchQ[$ECLApplication, Engine],
-		Message[Error::MissingDilutionContainer,Most[#]&/@missingDilutionContainerOptions,Last[#]&/@missingDilutionContainerOptions,ObjectToString[missingDilutionContainerInputs,Cache->simulatedCache]];
+		Message[Error::MissingDilutionContainer,Most[#]&/@missingDilutionContainerOptions,Last[#]&/@missingDilutionContainerOptions,ObjectToString[missingDilutionContainerInputs,Simulation -> updatedSimulation]];
 		{DilutionCurve, DilutionContainer},
 		{}
 	];
@@ -2110,13 +2188,13 @@ conflictingDilutionCurveTest=If[gatherTests,
 
 			(* Create a test for the passing inputs. *)
 			passingInputsTest=If[Length[passingInputs]>0,
-				Test["If a Dilution is specified, DilutionContainer is not Null, for the inputs "<>ObjectToString[passingInputs,Cache->simulatedCache]<>":",True,True],
+				Test["If a Dilution is specified, DilutionContainer is not Null, for the inputs "<>ObjectToString[passingInputs,Simulation -> updatedSimulation]<>":",True,True],
 				Nothing
 			];
 
 			(* Create a test for the non-passing inputs. *)
 			failingInputsTest=If[Length[missingDilutionContainerInputs]>0,
-				Test["If a Dilution is specified, DilutionContainer is not Null, for the inputs "<>ObjectToString[missingDilutionContainerInputs,Cache->simulatedCache]<>" :",True,False],
+				Test["If a Dilution is specified, DilutionContainer is not Null, for the inputs "<>ObjectToString[missingDilutionContainerInputs,Simulation -> updatedSimulation]<>" :",True,False],
 				Nothing
 			];
 
@@ -2159,13 +2237,13 @@ conflictingDilutionCurveTest=If[gatherTests,
     Module[{passingInputsTest,failingInputTest},
       (* Create a test for the non-passing inputs. *)
       failingInputTest=If[Length[conflictingDilutionContainerInValidOptions]>0,
-        Test["The dilution container groupings "<>ObjectToString[Lookup[roundedMeasureSurfaceTensionOptions,DilutionContainer],Cache->simulatedCache]<>" do not have different containers sharing the same index:",True,False],
+        Test["The dilution container groupings "<>ObjectToString[Lookup[roundedMeasureSurfaceTensionOptions,DilutionContainer],Simulation -> updatedSimulation]<>" do not have different containers sharing the same index:",True,False],
         Nothing
       ];
 
       (* Create a test for the passing inputs. *)
       passingInputsTest=If[Length[conflictingDilutionContainerInValidOptions]==0,
-        Test["The dilution container groupings "<>ObjectToString[Lookup[roundedMeasureSurfaceTensionOptions,DilutionContainer],Cache->simulatedCache]<>" do not have different containers sharing the same index:",True,True],
+        Test["The dilution container groupings "<>ObjectToString[Lookup[roundedMeasureSurfaceTensionOptions,DilutionContainer],Simulation -> updatedSimulation]<>" do not have different containers sharing the same index:",True,True],
         Nothing
       ];
 
@@ -2204,13 +2282,13 @@ conflictingDilutionCurveTest=If[gatherTests,
 		Module[{passingInputsTest,failingInputTest},
 			(* Create a test for the non-passing inputs. *)
 			failingInputTest=If[Length[dilutioncontainerStorageInValidOptions]>0,
-				Test["The inputted dilution storage condition, "<>ObjectToString[Lookup[roundedMeasureSurfaceTensionOptions,DilutionStorageCondition],Cache->simulatedCache]<>" does not conflict with the dilution container groupings "<>ObjectToString[Lookup[roundedMeasureSurfaceTensionOptions,DilutionContainer],Cache->simulatedCache]<>":",True,False],
+				Test["The inputted dilution storage condition, "<>ObjectToString[Lookup[roundedMeasureSurfaceTensionOptions,DilutionStorageCondition],Simulation -> updatedSimulation]<>" does not conflict with the dilution container groupings "<>ObjectToString[Lookup[roundedMeasureSurfaceTensionOptions,DilutionContainer],Simulation -> updatedSimulation]<>":",True,False],
 				Nothing
 			];
 
 			(* Create a test for the passing inputs. *)
 			passingInputsTest=If[Length[dilutioncontainerStorageInValidOptions]==0,
-				Test["The inputted dilution storage condition, "<>ObjectToString[Lookup[roundedMeasureSurfaceTensionOptions,DilutionStorageCondition],Cache->simulatedCache]<>" does not conflict with the dilution container groupings "<>ObjectToString[Lookup[roundedMeasureSurfaceTensionOptions,DilutionContainer],Cache->simulatedCache]<>":",True,True],
+				Test["The inputted dilution storage condition, "<>ObjectToString[Lookup[roundedMeasureSurfaceTensionOptions,DilutionStorageCondition],Simulation -> updatedSimulation]<>" does not conflict with the dilution container groupings "<>ObjectToString[Lookup[roundedMeasureSurfaceTensionOptions,DilutionContainer],Simulation -> updatedSimulation]<>":",True,True],
 				Nothing
 			];
 
@@ -2240,13 +2318,13 @@ conflictingDilutionCurveTest=If[gatherTests,
 		Module[{passingInputsTest,failingInputTest},
 			(* Create a test for the non-passing inputs. *)
 			failingInputTest=If[mismatchedContainerOutStorage,
-				Test["The inputted samples out storage condition, "<>ObjectToString[Lookup[roundedMeasureSurfaceTensionOptions,SamplesOutStorageCondition],Cache->simulatedCache]<>" does not conflict with the container groupings:",True,False],
+				Test["The inputted samples out storage condition, "<>ObjectToString[Lookup[roundedMeasureSurfaceTensionOptions,SamplesOutStorageCondition],Simulation -> updatedSimulation]<>" does not conflict with the container groupings:",True,False],
 				Nothing
 			];
 
 			(* Create a test for the passing inputs. *)
 			passingInputsTest=If[mismatchedContainerOutStorage,
-				Test["The inputted samples out storage condition, "<>ObjectToString[Lookup[roundedMeasureSurfaceTensionOptions,SamplesOutStorageCondition],Cache->simulatedCache]<>" does not conflict with the container groupings:",True,True],
+				Test["The inputted samples out storage condition, "<>ObjectToString[Lookup[roundedMeasureSurfaceTensionOptions,SamplesOutStorageCondition],Simulation -> updatedSimulation]<>" does not conflict with the container groupings:",True,True],
 				Nothing
 			];
 
@@ -2360,8 +2438,23 @@ conflictingDilutionCurveTest=If[gatherTests,
 	];
 
 	(* Set up another Mapthread to resolve the rest of the index matched options *)
-	{resolveddilutionCurve,resolvedserialdilutionCurve,dilutionCurveVolumeErrors,dilutionCurveExcessVolumeWarnings,resolveddilutionMixVolume,requiredSampleVolumes, dilutionContainerErrors, maxvolumes, numberOfDilutionWells, halfresolveddilutionContainer,requiredWells,requiredRows, resolveddilutionMixRate,resolvednumberOfMixes,resolveddilutionStorageCondition}=
-	Transpose[MapThread[Function[{myMapThreadOptions,myDiluents, myDilutionContainer},
+	{
+		(*1*)resolveddilutionCurve,
+		(*2*)resolvedserialdilutionCurve,
+		(*3*)dilutionCurveVolumeErrors,
+		(*4*)dilutionCurveExcessVolumeWarnings,
+		(*5*)resolveddilutionMixVolume,
+		(*6*)requiredSampleVolumes,
+		(*7*)dilutionContainerErrors,
+		(*8*)maxvolumes,
+		(*9*)numberOfDilutionWells,
+		(*10*)halfresolveddilutionContainer,
+		(*11*)requiredWells,
+		(*12*)requiredRows,
+		(*13*)resolveddilutionMixRate,
+		(*14*)resolvednumberOfMixes,
+		(*15*)resolveddilutionStorageCondition
+	}= Transpose[MapThread[Function[{myMapThreadOptions,myDiluents, myDilutionContainer},
 			Module[{dilutionCurve,serialdilutionCurve,dilutionCurveVolumeError,dilutionMixVolume,dilutionCurveExcessVolumeWarning,requiredSampleVolume,maxvolume, numberOfDilutionWell, dilutionContainerError,dilutionContainer,requiredWell,requiredRow, dilutionMixRate,numberOfMixes,dilutionStorageCondition},
 				(* Set more error tracking variables *)
 				{dilutionCurveVolumeError,dilutionCurveExcessVolumeWarning, dilutionContainerError}={False,False,False};
@@ -2489,7 +2582,7 @@ conflictingDilutionCurveTest=If[gatherTests,
 				dilutionMixRate=If[MatchQ[Lookup[myMapThreadOptions,DilutionMixRate],Automatic],
 					If[MatchQ[dilutionCurve,Null]&&MatchQ[serialdilutionCurve,Null],
 						Null,
-						100 Microliter/Second
+						250 Microliter/Second
 					],
 					Lookup[myMapThreadOptions,DilutionMixRate]
 				];
@@ -2497,7 +2590,7 @@ conflictingDilutionCurveTest=If[gatherTests,
 				numberOfMixes=If[MatchQ[Lookup[myMapThreadOptions,DilutionNumberOfMixes],Automatic],
 					If[MatchQ[dilutionCurve,Null]&&MatchQ[serialdilutionCurve,Null],
 						Null,
-						5
+						10
 					],
 					Lookup[myMapThreadOptions,DilutionNumberOfMixes]
 				];
@@ -2511,7 +2604,23 @@ conflictingDilutionCurveTest=If[gatherTests,
 				];
 
 				(* Gather MapThread results *)
-				{dilutionCurve,serialdilutionCurve,dilutionCurveVolumeError,dilutionCurveExcessVolumeWarning,dilutionMixVolume,requiredSampleVolume,dilutionContainerError, maxvolume, numberOfDilutionWell, dilutionContainer,requiredWell,requiredRow,dilutionMixRate,numberOfMixes,dilutionStorageCondition}
+				{
+					(*1*)dilutionCurve,
+					(*2*)serialdilutionCurve,
+					(*3*)dilutionCurveVolumeError,
+					(*4*)dilutionCurveExcessVolumeWarning,
+					(*5*)dilutionMixVolume,
+					(*6*)requiredSampleVolume,
+					(*7*)dilutionContainerError,
+					(*8*)maxvolume,
+					(*9*)numberOfDilutionWell,
+					(*10*)dilutionContainer,
+					(*11*)requiredWell,
+					(*12*)requiredRow,
+					(*13*)dilutionMixRate,
+					(*14*)numberOfMixes,
+					(*15*)dilutionStorageCondition
+				}
 			]
 		],
 		{mapThreadFriendlyOptions,resolveddiluents, unresolvedDilutionContainer}
@@ -2615,7 +2724,7 @@ conflictingDilutionCurveTest=If[gatherTests,
 	(* Check for a missing surface tension error *)
 	missingCalibrantSurfaceTensionInvalidOptions=If[TrueQ[missingCalibrantSurfaceTensionError]&&!gatherTests &&!MatchQ[$ECLApplication, Engine],
 		(* Throw the corresponding error. *)
-		Message[Error::MissingCalibrantSurfaceTension,ObjectToString[resolvedCalibrant, Cache -> simulatedCache]],
+		Message[Error::MissingCalibrantSurfaceTension,ObjectToString[resolvedCalibrant, Simulation -> updatedSimulation]],
 		{}
 	];
 
@@ -2625,13 +2734,13 @@ conflictingDilutionCurveTest=If[gatherTests,
 		Module[{passingInputsTest,failingInputTest},
 			(* Create a test for the non-passing inputs. *)
 			failingInputTest=If[Length[missingCalibrantSurfaceTensionInvalidOptions]>0,
-				Test["The inputted calibrant, "<>ObjectToString[resolvedCalibrant,Cache->simulatedCache]<>" has a populated SurfaceTension field in its model.:",True,False],
+				Test["The inputted calibrant, "<>ObjectToString[resolvedCalibrant,Simulation -> updatedSimulation]<>" has a populated SurfaceTension field in its model.:",True,False],
 				Nothing
 			];
 
 			(* Create a test for the passing inputs. *)
 			passingInputsTest=If[Length[missingCalibrantSurfaceTensionInvalidOptions]==0,
-				Test["The inputted calibrant, "<>ObjectToString[resolvedCalibrant,Cache->simulatedCache]<>" has a populated SurfaceTension field in its model.:",True,True],
+				Test["The inputted calibrant, "<>ObjectToString[resolvedCalibrant,Simulation -> updatedSimulation]<>" has a populated SurfaceTension field in its model.:",True,True],
 				Nothing
 			];
 
@@ -2660,7 +2769,7 @@ conflictingDilutionCurveTest=If[gatherTests,
 			neededcontainerVolumes=PickList[maxvolumes,dilutionContainerErrors];
 
 			(* Throw the corresponding error. *)
-			Message[Error::DilutionContainerInsufficientVolume,ToString[dilutionContainers],containerVolumes,neededcontainerVolumes,ObjectToString[dilutionCurveVolumeInvalidSamples,Cache->simulatedCache]];
+			Message[Error::DilutionContainerInsufficientVolume,ToString[dilutionContainers],containerVolumes,neededcontainerVolumes,ObjectToString[dilutionCurveVolumeInvalidSamples,Simulation -> updatedSimulation]];
 
 			(* Return our invalid options. *)
 			{DilutionContainer}
@@ -2680,13 +2789,13 @@ conflictingDilutionCurveTest=If[gatherTests,
 
 			(* Create a test for the non-passing inputs. *)
 			failingInputTest=If[Length[failingInputs]>0,
-				Test["The dilution containers, "<>ObjectToString[failingInputs,Cache->simulatedCache]<>" are large enough to dilute the sample:",True,False],
+				Test["The dilution containers, "<>ObjectToString[failingInputs,Simulation -> updatedSimulation]<>" are large enough to dilute the sample:",True,False],
 				Nothing
 			];
 
 			(* Create a test for the passing inputs. *)
 			passingInputsTest=If[Length[passingInputs]>0,
-				Test["The dilution containers, "<>ObjectToString[passingInputs,Cache->simulatedCache]<>" are large enough to dilute the sample:",True,True],
+				Test["The dilution containers, "<>ObjectToString[passingInputs,Simulation -> updatedSimulation]<>" are large enough to dilute the sample:",True,True],
 				Nothing
 			];
 
@@ -2711,7 +2820,7 @@ conflictingDilutionCurveTest=If[gatherTests,
 			customdilutionVolumes=PickList[resolveddilutionCurve,dilutionCurveVolumeErrors];
 
 			(* Throw the corresponding error. *)
-			Message[Error::InsufficientDilutionCurveVolume,ToString[customdilutionVolumes],ToString[serialdilutionVolumes],ToString[sampleLoadingVolume],ObjectToString[dilutionCurveVolumeInvalidSamples,Cache->simulatedCache]];
+			Message[Error::InsufficientDilutionCurveVolume,ToString[customdilutionVolumes],ToString[serialdilutionVolumes],ToString[sampleLoadingVolume],ObjectToString[dilutionCurveVolumeInvalidSamples,Simulation -> updatedSimulation]];
 
 			(* Return our invalid options. *)
 			{DilutionCurve}
@@ -2733,13 +2842,13 @@ conflictingDilutionCurveTest=If[gatherTests,
 
 			(* Create a test for the non-passing inputs. *)
 			failingInputTest=If[Length[failingInputs]>0,
-				Test["The volumes of the following dilutions, "<>ObjectToString[failingInputs,Cache->simulatedCache]<>" are the SampleLoadingVolume or larger:",True,False],
+				Test["The volumes of the following dilutions, "<>ObjectToString[failingInputs,Simulation -> updatedSimulation]<>" are the SampleLoadingVolume or larger:",True,False],
 				Nothing
 			];
 
 			(* Create a test for the passing inputs. *)
 			passingInputsTest=If[Length[passingInputs]>0,
-				Test["The volumes of the following dilutions, "<>ObjectToString[passingInputs,Cache->simulatedCache]<>" are SampleLoadingVolume  or larger:",True,True],
+				Test["The volumes of the following dilutions, "<>ObjectToString[passingInputs,Simulation -> updatedSimulation]<>" are SampleLoadingVolume  or larger:",True,True],
 				Nothing
 			];
 
@@ -2776,13 +2885,13 @@ conflictingDilutionCurveTest=If[gatherTests,
 
 			(* Create a test for the non-passing inputs. *)
 			failingTest=If[Length[failingInputs]>0,
-				Warning["The volumes of the following dilutions, "<>ObjectToString[failingInputs,Cache->simulatedCache]<>" are the SampleLoadingVolume  or larger:",True,False],
+				Warning["The volumes of the following dilutions, "<>ObjectToString[failingInputs,Simulation -> updatedSimulation]<>" are the SampleLoadingVolume  or larger:",True,False],
 				Nothing
 			];
 
 			(* Create a test for the passing inputs. *)
 			passingTest=If[Length[passingInputs]>0,
-				Warning["The volumes of the following dilutions, "<>ObjectToString[passingInputs,Cache->simulatedCache]<>" are the SampleLoadingVolume  or larger:",True,True],
+				Warning["The volumes of the following dilutions, "<>ObjectToString[passingInputs,Simulation -> updatedSimulation]<>" are the SampleLoadingVolume  or larger:",True,True],
 				Nothing
 			];
 
@@ -2809,7 +2918,7 @@ conflictingDilutionCurveTest=If[gatherTests,
 
 
 	incompatibleDilutionContainersOptions=If[Length[incompatibleDilutionContainers]>0&&!gatherTests &&!MatchQ[$ECLApplication, Engine],
-		Message[Error::IncompatableDilutionContainer,ObjectToString[incompatibleDilutionContainers]];
+		Message[Error::IncompatableDilutionContainer,ObjectToString[incompatibleDilutionContainers,Simulation -> updatedSimulation]];
 		DilutionContainers,
 		Nothing
 	];
@@ -2844,13 +2953,13 @@ conflictingDilutionCurveTest=If[gatherTests,
 	(* ---Call CompatibleMaterialsQ to determine if the samples are chemically compatible with the instrument --- *)
 
 	{compatibleMaterialsBool, compatibleMaterialsTests} = If[gatherTests,
-		CompatibleMaterialsQ[Model[Part, TensiometerProbe, "DyneProbe"], DeleteCases[Join[simulatedSamples,resolveddiluents,ToList[resolvedCalibrant],ToList[cleaningSolution]],Null], Cache -> simulatedCache, Output -> {Result, Tests}],
-		{CompatibleMaterialsQ[Model[Part, TensiometerProbe, "DyneProbe"], DeleteCases[Join[simulatedSamples,resolveddiluents,ToList[resolvedCalibrant],ToList[cleaningSolution]],Null], Cache -> simulatedCache, Messages -> messages], {}}
+		CompatibleMaterialsQ[Model[Part, TensiometerProbe, "DyneProbe"], DeleteCases[Join[simulatedSamples,resolveddiluents,ToList[resolvedCalibrant],ToList[cleaningSolution]],Null], Cache -> cache, Simulation -> updatedSimulation, Output -> {Result, Tests}],
+		{CompatibleMaterialsQ[Model[Part, TensiometerProbe, "DyneProbe"], DeleteCases[Join[simulatedSamples,resolveddiluents,ToList[resolvedCalibrant],ToList[cleaningSolution]],Null], Cache -> cache, Simulation -> updatedSimulation, Messages -> messages], {}}
 	];
 
 	(* If the materials are incompatible, then the Instrument is invalid *)
 	compatibleMaterialsInvalidInputs = If[Not[compatibleMaterialsBool] && messages,
-		Download[mySamples, Object],
+		Download[mySamples, Object, Simulation -> updatedSimulation],
 		{}
 	];
 
@@ -2864,7 +2973,7 @@ conflictingDilutionCurveTest=If[gatherTests,
 
 	(* Throw Error::InvalidInput if there are invalid inputs. *)
 	If[Length[invalidInputs]>0&&!gatherTests,
-		Message[Error::InvalidInput,ObjectToString[invalidInputs,Cache->simulatedCache]]
+		Message[Error::InvalidInput,ObjectToString[invalidInputs,Simulation -> updatedSimulation]]
 	];
 
 	(* Throw Error::InvalidOption if there are invalid options. *)
@@ -2881,100 +2990,105 @@ conflictingDilutionCurveTest=If[gatherTests,
 	targetVolumes=Quiet[AchievableResolution[#],{Error::MinimumAmount,Warning::AmountRounded}]&/@(requiredSampleVolumes*1.1);
 
 
-targetContainers=MapThread[Function[{container,volume},
-	If[
-		MatchQ[container, ObjectP[hamiltonCompatibleContainers]],
-		Null,
-		PreferredContainer[volume, LiquidHandlerCompatible -> True]
-	]
-],
-	{simulatedSampleContainers,targetVolumes}
-];
-
-{resolvedAliquotOptions,aliquotTests}=If[gatherTests,
-	resolveAliquotOptions[
-		ExperimentMeasureSurfaceTension,
-		Lookup[samplePackets, Object],
-		simulatedSamples,
-		ReplaceRule[myOptions, resolvedSamplePrepOptions],
-		Cache->simulatedCache,
-		RequiredAliquotContainers->Download[targetContainers,Object],
-		RequiredAliquotAmounts->targetVolumes,
-		Output->{Result,Tests}
+	targetContainers=MapThread[Function[{container,volume},
+		If[
+			MatchQ[container, ObjectP[hamiltonCompatibleContainers]],
+			Null,
+			PreferredContainer[volume, LiquidHandlerCompatible -> True]
+		]
 	],
-	{
+		{simulatedSampleContainers,targetVolumes}
+	];
+
+	{resolvedAliquotOptions,aliquotTests}=If[gatherTests,
 		resolveAliquotOptions[
 			ExperimentMeasureSurfaceTension,
 			Lookup[samplePackets, Object],
 			simulatedSamples,
 			ReplaceRule[myOptions, resolvedSamplePrepOptions],
-			Cache->simulatedCache,
-			RequiredAliquotContainers->Download[targetContainers,Object],
+			Simulation -> updatedSimulation,
+			Cache -> cache,
+			RequiredAliquotContainers->Download[targetContainers, Object, Simulation -> updatedSimulation],
 			RequiredAliquotAmounts->targetVolumes,
-			Output->Result
+			Output->{Result,Tests}
 		],
-		{}
-	}
-];
+		{
+			resolveAliquotOptions[
+				ExperimentMeasureSurfaceTension,
+				Lookup[samplePackets, Object],
+				simulatedSamples,
+				ReplaceRule[myOptions, resolvedSamplePrepOptions],
+				Simulation -> updatedSimulation,
+				Cache -> cache,
+				RequiredAliquotContainers->Download[targetContainers, Object, Simulation -> updatedSimulation],
+				RequiredAliquotAmounts->targetVolumes,
+				Output->Result
+			],
+			{}
+		}
+	];
 
 	(* Resolve Post Processing Options *)
 	resolvedPostProcessingOptions=resolvePostProcessingOptions[myOptions];
 
-	resolvedOptions = Flatten[{
-		NumberOfReplicates -> numberOfReplicates,
-		Instrument->instrument,
-		DilutionCurve->resolveddilutionCurve,
-		SerialDilutionCurve->resolvedserialdilutionCurve,
-		Diluent->resolveddiluents,
-		DilutionMixVolume->resolveddilutionMixVolume,
-		DilutionNumberOfMixes->resolvednumberOfMixes,
-		DilutionMixRate->resolveddilutionMixRate,
-		DilutionContainer->resolveddilutionContainer,
-		DilutionStorageCondition->resolveddilutionStorageCondition,
-		SamplesOutStorageCondition->assayStorageCondition,
-		NumberOfCalibrationMeasurements->numberOfCalibrationMeasurements,
-		Calibrant->resolvedCalibrant,
-		CalibrantSurfaceTension->resolvedcalibrantSurfaceTension,
-		MaxCalibrationNoise->maxCalibrationNoise,
-		EquilibrationTime->equilibrationTime,
-		NumberOfSampleMeasurements->numberOfSampleMeasurements,
-		ProbeSpeed->probeSpeed,
-		MaxDryNoise->maxDryNoise,
-		MaxWetNoise->maxWetNoise,
-		PreCleaningMethod->preCleaningMethod,
-		CleaningMethod->cleaningMethod,
-		CleaningSolution->primaryCleaningSolution,
-		SecondaryCleaningSolution->secondaryCleaningSolution,
-		TertiaryCleaningSolution->tertiaryCleaningSolution,
-		PreheatingTime->preheatingTime,
-		BurningTime->burningTime,
-		CoolingTime->coolingTime,
-		BetweenMeasurementBurningTime->betweenMeasurementBurningTime,
-		BetweenMeasurementCoolingTime->betweenMeasurementCoolingTime,
-		MaxCleaningNoise->maxCleaningNoise,
-		resolvedSamplePrepOptions,
-		resolvedAliquotOptions,
-		resolvedPostProcessingOptions,
-		Confirm -> confirm,
-		Name -> name,
-		Template -> template,
-		Cache -> cache,
-		Email -> email,
-		FastTrack -> fastTrack,
-		Operator -> operator,
-		Output -> outputOption,
-		ParentProtocol -> parentProtocol,
-		Upload -> upload,
-		SamplesInStorageCondition -> samplesInStorage,
-		SingleSamplePerProbe-> resolvedsingleSamplePerProbe,
-		PreparedPlate->preparedPlate,
-		SampleLoadingVolume->sampleLoadingVolume,
-		ImageDilutionContainers->imageDilutionContainers,
-		PreparatoryUnitOperations->preparatoryPrimitives,
-		PreparatoryPrimitives->Lookup[roundedMeasureSurfaceTensionOptions,PreparatoryPrimitives],
-		ContainerOut->resolvedcontainersOut
-	}];
-
+	resolvedOptions = ReplaceRule[
+		myOptions,
+		Join[
+			resolvedSamplePrepOptions,
+			resolvedAliquotOptions,
+			resolvedPostProcessingOptions,
+			{
+				NumberOfReplicates -> numberOfReplicates,
+				Instrument -> instrument,
+				DilutionCurve -> resolveddilutionCurve,
+				SerialDilutionCurve -> resolvedserialdilutionCurve,
+				Diluent -> resolveddiluents,
+				DilutionMixVolume -> resolveddilutionMixVolume,
+				DilutionNumberOfMixes -> resolvednumberOfMixes,
+				DilutionMixRate -> resolveddilutionMixRate,
+				DilutionContainer -> resolveddilutionContainer,
+				DilutionStorageCondition -> resolveddilutionStorageCondition,
+				SamplesOutStorageCondition -> assayStorageCondition,
+				NumberOfCalibrationMeasurements -> numberOfCalibrationMeasurements,
+				Calibrant -> resolvedCalibrant,
+				CalibrantSurfaceTension -> resolvedcalibrantSurfaceTension,
+				MaxCalibrationNoise -> maxCalibrationNoise,
+				EquilibrationTime -> equilibrationTime,
+				NumberOfSampleMeasurements -> numberOfSampleMeasurements,
+				ProbeSpeed -> probeSpeed,
+				MaxDryNoise -> maxDryNoise,
+				MaxWetNoise -> maxWetNoise,
+				PreCleaningMethod -> preCleaningMethod,
+				CleaningMethod -> cleaningMethod,
+				CleaningSolution -> primaryCleaningSolution,
+				SecondaryCleaningSolution -> secondaryCleaningSolution,
+				TertiaryCleaningSolution -> tertiaryCleaningSolution,
+				PreheatingTime -> preheatingTime,
+				BurningTime -> burningTime,
+				CoolingTime -> coolingTime,
+				BetweenMeasurementBurningTime -> betweenMeasurementBurningTime,
+				BetweenMeasurementCoolingTime -> betweenMeasurementCoolingTime,
+				MaxCleaningNoise -> maxCleaningNoise,
+				Confirm -> confirm,
+				CanaryBranch -> canaryBranch,
+				Name -> name,
+				Template -> template,
+				Cache -> cache,
+				Email -> email,
+				FastTrack -> fastTrack,
+				Operator -> operator,
+				Output -> outputOption,
+				ParentProtocol -> parentProtocol,
+				Upload -> upload,
+				SamplesInStorageCondition -> samplesInStorage,
+				SingleSamplePerProbe-> resolvedsingleSamplePerProbe,
+				PreparedPlate -> preparedPlate,
+				SampleLoadingVolume -> sampleLoadingVolume,
+				ImageDilutionContainers -> imageDilutionContainers,
+				ContainerOut -> resolvedcontainersOut
+			}
+		]
+	];
 
 	allTests={
 		samplePrepTests,
@@ -3017,14 +3131,14 @@ targetContainers=MapThread[Function[{container,volume},
 ];
 
 DefineOptions[
-	mscResourcePackets,
-	Options:>{OutputOption,CacheOption}
+	mstResourcePackets,
+	Options:>{ExperimentOutputOption,CacheOption,SimulationOption}
 ];
 
 
-mstResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myUnresolvedOptions:{___Rule}, myResolvedOptions:{___Rule}, ops:OptionsPattern[mscResourcePackets]]:=Module[
+mstResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myUnresolvedOptions:{___Rule}, myResolvedOptions:{___Rule}, ops:OptionsPattern[mstResourcePackets]]:=Module[
 		{
-			outputSpecification,output,gatherTests,messages,inheritedCache,numReplicates, samplesInStorage,assayPlates,measurementPlates,
+			outputSpecification,output,gatherTests,messages,inheritedCache,simulation,numReplicates,simulatedSamples,updatedSimulation,samplesInStorage,assayPlates,measurementPlates,safeOps,
 			expandedSamplesWithNumReplicates,pairedSamplesInAndVolumes,sampleVolumeRules, cleaningSolutionVolume, recoveryResources,
 			sampleResourceReplaceRules,samplesInResources,instrumentTime,instrumentResource,protocolPacket,sharedFieldPacket,finalizedPacket,
 			allResourceBlobs,fulfillable, frqTests,testsRule,resultRule,requiredSampleVolumes,requiredDiluentVolumes,requiredCalibrantVolumes,requiredRows,
@@ -3040,7 +3154,7 @@ mstResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myUnresolvedOptions:{_
 			maxCleaningNoise, betweenMeasurementBurningTime, betweenMeasurementCoolingTime, serialDilutionCurveVolumes, dilutionCurveVolumes, dilutionContainer,
 			dilutionContainerResources, uniqueDilutionContainerResources, dilutionContainerRules, numberOfDilutionWells, availableDilutionWells,
 			dilutionContainerObjects, requiredContainerNumbers, expandeddilutionContainerRules, olduniqueDilutionContainerResources,oldDilutionContainerResources,
-			dilutionContainerIndices, availabledilutionWellsrules, dilutionWellsrules
+			dilutionContainerIndices, availabledilutionWellsrules, dilutionWellsrules, simulationRule, simulatedSampleContainersIn
 		},
 	(* expand the resolved options if they weren't expanded already *)
 	{expandedInputs, expandedResolvedOptions} = ExpandIndexMatchedInputs[ExperimentMeasureSurfaceTension, {mySamples}, myResolvedOptions];
@@ -3061,11 +3175,17 @@ mstResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myUnresolvedOptions:{_
 	gatherTests = MemberQ[output,Tests];
 	messages = Not[gatherTests];
 
-	(* Get the inherited cache *)
-	inheritedCache = Lookup[myResolvedOptions, Cache];
+	(* Get the safe options for this function *)
+	safeOps = SafeOptions[mstResourcePackets, ToList[ops]];
+
+	(* Get the inherited cache and simulation *)
+	{inheritedCache, simulation} = Lookup[safeOps, {Cache, Simulation}];
 
 	(* Pull out the number of replicates; make sure all Nulls become 1 *)
 	numReplicates = Lookup[myResolvedOptions, NumberOfReplicates] /. {Null -> 1};
+
+	(* get the simulated containers so that we can download some things we need from those *)
+	{simulatedSamples, updatedSimulation} = simulateSamplesResourcePacketsNew[ExperimentMeasureSurfaceTension, mySamples, expandedResolvedOptions, Cache -> inheritedCache, Simulation -> simulation];
 
 	(* Get all containers which can fit on the liquid handler - many of our resources are in one of these containers *)
 	(* In case we need to prepare the resource add 0.5mL tube in 2 mL skirt to the beginning of the list (Engine uses the first requested container if it has to transfer or make a stock solution) *)
@@ -3078,24 +3198,28 @@ mstResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myUnresolvedOptions:{_
 	containersOut= Lookup[myResolvedOptions,ContainerOut];
 
 	(* Expand the samples according to the number of replicates *)
-	{expandedSamplesWithNumReplicates,optionsWithReplicates}=expandNumberOfReplicates[ExperimentMeasureSurfaceTension,mySamples,expandedResolvedOptions];
+	(* needs to be mySamples, NOT simulatedSamples because otherwise it will mess up PreparedSamples*)
+	{expandedSamplesWithNumReplicates,optionsWithReplicates}=expandNumberOfReplicates[ExperimentMeasureSurfaceTension, mySamples, expandedResolvedOptions];
 
 	uniqueDilutionContainersObjects=DeleteDuplicates[Cases[Join[dilutioncontainers,{containersOut}],ObjectP[]]];
 
 	(* Make a Download call to get the containers of the input samples *)
-	{sampleDownload,liquidHandlerContainerDownload, downloadedDilutionContainerFields}=Quiet[
+	{sampleContainersIn, sampleDownload,liquidHandlerContainerDownload, downloadedDilutionContainerFields}=Quiet[
 		Download[
 			{
 				mySamples,
+				simulatedSamples,
 				liquidHandlerContainers,
 				uniqueDilutionContainersObjects
 			},
 			{
+				{Container[Object]},
 				{Container[Object],Well},
 				{MaxVolume},
 				{MaxVolume,NumberOfWells}
 			},
-			Cache->inheritedCache,
+			Cache -> inheritedCache,
+			Simulation -> updatedSimulation,
 			Date->Now
 		],
 		{Download::FieldDoesntExist}
@@ -3112,7 +3236,7 @@ mstResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myUnresolvedOptions:{_
 	];
 
 	(* Find the list of input sample and antibody containers *)
-	sampleContainersIn=DeleteDuplicates[Flatten[listedSampleContainers]];
+	simulatedSampleContainersIn=DeleteDuplicates[Flatten[listedSampleContainers]];
 
 	(* Find the MaxVolume of all of the liquid handler compatible containers *)
 	liquidHandlerContainerMaxVolumes=Flatten[liquidHandlerContainerDownload,1];
@@ -3126,79 +3250,78 @@ mstResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myUnresolvedOptions:{_
 		cleaningMethod, preheatingTime, burningTime, coolingTime,
 		maxCleaningNoise, betweenMeasurementBurningTime, betweenMeasurementCoolingTime, dilutionContainer, cleaningsolution1,cleaningsolution2,cleaningsolution3,preparedPlate,
 		sampleLoadingVolume, imageDilutionContainers, samplesInStorage
-	}=
-			Lookup[optionsWithReplicates,
-				{
-					SerialDilutionCurve,DilutionCurve,Calibrant,Diluent,SingleSamplePerProbe,DilutionMixVolume, DilutionNumberOfMixes, DilutionMixRate,
-					SamplesOutStorageCondition, DilutionStorageCondition, CalibrantSurfaceTension,
-					NumberOfCalibrationMeasurements, MaxCalibrationNoise, EquilibrationTime, NumberOfSampleMeasurements,
-					ProbeSpeed, MaxDryNoise, MaxWetNoise, PreCleaningMethod,
-					CleaningMethod, PreheatingTime, BurningTime, CoolingTime,
-					MaxCleaningNoise, BetweenMeasurementBurningTime, BetweenMeasurementCoolingTime, DilutionContainer, CleaningSolution,SecondaryCleaningSolution,TertiaryCleaningSolution,PreparedPlate,
-					SampleLoadingVolume, ImageDilutionContainers, SamplesInStorageCondition
-				},
-				Null
-			];
+	} = Lookup[optionsWithReplicates,
+		{
+			SerialDilutionCurve,DilutionCurve,Calibrant,Diluent,SingleSamplePerProbe,DilutionMixVolume, DilutionNumberOfMixes, DilutionMixRate,
+			SamplesOutStorageCondition, DilutionStorageCondition, CalibrantSurfaceTension,
+			NumberOfCalibrationMeasurements, MaxCalibrationNoise, EquilibrationTime, NumberOfSampleMeasurements,
+			ProbeSpeed, MaxDryNoise, MaxWetNoise, PreCleaningMethod,
+			CleaningMethod, PreheatingTime, BurningTime, CoolingTime,
+			MaxCleaningNoise, BetweenMeasurementBurningTime, BetweenMeasurementCoolingTime, DilutionContainer, CleaningSolution,SecondaryCleaningSolution,TertiaryCleaningSolution,PreparedPlate,
+			SampleLoadingVolume, ImageDilutionContainers, SamplesInStorageCondition
+		},
+		Null
+	];
 
 	cleaningsolution={cleaningsolution1,cleaningsolution2,cleaningsolution3};
 	(* --- Make all the resources needed in the experiment --- *)
 	(* Set up a Mapthread to determine required volumes and other resources like containers*)
-	{requiredSampleVolumes,requiredDiluentVolumes,requiredWells,requiredRows,maxvolumes}=
-     Transpose[MapThread[Function[{serialdilutionCurve,dilutionCurve, diluent},
-		Module[{requiredSampleVolume,requiredDiluentVolume,requiredWell,requiredRow,maxvolume},
-			(*Determine the liquid volumes needed *)
-			{requiredSampleVolume,requiredDiluentVolume}=Which[
-				(*Is a serial Dilution specified?*)
-				MatchQ[serialdilutionCurve,Except[Null]], {
-						(*the first curve volume*)
-						First[First[calculatedDilutionCurveVolumes2[serialdilutionCurve,!MatchQ[calibrant, ObjectP[diluent]]]]],
-						(*all the diluent volumes used for mixing*)
-						Total[Last[calculatedDilutionCurveVolumes2[serialdilutionCurve,!MatchQ[calibrant, ObjectP[diluent]]]]]
-						(* the number of calibrants needed will depend on the number of rows taken up*)
-					},
-				(*Is a custom Dilution specified?*)
-				MatchQ[dilutionCurve,Except[Null]],{
-						(*all the sample volumes added togeather*)
-						Total[First[calculatedDilutionCurveVolumes2[dilutionCurve]]],
-						(*all the diluent volumes added togeather*)
-						Total[Last[calculatedDilutionCurveVolumes2[dilutionCurve]]]
-					},
-				(*Is the plate prepared*)
-				preparedPlate, {0Microliter,0Microliter},
-				(*Is there no diluting*)
-				True,{sampleLoadingVolume,0Microliter}
-			];
-			{requiredWell,requiredRow,maxvolume}=Which[
-				(*Is a serial Dilution specified?*)
-				MatchQ[serialdilutionCurve,Except[Null]],{
-						(*wells taken up by the curve excluding the calibrant*)
-						Length[Last[calculatedDilutionCurveVolumes2[serialdilutionCurve,!MatchQ[calibrant, ObjectP[diluent]]]]],
-						(*rows taken up by the curve*)
-						(Ceiling[(Length[Last[calculatedDilutionCurveVolumes2[serialdilutionCurve,!MatchQ[calibrant, ObjectP[diluent]]]]])/11]),
-						(*the transfer volume plus the diluent volume*)
-						Max[First[calculatedDilutionCurveVolumes2[serialdilutionCurve,!MatchQ[calibrant, ObjectP[diluent]]]]+Last[calculatedDilutionCurveVolumes2[serialdilutionCurve,!MatchQ[calibrant, ObjectP[diluent]]]]]
-					},
-				(*Is a custom Dilution specified?*)
-				MatchQ[dilutionCurve,Except[Null]],{
-						(*length of the curve*)
-						Length[dilutionCurve],
-						(*rows taken up by the curve*)
-						Ceiling[Length[dilutionCurve]/11],
-						(*largest sample volume*)
-						Max[First[calculatedDilutionCurveVolumes2[dilutionCurve]]+Last[calculatedDilutionCurveVolumes2[dilutionCurve]]]
-					},
-				(*Is the plate prepared*)
-				preparedPlate, {1,1,0 Microliter},
-				(*Is there no diluting*)
-				True,{1,1,sampleLoadingVolume}
-			];
-			{requiredSampleVolume,requiredDiluentVolume,requiredWell,requiredRow,maxvolume}
-		]
-	],
+	{requiredSampleVolumes,requiredDiluentVolumes,requiredWells,requiredRows,maxvolumes}= Transpose[
+		MapThread[Function[{serialdilutionCurve,dilutionCurve, diluent},
+			Module[{requiredSampleVolume,requiredDiluentVolume,requiredWell,requiredRow,maxvolume},
+				(*Determine the liquid volumes needed *)
+				{requiredSampleVolume,requiredDiluentVolume}=Which[
+					(*Is a serial Dilution specified?*)
+					MatchQ[serialdilutionCurve,Except[Null]], {
+							(*the first curve volume*)
+							First[First[calculatedDilutionCurveVolumes2[serialdilutionCurve,!MatchQ[calibrant, ObjectP[diluent]]]]],
+							(*all the diluent volumes used for mixing*)
+							Total[Last[calculatedDilutionCurveVolumes2[serialdilutionCurve,!MatchQ[calibrant, ObjectP[diluent]]]]]
+							(* the number of calibrants needed will depend on the number of rows taken up*)
+						},
+					(*Is a custom Dilution specified?*)
+					MatchQ[dilutionCurve,Except[Null]],{
+							(*all the sample volumes added togeather*)
+							Total[First[calculatedDilutionCurveVolumes2[dilutionCurve]]],
+							(*all the diluent volumes added togeather*)
+							Total[Last[calculatedDilutionCurveVolumes2[dilutionCurve]]]
+						},
+					(*Is the plate prepared*)
+					preparedPlate, {0Microliter,0Microliter},
+					(*Is there no diluting*)
+					True,{sampleLoadingVolume,0Microliter}
+				];
+				{requiredWell,requiredRow,maxvolume}=Which[
+					(*Is a serial Dilution specified?*)
+					MatchQ[serialdilutionCurve,Except[Null]],{
+							(*wells taken up by the curve excluding the calibrant*)
+							Length[Last[calculatedDilutionCurveVolumes2[serialdilutionCurve,!MatchQ[calibrant, ObjectP[diluent]]]]],
+							(*rows taken up by the curve*)
+							(Ceiling[(Length[Last[calculatedDilutionCurveVolumes2[serialdilutionCurve,!MatchQ[calibrant, ObjectP[diluent]]]]])/11]),
+							(*the transfer volume plus the diluent volume*)
+							Max[First[calculatedDilutionCurveVolumes2[serialdilutionCurve,!MatchQ[calibrant, ObjectP[diluent]]]]+Last[calculatedDilutionCurveVolumes2[serialdilutionCurve,!MatchQ[calibrant, ObjectP[diluent]]]]]
+						},
+					(*Is a custom Dilution specified?*)
+					MatchQ[dilutionCurve,Except[Null]],{
+							(*length of the curve*)
+							Length[dilutionCurve],
+							(*rows taken up by the curve*)
+							Ceiling[Length[dilutionCurve]/11],
+							(*largest sample volume*)
+							Max[First[calculatedDilutionCurveVolumes2[dilutionCurve]]+Last[calculatedDilutionCurveVolumes2[dilutionCurve]]]
+						},
+					(*Is the plate prepared*)
+					preparedPlate, {1,1,0 Microliter},
+					(*Is there no diluting*)
+					True,{1,1,sampleLoadingVolume}
+				];
+				{requiredSampleVolume,requiredDiluentVolume,requiredWell,requiredRow,maxvolume}
+			]
+		],
 		{serialdilutionCurves,dilutionCurves, diluents}
 	]];
 
-		(* plates needed by getting the total number of rows used, there are 8 rows per plate*)
+	(* plates needed by getting the total number of rows used, there are 8 rows per plate*)
 	requirednumberOfPlates=If[preparedPlate,
 		0,
 		If[singleSamplePerProbe,Ceiling[Total[requiredRows]/8],Ceiling[Total[requiredWells]/88]]
@@ -3273,7 +3396,7 @@ mstResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myUnresolvedOptions:{_
 		Or[MemberQ[ToList[Lookup[myResolvedOptions,PreCleaningMethod]],Solution],MemberQ[ToList[Lookup[myResolvedOptions,CleaningMethod]],Solution]],
 			Which[preparedPlate,
 		(*If a prepared plate is given*)
-		Map[If[MemberQ[solutionRows, #], {cleaningsolution[[1]]->1.4*Milliliter,cleaningsolution[[2]]->1.4*Milliliter,cleaningsolution[[3]]->1.4*Milliliter}, Null->0*Milliliter]&, Flatten[ConstantArray[{"A", "B", "C", "D", "E", "F", "G", "H"},Length[sampleContainersIn]]]],
+		Map[If[MemberQ[solutionRows, #], {cleaningsolution[[1]]->1.4*Milliliter,cleaningsolution[[2]]->1.4*Milliliter,cleaningsolution[[3]]->1.4*Milliliter}, Null->0*Milliliter]&, Flatten[ConstantArray[{"A", "B", "C", "D", "E", "F", "G", "H"},Length[simulatedSampleContainersIn]]]],
 		(*If a non prepared plate is given with no probe sharing*)
 		singleSamplePerProbe,
 		Flatten[Map[
@@ -3309,8 +3432,8 @@ mstResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myUnresolvedOptions:{_
 		sampleVolumeRules
 	];
 
-		(* Use the replace rules to get the sample resources *)
-		samplesInResources = Replace[expandedSamplesWithNumReplicates, sampleResourceReplaceRules, {1}];
+	(* Use the replace rules to get the sample resources *)
+	samplesInResources = Replace[expandedSamplesWithNumReplicates, sampleResourceReplaceRules, {1}];
 
 	(* -- Generate resources for the Diluents, Calibrants and Cleaning solution -- *)
 	(* Pair the diluents and their Volumes *)
@@ -3381,11 +3504,14 @@ mstResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myUnresolvedOptions:{_
 	];
 
 	cleaningsolutionResource= First[
-		Map[If[KeyMemberQ[uniqueObjectResourceReplaceRules,#],
-		Replace[#,uniqueObjectResourceReplaceRules],
-		Null
-	]&,Keys[requiredCleaningSolutionVolume],{2}]
-		];
+		Map[
+			If[KeyMemberQ[uniqueObjectResourceReplaceRules,#],
+				Replace[#,uniqueObjectResourceReplaceRules],
+				Null
+			]&,
+			Keys[requiredCleaningSolutionVolume],{2}
+		]
+	];
 
 
 
@@ -3404,7 +3530,7 @@ mstResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myUnresolvedOptions:{_
 
 	measurementPlateResources=Link@Resource[Sample->#,Name -> ToString[Unique[]]]&/@measurementPlates;
 
-	assayPlates=If[preparedPlate,Link[DeleteDuplicates[sampleContainersIn]],measurementPlateResources];
+	assayPlates=If[preparedPlate,Link[DeleteDuplicates[simulatedSampleContainersIn]],measurementPlateResources];
 
 	containersOutWells=If[MatchQ[Lookup[dilutionContainerReplaceRules,containersOut][[2]],$Failed],
 		1,
@@ -3415,7 +3541,7 @@ mstResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myUnresolvedOptions:{_
 	requirednumberOfContainersOut=If[MatchQ[containersOutWells,96],
 		(*96 well plate, preserve plate order*)
 		If[preparedPlate,
-			Length[DeleteDuplicates[sampleContainersIn]],
+			Length[DeleteDuplicates[simulatedSampleContainersIn]],
 			If[singleSamplePerProbe,Ceiling[Total[requiredRows]/8],Ceiling[Total[requiredWells]/88]]
 		],
 		(*else, fit in efficiently*)
@@ -3450,26 +3576,26 @@ mstResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myUnresolvedOptions:{_
 			Transpose[calculatedDilutionCurveVolumes2[#1,!MatchQ[calibrant, ObjectP[#2]]]]
 		]&,
 		{serialdilutionCurves,diluents}
-];
+	];
 
 
 	(* --- Generate the protocol packet --- *)
 	protocolPacket=<|
 		Type -> Object[Protocol,MeasureSurfaceTension],
 		Object -> CreateID[Object[Protocol,MeasureSurfaceTension]],
-		Replace[SamplesIn] -> (Link[#,Protocols]&/@samplesInResources),
-		Replace[ContainersIn] -> (Link[Resource[Sample->#],Protocols]&)/@DeleteDuplicates[sampleContainersIn],
+		Replace[SamplesIn] -> (Link[#, Protocols]& /@ samplesInResources),
+		Replace[ContainersIn] -> (Link[Resource[Sample -> #], Protocols]&) /@ DeleteDuplicates[Flatten[sampleContainersIn]],
 		UnresolvedOptions -> myUnresolvedOptions,
 		ResolvedOptions -> myResolvedOptions,
 		NumberOfReplicates -> numReplicates,
 		Instrument -> instrumentResource,
 		Replace[Checkpoints] -> {
-			{"Picking Resources",10 Minute,"Samples required to execute this protocol are gathered from storage.", Link[Resource[Operator -> Model[User, Emerald, Operator, "Trainee"], Time -> 10 Minute]]},
-			{"Preparing Samples",1 Minute,"Preprocessing, such as incubation, mixing, centrifuging, and aliquoting, is performed.",Link[Resource[Operator -> Model[User, Emerald, Operator, "Trainee"], Time -> 1 Minute]]},
+			{"Picking Resources",10 Minute,"Samples required to execute this protocol are gathered from storage.", Link[Resource[Operator -> $BaselineOperator, Time -> 10 Minute]]},
+			{"Preparing Samples",1 Minute,"Preprocessing, such as incubation, mixing, centrifuging, and aliquoting, is performed.",Link[Resource[Operator -> $BaselineOperator, Time -> 1 Minute]]},
 			{"Preparing Plate",2*Hour,"The measurement plates are loaded with the diluted samples and calibrants.",Null},
-			{"Acquiring Data",instrumentTime,"The surface tensions of the samples in the plate are acquired.",Link[Resource[Operator -> Model[User, Emerald, Operator, "Trainee"], Time -> instrumentTime]]},
-			{"Sample Post-Processing",1 Hour,"Any measuring of volume, weight, or sample imaging post experiment is performed.", Link[Resource[Operator -> Model[User, Emerald, Operator, "Trainee"], Time -> 1*Hour]]},
-			{"Returning Materials",10 Minute,"Samples are returned to storage.", Link[Resource[Operator -> Model[User, Emerald, Operator, "Trainee"], Time -> 10*Minute]]}
+			{"Acquiring Data",instrumentTime,"The surface tensions of the samples in the plate are acquired.",Link[Resource[Operator -> $BaselineOperator, Time -> instrumentTime]]},
+			{"Sample Post-Processing",1 Hour,"Any measuring of volume, weight, or sample imaging post experiment is performed.", Link[Resource[Operator -> $BaselineOperator, Time -> 1*Hour]]},
+			{"Returning Materials",10 Minute,"Samples are returned to storage.", Link[Resource[Operator -> $BaselineOperator, Time -> 10*Minute]]}
 		},
 		Replace[AssayPlates]->If[preparedPlate,Null,assayPlates],
 		Replace[AssayPlateLids]->lidResources,
@@ -3519,7 +3645,7 @@ mstResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myUnresolvedOptions:{_
 	|>;
 
 	(* generate a packet with the shared fields *)
-	sharedFieldPacket = populateSamplePrepFields[mySamples, myResolvedOptions,Cache->inheritedCache];
+	sharedFieldPacket = populateSamplePrepFields[mySamples, myResolvedOptions, Simulation -> updatedSimulation];
 
 	(* Merge the shared fields with the specific fields *)
 	finalizedPacket = Join[sharedFieldPacket, protocolPacket];
@@ -3531,8 +3657,8 @@ mstResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myUnresolvedOptions:{_
 	(* call fulfillableResourceQ on all the resources we created *)
 	{fulfillable, frqTests} = Which[
 		MatchQ[$ECLApplication, Engine], {True, {}},
-		gatherTests, Resources`Private`fulfillableResourceQ[allResourceBlobs, Output -> {Result, Tests}, FastTrack -> Lookup[myResolvedOptions, FastTrack],Site->Lookup[myResolvedOptions,Site], Cache->inheritedCache],
-		True, {Resources`Private`fulfillableResourceQ[allResourceBlobs, FastTrack -> Lookup[myResolvedOptions, FastTrack],Site->Lookup[myResolvedOptions,Site], Messages -> messages, Cache->inheritedCache], Null}
+		gatherTests, Resources`Private`fulfillableResourceQ[allResourceBlobs, Output -> {Result, Tests}, FastTrack -> Lookup[myResolvedOptions, FastTrack],Site->Lookup[myResolvedOptions,Site], Cache->inheritedCache, Simulation->updatedSimulation],
+		True, {Resources`Private`fulfillableResourceQ[allResourceBlobs, FastTrack -> Lookup[myResolvedOptions, FastTrack],Site->Lookup[myResolvedOptions,Site], Messages -> messages, Cache->inheritedCache, Simulation->updatedSimulation], Null}
 	];
 
 	(* generate the tests rule *)
@@ -3548,8 +3674,11 @@ mstResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myUnresolvedOptions:{_
 		$Failed
 	];
 
+	(* generate the simulation rule *)
+	simulationRule = Simulation -> updatedSimulation;
+
 	(* return the output as we desire it *)
-	outputSpecification /. {resultRule, testsRule}
+	outputSpecification /. {resultRule, simulationRule, testsRule}
 ];
 (* ::Subsection::Closed:: *)
 (*ExperimentMeasureSurfaceTensionPreview*)
@@ -3562,16 +3691,16 @@ DefineOptions[ExperimentMeasureSurfaceTensionPreview,
 SharedOptions :> {ExperimentMeasureSurfaceTension}
 ];
 
-Authors[ExperimentMeasureSurfaceTensionPreview] := {"waseem.vali", "malav.desai", "cgullekson"};
+Authors[ExperimentMeasureSurfaceTensionPreview] := {"daniel.shlian", "waseem.vali", "malav.desai", "cgullekson"};
 
 (* --- Core Function --- *)
-ExperimentMeasureSurfaceTensionPreview[myObjects:ListableP[ObjectP[Object[Container]]]|ListableP[(ObjectP[Object[Sample]]|_String)],myOptions:OptionsPattern[]]:=Module[
+ExperimentMeasureSurfaceTensionPreview[myObjects:ListableP[ObjectP[{Object[Container], Object[Sample], Model[Sample]}] | _String],myOptions:OptionsPattern[]]:=Module[
 {listedOptions, noOutputOptions},
 
 (* get the options as a list *)
 listedOptions = ToList[myOptions];
 
-(* remove the Output option before passing to the core function because it doens't make sense here *)
+(* remove the Output option before passing to the core function because it doesn't make sense here *)
 noOutputOptions = DeleteCases[listedOptions, Output -> _];
 
 (* return only the preview for ExperimentMeasureSurfaceTension *)
@@ -3598,15 +3727,15 @@ Options:>{
 SharedOptions :> {ExperimentMeasureSurfaceTension}
 ];
 
-Authors[ExperimentMeasureSurfaceTensionOptions] := {"waseem.vali", "malav.desai", "cgullekson"};
+Authors[ExperimentMeasureSurfaceTensionOptions] := {"daniel.shlian", "waseem.vali", "malav.desai", "cgullekson"};
 
-ExperimentMeasureSurfaceTensionOptions[myObjects:ListableP[ObjectP[Object[Container]]]|ListableP[(ObjectP[Object[Sample]]|_String)],myOptions:OptionsPattern[]]:=Module[
+ExperimentMeasureSurfaceTensionOptions[myObjects:ListableP[ObjectP[{Object[Container], Object[Sample], Model[Sample]}] | _String], myOptions:OptionsPattern[]]:=Module[
 {listedOptions, noOutputOptions, options},
 
 (* get the options as a list *)
 listedOptions = ToList[myOptions];
 
-(* remove the Output option before passing to the core function because it doens't make sense here *)
+(* remove the Output option before passing to the core function because it doesn't make sense here *)
 noOutputOptions = DeleteCases[listedOptions, (Output -> _) | (OutputFormat->_)];
 
 (* return only the preview for ExperimentMeasureSurfaceTension *)
@@ -3639,7 +3768,7 @@ Options :> {
 SharedOptions :> {ExperimentMeasureSurfaceTension}
 ];
 
-Authors[ValidExperimentMeasureSurfaceTensionQ] := {"waseem.vali", "malav.desai", "cgullekson"};
+Authors[ValidExperimentMeasureSurfaceTensionQ] := {"daniel.shlian", "waseem.vali", "malav.desai", "cgullekson"};
 
 (* --- Overloads --- *)
 
@@ -3651,7 +3780,7 @@ ValidExperimentMeasureSurfaceTensionQ[myContainers : {(_String|ObjectP[Object[Co
 (* get the options as a list *)
 listedOptions = ToList[myOptions];
 
-(* remove the Output option before passing to the core function because it doens't make sense here *)
+(* remove the Output option before passing to the core function because it doesn't make sense here *)
 preparedOptions = DeleteCases[listedOptions, (Output | Verbose | OutputFormat) -> _];
 
 (* return only the tests for ExperimentMeasureSurfaceTension *)
@@ -3694,16 +3823,16 @@ Lookup[RunUnitTest[<|"ValidExperimentMeasureSurfaceTensionQ" -> allTests|>, Outp
 ];
 
 
-ValidExperimentMeasureSurfaceTensionQ[myObject:(ObjectP[Object[Sample]]|_String),myOptions:OptionsPattern[]]:=ValidExperimentMeasureSurfaceTensionQ[{myObject},myOptions];
+ValidExperimentMeasureSurfaceTensionQ[myObject:(ObjectP[{Object[Sample], Model[Sample]}]|_String),myOptions:OptionsPattern[]]:=ValidExperimentMeasureSurfaceTensionQ[{myObject},myOptions];
 
-ValidExperimentMeasureSurfaceTensionQ[myObjects:{(ObjectP[Object[Sample]]|_String)...},myOptions:OptionsPattern[]]:=Module[
+ValidExperimentMeasureSurfaceTensionQ[myObjects:{(ObjectP[{Object[Sample], Model[Sample]}]|_String)...},myOptions:OptionsPattern[]]:=Module[
 {listedOptions,preparedOptions,measuresurfacetensionTests,validObjectBooleans,voqWarnings,
   allTests,verbose,outputFormat},
 
 (* get the options as a list *)
 listedOptions = ToList[myOptions];
 
-(* remove the Output option before passing to the core function because it doens't make sense here *)
+(* remove the Output option before passing to the core function because it doesn't make sense here *)
 preparedOptions = DeleteCases[listedOptions, (Output | Verbose | OutputFormat) -> _];
 
 (* return only the tests for ExperimentMeasureSurfaceTension *)

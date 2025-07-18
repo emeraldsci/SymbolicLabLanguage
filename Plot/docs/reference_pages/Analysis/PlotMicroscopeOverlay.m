@@ -47,13 +47,7 @@ DefineUsage[PlotMicroscopeOverlay,
 			"ImageOverlay",
 			"MicroscopeOverlay"
 		},
-		Author -> {
-			"sebastian.bernasek",
-			"brad",
-			"Sean",
-			"Catherine",
-			"Ruben"
-		},
+		Author -> {"dirk.schild", "sebastian.bernasek", "brad", "Sean", "Catherine", "Ruben"},
 		Preview->True
 	}
 ];

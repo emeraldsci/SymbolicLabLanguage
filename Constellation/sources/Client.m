@@ -92,15 +92,41 @@ apiUrl["EraseObject"]:="obj/object";
 apiUrl["GetType", type_String]:=StringTemplate["obj/type/`1`"][EncodeURIComponent[type]];
 apiUrl["ListTypes"]:="obj/type";
 apiUrl["Search"]:="obj/search";
+apiUrl["parallelSearch"]:="obj/sci-infra/parallel-search";
 apiUrl["Upload"]:="obj/upload?object=true";
 apiUrl["RollbackTransaction"]:="obj/rollback";
 apiUrl["AssumeIdentity"]:="ise/assume-identity";
 apiUrl["ArchiveNotebook"]:="ise/archive-notebook";
 apiUrl["GetNumOwnedObjects"]:="obj/get-num-owned-objects";
 apiUrl["OnCall"]:="ise/on-call";
+apuUrl["NotebookObjects"]="obj/notebook-objects";
 apiURL["GetFavoriteFolders"]:="obj/favorite-folders";
 apiURL["GetBookmarks"]:="/obj/bookmark-objects";
 apiURL["PollObjectChanges"]:="obj/poll-object-change";
+
+getNotebookObjects[nbID_String (*id:123456789123*)] :=
+	Module[{response},
+		response =
+			ConstellationRequest[<|"Path" -> "obj/notebook-objects",
+				"Method" -> "POST",
+				"Body" ->
+					ExportString[<|"notebook_ids" -> {nbID}, "summary" -> False|>, "JSON"]
+				|>
+			];
+
+		Replace[Lookup[response, "results"],
+
+			{
+				(*Expect a List of length 1, Constellation's id should match the input notebook id*)
+				{KeyValuePattern[{"id" -> nbID, "objects" -> objects_}]} :> Constellation`Private`objectReferenceToObject /@ objects,
+				(*If the request failed, return $Failed*)
+				$Failed -> $Failed,
+				(*Any thing else, just return empty list.*)
+				_ -> {}
+			}
+		]
+	];
+getNotebookObjects[$Failed]:=$Failed;
 
 listObjectTypes[]:=Module[{response},
 	response=ConstellationRequest[<|"Path" -> apiUrl["ListTypes"], "Method" -> "GET"|>];
@@ -576,7 +602,7 @@ generateBlockSpans[{dataLength_Integer, rowLength_Integer}]:=Module[
 	{blockSpans, chunkSize},
 	chunkSize=Min[dataLength, blockChunkSize];
 	blockSpans=ReplacePart[
-		Table[i;;i + chunkSize - 1, {i, 1, dataLength - 1, chunkSize}],
+		Table[i + 1 ;; i + chunkSize, {i, 0, dataLength - 1, chunkSize}],
 		{-1, -1} -> dataLength
 	];
 	blockSpans
@@ -2201,6 +2227,11 @@ DefineOptions[
 ];
 
 SetAttributes[transformHeldExpressionToStandardizedTreeForm, HoldFirst];
+
+
+(* Authors definition for Constellation`Private`transformHeldExpressionToStandardizedTreeForm *)
+Authors[Constellation`Private`transformHeldExpressionToStandardizedTreeForm]:={"melanie.reschke"};
+
 transformHeldExpressionToStandardizedTreeForm[heldExpr_, ops:OptionsPattern[]] := Module[{placeholderRules, replacedExpression, releasedExpr},
 	(* Convert MM symbol (ex. Max) into our custom symbols (ex. maxSym) so that we don't have to worry about holding to prevent evaluation. *)
 	placeholderRules={
@@ -3170,7 +3201,7 @@ uploadBlobReferences[localBlobReferences:{jsonBlobReferenceP..}, retryCount:_Int
 		fileUploadResults=GoCall["UploadCloudFile",
 			<|
 				"Paths" -> localPaths,
-				"Retries" -> 4,
+				"Retries" -> 8,
 				"Concurrency" -> 5
 			|>
 		];
@@ -3204,7 +3235,7 @@ uploadBlobReferences[localBlobReferences:{jsonBlobReferenceP..}, retryCount:_Int
 
 		(* Issue an error if the client and server didn't get the same hash *)
 		If[Not@AllTrue[resultsMatch, TrueQ],
-			invalidHashPositions=Flatten@Positions[resultsMatch, False];
+			invalidHashPositions=Flatten@Position[resultsMatch, False];
 			If[retryCount>maximumInvalidHashRetryCount,
 				Message[uploadBlobReferences::fileUploadHashMismatch, Lookup[fileUploadResults[[invalidHashPositions]], "Key", ""], localPaths[[invalidHashPositions]]];
 				Return[$Failed];,
@@ -3355,7 +3386,7 @@ standardizeDateObj[date_DateObject]:=If[MatchQ[date, None],
 	Rfc3339ToDateObject[DateObjectToRFC3339[DateObject[AbsoluteTime[date]]]]];
 
 (* create a temporary cache that only holds values for a single response *)
-responseToSeperateCacheAssociations[response_Association]:=TraceExpression["parseObjectLogResponse", Module[{nestedResponses, resolvedObject, resolvedObjects, packetSummaryPairs,
+responseToSeparateCacheAssociations[response_Association]:=TraceExpression["parseObjectLogResponse", Module[{nestedResponses, resolvedObject, resolvedObjects, packetSummaryPairs,
 	miniCaches, tempCache},
 	(* If unable to parse the resolved object but no error response occurred error hard. *)
 	resolvedObject=objectReferenceToObject[Lookup[response, "resolved_object", <||>]];

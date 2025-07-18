@@ -22,8 +22,7 @@ DefineObjectType[Object[Protocol,PlateMedia],{
 			Class->Link,
 			Pattern:>_Link,
 			Relation->Alternatives[Model[Instrument], Object[Instrument]],
-			IndexMatching->SamplesIn,
-			Description->"For each member of SamplesIn, the instrument used to pump the liquid media from the container in which it was prepared to multiple incubation plates in a serial fashion.",
+			Description->"The instrument(s) used to pump the liquid media from the container in which it was prepared to multiple incubation plates in a serial fashion.",
 			Category->"General"
 		},
 		Incubators->{
@@ -107,9 +106,24 @@ DefineObjectType[Object[Protocol,PlateMedia],{
 			Format->Multiple,
 			Class->Link,
 			Pattern:>_Link,
-			IndexMatching->SamplesIn,
 			Relation->Alternatives[Object[Container],Model[Container]],
-			Description->"For each member of SamplesIn, the plates into which the prepared media will be transferred.",
+			Description->"The plates into which the prepared media will be transferred.",
+			Category->"Experimental Results"
+		},
+		PlatesOutGrouped->{
+			Format->Multiple,
+			Class->Expression,
+			Pattern:>{ObjectP[]..},
+			Description->"The plates into which the prepared media will be transferred, grouped by SamplesIn.",
+			Category->"Experimental Results",
+			Developer->True
+		},
+		NumbersOfPlates->{
+			Format->Multiple,
+			Class->Integer,
+			Pattern:>GreaterP[0,1],
+			IndexMatching->SamplesIn,
+			Description->"For each member of SamplesIn, indicates the number of plates to which the prepared media should be transferred.",
 			Category->"Experimental Results"
 		},
 		PouringFailed->{
@@ -124,8 +138,7 @@ DefineObjectType[Object[Protocol,PlateMedia],{
 			Format->Multiple,
 			Class->Boolean,
 			Pattern:>BooleanP,
-			IndexMatching->SamplesIn,
-			Description->"For each member of SamplesIn, indicates whether the media is fully liquified after incubation.",
+			Description->"Indicates whether the current media is fully liquefied after incubation.",
 			Category->"General",
 			Developer->True
 		},
@@ -138,6 +151,99 @@ DefineObjectType[Object[Protocol,PlateMedia],{
 			Description->"For each member of SamplesIn, the total time the sample has been incubated prior to pouring into plates.",
 			Category->"General",
 			Developer->True
+		},
+		Tips -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[Item, Tips] | Model[Item, Tips],
+			Description -> "Tips required to pour the media.",
+			Category -> "General",
+			Developer -> True
+		},
+		TransferEnvironment -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[Instrument, BiosafetyCabinet] | Model[Instrument, BiosafetyCabinet],
+			Description -> "The biosafety cabinet used to pour plates.",
+			Category -> "General",
+			Developer -> True
+		},
+		BiosafetyWasteBin -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[Container, WasteBin] | Model[Container, WasteBin],
+			Description -> "Waste bins used in the biosafety cabinet.",
+			Category -> "General",
+			Developer -> True
+		},
+		BiosafetyWasteBag -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[Item, Consumable] | Model[Item, Consumable],
+			Description -> "Waste bags used in the biosafety cabinet.",
+			Category -> "General",
+			Developer -> True
+		},
+		BiosafetyWasteBinPlacements -> {
+			Format -> Multiple,
+			Class -> {Link, Link, String},
+			Pattern :> {_Link, _Link, LocationPositionP},
+			Relation -> {
+				Alternatives[
+					Object[Container,WasteBin],
+					Model[Container,WasteBin],
+					Object[Item,Consumable],
+					Model[Item,Consumable]
+				],
+				Alternatives[
+					Object[Instrument,BiosafetyCabinet],
+					Model[Instrument,BiosafetyCabinet],
+					Object[Container,WasteBin],
+					Model[Container,WasteBin]
+				],
+				Null
+			},
+			Headers -> {"Objects to move", "Object to move to", "Position to move to"},
+			Description -> "The specific positions into which waste bin objects should be moved into the biosafety cabinet at the beginning of the protocol.",
+			Category -> "General",
+			Developer -> True
+		},
+		FlameSource -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Model[Part,Lighter]|Object[Part,Lighter],
+			Description -> "Specifies the part used to heat destination with a flame to remove bubbles.",
+			Category -> "Temperature Equilibration",
+			Developer -> True
+		},
+		PlateBags -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[Object[Container, Bag, Aseptic],Model[Container, Bag, Aseptic]],
+			Description -> "The aseptic bags in which the prepared media plates will be stored.",
+			Category -> "Experimental Results"
+		},
+		PlateBagsGrouped -> {
+			Format->Multiple,
+			Class->Expression,
+			Pattern:>{(ObjectP[]|Null)...},
+			Description->"The aseptic bags in which the prepared media plates will be stored, grouped by SamplesIn.",
+			Category->"Experimental Results",
+			Developer->True
+		},
+		PlateBagPlacements->{
+			Format -> Multiple,
+			Class -> Expression,
+			Pattern :> {{ObjectP[], ObjectP[]|Null, LocationPositionP}...}|Null,
+			Description -> "The specific bags into which the specific plates should be placed after pouring.",
+			Category -> "Experimental Results",
+			Developer -> True
 		}
 	}
 }];

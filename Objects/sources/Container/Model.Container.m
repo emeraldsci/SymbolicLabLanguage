@@ -50,6 +50,22 @@ DefineObjectType[Model[Container], {
 			Category -> "Organizational Information",
 			Developer -> True
 		},
+		ParameterizationPlaceholder -> {
+			Format -> Single,
+			Class -> Expression,
+			Pattern :> BooleanP,
+			Description -> "Indicates if this model is being temporarily used as part of a container parameterization maintenance.",
+			Category -> "Organizational Information",
+			Developer -> True
+		},
+		Verified -> {
+			Format -> Single,
+			Class -> Boolean,
+			Pattern :> BooleanP,
+			Description -> "Indicates if the information in this model has been reviewed for accuracy by an ECL employee.",
+			Category -> "Organizational Information",
+			AdminWriteOnly->True
+		},
 
 		(*--- Cover Information ---*)
 		BuiltInCover -> {
@@ -494,7 +510,15 @@ DefineObjectType[Model[Container], {
 			Format -> Single,
 			Class -> Boolean,
 			Pattern :> BooleanP,
-			Description -> "Indicates that this container can be used repeatedly.",
+			Description -> "Indicates if the container is designed for multiple uses or if it is discarded after a single use. Reusable containers typically requiring cleaning and are hand washed or dishwashed after each use.",
+			Category -> "Physical Properties"
+		},
+
+		Reusable -> {
+			Format -> Single,
+			Class -> Boolean,
+			Pattern :> BooleanP,
+			Description -> "Indicates if the container is designed for multiple uses or if it is discarded after a single use. Reusable containers typically requiring cleaning and are hand washed or dishwashed after each use.",
 			Category -> "Physical Properties"
 		},
 
@@ -542,6 +566,13 @@ DefineObjectType[Model[Container], {
 			Description -> "A file containing an image of showing the designated orientation of this object in storage as defined by the StorageOrientation.",
 			Category -> "Storage & Handling",
 			Developer->True
+		},
+		StoreInverted -> {
+			Format -> Single,
+			Class -> Boolean,
+			Pattern :> BooleanP,
+			Description -> "Indicates if containers of this model are stored upside down.  This is primarily used for solid media to prevent condensation from forming on the lids and dripping into the samples.",
+			Category -> "Storage & Handling"
 		},
 		Expires -> {
 			Format -> Single,
@@ -604,6 +635,20 @@ DefineObjectType[Model[Container], {
 			Class -> Boolean,
 			Pattern :> BooleanP,
 			Description -> "Indicates if containers of this model should be wrapped in aluminum foil to protect the container contents from light by default.",
+			Category -> "Storage & Handling"
+		},
+		AsepticTransportContainerType -> {
+			Format -> Single,
+			Class -> Expression,
+			Pattern :> AsepticTransportContainerTypeP,
+			Description -> "Indicates how containers of this model are contained in an aseptic barrier and if they need to be unbagged before being used in a protocol, maintenance, or qualification.",
+			Category -> "Storage & Handling"
+		},
+		AsepticTechniqueEnvironment -> {
+			Format -> Single,
+			Class -> Boolean,
+			Pattern :> BooleanP,
+			Description -> "Indicates if interactions with the interior of the container should be done using aseptic practices.",
 			Category -> "Storage & Handling"
 		},
 
@@ -679,12 +724,28 @@ DefineObjectType[Model[Container], {
 			Description -> "PDFs of product documentation provided by the supplier of this model.",
 			Category -> "Organizational Information"
 		},
+		ProductURL -> {
+			Format -> Multiple,
+			Class -> String,
+			Pattern :> URLP,
+			Description -> "Supplier webpage for the container model which is provided by the user for developers to review and retrieve information.",
+			Category -> "Product Specifications",
+			Developer -> True
+		},
 		Preparable -> {
 			Format -> Single,
 			Class -> Boolean,
 			Pattern :> BooleanP,
 			Description -> "Indicates if this samples/items of this model maybe prepared as needed during the course of an experiment.",
 			Category -> "Inventory"
+		},
+		Stocked->{
+			Format->Single,
+			Class->Boolean,
+			Pattern:>BooleanP,
+			Description->"Indicates if the empty containers of this model are kept in stock for use on demand in experiments.",
+			Abstract->True,
+			Category -> "Container Specifications"
 		},
 		(* Note: Containers with StorageBuffer->True are allowed to be resource picked when stocked, even if they have a sample inside of them. *)
 		StorageBuffer -> {
@@ -708,6 +769,14 @@ DefineObjectType[Model[Container], {
 			Pattern :> _Link,
 			Relation -> Object[Product][KitComponents, ProductModel],
 			Description -> "Products ordering information for this model if this model is part of one or more kits.",
+			Category -> "Inventory"
+		},
+		KitProductsContainers -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[Product][KitComponents, ProductModel],
+			Description -> "Products ordering information for this filter plate container with its supplied storage buffer solution as part of one or more kits.",
 			Category -> "Inventory"
 		},
 		MixedBatchProducts -> {
@@ -768,6 +837,15 @@ DefineObjectType[Model[Container], {
 			Category -> "Inventory",
 			Developer -> True
 		},
+		DefaultStickerModel -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Model[Item,Sticker],
+			Description -> "The type of sticker applied to containers of this model when they are stickered upon receiving.",
+			Category -> "Inventory",
+			Developer->True
+		},
 		BarcodeTag -> {
 			Format -> Single,
 			Class -> Link,
@@ -790,7 +868,7 @@ DefineObjectType[Model[Container], {
 			Format -> Single,
 			Class -> Expression,
 			Pattern :> BooleanP,
-			Description -> "Indicates that this model of container arrives sterile from the manufacturer.",
+			Description -> "Indicates that this model of container arrives free of microbial contamination from the manufacturer or is sterilized upon receiving.",
 			Category -> "Health & Safety"
 		},
 		Sterilized -> {
@@ -942,6 +1020,14 @@ DefineObjectType[Model[Container], {
 			Pattern :> _String,
 			Description -> "The SLL2 ID for this Object, if it was migrated from the old data store.",
 			Category -> "Migration Support",
+			Developer -> True
+		},
+		PendingParameterization -> {
+			Format -> Single,
+			Class -> Boolean,
+			Pattern :> BooleanP,
+			Description -> "Indicate if this model is pending parameterization in lab.",
+			Category -> "Organizational Information",
 			Developer -> True
 		}
 	}

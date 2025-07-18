@@ -112,7 +112,7 @@ DefineOptions[ExperimentFlashChromatography,
 				OptionName->Column,
 				Default->Automatic,
 				Description->"The item containing the stationary phase through which the buffers and sample flow. It adsorbs and separates the molecules within the sample based on the properties of the mobile phase, Samples, and column material (stationary phase).",
-				ResolutionDescription->"If LoadingAmount is unspecified, and the SeparationMode is ReversePhase resolve to Model[Item,Column,\"RediSep Gold Reverse Phase C18 Column 15.5g\"]. If LoadingAmount is unspecified, and the SeparationMode is NormalPhase resolve to Model[Item,Column,\"RediSep Gold Normal Phase Silica Column 12g\"]. If LoadingAmount is specified, resolve to the smallest column of the SeparationMode from the default list (see Table...) that is large enough that the column's VoidVolume times the MaxLoadingPercent is greater than or equal to the LoadingAmount.",
+				ResolutionDescription->"If LoadingAmount is unspecified, and the SeparationMode is ReversePhase resolve to Model[Item,Column,\"RediSep Gold Reverse Phase C18 Column 15.5g\"]. If LoadingAmount is unspecified, and the SeparationMode is NormalPhase resolve to Model[Item,Column,\"RediSep Gold Normal Phase Silica Column 12g\"]. If LoadingAmount is specified, resolve to the smallest column of the SeparationMode from the default list that is large enough that the column's VoidVolume times the MaxLoadingPercent is greater than or equal to the LoadingAmount.",
 				AllowNull->False,
 				Widget->Widget[
 					Type->Object,
@@ -567,7 +567,7 @@ DefineOptions[ExperimentFlashChromatography,
 			{
 				OptionName->PeakDetectors,
 				Default->Automatic,
-				Description->"The set of detectors (PrimaryWavelength, SecondaryWavelength, and/or WideRangeUV) used to identify peaks in absorbance through the sample. A peak is called if there is a peak in called by any of the detectors.",
+				Description->"The set of detectors (PrimaryWavelength, SecondaryWavelength, and/or WideRangeUV) used to identify peaks in absorbance through the sample. A peak is called if there is a peak called by any of the detectors.",
 				ResolutionDescription->"Automatically set to include whichever of PrimaryWavelength and SecondaryWavelength are present in Detectors and WideRangeUV if it is present in Detectors and any WideRangeUV-related peak detection options are specified. Otherwise automatically set to {WideRangeUV}.",
 				AllowNull->True,
 				Widget->Widget[
@@ -695,7 +695,7 @@ DefineOptions[ExperimentFlashChromatography,
 				OptionName->ColumnStorageCondition,
 				Default->Automatic,
 				Description->"Indicates whether the column should be disposed of or stored after the sample run is completed and, if stored, under what condition it should be stored.",
-				ResolutionDescription->"Automatically set to Disposal for single-use columns (Reusability->True) and AmbientStorage for multiple-use columns (Reusability->False). If Reusability is Null, automatically set to AmbientStorage for columns with C18, C8 or Amine FunctionalGroup, and to Disposal otherwise.",
+				ResolutionDescription->"Automatically set to Disposal for single-use columns (Reusable->True) and AmbientStorage for multiple-use columns (Reusable->False). If Reusable is Null, automatically set to AmbientStorage for columns with C18, C8 or Amine FunctionalGroup, and to Disposal otherwise.",
 				AllowNull->False,
 				Category->"Cleaning",
 				(* Null indicates the storage conditions will be inherited from the model *)
@@ -734,10 +734,11 @@ DefineOptions[ExperimentFlashChromatography,
 		},
 
 		SimulationOption,
-		FuntopiaSharedOptions,
+		NonBiologyFuntopiaSharedOptions,
 		SamplesInStorageOptions,
 		SamplesOutStorageOptions,
-		PreparationOption
+		PreparationOption,
+		ModelInputOptions
 	}
 ];
 
@@ -861,7 +862,7 @@ combiFlashCompatibleSyringe[memoization_String]:=combiFlashCompatibleSyringe[mem
 		And[
 			Deprecated!=True,
 			ConnectionType==LuerLock,
-			Reusability==False,
+			Reusable==False,
 			StringContainsQ[Name,"syringe",IgnoreCase->True],
 			DeveloperObject!=True
 		]
@@ -1102,7 +1103,7 @@ flashChromatographyNumbersOfContainers[myResolvedCollectFractions_,myResolvedFra
 	]
 ];
 
-(* Must round sample volume to the same precision in resolver, resource packets, and simualtion function, so define here *)
+(* Must round sample volume to the same precision in resolver, resource packets, and simulation function, so define here *)
 flashChromatographyVolumePrecision[]:=10^-1 Milliliter;
 
 
@@ -1163,9 +1164,9 @@ flashChromatographyFractionCompositions[
 	(* If the Composition of the WorkingSamples is defined, then use it, otherwise use the Composition of the samplesIn.
 	When this function is called by importPeakTrak in the parser to actually define the fraction composition, WorkingSamples
 	will be defined. In the simulation, we use the composition of the SamplesIn instead.
-	TODO: figure out how to use the simulated WorkingSamples *)
+	remove time from composition *)
 	sampleCompositions=MapThread[
-		If[NullQ[#2],#1,#2]&,
+		If[NullQ[#2], #1[[All, {1, 2}]], #2[[All, {1, 2}]]]&,
 		{samplesInCompositions,workingSamplesCompositions}
 	];
 
@@ -1206,8 +1207,8 @@ flashChromatographyFractionCompositions[
 				or nothing for the sample if the sample's composition is Null *)
 				MapThread[
 					Join[
-						bufferAComposition/.{{composition:CompositionP,model:IdentityModelP}:>{#1*composition,Link[model]}},
-						bufferBComposition/.{{composition:CompositionP,model:IdentityModelP}:>{#2*composition,Link[model]}},
+						bufferAComposition[[All, {1, 2}]]/.{{composition:CompositionP,model:IdentityModelP}:>{#1*composition,Link[model]}},
+						bufferBComposition[[All, {1, 2}]]/.{{composition:CompositionP,model:IdentityModelP}:>{#2*composition,Link[model]}},
 						If[NullQ[sampleComposition],
 							Nothing,
 							sampleComposition/.{{CompositionP,model:IdentityModelP}:>{Null,Link[model]}}
@@ -1228,7 +1229,7 @@ flashChromatographyFractionCompositions[
 (* Mixed input overload *)
 ExperimentFlashChromatography[
 	myInputs:ListableP[Alternatives[
-		ObjectP[{Object[Container],Object[Sample]}],
+		ObjectP[{Object[Container],Object[Sample],Model[Sample]}],
 		_String,
 		{LocationPositionP,_String|ObjectP[Object[Container]]}
 	]],
@@ -1248,7 +1249,7 @@ ExperimentFlashChromatography[
 	gatherTests=MemberQ[output,Tests];
 
 	(* Remove temporal links and named objects. *)
-	{listedContainers,listedOptions}=sanitizeInputs[ToList[myInputs],ToList[myOptions]];
+	{listedContainers,listedOptions}={ToList[myInputs],ToList[myOptions]};
 
 	(* First, simulate our sample preparation. *)
 	validSamplePreparationResult=Check[
@@ -1259,7 +1260,7 @@ ExperimentFlashChromatography[
 			listedOptions
 		],
 		$Failed,
-		{Error::MissingDefineNames,Error::InvalidInput,Error::InvalidOption}
+		{Download::ObjectDoesNotExist,Error::MissingDefineNames,Error::InvalidInput,Error::InvalidOption}
 	];
 
 	(* If we are given an invalid define name, return early. *)
@@ -1332,7 +1333,7 @@ ExperimentFlashChromatography[
 		safeOptionsNamed,safeOpsTests,
 		samplesWithPreparedSamples,safeOps,optionsWithPreparedSamples,
 		validLengths,validLengthTests,templatedOptions,templateTests,specifiedGradientOptionsQ,safeTemplatedOptions,
-		inheritedOptions,upload,confirm,fastTrack,parentProtocol,cache,priority,startDate,holdOrder,queuePosition,
+		inheritedOptions,upload,confirm,canaryBranch,fastTrack,parentProtocol,cache,priority,startDate,holdOrder,queuePosition,
 		multiSelectOptions,multiSelectOptionValues,multiSelectRules,multiSelectReplacedOptions,expandedSafeOps,
 		allInstrumentModels,allColumnModels,allCartridgeModels,allFractionContainerModels,
 		instrumentOption,instrumentObjects,instrumentModels,
@@ -1368,7 +1369,7 @@ ExperimentFlashChromatography[
 			listedOptions
 		],
 		$Failed,
-		{Error::MissingDefineNames,Error::InvalidInput,Error::InvalidOption}
+		{Download::ObjectDoesNotExist,Error::MissingDefineNames,Error::InvalidInput,Error::InvalidOption}
 	];
 
 	(* If we are given an invalid define name, return early. *)
@@ -1385,7 +1386,7 @@ ExperimentFlashChromatography[
 	];
 
 	(* replace all objects referenced by Name to ID *)
-	{samplesWithPreparedSamples,safeOps,optionsWithPreparedSamples}=sanitizeInputs[samplesWithPreparedSamplesNamed,safeOptionsNamed,optionsWithPreparedSamplesNamed];
+	{samplesWithPreparedSamples,safeOps,optionsWithPreparedSamples}=sanitizeInputs[samplesWithPreparedSamplesNamed,safeOptionsNamed,optionsWithPreparedSamplesNamed,Simulation->updatedSimulation];
 
 	(* If the specified options don't match their patterns or if option lengths are invalid return $Failed *)
 	If[MatchQ[safeOps,$Failed],
@@ -1452,6 +1453,7 @@ ExperimentFlashChromatography[
 	{
 		upload,
 		confirm,
+		canaryBranch,
 		fastTrack,
 		parentProtocol,
 		cache,
@@ -1459,7 +1461,7 @@ ExperimentFlashChromatography[
 		startDate,
 		holdOrder,
 		queuePosition
-	}=Lookup[inheritedOptions,{Upload,Confirm,FastTrack,ParentProtocol,Cache,Priority,StartDate,HoldOrder,QueuePosition}];
+	}=Lookup[inheritedOptions,{Upload,Confirm,CanaryBranch,FastTrack,ParentProtocol,Cache,Priority,StartDate,HoldOrder,QueuePosition}];
 
 	(*- Replace specified from MultiSelect options with listed versions of those specified options -*)
 	(* Necessary to prevent incorrect interactions between ExpandIndexMatchedInputs and mapThreadOptions *)
@@ -1620,7 +1622,7 @@ ExperimentFlashChromatography[
 	};
 
 	(* Required fields for column models *)
-	modelColumnFields={Name,ChromatographyType,SeparationMode,PackingMaterial,FunctionalGroup,BedWeight,VoidVolume,MinFlowRate,MaxFlowRate,MinPressure,MaxPressure,Diameter,ColumnLength,Reusability,Deprecated};
+	modelColumnFields={Name,ChromatographyType,SeparationMode,PackingMaterial,FunctionalGroup,BedWeight,VoidVolume,MinFlowRate,MaxFlowRate,MinPressure,MaxPressure,Diameter,ColumnLength,Reusable,Deprecated};
 
 	(* Required fields for cartridge models *)
 	modelCartridgeFields=Union[
@@ -1742,7 +1744,7 @@ ExperimentFlashChromatography[
 	(* Figure out if we need to perform our simulation. If so, we can't return early even though we want to because we *)
 	(* need to return some type of simulation to our parent function that called us. *)
 	(*performSimulationQ = MemberQ[output, Simulation] || MatchQ[$CurrentSimulation, SimulationP];*)
-	performSimulationQ=MemberQ[output,Result|Simulation]&&MatchQ[Lookup[resolvedOptions,PreparatoryPrimitives],Null|{}];
+	performSimulationQ=MemberQ[output,Result|Simulation];
 
 	(* If option resolution failed and we aren't asked for the simulation or output, return early. *)
 	If[returnEarlyQ&&!performSimulationQ,
@@ -1786,23 +1788,20 @@ ExperimentFlashChromatography[
 		}
 	];
 
-	(* If we were asked for a simulation, also return a simulation. *)
-	{simulatedProtocol,simulation}=If[performSimulationQ,
+	(*If we were asked for a simulation, also return a simulation.*)
+	{simulatedProtocol,simulation}=Which[
+		MatchQ[resourcePackets,$Failed],
+		{$Failed, Simulation[]},
+		performSimulationQ,
 		simulateExperimentFlashChromatography[
-			If[MatchQ[resourcePackets,$Failed],
-				$Failed,
-				resourcePackets[[1]] (* protocolPacket *)
-			],
-			If[MatchQ[resourcePackets,$Failed],
-				$Failed,
-				Flatten[{resourcePackets[[2]]}] (* unitOperationPackets *)
-			],
+			resourcePackets[[1]],
+			Flatten[ToList[resourcePackets[[2]]]],
 			ToList[samplesWithPreparedSamples],
 			resolvedOptions,
 			Cache->cacheBall,
 			Simulation->updatedSimulation
 		],
-		{Null,Null}
+		True,{Null,Null}
 	];
 
 	(* If Result does not exist in the output, return everything without uploading *)
@@ -1858,6 +1857,7 @@ ExperimentFlashChromatography[
 			resourcePackets[[2]],
 			Upload->upload,
 			Confirm->confirm,
+			CanaryBranch->canaryBranch,
 			ParentProtocol->parentProtocol,
 			Priority->priority,
 			StartDate->startDate,
@@ -3545,7 +3545,7 @@ resolveExperimentFlashChromatographyOptions[
 						columnReusability
 					}=Lookup[
 						columnModelPacket,
-						{VoidVolume,MinFlowRate,MaxFlowRate,BedWeight,ColumnLength,SeparationMode,PackingMaterial,FunctionalGroup,Reusability},
+						{VoidVolume,MinFlowRate,MaxFlowRate,BedWeight,ColumnLength,SeparationMode,PackingMaterial,FunctionalGroup,Reusable},
 						Null
 					];
 
@@ -3999,8 +3999,8 @@ resolveExperimentFlashChromatographyOptions[
 						{Automatic,Preloaded,_},Null,
 
 						(* If PreSampleEquilibration is unspecified and the resolved LoadingType is not Preloaded,
-						resolve to 3 times columnTime *)
-						{Automatic,_,TimeP},SafeRound[3*columnTime,timePrecision],
+						resolve to 6 times columnTime *)
+						{Automatic,_,TimeP},SafeRound[6*columnTime,timePrecision],
 
 						(* ColumnTime will always be TimeP unless an error was thrown above because the column's Model's
 						VoidVolume field isn't informed. Resolve to 1 Minute to keep going through the resolver. *)
@@ -5004,11 +5004,11 @@ resolveExperimentFlashChromatographyOptions[
 						resolve to Disposal *)
 						{Automatic,_,False,_},Disposal,
 
-						(* If ColumnStorageCondition is unspecified, the column will not be reused, the column model's Reusability field is Null,
+						(* If ColumnStorageCondition is unspecified, the column will not be reused, the column model's Reusable field is Null,
 						and the column model's FunctionalGroup field is C8, C18, or Amine, resolve to AmbientStorage *)
 						{Automatic,_,_,C18|C8|C18Aq|Amine},AmbientStorage,
 
-						(* If ColumnStorageCondition is unspecified, the column will not be reused, the column model's Reusability field is Null,
+						(* If ColumnStorageCondition is unspecified, the column will not be reused, the column model's Reusable field is Null,
 						and the column model's FunctionalGroup field is not C8, C18, or Amine, resolve to Disposal *)
 						{Automatic,_,_,_},Disposal,
 
@@ -7354,7 +7354,7 @@ flashChromatographyResourcePackets[
 		numbersOfContainers,fractionContainerResourcesList,fractionContainerPlacementsList,
 
 		allowedKeys,unitOperationOptions,mapThreadFriendlyUnitOperationOptions,unitOperationBlobs,
-		initialUnitOperationPackets,unitOperationPackets,unitOperationObjects,
+		initialCombinedUnitOperationPackets,unitOperationPackets,unitOperationObjects,
 
 		protocolID,protocolPacketWithoutRequiredObjectsOrSharedFields,sharedFieldPacket,protocolPacketWithoutRequiredObjects,
 		allResourceBlobs,protocolPacket,
@@ -7370,7 +7370,7 @@ flashChromatographyResourcePackets[
 	output=ToList[outputSpecification];
 
 	(* Decide if we are gathering tests or throwing messages *)
-	gatherTests=MemberQ[Output,Tests];
+	gatherTests=MemberQ[output,Tests];
 	messages=Not[gatherTests];
 
 	(* Make the fast association *)
@@ -7819,35 +7819,6 @@ flashChromatographyResourcePackets[
 		{cartridgeMediaModels,resolvedCartridgePackingMass}
 	];
 
-	(*
-	(* Consolidating resources.
-	Don't want to do this, because then the operator would have to measure the weight again to parcel it out *)
-
-	(* Pair the media models and their packing masses *)
-	pairedMediaAndPackingMass=MapThread[
-		If[NullQ[#1],
-			Nothing,
-			#1->#2
-		]&,
-		{cartridgeMediaModels,resolvedCartridgePackingMass}
-	];
-
-	(* Merge the hand-packed solid media masses together to get the total mass of each model required *)
-	mediaMassRules=Merge[pairedMediaAndPackingMass,Total];
-
-	(* Make replace rules for the hand-packed media models and their resources; doing it this way because we only want to
-	make one resource per media model *)
-	mediaResourceReplaceRules=KeyValueMap[
-		Function[{sample,mass},
-			sample->Link[Resource[Sample->sample,Name->ToString[Unique[]],Amount->mass]]
-		],
-		mediaMassRules
-	];
-
-	(* Use the replace rules to get the hand-packed cartridge media resources *)
-	cartridgeMediaResources=Replace[cartridgeMediaModels,mediaResourceReplaceRules,{1}];
-	*)
-
 	(*- Beaker -*)
 
 	(* Generate a beaker resource for each sample that will be loaded in a cartridge *)
@@ -8207,7 +8178,7 @@ flashChromatographyResourcePackets[
 	];
 
 	(* Make unit operation packets out of the unit operation blobs *)
-	initialUnitOperationPackets=UploadUnitOperation[
+	initialCombinedUnitOperationPackets=UploadUnitOperation[
 		unitOperationBlobs,
 		UnitOperationType->Batched,
 		Upload->False,
@@ -8259,7 +8230,7 @@ flashChromatographyResourcePackets[
 			]
 		],
 		{
-			initialUnitOperationPackets,
+			initialCombinedUnitOperationPackets,
 			fractionContainerResourcesList,
 			primaryRackResources,
 			secondaryRackResources,
@@ -8279,7 +8250,7 @@ flashChromatographyResourcePackets[
 	];
 
 	(* Get the unit operation objects *)
-	unitOperationObjects=Lookup[initialUnitOperationPackets,Object];
+	unitOperationObjects=Lookup[initialCombinedUnitOperationPackets,Object];
 
 	(*--- Protocol packet ---*)
 
@@ -8291,8 +8262,15 @@ flashChromatographyResourcePackets[
 		Object->protocolID,
 
 		(* Fields for samples and sample containers *)
+		(* The ifs below are in case we've got models to deal with instead of objects, which shouldn't backlink to Protocols *)
 		Replace[SamplesIn]->Map[Link[#,Protocols]&,samplesInResources],
-		Replace[ContainersIn]->Map[Link[#,Protocols]&,containersInResources],
+		Replace[ContainersIn]->Map[
+			If[MatchQ[#, ObjectP[Object[Container]]] || (MatchQ[#, _Resource] && MatchQ[#[Sample], ObjectP[Object[Container]]]),
+				Link[#, Protocols],
+				Link[#]
+			]&,
+			containersInResources
+		],
 
 		(* Fields for non-index-matched options that are resources *)
 		Instrument->instrumentResource,
@@ -8429,7 +8407,7 @@ DefineOptions[
 
 simulateExperimentFlashChromatography[
 	myProtocolPacket:PacketP[Object[Protocol,FlashChromatography]]|$Failed|Null,
-	myUnitOperationPackets:{PacketP[Object[UnitOperation,FlashChromatography]]..}|{PacketP[Object[Primitive,FlashChromatography]]..}|$Failed,
+	myUnitOperationPackets:{PacketP[{Object[UnitOperation,FlashChromatography], Object[UnitOperation, LabelSample]}]..}|{PacketP[Object[Primitive,FlashChromatography]]..}|$Failed,
 	mySamples:{ObjectP[Object[Sample]]..},
 	myResolvedOptions:{_Rule...},
 	myResolutionOptions:OptionsPattern[simulateExperimentFlashChromatography]
@@ -8437,7 +8415,9 @@ simulateExperimentFlashChromatography[
 	{
 		cache,simulation,fastAssoc,protocolObject,mapThreadFriendlyOptions,
 
-		currentSimulation,
+		currentSimulation, batchedUnitOperationPackets, simulatedSamplePacketsPossiblyWithExtras,
+		simulatedSampleContainerPacketsPossiblyWithExtras, simulatedFractionContainerPacketsPossiblyWithExtras,
+		simulatedFritPacketsPossiblyWithExtras,
 		simulatedResolvedOptions,simulatedLoadingAmountVolumes,
 		simulatedBufferAPacket,simulatedBufferBPacket,simulatedSamplePackets,simulatedSampleContainerPackets,
 		simulatedFractionContainerPackets,simulatedFritPackets,simulatedColumnObjects,simulatedCartridgeObjects,
@@ -9066,10 +9046,11 @@ simulateExperimentFlashChromatography[
 		simulatedLoadingAmountVolumes,
 		simulatedBufferAPacket,
 		simulatedBufferBPacket,
-		simulatedSamplePackets,
-		simulatedSampleContainerPackets,
-		simulatedFractionContainerPackets,
-		simulatedFritPackets,
+		batchedUnitOperationPackets,
+		simulatedSamplePacketsPossiblyWithExtras,
+		simulatedSampleContainerPacketsPossiblyWithExtras,
+		simulatedFractionContainerPacketsPossiblyWithExtras,
+		simulatedFritPacketsPossiblyWithExtras,
 		simulatedColumnObjects,
 		simulatedCartridgeObjects
 	}=Quiet[
@@ -9080,6 +9061,7 @@ simulateExperimentFlashChromatography[
 				LoadingAmount,
 				Packet[BufferA[{Model,Name,Composition,Volume,Container}]],
 				Packet[BufferB[{Model,Name,Composition,Volume,Container}]],
+				Packet[BatchedUnitOperations[{SampleLink, FractionContainerPlacements, Frits}]],
 				Packet[BatchedUnitOperations[SampleLink][[1]][{Model,Name,Composition,Volume,Container}]],
 				Packet[BatchedUnitOperations[SampleLink][[1]][Container][{Model,Name,MaxVolume}]],
 				Packet[BatchedUnitOperations[FractionContainerPlacements][[All,1]][{Model,MaxVolume}]],
@@ -9091,6 +9073,21 @@ simulateExperimentFlashChromatography[
 			Simulation->currentSimulation
 		],
 		{Download::NotLinkField,Download::FieldDoesntExist}
+	];
+
+	{
+		simulatedSamplePackets,
+		simulatedSampleContainerPackets,
+		simulatedFractionContainerPackets,
+		simulatedFritPackets
+	} = Map[
+		PickList[#, batchedUnitOperationPackets, ObjectP[Object[UnitOperation, FlashChromatography]]]&,
+		{
+			simulatedSamplePacketsPossiblyWithExtras,
+			simulatedSampleContainerPacketsPossiblyWithExtras,
+			simulatedFractionContainerPacketsPossiblyWithExtras,
+			simulatedFritPacketsPossiblyWithExtras
+		}
 	];
 
 	(* Lookup the necessary option values *)
@@ -9137,7 +9134,8 @@ simulateExperimentFlashChromatography[
 	];
 
 	(* Get lists of all of the fraction container objects simulated for each sample *)
-	allFractionContainers=Lookup[#,Object,{}]&/@simulatedFractionContainerPackets;
+	(* We are skipping instances of $Failed in simulatedFractionContainerPackets, which might be from LabelSample UOs *)
+	allFractionContainers=Lookup[#,Object,{}]&/@DeleteCases[simulatedFractionContainerPackets,$Failed];
 
 	(* Trim the preferred fraction start and end times down to the number of containers we have (two full collection
 	rack's worth) if the number of containers is less than the number of preferred fractions *)
@@ -9291,7 +9289,7 @@ simulateExperimentFlashChromatography[
 	(*-- Update Frit Counts --*)
 
 	(* Get the non-null frit packets *)
-	nonNullSimulatedFritPackets=Cases[simulatedFritPackets,Except[Null]];
+	nonNullSimulatedFritPackets=Cases[simulatedFritPackets,Except[Null|$Failed]];
 
 	(* Get the frit objects and counts *)
 	simulatedFritObjects=Lookup[nonNullSimulatedFritPackets,Object,{}];
@@ -9331,11 +9329,11 @@ simulateExperimentFlashChromatography[
 	simulationWithLabels=Simulation[
 		Labels->Join[
 			Rule@@@Cases[
-				Transpose[{Lookup[myResolvedOptions,SampleLabel],simulatedSampleObjects}],
+				DeleteDuplicates[Transpose[{Lookup[myResolvedOptions,SampleLabel],simulatedSampleObjects}]],
 				{_String,ObjectP[]}
 			],
 			Rule@@@Cases[
-				Transpose[{Lookup[myResolvedOptions,SampleContainerLabel],simulatedSampleContainerObjects}],
+				DeleteDuplicates[Transpose[{Lookup[myResolvedOptions,SampleContainerLabel],simulatedSampleContainerObjects}]],
 				{_String,ObjectP[]}
 			],
 			Rule@@@Cases[
@@ -9398,7 +9396,7 @@ DefineOptions[ExperimentFlashChromatographyOptions,
 	SharedOptions:>{ExperimentFlashChromatography}
 ];
 
-ExperimentFlashChromatographyOptions[myInput:ListableP[ObjectP[{Object[Container],Object[Sample]}]|_String],myOptions:OptionsPattern[]]:=Module[
+ExperimentFlashChromatographyOptions[myInput:ListableP[ObjectP[{Object[Container],Object[Sample],Model[Sample]}]|_String],myOptions:OptionsPattern[]]:=Module[
 	{listedOptions,noOutputOptions,options},
 
 	(* get the options as a list *)
@@ -9430,7 +9428,7 @@ DefineOptions[ExperimentFlashChromatographyPreview,
 	SharedOptions:>{ExperimentFlashChromatography}
 ];
 
-ExperimentFlashChromatographyPreview[myInput:ListableP[ObjectP[{Object[Container],Object[Sample]}]|_String],myOptions:OptionsPattern[]]:=Module[
+ExperimentFlashChromatographyPreview[myInput:ListableP[ObjectP[{Object[Container],Object[Sample],Model[Sample]}]|_String],myOptions:OptionsPattern[]]:=Module[
 	{listedOptions,noOutputOptions},
 
 	(* Get the options as a list*)
@@ -9454,7 +9452,7 @@ DefineOptions[ValidExperimentFlashChromatographyQ,
 ];
 
 ValidExperimentFlashChromatographyQ[
-	myInput:ListableP[ObjectP[{Object[Container],Object[Sample]}]|_String],
+	myInput:ListableP[ObjectP[{Object[Container],Object[Sample],Model[Sample]}]|_String],
 	myOptions:OptionsPattern[ValidExperimentFlashChromatographyQ]]:=Module[
 	{listedOptions,listedInput,preparedOptions,filterTests,initialTestDescription,allTests,verbose,outputFormat},
 

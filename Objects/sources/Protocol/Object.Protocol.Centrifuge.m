@@ -58,6 +58,18 @@ DefineObjectType[Object[Protocol, Centrifuge], {
 			Category -> "Centrifuge Balancing",
 			Developer -> True
 		},
+		TareRacksIndexMatched -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[
+				Object[Container],
+				Model[Container]
+			],
+			Description -> "For each member of WorkingContainers, the rack(s) used to weigh non-self-standing containers.",
+			Category -> "Centrifuge Balancing",
+			Developer -> True
+		},
 		Counterbalances -> {
 			Format -> Multiple,
 			Class -> Link,
@@ -122,7 +134,7 @@ DefineObjectType[Object[Protocol, Centrifuge], {
 			Format->Multiple,
 			Class->Link,
 			Pattern:>_Link,
-			Relation->Object[Protocol,SampleManipulation],
+			Relation->Object[Protocol,SampleManipulation]|Object[Protocol,RoboticSamplePreparation]|Object[Protocol,ManualSamplePreparation]|Object[Notebook,Script],
 			Description->"The set of instructions specifying the transfer of balance solvent to the Counterbalances for balancing the vacuum centrifuge during evaporation.",
 			Category->"Centrifuge Balancing",
 			Developer->True
@@ -130,7 +142,7 @@ DefineObjectType[Object[Protocol, Centrifuge], {
 		CounterbalancePrepPrimitives->{
 			Format->Multiple,
 			Class->Expression,
-			Pattern:>SampleManipulationP,
+			Pattern:>SampleManipulationP|SamplePreparationP,
 			Description->"The list of manipulations used to generated CounterbalancePrepManipulation.",
 			Category->"Centrifuge Balancing",
 			Developer->True

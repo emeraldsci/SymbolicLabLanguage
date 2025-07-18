@@ -74,7 +74,7 @@ DefineObjectType[Object[UnitOperation, AdjustpH], {
 			Pattern :> _Link,
 			Relation -> Object[Data, pHAdjustment],
 			Description -> "For each member of SampleLink, the pH adjustment data used to determine the fixed additions in this protocol. The fixed additions and the titrant reflected in the data will be added as fixed additions in this protocol.",
-			Category->"Pre-Tritrated Additions",
+			Category->"Pre-Titrated Additions",
 			IndexMatching -> SampleLink
 		},
 		FixedAdditions -> {
@@ -83,7 +83,37 @@ DefineObjectType[Object[UnitOperation, AdjustpH], {
 			Pattern :> {{MassP|VolumeP|GreaterP[1], ObjectP[{Model[Sample], Object[Sample]}]}..}|None,
 			Relation -> Null,
 			Description -> "For each member of SampleLink, a list of all samples and amounts to add in the form {amount, sample}.",
-			Category->"Pre-Tritrated Additions",
+			Category->"Pre-Titrated Additions",
+			IndexMatching -> SampleLink
+		},
+		TitrationMethod -> {
+			Format -> Multiple,
+			Class -> Expression,
+			Pattern :> Robotic|Manual,
+			Relation -> Null,
+			Description -> "For each member of SampleLink, if the transfer for pH adjustment is manual or robotic.",
+			Category->"pH Titration",
+			IndexMatching -> SampleLink
+		},
+		TitrationInstrument -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link|None,
+			Relation -> Object[Instrument, pHTitrator]|Model[Instrument, pHTitrator],
+			Description -> "For each member of SampleLink, the instrument for making transfer in pH adjustment.",
+			Category->"pH Titration",
+			IndexMatching -> SampleLink
+		},
+		TitrationContainerCap->{
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[
+				Model[Item, Cap],
+				Object[Item, Cap]
+			],
+			Description -> "For each member of SampleLink, the cap that is used to assemble pH probe, overhead stir rod and tube of pHTitrator when TitrationMethod is set to Robotic.",
+			Category->"pH Titration",
 			IndexMatching -> SampleLink
 		},
 		pHMeter -> {

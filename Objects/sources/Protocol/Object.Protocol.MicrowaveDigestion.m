@@ -152,7 +152,7 @@ DefineObjectType[Object[Protocol, MicrowaveDigestion], {
     LoadReactionVesselPrimitives->{
       Format->Multiple,
       Class->Expression,
-      Pattern:>SampleManipulationP,
+      Pattern:>SampleManipulationP|SamplePreparationP,
       Description -> "A set of instructions specifying the loading of the reaction vessel with the sample.",
       Category -> "Sample Preparation"
     },
@@ -160,7 +160,7 @@ DefineObjectType[Object[Protocol, MicrowaveDigestion], {
       Format->Single,
       Class->Link,
       Pattern:>_Link,
-      Relation->Object[Protocol,SampleManipulation],
+      Relation->Object[Protocol,SampleManipulation]|Object[Protocol,ManualSamplePreparation],
       Description->"A sample manipulation protocol used to load the sample into the reaction vessel.",
       Category -> "Sample Preparation"
     },
@@ -278,7 +278,7 @@ DefineObjectType[Object[Protocol, MicrowaveDigestion], {
     PrepareOutputPrimitives->{
       Format->Multiple,
       Class->Expression,
-      Pattern:>SampleManipulationP,
+      Pattern:>SampleManipulationP|SamplePreparationP,
       Description -> "A set of instructions specifying the transfer and dilution of samples from the reaction vessel to the ContainersOut.",
       Category -> "Sample Preparation"
     },
@@ -286,7 +286,7 @@ DefineObjectType[Object[Protocol, MicrowaveDigestion], {
       Format->Single,
       Class->Link,
       Pattern:>_Link,
-      Relation->Object[Protocol,SampleManipulation],
+      Relation->Object[Protocol,SampleManipulation]|Object[Protocol,ManualSamplePreparation],
       Description->"A sample manipulation protocol used to transfer and dilute samples from the reaction vessel to the ContainersOut.",
       Category -> "Sample Preparation"
     },

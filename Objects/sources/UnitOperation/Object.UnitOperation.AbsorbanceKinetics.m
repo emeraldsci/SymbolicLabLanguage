@@ -36,7 +36,7 @@ With[{
 				Category -> "Absorbance Measurement"
 			},
 			WavelengthReal->{
-				Format->Single,
+				Format->Multiple,
 				Class->Real,
 				Pattern:>GreaterEqualP[0*Nano*Meter],
 				Units->Meter Nano,
@@ -45,7 +45,7 @@ With[{
 				Migration -> SplitField
 			},
 			WavelengthExpression -> {
-				Format -> Single,
+				Format -> Multiple,
 				Class -> Expression,
 				Pattern :> Alternatives[All,_Span],
 				Description->"The wavelengths at which sample absorbance is measured.",

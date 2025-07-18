@@ -43,7 +43,80 @@ DefineTests[
 			ObjectP[Object[Protocol,FlashFreeze]],
 			Messages:>{Warning::AliquotRequired}
 		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a sample that does not exist (name form):"},
+			ExperimentFlashFreeze[Object[Sample, "Nonexistent sample"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a container that does not exist (name form):"},
+			ExperimentFlashFreeze[Object[Container, Vessel, "Nonexistent container"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a sample that does not exist (ID form):"},
+			ExperimentFlashFreeze[Object[Sample, "id:12345678"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a container that does not exist (ID form):"},
+			ExperimentFlashFreeze[Object[Container, Vessel, "id:12345678"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Do NOT throw a message if we have a simulated sample but a simulation is specified that indicates that it is simulated:"},
+			Module[{containerPackets, containerID, sampleID, samplePackets, simulationToPassIn},
+				containerPackets = UploadSample[
+					Model[Container,Vessel,"50mL Tube"],
+					{"Work Surface", Object[Container, Bench, "The Bench of Testing"]},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True
+				];
+				simulationToPassIn = Simulation[containerPackets];
+				containerID = Lookup[First[containerPackets], Object];
+				samplePackets = UploadSample[
+					Model[Sample, "Milli-Q water"],
+					{"A1", containerID},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True,
+					Simulation -> simulationToPassIn,
+					InitialAmount -> 25 Milliliter
+				];
+				sampleID = Lookup[First[samplePackets], Object];
+				simulationToPassIn = UpdateSimulation[simulationToPassIn, Simulation[samplePackets]];
 
+				ExperimentFlashFreeze[sampleID, Simulation -> simulationToPassIn, Output -> Options]
+			],
+			{__Rule}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Do NOT throw a message if we have a simulated container but a simulation is specified that indicates that it is simulated:"},
+			Module[{containerPackets, containerID, sampleID, samplePackets, simulationToPassIn},
+				containerPackets = UploadSample[
+					Model[Container,Vessel,"50mL Tube"],
+					{"Work Surface", Object[Container, Bench, "The Bench of Testing"]},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True
+				];
+				simulationToPassIn = Simulation[containerPackets];
+				containerID = Lookup[First[containerPackets], Object];
+				samplePackets = UploadSample[
+					Model[Sample, "Milli-Q water"],
+					{"A1", containerID},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True,
+					Simulation -> simulationToPassIn,
+					InitialAmount -> 25 Milliliter
+				];
+				sampleID = Lookup[First[samplePackets], Object];
+				simulationToPassIn = UpdateSimulation[simulationToPassIn, Simulation[samplePackets]];
+
+				ExperimentFlashFreeze[containerID, Simulation -> simulationToPassIn, Output -> Options]
+			],
+			{__Rule}
+		],
 		(* Messages: errors and warnings *)
 		Example[{Messages,"DiscardedSamples","If the provided sample is discarded, an error will be thrown:"},
 			ExperimentFlashFreeze[Object[Sample,"Test discarded sample for ExperimentFlashFreeze" <> $SessionUUID]],
@@ -172,22 +245,6 @@ DefineTests[
 			Lookup[options,ImageSample],
 			False,
 			Variables:>{options}
-		],
-		Example[{Options,PreparatoryPrimitives,"Specify prepared samples to be flash frozen:"},
-			protocol=ExperimentFlashFreeze["Flash Freeze sample 1",
-				PreparatoryPrimitives->{
-					Define[Name->"Flash Freeze sample 1",
-						Container->Model[Container,Vessel,"2mL Tube"]
-					],
-					Transfer[
-						Source->Model[Sample,"Milli-Q water"],
-						Destination->"Flash Freeze sample 1",Amount->50*Microliter
-					]
-				}
-			];
-			Download[protocol,PreparatoryPrimitives],
-			{SampleManipulationP..},
-			Variables:>{protocol}
 		],
 		Example[{Options,PreparatoryUnitOperations,"Specify prepared samples to be flash frozen:"},
 			protocol=ExperimentFlashFreeze["Flash Freeze sample 1",
@@ -440,7 +497,7 @@ DefineTests[
 		Example[{Options,AliquotSampleLabel,"Flash freeze a single liquid sample by first aliquotting the sample with a label:"},
 			options=ExperimentFlashFreeze[Object[Sample,"FlashFreeze Test Water Sample2" <> $SessionUUID],Aliquot->True,AliquotSampleStorageCondition->CryogenicStorage,AliquotSampleLabel->"aliquot sample label 1",Output->Options];
 			Lookup[options,AliquotSampleLabel],
-			"aliquot sample label 1",
+			{"aliquot sample label 1"},
 			Variables:>{options}
 		],
 		Example[{Options,AliquotAmount,"The amount of each sample that should be transferred from the SamplesIn into the AliquotSamples which should be used in lieu of the SamplesIn for the experiment:"},
@@ -517,7 +574,7 @@ DefineTests[
 		Example[{Options,AliquotContainer,"The desired type of container that should be used to prepare and house the aliquot samples, with indices indicating grouping of samples in the same plates, if desired:"},
 			options=ExperimentFlashFreeze[Object[Sample,"FlashFreeze Test Water Sample1" <> $SessionUUID],AliquotContainer->Model[Container,Vessel,"2mL Tube"],AliquotSampleStorageCondition->CryogenicStorage,Output->Options];
 			Lookup[options,AliquotContainer],
-			{1,ObjectP[Model[Container,Vessel,"2mL Tube"]]},
+			{{1, ObjectP[Model[Container, Vessel, "2mL Tube"]]}},
 			Variables:>{options}
 		],
 		Example[{Options,SamplesInStorageCondition,"Indicates how the input samples of the experiment should be stored:"},
@@ -548,8 +605,41 @@ DefineTests[
 		Example[{Options,DestinationWell,"Indicates how the desired position in the corresponding AliquotContainer in which the aliquot samples will be placed:"},
 			options=ExperimentFlashFreeze[Object[Sample,"FlashFreeze Test Water Sample2" <> $SessionUUID],DestinationWell->"A1",AliquotSampleStorageCondition->CryogenicStorage,Output->Options];
 			Lookup[options,DestinationWell],
-			"A1",
+			{"A1"},
 			Variables:>{options}
+		],
+		Example[{Options, {PreparedModelContainer, PreparedModelAmount}, "Specify the container in which an input Model[Sample] should be prepared:"},
+			options = ExperimentFlashFreeze[
+				{Model[Sample, "id:8qZ1VWNmdLBD"](* Milli-Q water *), Model[Sample, "id:8qZ1VWNmdLBD"](* Milli-Q water *)},
+				PreparedModelContainer -> Model[Container, Vessel, "id:bq9LA0dBGGR6"](* 50mL Tube *),
+				PreparedModelAmount -> 200 Microliter,
+				Output -> Options
+			];
+			prepUOs = Lookup[options, PreparatoryUnitOperations];
+			{
+				prepUOs[[-1, 1]][Sample],
+				prepUOs[[-1, 1]][Container],
+				prepUOs[[-1, 1]][Amount],
+				prepUOs[[-1, 1]][Well],
+				prepUOs[[-1, 1]][ContainerLabel]
+			},
+			{
+				{ObjectP[Model[Sample, "id:8qZ1VWNmdLBD"]]..},
+				{ObjectP[Model[Container, Vessel, "id:bq9LA0dBGGR6"]]..},
+				{EqualP[200 Microliter]..},
+				{"A1", "A1"},
+				{_String, _String}
+			},
+			Variables :> {options, prepUOs}
+		],
+		Example[{Options, PreparedModelAmount, "If using model input, the sample preparation options can also be specified:"},
+			ExperimentFlashFreeze[
+				Model[Sample, "Milli-Q water"],
+				PreparedModelAmount -> 0.5 Milliliter,
+				Aliquot -> True,
+				Mix -> True
+			],
+			ObjectP[Object[Protocol, FlashFreeze]]
 		],
 		Example[{Options,Name,"Specify the name of a protocol:"},
 			options=ExperimentFlashFreeze[Object[Sample,"FlashFreeze Test Water Sample1" <> $SessionUUID],Name->"My Exploratory FlashFreeze Test Protocol",Output->Options];
@@ -752,7 +842,7 @@ DefineTests[
 			<|Object->waterSample6,Name->"Test discarded sample for ExperimentFlashFreeze" <> $SessionUUID,Status->Discarded,DeveloperObject->True|>,
 			<|Object->dcmSamp2,Name->"FlashFreeze Test DCM Sample2" <> $SessionUUID,Status->Available,DeveloperObject->True|>,
 			<|Object->waterSampleModelSevered,Name->"FlashFreeze Test Water Sample Severed Model" <> $SessionUUID,Status->Available,DeveloperObject->True,Model->Null|>,
-			<|Object->concentrationSample,Name->"Test Sample for ExperimentFlashFreeze with concentration" <> $SessionUUID,Replace[Composition]->{{100 VolumePercent,Link[Model[Molecule,"Water"]]},{10 Micromolar,Link[Model[Molecule,"Uracil"]]}},Status->Available,DeveloperObject->True|>,
+			<|Object->concentrationSample,Name->"Test Sample for ExperimentFlashFreeze with concentration" <> $SessionUUID,Replace[Composition]->{{100 VolumePercent,Link[Model[Molecule,"Water"]],Now},{10 Micromolar,Link[Model[Molecule,"Uracil"]],Now}},Status->Available,DeveloperObject->True|>,
 			<|Object->waterSample9,Name->"FlashFreeze Test Water Sample9 for high volume" <> $SessionUUID,Status->Available,DeveloperObject->True|>,
 			<|Object->largeContainerSample,Name->"FlashFreeze large container sample" <> $SessionUUID,Status->Available,DeveloperObject->True|>,
 			<|Object->plateSample1,Name->"FlashFreeze Test Water Sample in Plate1" <> $SessionUUID,Status->Available,DeveloperObject->True|>,

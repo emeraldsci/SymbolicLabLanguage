@@ -13,7 +13,7 @@ DefineObjectType[Model[Item,WeighBoat], {
 			Format -> Single,
 			Class -> Expression,
 			Pattern :> MaterialP,
-			Description -> "The material of which the spatula is composed.",
+			Description -> "The material of which the weigh boat is composed.",
 			Category -> "Physical Properties"
 		},
 		MaxVolume->{

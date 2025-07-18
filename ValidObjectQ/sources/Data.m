@@ -357,7 +357,7 @@ validDataUVMeltingQTests[packet:PacketP[Object[Data,MeltingCurve]]]:={
 (*validDataAppearanceQTests*)
 
 
-validDataAppearanceQTests[packet:PacketP[Object[Data,Appearance]]]:=If[MatchQ[Lookup[packet,Type],Except[Object[Data,Appearance,Crystals]]],
+validDataAppearanceQTests[packet:PacketP[Object[Data,Appearance]]]:=If[MatchQ[Lookup[packet,Type],Except[Object[Data,Appearance,Crystals]|Object[Data,Appearance,Colonies]]],
 	(* For all Appearance that are not Crystals *)
 	{
 		(* Shared Fields - Null*)
@@ -407,8 +407,6 @@ validDataAppearanceQTests[packet:PacketP[Object[Data,Appearance]]]:=If[MatchQ[Lo
 (*validDataAppearanceColoniesQTests*)
 
 validDataAppearanceColoniesQTests[packet:PacketP[Object[Data,Appearance]]]:={
-	(* Shared Fields - Null*)
-	NullFieldTest[packet, {ImageFile}],
 	
 	(* Different types of imaging parameters are all required together *)
 	RequiredTogetherTest[packet,{
@@ -1411,26 +1409,42 @@ validDataCoulterCountQTests[packet:PacketP[Object[Data,CoulterCount]]]:={
 	(* fields that should not be null *)
 	NotNullFieldTest[packet,{
 		(* Shared fields *)
-		Instrument,
-		DataFile,
+		DataFiles,
 		Protocol,
 		SamplesIn,
 		(* Unique fields *)
 		DataType,
-		SystemSuitabilityError,
 		Oversaturated,
 		ApertureDiameter,
 		StopCondition,
 		RunTime,
 		RunVolume,
-		CountRate,
-		ApertureResistance
+		RawTotalCount,
+		UnblankedTotalCount,
+		UnblankedDiameterDistribution,
+		UnblankedConcentration
 	}],
 
 	(* fields that should be null *)
 	NullFieldTest[packet,{
 		SamplesOut
-	}]
+	}],
+
+	(* if we are not dealing with a blank, then processed data is expected *)
+	If[!MatchQ[Lookup[packet, DataType], Blank],
+		NotNullFieldTest[packet,{
+			DiameterDistribution,
+			BlankDiameterDistribution,
+			BlankTotalCount,
+			BlankData,
+			TotalCount,
+			ModalDiameter,
+			AverageDiameter,
+			Concentration,
+			DerivedConcentration
+		}],
+		Nothing
+	]
 };
 
 
@@ -2418,47 +2432,49 @@ Test[
 (*validDataMeltingPointQTests*)
 
 
-validDataMeltingPointQTests[packet:PacketP[Object[Data,MeltingPoint]]]:={
+validDataMeltingPointQTests[packet : PacketP[Object[Data, MeltingPoint]]] := {
 	(* shared fields not null *)
-	NotNullFieldTest[packet, {DateCreated, Protocol, SamplesIn(*or SamplesOut?*), Instrument, DataFile}],
-	UniquelyInformedTest[packet, {Instrument, Protocol, Qualifications, Maintenance}],
-
-	(* shared fields null *)
-	NullFieldTest[packet, {SamplesOut,Sensor}],
-
-	(* unique fields not null *)
 	NotNullFieldTest[packet, {
-		SealCapillary, StartTemperature, EquilibrationTime, EndTemperature,
-		TemperatureRampRate, Position, MeltingCurve, RawDataFiles, DataFiles,
-		ReflectionVideoFile, TransmissionVideoFile
+		DateCreated,
+		Protocol,
+		SamplesIn,
+		Instrument,
+		AssaySample,
+		NumberOfReplicates,
+		SealCapillary,
+		StartTemperature,
+		EquilibrationTime,
+		EndTemperature,
+		TemperatureRampRate,
+		Position,
+		MeltingCurve,
+		MeltingCurveFile,
+		CapillaryVideoFile,
+		TransmissionVideoFile,
+		MeasurementMethod
 	}],
 
-	(*Fields that are required together because they depend on each other*)
-	RequiredTogetherTest[packet, {StartPoint, StartPointThreshold}],
-	RequiredTogetherTest[packet, {MeniscusPoint, MeniscusPointThreshold}],
-	RequiredTogetherTest[packet, {ClearPoint, ClearPointThreshold}],
+	(* shared fields null *)
+	NullFieldTest[packet, {SamplesOut, Sensor}],
 
 	(*Logical Maximum/Minimum Tests*)
 	FieldComparisonTest[packet, {StartTemperature, EndTemperature}, Less],
 
-
 	(* Sync Tests: sync data between replicates *)
-	With[
-		{
-			dataPackets = If[!NullQ[packet[Replicates]],
-				Download[packet[Replicates]]
-			]
-		},
-		If[!NullQ[dataPackets],
-			Return[{
-				FieldSyncTest[{dataPackets, packet}, NumberOfReplicates],
-				FieldSyncTest[{dataPackets, packet}, SealCapillary],
-				FieldSyncTest[{dataPackets, packet}, StartTemperature],
-				FieldSyncTest[{dataPackets, packet}, EquilibrationTime],
-				FieldSyncTest[{dataPackets, packet}, EndTemperature],
-				FieldSyncTest[{dataPackets, packet}, TemperatureRampRate]
-			}],
-			Nothing
+	If[
+		NullQ[packet[Replicates]],
+		Nothing,
+		Module[{dataPackets},
+			dataPackets = Download[packet[Replicates]];
+			{
+				FieldSyncTest[Flatten@{dataPackets, packet}, MeasurementMethod],
+				FieldSyncTest[Flatten@{dataPackets, packet}, NumberOfReplicates],
+				FieldSyncTest[Flatten@{dataPackets, packet}, SealCapillary],
+				FieldSyncTest[Flatten@{dataPackets, packet}, StartTemperature],
+				FieldSyncTest[Flatten@{dataPackets, packet}, EquilibrationTime],
+				FieldSyncTest[Flatten@{dataPackets, packet}, EndTemperature],
+				FieldSyncTest[Flatten@{dataPackets, packet}, TemperatureRampRate]
+			}
 		]
 	]
 };
@@ -2683,7 +2699,7 @@ validDatapHAdjustmentQTests[packet:PacketP[Object[Data,pHAdjustment]]]:= {
 	(* Shared Field Shaping *)
 	NullFieldTest[packet,{SamplesOut}],
 
-	NotNullFieldTest[packet,{Instrument}]
+	NotNullFieldTest[packet,{Probe}]
 };
 
 
@@ -3310,8 +3326,8 @@ Test["If ExperimentType -> SingleCrystal, Reflections must be populated; otherwi
 	{SingleCrystal, Except[{}]} | {Powder, {}}
 ],
 
-Test["If ExperimentType -> Powder, DiffractionSpectrum must be populated; otherwise, it must be Null:",
-	Lookup[packet, {ExperimentType, DiffractionSpectrum}],
+Test["If ExperimentType -> Powder, DiffractionPattern must be populated; otherwise, it must be Null:",
+	Lookup[packet, {ExperimentType, DiffractionPattern}],
 	{Powder, QuantityArrayP[{{AngularDegree, ArbitraryUnit}..}]} | {SingleCrystal, Null}
 ]
 };
@@ -3583,6 +3599,64 @@ validDataLiquidParticleCountQTests[packet:PacketP[Object[Data,LiquidParticleCoun
 
 
 
+(* ::Subsection::Closed:: *)
+(*validDataQuantifyCellsQTests*)
+
+validDataQuantifyCellsQTests[packet:PacketP[Object[Data,QuantifyCells]]]:={
+	(* Not null fields *)
+	NotNullFieldTest[packet,
+		{
+			Methods,
+			QuantificationUnit,
+			Instruments
+		}
+	],
+	RequiredTogetherTest[packet,
+		{
+			Absorbances,
+			AbsorbanceData
+		}
+	],
+	RequiredTogetherTest[packet,
+		{
+			Turbidities,
+			NephelometryData
+		}
+	]
+
+};
+
+
+
+(* ::Subsection::Closed:: *)
+(*validDataQuantifyColoniesQTests*)
+
+validDataQuantifyColoniesQTests[packet:PacketP[Object[Data,QuantifyColonies]]]:={
+	(* Not null fields *)
+	NotNullFieldTest[packet,
+		{
+			QuantificationColonySamples,
+			QuantificationColonyDilutionFactors,
+			MinReliableColonyCount,
+			MaxReliableColonyCount,
+			AllColonyAppearanceLog,
+			ColonyAnalysisLog,
+			TotalColonyCountsLog
+		}
+	],
+
+	RequiredTogetherTest[packet,
+		{
+			TotalColonyCounts,
+			PopulationTotalColonyCount,
+			CellConcentration
+		}
+	]
+
+};
+
+
+
 (* ::Subsection:: *)
 (* Test Registration *)
 
@@ -3662,3 +3736,5 @@ registerValidQTestFunction[Object[Data, XRayDiffraction], validDataXRayDiffracti
 registerValidQTestFunction[Object[Data, CircularDichroism], validDataCircularDichroismQTests];
 registerValidQTestFunction[Object[Data, LiquidParticleCount], validDataLiquidParticleCountQTests];
 registerValidQTestFunction[Object[Data, WettedLength],validDataWettedLengthQTests];
+registerValidQTestFunction[Object[Data, QuantifyCells], validDataQuantifyCellsQTests];
+registerValidQTestFunction[Object[Data, QuantifyColonies], validDataQuantifyColoniesQTests];

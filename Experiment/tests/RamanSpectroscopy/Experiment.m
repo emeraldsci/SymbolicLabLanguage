@@ -45,7 +45,7 @@ DefineTests[ExperimentRamanSpectroscopy,
     ],
     Example[{Basic, "Perform Raman spectroscopy on a single container:"},
       ExperimentRamanSpectroscopy[
-        Object[Container, Vessel, "Fake container 1 for RamanSpectroscopy tests"]
+        Object[Container, Vessel, "Fake container 1 for RamanSpectroscopy tests" <> $SessionUUID]
       ],
       ObjectP[Object[Protocol, RamanSpectroscopy]],
       SetUp :> ($CreatedObjects = {}; Off[Warning::SamplesOutOfStock]; Off[Warning::InstrumentUndergoingMaintenance];),
@@ -60,12 +60,37 @@ DefineTests[ExperimentRamanSpectroscopy,
     (* == OPTIONS == *)
     (* ============= *)
 
+    Example[{Options, {PreparedModelContainer, PreparedModelAmount}, "Specify the amount of an input Model[Sample] and the container in which it is to be prepared:"},
+      options = ExperimentRamanSpectroscopy[
+        {Model[Sample, "Milli-Q water"], Model[Sample, "Milli-Q water"]},
+        PreparedModelContainer -> Model[Container, Vessel, "2mL Tube"],
+        PreparedModelAmount -> 1 Milliliter,
+        Output -> Options
+      ];
+      prepUOs = Lookup[options, PreparatoryUnitOperations];
+      {
+        prepUOs[[-1, 1]][Sample],
+        prepUOs[[-1, 1]][Container],
+        prepUOs[[-1, 1]][Amount],
+        prepUOs[[-1, 1]][Well],
+        prepUOs[[-1, 1]][ContainerLabel]
+      },
+      {
+        {ObjectP[Model[Sample, "id:8qZ1VWNmdLBD"]]..},
+        {ObjectP[Model[Container, Vessel, "id:3em6Zv9NjjN8"]]..},
+        {EqualP[1 Milliliter]..},
+        {"A1", "A1"},
+        {_String, _String}
+      },
+      Variables :> {options, prepUOs}
+    ],
+
     (* -- Aliquoting Options -- *)
 
     Example[{Options, AliquotSampleLabel, "Set the AliquotSampleLabel option:"},
       options = ExperimentRamanSpectroscopy[Object[Sample,"RamanSpectroscopy Test Liquid 1"], Aliquot -> True,AliquotSampleLabel -> "Water Aliquot", Output -> Options];
       Lookup[options, AliquotSampleLabel],
-      "Water Aliquot",
+      {"Water Aliquot"},
       Variables :> {options}
     ],
 
@@ -1771,9 +1796,9 @@ DefineTests[ExperimentRamanSpectroscopy,
 
     (* THIS TEST IS BRUTAL BUT DO NOT REMOVE IT. MAKE SURE YOUR FUNCTION DOESNT BUG ON THIS. *)
     Example[{Options,Name,"Specify the name of a protocol:"},
-      options=ExperimentRamanSpectroscopy[Object[Sample,"RamanSpectroscopy Test Liquid 3"],Name->"My Exploratory RamanSpectroscopy Test Protocol",Output->Options];
+      options=ExperimentRamanSpectroscopy[Object[Sample,"RamanSpectroscopy Test Liquid 3"],Name->"My Exploratory RamanSpectroscopy Test Protocol" <> $SessionUUID,Output->Options];
       Lookup[options,Name],
-      "My Exploratory RamanSpectroscopy Test Protocol",
+      "My Exploratory RamanSpectroscopy Test Protocol" <> $SessionUUID,
       Variables :> {options}
     ],
     Example[{Options,Template,"Inherit options from a previously run protocol:"},
@@ -1809,7 +1834,7 @@ DefineTests[ExperimentRamanSpectroscopy,
     Example[{Options,DestinationWell,"Indicates how the desired position in the corresponding AliquotContainer in which the aliquot samples will be placed:"},
       options=ExperimentRamanSpectroscopy[Object[Sample,"RamanSpectroscopy Test Liquid 3"],DestinationWell->"A1",Output->Options];
       Lookup[options,DestinationWell],
-      "A1",
+      {"A1"},
       Variables:>{options}
     ],
     Example[{Options,TargetConcentrationAnalyte,"Set the TargetConcentrationAnalyte option to specify which analyte to achieve the desired TargetConentration for dilution of aliquots of SamplesIn:"},
@@ -2166,13 +2191,13 @@ DefineTests[ExperimentRamanSpectroscopy,
     Example[{Options, AliquotContainer, "The desired type of container that should be used to prepare and house the aliquot samples, with indices indicating grouping of samples in the same plates, if desired:"},
       options = ExperimentRamanSpectroscopy[Object[Sample,"RamanSpectroscopy Test Liquid 3"], AliquotContainer -> Model[Container, Plate, "id:kEJ9mqR3XELE"], Output -> Options];
       Lookup[options, AliquotContainer],
-      {1, ObjectP[Model[Container, Plate, "id:kEJ9mqR3XELE"]]},
+      {{1, ObjectP[Model[Container, Plate, "id:kEJ9mqR3XELE"]]}},
       Variables :> {options}
     ],
     Example[{Options,DestinationWell,"Indicates the desired position in the corresponding AliquotContainer in which the aliquot samples will be placed:"},
       options=ExperimentRamanSpectroscopy[Object[Sample,"RamanSpectroscopy Test Liquid 3"],DestinationWell->"A1",Output->Options];
       Lookup[options,DestinationWell],
-      "A1",
+      {"A1"},
       Variables:>{options}
     ],
     Example[{Options,IncubateAliquotDestinationWell,"Indicates the desired position in the corresponding IncubateAliquotContainer in which the aliquot samples will be placed:"},
@@ -2235,25 +2260,6 @@ DefineTests[ExperimentRamanSpectroscopy,
 
 
     (* --- Sample Prep unit tests --- *)
-    Example[{Options,PreparatoryPrimitives,"Specify prepared samples to be characterized using Raman spectrsocopy:"},
-      options=ExperimentRamanSpectroscopy["test sample",
-        PreparatoryPrimitives->{
-          Define[
-            Name->"test sample",
-            Container->Model[Container, Vessel, "id:bq9LA0dBGGR6"]
-          ],
-          Transfer[
-            Source->Object[Sample,"RamanSpectroscopy Test Liquid 3"],
-            Amount->500*Microliter,
-            Destination->{"test sample","A1"}
-          ]
-        },
-        Output->Options
-      ];
-      Lookup[options,SampleType],
-      Liquid,
-      Variables:>{options}
-    ],
     Example[{Options,PreparatoryUnitOperations,"Specify prepared samples to be characterized using Raman spectrsocopy:"},
       options= ExperimentRamanSpectroscopy[
         "dissolved solid",
@@ -2303,6 +2309,30 @@ DefineTests[ExperimentRamanSpectroscopy,
     (* ============== *)
     (* == MESSAGES == *)
     (* ============== *)
+
+    (* -- ObjectDoesNotExist -- *)
+
+    Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a sample that does not exist (name form):"},
+      ExperimentRamanSpectroscopy[Object[Sample, "Nonexistent sample"]],
+      $Failed,
+      Messages :> {Download::ObjectDoesNotExist}
+    ],
+    Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a container that does not exist (name form):"},
+      ExperimentRamanSpectroscopy[Object[Container, Vessel, "Nonexistent container"]],
+      $Failed,
+      Messages :> {Download::ObjectDoesNotExist}
+    ],
+    Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a sample that does not exist (ID form):"},
+      ExperimentRamanSpectroscopy[Object[Sample, "id:12345678"]],
+      $Failed,
+      Messages :> {Download::ObjectDoesNotExist}
+    ],
+    Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a container that does not exist (ID form):"},
+      ExperimentRamanSpectroscopy[Object[Container, Vessel, "id:12345678"]],
+      $Failed,
+      Messages :> {Download::ObjectDoesNotExist}
+    ],
+
 
     (* -- Sample Quantity -- *)
 
@@ -3034,6 +3064,15 @@ DefineTests[ExperimentRamanSpectroscopy,
         EraseObject[$CreatedObjects, Force -> True, Verbose -> False];
         Unset[$CreatedObjects]
       )
+    ],
+    Example[{Options, PreparedModelAmount, "If using model input, the sample preparation options can also be specified:"},
+      ExperimentRamanSpectroscopy[
+        Model[Sample, "Ammonium hydroxide"],
+        PreparedModelAmount -> 0.5 Milliliter,
+        Aliquot -> True,
+        Mix -> True
+      ],
+      ObjectP[Object[Protocol, RamanSpectroscopy]]
     ]
 
     (* =========== *)
@@ -3041,6 +3080,8 @@ DefineTests[ExperimentRamanSpectroscopy,
     (* =========== *)
 
   },
+  (* without this, telescope crashes and the test fails *)
+  HardwareConfiguration->HighRAM,
 
   (* make it parallel *)
   (*Parallel -> True,*)
@@ -3056,26 +3097,26 @@ DefineTests[ExperimentRamanSpectroscopy,
     Module[{objs, existingObjs},
       objs = Quiet[Cases[
         Flatten[{
-          Object[Container, Bench, "Fake bench for RamanSpectroscopy tests"],
-          Object[Container, Plate, "Fake sample plate for RamanSpectroscopy tests"],
-          Object[Container,Plate,Irregular,Raman, "Fake tablet holder for RamanSpectroscopy tests"],
-          Object[Item, TabletCutter, "Fake tablet cutter for RamanSpectroscopy tests"],
-          Object[Item, TabletCrusher, "Fake tablet crusher for RamanSpectroscopy tests"],
-          Object[Item, TabletCrusherBag, "Fake tablet crusher bags for RamanSpectroscopy tests"],
-          Object[Instrument, RamanSpectrometer, "Fake instrument for RamanSpectroscopy tests"],
+          Object[Container, Bench, "Fake bench for RamanSpectroscopy tests" <> $SessionUUID],
+          Object[Container, Plate, "Fake sample plate for RamanSpectroscopy tests" <> $SessionUUID],
+          Object[Container,Plate,Irregular,Raman, "Fake tablet holder for RamanSpectroscopy tests" <> $SessionUUID],
+          Object[Item, TabletCutter, "Fake tablet cutter for RamanSpectroscopy tests" <> $SessionUUID],
+          Object[Item, TabletCrusher, "Fake tablet crusher for RamanSpectroscopy tests" <> $SessionUUID],
+          Object[Item, TabletCrusherBag, "Fake tablet crusher bags for RamanSpectroscopy tests" <> $SessionUUID],
+          Object[Instrument, RamanSpectrometer, "Fake instrument for RamanSpectroscopy tests" <> $SessionUUID],
           Object[Protocol,RamanSpectroscopy,"Parent Protocol for ExperimentRamanSpectroscopy testing"],
 
-          Object[Container, Vessel, "Fake container 1 for RamanSpectroscopy tests"],
-          Object[Container, Vessel, "Fake container 2 for RamanSpectroscopy tests"],
-          Object[Container, Vessel, "Fake container 3 for RamanSpectroscopy tests"],
-          Object[Container, Vessel, "Fake container 4 for RamanSpectroscopy tests"],
-          Object[Container, Vessel, "Fake container 5 for RamanSpectroscopy tests"],
-          Object[Container, Vessel, "Fake container 6 for RamanSpectroscopy tests"],
-          Object[Container, Vessel, "Fake container 7 for RamanSpectroscopy tests"],
-          Object[Container, Vessel, "Fake container 8 for RamanSpectroscopy tests"],
-          Object[Container, Vessel, "Fake container 9 for RamanSpectroscopy tests"],
-          Object[Container, Vessel, "Fake container 10 for RamanSpectroscopy tests"],
-          Object[Container, Vessel, "Fake container 11 for RamanSpectroscopy tests"],
+          Object[Container, Vessel, "Fake container 1 for RamanSpectroscopy tests" <> $SessionUUID],
+          Object[Container, Vessel, "Fake container 2 for RamanSpectroscopy tests" <> $SessionUUID],
+          Object[Container, Vessel, "Fake container 3 for RamanSpectroscopy tests" <> $SessionUUID],
+          Object[Container, Vessel, "Fake container 4 for RamanSpectroscopy tests" <> $SessionUUID],
+          Object[Container, Vessel, "Fake container 5 for RamanSpectroscopy tests" <> $SessionUUID],
+          Object[Container, Vessel, "Fake container 6 for RamanSpectroscopy tests" <> $SessionUUID],
+          Object[Container, Vessel, "Fake container 7 for RamanSpectroscopy tests" <> $SessionUUID],
+          Object[Container, Vessel, "Fake container 8 for RamanSpectroscopy tests" <> $SessionUUID],
+          Object[Container, Vessel, "Fake container 9 for RamanSpectroscopy tests" <> $SessionUUID],
+          Object[Container, Vessel, "Fake container 10 for RamanSpectroscopy tests" <> $SessionUUID],
+          Object[Container, Vessel, "Fake container 11 for RamanSpectroscopy tests" <> $SessionUUID],
           Object[Sample,"RamanSpectroscopy Test Liquid 1"],
           Object[Sample,"RamanSpectroscopy Test Liquid 2"],
           Object[Sample,"RamanSpectroscopy Test Liquid 3"],
@@ -3106,13 +3147,13 @@ DefineTests[ExperimentRamanSpectroscopy,
           liquidSample1, liquidSample2, liquidSample3, solidSample1, solidSample2, solidSample3, tabletSample1, tabletSample2, tabletSample3, smallSolidSample1
         },
         (* set up fake bench as a location for the vessel *)
-        fakeBench = Upload[<|Type -> Object[Container, Bench], Model -> Link[Model[Container, Bench, "The Bench of Testing"], Objects], Name -> "Fake bench for RamanSpectroscopy tests", DeveloperObject -> True, StorageCondition -> Link[Model[StorageCondition, "Ambient Storage"]]|>];
+        fakeBench = Upload[<|Type -> Object[Container, Bench], Model -> Link[Model[Container, Bench, "The Bench of Testing"], Objects], Name -> "Fake bench for RamanSpectroscopy tests" <> $SessionUUID, DeveloperObject -> True, StorageCondition -> Link[Model[StorageCondition, "Ambient Storage"]]|>];
 
         (* set up instrument and tablet cursher bags *)
         instrument = Upload[<|
           Type -> Object[Instrument, RamanSpectrometer],
           Model ->Link[Model[Instrument, RamanSpectrometer, "THz Raman WPS"],Objects],
-          Name -> "Fake instrument for RamanSpectroscopy tests",
+          Name -> "Fake instrument for RamanSpectroscopy tests" <> $SessionUUID,
           Status ->Available,
           DeveloperObject->True
         |>];
@@ -3120,7 +3161,7 @@ DefineTests[ExperimentRamanSpectroscopy,
         tabletCrusherBags = Upload[<|
           Type -> Object[Item, TabletCrusherBag],
           Model -> Link[Model[Item, TabletCrusherBag, "Silent Knight tablet crusher bag"], Objects],
-          Name -> "Fake tablet crusher bags for RamanSpectroscopy tests",
+          Name -> "Fake tablet crusher bags for RamanSpectroscopy tests" <> $SessionUUID,
           StorageCondition -> Link[Model[StorageCondition, "Ambient Storage"]],
           Count -> 50,
           Status -> Available
@@ -3175,21 +3216,21 @@ DefineTests[ExperimentRamanSpectroscopy,
           Status -> ConstantArray[Available,15],
           Name ->
               {
-                "Fake container 1 for RamanSpectroscopy tests",
-                "Fake container 2 for RamanSpectroscopy tests",
-                "Fake container 3 for RamanSpectroscopy tests",
-                "Fake container 4 for RamanSpectroscopy tests",
-                "Fake container 5 for RamanSpectroscopy tests",
-                "Fake container 6 for RamanSpectroscopy tests",
-                "Fake container 7 for RamanSpectroscopy tests",
-                "Fake container 8 for RamanSpectroscopy tests",
-                "Fake container 9 for RamanSpectroscopy tests",
-                "Fake sample plate for RamanSpectroscopy tests",
-                "Fake tablet holder for RamanSpectroscopy tests",
-                "Fake tablet cutter for RamanSpectroscopy tests",
-                "Fake tablet crusher for RamanSpectroscopy tests",
-                "Fake container 10 for RamanSpectroscopy tests",
-                "Fake container 11 for RamanSpectroscopy tests"
+                "Fake container 1 for RamanSpectroscopy tests" <> $SessionUUID,
+                "Fake container 2 for RamanSpectroscopy tests" <> $SessionUUID,
+                "Fake container 3 for RamanSpectroscopy tests" <> $SessionUUID,
+                "Fake container 4 for RamanSpectroscopy tests" <> $SessionUUID,
+                "Fake container 5 for RamanSpectroscopy tests" <> $SessionUUID,
+                "Fake container 6 for RamanSpectroscopy tests" <> $SessionUUID,
+                "Fake container 7 for RamanSpectroscopy tests" <> $SessionUUID,
+                "Fake container 8 for RamanSpectroscopy tests" <> $SessionUUID,
+                "Fake container 9 for RamanSpectroscopy tests" <> $SessionUUID,
+                "Fake sample plate for RamanSpectroscopy tests" <> $SessionUUID,
+                "Fake tablet holder for RamanSpectroscopy tests" <> $SessionUUID,
+                "Fake tablet cutter for RamanSpectroscopy tests" <> $SessionUUID,
+                "Fake tablet crusher for RamanSpectroscopy tests" <> $SessionUUID,
+                "Fake container 10 for RamanSpectroscopy tests" <> $SessionUUID,
+                "Fake container 11 for RamanSpectroscopy tests" <> $SessionUUID
               }
         ];
 
@@ -3289,7 +3330,7 @@ DefineTests[ExperimentRamanSpectroscopy,
             <|Object -> liquidSample2, Model -> Null|>,
             <|
               Object -> liquidSample3, Model -> Null,
-              Replace[Composition] -> {{90 VolumePercent, Link[Model[Molecule, "id:vXl9j57PmP5D"]]}, {Null, Null}, {0.1 Molar, Link[Model[Molecule, "Sodium Chloride"]]}}
+              Replace[Composition] -> {{90 VolumePercent, Link[Model[Molecule, "id:vXl9j57PmP5D"]], Now}, {Null, Null, Null}, {0.1 Molar, Link[Model[Molecule, "Sodium Chloride"]], Now}}
             |>,
             <|Object -> solidSample1, Model -> Null|>,
             <|Object -> solidSample2, Model -> Null|>,
@@ -3297,7 +3338,7 @@ DefineTests[ExperimentRamanSpectroscopy,
             <|Object -> tabletSample1, Model -> Null|>,
             <|Object -> tabletSample2, Model -> Null|>,
             <|Object -> tabletSample3, Model -> Null|>,
-            <|Object->concentrationSample,Replace[Composition]->{{100 VolumePercent,Link[Model[Molecule,"Water"]]},{5 Micromolar,Link[Model[Molecule,"Uracil"]]}},Status->Available,DeveloperObject->True|>
+            <|Object->concentrationSample,Replace[Composition]->{{100 VolumePercent,Link[Model[Molecule,"Water"]], Now},{5 Micromolar,Link[Model[Molecule,"Uracil"]],Now}},Status->Available,DeveloperObject->True|>
 
           }
         ],
@@ -3317,26 +3358,26 @@ DefineTests[ExperimentRamanSpectroscopy,
     Module[{objs, existingObjs},
       objs = Quiet[Cases[
         Flatten[{
-          Object[Container, Bench, "Fake bench for RamanSpectroscopy tests"],
-          Object[Container, Plate, "Fake sample plate for RamanSpectroscopy tests"],
-          Object[Container,Plate,Irregular,Raman, "Fake tablet holder for RamanSpectroscopy tests"],
-          Object[Item, TabletCutter, "Fake tablet cutter for RamanSpectroscopy tests"],
-          Object[Item, TabletCrusher, "Fake tablet crusher for RamanSpectroscopy tests"],
-          Object[Item, TabletCrusherBag, "Fake tablet crusher bags for RamanSpectroscopy tests"],
-          Object[Instrument, RamanSpectrometer, "Fake instrument for RamanSpectroscopy tests"],
+          Object[Container, Bench, "Fake bench for RamanSpectroscopy tests" <> $SessionUUID],
+          Object[Container, Plate, "Fake sample plate for RamanSpectroscopy tests" <> $SessionUUID],
+          Object[Container,Plate,Irregular,Raman, "Fake tablet holder for RamanSpectroscopy tests" <> $SessionUUID],
+          Object[Item, TabletCutter, "Fake tablet cutter for RamanSpectroscopy tests" <> $SessionUUID],
+          Object[Item, TabletCrusher, "Fake tablet crusher for RamanSpectroscopy tests" <> $SessionUUID],
+          Object[Item, TabletCrusherBag, "Fake tablet crusher bags for RamanSpectroscopy tests" <> $SessionUUID],
+          Object[Instrument, RamanSpectrometer, "Fake instrument for RamanSpectroscopy tests" <> $SessionUUID],
           Object[Protocol,RamanSpectroscopy,"Parent Protocol for ExperimentRamanSpectroscopy testing"],
 
-          Object[Container, Vessel, "Fake container 1 for RamanSpectroscopy tests"],
-          Object[Container, Vessel, "Fake container 2 for RamanSpectroscopy tests"],
-          Object[Container, Vessel, "Fake container 3 for RamanSpectroscopy tests"],
-          Object[Container, Vessel, "Fake container 4 for RamanSpectroscopy tests"],
-          Object[Container, Vessel, "Fake container 5 for RamanSpectroscopy tests"],
-          Object[Container, Vessel, "Fake container 6 for RamanSpectroscopy tests"],
-          Object[Container, Vessel, "Fake container 7 for RamanSpectroscopy tests"],
-          Object[Container, Vessel, "Fake container 8 for RamanSpectroscopy tests"],
-          Object[Container, Vessel, "Fake container 9 for RamanSpectroscopy tests"],
-          Object[Container, Vessel, "Fake container 10 for RamanSpectroscopy tests"],
-          Object[Container, Vessel, "Fake container 11 for RamanSpectroscopy tests"],
+          Object[Container, Vessel, "Fake container 1 for RamanSpectroscopy tests" <> $SessionUUID],
+          Object[Container, Vessel, "Fake container 2 for RamanSpectroscopy tests" <> $SessionUUID],
+          Object[Container, Vessel, "Fake container 3 for RamanSpectroscopy tests" <> $SessionUUID],
+          Object[Container, Vessel, "Fake container 4 for RamanSpectroscopy tests" <> $SessionUUID],
+          Object[Container, Vessel, "Fake container 5 for RamanSpectroscopy tests" <> $SessionUUID],
+          Object[Container, Vessel, "Fake container 6 for RamanSpectroscopy tests" <> $SessionUUID],
+          Object[Container, Vessel, "Fake container 7 for RamanSpectroscopy tests" <> $SessionUUID],
+          Object[Container, Vessel, "Fake container 8 for RamanSpectroscopy tests" <> $SessionUUID],
+          Object[Container, Vessel, "Fake container 9 for RamanSpectroscopy tests" <> $SessionUUID],
+          Object[Container, Vessel, "Fake container 10 for RamanSpectroscopy tests" <> $SessionUUID],
+          Object[Container, Vessel, "Fake container 11 for RamanSpectroscopy tests" <> $SessionUUID],
           Object[Sample,"RamanSpectroscopy Test Liquid 1"],
           Object[Sample,"RamanSpectroscopy Test Liquid 2"],
           Object[Sample,"RamanSpectroscopy Test Liquid 3"],
@@ -3377,13 +3418,13 @@ DefineTests[ExperimentRamanSpectroscopyOptions,
   {
     Example[{Basic, "Display the option values which will be used in the experiment:"},
       ExperimentRamanSpectroscopyOptions[
-        Object[Sample,"RamanSpectroscopyOptions Test Solid 1"]
+        Object[Sample,"RamanSpectroscopyOptions Test Solid 1" <> $SessionUUID]
       ],
       _Grid
     ],
     Example[{Basic, "View any potential issues with provided inputs/options displayed:"},
       ExperimentRamanSpectroscopyOptions[
-        Object[Sample,"RamanSpectroscopyOptions Test Solid 1"],
+        Object[Sample,"RamanSpectroscopyOptions Test Solid 1" <> $SessionUUID],
         ObjectiveMagnification -> Null,
         FloodLight -> False
       ],
@@ -3393,9 +3434,9 @@ DefineTests[ExperimentRamanSpectroscopyOptions,
     Example[{Options, OutputFormat, "If OutputFormat -> List, return a list of options:"},
       ExperimentRamanSpectroscopyOptions[
         {
-          Object[Sample,"RamanSpectroscopyOptions Test Solid 1"],
-          Object[Sample,"RamanSpectroscopyOptions Test Solid 2"],
-          Object[Sample,"RamanSpectroscopyOptions Test Solid 3"]
+          Object[Sample,"RamanSpectroscopyOptions Test Solid 1" <> $SessionUUID],
+          Object[Sample,"RamanSpectroscopyOptions Test Solid 2" <> $SessionUUID],
+          Object[Sample,"RamanSpectroscopyOptions Test Solid 3" <> $SessionUUID]
         },
         OutputFormat -> List
       ],
@@ -3415,29 +3456,29 @@ DefineTests[ExperimentRamanSpectroscopyOptions,
     Module[{objs, existingObjs},
       objs = Quiet[Cases[
         Flatten[{
-          Object[Container, Bench, "Fake bench for RamanSpectroscopyOptions tests"],
-          Object[Container,Plate,Irregular,Raman, "Fake tablet holder for RamanSpectroscopyOptions tests"],
-          Object[Instrument, RamanSpectrometer, "Fake instrument for RamanSpectroscopyOptions tests"],
+          Object[Container, Bench, "Fake bench for RamanSpectroscopyOptions tests" <> $SessionUUID],
+          Object[Container,Plate,Irregular,Raman, "Fake tablet holder for RamanSpectroscopyOptions tests" <> $SessionUUID],
+          Object[Instrument, RamanSpectrometer, "Fake instrument for RamanSpectroscopyOptions tests" <> $SessionUUID],
 
-          Object[Container, Plate, "Fake sample plate for RamanSpectroscopyOptions tests"],
-          Object[Container, Vessel, "Fake container 1 for RamanSpectroscopyOptions tests"],
-          Object[Container, Vessel, "Fake container 2 for RamanSpectroscopyOptions tests"],
-          Object[Container, Vessel, "Fake container 3 for RamanSpectroscopyOptions tests"],
-          Object[Container, Vessel, "Fake container 4 for RamanSpectroscopyOptions tests"],
-          Object[Container, Vessel, "Fake container 5 for RamanSpectroscopyOptions tests"],
-          Object[Container, Vessel, "Fake container 6 for RamanSpectroscopyOptions tests"],
-          Object[Container, Vessel, "Fake container 7 for RamanSpectroscopyOptions tests"],
-          Object[Container, Vessel, "Fake container 8 for RamanSpectroscopyOptions tests"],
-          Object[Container, Vessel, "Fake container 9 for RamanSpectroscopyOptions tests"],
-          Object[Sample,"RamanSpectroscopyOptions Test Liquid 1"],
-          Object[Sample,"RamanSpectroscopyOptions Test Liquid 2"],
-          Object[Sample,"RamanSpectroscopyOptions Test Liquid 3"],
-          Object[Sample,"RamanSpectroscopyOptions Test Solid 1"],
-          Object[Sample,"RamanSpectroscopyOptions Test Solid 2"],
-          Object[Sample,"RamanSpectroscopyOptions Test Solid 3"],
-          Object[Sample,"RamanSpectroscopyOptions Test Tablet 1"],
-          Object[Sample,"RamanSpectroscopyOptions Test Tablet 2"],
-          Object[Sample,"RamanSpectroscopyOptions Test Tablet 3"]
+          Object[Container, Plate, "Fake sample plate for RamanSpectroscopyOptions tests" <> $SessionUUID],
+          Object[Container, Vessel, "Fake container 1 for RamanSpectroscopyOptions tests" <> $SessionUUID],
+          Object[Container, Vessel, "Fake container 2 for RamanSpectroscopyOptions tests" <> $SessionUUID],
+          Object[Container, Vessel, "Fake container 3 for RamanSpectroscopyOptions tests" <> $SessionUUID],
+          Object[Container, Vessel, "Fake container 4 for RamanSpectroscopyOptions tests" <> $SessionUUID],
+          Object[Container, Vessel, "Fake container 5 for RamanSpectroscopyOptions tests" <> $SessionUUID],
+          Object[Container, Vessel, "Fake container 6 for RamanSpectroscopyOptions tests" <> $SessionUUID],
+          Object[Container, Vessel, "Fake container 7 for RamanSpectroscopyOptions tests" <> $SessionUUID],
+          Object[Container, Vessel, "Fake container 8 for RamanSpectroscopyOptions tests" <> $SessionUUID],
+          Object[Container, Vessel, "Fake container 9 for RamanSpectroscopyOptions tests" <> $SessionUUID],
+          Object[Sample,"RamanSpectroscopyOptions Test Liquid 1" <> $SessionUUID],
+          Object[Sample,"RamanSpectroscopyOptions Test Liquid 2" <> $SessionUUID],
+          Object[Sample,"RamanSpectroscopyOptions Test Liquid 3" <> $SessionUUID],
+          Object[Sample,"RamanSpectroscopyOptions Test Solid 1" <> $SessionUUID],
+          Object[Sample,"RamanSpectroscopyOptions Test Solid 2" <> $SessionUUID],
+          Object[Sample,"RamanSpectroscopyOptions Test Solid 3" <> $SessionUUID],
+          Object[Sample,"RamanSpectroscopyOptions Test Tablet 1" <> $SessionUUID],
+          Object[Sample,"RamanSpectroscopyOptions Test Tablet 2" <> $SessionUUID],
+          Object[Sample,"RamanSpectroscopyOptions Test Tablet 3" <> $SessionUUID]
         }],
         ObjectP[]
       ]];
@@ -3452,13 +3493,13 @@ DefineTests[ExperimentRamanSpectroscopyOptions,
           liquidSample1, liquidSample2, liquidSample3, solidSample1, solidSample2, solidSample3, tabletSample1, tabletSample2, tabletSample3
         },
         (* set up fake bench as a location for the vessel *)
-        fakeBench = Upload[<|Type -> Object[Container, Bench], Model -> Link[Model[Container, Bench, "The Bench of Testing"], Objects], Name -> "Fake bench for RamanSpectroscopyOptions tests", DeveloperObject -> True, StorageCondition -> Link[Model[StorageCondition, "Ambient Storage"]]|>];
+        fakeBench = Upload[<|Type -> Object[Container, Bench], Model -> Link[Model[Container, Bench, "The Bench of Testing"], Objects], Name -> "Fake bench for RamanSpectroscopyOptions tests" <> $SessionUUID, DeveloperObject -> True, StorageCondition -> Link[Model[StorageCondition, "Ambient Storage"]]|>];
 
         (* set up instrument and tablet cursher bags *)
         instrument = Upload[<|
           Type -> Object[Instrument, RamanSpectrometer],
           Model ->Link[Model[Instrument, RamanSpectrometer, "THz Raman WPS"],Objects],
-          Name -> "Fake instrument for RamanSpectroscopyOptions tests",
+          Name -> "Fake instrument for RamanSpectroscopyOptions tests" <> $SessionUUID,
           Status -> Available,
           DeveloperObject->True
         |>];
@@ -3516,16 +3557,16 @@ DefineTests[ExperimentRamanSpectroscopyOptions,
               },
           Name ->
               {
-                "Fake container 1 for RamanSpectroscopyOptions tests",
-                "Fake container 2 for RamanSpectroscopyOptions tests",
-                "Fake container 3 for RamanSpectroscopyOptions tests",
-                "Fake container 4 for RamanSpectroscopyOptions tests",
-                "Fake container 5 for RamanSpectroscopyOptions tests",
-                "Fake container 6 for RamanSpectroscopyOptions tests",
-                "Fake container 7 for RamanSpectroscopyOptions tests",
-                "Fake container 8 for RamanSpectroscopyOptions tests",
-                "Fake container 9 for RamanSpectroscopyOptions tests",
-                "Fake sample plate for RamanSpectroscopyOptions tests"
+                "Fake container 1 for RamanSpectroscopyOptions tests" <> $SessionUUID,
+                "Fake container 2 for RamanSpectroscopyOptions tests" <> $SessionUUID,
+                "Fake container 3 for RamanSpectroscopyOptions tests" <> $SessionUUID,
+                "Fake container 4 for RamanSpectroscopyOptions tests" <> $SessionUUID,
+                "Fake container 5 for RamanSpectroscopyOptions tests" <> $SessionUUID,
+                "Fake container 6 for RamanSpectroscopyOptions tests" <> $SessionUUID,
+                "Fake container 7 for RamanSpectroscopyOptions tests" <> $SessionUUID,
+                "Fake container 8 for RamanSpectroscopyOptions tests" <> $SessionUUID,
+                "Fake container 9 for RamanSpectroscopyOptions tests" <> $SessionUUID,
+                "Fake sample plate for RamanSpectroscopyOptions tests" <> $SessionUUID
               }
         ];
 
@@ -3577,15 +3618,15 @@ DefineTests[ExperimentRamanSpectroscopyOptions,
               },
           Name ->
               {
-                "RamanSpectroscopyOptions Test Liquid 1",
-                "RamanSpectroscopyOptions Test Liquid 2",
-                "RamanSpectroscopyOptions Test Liquid 3",
-                "RamanSpectroscopyOptions Test Solid 1",
-                "RamanSpectroscopyOptions Test Solid 2",
-                "RamanSpectroscopyOptions Test Solid 3",
-                "RamanSpectroscopyOptions Test Tablet 1",
-                "RamanSpectroscopyOptions Test Tablet 2",
-                "RamanSpectroscopyOptions Test Tablet 3"
+                "RamanSpectroscopyOptions Test Liquid 1" <> $SessionUUID,
+                "RamanSpectroscopyOptions Test Liquid 2" <> $SessionUUID,
+                "RamanSpectroscopyOptions Test Liquid 3" <> $SessionUUID,
+                "RamanSpectroscopyOptions Test Solid 1" <> $SessionUUID,
+                "RamanSpectroscopyOptions Test Solid 2" <> $SessionUUID,
+                "RamanSpectroscopyOptions Test Solid 3" <> $SessionUUID,
+                "RamanSpectroscopyOptions Test Tablet 1" <> $SessionUUID,
+                "RamanSpectroscopyOptions Test Tablet 2" <> $SessionUUID,
+                "RamanSpectroscopyOptions Test Tablet 3" <> $SessionUUID
               }
         ];
 
@@ -3615,7 +3656,7 @@ DefineTests[ExperimentRamanSpectroscopyOptions,
                 <|Object -> liquidSample2, Model -> Null|>,
                 <|
                   Object -> liquidSample3, Model -> Null,
-                  Replace[Composition] -> {{90 VolumePercent, Link[Model[Molecule, "id:vXl9j57PmP5D"]]}, {Null, Null}, {0.1 Molar, Link[Model[Molecule, "Sodium Chloride"]]}}
+                  Replace[Composition] -> {{90 VolumePercent, Link[Model[Molecule, "id:vXl9j57PmP5D"]], Now}, {Null, Null, Null}, {0.1 Molar, Link[Model[Molecule, "Sodium Chloride"]], Now}}
                 |>,
                 <|Object -> solidSample1, Model -> Null|>,
                 <|Object -> solidSample2, Model -> Null|>,
@@ -3638,28 +3679,28 @@ DefineTests[ExperimentRamanSpectroscopyOptions,
     Module[{objs, existingObjs},
       objs = Quiet[Cases[
         Flatten[{
-          Object[Container, Bench, "Fake bench for RamanSpectroscopyOptions tests"],
-          Object[Container, Plate, "Fake sample plate for RamanSpectroscopyOptions tests"],
-          Object[Container,Plate,Irregular,Raman, "Fake tablet holder for RamanSpectroscopyOptions tests"],
-          Object[Instrument, RamanSpectrometer, "Fake instrument for RamanSpectroscopyOptions tests"],
-          Object[Container, Vessel, "Fake container 1 for RamanSpectroscopyOptions tests"],
-          Object[Container, Vessel, "Fake container 2 for RamanSpectroscopyOptions tests"],
-          Object[Container, Vessel, "Fake container 3 for RamanSpectroscopyOptions tests"],
-          Object[Container, Vessel, "Fake container 4 for RamanSpectroscopyOptions tests"],
-          Object[Container, Vessel, "Fake container 5 for RamanSpectroscopyOptions tests"],
-          Object[Container, Vessel, "Fake container 6 for RamanSpectroscopyOptions tests"],
-          Object[Container, Vessel, "Fake container 7 for RamanSpectroscopyOptions tests"],
-          Object[Container, Vessel, "Fake container 8 for RamanSpectroscopyOptions tests"],
-          Object[Container, Vessel, "Fake container 9 for RamanSpectroscopyOptions tests"],
-          Object[Sample,"RamanSpectroscopyOptions Test Liquid 1"],
-          Object[Sample,"RamanSpectroscopyOptions Test Liquid 2"],
-          Object[Sample,"RamanSpectroscopyOptions Test Liquid 3"],
-          Object[Sample,"RamanSpectroscopyOptions Test Solid 1"],
-          Object[Sample,"RamanSpectroscopyOptions Test Solid 2"],
-          Object[Sample,"RamanSpectroscopyOptions Test Solid 3"],
-          Object[Sample,"RamanSpectroscopyOptions Test Tablet 1"],
-          Object[Sample,"RamanSpectroscopyOptions Test Tablet 2"],
-          Object[Sample,"RamanSpectroscopyOptions Test Tablet 3"]
+          Object[Container, Bench, "Fake bench for RamanSpectroscopyOptions tests" <> $SessionUUID],
+          Object[Container, Plate, "Fake sample plate for RamanSpectroscopyOptions tests" <> $SessionUUID],
+          Object[Container,Plate,Irregular,Raman, "Fake tablet holder for RamanSpectroscopyOptions tests" <> $SessionUUID],
+          Object[Instrument, RamanSpectrometer, "Fake instrument for RamanSpectroscopyOptions tests" <> $SessionUUID],
+          Object[Container, Vessel, "Fake container 1 for RamanSpectroscopyOptions tests" <> $SessionUUID],
+          Object[Container, Vessel, "Fake container 2 for RamanSpectroscopyOptions tests" <> $SessionUUID],
+          Object[Container, Vessel, "Fake container 3 for RamanSpectroscopyOptions tests" <> $SessionUUID],
+          Object[Container, Vessel, "Fake container 4 for RamanSpectroscopyOptions tests" <> $SessionUUID],
+          Object[Container, Vessel, "Fake container 5 for RamanSpectroscopyOptions tests" <> $SessionUUID],
+          Object[Container, Vessel, "Fake container 6 for RamanSpectroscopyOptions tests" <> $SessionUUID],
+          Object[Container, Vessel, "Fake container 7 for RamanSpectroscopyOptions tests" <> $SessionUUID],
+          Object[Container, Vessel, "Fake container 8 for RamanSpectroscopyOptions tests" <> $SessionUUID],
+          Object[Container, Vessel, "Fake container 9 for RamanSpectroscopyOptions tests" <> $SessionUUID],
+          Object[Sample,"RamanSpectroscopyOptions Test Liquid 1" <> $SessionUUID],
+          Object[Sample,"RamanSpectroscopyOptions Test Liquid 2" <> $SessionUUID],
+          Object[Sample,"RamanSpectroscopyOptions Test Liquid 3" <> $SessionUUID],
+          Object[Sample,"RamanSpectroscopyOptions Test Solid 1" <> $SessionUUID],
+          Object[Sample,"RamanSpectroscopyOptions Test Solid 2" <> $SessionUUID],
+          Object[Sample,"RamanSpectroscopyOptions Test Solid 3" <> $SessionUUID],
+          Object[Sample,"RamanSpectroscopyOptions Test Tablet 1" <> $SessionUUID],
+          Object[Sample,"RamanSpectroscopyOptions Test Tablet 2" <> $SessionUUID],
+          Object[Sample,"RamanSpectroscopyOptions Test Tablet 3" <> $SessionUUID]
         }],
         ObjectP[]
       ]];
@@ -3683,13 +3724,13 @@ DefineTests[ValidExperimentRamanSpectroscopyQ,
   {
     Example[{Basic, "Verify that the experiment can be run without issues:"},
       ValidExperimentRamanSpectroscopyQ[
-        Object[Sample,"ValidRamanSpectroscopyQ Test Solid 1"]
+        Object[Sample,"ValidRamanSpectroscopyQ Test Solid 1" <> $SessionUUID]
       ],
       True
     ],
     Example[{Basic, "Return False if there are problems with the inputs or options:"},
       ValidExperimentRamanSpectroscopyQ[
-        Object[Sample,"ValidRamanSpectroscopyQ Test Solid 1"],
+        Object[Sample,"ValidRamanSpectroscopyQ Test Solid 1" <> $SessionUUID],
         ObjectiveMagnification -> Null,
         FloodLight -> False
       ],
@@ -3697,14 +3738,14 @@ DefineTests[ValidExperimentRamanSpectroscopyQ,
     ],
     Example[{Options, OutputFormat, "Return a test summary:"},
       ValidExperimentRamanSpectroscopyQ[
-        Object[Sample,"ValidRamanSpectroscopyQ Test Solid 1"],
+        Object[Sample,"ValidRamanSpectroscopyQ Test Solid 1" <> $SessionUUID],
         OutputFormat -> TestSummary
       ],
       _EmeraldTestSummary
     ],
     Example[{Options, Verbose, "Print verbose messages reporting test passage/failure:"},
       ValidExperimentRamanSpectroscopyQ[
-        Object[Sample,"ValidRamanSpectroscopyQ Test Solid 1"],
+        Object[Sample,"ValidRamanSpectroscopyQ Test Solid 1" <> $SessionUUID],
         Verbose -> True
       ],
       True
@@ -3723,31 +3764,31 @@ DefineTests[ValidExperimentRamanSpectroscopyQ,
     Module[{objs, existingObjs},
       objs = Quiet[Cases[
         Flatten[{
-          Object[Container, Bench, "Fake bench for ValidRamanSpectroscopyQ tests"],
-          Object[Container, Plate, "Fake sample plate for ValidRamanSpectroscopyQ tests"],
-          Object[Container,Plate,Irregular,Raman, "Fake tablet holder for ValidRamanSpectroscopyQ tests"],
-          Object[Item, TabletCutter, "Fake tablet cutter for ValidRamanSpectroscopyQ tests"],
-          Object[Item, TabletCrusher, "Fake tablet crusher for ValidRamanSpectroscopyQ tests"],
-          Object[Item, TabletCrusherBag, "Fake tablet crusher bags for ValidRamanSpectroscopyQ tests"],
-          Object[Instrument, RamanSpectrometer, "Fake instrument for ValidRamanSpectroscopyQ tests"],
-          Object[Container, Vessel, "Fake container 1 for ValidRamanSpectroscopyQ tests"],
-          Object[Container, Vessel, "Fake container 2 for ValidRamanSpectroscopyQ tests"],
-          Object[Container, Vessel, "Fake container 3 for ValidRamanSpectroscopyQ tests"],
-          Object[Container, Vessel, "Fake container 4 for ValidRamanSpectroscopyQ tests"],
-          Object[Container, Vessel, "Fake container 5 for ValidRamanSpectroscopyQ tests"],
-          Object[Container, Vessel, "Fake container 6 for ValidRamanSpectroscopyQ tests"],
-          Object[Container, Vessel, "Fake container 7 for ValidRamanSpectroscopyQ tests"],
-          Object[Container, Vessel, "Fake container 8 for ValidRamanSpectroscopyQ tests"],
-          Object[Container, Vessel, "Fake container 9 for ValidRamanSpectroscopyQ tests"],
-          Object[Sample,"ValidRamanSpectroscopyQ Test Liquid 1"],
-          Object[Sample,"ValidRamanSpectroscopyQ Test Liquid 2"],
-          Object[Sample,"ValidRamanSpectroscopyQ Test Liquid 3"],
-          Object[Sample,"ValidRamanSpectroscopyQ Test Solid 1"],
-          Object[Sample,"ValidRamanSpectroscopyQ Test Solid 2"],
-          Object[Sample,"ValidRamanSpectroscopyQ Test Solid 3"],
-          Object[Sample,"ValidRamanSpectroscopyQ Test Tablet 1"],
-          Object[Sample,"ValidRamanSpectroscopyQ Test Tablet 2"],
-          Object[Sample,"ValidRamanSpectroscopyQ Test Tablet 3"]
+          Object[Container, Bench, "Fake bench for ValidRamanSpectroscopyQ tests" <> $SessionUUID],
+          Object[Container, Plate, "Fake sample plate for ValidRamanSpectroscopyQ tests" <> $SessionUUID],
+          Object[Container,Plate,Irregular,Raman, "Fake tablet holder for ValidRamanSpectroscopyQ tests" <> $SessionUUID],
+          Object[Item, TabletCutter, "Fake tablet cutter for ValidRamanSpectroscopyQ tests" <> $SessionUUID],
+          Object[Item, TabletCrusher, "Fake tablet crusher for ValidRamanSpectroscopyQ tests" <> $SessionUUID],
+          Object[Item, TabletCrusherBag, "Fake tablet crusher bags for ValidRamanSpectroscopyQ tests" <> $SessionUUID],
+          Object[Instrument, RamanSpectrometer, "Fake instrument for ValidRamanSpectroscopyQ tests" <> $SessionUUID],
+          Object[Container, Vessel, "Fake container 1 for ValidRamanSpectroscopyQ tests" <> $SessionUUID],
+          Object[Container, Vessel, "Fake container 2 for ValidRamanSpectroscopyQ tests" <> $SessionUUID],
+          Object[Container, Vessel, "Fake container 3 for ValidRamanSpectroscopyQ tests" <> $SessionUUID],
+          Object[Container, Vessel, "Fake container 4 for ValidRamanSpectroscopyQ tests" <> $SessionUUID],
+          Object[Container, Vessel, "Fake container 5 for ValidRamanSpectroscopyQ tests" <> $SessionUUID],
+          Object[Container, Vessel, "Fake container 6 for ValidRamanSpectroscopyQ tests" <> $SessionUUID],
+          Object[Container, Vessel, "Fake container 7 for ValidRamanSpectroscopyQ tests" <> $SessionUUID],
+          Object[Container, Vessel, "Fake container 8 for ValidRamanSpectroscopyQ tests" <> $SessionUUID],
+          Object[Container, Vessel, "Fake container 9 for ValidRamanSpectroscopyQ tests" <> $SessionUUID],
+          Object[Sample,"ValidRamanSpectroscopyQ Test Liquid 1" <> $SessionUUID],
+          Object[Sample,"ValidRamanSpectroscopyQ Test Liquid 2" <> $SessionUUID],
+          Object[Sample,"ValidRamanSpectroscopyQ Test Liquid 3" <> $SessionUUID],
+          Object[Sample,"ValidRamanSpectroscopyQ Test Solid 1" <> $SessionUUID],
+          Object[Sample,"ValidRamanSpectroscopyQ Test Solid 2" <> $SessionUUID],
+          Object[Sample,"ValidRamanSpectroscopyQ Test Solid 3" <> $SessionUUID],
+          Object[Sample,"ValidRamanSpectroscopyQ Test Tablet 1" <> $SessionUUID],
+          Object[Sample,"ValidRamanSpectroscopyQ Test Tablet 2" <> $SessionUUID],
+          Object[Sample,"ValidRamanSpectroscopyQ Test Tablet 3" <> $SessionUUID]
         }],
         ObjectP[]
       ]];
@@ -3762,13 +3803,13 @@ DefineTests[ValidExperimentRamanSpectroscopyQ,
           liquidSample1, liquidSample2, liquidSample3, solidSample1, solidSample2, solidSample3, tabletSample1, tabletSample2, tabletSample3
         },
         (* set up fake bench as a location for the vessel *)
-        fakeBench = Upload[<|Type -> Object[Container, Bench], Model -> Link[Model[Container, Bench, "The Bench of Testing"], Objects], Name -> "Fake bench for ValidRamanSpectroscopyQ tests", DeveloperObject -> True, StorageCondition -> Link[Model[StorageCondition, "Ambient Storage"]]|>];
+        fakeBench = Upload[<|Type -> Object[Container, Bench], Model -> Link[Model[Container, Bench, "The Bench of Testing"], Objects], Name -> "Fake bench for ValidRamanSpectroscopyQ tests" <> $SessionUUID, DeveloperObject -> True, StorageCondition -> Link[Model[StorageCondition, "Ambient Storage"]]|>];
 
         (* set up instrument and tablet crusher bags *)
         instrument = Upload[<|
           Type -> Object[Instrument, RamanSpectrometer],
           Model ->Link[Model[Instrument, RamanSpectrometer, "THz Raman WPS"],Objects],
-          Name -> "Fake instrument for ValidRamanSpectroscopyQ tests",
+          Name -> "Fake instrument for ValidRamanSpectroscopyQ tests" <> $SessionUUID,
           Status -> Available,
           DeveloperObject->True
         |>];
@@ -3776,7 +3817,7 @@ DefineTests[ValidExperimentRamanSpectroscopyQ,
         tabletCrusherBags = Upload[<|
           Type -> Object[Item, TabletCrusherBag],
           Model -> Link[Model[Item, TabletCrusherBag, "Silent Knight tablet crusher bag"], Objects],
-          Name -> "Fake tablet crusher bags for ValidRamanSpectroscopyQ tests",
+          Name -> "Fake tablet crusher bags for ValidRamanSpectroscopyQ tests" <> $SessionUUID,
           StorageCondition -> Link[Model[StorageCondition, "Ambient Storage"]],
           Count -> 50,
           Status -> Available
@@ -3846,19 +3887,19 @@ DefineTests[ValidExperimentRamanSpectroscopyQ,
               },
           Name ->
               {
-                "Fake container 1 for ValidRamanSpectroscopyQ tests",
-                "Fake container 2 for ValidRamanSpectroscopyQ tests",
-                "Fake container 3 for ValidRamanSpectroscopyQ tests",
-                "Fake container 4 for ValidRamanSpectroscopyQ tests",
-                "Fake container 5 for ValidRamanSpectroscopyQ tests",
-                "Fake container 6 for ValidRamanSpectroscopyQ tests",
-                "Fake container 7 for ValidRamanSpectroscopyQ tests",
-                "Fake container 8 for ValidRamanSpectroscopyQ tests",
-                "Fake container 9 for ValidRamanSpectroscopyQ tests",
-                "Fake sample plate for ValidRamanSpectroscopyQ tests",
-                "Fake tablet holder for ValidRamanSpectroscopyQ tests",
-                "Fake tablet cutter for ValidRamanSpectroscopyQ tests",
-                "Fake tablet crusher for ValidRamanSpectroscopyQ tests"
+                "Fake container 1 for ValidRamanSpectroscopyQ tests" <> $SessionUUID,
+                "Fake container 2 for ValidRamanSpectroscopyQ tests" <> $SessionUUID,
+                "Fake container 3 for ValidRamanSpectroscopyQ tests" <> $SessionUUID,
+                "Fake container 4 for ValidRamanSpectroscopyQ tests" <> $SessionUUID,
+                "Fake container 5 for ValidRamanSpectroscopyQ tests" <> $SessionUUID,
+                "Fake container 6 for ValidRamanSpectroscopyQ tests" <> $SessionUUID,
+                "Fake container 7 for ValidRamanSpectroscopyQ tests" <> $SessionUUID,
+                "Fake container 8 for ValidRamanSpectroscopyQ tests" <> $SessionUUID,
+                "Fake container 9 for ValidRamanSpectroscopyQ tests" <> $SessionUUID,
+                "Fake sample plate for ValidRamanSpectroscopyQ tests" <> $SessionUUID,
+                "Fake tablet holder for ValidRamanSpectroscopyQ tests" <> $SessionUUID,
+                "Fake tablet cutter for ValidRamanSpectroscopyQ tests" <> $SessionUUID,
+                "Fake tablet crusher for ValidRamanSpectroscopyQ tests" <> $SessionUUID
               }
         ];
 
@@ -3910,15 +3951,15 @@ DefineTests[ValidExperimentRamanSpectroscopyQ,
               },
           Name ->
               {
-                "ValidRamanSpectroscopyQ Test Liquid 1",
-                "ValidRamanSpectroscopyQ Test Liquid 2",
-                "ValidRamanSpectroscopyQ Test Liquid 3",
-                "ValidRamanSpectroscopyQ Test Solid 1",
-                "ValidRamanSpectroscopyQ Test Solid 2",
-                "ValidRamanSpectroscopyQ Test Solid 3",
-                "ValidRamanSpectroscopyQ Test Tablet 1",
-                "ValidRamanSpectroscopyQ Test Tablet 2",
-                "ValidRamanSpectroscopyQ Test Tablet 3"
+                "ValidRamanSpectroscopyQ Test Liquid 1" <> $SessionUUID,
+                "ValidRamanSpectroscopyQ Test Liquid 2" <> $SessionUUID,
+                "ValidRamanSpectroscopyQ Test Liquid 3" <> $SessionUUID,
+                "ValidRamanSpectroscopyQ Test Solid 1" <> $SessionUUID,
+                "ValidRamanSpectroscopyQ Test Solid 2" <> $SessionUUID,
+                "ValidRamanSpectroscopyQ Test Solid 3" <> $SessionUUID,
+                "ValidRamanSpectroscopyQ Test Tablet 1" <> $SessionUUID,
+                "ValidRamanSpectroscopyQ Test Tablet 2" <> $SessionUUID,
+                "ValidRamanSpectroscopyQ Test Tablet 3" <> $SessionUUID
               }
         ];
 
@@ -3948,7 +3989,7 @@ DefineTests[ValidExperimentRamanSpectroscopyQ,
                 <|Object -> liquidSample2, Model -> Null|>,
                 <|
                   Object -> liquidSample3, Model -> Null,
-                  Replace[Composition] -> {{90 VolumePercent, Link[Model[Molecule, "id:vXl9j57PmP5D"]]}, {Null, Null}, {0.1 Molar, Link[Model[Molecule, "Sodium Chloride"]]}}
+                  Replace[Composition] -> {{90 VolumePercent, Link[Model[Molecule, "id:vXl9j57PmP5D"]], Now}, {Null, Null, Null}, {0.1 Molar, Link[Model[Molecule, "Sodium Chloride"]], Now}}
                 |>,
                 <|Object -> solidSample1, Model -> Null|>,
                 <|Object -> solidSample2, Model -> Null|>,
@@ -3971,32 +4012,32 @@ DefineTests[ValidExperimentRamanSpectroscopyQ,
     Module[{objs, existingObjs},
       objs = Quiet[Cases[
         Flatten[{
-          Object[Container, Bench, "Fake bench for ValidRamanSpectroscopyQ tests"],
-          Object[Container, Plate, "Fake sample plate for ValidRamanSpectroscopyQ tests"],
-          Object[Container,Plate,Irregular,Raman, "Fake tablet holder for ValidRamanSpectroscopyQ tests"],
-          Object[Item, TabletCutter, "Fake tablet cutter for ValidRamanSpectroscopyQ tests"],
-          Object[Item, TabletCrusher, "Fake tablet crusher for ValidRamanSpectroscopyQ tests"],
-          Object[Item, TabletCrusherBag, "Fake tablet crusher bags for ValidRamanSpectroscopyQ tests"],
-          Object[Instrument, RamanSpectrometer, "Fake instrument for ValidRamanSpectroscopyQ tests"],
+          Object[Container, Bench, "Fake bench for ValidRamanSpectroscopyQ tests" <> $SessionUUID],
+          Object[Container, Plate, "Fake sample plate for ValidRamanSpectroscopyQ tests" <> $SessionUUID],
+          Object[Container,Plate,Irregular,Raman, "Fake tablet holder for ValidRamanSpectroscopyQ tests" <> $SessionUUID],
+          Object[Item, TabletCutter, "Fake tablet cutter for ValidRamanSpectroscopyQ tests" <> $SessionUUID],
+          Object[Item, TabletCrusher, "Fake tablet crusher for ValidRamanSpectroscopyQ tests" <> $SessionUUID],
+          Object[Item, TabletCrusherBag, "Fake tablet crusher bags for ValidRamanSpectroscopyQ tests" <> $SessionUUID],
+          Object[Instrument, RamanSpectrometer, "Fake instrument for ValidRamanSpectroscopyQ tests" <> $SessionUUID],
 
-          Object[Container, Vessel, "Fake container 1 for ValidRamanSpectroscopyQ tests"],
-          Object[Container, Vessel, "Fake container 2 for ValidRamanSpectroscopyQ tests"],
-          Object[Container, Vessel, "Fake container 3 for ValidRamanSpectroscopyQ tests"],
-          Object[Container, Vessel, "Fake container 4 for ValidRamanSpectroscopyQ tests"],
-          Object[Container, Vessel, "Fake container 5 for ValidRamanSpectroscopyQ tests"],
-          Object[Container, Vessel, "Fake container 6 for ValidRamanSpectroscopyQ tests"],
-          Object[Container, Vessel, "Fake container 7 for ValidRamanSpectroscopyQ tests"],
-          Object[Container, Vessel, "Fake container 8 for ValidRamanSpectroscopyQ tests"],
-          Object[Container, Vessel, "Fake container 9 for ValidRamanSpectroscopyQ tests"],
-          Object[Sample,"ValidRamanSpectroscopyQ Test Liquid 1"],
-          Object[Sample,"ValidRamanSpectroscopyQ Test Liquid 2"],
-          Object[Sample,"ValidRamanSpectroscopyQ Test Liquid 3"],
-          Object[Sample,"ValidRamanSpectroscopyQ Test Solid 1"],
-          Object[Sample,"ValidRamanSpectroscopyQ Test Solid 2"],
-          Object[Sample,"ValidRamanSpectroscopyQ Test Solid 3"],
-          Object[Sample,"ValidRamanSpectroscopyQ Test Tablet 1"],
-          Object[Sample,"ValidRamanSpectroscopyQ Test Tablet 2"],
-          Object[Sample,"ValidRamanSpectroscopyQ Test Tablet 3"]
+          Object[Container, Vessel, "Fake container 1 for ValidRamanSpectroscopyQ tests" <> $SessionUUID],
+          Object[Container, Vessel, "Fake container 2 for ValidRamanSpectroscopyQ tests" <> $SessionUUID],
+          Object[Container, Vessel, "Fake container 3 for ValidRamanSpectroscopyQ tests" <> $SessionUUID],
+          Object[Container, Vessel, "Fake container 4 for ValidRamanSpectroscopyQ tests" <> $SessionUUID],
+          Object[Container, Vessel, "Fake container 5 for ValidRamanSpectroscopyQ tests" <> $SessionUUID],
+          Object[Container, Vessel, "Fake container 6 for ValidRamanSpectroscopyQ tests" <> $SessionUUID],
+          Object[Container, Vessel, "Fake container 7 for ValidRamanSpectroscopyQ tests" <> $SessionUUID],
+          Object[Container, Vessel, "Fake container 8 for ValidRamanSpectroscopyQ tests" <> $SessionUUID],
+          Object[Container, Vessel, "Fake container 9 for ValidRamanSpectroscopyQ tests" <> $SessionUUID],
+          Object[Sample,"ValidRamanSpectroscopyQ Test Liquid 1" <> $SessionUUID],
+          Object[Sample,"ValidRamanSpectroscopyQ Test Liquid 2" <> $SessionUUID],
+          Object[Sample,"ValidRamanSpectroscopyQ Test Liquid 3" <> $SessionUUID],
+          Object[Sample,"ValidRamanSpectroscopyQ Test Solid 1" <> $SessionUUID],
+          Object[Sample,"ValidRamanSpectroscopyQ Test Solid 2" <> $SessionUUID],
+          Object[Sample,"ValidRamanSpectroscopyQ Test Solid 3" <> $SessionUUID],
+          Object[Sample,"ValidRamanSpectroscopyQ Test Tablet 1" <> $SessionUUID],
+          Object[Sample,"ValidRamanSpectroscopyQ Test Tablet 2" <> $SessionUUID],
+          Object[Sample,"ValidRamanSpectroscopyQ Test Tablet 3" <> $SessionUUID]
         }],
         ObjectP[]
       ]];
@@ -4022,19 +4063,19 @@ DefineTests[ExperimentRamanSpectroscopyPreview,
   {
     Example[{Basic,"No preview is currently available for ExperimentRamanSpectroscopy:"},
       ExperimentRamanSpectroscopyPreview[
-        Object[Sample,"RamanSpectroscopyPreview Test Liquid 1"]
+        Object[Sample,"RamanSpectroscopyPreview Test Liquid 1" <> $SessionUUID]
       ],
       Null
     ],
     Example[{Additional, "If you wish to understand how the experiment will be performed, try using ExperimentRamanSpectroscopyOptions:"},
       ExperimentRamanSpectroscopyOptions[
-        Object[Sample,"RamanSpectroscopyPreview Test Liquid 1"]
+        Object[Sample,"RamanSpectroscopyPreview Test Liquid 1" <> $SessionUUID]
       ],
       _Grid
     ],
     Example[{Additional, "The inputs and options can also be checked to verify that the experiment can be safely run using ValidExperimentRamanSpectroscopyQ:"},
       ValidExperimentRamanSpectroscopyQ[
-        Object[Sample,"RamanSpectroscopyPreview Test Liquid 1"]
+        Object[Sample,"RamanSpectroscopyPreview Test Liquid 1" <> $SessionUUID]
       ],
       True
     ]
@@ -4051,9 +4092,9 @@ DefineTests[ExperimentRamanSpectroscopyPreview,
     Module[{objs, existingObjs},
       objs = Quiet[Cases[
         Flatten[{
-          Object[Container, Bench, "Fake bench for RamanSpectroscopyPreview tests"],
-          Object[Container, Vessel, "Fake container 1 for RamanSpectroscopyPreview tests"],
-          Object[Sample,"RamanSpectroscopyPreview Test Liquid 1"]
+          Object[Container, Bench, "Fake bench for RamanSpectroscopyPreview tests" <> $SessionUUID],
+          Object[Container, Vessel, "Fake container 1 for RamanSpectroscopyPreview tests" <> $SessionUUID],
+          Object[Sample,"RamanSpectroscopyPreview Test Liquid 1" <> $SessionUUID]
         }],
         ObjectP[]
       ]];
@@ -4068,7 +4109,7 @@ DefineTests[ExperimentRamanSpectroscopyPreview,
           liquidSample1
         },
         (* set up fake bench as a location for the vessel *)
-        fakeBench = Upload[<|Type -> Object[Container, Bench], Model -> Link[Model[Container, Bench, "The Bench of Testing"], Objects], Name -> "Fake bench for RamanSpectroscopyPreview tests", DeveloperObject -> True, StorageCondition -> Link[Model[StorageCondition, "Ambient Storage"]]|>];
+        fakeBench = Upload[<|Type -> Object[Container, Bench], Model -> Link[Model[Container, Bench, "The Bench of Testing"], Objects], Name -> "Fake bench for RamanSpectroscopyPreview tests" <> $SessionUUID, DeveloperObject -> True, StorageCondition -> Link[Model[StorageCondition, "Ambient Storage"]]|>];
 
         (* set up fake containers for our samples *)
         {
@@ -4086,7 +4127,7 @@ DefineTests[ExperimentRamanSpectroscopyPreview,
               },
           Name ->
               {
-                "Fake container 1 for RamanSpectroscopyPreview tests"
+                "Fake container 1 for RamanSpectroscopyPreview tests" <> $SessionUUID
               }
         ];
 
@@ -4106,7 +4147,7 @@ DefineTests[ExperimentRamanSpectroscopyPreview,
               },
           Name ->
               {
-                "RamanSpectroscopyPreview Test Liquid 1"
+                "RamanSpectroscopyPreview Test Liquid 1" <> $SessionUUID
               }
         ];
 
@@ -4148,9 +4189,9 @@ DefineTests[ExperimentRamanSpectroscopyPreview,
     Module[{objs, existingObjs},
       objs = Quiet[Cases[
         Flatten[{
-          Object[Container, Bench, "Fake bench for RamanSpectroscopyPreview tests"],
-          Object[Container, Vessel, "Fake container 1 for RamanSpectroscopyPreview tests"],
-          Object[Sample,"RamanSpectroscopyPreview Test Liquid 1"]
+          Object[Container, Bench, "Fake bench for RamanSpectroscopyPreview tests" <> $SessionUUID],
+          Object[Container, Vessel, "Fake container 1 for RamanSpectroscopyPreview tests" <> $SessionUUID],
+          Object[Sample,"RamanSpectroscopyPreview Test Liquid 1" <> $SessionUUID]
         }],
         ObjectP[]
       ]];

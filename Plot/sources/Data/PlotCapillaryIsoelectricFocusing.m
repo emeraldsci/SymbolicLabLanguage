@@ -119,6 +119,8 @@ DefineOptions[PlotCapillaryIsoelectricFocusing,
 
 (* cief specific messages *)
 Warning::InvalidFluorescneceExposureTime="The data packet (`1`) does not contain data collected at the specified FluorescenceExposureTime. Data is present for the following exposures `2`. Defaulting to plot data at the longest exposure present (`3`).";
+Error::NoCapillaryIsoelectricFocusingDataToPlot = "The protocol object does not contain any associated capillary isoelectric focusing data.";
+Error::CapillaryIsoelectricFocusingProtocolDataNotPlotted = "The data objects linked to the input protocol were not able to be plotted. The data objects may be missing field values that are required for plotting. Please inspect the data objects to ensure that they contain the data to be plotted, and call PlotCapillaryIsoelectricFocusing or PlotObject on an individual data object to identify the missing values.";
 
 (* Raw Definition *)
 PlotCapillaryIsoelectricFocusing[primaryData:rawPlotInputP,inputOptions:OptionsPattern[]]:=Module[{outputs},
@@ -157,6 +159,77 @@ PlotCapillaryIsoelectricFocusing[primaryData:rawPlotInputP,inputOptions:OptionsP
 
 	(* Return rawToPacket output, adding any missing options *)
 	processELLPOutput[outputs,SafeOptions[PlotCapillaryIsoelectricFocusing,ToList@inputOptions]]
+];
+
+(* Protocol Overload *)
+PlotCapillaryIsoelectricFocusing[
+	obj: ObjectP[Object[Protocol, CapillaryIsoelectricFocusing]],
+	ops: OptionsPattern[PlotCapillaryIsoelectricFocusing]
+] := Module[{safeOps, output, data, previewPlot, plots, resolvedOptions, finalResult, outputPlot, outputOptions},
+
+	(* Check the options pattern and return a list of all options, using defaults for unspecified or invalid options *)
+	safeOps=SafeOptions[PlotCapillaryIsoelectricFocusing, ToList[ops]];
+
+	(* Requested output, either a single value or list of Alternatives[Result,Options,Preview,Tests] *)
+	output = ToList[Lookup[safeOps, Output]];
+
+	(* Download the data from the input protocol *)
+	data = Download[obj, Data];
+
+	(* Return an error if there is no data or it is not the correct data type *)
+	If[!MatchQ[data, {ObjectP[Object[Data, CapillaryIsoelectricFocusing]]..}],
+		Message[Error::NoCapillaryIsoelectricFocusingDataToPlot];
+		Return[$Failed]
+	];
+
+	(* If Preview is requested, return a plot with all of the data objects in the protocol overlaid in one plot *)
+	previewPlot = If[MemberQ[output, Preview],
+		PlotCapillaryIsoelectricFocusing[data, Sequence @@ ReplaceRule[safeOps, Output -> Preview]],
+		Null
+	];
+
+	(* If either Result or Options are requested, map over the data objects. Remove anything that failed from the list of plots to be displayed*)
+	{plots, resolvedOptions} = If[MemberQ[output, (Result | Options)],
+		Transpose[
+			(PlotCapillaryIsoelectricFocusing[#, Sequence @@ ReplaceRule[safeOps, Output -> {Result, Options}]]& /@ data) /. $Failed -> Nothing
+		],
+		{{}, {}}
+	];
+
+	(* If all of the data objects failed to plot, return an error *)
+	If[MatchQ[plots, (ListableP[{}] | ListableP[Null])] && MatchQ[previewPlot, (Null | $Failed)],
+		Message[Error::CapillaryIsoelectricFocusingProtocolDataNotPlotted];
+		Return[$Failed],
+		Nothing
+	];
+
+	(* If Result was requested, output the plots in slide view, unless there is only one plot then we can just show it not in slide view. *)
+	outputPlot = If[MemberQ[output, Result],
+		If[Length[plots] > 1,
+			SlideView[plots],
+			First[plots]
+		]
+	];
+
+	(* If Options were requested, just take the first set of options since they are the same for all plots. Make it a List first just in case there is only one option set. *)
+	outputOptions = If[MemberQ[output, Options],
+		First[ToList[resolvedOptions]]
+	];
+
+	(* Prepare our final result *)
+	finalResult = output /. {
+		Result -> outputPlot,
+		Options -> outputOptions,
+		Preview -> previewPlot,
+		Tests -> {}
+	};
+
+	(* Return the result *)
+	If[
+		Length[finalResult] == 1,
+		First[finalResult],
+		finalResult
+	]
 ];
 
 (* Packet Definition *)
@@ -308,7 +381,7 @@ PlotCapillaryIsoelectricFocusing[infs:ListableP[ObjectP[Object[Data,CapillaryIso
 		Message[Warning::InvalidFluorescneceExposureTime,invalidExposures[[All,1]],invalidExposures[[All,2]],invalidExposures[[All,3]]]
 	];
 
-	(* resolve exposure time to plot. if automatic or invalid, resolve to the longest exposure present, otherwise, resolve to whatever teh user specified *)
+	(* resolve exposure time to plot. if automatic or invalid, resolve to the longest exposure present, otherwise, resolve to whatever the user specified *)
 	resolvedFLExposure=MapThread[Function[{dataAvailableQ,specifiedExposures,presentExposures,longestExposure},
 		Which[
 			!dataAvailableQ,Null,

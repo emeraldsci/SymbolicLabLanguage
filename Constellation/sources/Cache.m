@@ -247,8 +247,7 @@ defaultValue[$Failed]:=$Failed;
 defaultValue[$Failed, _Symbol]:=$Failed;
 defaultValue[definition:{(_Rule | _RuleDelayed)...}]:=With[
 	{
-		format=Lookup[definition, Format],
-		class=Lookup[definition, Class]
+		format=Lookup[definition, Format]
 	},
 
 	If[MatchQ[format, Single | Computable],
@@ -457,12 +456,10 @@ DefineOptions[makeExplicitCache,
 (* We will add all of the fields with Missing["cache"] as a value if we are called from the whole object (Object->True) *)
 (* overload. We also always add the Type and ID fields to the object cache. *)
 makeExplicitCache[packets:{__}, ops:OptionsPattern[]]:=Module[
-	{options, objectOption, packetMetadata, nonNullPackets, objectPackets, badPackets, packetsWithKeys},
+	{options, objectOption, objectPackets, badPackets, packetsWithKeys},
 	options=OptionDefaults[makeExplicitCache, ToList[ops]];
 	objectOption=Lookup[options, "Object"];
 
-	(* Remove Null packets from our explicit cache. *)
-	nonNullPackets=DeleteCases[packetMetadata, KeyValuePattern["packet" -> Null]];
 	(* remove and message on packets with no Object *)
 	{badPackets, objectPackets}=groupGoodObjectPackets[packets];
 
@@ -488,7 +485,7 @@ makeExplicitCache[packets:{__}, ops:OptionsPattern[]]:=Module[
 (* No cache fallthrough *)
 makeExplicitCache[_, ops:OptionsPattern[]]:=<||>;
 
-(* This is to preserve the helpful user error messages, because makeExplicitCache no longer gauruntees user ordering (due to simulation) *)
+(* This is to preserve the helpful user error messages, because makeExplicitCache no longer guarantees user ordering (due to simulation) *)
 messageBadCachePackages[packets:{__}]:=Module[
 	{objectPackets, badPackets},
 	{badPackets, objectPackets}=groupGoodObjectPackets[packets];
@@ -506,7 +503,7 @@ groupGoodObjectPackets[packets:{__}]:=Module[{packetMetadata, nonNullPackets, ba
 			(* NOTE: This is equivalent to Lookup[#1, Object]. It's actually slower than Lookup, but it gracefully handles Null  *)
 			"object" -> Query[Key[Object]]@#1
 		|> &,
-		packets
+		DeleteDuplicates@packets
 	];
 
 	(* Remove Null packets from our explicit cache. *)

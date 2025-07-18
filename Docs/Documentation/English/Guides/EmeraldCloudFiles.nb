@@ -1,3 +1,429 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:a929142468a191cbc61db14290128bef7a9132c69862d557e0b623a84fbcfd50
-size 17787
+(* Content-type: application/vnd.wolfram.mathematica *)
+
+(*** Wolfram Notebook File ***)
+(* http://www.wolfram.com/nb *)
+
+(* CreatedBy='Mathematica 12.0' *)
+
+(*CacheID: 234*)
+(* Internal cache information:
+NotebookFileLineBreakTest
+NotebookFileLineBreakTest
+NotebookDataPosition[       158,          7]
+NotebookDataLength[     17158,        419]
+NotebookOptionsPosition[     12426,        331]
+NotebookOutlinePosition[     14353,        374]
+CellTagsIndexPosition[     14310,        371]
+WindowTitle->EmeraldCloudFiles
+WindowFrame->Normal*)
+
+(* Beginning of Notebook Content *)
+Notebook[{
+Cell[BoxData[GridBox[{
+   {GridBox[{
+      {
+       ItemBox[Cell[BoxData[
+         RowBox[{
+          InterpretationBox[
+           StyleBox[
+            GraphicsBox[{},
+             BaselinePosition->Baseline,
+             ImageSize->{8, 0}],
+            CacheGraphics->False],
+           Spacer[8],
+           Selectable->False], Cell["EMERALD GUIDE", "PacletNameCell",
+           TextAlignment->Center,ExpressionUUID->
+           "7908e89f-b893-47ac-459a-a815c351d89e"], 
+          InterpretationBox[
+           StyleBox[
+            GraphicsBox[{},
+             BaselinePosition->Baseline,
+             ImageSize->{8, 0}],
+            CacheGraphics->False],
+           Spacer[8],
+           Selectable->False]}]],
+         TextAlignment->Center,ExpressionUUID->
+         "867f6861-a9ab-4486-7f3f-3ad8f927adfb"],
+        Background->RGBColor[
+         0.24313725490196078`, 0.27058823529411763`, 0.2980392156862745],
+        ItemSize->Full], ""}
+     },
+     GridBoxAlignment->{"Rows" -> {{Center}}},
+     GridBoxItemSize->{"Columns" -> {Full, 
+         Scaled[0.02]}, "Rows" -> {{2.5}}}], Cell[TextData[{
+     Cell[BoxData[
+      ActionMenuBox[
+       FrameBox[Cell[TextData[{
+         "Functions",
+         " ",
+         Cell[BoxData[
+          GraphicsBox[
+           {RGBColor[183/256., 197/256., 211/256.], Thickness[0.13], 
+            LineBox[{{-1.8, 0.5}, {0, 0}, {1.8, 0.5}}]},
+           AspectRatio->1,
+           ImageSize->20,
+           PlotRange->{{-3, 4}, {-1, 1}}]],ExpressionUUID->
+          "3b35a7c6-7e2f-43f8-aa03-90d26238042e"]
+        }],ExpressionUUID->"be810d01-3ef0-4dd9-8bc5-a59546156d9e"],
+        StripOnInput->False], {"\<\"CloudFileExistsQ\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Constellation/ref/CloudFileExistsQ"], "\<\"DownloadCloudFile\"\
+\>":>Documentation`HelpLookup[
+       "paclet:CloudFiles/ref/DownloadCloudFile"], \
+"\<\"EmeraldCloudFileQ\"\>":>Documentation`HelpLookup[
+       "paclet:Constellation/ref/EmeraldCloudFileQ"], "\<\"EmeraldFileQ\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Constellation/ref/EmeraldFileQ"], "\<\"ImportCloudFile\"\>":>
+       Documentation`HelpLookup[
+       "paclet:CloudFiles/ref/ImportCloudFile"], "\<\"OpenCloudFile\"\>":>
+       Documentation`HelpLookup[
+       "paclet:CloudFiles/ref/OpenCloudFile"], "\<\"UploadCloudFile\"\>":>
+       Documentation`HelpLookup[
+       "paclet:CloudFiles/ref/UploadCloudFile"], "\<\"ValidRenameCloudFileQ\"\
+\>":>Documentation`HelpLookup[
+       "paclet:CloudFiles/ref/ValidRenameCloudFileQ"], \
+"\<\"ValidUploadCloudFileQ\"\>":>Documentation`HelpLookup[
+       "paclet:CloudFiles/ref/ValidUploadCloudFileQ"]},
+       LineSpacing -> {1.4, 0},
+       Appearance->None,
+       MenuAppearance->Automatic,
+       MenuStyle->"GuideFunction"]],ExpressionUUID->
+      "9ba7a70c-c044-4c14-b44c-c495b3084f89"],
+     "\[ThickSpace]\[ThickSpace]\[ThickSpace]\[ThickSpace]\[ThickSpace]\
+\[ThickSpace]",
+     Cell[BoxData[
+      ActionMenuBox[
+       FrameBox[Cell[TextData[{
+         "Related Guides",
+         " ",
+         Cell[BoxData[
+          GraphicsBox[
+           {RGBColor[183/256., 197/256., 211/256.], Thickness[0.13], 
+            LineBox[{{-1.8, 0.5}, {0, 0}, {1.8, 0.5}}]},
+           AspectRatio->1,
+           ImageSize->20,
+           PlotRange->{{-3, 4}, {-1, 1}}]],ExpressionUUID->
+          "e02386be-9a7e-4eaa-a29c-9fac3bc7d519"]
+        }],ExpressionUUID->"d09add5b-0f55-44ac-8e7e-3b7e45ddd540"],
+        StripOnInput->False], {"\<\"ConstellationUtilityFunctions\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Docs/guide/ConstellationUtilityFunctions"], \
+"\<\"IncludingLiteratureReferences\"\>":>Documentation`HelpLookup[
+       "paclet:Docs/guide/IncludingLiteratureReferences"], \
+"\<\"ObjectOntology\"\>":>Documentation`HelpLookup[
+       "paclet:Docs/guide/ObjectOntology"], \
+"\<\"WorkingWithConstellationObjects\"\>":>Documentation`HelpLookup[
+       "paclet:Docs/guide/WorkingWithConstellationObjects"]},
+       LineSpacing -> {1.4, 0},
+       Appearance->None,
+       MenuAppearance->Automatic,
+       MenuStyle->"GuideFunction"]],ExpressionUUID->
+      "a1ee6484-71ab-4417-8400-55d4cf8f1950"]
+    }], "AnchorBar",ExpressionUUID->"481a0348-6f99-47a6-9bf5-617ba24a8928"]}
+  }]], "AnchorBarGrid",
+ CellID->1,ExpressionUUID->"9ce9bcd9-3218-46f5-be87-6f2164e522ea"],
+
+Cell["Emerald Cloud Files", "GuideTitle",
+ CellID->74076350,ExpressionUUID->"e1d929b0-0288-473b-8b3a-b8dc630305ba"],
+
+Cell["\<\
+Emerald Cloud Files are files such as images or PDFs that are stored on the \
+cloud in Constellation and referred to within fields of Constellation \
+objects, such as say the a PSF file containing the materials safety data \
+sheet (MSDS) in pdf form of a given chemical which might reside within the \
+MSDS field of a constellation object representing that chemical. Because they \
+live on the cloud, Emerald Cloud Files can be accessed from any local \
+computer provided one has valid user credentials to the ECL.\
+\>", "GuideAbstract",
+ CellID->92408228,ExpressionUUID->"994f1948-1d16-481d-9140-8abd5b0a4392"],
+
+Cell["\t", "GuideDelimiterSubsection",
+ CellID->146742564,ExpressionUUID->"d077099a-15bd-4331-bfb7-e6ab594dba25"],
+
+Cell["Download Information from Cloud Files", "GuideFunctionsSubsection",
+ CellID->221814987,ExpressionUUID->"cc1c1c73-b9b3-436a-93c4-ffa7e7881d1e"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["DownloadCloudFile"]],"paclet:CloudFiles/ref/DownloadCloudFile"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "c57103a5-d9ed-4102-8ae9-9cef55d19088"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Given an Object[EmeraldCloudFile], downloads the contents of that file to \
+the local computer's hard drive."
+}], "GuideText",
+ CellID->195183490,ExpressionUUID->"6c1625a4-33a4-49cd-9b27-ea3bce05b377"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["ImportCloudFile"]],"paclet:CloudFiles/ref/ImportCloudFile"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "8c307a2c-185a-4dd5-b724-8a6dc74f1d49"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Given an Object[EmeraldCloudFile], returns the contents of that file."
+}], "GuideText",
+ CellID->18317553,ExpressionUUID->"494a6075-af4c-42e7-a457-1bd87b775b2d"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["OpenCloudFile"]],"paclet:CloudFiles/ref/OpenCloudFile"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "ff45ed27-417e-46d6-bab2-ed97efb18b3f"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Given an Object[EmeraldCloudFile], opens that file using the local \
+computers system."
+}], "GuideText",
+ CellID->109950892,ExpressionUUID->"d0c6d875-3899-41e3-9474-05dbf0b81745"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["ValidRenameCloudFileQ"]],
+    "paclet:CloudFiles/ref/ValidRenameCloudFileQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "5a7c5bcd-36ba-497b-8178-a686da521048"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if new names for cloud files are valid."
+}], "GuideText",
+ CellID->357031336,ExpressionUUID->"78ebd102-2120-4678-a34f-42240ed8d5d0"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["EmeraldCloudFileQ"]],
+    "paclet:Constellation/ref/EmeraldCloudFileQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "9dcf4ec3-6843-4b4c-bee4-6d89dab4da18"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the specified file or the Amazon S3 address is a valid \
+EmeraldCloudFile."
+}], "GuideText",
+ CellID->30852424,ExpressionUUID->"983f7347-5bcc-4bd6-b4ff-c540231a3731"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["CloudFileExistsQ"]],
+    "paclet:Constellation/ref/CloudFileExistsQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "88aff27d-682a-4a73-81f9-40fe6a3c9119"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the specified file exists in the Emerald cloud and are of a \
+recognized format."
+}], "GuideText",
+ CellID->78162359,ExpressionUUID->"a4a4ee4b-4161-46f5-ab01-6661185876f5"],
+
+Cell["\t", "GuideDelimiterSubsection",
+ CellID->526957474,ExpressionUUID->"13d4967c-0e15-4043-9238-a40294a36edc"],
+
+Cell["Generating New Cloud Files", "GuideFunctionsSubsection",
+ CellID->44661751,ExpressionUUID->"eed11de3-d12e-489d-b519-70ffd6906787"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["EmeraldFileQ"]],"paclet:Constellation/ref/EmeraldFileQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "5ec69f76-9dbb-49fa-8021-3ffd36583b98"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if a given object is a file stored on the cloud or stored locally."
+}], "GuideText",
+ CellID->92742740,ExpressionUUID->"c59961a9-3e3f-4169-a4b1-bd5574226e96"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["UploadCloudFile"]],"paclet:CloudFiles/ref/UploadCloudFile"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "812e8a2c-13d4-45f3-9eef-6f858a598682"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Uploads a new file to be stored as an Object[EmeraldCloudFile]."
+}], "GuideText",
+ CellID->21400493,ExpressionUUID->"f9c2293e-0e38-44b8-a5e2-295bf0538ea7"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["ValidUploadCloudFileQ"]],
+    "paclet:CloudFiles/ref/ValidUploadCloudFileQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "10e34fc6-3720-44bf-8026-74b7d4146b15"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided input and options are valid for calling \
+UploadCloudFile function."
+}], "GuideText",
+ CellID->1027012256,ExpressionUUID->"dacc595e-01be-4746-a43f-9a0bbd25298e"],
+
+Cell["", "SectionFooterSpacer",
+ CellID->226792549,ExpressionUUID->"91337754-46f6-46a6-866c-767c1da8206b"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  InterpretationBox[
+   StyleBox[
+    GraphicsBox[{},
+     BaselinePosition->Baseline,
+     ImageSize->{6, 0}],
+    CacheGraphics->False],
+   Spacer[6]]],ExpressionUUID->"c3eab732-3715-4dff-8f93-31a0cece93ee"],
+ "Related Guides"
+}], "GuideMoreAboutSection",
+ WholeCellGroupOpener->True,
+ CellID->58279592,ExpressionUUID->"fa8d6615-72c2-4f80-a427-f4ce99ae9a55"],
+
+Cell["", "SectionHeaderSpacer",
+ CellID->314100221,ExpressionUUID->"4085ca48-bf4a-432e-a9af-3b18be62f5d5"],
+
+Cell[BoxData[
+ TemplateBox[{Cell[
+    TextData["WorkingWithConstellationObjects"]],
+   "paclet:Docs/guide/WorkingWithConstellationObjects"},
+  "RefLink",
+  BaseStyle->"GuideMoreAboutSub"]], "GuideMoreAboutSub",
+ CellID->276432717,ExpressionUUID->"1f9de99d-d428-415d-b743-a20283333a73"],
+
+Cell[BoxData[
+ TemplateBox[{Cell[
+    TextData["ObjectOntology"]],"paclet:Docs/guide/ObjectOntology"},
+  "RefLink",
+  BaseStyle->"GuideMoreAboutSub"]], "GuideMoreAboutSub",
+ CellID->140127210,ExpressionUUID->"e006278c-4209-4944-8ee8-d792d52a953c"],
+
+Cell[BoxData[
+ TemplateBox[{Cell[
+    TextData["IncludingLiteratureReferences"]],
+   "paclet:Docs/guide/IncludingLiteratureReferences"},
+  "RefLink",
+  BaseStyle->"GuideMoreAboutSub"]], "GuideMoreAboutSub",
+ CellID->582646586,ExpressionUUID->"5572338e-12f7-45c4-8bdf-a24adf29937f"],
+
+Cell[BoxData[
+ TemplateBox[{Cell[
+    TextData["ConstellationUtilityFunctions"]],
+   "paclet:Docs/guide/ConstellationUtilityFunctions"},
+  "RefLink",
+  BaseStyle->"GuideMoreAboutSub"]], "GuideMoreAboutSub",
+ CellID->380410155,ExpressionUUID->"16cc8816-eca6-4822-8905-8f98e0e64a78"],
+
+Cell["", "FooterCell",
+ CellID->212777841,ExpressionUUID->"fe1dd4a7-3bbc-4a51-9df7-77878feb2d37"]
+},
+Saveable->False,
+ScreenStyleEnvironment->"Working",
+WindowSize->{775, 872},
+WindowMargins->{{564, Automatic}, {Automatic, 54}},
+WindowTitle->"EmeraldCloudFiles",
+Visible->False,
+TaggingRules->{
+ "ModificationHighlight" -> False, "ColorType" -> "GuideColor", 
+  "ExampleCounter" -> 1, "NeedPlatMsgIn" -> None, "RootCaptions" -> "", 
+  "Metadata" -> {
+   "built" -> "Mon 14 Nov 2022 19:04:55", "context" -> "Docs`", 
+    "keywords" -> {
+     "DownloadCloudFile", "ImportCloudFile", "OpenCloudFile", 
+      "ValidRenameCloudFileQ", "EmeraldCloudFileQ", "CloudFileExistsQ", 
+      "EmeraldFileQ", "UploadCloudFile", "ValidUploadCloudFileQ"}, 
+    "specialkeywords" -> {}, "tutorialcollectionlinks" -> {}, "index" -> True,
+     "label" -> "ECL Guide", "language" -> "en", "paclet" -> "Docs", "status" -> 
+    "None", "summary" -> 
+    "Emerald Cloud Files are files such as images or PDFs that are stored on \
+the cloud in Constellation and referred to within fields of Constellation \
+objects, such as say the a PSF file containing the materials safety data \
+sheet (MSDS) in pdf form of a given chemical which might reside within the \
+MSDS field of a constellation object representing that chemical. Because they \
+live on the cloud, Emerald Cloud Files can be accessed from any local \
+computer provided one has valid user credentials to the ECL.", 
+    "synonyms" -> {}, "titlemodifier" -> "", "Windowtitle" -> 
+    "EmeraldCloudFiles", "title" -> "EmeraldCloudFiles", "type" -> "Guide", 
+    "uri" -> "Docs/guide/EmeraldCloudFiles", "WorkflowDockedCell" -> ""}, 
+  "SearchTextTranslated" -> "", "LinkTrails" -> ""},
+FrontEndVersion->"12.0 for Microsoft Windows (64-bit) (September 6, 2019)",
+StyleDefinitions->"EmeraldReference.nb",
+CharacterEncoding -> "UTF-8"
+]
+(* End of Notebook Content *)
+
+(* Internal cache information *)
+(*CellTagsOutline
+CellTagsIndex->{}
+*)
+(*CellTagsIndex
+CellTagsIndex->{}
+*)
+(*NotebookFileOutline
+Notebook[{
+Cell[589, 21, 4330, 102, 56, "AnchorBarGrid",ExpressionUUID->"9ce9bcd9-3218-46f5-be87-6f2164e522ea",
+ CellID->1],
+Cell[4922, 125, 115, 1, 50, "GuideTitle",ExpressionUUID->"e1d929b0-0288-473b-8b3a-b8dc630305ba",
+ CellID->74076350],
+Cell[5040, 128, 621, 9, 136, "GuideAbstract",ExpressionUUID->"994f1948-1d16-481d-9140-8abd5b0a4392",
+ CellID->92408228],
+Cell[5664, 139, 113, 1, 22, "GuideDelimiterSubsection",ExpressionUUID->"d077099a-15bd-4331-bfb7-e6ab594dba25",
+ CellID->146742564],
+Cell[5780, 142, 148, 1, 36, "GuideFunctionsSubsection",ExpressionUUID->"cc1c1c73-b9b3-436a-93c4-ffa7e7881d1e",
+ CellID->221814987],
+Cell[5931, 145, 516, 12, 53, "GuideText",ExpressionUUID->"6c1625a4-33a4-49cd-9b27-ea3bce05b377",
+ CellID->195183490],
+Cell[6450, 159, 472, 11, 38, "GuideText",ExpressionUUID->"494a6075-af4c-42e7-a457-1bd87b775b2d",
+ CellID->18317553],
+Cell[6925, 172, 486, 12, 59, "GuideText",ExpressionUUID->"d0c6d875-3899-41e3-9474-05dbf0b81745",
+ CellID->109950892],
+Cell[7414, 186, 467, 12, 38, "GuideText",ExpressionUUID->"78ebd102-2120-4678-a34f-42240ed8d5d0",
+ CellID->357031336],
+Cell[7884, 200, 499, 13, 59, "GuideText",ExpressionUUID->"983f7347-5bcc-4bd6-b4ff-c540231a3731",
+ CellID->30852424],
+Cell[8386, 215, 503, 13, 59, "GuideText",ExpressionUUID->"a4a4ee4b-4161-46f5-ab01-6661185876f5",
+ CellID->78162359],
+Cell[8892, 230, 113, 1, 22, "GuideDelimiterSubsection",ExpressionUUID->"13d4967c-0e15-4043-9238-a40294a36edc",
+ CellID->526957474],
+Cell[9008, 233, 136, 1, 36, "GuideFunctionsSubsection",ExpressionUUID->"eed11de3-d12e-489d-b519-70ffd6906787",
+ CellID->44661751],
+Cell[9147, 236, 473, 11, 32, "GuideText",ExpressionUUID->"c59961a9-3e3f-4169-a4b1-bd5574226e96",
+ CellID->92742740],
+Cell[9623, 249, 466, 11, 38, "GuideText",ExpressionUUID->"f9c2293e-0e38-44b8-a5e2-295bf0538ea7",
+ CellID->21400493],
+Cell[10092, 262, 512, 13, 59, "GuideText",ExpressionUUID->"dacc595e-01be-4746-a43f-9a0bbd25298e",
+ CellID->1027012256],
+Cell[10607, 277, 106, 1, 29, "SectionFooterSpacer",ExpressionUUID->"91337754-46f6-46a6-866c-767c1da8206b",
+ CellID->226792549],
+Cell[10716, 280, 391, 12, 72, "GuideMoreAboutSection",ExpressionUUID->"fa8d6615-72c2-4f80-a427-f4ce99ae9a55",
+ CellID->58279592],
+Cell[11110, 294, 106, 1, 14, "SectionHeaderSpacer",ExpressionUUID->"4085ca48-bf4a-432e-a9af-3b18be62f5d5",
+ CellID->314100221],
+Cell[11219, 297, 285, 6, 24, "GuideMoreAboutSub",ExpressionUUID->"1f9de99d-d428-415d-b743-a20283333a73",
+ CellID->276432717],
+Cell[11507, 305, 247, 5, 24, "GuideMoreAboutSub",ExpressionUUID->"e006278c-4209-4944-8ee8-d792d52a953c",
+ CellID->140127210],
+Cell[11757, 312, 281, 6, 24, "GuideMoreAboutSub",ExpressionUUID->"5572338e-12f7-45c4-8bdf-a24adf29937f",
+ CellID->582646586],
+Cell[12041, 320, 281, 6, 24, "GuideMoreAboutSub",ExpressionUUID->"16cc8816-eca6-4822-8905-8f98e0e64a78",
+ CellID->380410155],
+Cell[12325, 328, 97, 1, 41, "FooterCell",ExpressionUUID->"fe1dd4a7-3bbc-4a51-9df7-77878feb2d37",
+ CellID->212777841]
+}
+]
+*)
+
+(* End of internal cache information *)
+

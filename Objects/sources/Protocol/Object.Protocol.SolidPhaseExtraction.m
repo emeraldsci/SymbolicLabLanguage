@@ -1191,7 +1191,7 @@ DefineObjectType[Object[Protocol, SolidPhaseExtraction],
 				Format -> Multiple,
 				Class -> Link,
 				Pattern :> _Link,
-				Relation -> Alternatives[Object[Sample], Model[Sample]];
+				Relation -> Alternatives[Object[Sample], Model[Sample]],
 				Description -> "For each member of SampleExpression, Solution that is used to rinse each individual sample source containers to ensure that all SampleIn is transferred to the sorbent.",
 				Category -> "Loading",
 				IndexMatching -> SampleExpression
@@ -1465,7 +1465,10 @@ DefineObjectType[Object[Protocol, SolidPhaseExtraction],
 				Format -> Multiple,
 				Class -> Link,
 				Pattern :> _Link,
-				Relation -> Alternatives[Object[Sample][Protocols], Model[Sample][Protocols]],
+				Relation -> Alternatives[
+					Object[Sample][Protocols],
+					Model[Sample]
+				],
 				Description -> "For each member of SampleExpression, all of samples that are produced or transferred during PreFlushing step of ExperimentSolidPhaseExtraction.",
 				Category -> "General",
 				IndexMatching -> SampleExpression
@@ -1474,7 +1477,10 @@ DefineObjectType[Object[Protocol, SolidPhaseExtraction],
 				Format -> Multiple,
 				Class -> Link,
 				Pattern :> _Link,
-				Relation -> Alternatives[Object[Sample][Protocols], Model[Sample][Protocols]],
+				Relation -> Alternatives[
+					Object[Sample][Protocols],
+					Model[Sample]
+				],
 				Description -> "For each member of SampleExpression, all of samples that are produced or transferred during Conditioning step of ExperimentSolidPhaseExtraction.",
 				Category -> "General",
 				IndexMatching -> SampleExpression
@@ -1483,7 +1489,10 @@ DefineObjectType[Object[Protocol, SolidPhaseExtraction],
 				Format -> Multiple,
 				Class -> Link,
 				Pattern :> _Link,
-				Relation -> Alternatives[Object[Sample][Protocols], Model[Sample][Protocols]],
+				Relation -> Alternatives[
+					Object[Sample][Protocols],
+					Model[Sample]
+				],
 				Description -> "For each member of SampleExpression, all of samples that are produced or transferred during LoadingSample step of ExperimentSolidPhaseExtraction.",
 				Category -> "General",
 				IndexMatching -> SampleExpression
@@ -1492,7 +1501,10 @@ DefineObjectType[Object[Protocol, SolidPhaseExtraction],
 				Format -> Multiple,
 				Class -> Link,
 				Pattern :> _Link,
-				Relation -> Alternatives[Object[Sample][Protocols], Model[Sample][Protocols]],
+				Relation -> Alternatives[
+					Object[Sample][Protocols],
+					Model[Sample]
+				],
 				Description -> "For each member of SampleExpression, all of samples that are produced or transferred during Washing step of ExperimentSolidPhaseExtraction.",
 				Category -> "General",
 				IndexMatching -> SampleExpression
@@ -1501,7 +1513,10 @@ DefineObjectType[Object[Protocol, SolidPhaseExtraction],
 				Format -> Multiple,
 				Class -> Link,
 				Pattern :> _Link,
-				Relation -> Alternatives[Object[Sample][Protocols], Model[Sample][Protocols]],
+				Relation -> Alternatives[
+					Object[Sample][Protocols],
+					Model[Sample]
+				],
 				Description -> "For each member of SampleExpression, all of samples that are produced or transferred during SecondaryWashing step of ExperimentSolidPhaseExtraction.",
 				Category -> "General",
 				IndexMatching -> SampleExpression
@@ -1510,7 +1525,10 @@ DefineObjectType[Object[Protocol, SolidPhaseExtraction],
 				Format -> Multiple,
 				Class -> Link,
 				Pattern :> _Link,
-				Relation -> Alternatives[Object[Sample][Protocols], Model[Sample][Protocols]],
+				Relation -> Alternatives[
+					Object[Sample][Protocols],
+					Model[Sample]
+				],
 				Description -> "For each member of SampleExpression, all of samples that are produced or transferred during TertiaryWashing step of ExperimentSolidPhaseExtraction.",
 				Category -> "General",
 				IndexMatching -> SampleExpression
@@ -1519,7 +1537,10 @@ DefineObjectType[Object[Protocol, SolidPhaseExtraction],
 				Format -> Multiple,
 				Class -> Link,
 				Pattern :> _Link,
-				Relation -> Alternatives[Object[Sample][Protocols], Model[Sample][Protocols]],
+				Relation -> Alternatives[
+					Object[Sample][Protocols],
+					Model[Sample]
+				],
 				Description -> "For each member of SampleExpression, all of samples that are produced or transferred during Eluting step of ExperimentSolidPhaseExtraction.",
 				Category -> "General",
 				IndexMatching -> SampleExpression
@@ -1594,7 +1615,10 @@ DefineObjectType[Object[Protocol, SolidPhaseExtraction],
 				Format -> Single,
 				Class -> Link,
 				Pattern :> _Link,
-				Relation -> Object[Protocol],
+				Relation -> Alternatives[
+					Object[Protocol],
+					Object[Notebook, Script]
+				],
 				Description -> "A SamplePreparation protocol that is used to aliquot SamplesIn to appropriate container.",
 				Category -> "Sample Preparation"
 			},

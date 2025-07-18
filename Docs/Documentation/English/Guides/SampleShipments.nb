@@ -1,3 +1,797 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:e14459296968c296409d3f1b6a84c806a2aadbe81f8e053feba6272f0857239b
-size 31703
+(* Content-type: application/vnd.wolfram.mathematica *)
+
+(*** Wolfram Notebook File ***)
+(* http://www.wolfram.com/nb *)
+
+(* CreatedBy='Mathematica 12.3' *)
+
+(*CacheID: 234*)
+(* Internal cache information:
+NotebookFileLineBreakTest
+NotebookFileLineBreakTest
+NotebookDataPosition[       158,          7]
+NotebookDataLength[     31503,        787]
+NotebookOptionsPosition[     23694,        650]
+NotebookOutlinePosition[     25697,        694]
+CellTagsIndexPosition[     25654,        691]
+WindowTitle->SampleShipments
+WindowFrame->Normal*)
+
+(* Beginning of Notebook Content *)
+Notebook[{
+Cell[BoxData[GridBox[{
+   {GridBox[{
+      {
+       ItemBox[Cell[BoxData[
+         RowBox[{
+          InterpretationBox[
+           StyleBox[
+            GraphicsBox[{},
+             BaselinePosition->Baseline,
+             ImageSize->{8, 0}],
+            CacheGraphics->False],
+           Spacer[8],
+           Selectable->False], Cell["EMERALD GUIDE", "PacletNameCell",
+           TextAlignment->Center,ExpressionUUID->
+           "7908e89f-b893-47ac-459a-a815c351d89e"], 
+          InterpretationBox[
+           StyleBox[
+            GraphicsBox[{},
+             BaselinePosition->Baseline,
+             ImageSize->{8, 0}],
+            CacheGraphics->False],
+           Spacer[8],
+           Selectable->False]}]],
+         TextAlignment->Center,ExpressionUUID->
+         "867f6861-a9ab-4486-7f3f-3ad8f927adfb"],
+        Background->RGBColor[
+         0.24313725490196078`, 0.27058823529411763`, 0.2980392156862745],
+        ItemSize->Full], ""}
+     },
+     GridBoxAlignment->{"Rows" -> {{Center}}},
+     GridBoxItemSize->{"Columns" -> {Full, 
+         Scaled[0.02]}, "Rows" -> {{2.5}}}], Cell[TextData[{
+     Cell[BoxData[
+      ActionMenuBox[
+       FrameBox[Cell[TextData[{
+         "Functions",
+         " ",
+         Cell[BoxData[
+          GraphicsBox[
+           {RGBColor[183/256., 197/256., 211/256.], Thickness[0.13], 
+            LineBox[{{-1.8, 0.5}, {0, 0}, {1.8, 0.5}}]},
+           AspectRatio->1,
+           ImageSize->20,
+           PlotRange->{{-3, 4}, {-1, 1}}]],ExpressionUUID->
+          "1b040636-0948-49c9-ac24-3e98e0eb9814"]
+        }],ExpressionUUID->"33f76aa0-8bf9-41b9-8dc6-dbcbfa7c54e8"],
+        StripOnInput->False], {"\<\"CancelTransaction\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Inventory/ref/CancelTransaction"], \
+"\<\"CancelTransactionPreview\"\>":>Documentation`HelpLookup[
+       "paclet:Inventory/ref/CancelTransactionPreview"], "\<\"DropShipSamples\
+\"\>":>Documentation`HelpLookup[
+       "paclet:Inventory/ref/DropShipSamples"], "\<\"DropShipSamplesOptions\"\
+\>":>Documentation`HelpLookup[
+       "paclet:Inventory/ref/DropShipSamplesOptions"], "\<\"OrderSamples\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Inventory/ref/OrderSamples"], "\<\"OrderSamplesOptions\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Inventory/ref/OrderSamplesOptions"], \
+"\<\"PriceTransactions\"\>":>Documentation`HelpLookup[
+       "paclet:ExperimentUtilities/ref/PriceTransactions"], \
+"\<\"ShipToECL\"\>":>Documentation`HelpLookup[
+       "paclet:Inventory/ref/ShipToECL"], "\<\"ShipToECLOptions\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Inventory/ref/ShipToECLOptions"], "\<\"ShipToECLPreview\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Inventory/ref/ShipToECLPreview"], "\<\"ShipToUser\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Inventory/ref/ShipToUser"], "\<\"ShipToUserPreview\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Inventory/ref/ShipToUserPreview"], "\<\"SyncOrders\"\>":>
+       Documentation`HelpLookup[
+       "paclet:InternalInventory/ref/SyncOrders"], \
+"\<\"UploadCompanyService\"\>":>Documentation`HelpLookup[
+       "paclet:ExternalUpload/ref/UploadCompanyService"], \
+"\<\"UploadCompanySupplier\"\>":>Documentation`HelpLookup[
+       "paclet:ExternalUpload/ref/UploadCompanySupplier"], \
+"\<\"UploadCompanySupplierOptions\"\>":>Documentation`HelpLookup[
+       "paclet:ExternalUpload/ref/UploadCompanySupplierOptions"], \
+"\<\"UploadTransportCondition\"\>":>Documentation`HelpLookup[
+       "paclet:ExternalUpload/ref/UploadTransportCondition"], \
+"\<\"UploadTransportConditionPreview\"\>":>Documentation`HelpLookup[
+       "paclet:ExternalUpload/ref/UploadTransportConditionPreview"], \
+"\<\"ValidCancelTransactionQ\"\>":>Documentation`HelpLookup[
+       "paclet:Inventory/ref/ValidCancelTransactionQ"], \
+"\<\"ValidDropShipSamplesQ\"\>":>Documentation`HelpLookup[
+       "paclet:Inventory/ref/ValidDropShipSamplesQ"], "\<\"ValidOrderSamplesQ\
+\"\>":>Documentation`HelpLookup[
+       "paclet:Inventory/ref/ValidOrderSamplesQ"], "\<\"ValidShipToUserQ\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Inventory/ref/ValidShipToUserQ"], \
+"\<\"ValidUploadCompanyServiceQ\"\>":>Documentation`HelpLookup[
+       "paclet:ExternalUpload/ref/ValidUploadCompanyServiceQ"], \
+"\<\"ValidUploadTransportConditionQ\"\>":>Documentation`HelpLookup[
+       "paclet:ExternalUpload/ref/ValidUploadTransportConditionQ"]},
+       LineSpacing -> {1.4, 0},
+       Appearance->None,
+       MenuAppearance->Automatic,
+       MenuStyle->"GuideFunction"]],ExpressionUUID->
+      "d18189ad-8572-464a-bd87-b417decf3376"],
+     "\[ThickSpace]\[ThickSpace]\[ThickSpace]\[ThickSpace]\[ThickSpace]\
+\[ThickSpace]",
+     Cell[BoxData[
+      ActionMenuBox[
+       FrameBox[Cell[TextData[{
+         "Related Guides",
+         " ",
+         Cell[BoxData[
+          GraphicsBox[
+           {RGBColor[183/256., 197/256., 211/256.], Thickness[0.13], 
+            LineBox[{{-1.8, 0.5}, {0, 0}, {1.8, 0.5}}]},
+           AspectRatio->1,
+           ImageSize->20,
+           PlotRange->{{-3, 4}, {-1, 1}}]],ExpressionUUID->
+          "a4bac517-9123-45ee-beb5-1f0be064edbc"]
+        }],ExpressionUUID->"974bef56-0c6a-4f16-b2ae-421a9d2cc8b6"],
+        StripOnInput->False], {"\<\"LocationTracking\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Docs/guide/LocationTracking"], "\<\"SampleStorage\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Docs/guide/SampleStorage"], "\<\"UploadingNewSamplesOrModels\"\
+\>":>Documentation`HelpLookup[
+       "paclet:Docs/guide/UploadingNewSamplesOrModels"]},
+       LineSpacing -> {1.4, 0},
+       Appearance->None,
+       MenuAppearance->Automatic,
+       MenuStyle->"GuideFunction"]],ExpressionUUID->
+      "de504b79-6291-439f-ac5e-2acccc28a924"]
+    }], "AnchorBar",ExpressionUUID->"3169da76-a96f-45df-83b1-8d3717e82b4f"]}
+  }]], "AnchorBarGrid",
+ CellID->1,ExpressionUUID->"d76d2c00-0d81-46d7-a0d3-58886d2a286d"],
+
+Cell["Sample Shipments", "GuideTitle",
+ CellID->1038810439,ExpressionUUID->"24950afd-2ad6-4880-9a5d-c10bd55ae090"],
+
+Cell["\<\
+Collection of functions for handling shipping of materials into and out of an \
+ECL facility as well as the purchase of materials to be used in an ECL \
+facility.\
+\>", "GuideAbstract",
+ CellID->244998163,ExpressionUUID->"cb92795e-99e1-4903-b753-15f210287487"],
+
+Cell["\t", "GuideDelimiterSubsection",
+ CellID->957974242,ExpressionUUID->"bbb619fd-4c86-4097-a60e-824e1634bed2"],
+
+Cell["Purchasing Inventory", "GuideFunctionsSubsection",
+ CellID->988183735,ExpressionUUID->"bb2eba41-764d-4a0c-8b33-bf3084e0386b"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["OrderSamples"]], "paclet:Inventory/ref/OrderSamples"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "5dfce4da-fefd-4ca6-a26b-e3b0fc2ce315"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Places an order for the given materials to be purchased and added to the \
+users inventory."
+}], "GuideText",
+ CellID->1912991894,ExpressionUUID->"c4097c82-0a99-4c82-b263-45dd9141a955"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["DropShipSamples"]], "paclet:Inventory/ref/DropShipSamples"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "be8dabd0-d4fb-44e1-946e-160d876848ab"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Generates a transaction to track a user-initiated shipment from a third \
+party provider."
+}], "GuideText",
+ CellID->1677083221,ExpressionUUID->"077fc92a-30d8-4cda-ab6d-48e030e6ebc4"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["CancelTransaction"]], "paclet:Inventory/ref/CancelTransaction"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "c75285c4-4067-4dfa-8204-4ce004be9e8b"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Cancels the given outstanding order or drop shipment if it has not already \
+been fulfilled or received."
+}], "GuideText",
+ CellID->1014828472,ExpressionUUID->"809f506a-d75a-43c9-9907-45b793023ba2"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["PriceTransactions"]], 
+    "paclet:ExperimentUtilities/ref/PriceTransactions"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "6c0b474c-12a0-4a66-9cde-3889d12e87b7"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Generates a table of the receiving charges associated with a given \
+transaction or all of the transactions in a given notebook."
+}], "GuideText",
+ CellID->907004430,ExpressionUUID->"dafcd113-0164-4ce5-953f-d9899efbaa15"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["SyncOrders"]], "paclet:InternalInventory/ref/SyncOrders"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "188cdcf0-4b02-4aa4-83ca-f988c8522f37"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Process any pending orders which can be directly purchased from the ECL by \
+transferring ownership of the samples in the database, and any DropShipToUser \
+orders which can send to user's home site."
+}], "GuideText",
+ CellID->1184528604,ExpressionUUID->"5e785b0b-5b3d-414f-b45a-7d259e168a55"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["UploadCompanyService"]], 
+    "paclet:ExternalUpload/ref/UploadCompanyService"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "1a51e358-7a12-4c62-b02a-e0520e5ced3d"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Generates an object for the specified company that systhesizes custom made \
+samples as a service."
+}], "GuideText",
+ CellID->1198839738,ExpressionUUID->"b67aac97-f6c8-4bfb-a46a-9fe0e8847424"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["UploadCompanySupplier"]], 
+    "paclet:ExternalUpload/ref/UploadCompanySupplier"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "1155d2f7-e8d7-4a87-8367-1f423c1c73cf"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Generates a supplier object that contains the information about the \
+supplier when called using the supplier name."
+}], "GuideText",
+ CellID->1207900412,ExpressionUUID->"e0d93f93-9c54-4150-92cf-d4f27e624d38"],
+
+Cell["\t", "GuideDelimiterSubsection",
+ CellID->1019309393,ExpressionUUID->"493a39e5-13b6-4868-b983-5389949316c7"],
+
+Cell["Shipping Materials", "GuideFunctionsSubsection",
+ CellID->1055916032,ExpressionUUID->"0b9b32c6-2f6e-4cdb-a387-1067bf4a7c35"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["ShipToECL"]], "paclet:Inventory/ref/ShipToECL"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "5f37fb0b-5dcc-4603-a062-9422b7c2cf9a"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Generates a transaction to track a user-initiated shipment from their own \
+lab to an ECL facility."
+}], "GuideText",
+ CellID->2123374663,ExpressionUUID->"399d6b5d-2aec-4fa5-8443-eec329b88bc3"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["ShipToUser"]], "paclet:Inventory/ref/ShipToUser"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "10d7d322-7092-4213-865a-58f2a9de1caa"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Instructs the ECL to ship the given samples from an ECL facility to the \
+users lab."
+}], "GuideText",
+ CellID->674715195,ExpressionUUID->"941bd336-4c05-4bdc-9738-714c88765299"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["CancelTransaction"]], "paclet:Inventory/ref/CancelTransaction"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "4814d185-8beb-4312-b3c6-2f2f78ad6a4d"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Cancels the given outstanding shipment transaction if it has not already \
+shipped."
+}], "GuideText",
+ CellID->1224626205,ExpressionUUID->"0e9a1784-2b2d-40ec-9fd2-d5318a2ee87f"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["PriceTransactions"]], 
+    "paclet:ExperimentUtilities/ref/PriceTransactions"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "582f044b-c56a-4eb5-b7be-01e93122cacc"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Generates a table of the shipping charges associated with a given \
+transaction or all of the transactions in a given notebook."
+}], "GuideText",
+ CellID->809354587,ExpressionUUID->"0851b64e-0f9f-464a-88a4-ce69aec266b5"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["UploadTransportCondition"]], 
+    "paclet:ExternalUpload/ref/UploadTransportCondition"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "58239a7a-fcc1-4693-b8fd-91ddd8125382"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Modifies the corresponding transport conditions for the specifed samples."
+}], "GuideText",
+ CellID->661123611,ExpressionUUID->"e297290d-18f4-474e-b961-9c09a49aa21c"],
+
+Cell["\t", "GuideDelimiterSubsection",
+ CellID->424140499,ExpressionUUID->"d8181033-034d-42c9-8a0a-3be495b802ff"],
+
+Cell["Validating", "GuideFunctionsSubsection",
+ CellID->1031142300,ExpressionUUID->"7e668b73-1ba3-4c31-bf94-14d2c0efedab"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["ValidUploadCompanyServiceQ"]], 
+    "paclet:ExternalUpload/ref/ValidUploadCompanyServiceQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "20dd35b7-eac0-4aad-b8a4-733211071a02"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks whether the provided company is valid."
+}], "GuideText",
+ CellID->215604810,ExpressionUUID->"af207714-d76e-4007-b6f4-8cb4b8e04bb9"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["ValidOrderSamplesQ"]], 
+    "paclet:Inventory/ref/ValidOrderSamplesQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "27cd9268-d8f0-42e3-9a2c-c4ce94a0a3ca"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided samples and options are valid inputs for a \
+purchasing order."
+}], "GuideText",
+ CellID->865129181,ExpressionUUID->"ad365fca-6b06-4c06-800a-e796dc868430"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["ValidUploadTransportConditionQ"]], 
+    "paclet:ExternalUpload/ref/ValidUploadTransportConditionQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "019bbb8f-851d-46a2-b0a3-13f7c86ee5fd"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks if the provided samples and transport conditions are valid for \
+specifying those samples' transport conditions."
+}], "GuideText",
+ CellID->1761854877,ExpressionUUID->"d2a01d36-603f-436a-b4d2-3f1bf5a146d9"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["ValidShipToUserQ"]], "paclet:Inventory/ref/ValidShipToUserQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "34aa2913-60a3-49ca-ab41-c2d3d58880cf"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks whether the provided samples and specified options are would lead \
+to a valid ShipToUser call."
+}], "GuideText",
+ CellID->1990392903,ExpressionUUID->"ea209395-3e45-43fc-9316-2e961cd60cc1"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["ValidCancelTransactionQ"]], 
+    "paclet:Inventory/ref/ValidCancelTransactionQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "5a75be86-359e-4a92-bf74-34f43b497bbc"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks whether the provided transaction and specified options are valid \
+for calling CancelTransaction function."
+}], "GuideText",
+ CellID->1180751402,ExpressionUUID->"5189387a-25a0-42a2-addc-d6f0bc57b6ae"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["ValidDropShipSamplesQ"]], 
+    "paclet:Inventory/ref/ValidDropShipSamplesQ"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "637d8b20-da73-48a5-ab12-0416484d2c7f"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Checks the provided inputs and ordered items and order numbers, or \
+transactions are valid for called them with DropShipSamples."
+}], "GuideText",
+ CellID->2139915134,ExpressionUUID->"0ac24ae6-ad74-4729-801e-f7a7024cbb3c"],
+
+Cell["\t", "GuideDelimiterSubsection",
+ CellID->1645020829,ExpressionUUID->"897d8241-6920-49d2-b62c-7c22699f4221"],
+
+Cell["Preview", "GuideFunctionsSubsection",
+ CellID->1160601525,ExpressionUUID->"bcf57e64-6506-440f-a793-2fba7e809990"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["OrderSamplesOptions"]], 
+    "paclet:Inventory/ref/OrderSamplesOptions"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "f5dc4405-728b-4853-a55b-be14660fc30a"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Generates the resolved options when the amount of sample is specified."
+}], "GuideText",
+ CellID->635864974,ExpressionUUID->"a3630778-9cf9-431a-990e-949855850cc3"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["ShipToECLPreview"]], "paclet:Inventory/ref/ShipToECLPreview"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "3bb8b632-394d-4e63-804f-5f6f641d53e8"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Returns the preview for ShipToECL function when trying to send samples and \
+items to ECl."
+}], "GuideText",
+ CellID->1103990546,ExpressionUUID->"f060b3f2-d5ad-4ec5-bc0c-b28352633816"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["ShipToUserPreview"]], "paclet:Inventory/ref/ShipToUserPreview"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "a93446e6-eb9b-4e02-9a80-36ad8eaf8cc5"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Displays a graphical preview of the output that would happen if the given \
+samples were to be shipped to a user."
+}], "GuideText",
+ CellID->510396542,ExpressionUUID->"923d7de8-1be8-41f2-8844-bd15030461d5"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["CancelTransactionPreview"]], 
+    "paclet:Inventory/ref/CancelTransactionPreview"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "fa0a8604-7eef-44c6-980f-2b7f14a76f13"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Displays a graphical preview of what would happen if a specified \
+transaction was cancelled."
+}], "GuideText",
+ CellID->1184995276,ExpressionUUID->"02596dea-ee46-468a-8a83-7065ea3e723b"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["UploadTransportConditionPreview"]], 
+    "paclet:ExternalUpload/ref/UploadTransportConditionPreview"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "ce69cc86-848a-4d03-96f2-f20fe81924ae"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Returns a preview for when the specific conditions for the transport of a \
+sample is changed."
+}], "GuideText",
+ CellID->452261454,ExpressionUUID->"2359b24d-add8-46b8-ba38-d141a52ada10"],
+
+Cell["\t", "GuideDelimiterSubsection",
+ CellID->1213630645,ExpressionUUID->"d9971715-b141-4990-af4b-58b5c7b1528c"],
+
+Cell["Calculate Options", "GuideFunctionsSubsection",
+ CellID->690571309,ExpressionUUID->"7f1ce861-9ff5-4244-81e4-1931301a17ef"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["ShipToECLOptions"]], "paclet:Inventory/ref/ShipToECLOptions"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "e0444ea2-94c6-4e71-b2fd-7b31d0ad101e"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Returns a list of options that generates a transaction to track a \
+user-initiated shipment from their own lab to an ECL facility."
+}], "GuideText",
+ CellID->1430361975,ExpressionUUID->"1ee7e8e2-aec2-4951-985c-697e8f22f032"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["DropShipSamplesOptions"]], 
+    "paclet:Inventory/ref/DropShipSamplesOptions"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "e44691d3-14db-4c8e-8349-5b6949cfaea8"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Returns a list of options to track user initiated shipment from a third \
+party or to add shipping information to an existing transaction."
+}], "GuideText",
+ CellID->1161769307,ExpressionUUID->"ec26e698-55b1-4210-97fc-66dcc932f456"],
+
+Cell["\t", "GuideDelimiterSubsection",
+ CellID->935424225,ExpressionUUID->"1970911c-6ec9-4899-8081-9ec2741f8005"],
+
+Cell["Manage Suppliers", "GuideFunctionsSubsection",
+ CellID->2094653535,ExpressionUUID->"345db6c6-62fd-493f-8f81-e0d937d79fa8"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["UploadCompanySupplierOptions"]], 
+    "paclet:ExternalUpload/ref/UploadCompanySupplierOptions"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "f5db466e-6dea-45f0-89d0-9af7dea412df"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Returns a list of options as they will be resolved by \
+UploadCompanySupplier."
+}], "GuideText",
+ CellID->1142537474,ExpressionUUID->"1e9b5b7c-5ae0-4680-9603-1b1d5a0ede80"],
+
+Cell["", "SectionFooterSpacer",
+ CellID->1976037691,ExpressionUUID->"e782b069-9616-4166-9247-84379f86bc54"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  InterpretationBox[
+   StyleBox[
+    GraphicsBox[{},
+     BaselinePosition->Baseline,
+     ImageSize->{6, 0}],
+    CacheGraphics->False],
+   Spacer[6]]],ExpressionUUID->"4d95123e-bc98-4020-bf06-e60e716767d5"],
+ "Related Guides"
+}], "GuideMoreAboutSection",
+ WholeCellGroupOpener->True,
+ CellID->430871782,ExpressionUUID->"324b56d1-1fef-40e3-a371-76105b0fe009"],
+
+Cell["", "SectionHeaderSpacer",
+ CellID->347182390,ExpressionUUID->"aada2a4e-52db-4f08-b2b1-354e6f3e6ad6"],
+
+Cell[BoxData[
+ TemplateBox[{
+   Cell[
+    TextData["SampleStorage"]], "paclet:Docs/guide/SampleStorage"},
+  "RefLink",
+  BaseStyle->"GuideMoreAboutSub"]], "GuideMoreAboutSub",
+ CellID->381359831,ExpressionUUID->"e12b6251-48c7-41ea-92f3-82bc8de30a7c"],
+
+Cell[BoxData[
+ TemplateBox[{
+   Cell[
+    TextData["LocationTracking"]], "paclet:Docs/guide/LocationTracking"},
+  "RefLink",
+  BaseStyle->"GuideMoreAboutSub"]], "GuideMoreAboutSub",
+ CellID->1423476969,ExpressionUUID->"d323d40f-065b-4017-8cad-88e01903e0f2"],
+
+Cell[BoxData[
+ TemplateBox[{
+   Cell[
+    TextData["UploadingNewSamplesOrModels"]], 
+   "paclet:Docs/guide/UploadingNewSamplesOrModels"},
+  "RefLink",
+  BaseStyle->"GuideMoreAboutSub"]], "GuideMoreAboutSub",
+ CellID->1409590403,ExpressionUUID->"15d13e99-a650-4c13-a6c8-0bb4adfa611a"],
+
+Cell["", "FooterCell",
+ CellID->2093793164,ExpressionUUID->"069088ef-5967-4ac4-9c55-3b7b8c03f82b"]
+},
+Saveable->False,
+ScreenStyleEnvironment->"Working",
+WindowSize->{808, 911},
+WindowMargins->{{460, Automatic}, {Automatic, 70}},
+WindowTitle->"SampleShipments",
+Visible->False,
+TaggingRules->{
+ "ModificationHighlight" -> False, "ColorType" -> "GuideColor", 
+  "ExampleCounter" -> 1, "NeedPlatMsgIn" -> None, "RootCaptions" -> "", 
+  "Metadata" -> {
+   "built" -> "Tue 15 Nov 2022 15:09:17", "context" -> "Docs`", 
+    "keywords" -> {
+     "OrderSamples", "DropShipSamples", "CancelTransaction", 
+      "PriceTransactions", "SyncOrders", "UploadCompanyService", 
+      "UploadCompanySupplier", "ShipToECL", "ShipToUser", 
+      "UploadTransportCondition", "ValidUploadCompanyServiceQ", 
+      "ValidOrderSamplesQ", "ValidUploadTransportConditionQ", 
+      "ValidShipToUserQ", "ValidCancelTransactionQ", "ValidDropShipSamplesQ", 
+      "OrderSamplesOptions", "ShipToECLPreview", "ShipToUserPreview", 
+      "CancelTransactionPreview", "UploadTransportConditionPreview", 
+      "ShipToECLOptions", "DropShipSamplesOptions", 
+      "UploadCompanySupplierOptions"}, "specialkeywords" -> {}, 
+    "tutorialcollectionlinks" -> {}, "index" -> True, "label" -> "ECL Guide", 
+    "language" -> "en", "paclet" -> "Docs", "status" -> "None", "summary" -> 
+    "Collection of functions for handling shipping of materials into and out \
+of an ECL facility as well as the purchase of materials to be used in an ECL \
+facility.", "synonyms" -> {}, "titlemodifier" -> "", "Windowtitle" -> 
+    "SampleShipments", "title" -> "SampleShipments", "type" -> "Guide", "uri" -> 
+    "Docs/guide/SampleShipments", "WorkflowDockedCell" -> ""}, 
+  "SearchTextTranslated" -> "", "LinkTrails" -> ""},
+FrontEndVersion->"12.3 for Mac OS X ARM (64-bit) (September 30, 2021)",
+StyleDefinitions->"EmeraldReference.nb",
+ExpressionUUID->"b9530525-8caa-4c81-8f5f-360980287674"
+]
+(* End of Notebook Content *)
+
+(* Internal cache information *)
+(*CellTagsOutline
+CellTagsIndex->{}
+*)
+(*CellTagsIndex
+CellTagsIndex->{}
+*)
+(*NotebookFileOutline
+Notebook[{
+Cell[587, 21, 5956, 130, 58, "AnchorBarGrid",ExpressionUUID->"d76d2c00-0d81-46d7-a0d3-58886d2a286d",
+ CellID->1],
+Cell[6546, 153, 114, 1, 45, "GuideTitle",ExpressionUUID->"24950afd-2ad6-4880-9a5d-c10bd55ae090",
+ CellID->1038810439],
+Cell[6663, 156, 270, 5, 50, "GuideAbstract",ExpressionUUID->"cb92795e-99e1-4903-b753-15f210287487",
+ CellID->244998163],
+Cell[6936, 163, 113, 1, 24, "GuideDelimiterSubsection",ExpressionUUID->"bbb619fd-4c86-4097-a60e-824e1634bed2",
+ CellID->957974242],
+Cell[7052, 166, 131, 1, 34, "GuideFunctionsSubsection",ExpressionUUID->"bb2eba41-764d-4a0c-8b33-bf3084e0386b",
+ CellID->988183735],
+Cell[7186, 169, 495, 13, 51, "GuideText",ExpressionUUID->"c4097c82-0a99-4c82-b263-45dd9141a955",
+ CellID->1912991894],
+Cell[7684, 184, 499, 13, 37, "GuideText",ExpressionUUID->"077fc92a-30d8-4cda-ab6d-48e030e6ebc4",
+ CellID->1677083221],
+Cell[8186, 199, 518, 13, 57, "GuideText",ExpressionUUID->"809f506a-d75a-43c9-9907-45b793023ba2",
+ CellID->1014828472],
+Cell[8707, 214, 556, 14, 57, "GuideText",ExpressionUUID->"dafcd113-0164-4ce5-953f-d9899efbaa15",
+ CellID->907004430],
+Cell[9266, 230, 607, 14, 77, "GuideText",ExpressionUUID->"5e785b0b-5b3d-414f-b45a-7d259e168a55",
+ CellID->1184528604],
+Cell[9876, 246, 528, 14, 57, "GuideText",ExpressionUUID->"b67aac97-f6c8-4bfb-a46a-9fe0e8847424",
+ CellID->1198839738],
+Cell[10407, 262, 547, 14, 57, "GuideText",ExpressionUUID->"e0d93f93-9c54-4150-92cf-d4f27e624d38",
+ CellID->1207900412],
+Cell[10957, 278, 114, 1, 24, "GuideDelimiterSubsection",ExpressionUUID->"493a39e5-13b6-4868-b983-5389949316c7",
+ CellID->1019309393],
+Cell[11074, 281, 130, 1, 34, "GuideFunctionsSubsection",ExpressionUUID->"0b9b32c6-2f6e-4cdb-a387-1067bf4a7c35",
+ CellID->1055916032],
+Cell[11207, 284, 497, 13, 51, "GuideText",ExpressionUUID->"399d6b5d-2aec-4fa5-8443-eec329b88bc3",
+ CellID->2123374663],
+Cell[11707, 299, 483, 13, 37, "GuideText",ExpressionUUID->"941bd336-4c05-4bdc-9738-714c88765299",
+ CellID->674715195],
+Cell[12193, 314, 497, 13, 37, "GuideText",ExpressionUUID->"0e9a1784-2b2d-40ec-9fd2-d5318a2ee87f",
+ CellID->1224626205],
+Cell[12693, 329, 555, 14, 57, "GuideText",ExpressionUUID->"0851b64e-0f9f-464a-88a4-ce69aec266b5",
+ CellID->809354587],
+Cell[13251, 345, 510, 13, 37, "GuideText",ExpressionUUID->"e297290d-18f4-474e-b961-9c09a49aa21c",
+ CellID->661123611],
+Cell[13764, 360, 113, 1, 24, "GuideDelimiterSubsection",ExpressionUUID->"d8181033-034d-42c9-8a0a-3be495b802ff",
+ CellID->424140499],
+Cell[13880, 363, 122, 1, 34, "GuideFunctionsSubsection",ExpressionUUID->"7e668b73-1ba3-4c31-bf94-14d2c0efedab",
+ CellID->1031142300],
+Cell[14005, 366, 486, 13, 31, "GuideText",ExpressionUUID->"af207714-d76e-4007-b6f4-8cb4b8e04bb9",
+ CellID->215604810],
+Cell[14494, 381, 505, 14, 57, "GuideText",ExpressionUUID->"ad365fca-6b06-4c06-800a-e796dc868430",
+ CellID->865129181],
+Cell[15002, 397, 569, 14, 57, "GuideText",ExpressionUUID->"d2a01d36-603f-436a-b4d2-3f1bf5a146d9",
+ CellID->1761854877],
+Cell[15574, 413, 514, 13, 57, "GuideText",ExpressionUUID->"ea209395-3e45-43fc-9316-2e961cd60cc1",
+ CellID->1990392903],
+Cell[16091, 428, 544, 14, 57, "GuideText",ExpressionUUID->"5189387a-25a0-42a2-addc-d6f0bc57b6ae",
+ CellID->1180751402],
+Cell[16638, 444, 556, 14, 57, "GuideText",ExpressionUUID->"0ac24ae6-ad74-4729-801e-f7a7024cbb3c",
+ CellID->2139915134],
+Cell[17197, 460, 114, 1, 24, "GuideDelimiterSubsection",ExpressionUUID->"897d8241-6920-49d2-b62c-7c22699f4221",
+ CellID->1645020829],
+Cell[17314, 463, 119, 1, 34, "GuideFunctionsSubsection",ExpressionUUID->"bcf57e64-6506-440f-a793-2fba7e809990",
+ CellID->1160601525],
+Cell[17436, 466, 492, 13, 31, "GuideText",ExpressionUUID->"a3630778-9cf9-431a-990e-949855850cc3",
+ CellID->635864974],
+Cell[17931, 481, 502, 13, 57, "GuideText",ExpressionUUID->"f060b3f2-d5ad-4ec5-bc0c-b28352633816",
+ CellID->1103990546],
+Cell[18436, 496, 526, 13, 57, "GuideText",ExpressionUUID->"923d7de8-1be8-41f2-8844-bd15030461d5",
+ CellID->510396542],
+Cell[18965, 511, 526, 14, 57, "GuideText",ExpressionUUID->"02596dea-ee46-468a-8a83-7065ea3e723b",
+ CellID->1184995276],
+Cell[19494, 527, 545, 14, 57, "GuideText",ExpressionUUID->"2359b24d-add8-46b8-ba38-d141a52ada10",
+ CellID->452261454],
+Cell[20042, 543, 114, 1, 24, "GuideDelimiterSubsection",ExpressionUUID->"d9971715-b141-4990-af4b-58b5c7b1528c",
+ CellID->1213630645],
+Cell[20159, 546, 128, 1, 34, "GuideFunctionsSubsection",ExpressionUUID->"7f1ce861-9ff5-4244-81e4-1931301a17ef",
+ CellID->690571309],
+Cell[20290, 549, 542, 13, 51, "GuideText",ExpressionUUID->"1ee7e8e2-aec2-4951-985c-697e8f22f032",
+ CellID->1430361975],
+Cell[20835, 564, 567, 14, 57, "GuideText",ExpressionUUID->"ec26e698-55b1-4210-97fc-66dcc932f456",
+ CellID->1161769307],
+Cell[21405, 580, 113, 1, 24, "GuideDelimiterSubsection",ExpressionUUID->"1970911c-6ec9-4899-8081-9ec2741f8005",
+ CellID->935424225],
+Cell[21521, 583, 128, 1, 34, "GuideFunctionsSubsection",ExpressionUUID->"345db6c6-62fd-493f-8f81-e0d937d79fa8",
+ CellID->2094653535],
+Cell[21652, 586, 524, 14, 51, "GuideText",ExpressionUUID->"1e9b5b7c-5ae0-4680-9603-1b1d5a0ede80",
+ CellID->1142537474],
+Cell[22179, 602, 107, 1, 29, "SectionFooterSpacer",ExpressionUUID->"e782b069-9616-4166-9247-84379f86bc54",
+ CellID->1976037691],
+Cell[22289, 605, 392, 12, 73, "GuideMoreAboutSection",ExpressionUUID->"324b56d1-1fef-40e3-a371-76105b0fe009",
+ CellID->430871782],
+Cell[22684, 619, 106, 1, 14, "SectionHeaderSpacer",ExpressionUUID->"aada2a4e-52db-4f08-b2b1-354e6f3e6ad6",
+ CellID->347182390],
+Cell[22793, 622, 250, 6, 24, "GuideMoreAboutSub",ExpressionUUID->"e12b6251-48c7-41ea-92f3-82bc8de30a7c",
+ CellID->381359831],
+Cell[23046, 630, 257, 6, 24, "GuideMoreAboutSub",ExpressionUUID->"d323d40f-065b-4017-8cad-88e01903e0f2",
+ CellID->1423476969],
+Cell[23306, 638, 283, 7, 24, "GuideMoreAboutSub",ExpressionUUID->"15d13e99-a650-4c13-a6c8-0bb4adfa611a",
+ CellID->1409590403],
+Cell[23592, 647, 98, 1, 40, "FooterCell",ExpressionUUID->"069088ef-5967-4ac4-9c55-3b7b8c03f82b",
+ CellID->2093793164]
+}
+]
+*)
+
+(* End of internal cache information *)
+

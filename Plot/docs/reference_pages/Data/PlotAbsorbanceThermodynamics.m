@@ -33,6 +33,27 @@ DefineUsage[PlotAbsorbanceThermodynamics,
 				}
 			},
 			{
+				Definition -> {"PlotAbsorbanceThermodynamics[protocol]", "plot"},
+				Description -> "creates a 'plot' of the melting and/or cooling curves stored in the data objects found in the Data field of 'protocol'.",
+				Inputs :> {
+					{
+						InputName -> "protocol",
+						Description -> "The protocol object containing absorbance thermodynamics data objects.",
+						Widget -> Alternatives[
+							"UV melting protocol" -> Widget[Type -> Object, Pattern :> ObjectP[Object[Protocol, UVMelting]]],
+							"Thermal shift protocol" -> Widget[Type -> Object, Pattern :> ObjectP[Object[Protocol, ThermalShift]]]
+						]
+					}
+				},
+				Outputs :> {
+					{
+						OutputName -> "plot",
+						Description -> "The figure generated from data found in the thermal shift or UV melting protocol.",
+						Pattern :> ValidGraphicsP[]
+					}
+				}
+			},
+			{
 				Definition->{"PlotAbsorbanceThermodynamics[MeltingCurveData]","plot"},
 				Description->"provides a graphical plot of the melting curve.",
 				Inputs:>{

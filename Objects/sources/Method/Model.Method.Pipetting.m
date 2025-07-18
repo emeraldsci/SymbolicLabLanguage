@@ -90,7 +90,7 @@ DefineObjectType[Model[Method, Pipetting],
 				Class -> Real,
 				Pattern :> GreaterEqualP[0 Microliter],
 				Units -> Microliter,
-				Description -> "The volume of air drawn blown out at the end of the dispensing of a liquid.",
+				Description -> "The volume of air blown out at the end of the dispensing of a liquid.",
 				Category -> "General"
 			},
 			DispenseWithdrawalRate -> {

@@ -27,6 +27,17 @@ DefineUsage[ExperimentPellet,
 										Object[Container] -> Field[Contents[[All, 2]]]
 									}
 								],
+								"Model Sample"->Widget[
+									Type->Object,
+									Pattern:>ObjectP[Model[Sample]],
+									ObjectTypes->{Model[Sample]},
+									OpenPaths -> {
+										{
+											Object[Catalog, "Root"],
+											"Materials"
+										}
+									}
+								],
 								"Container with Well Position"->{
 									"Well Position" -> Alternatives[
 										"A1 to H12" -> Widget[

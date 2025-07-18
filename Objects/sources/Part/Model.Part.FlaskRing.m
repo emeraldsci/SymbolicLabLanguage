@@ -4,7 +4,7 @@
 (* :Date: 2023-01-06 *)
 
 DefineObjectType[Model[Part,FlaskRing], {
-    Description -> "A thick metal sheet with a large aperture in the center, which circumscribes the neck of a piece of glassware that is collecting fluid during an experiment on a GravityRack Instrument. Functionally, the flask ring is necessary when the collection glassware piece has a round bottom, as the round bottom flasks and eggplant shaped flasks often used for organic reactions do. Each flask ring also has small round slots in the corners for grasping the Support Rods that are used for positioning on the Collection Tray.",
+    Description -> "A thick metal sheet with a large aperture in the center, which circumscribes the neck of a piece of glassware that is collecting fluid during an experiment on a GravityRack Instrument or while mixing with a Sonicator Instrument. Functionally, the flask ring provides stability when the glassware is too light to stand securely in a sonicator, or collection glassware piece has a round bottom, as the round bottom flasks and eggplant shaped flasks often used for organic reactions do. On the GravityRack Instrument, each flask ring also has small round slots in the corners for grasping the Support Rods that are used for positioning on the Collection Tray.",
     CreatePrivileges -> None,
     Cache -> Session,
     Fields -> {
@@ -17,14 +17,13 @@ DefineObjectType[Model[Part,FlaskRing], {
             Category -> "Part Specifications"
         },
 
-        Dimensions -> {
+        Weight-> {
             Format -> Single,
-            Class -> {Real, Real, Real},
-            Pattern :> {GreaterEqualP[0*Meter],GreaterEqualP[0*Meter],GreaterEqualP[0*Meter]},
-            Units ->{Meter,Meter,Meter},
-            Description -> "The external dimensions of this model of part.",
-            Category -> "Dimensions & Positions",
-            Headers -> {"X Direction (Width)","Y Direction (Depth)","Z Direction (Height)"}
+            Class -> Real,
+            Pattern :> _?MassQ,
+            Units-> Gram,
+            Description -> "The weight of the flask ring.",
+            Category -> "Part Specifications"
         }
     }
 }];

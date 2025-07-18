@@ -142,15 +142,14 @@ ExperimentVapro5600Training[myOperator:{ObjectP[Object[User,Emerald]]},myOptions
 ExperimentVapro5600Training[myOperator:ObjectP[Object[User,Emerald]],myOptions:OptionsPattern[]]:=Module[
 	{
 		listedOperator,listedOptions,outputSpecification,output,gatherTests,cacheOption,safeOptionsNamed,safeOpsTests,
-		operator,safeOps,templatedOptions,templateTests,expandedSafeOps,inheritedOptions,optionsWithObjects,
-		userSpecifiedObjects,objectsExistQs,objectsExistTests,osmometerInstrumentModels,inoculationPapersList,
+		operator,safeOps,templatedOptions,templateTests,expandedSafeOps,inheritedOptions,osmometerInstrumentModels,inoculationPapersList,
 		pipettesList,tweezersList,specifiedInstrumentObjects,specifiedInstrumentModels,allInstrumentModels,specifiedSampleObjects,
 		specifiedSampleModels,osmolalityStandardsList,allStandardsModels,tipsList,allPackets,specifiedPipetteObjects,
 		specifiedPipetteModels,allPipetteModels,instrumentObjectPackets,instrumentModelPackets,sampleObjectPackets,
 		sampleModelPackets,cacheBall,specifiedInoculationPaperObjects,specifiedInoculationPaperModels,allInoculationPapersModels,
 		specifiedPipetteTipsObjects,specifiedPipetteTipsModels,allPipetteTipsModels,inoculationPaperPackets,inoculationPaperModelPackets,
 		pipetteTipsPackets,pipetteTipsModelPackets,pipettePackets,pipetteModelPackets,resolvedOptionsResult,
-		resolvedOptions,resolvedOptionsTests,resourcePackets,resourcePacketTests,protocolObject
+		resolvedOptions,resolvedOptionsTests,resourcePackets,resourcePacketTests,protocolObject,listedOperatorNoName
 	},
 
 	(* Determine the requested return value from the function *)
@@ -173,7 +172,7 @@ ExperimentVapro5600Training[myOperator:ObjectP[Object[User,Emerald]],myOptions:O
 	];
 
 	(*change all Names to objects *)
-	{{operator},safeOps}=sanitizeInputs[listedOperator,safeOptionsNamed];
+	{listedOperatorNoName,safeOps}=sanitizeInputs[listedOperator,safeOptionsNamed];
 
 	(* If the specified options don't match their patterns or if option lengths are invalid return $Failed *)
 	If[MatchQ[safeOps,$Failed],
@@ -185,6 +184,8 @@ ExperimentVapro5600Training[myOperator:ObjectP[Object[User,Emerald]],myOptions:O
 		}]
 	];
 
+	operator = First[listedOperatorNoName];
+
 	(* Use any template options to get values for options not specified in myOptions *)
 	{templatedOptions,templateTests}=If[gatherTests,
 		ApplyTemplateOptions[ExperimentVapro5600Training,{ToList[operator]},listedOptions,Output->{Result,Tests}],
@@ -195,7 +196,7 @@ ExperimentVapro5600Training[myOperator:ObjectP[Object[User,Emerald]],myOptions:O
 	If[MatchQ[templatedOptions,$Failed],
 		Return[outputSpecification/.{
 			Result->$Failed,
-			Tests->Join[safeOpsTests,validLengthTests,templateTests],
+			Tests->Join[safeOpsTests,templateTests],
 			Options->$Failed,
 			Preview->Null
 		}]
@@ -206,60 +207,6 @@ ExperimentVapro5600Training[myOperator:ObjectP[Object[User,Emerald]],myOptions:O
 
 	(* No options to expand *)
 	expandedSafeOps=inheritedOptions;
-
-	(* Create list of options that can take objects *)
-	optionsWithObjects={Instrument,Sample,Pipette,InoculationPaper,Tweezers};
-
-	(* Extract any objects that the user has explicitly specified *)
-	userSpecifiedObjects=DeleteDuplicates[
-		Cases[
-			Flatten@Join[
-				{operator},
-				(* All options that could have an object *)
-				Lookup[expandedSafeOps,optionsWithObjects]
-			],
-			ObjectP[]
-		]
-	];
-
-	(* Check that the specified objects exist or are visible to the current user *)
-	objectsExistQs=DatabaseMemberQ[
-		userSpecifiedObjects
-	];
-
-	(* Build tests for object existence *)
-	objectsExistTests=If[gatherTests,
-		Module[{failingTest,passingTest},
-
-			failingTest=If[!MemberQ[objectsExistQs,False],
-				Nothing,
-				Test["The specified objects "<>ToString[PickList[userSpecifiedObjects,objectsExistQs,False]]<>" exist in the database:",True,False]
-			];
-
-			passingTest=If[!MemberQ[objectsExistQs,True],
-				Nothing,
-				Test["The specified objects "<>ToString[PickList[userSpecifiedObjects,objectsExistQs,True]]<>" exist in the database:",True,True]
-			];
-
-			{failingTest,passingTest}
-		],
-		{}
-	];
-
-	(* If objects do not exist, return failure *)
-	If[!(And@@objectsExistQs),
-		If[!gatherTests,
-			Message[Error::ObjectDoesNotExist,PickList[userSpecifiedObjects,objectsExistQs,False]];
-			Message[Error::InvalidInput,PickList[userSpecifiedObjects,objectsExistQs,False]]
-		];
-		Return[outputSpecification/.{
-			Result->$Failed,
-			Tests->Join[safeOpsTests,validLengthTests,templateTests,objectsExistTests],
-			Options->$Failed,
-			Preview->Null
-		}]
-	];
-
 
 	(*-- DOWNLOAD THE INFORMATION THAT WE NEED FOR OUR OPTION RESOLVER AND RESOURCE PACKET FUNCTION --*)
 
@@ -434,7 +381,7 @@ ExperimentVapro5600Training[myOperator:ObjectP[Object[User,Emerald]],myOptions:O
 	If[MatchQ[resolvedOptionsResult,$Failed],
 		Return[outputSpecification/.{
 			Result->$Failed,
-			Tests->Join[safeOpsTests,validLengthTests,templateTests,objectsExistTests,resolvedOptionsTests],
+			Tests->Join[safeOpsTests,templateTests,resolvedOptionsTests],
 			Options->RemoveHiddenOptions[ExperimentVapro5600Training,resolvedOptions],
 			Preview->Null
 		}]
@@ -451,7 +398,7 @@ ExperimentVapro5600Training[myOperator:ObjectP[Object[User,Emerald]],myOptions:O
 	If[!MemberQ[output,Result],
 		Return[outputSpecification/.{
 			Result->Null,
-			Tests->Flatten[{safeOpsTests,templateTests,objectsExistTests,resolvedOptionsTests,resourcePacketTests}],
+			Tests->Flatten[{safeOpsTests,templateTests,resolvedOptionsTests,resourcePacketTests}],
 			Options->RemoveHiddenOptions[ExperimentVapro5600Training,resolvedOptions],
 			Preview->Null
 		}]
@@ -463,6 +410,7 @@ ExperimentVapro5600Training[myOperator:ObjectP[Object[User,Emerald]],myOptions:O
 			resourcePackets,
 			Upload->Lookup[safeOps,Upload],
 			Confirm->Lookup[safeOps,Confirm],
+			CanaryBranch->Lookup[safeOps,CanaryBranch],
 			ParentProtocol->Lookup[safeOps,ParentProtocol],
 			Priority->Lookup[safeOps,Priority],
 			StartDate->Lookup[safeOps,StartDate],
@@ -477,7 +425,7 @@ ExperimentVapro5600Training[myOperator:ObjectP[Object[User,Emerald]],myOptions:O
 	(* Return requested output *)
 	outputSpecification/.{
 		Result->protocolObject,
-		Tests->Flatten[{safeOpsTests,templateTests,objectsExistTests,resolvedOptionsTests,resourcePacketTests}],
+		Tests->Flatten[{safeOpsTests,templateTests,resolvedOptionsTests,resourcePacketTests}],
 		Options->RemoveHiddenOptions[ExperimentVapro5600Training,resolvedOptions],
 		Preview->Null
 	}
@@ -508,7 +456,7 @@ resolveExperimentVapro5600TrainingOptions[myOperator:ObjectP[Object[User,Emerald
 		resolvedRepeatability,repeatabilityWarningConflictOptions,repeatabilityWarningOptions,resolvedRepeatabilityNumberOfMeasurements,
 		resolvedMaxNumberOfMeasurements,maxNumberOfMeasurementsCompatibilityErrorConflictOptions,maxNumberOfMeasurementsCompatibilityErrorOptions,
 		maxNumberOfMeasurementsCompatibilityErrorTest,resolvedPipette,resolvedInoculationPaper,resolvedTweezers,
-		emailOption,uploadOption,nameOption,confirmOption,parentProtocolOption,fastTrackOption,templateOption,operator,
+		emailOption,uploadOption,nameOption,confirmOption,canaryBranchOption,parentProtocolOption,fastTrackOption,templateOption,operator,
 		invalidOptions,allTests,resolvedEmail,resolvedOptions,discardedInvalidOptions
 	},
 
@@ -1071,10 +1019,10 @@ resolveExperimentVapro5600TrainingOptions[myOperator:ObjectP[Object[User,Emerald
 
 	(* Pull out Miscellaneous options *)
 	{
-		emailOption,uploadOption,nameOption,confirmOption,parentProtocolOption,fastTrackOption,templateOption,operator
+		emailOption,uploadOption,nameOption,confirmOption,canaryBranchOption,parentProtocolOption,fastTrackOption,templateOption,operator
 	}=Lookup[allOptionsRounded,
 		{
-			Email,Upload,Name,Confirm,ParentProtocol,FastTrack,Template,Operator
+			Email,Upload,Name,Confirm,CanaryBranch,ParentProtocol,FastTrack,Template,Operator
 		}
 	];
 
@@ -1119,6 +1067,7 @@ resolveExperimentVapro5600TrainingOptions[myOperator:ObjectP[Object[User,Emerald
 			InoculationPaper->resolvedInoculationPaper,
 			Tweezers->resolvedTweezers,
 			Confirm->confirmOption,
+			CanaryBranch->canaryBranchOption,
 			Name->name,
 			Template->templateOption,
 			Cache->cache,

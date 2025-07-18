@@ -41,7 +41,15 @@ DefineOptions[ExperimentLCMS,
 			AllowNull -> False,
 			Widget -> Widget[
 				Type -> Object,
-				Pattern :> ObjectP[{Model[Instrument, HPLC], Object[Instrument, HPLC]}]
+				Pattern :> ObjectP[{Model[Instrument, HPLC], Object[Instrument, HPLC]}],
+				OpenPaths -> {
+					{
+						Object[Catalog, "Root"],
+						"Instruments",
+						"Chromatography",
+						"High Pressure Liquid Chromatography (HPLC)"
+					}
+				}
 			],
 			Category -> "General"
 		},
@@ -53,7 +61,14 @@ DefineOptions[ExperimentLCMS,
 			AllowNull -> False,
 			Widget -> Widget[
 				Type -> Object,
-				Pattern :> ObjectP[{Model[Instrument, MassSpectrometer], Object[Instrument, MassSpectrometer]}]
+				Pattern :> ObjectP[{Model[Instrument, MassSpectrometer], Object[Instrument, MassSpectrometer]}],
+				OpenPaths -> {
+					{
+						Object[Catalog, "Root"],
+						"Instruments",
+						"Mass Spectrometer"
+					}
+				}
 			]
 		},
 		{
@@ -103,7 +118,15 @@ DefineOptions[ExperimentLCMS,
 			AllowNull -> True,
 			Widget -> Widget[
 				Type -> Object,
-				Pattern :> ObjectP[{Model[Item, Column], Object[Item, Column]}]
+				Pattern :> ObjectP[{Model[Item, Column], Object[Item, Column]}],
+				OpenPaths -> {
+					{
+						Object[Catalog, "Root"],
+						"Materials",
+						"Liquid Chromatography",
+						"HPLC Columns"
+					}
+				}
 			],
 			Category -> "Chromatography"
 		},
@@ -115,7 +138,15 @@ DefineOptions[ExperimentLCMS,
 			AllowNull -> True,
 			Widget -> Widget[
 				Type -> Object,
-				Pattern :> ObjectP[{Model[Item, Column], Object[Item, Column]}]
+				Pattern :> ObjectP[{Model[Item, Column], Object[Item, Column]}],
+				OpenPaths -> {
+					{
+						Object[Catalog, "Root"],
+						"Materials",
+						"Liquid Chromatography",
+						"HPLC Columns"
+					}
+				}
 			],
 			Category -> "Chromatography"
 		},
@@ -127,7 +158,16 @@ DefineOptions[ExperimentLCMS,
 			AllowNull -> True,
 			Widget -> Widget[
 				Type -> Object,
-				Pattern :> ObjectP[{Model[Item, Column], Object[Item, Column], Model[Item, Cartridge, Column], Object[Item, Cartridge, Column]}]
+				Pattern :> ObjectP[{Model[Item, Column], Object[Item, Column], Model[Item, Cartridge, Column], Object[Item, Cartridge, Column]}],
+				OpenPaths -> {
+					{
+						Object[Catalog, "Root"],
+						"Materials",
+						"Liquid Chromatography",
+						"HPLC Columns",
+						"Guard Columns"
+					}
+				}
 			],
 			Category -> "General"
 		},
@@ -142,7 +182,16 @@ DefineOptions[ExperimentLCMS,
 				"Guard Column" -> Alternatives[
 					Widget[
 						Type -> Object,
-						Pattern :> ObjectP[{Model[Item, Column], Object[Item, Column]}]
+						Pattern :> ObjectP[{Model[Item, Column], Object[Item, Column]}],
+						OpenPaths -> {
+							{
+								Object[Catalog, "Root"],
+								"Materials",
+								"Liquid Chromatography",
+								"HPLC Columns",
+								"Guard Columns"
+							}
+						}
 					],
 					Widget[
 						Type -> Enumeration,
@@ -152,7 +201,15 @@ DefineOptions[ExperimentLCMS,
 				"Column" -> Alternatives[
 					Widget[
 						Type -> Object,
-						Pattern :> ObjectP[{Model[Item, Column], Object[Item, Column]}]
+						Pattern :> ObjectP[{Model[Item, Column], Object[Item, Column]}],
+						OpenPaths -> {
+							{
+								Object[Catalog, "Root"],
+								"Materials",
+								"Liquid Chromatography",
+								"HPLC Columns"
+							}
+						}
 					],
 					Widget[
 						Type -> Enumeration,
@@ -162,7 +219,15 @@ DefineOptions[ExperimentLCMS,
 				"Secondary Column" -> Alternatives[
 					Widget[
 						Type -> Object,
-						Pattern :> ObjectP[{Model[Item, Column], Object[Item, Column]}]
+						Pattern :> ObjectP[{Model[Item, Column], Object[Item, Column]}],
+						OpenPaths -> {
+							{
+								Object[Catalog, "Root"],
+								"Materials",
+								"Liquid Chromatography",
+								"HPLC Columns"
+							}
+						}
 					],
 					Widget[
 						Type -> Enumeration,
@@ -172,7 +237,15 @@ DefineOptions[ExperimentLCMS,
 				"Tertiary Column" -> Alternatives[
 					Widget[
 						Type -> Object,
-						Pattern :> ObjectP[{Model[Item, Column], Object[Item, Column]}]
+						Pattern :> ObjectP[{Model[Item, Column], Object[Item, Column]}],
+						OpenPaths -> {
+							{
+								Object[Catalog, "Root"],
+								"Materials",
+								"Liquid Chromatography",
+								"HPLC Columns"
+							}
+						}
 					],
 					Widget[
 						Type -> Enumeration,
@@ -202,7 +275,15 @@ DefineOptions[ExperimentLCMS,
 			AllowNull -> False,
 			Widget -> Widget[
 				Type -> Object,
-				Pattern :> ObjectP[{Object[Sample], Model[Sample]}]
+				Pattern :> ObjectP[{Object[Sample], Model[Sample]}],
+				OpenPaths -> {
+					{
+						Object[Catalog, "Root"],
+						"Materials",
+						"Liquid Chromatography",
+						"Buffer Systems"
+					}
+				}
 			],
 			Category -> "Chromatography"
 		},
@@ -214,7 +295,15 @@ DefineOptions[ExperimentLCMS,
 			AllowNull -> False,
 			Widget -> Widget[
 				Type -> Object,
-				Pattern :> ObjectP[{Object[Sample], Model[Sample]}]
+				Pattern :> ObjectP[{Object[Sample], Model[Sample]}],
+				OpenPaths -> {
+					{
+						Object[Catalog, "Root"],
+						"Materials",
+						"Liquid Chromatography",
+						"Buffer Systems"
+					}
+				}
 			],
 			Category -> "Chromatography"
 		},
@@ -226,7 +315,15 @@ DefineOptions[ExperimentLCMS,
 			AllowNull -> False,
 			Widget -> Widget[
 				Type -> Object,
-				Pattern :> ObjectP[{Object[Sample], Model[Sample]}]
+				Pattern :> ObjectP[{Object[Sample], Model[Sample]}],
+				OpenPaths -> {
+					{
+						Object[Catalog, "Root"],
+						"Materials",
+						"Liquid Chromatography",
+						"Buffer Systems"
+					}
+				}
 			],
 			Category -> "Chromatography"
 		},
@@ -238,7 +335,15 @@ DefineOptions[ExperimentLCMS,
 			AllowNull -> True,
 			Widget -> Widget[
 				Type -> Object,
-				Pattern :> ObjectP[{Object[Sample], Model[Sample]}]
+				Pattern :> ObjectP[{Object[Sample], Model[Sample]}],
+				OpenPaths -> {
+					{
+						Object[Catalog, "Root"],
+						"Materials",
+						"Liquid Chromatography",
+						"Buffer Systems"
+					}
+				}
 			],
 			Category -> "Chromatography"
 		},
@@ -258,7 +363,13 @@ DefineOptions[ExperimentLCMS,
 						Widget[
 							Type -> Object,
 							Pattern :> ObjectP[{Model[Sample], Object[Sample]}],
-							ObjectTypes -> {Model[Sample], Object[Sample]}
+							ObjectTypes -> {Model[Sample], Object[Sample]},
+							OpenPaths -> {
+								{
+									Object[Catalog, "Root"],
+									"Materials"
+								}
+							}
 						],
 						Widget[
 							Type -> Enumeration,
@@ -336,7 +447,7 @@ DefineOptions[ExperimentLCMS,
 			{
 				OptionName->ColumnTemperature,
 				Default -> Automatic,
-				Description -> "The temperature of the Column throughout the measurement and/or collection. If ColumnnTemperature is set to Ambient, column oven temperature control is not used. Otherwise, ColumnTemperature is maintained by temperature control of the column oven.",
+				Description -> "The temperature of the Column throughout the measurement and/or collection. If ColumnTemperature is set to Ambient, column oven temperature control is not used. Otherwise, ColumnTemperature is maintained by temperature control of the column oven.",
 				ResolutionDescription -> "Automatically set to the corresponding gradient temperature specified in the Gradient option or the column temperature for the sample in the InjectionTable option; otherwise, set to Ambient.",
 				AllowNull -> False,
 				Widget -> Alternatives[
@@ -374,7 +485,16 @@ DefineOptions[ExperimentLCMS,
 			AllowNull -> False,
 			Widget -> Widget[
 				Type -> Object,
-				Pattern :> ObjectP[{Object[Sample], Model[Sample]}]
+				Pattern :> ObjectP[{Object[Sample], Model[Sample]}],
+				OpenPaths -> {
+					{
+						Object[Catalog, "Root"],
+						"Materials",
+						"Reagents"
+					}
+				},
+				PreparedSample->False,
+				PreparedContainer->False
 			],
 			Category -> "Sample Parameters"
 		},
@@ -616,19 +736,35 @@ DefineOptions[ExperimentLCMS,
 			Category -> "Mass Analysis",
 			Widget -> Widget[
 				Type -> Object,
-				Pattern :> ObjectP[{Object[Sample], Model[Sample]}]
+				Pattern :> ObjectP[{Object[Sample], Model[Sample]}],
+				OpenPaths -> {
+					{
+						Object[Catalog, "Root"],
+						"Materials",
+						"Mass Spectrometry",
+						"Calibrants"
+					}
+				}
 			]
 		},
 		{
 			OptionName -> SecondCalibrant,
 			Default -> Automatic,
 			Description -> "The additional sample with components of known mass-to-charge ratios (m/z) used to calibrate the mass spectrometer. In the chosen ion polarity mode, the calibrant should contain at least 3 masses spread over the mass range of interest.",
-			ResolutionDescription -> "Set to Model[Sample, \"id:zGj91a71kXEO\"] or Model[Sample, \"id:bq9LA0JA1YJz\"] for Positive and Negative, respectively, when using TripleQuandrupole as the MassAnalyzer. Otherwise set to Null.",
+			ResolutionDescription -> "Set to Model[Sample, \"id:zGj91a71kXEO\"] or Model[Sample, \"id:bq9LA0JA1YJz\"] for Positive and Negative, respectively, when using TripleQuadrupole as the MassAnalyzer. Otherwise set to Null.",
 			AllowNull -> True,
 			Category -> "Mass Analysis",
 			Widget -> Widget[
 				Type -> Object,
-				Pattern :> ObjectP[{Object[Sample], Model[Sample]}]
+				Pattern :> ObjectP[{Object[Sample], Model[Sample]}],
+				OpenPaths -> {
+					{
+						Object[Catalog, "Root"],
+						"Materials",
+						"Mass Spectrometry",
+						"Calibrants"
+					}
+				}
 			]
 		},
 		IndexMatching[
@@ -952,7 +1088,7 @@ DefineOptions[ExperimentLCMS,
 				OptionName -> MassDetectionStepSize,
 				Default -> Automatic,
 				Description ->"Indicate the step size for mass collection in range when using TripleQuadruploe as the MassAnalyzer.",
-				ResolutionDescription ->"This option will be set to Null if using ESI-QTOF. For ESI-QQQ, if both of the mass anaylzer are in mass selection mode (SelectedIonMonitoring and MultipleReactionMonitoring mode), this option will be auto resolved to Null. In all other mass scan modes in ESI-QQQ, this option will be automatically resolved to 0.1 g/mol.",
+				ResolutionDescription ->"This option will be set to Null if using ESI-QTOF. For ESI-QQQ, if both of the mass analyzer are in mass selection mode (SelectedIonMonitoring and MultipleReactionMonitoring mode), this option will be auto resolved to Null. In all other mass scan modes in ESI-QQQ, this option will be automatically resolved to 0.1 g/mol.",
 				AllowNull -> True,
 				Category -> "Mass Analysis",
 				Widget -> Alternatives[
@@ -1016,14 +1152,14 @@ DefineOptions[ExperimentLCMS,
 						"PrecursorIonScan" -> Adder[
 							Widget[
 								Type -> Quantity,
-								Pattern :> RangeP[20 Gram / Mole, 16000 Gram / Mole],
+								Pattern :> RangeP[5 Gram / Mole, 16000 Gram / Mole],
 								Units -> CompoundUnit[{1, {Gram, {Nanogram, Microgram, Milligram, Gram, Kilogram}}}, {-1, {Mole, {Nanomole, Micromole, Millimole, Mole}}}]
 							]
 						],
 						"ProductIonScan" -> Span[
 							Widget[
 								Type -> Quantity,
-								Pattern :> RangeP[20 Gram / Mole, 16000 Gram / Mole],
+								Pattern :> RangeP[5 Gram / Mole, 16000 Gram / Mole],
 								Units -> CompoundUnit[{1, {Gram, {Nanogram, Microgram, Milligram, Gram, Kilogram}}}, {-1, {Mole, {Nanomole, Micromole, Millimole, Mole}}}]
 							],
 							Widget[
@@ -1052,14 +1188,14 @@ DefineOptions[ExperimentLCMS,
 						"PrecursorIonScan" -> Adder[
 							Widget[
 								Type -> Quantity,
-								Pattern :> RangeP[20 Gram / Mole, 16000 Gram / Mole],
+								Pattern :> RangeP[5 Gram / Mole, 16000 Gram / Mole],
 								Units -> CompoundUnit[{1, {Gram, {Nanogram, Microgram, Milligram, Gram, Kilogram}}}, {-1, {Mole, {Nanomole, Micromole, Millimole, Mole}}}]
 							]
 						],
 						"ProductIonScan" -> Span[
 							Widget[
 								Type -> Quantity,
-								Pattern :> RangeP[20 Gram / Mole, 16000 Gram / Mole],
+								Pattern :> RangeP[5 Gram / Mole, 16000 Gram / Mole],
 								Units -> CompoundUnit[{1, {Gram, {Nanogram, Microgram, Milligram, Gram, Kilogram}}}, {-1, {Mole, {Nanomole, Micromole, Millimole, Mole}}}]
 							],
 							Widget[
@@ -1089,7 +1225,7 @@ DefineOptions[ExperimentLCMS,
 			{
 				OptionName -> CollisionEnergy, (*TODO: make a figure for the interpolation; preview function tab*)
 				Default -> Automatic,
-				Description -> "The voltage by which intact ions are accelerated through inert gas in order to dissociate them into measurable fragment ion species when Fragment is True. CollisionEnergy cannot be defined simultaneously with CollisionEnergyMassProfile.",
+				Description -> "The voltage by which intact ions are accelerated through inert gas in order to dissociate them into measurable fragment ion species when Fragment is True. If the corresponding AcquisitionMode is DataIndependent, CollisionEnergy specifies the voltage of the low fragemention scan. Otherwise, CollisionEnergy cannot be defined simultaneously with CollisionEnergyMassProfile.",
 				ResolutionDescription -> "Is automatically set to 40 Volt when Fragment is True, otherwise is set to Null.",
 				AllowNull -> True,
 				Category -> "Mass Analysis",
@@ -1163,20 +1299,25 @@ DefineOptions[ExperimentLCMS,
 						Pattern :> RangeP[5 Millisecond,  2000 Millisecond],
 						Units -> {Millisecond, {Millisecond,Second,Minute}}
 					],
-					Adder[
-						Alternatives[
+					Adder[Alternatives[
+						"Single Values"->Widget[
+							Type -> Quantity,
+							Pattern :> RangeP[5 Millisecond,  2000 Millisecond],
+							Units -> {Millisecond, {Millisecond,Second,Minute}}
+						],
+						"A list of Single Values"->Adder[
 							Widget[
 								Type -> Quantity,
 								Pattern :> RangeP[5 Millisecond,  2000 Millisecond],
 								Units -> {Millisecond, {Millisecond,Second,Minute}}
 							],
-							Widget[
-								Type -> Enumeration,
-								Pattern :> Alternatives[Null]
-							]
+							Orientation->Vertical
 						],
-						Orientation->Vertical
-					]
+						Widget[
+							Type -> Enumeration,
+							Pattern :> Alternatives[Null]
+						]
+					]]
 				]
 			},
 			{
@@ -1216,67 +1357,101 @@ DefineOptions[ExperimentLCMS,
 			{
 				OptionName -> MultipleReactionMonitoringAssays,
 				Default -> Automatic,
-				Description -> "In ESI-QQQ, the ion corresponding to the compound of interest is targetted with subsequent fragmentation of that target ion to produce a range of daughter ions. One (or more) of these fragment daughter ions can be selected for quantitation purposes. Only compounds that meet both these criteria, i.e. specific parent ion and specific daughter ions corresponding to the mass of the molecule of interest are detected within the mass spectrometer. The mass assays (MS1/MS2 mass value combinations) for each scan, along with the CollisionEnergy and DwellTime (length of time of each scan).",
-				ResolutionDescription -> "Is set based on MassDetection, CollissionEnergy, DwellTime and FramentMassDetection.",
+				Description -> "In ESI-QQQ, the ion corresponding to the compound of interest is targeted with subsequent fragmentation of that target ion to produce a range of daughter ions. One (or more) of these fragment daughter ions can be selected for quantitation purposes. Only compounds that meet both these criteria, i.e. specific parent ion and specific daughter ions corresponding to the mass of the molecule of interest are detected within the mass spectrometer. The mass assays (MS1/MS2 mass value combinations) for each scan, along with the CollisionEnergy and DwellTime (length of time of each scan).",
+				ResolutionDescription -> "Is set based on MassDetection, CollisionEnergy, DwellTime and FragmentMassDetection.",
 				AllowNull -> True,
 				Category -> "Mass Analysis",
 				Widget -> Alternatives[
 					Adder[
 						Alternatives[
-							Adder[
-								Alternatives[
-									"Individual Multiple Reaction Monitoring Assay"-> {
-										"Mass Selection Values" -> Widget[
-											Type -> Quantity,
-											Pattern :> GreaterP[0 Gram / Mole],
-											Units -> CompoundUnit[
-												{1, {Gram, {Nanogram, Microgram, Milligram, Gram, Kilogram}}},
-												{-1, {Mole, {Nanomole, Micromole, Millimole, Mole}}}
-											]
-										],
-										"CollisionEnergies" -> Alternatives[
-											Widget[
-												Type -> Quantity,
-												Pattern :> RangeP[5 Volt, 180 Volt] | RangeP[-180 Volt, 5 Volt],
-												Units -> Volt
-											],
-											Widget[
-												Type -> Enumeration,
-												Pattern :> Alternatives[Automatic]
-											]
-										],
-										"Fragment Mass Selection Values" -> Widget[
-											Type -> Quantity,
-											Pattern :> GreaterP[0 Gram / Mole],
-											Units -> CompoundUnit[
-												{1, {Gram, {Nanogram, Microgram, Milligram, Gram, Kilogram}}},
-												{-1, {Mole, {Nanomole, Micromole, Millimole, Mole}}}
-											]
-										],
-										"Dwell Times" -> Alternatives[
-											Widget[
-												Type -> Quantity,
-												Pattern :> GreaterP[0 Second],
-												Units -> {Millisecond, {Microsecond, Millisecond, Second}}
-											],
-											Widget[
-												Type -> Enumeration,
-												Pattern :> Alternatives[Automatic]
-											]
-										]
-									},
-									"None"->Widget[
-										Type -> Enumeration,
-										Pattern :> Alternatives[Null]
+							"Individual Multiple Reaction Monitoring Assay" -> Adder[{
+								"Mass Selection Values" -> Widget[
+									Type -> Quantity,
+									Pattern :> GreaterP[0 Gram / Mole],
+									Units -> CompoundUnit[
+										{1, {Gram, {Nanogram, Microgram, Milligram, Gram, Kilogram}}},
+										{-1, {Mole, {Nanomole, Micromole, Millimole, Mole}}}
 									]
 								],
-								Orientation -> Vertical
-							],
-							Widget[
+								"CollisionEnergies" -> Alternatives[
+									Widget[
+										Type -> Quantity,
+										Pattern :> RangeP[5 Volt, 180 Volt] | RangeP[-180 Volt, 5 Volt],
+										Units -> Volt
+									],
+									Widget[
+										Type -> Enumeration,
+										Pattern :> Alternatives[Automatic]
+									]
+								],
+								"Fragment Mass Selection Values" -> Widget[
+									Type -> Quantity,
+									Pattern :> GreaterP[0 Gram / Mole],
+									Units -> CompoundUnit[
+										{1, {Gram, {Nanogram, Microgram, Milligram, Gram, Kilogram}}},
+										{-1, {Mole, {Nanomole, Micromole, Millimole, Mole}}}
+									]
+								],
+								"Dwell Times" -> Alternatives[
+									Widget[
+										Type -> Quantity,
+										Pattern :> GreaterP[0 Second],
+										Units -> {Millisecond, {Microsecond, Millisecond, Second}}
+									],
+									Widget[
+										Type -> Enumeration,
+										Pattern :> Alternatives[Automatic]
+									]
+								]
+							}],
+							{
+								"Multiple Reaction Monitoring Assays" -> Adder[{
+									"Mass Selection Values" -> Widget[
+										Type -> Quantity,
+										Pattern :> GreaterP[0 Gram / Mole],
+										Units -> CompoundUnit[
+											{1, {Gram, {Nanogram, Microgram, Milligram, Gram, Kilogram}}},
+											{-1, {Mole, {Nanomole, Micromole, Millimole, Mole}}}
+										]
+									],
+									"CollisionEnergies" -> Alternatives[
+										Widget[
+											Type -> Quantity,
+											Pattern :> RangeP[5 Volt, 180 Volt] | RangeP[-180 Volt, 5 Volt],
+											Units -> Volt
+										],
+										Widget[
+											Type -> Enumeration,
+											Pattern :> Alternatives[Automatic]
+										]
+									],
+									"Fragment Mass Selection Values" -> Widget[
+										Type -> Quantity,
+										Pattern :> GreaterP[0 Gram / Mole],
+										Units -> CompoundUnit[
+											{1, {Gram, {Nanogram, Microgram, Milligram, Gram, Kilogram}}},
+											{-1, {Mole, {Nanomole, Micromole, Millimole, Mole}}}
+										]
+									],
+									"Dwell Times" -> Alternatives[
+										Widget[
+											Type -> Quantity,
+											Pattern :> GreaterP[0 Second],
+											Units -> {Millisecond, {Microsecond, Millisecond, Second}}
+										],
+										Widget[
+											Type -> Enumeration,
+											Pattern :> Alternatives[Automatic]
+										]
+									]
+								}]
+							},
+							"None" -> Widget[
 								Type -> Enumeration,
-								Pattern :> Alternatives[Null]
+								Pattern :> Alternatives[Null, {Null}]
 							]
-						]
+						],
+						Orientation -> Vertical
 					],
 					Widget[
 						Type -> Enumeration,
@@ -1287,7 +1462,7 @@ DefineOptions[ExperimentLCMS,
 			{
 				OptionName -> CollisionEnergyMassProfile,
 				Default -> Automatic,
-				Description -> "The relationship of collision energy with the MassDetection.",
+				Description -> "The relationship of collision energy with the MassDetection. If the corresponding AcquisitionMode is DataIndependent, this span specifies the minimum and maximum values for the linear voltage ramp of the high fragmentation scan. If the corresponding AcquisitionMode is DataDependent, this span specifies the minimum and maximum values for the low energy voltage ramp. Otherwise, it should be Null. ",
 				ResolutionDescription -> "Set to CollisionEnergyMassScan if defined; otherwise, set to Null.",
 				AllowNull -> True,
 				Category -> "Mass Analysis",
@@ -1955,7 +2130,7 @@ DefineOptions[ExperimentLCMS,
 			{
 				OptionName -> SurveyIsotopeExclusion,
 				Default -> Automatic,
-				Description -> "Indicates if redundant ions that differ by isotopic mass (e.g. 1, 2 Gram/Mole) should be exlcuded and if MassIsotope exclusion-related options should be automatically filled in.",
+				Description -> "Indicates if redundant ions that differ by isotopic mass (e.g. 1, 2 Gram/Mole) should be excluded and if MassIsotope exclusion-related options should be automatically filled in.",
 				ResolutionDescription -> "Set to True, if any of the IsotopeExclusion options are set; otherwise, False.",
 				Category -> "Mass Analysis",
 				AllowNull -> True,
@@ -2016,6 +2191,13 @@ DefineOptions[ExperimentLCMS,
 							Type -> Number,
 							Pattern :> RangeP[1, 6, 1]
 						],
+						Adder[
+							Widget[
+								Type -> Number,
+								Pattern :> RangeP[1, 6, 1]
+							],
+							Orientation->Vertical
+						],
 						Widget[
 							Type -> Enumeration,
 							Pattern :> Alternatives[Null]
@@ -2060,12 +2242,10 @@ DefineOptions[ExperimentLCMS,
 					AllowNull -> True,
 					Category -> "Data Dependent Acquisition",
 					Widget -> Alternatives[
-						Alternatives[
-							Widget[
-								Type -> Quantity,
-								Pattern :> RangeP[0 Gram/Mole, 3000 Gram/Mole],
-								Units -> Gram/Mole
-							]
+						Widget[
+							Type -> Quantity,
+							Pattern :> RangeP[0 Gram/Mole, 3000 Gram/Mole],
+							Units -> Gram/Mole
 						],
 						Adder[Alternatives[
 							Widget[
@@ -2073,18 +2253,19 @@ DefineOptions[ExperimentLCMS,
 								Pattern :> RangeP[0 Gram/Mole, 3000 Gram/Mole],
 								Units -> Gram/Mole
 							],
+							Adder[
+								Widget[
+									Type -> Quantity,
+									Pattern :> RangeP[0 Gram/Mole, 3000 Gram/Mole],
+									Units -> Gram/Mole
+								],
+								Orientation->Vertical
+							],
 							Widget[
 								Type -> Enumeration,
 								Pattern :> Alternatives[Null]
 							]
-						]],
-						Adder[Adder[Alternatives[
-							Widget[
-								Type -> Quantity,
-								Pattern :> RangeP[0 Gram/Mole, 3000 Gram/Mole],
-								Units -> Gram/Mole
-							]
-						]]]
+						]]
 					]
 				},
 				{
@@ -2103,15 +2284,18 @@ DefineOptions[ExperimentLCMS,
 								Type -> Number,
 								Pattern :> RangeP[0, 1]
 							],
+							Adder[
+								Widget[
+									Type -> Number,
+									Pattern :> RangeP[0, 1]
+								],
+								Orientation->Vertical
+							],
 							Widget[
 								Type -> Enumeration,
 								Pattern :> Alternatives[Null]
 							]
-						]],
-						Adder[Adder[Widget[
-							Type -> Number,
-							Pattern :> RangeP[0, 1]
-						]]]
+						]]
 					],
 					Category -> "Data Dependent Acquisition"
 				}
@@ -2135,16 +2319,17 @@ DefineOptions[ExperimentLCMS,
 							Pattern :> GreaterEqualP[0 * 1 / Second],
 							Units -> {-1, {Minute, {Minute, Second}}}
 						],
+						Adder[
+							Widget[
+								Type -> Quantity,
+								Pattern :> GreaterEqualP[0 * 1 / Second],
+								Units -> {-1, {Minute, {Minute, Second}}}
+							],
+							Orientation->Vertical
+						],
 						Widget[
 							Type -> Enumeration,
 							Pattern :> Alternatives[Null]
-						]
-					]],
-					Adder[Adder[
-						Widget[
-							Type -> Quantity,
-							Pattern :> GreaterEqualP[0 * 1 / Second],
-							Units -> {-1, {Minute, {Minute, Second}}}
 						]
 					]]
 				]
@@ -2284,7 +2469,21 @@ DefineOptions[ExperimentLCMS,
 				Category -> "Standard",
 				Widget -> Widget[
 					Type -> Object,
-					Pattern :> ObjectP[{Model[Sample], Object[Sample]}]
+					Pattern :> ObjectP[{Model[Sample], Object[Sample]}],
+					OpenPaths -> {
+						{
+							Object[Catalog, "Root"],
+							"Materials",
+							"Liquid Chromatography",
+							"Standards"
+						},
+						{
+							Object[Catalog, "Root"],
+							"Materials",
+							"Reagents",
+							"Standards"
+						}
+					}
 				]
 			},
 			{
@@ -2324,7 +2523,7 @@ DefineOptions[ExperimentLCMS,
 			{
 				OptionName -> StandardColumnTemperature,
 				Default -> Automatic,
-				Description -> "The temperature of the column when the Standard gradient and measurement are run. If StandardColumnnTemperature is set to Ambient, column oven temperature control is not used. Otherwise, StandardColumnTemperature is maintained by temperature control of the column oven.",
+				Description -> "The temperature of the column when the Standard gradient and measurement are run. If StandardColumnTemperature is set to Ambient, column oven temperature control is not used. Otherwise, StandardColumnTemperature is maintained by temperature control of the column oven.",
 				ResolutionDescription -> "Automatically set to the corresponding gradient temperature specified in the StandardGradient option or the column temperature for the sample in the InjectionTable option; otherwise, set as the first value of the ColumnTemperature option.",
 				AllowNull -> True,
 				Category -> "Standard",
@@ -2575,9 +2774,15 @@ DefineOptions[ExperimentLCMS,
 				ResolutionDescription -> "If Standard samples exist and MassSpectrometryMethod is specified, then set to the first available StandardMassSpectrometryMethod.",
 				AllowNull -> True,
 				Category -> "Standard",
-				Widget -> Widget[
-					Type -> Object,
-					Pattern :> ObjectP[Object[Method, MassAcquisition]]
+				Widget -> Alternatives[
+					Widget[
+						Type -> Object,
+						Pattern :> ObjectP[Object[Method, MassAcquisition]]
+					],
+					Widget[
+						Type -> Enumeration,
+						Pattern :> Alternatives[New]
+					]
 				]
 			},
 			{
@@ -2877,21 +3082,17 @@ DefineOptions[ExperimentLCMS,
 				Category -> "Standard",
 				Widget -> Alternatives[
 					Alternatives[
-						"Specific" -> Adder[
+						"PrecursorIonScan" -> Adder[
 							Widget[
 								Type -> Quantity,
-								Pattern :> RangeP[20 Gram / Mole, 16000 Gram / Mole],
+								Pattern :> RangeP[5 Gram / Mole, 16000 Gram / Mole],
 								Units -> CompoundUnit[{1, {Gram, {Nanogram, Microgram, Milligram, Gram, Kilogram}}}, {-1, {Mole, {Nanomole, Micromole, Millimole, Mole}}}]
 							]
 						],
-						"All" -> Widget[
-							Type -> Enumeration,
-							Pattern :> Alternatives[All]
-						],
-						"Range" -> Span[
+						"ProductIonScan" -> Span[
 							Widget[
 								Type -> Quantity,
-								Pattern :> RangeP[20 Gram / Mole, 16000 Gram / Mole],
+								Pattern :> RangeP[5 Gram / Mole, 16000 Gram / Mole],
 								Units -> CompoundUnit[{1, {Gram, {Nanogram, Microgram, Milligram, Gram, Kilogram}}}, {-1, {Mole, {Nanomole, Micromole, Millimole, Mole}}}]
 							],
 							Widget[
@@ -2899,17 +3100,8 @@ DefineOptions[ExperimentLCMS,
 								Pattern :> RangeP[100 Gram / Mole, 16000 Gram / Mole],
 								Units -> CompoundUnit[{1, {Gram, {Nanogram, Microgram, Milligram, Gram, Kilogram}}}, {-1, {Mole, {Nanomole, Micromole, Millimole, Mole}}}]
 							]
-						]
-					],
-					Adder[Alternatives[
-						"Specific" -> Adder[
-							Widget[
-								Type -> Quantity,
-								Pattern :> RangeP[20 Gram / Mole, 16000 Gram / Mole],
-								Units -> CompoundUnit[{1, {Gram, {Nanogram, Microgram, Milligram, Gram, Kilogram}}}, {-1, {Mole, {Nanomole, Micromole, Millimole, Mole}}}]
-							]
 						],
-						"All" -> Widget[
+						"DataDependent or DataIndependent" -> Widget[
 							Type -> Enumeration,
 							Pattern :> Alternatives[All]
 						],
@@ -2917,15 +3109,46 @@ DefineOptions[ExperimentLCMS,
 							Type -> Enumeration,
 							Pattern :> Alternatives[Null]
 						],
-						"Range" -> Span[
+						"MultipleReactionMonitoring" -> Adder[
 							Widget[
 								Type -> Quantity,
-								Pattern :> RangeP[20 Gram / Mole, 16000 Gram / Mole],
+								Pattern :> RangeP[5 Gram / Mole, 2000 Gram / Mole],
+								Units -> CompoundUnit[{1, {Gram, {Nanogram, Microgram, Milligram, Gram, Kilogram}}}, {-1, {Mole, {Nanomole, Micromole, Millimole, Mole}}}]
+							]
+						]
+					],
+					Adder[Alternatives[
+						"PrecursorIonScan" -> Adder[
+							Widget[
+								Type -> Quantity,
+								Pattern :> RangeP[5 Gram / Mole, 16000 Gram / Mole],
+								Units -> CompoundUnit[{1, {Gram, {Nanogram, Microgram, Milligram, Gram, Kilogram}}}, {-1, {Mole, {Nanomole, Micromole, Millimole, Mole}}}]
+							]
+						],
+						"ProductIonScan" -> Span[
+							Widget[
+								Type -> Quantity,
+								Pattern :> RangeP[5 Gram / Mole, 16000 Gram / Mole],
 								Units -> CompoundUnit[{1, {Gram, {Nanogram, Microgram, Milligram, Gram, Kilogram}}}, {-1, {Mole, {Nanomole, Micromole, Millimole, Mole}}}]
 							],
 							Widget[
 								Type -> Quantity,
 								Pattern :> RangeP[100 Gram / Mole, 16000 Gram / Mole],
+								Units -> CompoundUnit[{1, {Gram, {Nanogram, Microgram, Milligram, Gram, Kilogram}}}, {-1, {Mole, {Nanomole, Micromole, Millimole, Mole}}}]
+							]
+						],
+						"DataDependent or DataIndependent" -> Widget[
+							Type -> Enumeration,
+							Pattern :> Alternatives[All]
+						],
+						"Null" -> Widget[
+							Type -> Enumeration,
+							Pattern :> Alternatives[Null]
+						],
+						"MultipleReactionMonitoring" -> Adder[
+							Widget[
+								Type -> Quantity,
+								Pattern :> RangeP[5 Gram / Mole, 2000 Gram / Mole],
 								Units -> CompoundUnit[{1, {Gram, {Nanogram, Microgram, Milligram, Gram, Kilogram}}}, {-1, {Mole, {Nanomole, Micromole, Millimole, Mole}}}]
 							]
 						]
@@ -3701,6 +3924,12 @@ DefineOptions[ExperimentLCMS,
 						Widget[
 							Type -> Enumeration,
 							Pattern :> Alternatives[Null]
+						],
+						Adder[
+							Widget[
+								Type -> Number,
+								Pattern :> RangeP[1, 6, 1]
+							]
 						]
 					]]
 				],
@@ -3742,12 +3971,10 @@ DefineOptions[ExperimentLCMS,
 				AllowNull -> True,
 				Category -> "Standard",
 				Widget -> Alternatives[
-					Alternatives[
-						Widget[
-							Type -> Quantity,
-							Pattern :> RangeP[0 Gram/Mole, 3000 Gram/Mole],
-							Units -> Gram/Mole
-						]
+					Widget[
+						Type -> Quantity,
+						Pattern :> RangeP[0 Gram/Mole, 3000 Gram/Mole],
+						Units -> Gram/Mole
 					],
 					Adder[Alternatives[
 						Widget[
@@ -3758,15 +3985,15 @@ DefineOptions[ExperimentLCMS,
 						Widget[
 							Type -> Enumeration,
 							Pattern :> Alternatives[Null]
+						],
+						Adder[
+							Widget[
+								Type -> Quantity,
+								Pattern :> RangeP[0 Gram/Mole, 3000 Gram/Mole],
+								Units -> Gram/Mole
+							]
 						]
-					]],
-					Adder[Adder[Alternatives[
-						Widget[
-							Type -> Quantity,
-							Pattern :> RangeP[0 Gram/Mole, 3000 Gram/Mole],
-							Units -> Gram/Mole
-						]
-					]]]
+					]]
 				]
 			},
 			{
@@ -3780,20 +4007,24 @@ DefineOptions[ExperimentLCMS,
 						Type -> Number,
 						Pattern :> RangeP[0, 1]
 					],
-					Adder[Alternatives[
-						Widget[
-							Type -> Number,
-							Pattern :> RangeP[0, 1]
-						],
-						Widget[
-							Type -> Enumeration,
-							Pattern :> Alternatives[Null]
+					Adder[
+						Alternatives[
+							Widget[
+								Type -> Number,
+								Pattern :> RangeP[0, 1]
+							],
+							Widget[
+								Type -> Enumeration,
+								Pattern :> Alternatives[Null]
+							],
+							Adder[
+								Widget[
+									Type -> Number,
+									Pattern :> RangeP[0, 1]
+								]
+							]
 						]
-					]],
-					Adder[Adder[Widget[
-						Type -> Number,
-						Pattern :> RangeP[0, 1]
-					]]]
+					]
 				],
 				Category -> "Standard"
 			}
@@ -3811,24 +4042,26 @@ DefineOptions[ExperimentLCMS,
 						Pattern :> GreaterEqualP[0 * 1 / Second],
 						Units -> {-1, {Minute, {Minute, Second}}}
 					],
-					Adder[Alternatives[
-						Widget[
-							Type -> Quantity,
-							Pattern :> GreaterEqualP[0 * 1 / Second],
-							Units -> {-1, {Minute, {Minute, Second}}}
-						],
-						Widget[
-							Type -> Enumeration,
-							Pattern :> Alternatives[Null]
+					Adder[
+						Alternatives[
+							Widget[
+								Type -> Quantity,
+								Pattern :> GreaterEqualP[0 * 1 / Second],
+								Units -> {-1, {Minute, {Minute, Second}}}
+							],
+							Widget[
+								Type -> Enumeration,
+								Pattern :> Alternatives[Null]
+							],
+							Adder[
+								Widget[
+									Type -> Quantity,
+									Pattern :> GreaterEqualP[0 * 1 / Second],
+									Units -> {-1, {Minute, {Minute, Second}}}
+								]
+							]
 						]
-					]],
-					Adder[Adder[
-						Widget[
-							Type -> Quantity,
-							Pattern :> GreaterEqualP[0 * 1 / Second],
-							Units -> {-1, {Minute, {Minute, Second}}}
-						]
-					]]
+					]
 				]
 			},
 			{
@@ -3906,6 +4139,13 @@ DefineOptions[ExperimentLCMS,
 							Widget[
 								Type -> Enumeration,
 								Pattern :> Alternatives[Null]
+							],
+							Adder[
+								Widget[
+									Type -> Quantity,
+									Pattern :> RangeP[5 Millisecond,  2000 Millisecond],
+									Units -> {Millisecond, {Millisecond,Second,Minute}}
+								]
 							]
 						],
 						Orientation->Vertical
@@ -3916,7 +4156,7 @@ DefineOptions[ExperimentLCMS,
 				OptionName -> StandardCollisionCellExitVoltage,
 				Default -> Automatic,
 				Description ->"Also known as the Collision Cell Exit Potential (CXP). This value focuses and accelerates the ions out of collision cell (Q2) and into 2nd mass analyzer (MS 2). This potential is tuned to ensure successful ion acceleration out of collision cell and into MS2, and can be adjusted to reach the maximal signal intensity. This option is unique to ESI-QQQ for now, and only required when Fragment ->True and/or in ScanMode that achieves tandem mass feature (PrecursorIonScan, NeutralIonLoss,ProductIonScan,MultipleReactionMonitoring). For non-tandem mass ScanMode (FullScan and SelectedIonMonitoring) and other massspectrometer (ESI-QTOF and MALDI-TOF), this option is resolved to Null.",
-				ResolutionDescription ->"For TripleQuandrupole as the MassAnalyzer, is set to first CollisionCellExitVoltage, otherwise set to Null.",
+				ResolutionDescription ->"For TripleQuadrupole as the MassAnalyzer, is set to first CollisionCellExitVoltage, otherwise set to Null.",
 				AllowNull -> True,
 				Category -> "Standard",
 				Widget -> Alternatives[
@@ -4011,67 +4251,101 @@ DefineOptions[ExperimentLCMS,
 			{
 				OptionName -> StandardMultipleReactionMonitoringAssays,
 				Default -> Automatic,
-				Description -> "In ESI-QQQ mass spectrometry analysis, the ion corresponding to the compound of interest is targetted with subsequent fragmentation of that target ion to produce a range of daughter ions. One (or more) of these fragment daughter ions can be selected for quantitation purposes. Only compounds that meet both these criteria, i.e. specific parent ion and specific daughter ions corresponding to the mass of the molecule of interest are detected within the mass spectrometer. The mass assays (MS1/MS2 mass value combinations) for each scan, along with the CollisionEnergy and DwellTime (length of time of each scan).",
-				ResolutionDescription -> "Is set based on StandardMassDetection, StandardCollissionEnergy, StandardDwellTime and StandardFramentMassDetection.",
+				Description -> "In ESI-QQQ mass spectrometry analysis, the ion corresponding to the compound of interest is targeted with subsequent fragmentation of that target ion to produce a range of daughter ions. One (or more) of these fragment daughter ions can be selected for quantitation purposes. Only compounds that meet both these criteria, i.e. specific parent ion and specific daughter ions corresponding to the mass of the molecule of interest are detected within the mass spectrometer. The mass assays (MS1/MS2 mass value combinations) for each scan, along with the CollisionEnergy and DwellTime (length of time of each scan).",
+				ResolutionDescription -> "Is set based on StandardMassDetection, StandardCollisionEnergy, StandardDwellTime and StandardFragmentMassDetection.",
 				AllowNull -> True,
 				Category -> "Standard",
 				Widget -> Alternatives[
 					Adder[
 						Alternatives[
-							Adder[
-								Alternatives[
-									"Individual Multiple Reaction Monitoring Assay"-> {
-										"Mass Selection Values" -> Widget[
-											Type -> Quantity,
-											Pattern :> GreaterP[0 Gram / Mole],
-											Units -> CompoundUnit[
-												{1, {Gram, {Nanogram, Microgram, Milligram, Gram, Kilogram}}},
-												{-1, {Mole, {Nanomole, Micromole, Millimole, Mole}}}
-											]
-										],
-										"CollisionEnergies" -> Alternatives[
-											Widget[
-												Type -> Quantity,
-												Pattern :> RangeP[5 Volt, 180 Volt] | RangeP[-180 Volt, 5 Volt],
-												Units -> Volt
-											],
-											Widget[
-												Type -> Enumeration,
-												Pattern :> Alternatives[Automatic]
-											]
-										],
-										"Fragment Mass Selection Values" -> Widget[
-											Type -> Quantity,
-											Pattern :> GreaterP[0 Gram / Mole],
-											Units -> CompoundUnit[
-												{1, {Gram, {Nanogram, Microgram, Milligram, Gram, Kilogram}}},
-												{-1, {Mole, {Nanomole, Micromole, Millimole, Mole}}}
-											]
-										],
-										"Dwell Times" -> Alternatives[
-											Widget[
-												Type -> Quantity,
-												Pattern :> GreaterP[0 Second],
-												Units -> {Millisecond, {Microsecond, Millisecond, Second}}
-											],
-											Widget[
-												Type -> Enumeration,
-												Pattern :> Alternatives[Automatic]
-											]
-										]
-									},
-									"None"->Widget[
-										Type -> Enumeration,
-										Pattern :> Alternatives[Null]
+							"Individual Multiple Reaction Monitoring Assay" -> Adder[{
+								"Mass Selection Values" -> Widget[
+									Type -> Quantity,
+									Pattern :> GreaterP[0 Gram / Mole],
+									Units -> CompoundUnit[
+										{1, {Gram, {Nanogram, Microgram, Milligram, Gram, Kilogram}}},
+										{-1, {Mole, {Nanomole, Micromole, Millimole, Mole}}}
 									]
 								],
-								Orientation -> Vertical
-							],
-							Widget[
+								"CollisionEnergies" -> Alternatives[
+									Widget[
+										Type -> Quantity,
+										Pattern :> RangeP[5 Volt, 180 Volt] | RangeP[-180 Volt, 5 Volt],
+										Units -> Volt
+									],
+									Widget[
+										Type -> Enumeration,
+										Pattern :> Alternatives[Automatic]
+									]
+								],
+								"Fragment Mass Selection Values" -> Widget[
+									Type -> Quantity,
+									Pattern :> GreaterP[0 Gram / Mole],
+									Units -> CompoundUnit[
+										{1, {Gram, {Nanogram, Microgram, Milligram, Gram, Kilogram}}},
+										{-1, {Mole, {Nanomole, Micromole, Millimole, Mole}}}
+									]
+								],
+								"Dwell Times" -> Alternatives[
+									Widget[
+										Type -> Quantity,
+										Pattern :> GreaterP[0 Second],
+										Units -> {Millisecond, {Microsecond, Millisecond, Second}}
+									],
+									Widget[
+										Type -> Enumeration,
+										Pattern :> Alternatives[Automatic]
+									]
+								]
+							}],
+							{
+								"Multiple Reaction Monitoring Assays" -> Adder[{
+									"Mass Selection Values" -> Widget[
+										Type -> Quantity,
+										Pattern :> GreaterP[0 Gram / Mole],
+										Units -> CompoundUnit[
+											{1, {Gram, {Nanogram, Microgram, Milligram, Gram, Kilogram}}},
+											{-1, {Mole, {Nanomole, Micromole, Millimole, Mole}}}
+										]
+									],
+									"CollisionEnergies" -> Alternatives[
+										Widget[
+											Type -> Quantity,
+											Pattern :> RangeP[5 Volt, 180 Volt] | RangeP[-180 Volt, 5 Volt],
+											Units -> Volt
+										],
+										Widget[
+											Type -> Enumeration,
+											Pattern :> Alternatives[Automatic]
+										]
+									],
+									"Fragment Mass Selection Values" -> Widget[
+										Type -> Quantity,
+										Pattern :> GreaterP[0 Gram / Mole],
+										Units -> CompoundUnit[
+											{1, {Gram, {Nanogram, Microgram, Milligram, Gram, Kilogram}}},
+											{-1, {Mole, {Nanomole, Micromole, Millimole, Mole}}}
+										]
+									],
+									"Dwell Times" -> Alternatives[
+										Widget[
+											Type -> Quantity,
+											Pattern :> GreaterP[0 Second],
+											Units -> {Millisecond, {Microsecond, Millisecond, Second}}
+										],
+										Widget[
+											Type -> Enumeration,
+											Pattern :> Alternatives[Automatic]
+										]
+									]
+								}]
+							},
+							"None" -> Widget[
 								Type -> Enumeration,
-								Pattern :> Alternatives[Null]
+								Pattern :> Alternatives[Null, {Null}]
 							]
-						]
+						],
+						Orientation -> Vertical
 					],
 					Widget[
 						Type -> Enumeration,
@@ -4173,7 +4447,22 @@ DefineOptions[ExperimentLCMS,
 				Category -> "Blanks",
 				Widget -> Widget[
 					Type -> Object,
-					Pattern :> ObjectP[{Model[Sample], Object[Sample]}]
+					Pattern :> ObjectP[{Model[Sample], Object[Sample]}],
+					OpenPaths -> {
+						{
+							Object[Catalog, "Root"],
+							"Materials",
+							"Reagents",
+							"Buffers",
+							"HPLC Buffers"
+						},
+						{
+							Object[Catalog, "Root"],
+							"Materials",
+							"Reagents",
+							"Water"
+						}
+					}
 				]
 			},
 			{
@@ -4213,7 +4502,7 @@ DefineOptions[ExperimentLCMS,
 			{
 				OptionName -> BlankColumnTemperature,
 				Default -> Automatic,
-				Description -> "The temperature of the column when the Blank gradient and measurement are run. If BlankColumnnTemperature is set to Ambient, column oven temperature control is not used. Otherwise, BlankColumnTemperature is maintained by temperature control of the column oven.",
+				Description -> "The temperature of the column when the Blank gradient and measurement are run. If BlankColumnTemperature is set to Ambient, column oven temperature control is not used. Otherwise, BlankColumnTemperature is maintained by temperature control of the column oven.",
 				ResolutionDescription -> "Automatically set to the corresponding gradient temperature specified in the BlankGradient option or the column temperature for the sample in the InjectionTable option; otherwise, set as the first value of the ColumnTemperature option.",
 				AllowNull -> True,
 				Category -> "Blanks",
@@ -4464,9 +4753,15 @@ DefineOptions[ExperimentLCMS,
 				ResolutionDescription -> "If Blank samples exist and MassSpectrometryMethod is specified, then set to the first available BlankMassSpectrometryMethod.",
 				AllowNull -> True,
 				Category -> "Blanks",
-				Widget -> Widget[
-					Type -> Object,
-					Pattern :> ObjectP[Object[Method, MassAcquisition]]
+				Widget -> Alternatives[
+					Widget[
+						Type -> Object,
+						Pattern :> ObjectP[Object[Method, MassAcquisition]]
+					],
+					Widget[
+						Type -> Enumeration,
+						Pattern :> Alternatives[New]
+					]
 				]
 			}, (*
 			IndexMatching[
@@ -4767,21 +5062,17 @@ DefineOptions[ExperimentLCMS,
 				Category -> "Blanks",
 				Widget -> Alternatives[
 					Alternatives[
-						"Specific" -> Adder[
+						"PrecursorIonScan" -> Adder[
 							Widget[
 								Type -> Quantity,
-								Pattern :> RangeP[20 Gram / Mole, 16000 Gram / Mole],
+								Pattern :> RangeP[5 Gram / Mole, 16000 Gram / Mole],
 								Units -> CompoundUnit[{1, {Gram, {Nanogram, Microgram, Milligram, Gram, Kilogram}}}, {-1, {Mole, {Nanomole, Micromole, Millimole, Mole}}}]
 							]
 						],
-						"All" -> Widget[
-							Type -> Enumeration,
-							Pattern :> Alternatives[All]
-						],
-						"Range" -> Span[
+						"ProductIonScan" -> Span[
 							Widget[
 								Type -> Quantity,
-								Pattern :> RangeP[20 Gram / Mole, 16000 Gram / Mole],
+								Pattern :> RangeP[5 Gram / Mole, 16000 Gram / Mole],
 								Units -> CompoundUnit[{1, {Gram, {Nanogram, Microgram, Milligram, Gram, Kilogram}}}, {-1, {Mole, {Nanomole, Micromole, Millimole, Mole}}}]
 							],
 							Widget[
@@ -4789,17 +5080,8 @@ DefineOptions[ExperimentLCMS,
 								Pattern :> RangeP[100 Gram / Mole, 16000 Gram / Mole],
 								Units -> CompoundUnit[{1, {Gram, {Nanogram, Microgram, Milligram, Gram, Kilogram}}}, {-1, {Mole, {Nanomole, Micromole, Millimole, Mole}}}]
 							]
-						]
-					],
-					Adder[Alternatives[
-						"Specific" -> Adder[
-							Widget[
-								Type -> Quantity,
-								Pattern :> RangeP[20 Gram / Mole, 16000 Gram / Mole],
-								Units -> CompoundUnit[{1, {Gram, {Nanogram, Microgram, Milligram, Gram, Kilogram}}}, {-1, {Mole, {Nanomole, Micromole, Millimole, Mole}}}]
-							]
 						],
-						"All" -> Widget[
+						"DataDependent or DataIndependent" -> Widget[
 							Type -> Enumeration,
 							Pattern :> Alternatives[All]
 						],
@@ -4807,15 +5089,46 @@ DefineOptions[ExperimentLCMS,
 							Type -> Enumeration,
 							Pattern :> Alternatives[Null]
 						],
-						"Range" -> Span[
+						"MultipleReactionMonitoring" -> Adder[
 							Widget[
 								Type -> Quantity,
-								Pattern :> RangeP[20 Gram / Mole, 16000 Gram / Mole],
+								Pattern :> RangeP[5 Gram / Mole, 2000 Gram / Mole],
+								Units -> CompoundUnit[{1, {Gram, {Nanogram, Microgram, Milligram, Gram, Kilogram}}}, {-1, {Mole, {Nanomole, Micromole, Millimole, Mole}}}]
+							]
+						]
+					],
+					Adder[Alternatives[
+						"PrecursorIonScan" -> Adder[
+							Widget[
+								Type -> Quantity,
+								Pattern :> RangeP[5 Gram / Mole, 16000 Gram / Mole],
+								Units -> CompoundUnit[{1, {Gram, {Nanogram, Microgram, Milligram, Gram, Kilogram}}}, {-1, {Mole, {Nanomole, Micromole, Millimole, Mole}}}]
+							]
+						],
+						"ProductIonScan" -> Span[
+							Widget[
+								Type -> Quantity,
+								Pattern :> RangeP[5 Gram / Mole, 16000 Gram / Mole],
 								Units -> CompoundUnit[{1, {Gram, {Nanogram, Microgram, Milligram, Gram, Kilogram}}}, {-1, {Mole, {Nanomole, Micromole, Millimole, Mole}}}]
 							],
 							Widget[
 								Type -> Quantity,
-								Pattern :> RangeP[100 Gram / Mole, 16000 Gram / Mole],
+								Pattern :> RangeP[5 Gram / Mole, 16000 Gram / Mole],
+								Units -> CompoundUnit[{1, {Gram, {Nanogram, Microgram, Milligram, Gram, Kilogram}}}, {-1, {Mole, {Nanomole, Micromole, Millimole, Mole}}}]
+							]
+						],
+						"DataDependent or DataIndependent" -> Widget[
+							Type -> Enumeration,
+							Pattern :> Alternatives[All]
+						],
+						"Null" -> Widget[
+							Type -> Enumeration,
+							Pattern :> Alternatives[Null]
+						],
+						"MultipleReactionMonitoring" -> Adder[
+							Widget[
+								Type -> Quantity,
+								Pattern :> RangeP[5 Gram / Mole, 2000 Gram / Mole],
 								Units -> CompoundUnit[{1, {Gram, {Nanogram, Microgram, Milligram, Gram, Kilogram}}}, {-1, {Mole, {Nanomole, Micromole, Millimole, Mole}}}]
 							]
 						]
@@ -5591,6 +5904,12 @@ DefineOptions[ExperimentLCMS,
 						Widget[
 							Type -> Enumeration,
 							Pattern :> Alternatives[Null]
+						],
+						Adder[
+							Widget[
+								Type -> Number,
+								Pattern :> RangeP[1, 6, 1]
+							]
 						]
 					]]
 				],
@@ -5648,15 +5967,15 @@ DefineOptions[ExperimentLCMS,
 						Widget[
 							Type -> Enumeration,
 							Pattern :> Alternatives[Null]
+						],
+						Adder[
+							Widget[
+								Type -> Quantity,
+								Pattern :> RangeP[0 Gram/Mole, 3000 Gram/Mole],
+								Units -> Gram/Mole
+							]
 						]
-					]],
-					Adder[Adder[Alternatives[
-						Widget[
-							Type -> Quantity,
-							Pattern :> RangeP[0 Gram/Mole, 3000 Gram/Mole],
-							Units -> Gram/Mole
-						]
-					]]]
+					]]
 				]
 			},
 			{
@@ -5670,20 +5989,24 @@ DefineOptions[ExperimentLCMS,
 						Type -> Number,
 						Pattern :> RangeP[0, 1]
 					],
-					Adder[Alternatives[
-						Widget[
-							Type -> Number,
-							Pattern :> RangeP[0, 1]
-						],
-						Widget[
-							Type -> Enumeration,
-							Pattern :> Alternatives[Null]
+					Adder[
+						Alternatives[
+							Widget[
+								Type -> Number,
+								Pattern :> RangeP[0, 1]
+							],
+							Widget[
+								Type -> Enumeration,
+								Pattern :> Alternatives[Null]
+							],
+							Adder[
+								Widget[
+									Type -> Number,
+									Pattern :> RangeP[0, 1]
+								]
+							]
 						]
-					]],
-					Adder[Adder[Widget[
-						Type -> Number,
-						Pattern :> RangeP[0, 1]
-					]]]
+					]
 				],
 				Category -> "Blanks"
 			}
@@ -5701,24 +6024,26 @@ DefineOptions[ExperimentLCMS,
 						Pattern :> GreaterEqualP[0 * 1 / Second],
 						Units -> {-1, {Minute, {Minute, Second}}}
 					],
-					Adder[Alternatives[
-						Widget[
-							Type -> Quantity,
-							Pattern :> GreaterEqualP[0 * 1 / Second],
-							Units -> {-1, {Minute, {Minute, Second}}}
-						],
-						Widget[
-							Type -> Enumeration,
-							Pattern :> Alternatives[Null]
+					Adder[
+						Alternatives[
+							Widget[
+								Type -> Quantity,
+								Pattern :> GreaterEqualP[0 * 1 / Second],
+								Units -> {-1, {Minute, {Minute, Second}}}
+							],
+							Widget[
+								Type -> Enumeration,
+								Pattern :> Alternatives[Null]
+							],
+							Adder[
+								Widget[
+									Type -> Quantity,
+									Pattern :> GreaterEqualP[0 * 1 / Second],
+									Units -> {-1, {Minute, {Minute, Second}}}
+								]
+							]
 						]
-					]],
-					Adder[Adder[
-						Widget[
-							Type -> Quantity,
-							Pattern :> GreaterEqualP[0 * 1 / Second],
-							Units -> {-1, {Minute, {Minute, Second}}}
-						]
-					]]
+					]
 				]
 			},
 			{
@@ -5830,6 +6155,13 @@ DefineOptions[ExperimentLCMS,
 							Widget[
 								Type -> Enumeration,
 								Pattern :> Alternatives[Null]
+							],
+							Adder[
+								Widget[
+									Type -> Quantity,
+									Pattern :> RangeP[5 Millisecond,  2000 Millisecond],
+									Units -> {Millisecond, {Millisecond,Second,Minute}}
+								]
 							]
 						],
 						Orientation->Vertical
@@ -5840,7 +6172,7 @@ DefineOptions[ExperimentLCMS,
 				OptionName -> BlankCollisionCellExitVoltage,
 				Default -> Automatic,
 				Description ->"Also known as the Collision Cell Exit Potential (CXP). This value focuses and accelerates the ions out of collision cell (Q2) and into 2nd mass analyzer (MS 2). This potential is tuned to ensure successful ion acceleration out of collision cell and into MS2, and can be adjusted to reach the maximal signal intensity. This option is unique to ESI-QQQ for now, and only required when Fragment ->True and/or in ScanMode that achieves tandem mass feature (PrecursorIonScan, NeutralIonLoss,ProductIonScan,MultipleReactionMonitoring). For non-tandem mass ScanMode (FullScan and SelectedIonMonitoring) and other massspectrometer (ESI-QTOF and MALDI-TOF), this option is resolved to Null.",
-				ResolutionDescription ->"For TripleQuandrupole as the MassAnalyzer, is set to first CollisionCellExitVoltage, otherwise set to Null.",
+				ResolutionDescription ->"For TripleQuadrupole as the MassAnalyzer, is set to first CollisionCellExitVoltage, otherwise set to Null.",
 				AllowNull -> True,
 				Category -> "Blanks",
 				Widget -> Alternatives[
@@ -5868,7 +6200,7 @@ DefineOptions[ExperimentLCMS,
 				OptionName -> BlankMassDetectionStepSize,
 				Default -> Automatic,
 				Description ->"Indicate the step size for mass collection in range when using TripleQuadruploe as the MassAnalyzer.",
-				ResolutionDescription ->"This option will be set to Null if using ESI-QTOF. For ESI-QQQ, if both of the mass anaylzer are in mass selection mode (SelectedIonMonitoring and MultipleReactionMonitoring mode), this option will be auto resolved to Null. In all other mass scan modes in ESI-QQQ, this option will be automatically resolved to 0.1 g/mol.",
+				ResolutionDescription ->"This option will be set to Null if using ESI-QTOF. For ESI-QQQ, if both of the mass analyzer are in mass selection mode (SelectedIonMonitoring and MultipleReactionMonitoring mode), this option will be auto resolved to Null. In all other mass scan modes in ESI-QQQ, this option will be automatically resolved to 0.1 g/mol.",
 				AllowNull -> True,
 				Category -> "Blanks",
 				Widget -> Alternatives[
@@ -5901,67 +6233,101 @@ DefineOptions[ExperimentLCMS,
 			{
 				OptionName -> BlankMultipleReactionMonitoringAssays,
 				Default -> Automatic,
-				Description -> "In ESI-QQQ mass spectrometry analysis, the ion corresponding to the compound of interest is targetted with subsequent fragmentation of that target ion to produce a range of daughter ions. One (or more) of these fragment daughter ions can be selected for quantitation purposes. Only compounds that meet both these criteria, i.e. specific parent ion and specific daughter ions corresponding to the mass of the molecule of interest are detected within the mass spectrometer. The mass assays (MS1/MS2 mass value combinations) for each scan, along with the CollisionEnergy and DwellTime (length of time of each scan).",
-				ResolutionDescription -> "Is set based on BlankMassDetection, BlankCollissionEnergy, BlankDwellTime and BlankFramentMassDetection.",
+				Description -> "In ESI-QQQ mass spectrometry analysis, the ion corresponding to the compound of interest is targeted with subsequent fragmentation of that target ion to produce a range of daughter ions. One (or more) of these fragment daughter ions can be selected for quantitation purposes. Only compounds that meet both these criteria, i.e. specific parent ion and specific daughter ions corresponding to the mass of the molecule of interest are detected within the mass spectrometer. The mass assays (MS1/MS2 mass value combinations) for each scan, along with the CollisionEnergy and DwellTime (length of time of each scan).",
+				ResolutionDescription -> "Is set based on BlankMassDetection, BlankCollisionEnergy, BlankDwellTime and BlankFragmentMassDetection.",
 				AllowNull -> True,
 				Category -> "Blanks",
 				Widget -> Alternatives[
 					Adder[
 						Alternatives[
-							Adder[
-								Alternatives[
-									"Individual Multiple Reaction Monitoring Assay"-> {
-										"Mass Selection Values" -> Widget[
-											Type -> Quantity,
-											Pattern :> GreaterP[0 Gram / Mole],
-											Units -> CompoundUnit[
-												{1, {Gram, {Nanogram, Microgram, Milligram, Gram, Kilogram}}},
-												{-1, {Mole, {Nanomole, Micromole, Millimole, Mole}}}
-											]
-										],
-										"CollisionEnergies" -> Alternatives[
-											Widget[
-												Type -> Quantity,
-												Pattern :> RangeP[5 Volt, 180 Volt] | RangeP[-180 Volt, 5 Volt],
-												Units -> Volt
-											],
-											Widget[
-												Type -> Enumeration,
-												Pattern :> Alternatives[Automatic]
-											]
-										],
-										"Fragment Mass Selection Values" -> Widget[
-											Type -> Quantity,
-											Pattern :> GreaterP[0 Gram / Mole],
-											Units -> CompoundUnit[
-												{1, {Gram, {Nanogram, Microgram, Milligram, Gram, Kilogram}}},
-												{-1, {Mole, {Nanomole, Micromole, Millimole, Mole}}}
-											]
-										],
-										"Dwell Times" -> Alternatives[
-											Widget[
-												Type -> Quantity,
-												Pattern :> GreaterP[0 Second],
-												Units -> {Millisecond, {Microsecond, Millisecond, Second}}
-											],
-											Widget[
-												Type -> Enumeration,
-												Pattern :> Alternatives[Automatic]
-											]
-										]
-									},
-									"None"->Widget[
-										Type -> Enumeration,
-										Pattern :> Alternatives[Null]
+							"Individual Multiple Reaction Monitoring Assay" -> Adder[{
+								"Mass Selection Values" -> Widget[
+									Type -> Quantity,
+									Pattern :> GreaterP[0 Gram / Mole],
+									Units -> CompoundUnit[
+										{1, {Gram, {Nanogram, Microgram, Milligram, Gram, Kilogram}}},
+										{-1, {Mole, {Nanomole, Micromole, Millimole, Mole}}}
 									]
 								],
-								Orientation -> Vertical
-							],
-							Widget[
+								"CollisionEnergies" -> Alternatives[
+									Widget[
+										Type -> Quantity,
+										Pattern :> RangeP[5 Volt, 180 Volt] | RangeP[-180 Volt, 5 Volt],
+										Units -> Volt
+									],
+									Widget[
+										Type -> Enumeration,
+										Pattern :> Alternatives[Automatic]
+									]
+								],
+								"Fragment Mass Selection Values" -> Widget[
+									Type -> Quantity,
+									Pattern :> GreaterP[0 Gram / Mole],
+									Units -> CompoundUnit[
+										{1, {Gram, {Nanogram, Microgram, Milligram, Gram, Kilogram}}},
+										{-1, {Mole, {Nanomole, Micromole, Millimole, Mole}}}
+									]
+								],
+								"Dwell Times" -> Alternatives[
+									Widget[
+										Type -> Quantity,
+										Pattern :> GreaterP[0 Second],
+										Units -> {Millisecond, {Microsecond, Millisecond, Second}}
+									],
+									Widget[
+										Type -> Enumeration,
+										Pattern :> Alternatives[Automatic]
+									]
+								]
+							}],
+							{
+								"Multiple Reaction Monitoring Assays" -> Adder[{
+									"Mass Selection Values" -> Widget[
+										Type -> Quantity,
+										Pattern :> GreaterP[0 Gram / Mole],
+										Units -> CompoundUnit[
+											{1, {Gram, {Nanogram, Microgram, Milligram, Gram, Kilogram}}},
+											{-1, {Mole, {Nanomole, Micromole, Millimole, Mole}}}
+										]
+									],
+									"CollisionEnergies" -> Alternatives[
+										Widget[
+											Type -> Quantity,
+											Pattern :> RangeP[5 Volt, 180 Volt] | RangeP[-180 Volt, 5 Volt],
+											Units -> Volt
+										],
+										Widget[
+											Type -> Enumeration,
+											Pattern :> Alternatives[Automatic]
+										]
+									],
+									"Fragment Mass Selection Values" -> Widget[
+										Type -> Quantity,
+										Pattern :> GreaterP[0 Gram / Mole],
+										Units -> CompoundUnit[
+											{1, {Gram, {Nanogram, Microgram, Milligram, Gram, Kilogram}}},
+											{-1, {Mole, {Nanomole, Micromole, Millimole, Mole}}}
+										]
+									],
+									"Dwell Times" -> Alternatives[
+										Widget[
+											Type -> Quantity,
+											Pattern :> GreaterP[0 Second],
+											Units -> {Millisecond, {Microsecond, Millisecond, Second}}
+										],
+										Widget[
+											Type -> Enumeration,
+											Pattern :> Alternatives[Automatic]
+										]
+									]
+								}]
+							},
+							"None" -> Widget[
 								Type -> Enumeration,
-								Pattern :> Alternatives[Null]
+								Pattern :> Alternatives[Null, {Null}]
 							]
-						]
+						],
+						Orientation -> Vertical
 					],
 					Widget[
 						Type -> Enumeration,
@@ -6073,7 +6439,7 @@ DefineOptions[ExperimentLCMS,
 		{
 			OptionName -> ColumnPrimeTemperature,
 			Default -> Automatic,
-			Description -> "The column's temperature at which the column prime gradient is run. If ColumnnPrimeTemperature is set to Ambient, column oven temperature control is not used. Otherwise, ColumnPrimeTemperature is maintained by temperature control of the column oven.",
+			Description -> "The column's temperature at which the column prime gradient is run. If ColumnPrimeTemperature is set to Ambient, column oven temperature control is not used. Otherwise, ColumnPrimeTemperature is maintained by temperature control of the column oven.",
 			ResolutionDescription -> "Automatically set to the corresponding gradient temperature specified in the ColumnPrimeGradient option or the column temperature for the column prime in the InjectionTable option; otherwise, set as the first value of the ColumnTemperature option.",
 			AllowNull -> True,
 			Category -> "Column Prime",
@@ -6212,7 +6578,7 @@ DefineOptions[ExperimentLCMS,
 		{
 			OptionName -> ColumnPrimeFlowRate,
 			Default -> Automatic,
-			Description -> "The net speed of the fluid flowing through the pump inclusive of the composition of BufferA, BufferB, BufferC, and BufferD specified in the ColumePrimeGradient options during column prime. This speed is linearly interpolated such that consecutive entries of {Time, Flow Rate} will define the intervening fluid speed. For example, {{0 Minute, 0.3 Milliliter/Minute},{30 Minute, 0.5 Milliliter/Minute}} means flow rate of 0.4 Milliliter/Minute at 15 minutes into the run.",
+			Description -> "The net speed of the fluid flowing through the pump inclusive of the composition of BufferA, BufferB, BufferC, and BufferD specified in the ColumnPrimeGradient options during column prime. This speed is linearly interpolated such that consecutive entries of {Time, Flow Rate} will define the intervening fluid speed. For example, {{0 Minute, 0.3 Milliliter/Minute},{30 Minute, 0.5 Milliliter/Minute}} means flow rate of 0.4 Milliliter/Minute at 15 minutes into the run.",
 			ResolutionDescription -> "If ColumnPrimeGradient option is specified, automatically set from the method given in the ColumnPrimeGradient option. If NominalFlowRate of the column model is specified, set to lesser of the NominalFlowRate for each of the columns, guard columns or the instrument's MaxFlowRate. Otherwise set to 1 Milliliter / Minute.",
 			AllowNull -> True,
 			Category -> "Column Prime",
@@ -6529,7 +6895,7 @@ DefineOptions[ExperimentLCMS,
 				Default -> Automatic,
 				Description -> "The duration of time allowed to pass between each spectral acquisition. When ColumnPrimeAcquisitionMode is DataDependent, this value refers to the duration for measuring spectra from the intact ions. Increasing this value improves sensitivity whereas decreasing this value allows for more data points and spectra to be acquired.",
 				ResolutionDescription -> "Set to 0.2 seconds unless a method is given.",
-				AllowNull -> False,
+				AllowNull -> True,
 				Category -> "Column Prime",
 				Widget -> Widget[
 					Type -> Quantity,
@@ -6545,26 +6911,37 @@ DefineOptions[ExperimentLCMS,
 				AllowNull -> True,
 				Category -> "Column Prime",
 				Widget -> Alternatives[
-					"Specific" -> Adder[
+					"PrecursorIonScan" -> Adder[
 						Widget[
 							Type -> Quantity,
-							Pattern :> RangeP[20 Gram / Mole, 16000 Gram / Mole],
+							Pattern :> RangeP[5 Gram / Mole, 16000 Gram / Mole],
 							Units -> CompoundUnit[{1, {Gram, {Nanogram, Microgram, Milligram, Gram, Kilogram}}}, {-1, {Mole, {Nanomole, Micromole, Millimole, Mole}}}]
 						]
 					],
-					"All" -> Widget[
-						Type -> Enumeration,
-						Pattern :> Alternatives[All]
-					],
-					"Range" -> Span[
+					"ProductIonScan" -> Span[
 						Widget[
 							Type -> Quantity,
-							Pattern :> RangeP[20 Gram / Mole, 16000 Gram / Mole],
+							Pattern :> RangeP[5 Gram / Mole, 16000 Gram / Mole],
 							Units -> CompoundUnit[{1, {Gram, {Nanogram, Microgram, Milligram, Gram, Kilogram}}}, {-1, {Mole, {Nanomole, Micromole, Millimole, Mole}}}]
 						],
 						Widget[
 							Type -> Quantity,
 							Pattern :> RangeP[100 Gram / Mole, 16000 Gram / Mole],
+							Units -> CompoundUnit[{1, {Gram, {Nanogram, Microgram, Milligram, Gram, Kilogram}}}, {-1, {Mole, {Nanomole, Micromole, Millimole, Mole}}}]
+						]
+					],
+					"DataDependent or DataIndependent" -> Widget[
+						Type -> Enumeration,
+						Pattern :> Alternatives[All]
+					],
+					"Null" -> Widget[
+						Type -> Enumeration,
+						Pattern :> Alternatives[Null]
+					],
+					"MultipleReactionMonitoring" -> Adder[
+						Widget[
+							Type -> Quantity,
+							Pattern :> RangeP[5 Gram / Mole, 2000 Gram / Mole],
 							Units -> CompoundUnit[{1, {Gram, {Nanogram, Microgram, Milligram, Gram, Kilogram}}}, {-1, {Mole, {Nanomole, Micromole, Millimole, Mole}}}]
 						]
 					]
@@ -7198,7 +7575,7 @@ DefineOptions[ExperimentLCMS,
 				OptionName -> ColumnPrimeCollisionCellExitVoltage,
 				Default -> Automatic,
 				Description ->"Also known as the Collision Cell Exit Potential (CXP). This value focuses and accelerates the ions out of collision cell (Q2) and into 2nd mass analyzer (MS 2). This potential is tuned to ensure successful ion acceleration out of collision cell and into MS2, and can be adjusted to reach the maximal signal intensity. This option is unique to ESI-QQQ for now, and only required when Fragment ->True and/or in ScanMode that achieves tandem mass feature (PrecursorIonScan, NeutralIonLoss,ProductIonScan,MultipleReactionMonitoring). For non-tandem mass ScanMode (FullScan and SelectedIonMonitoring) and other massspectrometer (ESI-QTOF and MALDI-TOF), this option is resolved to Null.",
-				ResolutionDescription ->"For TripleQuandrupole as the MassAnalyzer, is set to first CollisionCellExitVoltage, otherwise set to Null.",
+				ResolutionDescription ->"For TripleQuadrupole as the MassAnalyzer, is set to first CollisionCellExitVoltage, otherwise set to Null.",
 				AllowNull -> True,
 				Category -> "Column Prime",
 				Widget -> Widget[
@@ -7226,63 +7603,96 @@ DefineOptions[ExperimentLCMS,
 			{
 				OptionName -> ColumnPrimeMultipleReactionMonitoringAssays,
 				Default -> Automatic,
-				Description -> "In ESI-QQQ mass spectrometry analysis, the ion corresponding to the compound of interest is targetted with subsequent fragmentation of that target ion to produce a range of daughter ions. One (or more) of these fragment daughter ions can be selected for quantitation purposes. Only compounds that meet both these criteria, i.e. specific parent ion and specific daughter ions corresponding to the mass of the molecule of interest are detected within the mass spectrometer. The mass assays (MS1/MS2 mass value combinations) for each scan, along with the CollisionEnergy and DwellTime (length of time of each scan).",
-				ResolutionDescription -> "Is set based on ColumnPrimeMassDetection, ColumnPrimeCollissionEnergy, ColumnPrimeDwellTime and ColumnPrimeFramentMassDetection.",
+				Description -> "In ESI-QQQ mass spectrometry analysis, the ion corresponding to the compound of interest is targeted with subsequent fragmentation of that target ion to produce a range of daughter ions. One (or more) of these fragment daughter ions can be selected for quantitation purposes. Only compounds that meet both these criteria, i.e. specific parent ion and specific daughter ions corresponding to the mass of the molecule of interest are detected within the mass spectrometer. The mass assays (MS1/MS2 mass value combinations) for each scan, along with the CollisionEnergy and DwellTime (length of time of each scan).",
+				ResolutionDescription -> "Is set based on ColumnPrimeMassDetection, ColumnPrimeCollisionEnergy, ColumnPrimeDwellTime and ColumnPrimeFragmentMassDetection.",
 				AllowNull -> True,
 				Category -> "Column Prime",
 				Widget -> Alternatives[
-					Adder[
-						Alternatives[
-							"Individual Multiple Reaction Monitoring Assay"-> {
-								"Mass Selection Values" -> Widget[
-									Type -> Quantity,
-									Pattern :> GreaterP[0 Gram / Mole],
-									Units -> CompoundUnit[
-										{1, {Gram, {Nanogram, Microgram, Milligram, Gram, Kilogram}}},
-										{-1, {Mole, {Nanomole, Micromole, Millimole, Mole}}}
-									]
-								],
-								"CollisionEnergies" -> Alternatives[
-									Widget[
-										Type -> Quantity,
-										Pattern :> RangeP[5 Volt, 180 Volt] | RangeP[-180 Volt, 5 Volt],
-										Units -> Volt
-									],
-									Widget[
-										Type -> Enumeration,
-										Pattern :> Alternatives[Automatic]
-									]
-								],
-								"Fragment Mass Selection Values" -> Widget[
-									Type -> Quantity,
-									Pattern :> GreaterP[0 Gram / Mole],
-									Units -> CompoundUnit[
-										{1, {Gram, {Nanogram, Microgram, Milligram, Gram, Kilogram}}},
-										{-1, {Mole, {Nanomole, Micromole, Millimole, Mole}}}
-									]
-								],
-								"Dwell Times" -> Alternatives[
-									Widget[
-										Type -> Quantity,
-										Pattern :> GreaterP[0 Second],
-										Units -> {Millisecond, {Microsecond, Millisecond, Second}}
-									],
-									Widget[
-										Type -> Enumeration,
-										Pattern :> Alternatives[Automatic]
-									]
-								]
-							},
-							"None"->Widget[
-								Type -> Enumeration,
-								Pattern :> Alternatives[Null]
+					"Individual Multiple Reaction Monitoring Assay" -> Adder[{
+						"Mass Selection Values" -> Widget[
+							Type -> Quantity,
+							Pattern :> GreaterP[0 Gram / Mole],
+							Units -> CompoundUnit[
+								{1, {Gram, {Nanogram, Microgram, Milligram, Gram, Kilogram}}},
+								{-1, {Mole, {Nanomole, Micromole, Millimole, Mole}}}
 							]
 						],
-						Orientation -> Vertical
-					],
-					Widget[
+						"CollisionEnergies" -> Alternatives[
+							Widget[
+								Type -> Quantity,
+								Pattern :> RangeP[5 Volt, 180 Volt] | RangeP[-180 Volt, 5 Volt],
+								Units -> Volt
+							],
+							Widget[
+								Type -> Enumeration,
+								Pattern :> Alternatives[Automatic]
+							]
+						],
+						"Fragment Mass Selection Values" -> Widget[
+							Type -> Quantity,
+							Pattern :> GreaterP[0 Gram / Mole],
+							Units -> CompoundUnit[
+								{1, {Gram, {Nanogram, Microgram, Milligram, Gram, Kilogram}}},
+								{-1, {Mole, {Nanomole, Micromole, Millimole, Mole}}}
+							]
+						],
+						"Dwell Times" -> Alternatives[
+							Widget[
+								Type -> Quantity,
+								Pattern :> GreaterP[0 Second],
+								Units -> {Millisecond, {Microsecond, Millisecond, Second}}
+							],
+							Widget[
+								Type -> Enumeration,
+								Pattern :> Alternatives[Automatic]
+							]
+						]
+					}],
+					{
+						"Multiple Reaction Monitoring Assays" -> Adder[{
+							"Mass Selection Values" -> Widget[
+								Type -> Quantity,
+								Pattern :> GreaterP[0 Gram / Mole],
+								Units -> CompoundUnit[
+									{1, {Gram, {Nanogram, Microgram, Milligram, Gram, Kilogram}}},
+									{-1, {Mole, {Nanomole, Micromole, Millimole, Mole}}}
+								]
+							],
+							"CollisionEnergies" -> Alternatives[
+								Widget[
+									Type -> Quantity,
+									Pattern :> RangeP[5 Volt, 180 Volt] | RangeP[-180 Volt, 5 Volt],
+									Units -> Volt
+								],
+								Widget[
+									Type -> Enumeration,
+									Pattern :> Alternatives[Automatic]
+								]
+							],
+							"Fragment Mass Selection Values" -> Widget[
+								Type -> Quantity,
+								Pattern :> GreaterP[0 Gram / Mole],
+								Units -> CompoundUnit[
+									{1, {Gram, {Nanogram, Microgram, Milligram, Gram, Kilogram}}},
+									{-1, {Mole, {Nanomole, Micromole, Millimole, Mole}}}
+								]
+							],
+							"Dwell Times" -> Alternatives[
+								Widget[
+									Type -> Quantity,
+									Pattern :> GreaterP[0 Second],
+									Units -> {Millisecond, {Microsecond, Millisecond, Second}}
+								],
+								Widget[
+									Type -> Enumeration,
+									Pattern :> Alternatives[Automatic]
+								]
+							]
+						}]
+					},
+					"None"->Widget[
 						Type -> Enumeration,
-						Pattern :> Alternatives[Null]
+						Pattern :> Alternatives[Null, {Null}]
 					]
 				]
 			}
@@ -7361,7 +7771,7 @@ DefineOptions[ExperimentLCMS,
 		{
 			OptionName -> ColumnFlushTemperature,
 			Default -> Automatic,
-			Description -> "The column's temperature at which the column flush gradient is run. If ColumnnFlushTemperature is set to Ambient, column oven temperature control is not used. Otherwise, ColumnFlushTemperature is maintained by temperature control of the column oven.",
+			Description -> "The column's temperature at which the column flush gradient is run. If ColumnFlushTemperature is set to Ambient, column oven temperature control is not used. Otherwise, ColumnFlushTemperature is maintained by temperature control of the column oven.",
 			ResolutionDescription -> "Automatically set to the corresponding gradient temperature specified in the ColumnFlushGradient option or the column temperature for the column flush in the InjectionTable option; otherwise, set as the first value of the ColumnTemperature option.",
 			AllowNull -> True,
 			Category -> "Column Flush",
@@ -7500,8 +7910,8 @@ DefineOptions[ExperimentLCMS,
 		{
 			OptionName -> ColumnFlushFlowRate,
 			Default -> Automatic,
-			Description -> "The net speed of the fluid flowing through the pump inclusive of the composition of BufferA, BufferB, BufferC, and BufferD specified in the ColumeFlushGradient options during column flush. This speed is linearly interpolated such that consecutive entries of {Time, Flow Rate} will define the intervening fluid speed. For example, {{0 Minute, 0.3 Milliliter/Minute},{30 Minute, 0.5 Milliliter/Minute}} means flow rate of 0.4 Milliliter/Minute at 15 minutes into the run.",
-			ResolutionDescription -> "If ColumeFlushGradient option is specified, automatically set from the method given in the ColumeFlushGradient option. If NominalFlowRate of the column model is specified, set to lesser of the NominalFlowRate for each of the columns, guard columns or the instrument's MaxFlowRate. Otherwise set to 1 Milliliter / Minute.",
+			Description -> "The net speed of the fluid flowing through the pump inclusive of the composition of BufferA, BufferB, BufferC, and BufferD specified in the ColumnFlushGradient options during column flush. This speed is linearly interpolated such that consecutive entries of {Time, Flow Rate} will define the intervening fluid speed. For example, {{0 Minute, 0.3 Milliliter/Minute},{30 Minute, 0.5 Milliliter/Minute}} means flow rate of 0.4 Milliliter/Minute at 15 minutes into the run.",
+			ResolutionDescription -> "If ColumnFlushGradient option is specified, automatically set from the method given in the ColumnFlushGradient option. If NominalFlowRate of the column model is specified, set to lesser of the NominalFlowRate for each of the columns, guard columns or the instrument's MaxFlowRate. Otherwise set to 1 Milliliter / Minute.",
 			AllowNull -> True,
 			Category -> "Column Flush",
 			Widget -> Alternatives[
@@ -7817,7 +8227,7 @@ DefineOptions[ExperimentLCMS,
 				Default -> Automatic,
 				Description -> "The duration of time allowed to pass between each spectral acquisition. When ColumnFlushAcquisitionMode is DataDependent, this value refers to the duration for measuring spectra from the intact ions. Increasing this value improves sensitivity whereas decreasing this value allows for more data points and spectra to be acquired.",
 				ResolutionDescription -> "Set to 0.2 seconds unless a method is given.",
-				AllowNull -> False,
+				AllowNull -> True,
 				Category -> "Column Flush",
 				Widget -> Widget[
 					Type -> Quantity,
@@ -7833,26 +8243,37 @@ DefineOptions[ExperimentLCMS,
 				AllowNull -> True,
 				Category -> "Column Flush",
 				Widget -> Alternatives[
-					"Specific" -> Adder[
+					"PrecursorIonScan" -> Adder[
 						Widget[
 							Type -> Quantity,
-							Pattern :> RangeP[20 Gram / Mole, 16000 Gram / Mole],
+							Pattern :> RangeP[5 Gram / Mole, 16000 Gram / Mole],
 							Units -> CompoundUnit[{1, {Gram, {Nanogram, Microgram, Milligram, Gram, Kilogram}}}, {-1, {Mole, {Nanomole, Micromole, Millimole, Mole}}}]
 						]
 					],
-					"All" -> Widget[
-						Type -> Enumeration,
-						Pattern :> Alternatives[All]
-					],
-					"Range" -> Span[
+					"ProductIonScan" -> Span[
 						Widget[
 							Type -> Quantity,
-							Pattern :> RangeP[20 Gram / Mole, 16000 Gram / Mole],
+							Pattern :> RangeP[5 Gram / Mole, 16000 Gram / Mole],
 							Units -> CompoundUnit[{1, {Gram, {Nanogram, Microgram, Milligram, Gram, Kilogram}}}, {-1, {Mole, {Nanomole, Micromole, Millimole, Mole}}}]
 						],
 						Widget[
 							Type -> Quantity,
 							Pattern :> RangeP[100 Gram / Mole, 16000 Gram / Mole],
+							Units -> CompoundUnit[{1, {Gram, {Nanogram, Microgram, Milligram, Gram, Kilogram}}}, {-1, {Mole, {Nanomole, Micromole, Millimole, Mole}}}]
+						]
+					],
+					"DataDependent or DataIndependent" -> Widget[
+						Type -> Enumeration,
+						Pattern :> Alternatives[All]
+					],
+					"Null" -> Widget[
+						Type -> Enumeration,
+						Pattern :> Alternatives[Null]
+					],
+					"MultipleReactionMonitoring" -> Adder[
+						Widget[
+							Type -> Quantity,
+							Pattern :> RangeP[5 Gram / Mole, 2000 Gram / Mole],
 							Units -> CompoundUnit[{1, {Gram, {Nanogram, Microgram, Milligram, Gram, Kilogram}}}, {-1, {Mole, {Nanomole, Micromole, Millimole, Mole}}}]
 						]
 					]
@@ -8486,7 +8907,7 @@ DefineOptions[ExperimentLCMS,
 				OptionName -> ColumnFlushCollisionCellExitVoltage,
 				Default -> Automatic,
 				Description ->"Also known as the Collision Cell Exit Potential (CXP). This value focuses and accelerates the ions out of collision cell (Q2) and into 2nd mass analyzer (MS 2). This potential is tuned to ensure successful ion acceleration out of collision cell and into MS2, and can be adjusted to reach the maximal signal intensity. This option is unique to ESI-QQQ for now, and only required when Fragment ->True and/or in ScanMode that achieves tandem mass feature (PrecursorIonScan, NeutralIonLoss,ProductIonScan,MultipleReactionMonitoring). For non-tandem mass ScanMode (FullScan and SelectedIonMonitoring) and other massspectrometer (ESI-QTOF and MALDI-TOF), this option is resolved to Null.",
-				ResolutionDescription ->"For TripleQuandrupole as the MassAnalyzer, is set to first CollisionCellExitVoltage, otherwise set to Null.",
+				ResolutionDescription ->"For TripleQuadrupole as the MassAnalyzer, is set to first CollisionCellExitVoltage, otherwise set to Null.",
 				AllowNull -> True,
 				Category -> "Column Flush",
 				Widget -> Widget[
@@ -8514,63 +8935,96 @@ DefineOptions[ExperimentLCMS,
 			{
 				OptionName -> ColumnFlushMultipleReactionMonitoringAssays,
 				Default -> Automatic,
-				Description -> "In ESI-QQQ mass spectrometry analysis, the ion corresponding to the compound of interest is targetted with subsequent fragmentation of that target ion to produce a range of daughter ions. One (or more) of these fragment daughter ions can be selected for quantitation purposes. Only compounds that meet both these criteria, i.e. specific parent ion and specific daughter ions corresponding to the mass of the molecule of interest are detected within the mass spectrometer. The mass assays (MS1/MS2 mass value combinations) for each scan, along with the CollisionEnergy and DwellTime (length of time of each scan).",
-				ResolutionDescription -> "Is set based on ColumnFlushMassDetection, ColumnFlushCollissionEnergy, ColumnFlushDwellTime and ColumnFlushFramentMassDetection.",
+				Description -> "In ESI-QQQ mass spectrometry analysis, the ion corresponding to the compound of interest is targeted with subsequent fragmentation of that target ion to produce a range of daughter ions. One (or more) of these fragment daughter ions can be selected for quantitation purposes. Only compounds that meet both these criteria, i.e. specific parent ion and specific daughter ions corresponding to the mass of the molecule of interest are detected within the mass spectrometer. The mass assays (MS1/MS2 mass value combinations) for each scan, along with the CollisionEnergy and DwellTime (length of time of each scan).",
+				ResolutionDescription -> "Is set based on ColumnFlushMassDetection, ColumnFlushCollisionEnergy, ColumnFlushDwellTime and ColumnFlushFragmentMassDetection.",
 				AllowNull -> True,
 				Category -> "Column Flush",
 				Widget -> Alternatives[
-					Adder[
-						Alternatives[
-							"Individual Multiple Reaction Monitoring Assay"-> {
-								"Mass Selection Values" -> Widget[
-									Type -> Quantity,
-									Pattern :> GreaterP[0 Gram / Mole],
-									Units -> CompoundUnit[
-										{1, {Gram, {Nanogram, Microgram, Milligram, Gram, Kilogram}}},
-										{-1, {Mole, {Nanomole, Micromole, Millimole, Mole}}}
-									]
-								],
-								"CollisionEnergies" -> Alternatives[
-									Widget[
-										Type -> Quantity,
-										Pattern :> RangeP[5 Volt, 180 Volt] | RangeP[-180 Volt, 5 Volt],
-										Units -> Volt
-									],
-									Widget[
-										Type -> Enumeration,
-										Pattern :> Alternatives[Automatic]
-									]
-								],
-								"Fragment Mass Selection Values" -> Widget[
-									Type -> Quantity,
-									Pattern :> GreaterP[0 Gram / Mole],
-									Units -> CompoundUnit[
-										{1, {Gram, {Nanogram, Microgram, Milligram, Gram, Kilogram}}},
-										{-1, {Mole, {Nanomole, Micromole, Millimole, Mole}}}
-									]
-								],
-								"Dwell Times" -> Alternatives[
-									Widget[
-										Type -> Quantity,
-										Pattern :> GreaterP[0 Second],
-										Units -> {Millisecond, {Microsecond, Millisecond, Second}}
-									],
-									Widget[
-										Type -> Enumeration,
-										Pattern :> Alternatives[Automatic]
-									]
-								]
-							},
-							"None"->Widget[
-								Type -> Enumeration,
-								Pattern :> Alternatives[Null]
+					"Individual Multiple Reaction Monitoring Assay" -> Adder[{
+						"Mass Selection Values" -> Widget[
+							Type -> Quantity,
+							Pattern :> GreaterP[0 Gram / Mole],
+							Units -> CompoundUnit[
+								{1, {Gram, {Nanogram, Microgram, Milligram, Gram, Kilogram}}},
+								{-1, {Mole, {Nanomole, Micromole, Millimole, Mole}}}
 							]
 						],
-						Orientation -> Vertical
-					],
-					Widget[
+						"CollisionEnergies" -> Alternatives[
+							Widget[
+								Type -> Quantity,
+								Pattern :> RangeP[5 Volt, 180 Volt] | RangeP[-180 Volt, 5 Volt],
+								Units -> Volt
+							],
+							Widget[
+								Type -> Enumeration,
+								Pattern :> Alternatives[Automatic]
+							]
+						],
+						"Fragment Mass Selection Values" -> Widget[
+							Type -> Quantity,
+							Pattern :> GreaterP[0 Gram / Mole],
+							Units -> CompoundUnit[
+								{1, {Gram, {Nanogram, Microgram, Milligram, Gram, Kilogram}}},
+								{-1, {Mole, {Nanomole, Micromole, Millimole, Mole}}}
+							]
+						],
+						"Dwell Times" -> Alternatives[
+							Widget[
+								Type -> Quantity,
+								Pattern :> GreaterP[0 Second],
+								Units -> {Millisecond, {Microsecond, Millisecond, Second}}
+							],
+							Widget[
+								Type -> Enumeration,
+								Pattern :> Alternatives[Automatic]
+							]
+						]
+					}],
+					{
+						"Multiple Reaction Monitoring Assays" -> Adder[{
+							"Mass Selection Values" -> Widget[
+								Type -> Quantity,
+								Pattern :> GreaterP[0 Gram / Mole],
+								Units -> CompoundUnit[
+									{1, {Gram, {Nanogram, Microgram, Milligram, Gram, Kilogram}}},
+									{-1, {Mole, {Nanomole, Micromole, Millimole, Mole}}}
+								]
+							],
+							"CollisionEnergies" -> Alternatives[
+								Widget[
+									Type -> Quantity,
+									Pattern :> RangeP[5 Volt, 180 Volt] | RangeP[-180 Volt, 5 Volt],
+									Units -> Volt
+								],
+								Widget[
+									Type -> Enumeration,
+									Pattern :> Alternatives[Automatic]
+								]
+							],
+							"Fragment Mass Selection Values" -> Widget[
+								Type -> Quantity,
+								Pattern :> GreaterP[0 Gram / Mole],
+								Units -> CompoundUnit[
+									{1, {Gram, {Nanogram, Microgram, Milligram, Gram, Kilogram}}},
+									{-1, {Mole, {Nanomole, Micromole, Millimole, Mole}}}
+								]
+							],
+							"Dwell Times" -> Alternatives[
+								Widget[
+									Type -> Quantity,
+									Pattern :> GreaterP[0 Second],
+									Units -> {Millisecond, {Microsecond, Millisecond, Second}}
+								],
+								Widget[
+									Type -> Enumeration,
+									Pattern :> Alternatives[Automatic]
+								]
+							]
+						}]
+					},
+					"None"->Widget[
 						Type -> Enumeration,
-						Pattern :> Alternatives[Null]
+						Pattern :> Alternatives[Null, {Null}]
 					]
 				]
 			}
@@ -8644,7 +9098,19 @@ DefineOptions[ExperimentLCMS,
 			ResolutionDescription -> "Automatically set to the same as the first entry in AbsorbanceSamplingRate.",
 			Category -> "Column Flush"
 		},
-		FuntopiaSharedOptions
+		NonBiologyFuntopiaSharedOptions,
+		ModifyOptions[
+			ModelInputOptions,
+			OptionName -> PreparedModelAmount
+		],
+		ModifyOptions[
+			ModelInputOptions,
+			PreparedModelContainer,
+			{
+				ResolutionDescription -> "If PreparedModelAmount is set to All and the input model has a product associated with both Amount and DefaultContainerModel populated, automatically set to the DefaultContainerModel value in the product. Otherwise, automatically set to Model[Container, Plate, \"96-well 2mL Deep Well Plate\"]."
+			}
+		],
+		SimulationOption
 	}
 ];
 
@@ -8654,11 +9120,11 @@ Error::OnlyHPLCAvailable="We do not currently offer `1` as a chromatography inst
 Error::HPLCColumnsCannotFitLCMS = "The specified columns cannot fit into the instrument's column oven compartment. Please check the Dimensions of the column and the MaxColumnLength of the instruments and select a different column in the experiment.";
 Error::ColumnPrimeConflict="Column prime options cannot be set when column prime is not being performed. Consider allowing options `1` to be set automatically";
 Error::ColumnFlushConflict="Column flush options cannot be set when column flush is not being performed. Considering letting options `1` to be set automatically";
-Error::FragmentConflict="The Fragment options `1` must be compatible with their corresponding AcquisitionMode option. Fragment must be True when AcquisitionMode is MS1MS2ProductIonScan, PrecusorIonScan, NeutralIonLoss, MultipleReactionMonitoring,DataIndependent, and DataDependent, and it must be False for MS1FullScan. Consider setting either the AcquisitionMode or Fragment.";
+Error::FragmentConflict="The Fragment options `1` must be compatible with their corresponding AcquisitionMode option. Fragment must be True when AcquisitionMode is MS1MS2ProductIonScan, PrecursorIonScan, NeutralIonLoss, MultipleReactionMonitoring,DataIndependent, and DataDependent, and it must be False for MS1FullScan. Consider setting either the AcquisitionMode or Fragment.";
 Error::MassDetectionConflict="The MassDetection options `1` cannot have multiple entries when AcquisitionMode is MS1MS2ProductIonScan. Only one mass can be chosen.";
 Error::FragmentDetectionConflict="FragmentMassDetection options `1` must be specified if the AcquisitionMode is MS1MS2ProductIonScan, DataDependent, or DataIndependent, or must be Null if the AcquisitionMode is MS1FullScan. Consider using an AcquisitionMode of MS1MS2ProductIonScan, DataIndependent, or DataDependent if `1` are desired, or setting FragmentMassDetection to Null if the desired AcquisitionMode is MS1FullScan.";
 Error::CollisonEnergyConflict="CollisionEnergy options `1` can not be defined unless the AcquisitionMode is MS1MS2ProductIonScan, DataDependent, DataIndependent. It should also be Null for when AcquisitionMode MS1FullScan.";
-Error::CollisionEnergyProfileConflict="CollisionEnergyMassProfile cannot be defined at the same time as CollisionEnergy as seen in `1`. Consider setting either CollisionEnergyMassProfile or CollisionEnergy, but not both.";
+Error::CollisionEnergyProfileConflict="The defined CollisionEnergyMassProfile does not match with CollisionEnergy as seen in `1`. If AcquisitionMode is DataIndependent, CollisionEnergy must be smaller or equal to the left side of CollisionEnergyMassProfile.  Otherwise, CollisionEnergyMassProfile cannot be defined at the same time as CollisionEnergy, so consider setting either CollisionEnergyMassProfile or CollisionEnergy, but not both.";
 Error::CollisionEnergyScanConflict="CollisionEnergyMassScan options `1` cannot be defined unless the corresponding AcquisitionMode is DataDependent.";
 Error::FragmentScanTimeConflict="FragmentScanTime options `1` can only be set if the corresponding AcquisitionMode option is DataDependent. It must not be Null when AcquisitionMode is DataDependent. Consider setting AcquisitionMode to DataDependent or allowing FragmentScanTime options to be Automatic.";
 Error::AcquisitionSurveyConflict="AcquisitionSurvey options `1` can only be set if the corresponding AcquisitionMode option is DataDependent. It must not be Null when AcquisitionMode is DataDependent. Consider setting AcquisitionMode to DataDependent or setting AcquisitionSurvey to Automatic. ";
@@ -8669,7 +9135,7 @@ Error::ExclusionMassToleranceConflict="ExclusionMassTolerance options `1` can on
 Error::ExclusionRetentionTimeConflict="ExclusionRetentionTimeTolerance options `1` can only be set if the corresponding ExclusionMode options are set. It must not be Null when ExclusionMode options are provided.";
 Error::InclusionModeConflict="InclusionMode options `1` can only be set if the corresponding AcquisitionMode option is DataDependent. Consider setting the AcquisitionMode to DataDependent or setting InclusionMode options to Automatic.";
 Error::InclusionMassToleranceConflict="InclusionMassTolerance options `1` can only be set if the corresponding InclusionMode options are set. It must not be Null when InclusionMode options are provided.";
-Error::ChargeStateExclusionLimitConflict="ChargeStateExclusionLimit options `1` must not exceed the value of the corresponding AcquisitionSurvey. Consider setting the ChargeStateExclusion to a lower value or increasing the AcqusutionSurvey value.";
+Error::ChargeStateExclusionLimitConflict="ChargeStateExclusionLimit options `1` must not exceed the value of the corresponding AcquisitionSurvey. Consider setting the ChargeStateExclusion to a lower value or increasing the AcquisitionSurvey value.";
 Error::ChargeStateExclusionConflict="ChargeStateExclusion options `1` can only be set if the corresponding AcquisitionMode option is DataDependent. Consider setting the AcquisitionMode to DataDependent or leaving the ChargeStateExclusion options as Automatic.";
 Error::ChargeStateMassToleranceConflict="ChargeStateMassTolerance options `1` can only be set if the corresponding ChargeStateExclusion options are set. It must not be Null when ChargeStateExclusion options are provided.";
 Error::IsotopicExclusionLimitConflict="IsotopicExclusionMass options `1` can only have up to 2 entries. Please remove anything beyond two entries.";
@@ -8688,13 +9154,13 @@ Error::LCMSInvalidMultipleReactionMonitoringLengthOfInputOptions="When using Mul
 Error::LCMSCollisionEnergyAcquisitionModeConflict="When not using MultipleReactionMonitoring as the acquisition mode, the following CollisionEnergy options `1` can only have one single value for each AcquisitionWindow. If multiple AcquisitionWindows are desired, please either specify the desired the AcquisitionWindow or add another layer of the list to specific CollisionEnergy values. For example: `2`";
 Error::InvalidGasFlowOptions="The following gas flow options related options `1` and their values `2` are not consistent with corresponding mass analyzer `3`. For QTOF as the mass analyzer, the instrument accepts gas flows in flow rates (mL/min), while for QQQ as the mass analyzer, the instrument only accepts pressures (PSI) as the unit.";
 Error::MassAnalyzerAndAcquitionModeMismatched="The acquisition mode specified for this experiment `1` and their values `2` are not consistent with specified massanalyzer `3`. For QTOF as the mass analyzer, AcquistionMode can be: DataIndependent, DataDependent, MS1FullScan, MS1MS2ProductIonScan. For QQQ as the mass analyzer, AcquisitionMode can be: MS1FullScan, MS1MS2ProductIonScan, SelectedIonMonitoring, NeutralIonLoss, PrecursorIonScan, MultipleReactionMonitoring";
-Error::MassAnalyzerAndMassSpecInstrumentConflict="The MassAnalyzer: `1` cannot be used by specified instrument `2`. If QTOF is desired, please use Model[Instrument, MassSpectrometer, \"Xevo G2-XS QTOF\"], and if TripleQuandrupole is desired, please use Model[Instrument, MassSpectrometer, \"QTRAP 6500\"].";
+Error::MassAnalyzerAndMassSpecInstrumentConflict="The MassAnalyzer: `1` cannot be used by specified instrument `2`. If QTOF is desired, please use Model[Instrument, MassSpectrometer, \"Xevo G2-XS QTOF\"], and if TripleQuadrupole is desired, please use Model[Instrument, MassSpectrometer, \"QTRAP 6500\"].";
 
 (*Warning*)
 Warning::OverwritingMassAcquisitionMethod="The following acquisition methods specified in the following options `1` will be overwritten with new methods because of specified acquisition changes.";
-Warning::OnlyOneCalibrantWillBeRan="If the MassAnalyzer is not TripeQuandrupole, only one calibrant will be ran during the experiment: `1`. The SecondCalibrant (`2`) will not be ran.";
+Warning::OnlyOneCalibrantWillBeRan="If the MassAnalyzer is not TripleQuadrupole, only one calibrant will be ran during the experiment: `1`. The SecondCalibrant (`2`) will not be ran.";
 Warning::SameCalibrantsForLCMS="The specified carlibrants `1` and `2` are same, only one calibrant will be ran in experiment.";
-Warning::LCMSAutoResolvedNeutralLoss="For using TripleQuadrupole and NeutralIonLoss as the acquisition mode, a valid mass value in NeutralLoss option needs to be specified in order to generate useful and reliable data. The experiment can further procees with an automatically assigned value `2` for the following options `1`, but this experiment may not generate reliable data.";
+Warning::LCMSAutoResolvedNeutralLoss="For using TripleQuadrupole and NeutralIonLoss as the acquisition mode, a valid mass value in NeutralLoss option needs to be specified in order to generate useful and reliable data. The experiment can further proceed with an automatically assigned value `2` for the following options `1`, but this experiment may not generate reliable data.";
 
 (*Instrumentation Issue: Waiting on SciEx to resolve the following error message and associated code can be removed if the company is able to address this issue. *)
 Error::InstrumentationLimitation = "The specified options are unable to be fulfilled faithfully by the mass spectrometer. These conditions result in data artifacts during acquisition. Please specify an alternate MassDetection (i.e. not 5 to 1250 Gram/Mole), MassDetectionStepSize (i.e. not 0.1 Gram/Mole), or ScanTime (i.e. not 0.5 Second) for: `1`.";
@@ -8704,22 +9170,22 @@ Error::InstrumentationLimitation = "The specified options are unable to be fulfi
 
 
 ExperimentLCMS[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:OptionsPattern[]]:=Module[
-	{listedOptions, outputSpecification, output, gatherTestsQ, cache, simulation, validSamplePreparationResult,
-		mySamplesWithPreparedSamples,myOptionsWithPreparedSamples,samplePreparationCache,modelMoleculeObjects,
+	{listedOptions, outputSpecification, output, gatherTestsQ, cache, validSamplePreparationResult,
+		mySamplesWithPreparedSamples,myOptionsWithPreparedSamples,modelMoleculeObjects,
 		safeOps,safeOpsTests,validLengths,validLengthTests,templatedOptions,templateTests,download,
 		inheritedOptions, expandedSafeOps, hplcInstrumentFields, msInstrumentFields, modelHPLCInstrumentFields,
 		modelMSInstrumentFields, columnFields, modelColumnFields,cartridgeFields, modelCartridgeFields, gradientFields,
-		massSpectrometryMethodFields, objectSampleFields, modelSampleFields, analyteFields, objectContainerFields, modelContainerFields,
-		sampleFields, modelContainerFieldsPacket,optionsWithObjects, userSpecifiedObjects, simulatedSampleQ, objectsExistQs,
-		objectsExistTests,availableHPLCInstruments, availableMSInstruments, allObjects,sampleObjects, modelContainerObjects,
-		hplcInstrumentObjects, modelHPLCInstrumentObjects, msInstrumentObjects, modelMSInstrumentObjects, columnObjects,
-		modelColumnObjects, gradientObjects, msMethodObjects, cartridgeObjects, modelCartridgeObjects,cacheBall,
-		resolvedOptionsResult, collapsedResolvedOptions, protocolObject, resolvedOptions,resolvedOptionsTests,
-		sampleIdentityModelFields,modelMoleculeFieldsPacket,identityModelFieldsPacketForm, identityModelObjects,
-		resourcePackets,resourcePacketTests,listedSamples, mySamplesWithPreparedSamplesNamed, safeOpsNamed, myOptionsWithPreparedSamplesNamed},
+		massSpectrometryMethodFields, objectSampleFields, modelSampleFields, objectContainerFields, modelContainerFields,
+		sampleFields, modelContainerFieldsPacket,optionsWithObjects,availableHPLCInstrumentObjects,availableHPLCInstrumentModels,
+		availableMSInstruments, allObjects,sampleObjects, modelContainerObjects, hplcInstrumentObjects, modelHPLCInstrumentObjects,
+		msInstrumentObjects, modelMSInstrumentObjects, columnObjects, modelColumnObjects, gradientObjects, msMethodObjects,
+		cartridgeObjects, modelCartridgeObjects,cacheBall, resolvedOptionsResult, collapsedResolvedOptions, protocolObject,
+		resolvedOptions,resolvedOptionsTests, sampleIdentityModelFields,modelMoleculeFieldsPacket,identityModelFieldsPacketForm,
+		identityModelObjects, resourcePackets,resourcePacketTests,listedSamples, mySamplesWithPreparedSamplesNamed, safeOpsNamed,
+		myOptionsWithPreparedSamplesNamed, updatedSimulation},
 
 	(* Make sure we're working with a list of options *)
-	{listedSamples, listedOptions}=removeLinks[ToList[mySamples], ToList[myOptions]];
+	{listedSamples, listedOptions} = removeLinks[ToList[mySamples], ToList[myOptions]];
 
 	(* Determine the requested return value from the function *)
 	outputSpecification=Quiet[OptionValue[Output]];
@@ -8730,25 +9196,24 @@ ExperimentLCMS[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:OptionsPat
 
 	(* Fetch our cache from the parent function. *)
 	cache = Lookup[ToList[myOptions], Cache, {}];
-	simulation = Lookup[ToList[myOptions], Simulation, Simulation[]];
 
 	(* Simulate our sample preparation. *)
 	validSamplePreparationResult=Check[
 		(* Simulate sample preparation. *)
-		{mySamplesWithPreparedSamplesNamed,myOptionsWithPreparedSamplesNamed,samplePreparationCache}=simulateSamplePreparationPackets[
+		{mySamplesWithPreparedSamplesNamed,myOptionsWithPreparedSamplesNamed,updatedSimulation} = simulateSamplePreparationPacketsNew[
 			ExperimentLCMS,
 			listedSamples,
 			listedOptions
 		],
 		$Failed,
-		{Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
+		{Download::ObjectDoesNotExist, Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
 	];
 
 	(* If we are given an invalid define name, return early. *)
 	If[MatchQ[validSamplePreparationResult,$Failed],
 		(* Return early. *)
 		(* Note: We've already thrown a message above in simulateSamplePreparationPackets. *)
-		ClearMemoization[Experiment`Private`simulateSamplePreparationPackets];Return[$Failed]
+		Return[$Failed]
 	];
 
 	(* Call SafeOptions to make sure all options match pattern *)
@@ -8758,13 +9223,7 @@ ExperimentLCMS[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:OptionsPat
 	];
 
 	(* Sanitize named inputs *)
-	{mySamplesWithPreparedSamples,safeOps, myOptionsWithPreparedSamples} = sanitizeInputs[mySamplesWithPreparedSamplesNamed, safeOpsNamed, myOptionsWithPreparedSamplesNamed];
-
-	(* Call ValidInputLengthsQ to make sure all options are the right length *)
-	{validLengths,validLengthTests}=If[gatherTestsQ,
-		ValidInputLengthsQ[ExperimentLCMS,{mySamplesWithPreparedSamples},myOptionsWithPreparedSamples,Output->{Result,Tests}],
-		{ValidInputLengthsQ[ExperimentLCMS,{mySamplesWithPreparedSamples},myOptionsWithPreparedSamples],Null}
-	];
+	{mySamplesWithPreparedSamples, safeOps, myOptionsWithPreparedSamples} = sanitizeInputs[mySamplesWithPreparedSamplesNamed, safeOpsNamed, myOptionsWithPreparedSamplesNamed, Simulation -> updatedSimulation];
 
 	(* If the specified options don't match their patterns or if option lengths are invalid return $Failed *)
 	If[MatchQ[safeOps,$Failed],
@@ -8775,6 +9234,12 @@ ExperimentLCMS[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:OptionsPat
 			Preview -> Null,
 			Simulation -> Null
 		}]
+	];
+
+	(* Call ValidInputLengthsQ to make sure all options are the right length *)
+	{validLengths,validLengthTests}=If[gatherTestsQ,
+		ValidInputLengthsQ[ExperimentLCMS,{mySamplesWithPreparedSamples},myOptionsWithPreparedSamples,Output->{Result,Tests}],
+		{ValidInputLengthsQ[ExperimentLCMS,{mySamplesWithPreparedSamples},myOptionsWithPreparedSamples],Null}
 	];
 
 	(* If option lengths are invalid return $Failed (or the tests up to this point) *)
@@ -8809,26 +9274,31 @@ ExperimentLCMS[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:OptionsPat
 	inheritedOptions=ReplaceRule[safeOps,templatedOptions];
 
 	(* Expand index-matching options *)
-	expandedSafeOps=Last[ExpandIndexMatchedInputs[ExperimentLCMS,{ToList[mySamplesWithPreparedSamples]},inheritedOptions]];
+	expandedSafeOps=Last[ExpandIndexMatchedInputs[ExperimentLCMS, {ToList[mySamplesWithPreparedSamples]}, inheritedOptions]];
 
 	(*-- DOWNLOAD THE INFORMATION THAT WE NEED FOR OUR OPTION RESOLVER AND RESOURCE PACKET FUNCTION --*)
 
 	(* Fields to download from any instrument objects *)
 	hplcInstrumentFields = {
-		Packet[Model,Status,MinColumnTemperature,MaxColumnTemperature],
+		Packet[Model, Status, MinColumnTemperature, MaxColumnTemperature, Site],
 		Packet[Model[{
+			Name,
+			AutosamplerDeckModel,
 			MinAcceleration,
 			MaxAcceleration,
 			MinAbsorbanceWavelength,
 			MaxAbsorbanceWavelength,
 			TubingMaxPressure,
 			PumpMaxPressure,
+			MaxColumnLength,
+			PumpType,
+			NumberOfBuffers,
 			SystemPrimeGradients,
 			SystemFlushGradients,
-			AbsorbanceDetector,
 			MinFlowRate,
 			MaxFlowRate,
 			MinSampleVolume,
+			RecommendedSampleVolume,
 			MaxSampleVolume,
 			MinSampleTemperature,
 			MaxSampleTemperature,
@@ -8836,40 +9306,52 @@ ExperimentLCMS[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:OptionsPat
 			MaxColumnTemperature,
 			WashSolution,
 			SampleLoop,
-			PumpType,
-			NumberOfBuffers,
 			Detectors,
+			FractionCollectionDetectors,
 			Manufacturer,
 			Deprecated,
 			WettedMaterials,
-			Positions
+			MaxNumberOfColumns,
+			Positions,
+			ColumnPreheater,
+			Scale
 		}]],
-		Packet[Model[Field[SystemPrimeGradients[[All,2]]][{Gradient,BufferA,BufferB,BufferC,BufferD}]]],
-		Packet[Model[Field[SystemFlushGradients[[All,2]]][{Gradient,BufferA,BufferB,BufferC,BufferD}]]]
+		Packet[Model[Field[SystemPrimeGradients[[All, 2]]][{Gradient, BufferA, BufferB, BufferC, BufferD, RefractiveIndexReferenceLoading}]]],
+		Packet[Model[Field[SystemFlushGradients[[All, 2]]][{Gradient, BufferA, BufferB, BufferC, BufferD, RefractiveIndexReferenceLoading}]]],
+		Packet[Model[Field[AutosamplerDeckModel]][{Positions}]]
 	};
 
 	msInstrumentFields = {
 		Packet[Model,Status,MinColumnTemperature,MaxColumnTemperature],
 		Packet[Model[{
-			IonSources,MassAnalyzer,Detectors,Objects
+			IonSources, MassAnalyzer, Detectors, Objects
 		}]]
 	};
 
 	(* Fields to download from any model instrument objects *)
 	modelHPLCInstrumentFields = {
 		Packet[
+			Name,
+			AutosamplerDeckModel,
 			MinAcceleration,
 			MaxAcceleration,
 			MinAbsorbanceWavelength,
 			MaxAbsorbanceWavelength,
+			MinEmissionWavelength,
+			MaxEmissionWavelength,
+			MinExcitationWavelength,
+			MaxExcitationWavelength,
 			TubingMaxPressure,
 			PumpMaxPressure,
+			MaxColumnLength,
+			PumpType,
+			NumberOfBuffers,
 			SystemPrimeGradients,
 			SystemFlushGradients,
-			AbsorbanceDetector,
 			MinFlowRate,
 			MaxFlowRate,
 			MinSampleVolume,
+			RecommendedSampleVolume,
 			MaxSampleVolume,
 			MinSampleTemperature,
 			MaxSampleTemperature,
@@ -8878,16 +9360,17 @@ ExperimentLCMS[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:OptionsPat
 			WashSolution,
 			SampleLoop,
 			Detectors,
+			FractionCollectionDetectors,
 			Manufacturer,
 			Deprecated,
-			PumpType,
-			NumberOfBuffers,
 			WettedMaterials,
+			MaxNumberOfColumns,
 			Positions,
-			AutosamplerDeckModel
+			ColumnPreheater
 		],
-		Packet[Field[SystemPrimeGradients[[All,2]]][{Gradient,BufferA,BufferB,BufferC,BufferD}]],
-		Packet[Field[SystemFlushGradients[[All,2]]][{Gradient,BufferA,BufferB,BufferC,BufferD}]]
+		Packet[Field[SystemPrimeGradients[[All, 2]]][{Gradient, BufferA, BufferB, BufferC, BufferD, RefractiveIndexReferenceLoading}]],
+		Packet[Field[SystemFlushGradients[[All, 2]]][{Gradient, BufferA, BufferB, BufferC, BufferD, RefractiveIndexReferenceLoading}]],
+		Packet[Field[AutosamplerDeckModel][{Positions}]]
 	};
 
 	modelMSInstrumentFields={Packet[IonSources,MassAnalyzer,Detectors,Objects]};
@@ -8929,7 +9412,8 @@ ExperimentLCMS[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:OptionsPat
 		InclusionDeclusteringVoltages, InclusionChargeStates, InclusionScanTimes,InclusionMassTolerances,IsotopeExclusionModes,
 		ChargeStateSelections,ChargeStateLimits,ChargeStateMassTolerances,ChargeStateMassWindows,IsotopeMassDifferences,
 		IsotopeRatios,IsotopeDetectionMinimums,IsotopeRatioTolerances,IsotopeMassTolerances,
-		ESICapillaryVoltage,DesolvationTemperature,DesolvationGasFlow,SourceTemperature,DeclusteringVoltage,ConeGasFlow,StepwaveVoltage
+		ESICapillaryVoltage,DesolvationTemperature,DesolvationGasFlow,SourceTemperature,DeclusteringVoltage,ConeGasFlow,StepwaveVoltage,
+		IonGuideVoltage, SecondCalibrant, CollisionCellExitVoltages, DwellTimes, MassDetectionStepSizes, MultipleReactionMonitoringAssays, NeutralLosses
 	]};
 
 	(*define all the fields that we want*)
@@ -8991,42 +9475,14 @@ ExperimentLCMS[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:OptionsPat
 		BlankAnalytes
 	};
 
-	(* Extract any objects that the user has explicitly specified *)
-	userSpecifiedObjects = DeleteDuplicates@Cases[
-		Flatten@Join[ToList[mySamples],Lookup[ToList[myOptions],optionsWithObjects,Null]],
-		ObjectP[]
-	];
-
-	(* Check that the specified objects exist or are visible to the current user *)
-	simulatedSampleQ = Lookup[fetchPacketFromCache[#,samplePreparationCache],Simulated,False]&/@userSpecifiedObjects;
-	objectsExistQs = DatabaseMemberQ[PickList[userSpecifiedObjects,simulatedSampleQ,False]];
-
-	(* Build tests for object existence *)
-	objectsExistTests = If[gatherTestsQ,
-		MapThread[
-			Test[StringTemplate["Specified object `1` exists in the database:"][#1],#2,True]&,
-			{PickList[userSpecifiedObjects,simulatedSampleQ,False],objectsExistQs}
-		],
-		{}
-	];
-
-	(* If objects do not exist, return failure *)
-	If[!(And@@objectsExistQs),
-		If[!gatherTestsQ,
-			Message[Error::ObjectDoesNotExist,PickList[PickList[userSpecifiedObjects,simulatedSampleQ,False],objectsExistQs,False]];
-			Message[Error::InvalidInput,PickList[PickList[userSpecifiedObjects,simulatedSampleQ,False],objectsExistQs,False]]
-		];
-		Return[outputSpecification/.{
-			Result -> $Failed,
-			Tests -> Join[safeOpsTests,validLengthTests,templateTests,objectsExistTests],
-			Options -> $Failed,
-			Preview -> Null
-		}]
-	];
-
 	(*define the instruments available for this experiment*)
 	(* NOTE: not all of these LCs are actually available to use with LCMS. We just need to pass cache to ExperimentHPLC's resolver *)
-	availableHPLCInstruments=Search[Model[Instrument,HPLC],Deprecated!=True];
+	(* All the instruments to download and possibly use from memoization *)
+	availableHPLCInstrumentModels = allHPLCInstrumentSearch["Memoization"][[1]];
+	availableHPLCInstrumentObjects = Join[
+		allECL2HPLCInstrumentObjectsSearch["Memoization"],
+		allECLCMUHPLCInstrumentObjectsSearch["Memoization"]
+	];
 
 	availableMSInstruments={Model[Instrument, MassSpectrometer, "id:aXRlGn6KaWdO"] (*"Xevo G2-XS QTOF"*),Model[Instrument, MassSpectrometer, "id:N80DNj1aROOD"] (*"QTRAP 6500"*)};
 
@@ -9046,13 +9502,15 @@ ExperimentLCMS[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:OptionsPat
 					Model[Container, Vessel, "HPLC vial (flat bottom)"],
 					Model[Container, Vessel, "Amber HPLC vial (high recovery)"],
 					Model[Container, Vessel, "HPLC vial (high recovery), LCMS Certified"],
+					Model[Container, Vessel, "HPLC vial (high recovery) - Deactivated Clear Glass"],
 					(* These are only used in prep HPLC but we would like to pass in the cache when calling ExperimentHPLC *)
 					Model[Container, Vessel, "15mL Tube"],
 					Model[Container, Vessel, "50mL Tube"],
 					Model[Container, Vessel, "15mL Light Sensitive Centrifuge Tube"],
 					Model[Container, Vessel, "50mL Light Sensitive Centrifuge Tube"],
 					(* Instruments *)
-					availableHPLCInstruments,
+					availableHPLCInstrumentObjects,
+					availableHPLCInstrumentModels,
 					availableMSInstruments,
 					(* Autosampler Racks *)
 					Model[Container, Rack, "HPLC Vial Rack"],
@@ -9127,14 +9585,15 @@ ExperimentLCMS[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:OptionsPat
 			modelCartridgeFields,
 			identityModelFieldsPacketForm
 		},
-		Cache->samplePreparationCache,
+		Cache->cache,
+		Simulation -> updatedSimulation,
 		Date->Now
 	],{Download::FieldDoesntExist}];
 
 	cacheBall = DeleteCases[
 		FlattenCachePackets[
 			{
-				samplePreparationCache,
+				cache,
 				download
 			}
 		],
@@ -9144,7 +9603,7 @@ ExperimentLCMS[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:OptionsPat
 	(* Build the resolved options *)
 	resolvedOptionsResult=If[gatherTestsQ,
 		(* We are gathering tests. This silences any messages being thrown. *)
-		{resolvedOptions,resolvedOptionsTests}=resolveExperimentLCMSOptions[ToList[mySamplesWithPreparedSamples],expandedSafeOps,Cache->cacheBall,Output->{Result,Tests}];
+		{resolvedOptions,resolvedOptionsTests}=resolveExperimentLCMSOptions[ToList[mySamplesWithPreparedSamples],expandedSafeOps,Cache->cacheBall, Simulation -> updatedSimulation,Output->{Result,Tests}];
 
 		(* Therefore, we have to run the tests to see if we encountered a failure. *)
 		If[RunUnitTest[<|"Tests"->resolvedOptionsTests|>,OutputFormat->SingleBoolean,Verbose->False],
@@ -9154,7 +9613,7 @@ ExperimentLCMS[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:OptionsPat
 
 		(* We are not gathering tests. Simply check for Error::InvalidInput and Error::InvalidOption. *)
 		Check[
-			{resolvedOptions,resolvedOptionsTests}={resolveExperimentLCMSOptions[ToList[mySamplesWithPreparedSamples],expandedSafeOps,Cache->cacheBall],{}},
+			{resolvedOptions,resolvedOptionsTests}={resolveExperimentLCMSOptions[ToList[mySamplesWithPreparedSamples],expandedSafeOps,Cache->cacheBall, Simulation -> updatedSimulation],{}},
 			$Failed,
 			{Error::InvalidInput,Error::InvalidOption}
 		]
@@ -9175,15 +9634,15 @@ ExperimentLCMS[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:OptionsPat
 			Tests->Join[safeOpsTests,validLengthTests,templateTests,resolvedOptionsTests],
 			Options->RemoveHiddenOptions[ExperimentLCMS,collapsedResolvedOptions],
 			Preview->Null,
-			Simulation -> simulation
+			Simulation -> updatedSimulation
 		}]
 	];
 	
 	
 	(* Build packets with resources *)
 	{resourcePackets,resourcePacketTests} = If[gatherTestsQ,
-		LCMSResourcePackets[ToList[mySamplesWithPreparedSamples],templatedOptions,resolvedOptions,Cache->cacheBall,Output->{Result,Tests}],
-		{LCMSResourcePackets[ToList[mySamplesWithPreparedSamples],templatedOptions,resolvedOptions,Cache->cacheBall],{}}
+		LCMSResourcePackets[ToList[mySamplesWithPreparedSamples],templatedOptions,resolvedOptions,Cache->cacheBall, Simulation -> updatedSimulation,Output->{Result,Tests}],
+		{LCMSResourcePackets[ToList[mySamplesWithPreparedSamples],templatedOptions,resolvedOptions,Cache->cacheBall, Simulation -> updatedSimulation],{}}
 	];
 
 	(* If we don't have to return the Result, don't bother calling UploadProtocol[...]. *)
@@ -9193,7 +9652,7 @@ ExperimentLCMS[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:OptionsPat
 			Tests -> Flatten[{safeOpsTests,validLengthTests,templateTests,resolvedOptionsTests,resourcePacketTests}],
 			Options -> RemoveHiddenOptions[ExperimentLCMS,collapsedResolvedOptions],
 			Preview -> Null,
-			Simulation -> simulation
+			Simulation -> updatedSimulation
 		}]
 	];
 
@@ -9207,26 +9666,30 @@ ExperimentLCMS[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:OptionsPat
 				Rest[resourcePackets],
 				Upload->Lookup[safeOps,Upload],
 				Confirm->Lookup[safeOps,Confirm],
+				CanaryBranch->Lookup[safeOps,CanaryBranch],
 				ParentProtocol->Lookup[safeOps,ParentProtocol],
 				Priority->Lookup[safeOps,Priority],
 				StartDate->Lookup[safeOps,StartDate],
 				HoldOrder->Lookup[safeOps,HoldOrder],
 				QueuePosition->Lookup[safeOps,QueuePosition],
 				ConstellationMessage->Object[Protocol,LCMS],
-				Cache->samplePreparationCache
+				Cache->cache,
+				Simulation -> updatedSimulation
 			],
 			(*otherwise just protocol packet*)
 			UploadProtocol[
 				First[resourcePackets],
 				Upload->Lookup[safeOps,Upload],
 				Confirm->Lookup[safeOps,Confirm],
+				CanaryBranch->Lookup[safeOps,CanaryBranch],
 				ParentProtocol->Lookup[safeOps,ParentProtocol],
 				Priority->Lookup[safeOps,Priority],
 				StartDate->Lookup[safeOps,StartDate],
 				HoldOrder->Lookup[safeOps,HoldOrder],
 				QueuePosition->Lookup[safeOps,QueuePosition],
 				ConstellationMessage->Object[Protocol,LCMS],
-				Cache->samplePreparationCache
+				Cache->cache,
+				Simulation -> updatedSimulation
 			]
 		],
 		$Failed
@@ -9238,18 +9701,15 @@ ExperimentLCMS[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:OptionsPat
 		Tests -> Flatten[{safeOpsTests,validLengthTests,templateTests,resolvedOptionsTests,resourcePacketTests}],
 		Options -> RemoveHiddenOptions[ExperimentLCMS,collapsedResolvedOptions],
 		Preview -> Null,
-		Simulation -> simulation
+		Simulation -> updatedSimulation
 	}
 ];
 
 (*container overload*)
-ExperimentLCMS[myContainers:ListableP[ObjectP[{Object[Container],Object[Sample]}]|_String|{LocationPositionP,_String|ObjectP[Object[Container]]}],myOptions:OptionsPattern[]]:=Module[
-	{listedOptions,outputSpecification,output,gatherTests,validSamplePreparationResult,mySamplesWithPreparedSamples,myOptionsWithPreparedSamples,
-		samplePreparationCache,containerToSampleResult,containerToSampleOutput,updatedCache,samples,sampleOptions,containerToSampleTests,sampleCache,
-		listedContainers},
-
-	(* Make sure we're working with a list of options *)
-	{listedContainers, listedOptions}=removeLinks[ToList[myContainers], ToList[myOptions]];
+ExperimentLCMS[myContainers:ListableP[ObjectP[{Object[Container],Object[Sample],Model[Sample]}]|_String|{LocationPositionP,_String|ObjectP[Object[Container]]}],myOptions:OptionsPattern[]]:=Module[
+	{outputSpecification,output,gatherTests,validSamplePreparationResult,mySamplesWithPreparedSamples,myOptionsWithPreparedSamples,
+		updatedSimulation,containerToSampleResult,containerToSampleOutput,samples,sampleOptions,
+		containerToSampleTests,containerToSampleSimulation},
 
 	(* Determine the requested return value from the function *)
 	outputSpecification=Quiet[OptionValue[Output]];
@@ -9261,31 +9721,32 @@ ExperimentLCMS[myContainers:ListableP[ObjectP[{Object[Container],Object[Sample]}
 	(* First, simulate our sample preparation. *)
 	validSamplePreparationResult=Check[
 		(* Simulate sample preparation. *)
-		{mySamplesWithPreparedSamples,myOptionsWithPreparedSamples,samplePreparationCache}=simulateSamplePreparationPackets[
+		{mySamplesWithPreparedSamples,myOptionsWithPreparedSamples,updatedSimulation}=simulateSamplePreparationPacketsNew[
 			ExperimentLCMS,
-			listedContainers,
-			listedOptions
+			ToList[myContainers],
+			ToList[myOptions],
+			DefaultPreparedModelContainer -> Model[Container, Plate, "96-well 2mL Deep Well Plate"]
 		],
 		$Failed,
-		{Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
+		{Download::ObjectDoesNotExist, Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
 	];
 
 	(* If we are given an invalid define name, return early. *)
 	If[MatchQ[validSamplePreparationResult,$Failed],
 		(* Return early. *)
 		(* Note: We've already thrown a message above in simulateSamplePreparationPackets. *)
-		ClearMemoization[Experiment`Private`simulateSamplePreparationPackets];Return[$Failed]
+		Return[$Failed]
 	];
 
 	(* Convert our given containers into samples and sample index-matched options. *)
 	containerToSampleResult=If[gatherTests,
 		(* We are gathering tests. This silences any messages being thrown. *)
-		{containerToSampleOutput,containerToSampleTests}=containerToSampleOptions[
+		{containerToSampleOutput,containerToSampleTests, containerToSampleSimulation}=containerToSampleOptions[
 			ExperimentLCMS,
 			mySamplesWithPreparedSamples,
 			myOptionsWithPreparedSamples,
-			Output->{Result,Tests},
-			Cache->samplePreparationCache
+			Output->{Result,Tests,Simulation},
+			Simulation -> updatedSimulation
 		];
 
 		(* Therefore, we have to run the tests to see if we encountered a failure. *)
@@ -9296,24 +9757,17 @@ ExperimentLCMS[myContainers:ListableP[ObjectP[{Object[Container],Object[Sample]}
 
 		(* We are not gathering tests. Simply check for Error::InvalidInput and Error::InvalidOption. *)
 		Check[
-			containerToSampleOutput=containerToSampleOptions[
+			{containerToSampleOutput, containerToSampleSimulation} = containerToSampleOptions[
 				ExperimentLCMS,
 				mySamplesWithPreparedSamples,
 				myOptionsWithPreparedSamples,
-				Output->Result,
-				Cache->samplePreparationCache
+				Output-> {Result, Simulation},
+				Simulation -> updatedSimulation
 			],
 			$Failed,
 			{Error::EmptyContainers, Error::ContainerEmptyWells, Error::WellDoesNotExist}
 		]
 	];
-
-	(* Update our cache with our new simulated values. *)
-	(* It is important the sample preparation cache appears first in the cache ball. *)
-	updatedCache=Flatten[{
-		samplePreparationCache,
-		Lookup[listedOptions,Cache,{}]
-	}];
 
 	(* If we were given an empty container, return early. *)
 	If[MatchQ[containerToSampleResult,$Failed],
@@ -9326,21 +9780,21 @@ ExperimentLCMS[myContainers:ListableP[ObjectP[{Object[Container],Object[Sample]}
 			Simulation -> Null
 		},
 		(* Split up our containerToSample result into the samples and sampleOptions. *)
-		{samples,sampleOptions, sampleCache}=containerToSampleOutput;
+		{samples, sampleOptions} = containerToSampleOutput;
 
 		(* Call our main function with our samples and converted options. *)
-		ExperimentLCMS[samples,ReplaceRule[sampleOptions,Cache->Flatten[updatedCache,sampleCache]]]
+		ExperimentLCMS[samples, ReplaceRule[sampleOptions,Simulation -> containerToSampleSimulation]]
 	]
 ];
 
 DefineOptions[
 	resolveExperimentLCMSOptions,
-	Options:>{HelperOutputOption,CacheOption}
+	Options:>{SimulationOption, HelperOutputOption,CacheOption}
 ];
 
 resolveExperimentLCMSOptions[mySamples:{ObjectP[Object[Sample]]...},myOptions:{_Rule...},myResolutionOptions:OptionsPattern[resolveExperimentLCMSOptions]]:=Module[
 	{outputSpecification, output, gatherTestsQ, cache, samplePrepOptions, lcmsOptions,hplcOptionRulesWithFrequencies,
-		simulatedSamples,simulatedCache, messagesQ, engineQ,hplcOptions,blankOptions, standardOptions,
+		simulatedSamples,simulationFastAssoc, messagesQ, engineQ,hplcOptions,blankOptions, standardOptions,
 		lcmsOptionsAssociation,resolvedExperimentOptions, invalidInputs, invalidOptions,simulatedSampleIdentityModelFields,
 		allTests, resolvedPostProcessingOptions, hplcResolvedOptions, resolvedOptions, hplcInvalidInputs, hplcInvalidOptions, hplcTests,
 		roundedOptionsAssociation,userHPLCOptions, initialHPLCOptionsRule, hplcOptionsRuleWithInstrument,
@@ -9348,7 +9802,7 @@ resolveExperimentLCMSOptions[mySamples:{ObjectP[Object[Sample]]...},myOptions:{_
 		injectionTableOmitMSMethod, injectionTableWithColumnAutomatics, hplcOptionsWithInjectionTable,
 		relevantResolvedHPLCOptions, replacedHPLCOptions,
 		columnSelectorSpecifiedQ, columnSelectorHPLCFormat, specifiedColumnSelector, columnSelectorWithHPLCKeys,
-		hplcOptionsRuleWithColumns,availableMassAnalyzers, unavailableMassAnalyzerTest,
+		hplcOptionsRuleWithColumns,
 		chromatographyInstrumentModel, suppliedMassSpecModel, availableChromatographyInstrumentModels, availableMassSpecInstrumentModels,
 		unavailableMassSpecOptions, unavailableMassSpecTest, unavailableLCOptions, unavailableLCTest, someRelevantResolvedHPLCOptions,
 		columnOptionsToSingleton, columnOptionValuesFromHPLC, columnOptionsValuesSingleton, columnOptionSingleAssociation,updatedColumnSelector,
@@ -9360,7 +9814,8 @@ resolveExperimentLCMSOptions[mySamples:{ObjectP[Object[Sample]]...},myOptions:{_
 		sampleMolecularWeights, calibrantLookup, firstSampleCategory, firstIonMode, resolvedCalibrant,
 		hplcInjectionTable, transposedHPLCInjectionTable, hplcInjectionTableColumnsRemoved, massSpecMethodsFromInjectionTable, samplePositions,
 		standardPositions, blankPositions, columnFlushPositions, columnPrimePositions, sampleMassSpecMethodsFromIT, preresolvedStandard,
-		preresolvedBlank, expandedStandardOptions, expandedBlankOptions,standardMassSpecMethodsFromIT, blankMassSpecMethodsFromIT,
+		preresolvedBlank, expandedStandardOptions, expandedStandardOptionsPreCheck, expandedBlankOptions, expandedBlankOptionsPreCheck,
+		unexpandKeyValuePairs, standardMassSpecMethodsFromIT, blankMassSpecMethodsFromIT,
 		columnFlushMassSpecMethodsFromIT, columnPrimeMassSpecMethodsFromIT, massSpecMethodSampleLookup, columnPrimeMassSpecMethodSampleLookup,
 		columnFlushMassSpecMethodSampleLookup, standardMassSpecMethodSampleLookup, blankMassSpecMethodSampleLookup, bestSamplesMassSpecMethods,
 		massSpecMethodConflictSamplesBool,resolvedStandard, resolvedBlank, standardPositionsAll, blankPositionsAll, columnFlushPositionsAll,
@@ -9580,7 +10035,7 @@ resolveExperimentLCMSOptions[mySamples:{ObjectP[Object[Sample]]...},myOptions:{_
 		resolvedSampleMassSpecMethodsForIT, resolvedStandardMassSpecMethodsForIT, resolvedBlankMassSpecMethodsForIT,
 		resolvedColumnFlushMassSpecMethodsForIT, resolvedColumnPrimeMassSpecMethodsForIT,columnPrimeToSingle,
 		columnFlushToSingle, depth4Options, acquisitionWindowExpandedByMethod, currentMassAcquisitionMethodPacket,
-		acquisitionMethodFromMethod, acquisitionMethodFromMethodLength, allesInOrdnungQ,preCollapsedOptionAssociation,
+		acquisitionMethodFromMethod, acquisitionMethodFromMethodLength, allesInOrdnungQ,
 		expandAcquisitionWindowByMethod,standardAcquisitionWindowExpandedByMethod, blankAcquisitionWindowExpandedByMethod,
 		columnPrimeAcquisitionWindowExpandedByMethod, columnFlushAcquisitionWindowExpandedByMethod,continueQ,mapThreadVariables,
 		currentColumnPrimeAcquisitionWindow, currentColumnFlushAcquisitionWindow,
@@ -9653,8 +10108,8 @@ resolveExperimentLCMSOptions[mySamples:{ObjectP[Object[Sample]]...},myOptions:{_
 		resolvedMassDetectionStepSizes,resolvedMassDetectionStepSize,result,resolvedStandardMassDetectionStepSizes,
 		autoNeutralLossValueWarningStandardList,autoNeutralLossValueWarningBlankList,autoNeutralLossValueWarningColumnPrimeList,
 		autoNeutralLossValueWarningColumnFlushList,invalidSourceTemperatureColumnFlushBool,invalidVoltagesColumnFlushBool,invalidGasFlowColumnFlushBool,
-		invalidSourceTemperatureStandardBool,invalidVoltagesStandardBool,invalidGasFlowStandardBool,resolvedStandardIonGuideVoltage,resolvedColumnPrimeIonGuideVoltage,
-		invalidSourceTemperatureBlankBool,invalidVoltagesBlankBool,invalidGasFlowBlankBool,resolvedBlankIonGuideVoltage,resolvedColumnFlushIonGuideVoltage,
+		invalidSourceTemperatureStandardBool,invalidVoltagesStandardBool,invalidGasFlowStandardBool,
+		invalidSourceTemperatureBlankBool,invalidVoltagesBlankBool,invalidGasFlowBlankBool,
 		invalidSourceTemperatureColumnPrimeBool,invalidVoltagesColumnPrimeBool,invalidGasFlowColumnPrimeBool,sameCalibrantWarning, invalidScanTimeQ, numberOfPoints,
 		acqModeMassAnalyzerMismatchedStandardBool,acqModeMassAnalyzerMismatchedBlankBool,acqModeMassAnalyzerMismatchedColumnPrimeBool,acqModeMassAnalyzerMismatchedColumnFlushBool,
 		resolvedBlankNeutralLosses,resolvedBlankDwellTimes,resolvedBlankMassDetectionStepSizes,resolvedBlankCollisionCellExitVoltages,resolvedBlankMultipleReactionMonitoringAssays,resolvedBlankIonGuideVoltages,
@@ -9672,7 +10127,8 @@ resolveExperimentLCMSOptions[mySamples:{ObjectP[Object[Sample]]...},myOptions:{_
 		invalidCollisionVoltagesErrorOverallConflictQ,invalidCollisionVoltagesErrorOptions,collisionVoltagesConflictTest,invalidLengthOfInputBools,invalidLengthOfInputOverallConflictQ,
 		invalidLengthOfInputOptions,memAssaysNotInSameLengthTest,collisionEnergyAcqModeInvalidQ,formattedMultipleReactionMonitoringAssays, invalidScanTimeStandardBool, invalidScanTimeBlankBool,
 		invalidScanTimeColumnPrimeBool, invalidScanTimeColumnFlushBool, invalidScanTimeBool, numberOfPointsInScan,
-		invalidScanTimesBool, invalidScanTimeOverallQ, invalidScanTimesOptions, invalidScanTimeTests
+		invalidScanTimesBool, invalidScanTimeOverallQ, invalidScanTimesOptions, invalidScanTimeTests, simulation, updatedSimulation,
+		optionSymbolsIndexMatchingToColumnSelector, hplcSingletonCorrectionRules, hplcResolvedOptionsCorrected
 	},
 
 	(*-- SETUP OUR USER SPECIFIED OPTIONS AND CACHE --*)
@@ -9686,8 +10142,9 @@ resolveExperimentLCMSOptions[mySamples:{ObjectP[Object[Sample]]...},myOptions:{_
 
 	(* Fetch our cache from the parent function. *)
 	cache = Lookup[ToList[myResolutionOptions], Cache, {}];
+	simulation = Lookup[ToList[myResolutionOptions], Simulation, Simulation[]];
 
-	(* Seperate out our lcms options from our Sample Prep options. *)
+	(* Separate out our lcms options from our Sample Prep options. *)
 	{samplePrepOptions,lcmsOptions}=splitPrepOptions[myOptions];
 
 	(* Determine if we should throw messages *)
@@ -9723,12 +10180,12 @@ resolveExperimentLCMSOptions[mySamples:{ObjectP[Object[Sample]]...},myOptions:{_
 	(*define the available instrument models*)
 	availableChromatographyInstrumentModels={Model[Instrument, HPLC, "id:4pO6dM5lRrl7"](*"Waters Acquity UPLC I-Class PDA"*)};
 	(* we will allow for Automatic here right now for the error checking, will resolve these value after we pre-resolved the MassSpecAquisitionMethod *)
-	availableMassSpecInstrumentModels={Model[Instrument, MassSpectrometer, "id:aXRlGn6KaWdO"] (*"Xevo G2-XS QTOF"*),Model[Instrument, MassSpectrometer, "id:N80DNj1aROOD"] (*"QTRAP 6500"*)};
+	availableMassSpecInstrumentModels={Model[Instrument, MassSpectrometer, "id:aXRlGn6KaWdO"] (*"Xevo G2-XS QTOF"*),Model[Instrument, MassSpectrometer, "id:N80DNj1aROOD"] (*"QTRAP 6500"*), Model[Instrument, MassSpectrometer, "id:Y0lXejl8MeOa"] (* QTRAP 6500 PLUS *)};
 
 	(* if the user specifies an mass spec that we don't have. throw the error *)
 	unavailableMassSpecOptions = If[messagesQ && !MatchQ[suppliedMassSpecModel,(ObjectP[availableMassSpecInstrumentModels]|Automatic)],
 		(
-			Message[Error::OnlyMassSpecAvailable, ObjectToString[Lookup[lcmsOptionsAssociation,MassSpectrometerInstrument]], ObjectToString[availableMassSpecInstrumentModels]];
+			Message[Error::OnlyMassSpecAvailable, ObjectToString[Lookup[lcmsOptionsAssociation,MassSpectrometerInstrument],Simulation->simulation], ObjectToString[availableMassSpecInstrumentModels,Simulation->simulation]];
 			MassSpectrometerInstrument
 		),
 		{}
@@ -9746,7 +10203,7 @@ resolveExperimentLCMSOptions[mySamples:{ObjectP[Object[Sample]]...},myOptions:{_
 	(* if the user specifies an mass spec that we don't have. throw the error *)
 	unavailableLCOptions = If[messagesQ && !MatchQ[chromatographyInstrumentModel,ObjectP[Download[availableChromatographyInstrumentModels,Object]]],
 		(
-			Message[Error::OnlyHPLCAvailable, ObjectToString[Lookup[lcmsOptionsAssociation,ChromatographyInstrument]], ObjectToString[availableChromatographyInstrumentModels]];
+			Message[Error::OnlyHPLCAvailable, ObjectToString[Lookup[lcmsOptionsAssociation,ChromatographyInstrument],Simulation->simulation], ObjectToString[availableChromatographyInstrumentModels,Simulation->simulation]];
 			ChromatographyInstrument
 		),
 		{}
@@ -9846,8 +10303,8 @@ resolveExperimentLCMSOptions[mySamples:{ObjectP[Object[Sample]]...},myOptions:{_
 			transposedInjectionTable=Transpose[injectionTableSpecification];
 			(*we don't need the last row (the Mass method)*)
 			injectionTableOmitMSMethod=Most[transposedInjectionTable];
-			(*we add a row of automatics for the column position and a row of Automatics . it's the second from the last*)
-			injectionTableWithColumnAutomatics=Insert[injectionTableOmitMSMethod,ConstantArray[Automatic,Length[First@transposedInjectionTable]],-3];
+			(* Add a row of PositionA for the column position index (third from end). *)
+			injectionTableWithColumnAutomatics = Insert[injectionTableOmitMSMethod, ConstantArray[PositionA, Length[First@transposedInjectionTable]], -3];
 			(*and transpose back*)
 			Transpose[injectionTableWithColumnAutomatics]
 		),
@@ -9865,13 +10322,14 @@ resolveExperimentLCMSOptions[mySamples:{ObjectP[Object[Sample]]...},myOptions:{_
 
 	(*HPLC will also handle all of the sample prep and required aliquot options*)
 	{
-		{simulatedSamples, hplcResolvedOptions, hplcInvalidOptions, hplcInvalidInputs, simulatedCache},
+		{simulatedSamples, hplcResolvedOptions, hplcInvalidOptions, hplcInvalidInputs, updatedSimulation},
 		hplcTests
 	}= If[gatherTestsQ,
 		resolveExperimentHPLCOptions[
 			mySamples,
 			replacedHPLCOptions,
 			Cache->cache,
+			Simulation -> simulation,
 			Output->{Result,Tests},
 			InternalUsage->True
 		],
@@ -9880,6 +10338,7 @@ resolveExperimentLCMSOptions[mySamples:{ObjectP[Object[Sample]]...},myOptions:{_
 				mySamples,
 				replacedHPLCOptions,
 				Cache->cache,
+				Simulation -> simulation,
 				Output->Result,
 				InternalUsage->True
 			],
@@ -9887,31 +10346,50 @@ resolveExperimentLCMSOptions[mySamples:{ObjectP[Object[Sample]]...},myOptions:{_
 		]
 	];
 
-	(*only take the HPLC options that are relevant*)
-	someRelevantResolvedHPLCOptions=KeyTake[hplcResolvedOptions,Join[hplcOptions,Keys@samplePrepOptions]];
+	(* Note, although LCMS and HPLC share some option names, they don't necessarily have the same definition *)
+	(* One major difference is for HPLC some options are index-matched to ColumnSelector option since multiple columns are allowed *)
+	(* However for LCMS since we only allow single column, these options are singleton instead. We have to correct them, otherwise they will cause problem *)
 
-	(*define the other options that need to made single*)
-	columnPrimeToSingle={ColumnPrimeGradientA,ColumnPrimeGradientB,ColumnPrimeGradientC,ColumnPrimeGradientD, ColumnPrimeFlowRate,ColumnPrimeGradient, ColumnPrimeTemperature, ColumnPrimeAbsorbanceWavelength,ColumnPrimeWavelengthResolution, ColumnPrimeUVFilter,ColumnPrimeAbsorbanceSamplingRate
-	};
-	columnFlushToSingle={ColumnFlushGradientA,ColumnFlushGradientB,ColumnFlushGradientC,ColumnFlushGradientD, ColumnFlushFlowRate, ColumnFlushTemperature, ColumnFlushGradient, ColumnFlushAbsorbanceWavelength,ColumnFlushWavelengthResolution, ColumnFlushUVFilter,ColumnFlushAbsorbanceSamplingRate
-	};
-
-	(*the column-related options have to be made into singletons*)
-	columnOptionsToSingleton=Join[columnPrimeToSingle,columnFlushToSingle];
-	columnOptionValuesFromHPLC=Lookup[hplcResolvedOptions,columnOptionsToSingleton];
-	columnOptionsValuesSingleton=Map[
-		Function[{optionValue},
-			If[!NullQ[optionValue],FirstOrDefault@optionValue]
+	(* Find all options index-match to ColumnSelector. Excluding itself *)
+	optionSymbolsIndexMatchingToColumnSelector = DeleteCases[
+		Lookup[
+			Cases[OptionDefinition[ExperimentHPLC], AssociationMatchP[ <|"IndexMatchingParent" -> "ColumnSelector"|>, AllowForeignKeys -> True]],
+			"OptionSymbol"
 		],
-		columnOptionValuesFromHPLC
+		ColumnSelector
 	];
-	columnOptionSingleAssociation=Association@MapThread[Rule,{columnOptionsToSingleton,columnOptionsValuesSingleton}];
+
+	(* Correct the option value to singleton if needed *)
+	hplcSingletonCorrectionRules = Map[
+		Function[{option},
+			Module[{optionValue},
+				optionValue = Lookup[hplcResolvedOptions, option, "Missing"];
+				Switch[optionValue,
+					(* If the option does not exist, don't include it *)
+					"Missing",
+						Nothing,
+					(* If the option value is a list, take its first entry *)
+					_List,
+						option -> First[optionValue],
+					(* In other cases, don't change anything *)
+					_,
+						Nothing
+				]
+			]
+		],
+		optionSymbolsIndexMatchingToColumnSelector
+	];
+
+	hplcResolvedOptionsCorrected = ReplaceRule[hplcResolvedOptions, hplcSingletonCorrectionRules];
+
+	(*only take the HPLC options that are relevant*)
+	someRelevantResolvedHPLCOptions=KeyTake[hplcResolvedOptionsCorrected,Join[hplcOptions,Keys@samplePrepOptions]];
 
 	(* Convert ColumnSelector back to LCMS format - Singleton, no ColumnPosition and Orientation *)
-	updatedColumnSelector=Lookup[hplcResolvedOptions,ColumnSelector][[1,{2,4,6,7}]];
+	updatedColumnSelector=Lookup[hplcResolvedOptionsCorrected,ColumnSelector][[1,{2,4,6,7}]];
 
 	(*add these to our list*)
-	relevantResolvedHPLCOptions=Join[someRelevantResolvedHPLCOptions,columnOptionSingleAssociation,Association[ColumnSelector->updatedColumnSelector]];
+	relevantResolvedHPLCOptions=Join[someRelevantResolvedHPLCOptions,Association[ColumnSelector->updatedColumnSelector]];
 
 	(* LCMS Specific rounding options *)
 
@@ -10006,8 +10484,20 @@ resolveExperimentLCMSOptions[mySamples:{ObjectP[Object[Sample]]...},myOptions:{_
 
 	(*grab the simulated sample packets*)
 	simulatedSampleIdentityModelFields = {pKa,Acid,Base,Molecule,MolecularWeight,StandardComponents,PolymerType};
-	simulatedSamplePackets=Map[fetchPacketFromCache[#,simulatedCache]&,simulatedSamples];
-	simulatedSampleIdentityModelPackets=Quiet[Download[simulatedSamples,Packet[Composition[[All,2]][simulatedSampleIdentityModelFields]],Cache->simulatedCache],Download::FieldDoesntExist];
+	simulationFastAssoc = makeFastAssocFromCache[FlattenCachePackets[{cache, Lookup[First[updatedSimulation], Packets]}]];
+	simulatedSamplePackets=Map[
+		fetchPacketFromFastAssoc[#,simulationFastAssoc]&,
+		simulatedSamples
+	];
+	simulatedSampleIdentityModelPackets=Quiet[
+		Download[
+			simulatedSamples,
+			Packet[Composition[[All,2]][simulatedSampleIdentityModelFields]],
+			Cache->cache,
+			Simulation -> updatedSimulation
+		],
+		Download::FieldDoesntExist
+	];
 
 	(* Helper function that resolves to the analytes of interest, given a list of a bunch of analyte packets. *)
 	resolveMassSpecAnalytes[myAnalytePackets_]:=Which[
@@ -10028,7 +10518,7 @@ resolveExperimentLCMSOptions[mySamples:{ObjectP[Object[Sample]]...},myOptions:{_
 		],
 		(* Field isn't filled out *)
 		True,
-		{Null}
+		Null
 	];
 
 	(* Resolve the analytes of interest from our Composition field by looking at the Analytes field. *)
@@ -10124,7 +10614,7 @@ resolveExperimentLCMSOptions[mySamples:{ObjectP[Object[Sample]]...},myOptions:{_
 	(*if we have a specified injection table, we'll want to download the pertinent mass spec methods if there*)
 
 	(*first we reassemble back from HPLC*)
-	hplcInjectionTable=Lookup[hplcResolvedOptions,InjectionTable];
+	hplcInjectionTable=Lookup[hplcResolvedOptionsCorrected,InjectionTable];
 
 	(*we'll put back in our mass spec methods and take out the column column*)
 	transposedHPLCInjectionTable=Transpose[hplcInjectionTable];
@@ -10139,7 +10629,7 @@ resolveExperimentLCMSOptions[mySamples:{ObjectP[Object[Sample]]...},myOptions:{_
 	];
 
 	(*expand the blank and standard options*)
-	{preresolvedStandard,preresolvedBlank}=Lookup[hplcResolvedOptions,{Standard,Blank}];
+	{preresolvedStandard,preresolvedBlank}=Lookup[hplcResolvedOptionsCorrected,{Standard,Blank}];
 
 	(*if we do have these, keep them otherwise use an empty list*)
 	resolvedStandard=If[standardExistQ,
@@ -10204,7 +10694,7 @@ resolveExperimentLCMSOptions[mySamples:{ObjectP[Object[Sample]]...},myOptions:{_
 		Nothing
 	];
 
-	expandedStandardOptions = If[!standardExistQ,
+	expandedStandardOptionsPreCheck = If[!standardExistQ,
 		Association[#->{}&/@standardOptions],
 		(*we need to wrap all the values in in list if not already*)
 		Association@Last[ExpandIndexMatchedInputs[
@@ -10218,10 +10708,51 @@ resolveExperimentLCMSOptions[mySamples:{ObjectP[Object[Sample]]...},myOptions:{_
 		]]
 	];
 
+	expandedBlankOptionsPreCheck = If[!blanksExistQ,
+		Association[#->{}&/@blankOptions],
+		(*we need to wrap in list if not already*)
+		Association@Last[ExpandIndexMatchedInputs[
+			ExperimentLCMS,
+			{mySamples},
+			Normal@Append[
+				KeyTake[roundedOptionsAssociation,blankOptions],
+				Blank -> resolvedBlank
+			],
+			Messages -> False
+		]]
+	];
+
+	(* It is possible for the following options to be over-expanded: StandardScanTime, BlankScanTime *)
+	(* This module creates rules to unexpand these options if they were over-expanded. *)
+	unexpandKeyValuePairs = Association @@ Module[{optionsToCheck, primaryIndexLengths, preexpansionLengths, preExpansionValues, noExpansionNeeded},
+
+		(* Options that may be over-expanded. *)
+		optionsToCheck = {StandardScanTime, BlankScanTime};
+
+		(* Check the length of the primrary indicies. *)
+		primaryIndexLengths = Length /@ {resolvedStandard, resolvedBlank};
+
+		(* Lookup the options prior to expansion. *)
+		preExpansionValues = Lookup[roundedOptionsAssociation, optionsToCheck];
+
+		(* Get their lengths. *)
+		preexpansionLengths = Length /@ preExpansionValues;
+
+		(* Compare whether the options were index-matched appropriately prior to expansion. *)
+		noExpansionNeeded = Map[EqualQ @@ # &, Transpose[{primaryIndexLengths, preexpansionLengths}]];
+
+		(* Create rules to unexpand them. *)
+		MapThread[If[#1, (#2 -> #3), Nothing]&, {noExpansionNeeded, optionsToCheck, preExpansionValues}]
+	];
+
+	(* Some other options will cross over into the other association but it should not matter. *)
+	expandedStandardOptions = Join[expandedStandardOptionsPreCheck, unexpandKeyValuePairs];
+	expandedBlankOptions = Join[expandedBlankOptionsPreCheck, unexpandKeyValuePairs];
+
 	(*we want to get the standard analytes*)
 	standardPackets=If[standardExistQ,Map[fetchPacketFromCache[#,cache]&,resolvedStandard],{}];
 	standardIdentityModelPackets= If[standardExistQ,
-		Quiet[Download[resolvedStandard, Packet[Composition[[All, 2]][simulatedSampleIdentityModelFields]], Cache -> cache], Download::FieldDoesntExist],
+		Quiet[Download[resolvedStandard, Packet[Composition[[All, 2]][simulatedSampleIdentityModelFields]], Cache -> cache, Simulation->updatedSimulation], Download::FieldDoesntExist],
 		{}
 	];
 
@@ -10250,23 +10781,9 @@ resolveExperimentLCMSOptions[mySamples:{ObjectP[Object[Sample]]...},myOptions:{_
 		],
 		standardAnalytePackets];
 
-	expandedBlankOptions = If[!blanksExistQ,
-		Association[#->{}&/@blankOptions],
-		(*we need to wrap in list if not already*)
-		Association@Last[ExpandIndexMatchedInputs[
-			ExperimentLCMS,
-			{mySamples},
-			Normal@Append[
-				KeyTake[roundedOptionsAssociation,blankOptions],
-				Blank -> resolvedBlank
-			],
-			Messages -> False
-		]]
-	];
-
 	blankPackets=If[blanksExistQ,Map[fetchPacketFromCache[#,cache]&,resolvedBlank],{}];
 	blankIdentityModelPackets= If[blanksExistQ,
-		Quiet[Download[resolvedBlank, Packet[Composition[[All, 2]][simulatedSampleIdentityModelFields]], Cache -> cache], Download::FieldDoesntExist],
+		Quiet[Download[resolvedBlank, Packet[Composition[[All, 2]][simulatedSampleIdentityModelFields]], Cache -> cache, Simulation->updatedSimulation], Download::FieldDoesntExist],
 		{}
 	];
 
@@ -10449,9 +10966,8 @@ resolveExperimentLCMSOptions[mySamples:{ObjectP[Object[Sample]]...},myOptions:{_
 	];
 	
 	(* Fetch all the input MassAnalyzers from all input method *)
-	allMassAnalyzersInMethod=If[
-		Length[allMassAcquisitionMethods]>0,
-		Lookup[Flatten[fetchPacketFromCache[#,simulatedCache]&/@allMassAcquisitionMethods],MassAnalyzer],
+	allMassAnalyzersInMethod=If[Length[allMassAcquisitionMethods]>0,
+		fastAssocLookup[simulationFastAssoc, #, MassAnalyzer]& /@ allMassAcquisitionMethods,
 		{}
 	];
 	
@@ -10464,7 +10980,7 @@ resolveExperimentLCMSOptions[mySamples:{ObjectP[Object[Sample]]...},myOptions:{_
 		
 		(* if user specified instrument, resolve the mass analyzer based on the specified the instrument *)
 		MatchQ[suppliedMassSpecModel,ObjectP[{Model[Instrument, MassSpectrometer, "id:aXRlGn6KaWdO"] (*"Xevo G2-XS QTOF"*)}]],QTOF,
-		MatchQ[suppliedMassSpecModel,ObjectP[{Model[Instrument, MassSpectrometer, "id:N80DNj1aROOD"] (*"QTRAP 6500"*)}]],TripleQuadrupole,
+		MatchQ[suppliedMassSpecModel,ObjectP[{Model[Instrument, MassSpectrometer, "id:N80DNj1aROOD"] (*"QTRAP 6500"*), Model[Instrument, MassSpectrometer, "id:Y0lXejl8MeOa"] (* QTrap 6500 Plus *)}]],TripleQuadrupole,
 		
 		
 		(* Else we check if user specified unique options, if so, we resolved to that mass analyzer to QQQ*)
@@ -10495,13 +11011,13 @@ resolveExperimentLCMSOptions[mySamples:{ObjectP[Object[Sample]]...},myOptions:{_
 	(* check for all inconsistency between mass analyzer and mass spec instrument *)
 	conflictingMassAnalyzerAndInstrumentQ=Which[
 		MatchQ[resolvedMassAnalyzer,QTOF]&&MatchQ[suppliedMassSpecModel,ObjectP[]], (!MatchQ[suppliedMassSpecModel,ObjectP[Model[Instrument, MassSpectrometer, "id:aXRlGn6KaWdO"] (*"Xevo G2-XS QTOF"*)]]),
-		MatchQ[suppliedMassSpecModel,ObjectP[]],(!MatchQ[suppliedMassSpecModel,ObjectP[Model[Instrument, MassSpectrometer, "id:N80DNj1aROOD"] (*"QTRAP 6500"*)]]),
+		MatchQ[suppliedMassSpecModel,ObjectP[]],(!MatchQ[suppliedMassSpecModel,ObjectP[{Model[Instrument, MassSpectrometer, "id:N80DNj1aROOD"] (*"QTRAP 6500"*), Model[Instrument, MassSpectrometer, "id:Y0lXejl8MeOa"] (* QTrap 6500 Plus *)}]]),
 		True,False
 	];
 	
 	conflictingMassAnalyzerAndInstrumentOptions=If[messagesQ && conflictingMassAnalyzerAndInstrumentQ,
 		(
-			Message[Error::MassAnalyzerAndMassSpecInstrumentConflict, resolvedMassAnalyzer, ObjectToString[resolvedMassSpectrometryInstrument]];
+			Message[Error::MassAnalyzerAndMassSpecInstrumentConflict, resolvedMassAnalyzer, ObjectToString[resolvedMassSpectrometryInstrument,Simulation->updatedSimulation]];
 			Join[PickList[columnPrimeOptions,columnPrimeSpecificationBool],{InjectionTable,ColumnRefreshFrequency}]
 		),
 		{}
@@ -11276,7 +11792,7 @@ resolveExperimentLCMSOptions[mySamples:{ObjectP[Object[Sample]]...},myOptions:{_
 		If[MatchQ[massAcquisitionMethod,ObjectP[]],
 			(
 				(*get the packet for the acquisition method*)
-				currentMassAcquisitionMethodPacket=fetchPacketFromCache[Download[massAcquisitionMethod,Object],simulatedCache];
+				currentMassAcquisitionMethodPacket=fetchPacketFromFastAssoc[Download[massAcquisitionMethod,Object],simulationFastAssoc];
 				(*get the acquisition window in the method and convert to the native format for the resolver*)
 				acquisitionMethodFromMethod={StartTime, EndTime} /.Lookup[currentMassAcquisitionMethodPacket,AcquisitionWindows];
 				(*get the length*)
@@ -12320,7 +12836,8 @@ resolveExperimentLCMSOptions[mySamples:{ObjectP[Object[Sample]]...},myOptions:{_
 		(*E33*)invalidScanTimeBool,
 		(*E34*)numberOfPointsInScan
 	}=Transpose@MapThread[
-		Function[{
+		Function[
+			{
 			(*N1*)filteredAnalytePacketList,
 			(*N2*)simulatedSamplePacket,
 			(*N3*)sampleCategory,
@@ -12617,7 +13134,7 @@ resolveExperimentLCMSOptions[mySamples:{ObjectP[Object[Sample]]...},myOptions:{_
 					(*if no automatics go with it*)
 					MatchQ[acquisitionWindowList,List[Except[Automatic]..]],acquisitionWindowList,
 					(*if fully automatic and there's a method, take the method*)
-					MatchQ[acquisitionWindowList,Automatic|{Automatic}]&&!NullQ[resolvedMassAcquisitionMethodPacket],
+					MatchQ[acquisitionWindowList,Automatic|{Automatic..}]&&!NullQ[resolvedMassAcquisitionMethodPacket],
 						Lookup[resolvedMassAcquisitionMethodPacket,AcquisitionWindows],
 					(*if it's just automatics, we split the time window by the time*)
 					MatchQ[acquisitionWindowList,{Automatic..}], splitTime[gradientEndTime,Length[acquisitionWindowList]],
@@ -12670,6 +13187,9 @@ resolveExperimentLCMSOptions[mySamples:{ObjectP[Object[Sample]]...},myOptions:{_
 				fieldValuesFromMethod=If[!NullQ[resolvedMassAcquisitionMethodPacket],
 					Map[
 						Function[{currentFieldValue}, Which[
+							(* For single field, replicate to match sample length *)
+							!MatchQ[currentFieldValue, _List],
+								ConstantArray[currentFieldValue, lengthOfWindows],
 							(*if the length are the same, then no problem*)
 							Length[currentFieldValue]==Length[resolvedAcquisitionWindowList],
 								currentFieldValue,
@@ -12696,7 +13216,8 @@ resolveExperimentLCMSOptions[mySamples:{ObjectP[Object[Sample]]...},myOptions:{_
 
 				(*now resolve our depth 3 options*)
 				acquisitionOptionsMapResult=Transpose@MapThread[
-					Function[{
+					Function[
+						{
 						(*1*)acquisitionWindow,
 						(*2*)acquisitionMode,
 						(*3*)fragment,
@@ -12860,7 +13381,7 @@ resolveExperimentLCMSOptions[mySamples:{ObjectP[Object[Sample]]...},myOptions:{_
 							True,False
 						];
 
-						(*check that the fragment and the mode are copacetic*)
+						(*check that the fragment and the mode are compatible*)
 						fragmentModeConflictQ=Switch[{resolvedAcquisitionMode, resolvedFragment},
 							{fragmentAcqModesP,True},False,
 							{MS1FullScan|SelectedIonMonitoring,False},False,
@@ -13062,6 +13583,9 @@ resolveExperimentLCMSOptions[mySamples:{ObjectP[Object[Sample]]...},myOptions:{_
 								
 								
 								(*For NeutralLoss, and all other cases resolved it to All*)
+								(* Note that MassDetection has wider valid range than FragmentMassDetection. We need to make sure our resolved option is valid *)
+								MatchQ[resolvedMassDetection, _Span],
+									Span[Max[20 Gram/Mole, First[resolvedMassDetection]], Min[16000 Gram/Mole, Last[resolvedMassDetection]]],
 								True, resolvedMassDetection
 							],
 							
@@ -13122,8 +13646,8 @@ resolveExperimentLCMSOptions[mySamples:{ObjectP[Object[Sample]]...},myOptions:{_
 								(* In all other cases we use what user specified, we will check if the length of each input are the same in below*)
 								collisionEnergy
 							],
-							MatchQ[resolvedAcquisitionMode,MS1FullScan|SelectecIonMonitoring],Null,
-							MatchQ[collisionEnergyMassProfile,Except[Automatic|Null]],Null,
+							MatchQ[resolvedAcquisitionMode,MS1FullScan|SelectedIonMonitoring],Null,
+							MatchQ[collisionEnergyMassProfile,Except[Automatic|Null]]&&MatchQ[resolvedAcquisitionMode, Except[DataIndependent]],Null,
 							MatchQ[Lookup[methodPacket,LowCollisionEnergies],Except[Automatic|Null]],Null,
 							MatchQ[Lookup[methodPacket,CollisionEnergies],Except[Automatic]], Lookup[methodPacket,CollisionEnergies],
 							
@@ -13160,13 +13684,15 @@ resolveExperimentLCMSOptions[mySamples:{ObjectP[Object[Sample]]...},myOptions:{_
 						resolvedCollisionEnergyMassProfile=Which[
 							MatchQ[collisionEnergyMassProfile,Except[Automatic]],collisionEnergyMassProfile,
 							MatchQ[resolvedAcquisitionMode,MS1FullScan],Null,
-							(*cannot have both the energy and the mass profile*)
-							MatchQ[resolvedCollisionEnergy,Except[Null]],Null,
+							(*cannot have both the energy and the mass profile unless in DataIndependent mode*)
+							MatchQ[resolvedCollisionEnergy,Except[Null]]&&MatchQ[resolvedAcquisitionMode,Except[DataIndependent]],Null,
 							And[
 								MatchQ[Lookup[methodPacket,LowCollisionEnergies],Except[Automatic|Null]],
 								MatchQ[Lookup[methodPacket,HighCollisionEnergies],Except[Automatic|Null]]
 							],
 								Span[Lookup[methodPacket,LowCollisionEnergies],Lookup[methodPacket,HighCollisionEnergies]],
+							(* if acquisition mode is DataIndependent but mass profile was not specified, use resolvedCollisionEnergy as the left side and max voltage as the right side *)
+							MatchQ[resolvedAcquisitionMode,DataIndependent],Span[First[ToList[resolvedCollisionEnergy]], 255 Volt],
 							True,Null
 						];
 
@@ -13317,12 +13843,11 @@ resolveExperimentLCMSOptions[mySamples:{ObjectP[Object[Sample]]...},myOptions:{_
 					
 						(* Resolve the MRM assay *)
 						resolvedMultipleReactionMonitoringAssay=ToList[Which[
-							
 							(* use user specified value *)
 							MatchQ[multipleReactionMonitoringAssays,Except[Automatic]],multipleReactionMonitoringAssays,
 							(* If not in QQQ resolve to Null *)
 							(* !tripleQuadQ,{Null,Null,Null,Null},*)
-							!tripleQuadQ,Null,
+							!tripleQuadQ, Null,
 							
 							(* get the value from MassAcquisition Method, if specified *)
 							MatchQ[Lookup[methodPacket,MultipleReactionMonitoringAssays],Except[Automatic|Null]],Lookup[methodPacket,MultipleReactionMonitoringAssays],
@@ -13334,10 +13859,21 @@ resolveExperimentLCMSOptions[mySamples:{ObjectP[Object[Sample]]...},myOptions:{_
 							True, Null (*{Null,Null,Null,Null}*)
 						
 						]];
-						
-
-						(*we also check if both are defined at the same time*)
-						collisionEnergyProfileConflictQ=MatchQ[resolvedCollisionEnergy,Except[Null]]&&MatchQ[resolvedCollisionEnergyMassProfile,Except[Null]];
+						(*we also check if CollisionEnergy and CollisionEnergyMassProfile are defined correctly*)
+						collisionEnergyProfileConflictQ=Which[
+							(* in DataIndependent mode , we use CollisionEnergy for scan 1 and CollisionEnergyMassProfile for scan 2*)
+							(* the left side of CollisionEnergyMassProfile--LowCollisionEnergy must be larger than CollisionEnergy *)
+							(* the right side of CollisionEnergyMassProfile--HighCollisionEnergy must be larger than the left side--LowCollisionEnergy*)
+							MatchQ[resolvedAcquisitionMode, DataIndependent],
+							!And[
+								(* the resolvedCollisionEnergy for DataIndependent could be {energy} or energy *)
+								GreaterEqualQ[resolvedCollisionEnergyMassProfile[[1]], First[ToList[resolvedCollisionEnergy]]],
+								GreaterEqualQ[resolvedCollisionEnergyMassProfile[[2]], resolvedCollisionEnergyMassProfile[[1]]]
+							],
+							(* in other mode, we only use one of them *)
+							True,
+							MatchQ[resolvedCollisionEnergy,Except[Null]]&&MatchQ[resolvedCollisionEnergyMassProfile,Except[Null]]
+						];
 
 						resolvedCollisionEnergyMassScan=Which[
 							MatchQ[collisionEnergyMassScan,Except[Automatic]],collisionEnergyMassScan,
@@ -13587,7 +14123,12 @@ resolveExperimentLCMSOptions[mySamples:{ObjectP[Object[Sample]]...},myOptions:{_
 								MatchQ[Lookup[methodPacket,InclusionChargeStates],Except[Automatic|Null|{}]],
 								MatchQ[Lookup[methodPacket,InclusionScanTimes],Except[Automatic|Null|{}]]
 							],{
-								Lookup[methodPacket,InclusionDomains],
+								(* Note that in Object[Method, MassAcquisition] InclusionDomains are defined as List not span *)
+								(* i.e., {start, end} instead of start;;end. Need to convert this *)
+								Map[
+									Apply[Span, #]&,
+									Lookup[methodPacket,InclusionDomains]
+								],
 								Lookup[methodPacket,InclusionMasses],
 								Lookup[methodPacket,InclusionCollisionEnergies],
 								Lookup[methodPacket,InclusionDeclusteringVoltages],
@@ -14087,8 +14628,8 @@ resolveExperimentLCMSOptions[mySamples:{ObjectP[Object[Sample]]...},myOptions:{_
 			(*N2*)simulatedSamplePackets,
 			(*N3*)sampleCategories,
 			(*N4*)bestSamplesMassSpecMethods,
-			(*N5*)Lookup[hplcResolvedOptions,FlowRate],
-			(*N6*)Lookup[hplcResolvedOptions,Gradient],
+			(*N5*)Lookup[hplcResolvedOptionsCorrected,FlowRate],
+			(*N6*)Lookup[hplcResolvedOptionsCorrected,Gradient],
 			(*N7*)Lookup[roundedOptionsAssociation,IonMode],
 			(*N8*)Lookup[roundedOptionsAssociation,MassSpectrometryMethod],
 			(*N9*)Lookup[roundedOptionsAssociation,ESICapillaryVoltage],
@@ -14168,7 +14709,7 @@ resolveExperimentLCMSOptions[mySamples:{ObjectP[Object[Sample]]...},myOptions:{_
 	
 	(* Throw a warning if the MassAnalyzer is not qqq and 2nd Calibrant is specified *)
 	If[(!tripleQuadQ)&&MatchQ[secondCalibrantLookup,ObjectP[]],
-		Message[Warning::OnlyOneCalibrantWillBeRan,ObjectToString[resolvedCalibrant,Cache->simulatedCache],ObjectToString[secondCalibrantLookup,Cache->simulatedCache]];
+		Message[Warning::OnlyOneCalibrantWillBeRan,ObjectToString[resolvedCalibrant,Simulation -> updatedSimulation],ObjectToString[secondCalibrantLookup,Simulation -> updatedSimulation]];
 	
 	];
 	
@@ -14883,6 +15424,9 @@ resolveExperimentLCMSOptions[mySamples:{ObjectP[Object[Sample]]...},myOptions:{_
 					fieldValuesFromMethod = If[!NullQ[resolvedMassAcquisitionMethodPacket],
 						Map[
 							Function[{currentFieldValue}, Which[
+								(* For single field, replicate to match sample length *)
+								!MatchQ[currentFieldValue, _List],
+								ConstantArray[currentFieldValue, Length[resolvedAcquisitionWindowList]],
 								(*if the length are the same, then no problem*)
 								Length[currentFieldValue] == Length[resolvedAcquisitionWindowList],
 								currentFieldValue,
@@ -15057,7 +15601,7 @@ resolveExperimentLCMSOptions[mySamples:{ObjectP[Object[Sample]]...},myOptions:{_
 								True,False
 							];
 							
-							(*check that the fragment and the mode are copacetic*)
+							(*check that the fragment and the mode are compatible*)
 							fragmentModeConflictQ=Switch[{resolvedAcquisitionMode, resolvedFragment},
 								{fragmentAcqModesP,True},False,
 								{MS1FullScan|SelectedIonMonitoring,False},False,
@@ -15309,8 +15853,8 @@ resolveExperimentLCMSOptions[mySamples:{ObjectP[Object[Sample]]...},myOptions:{_
 									(* In all other cases we use what user specified, we will check if the length of each input are the same in below*)
 									collisionEnergy
 								],
-								MatchQ[resolvedAcquisitionMode,MS1FullScan|SelectecIonMonitoring],Null,
-								MatchQ[collisionEnergyMassProfile,Except[Automatic|Null]],Null,
+								MatchQ[resolvedAcquisitionMode,MS1FullScan|SelectedIonMonitoring],Null,
+								MatchQ[collisionEnergyMassProfile,Except[Automatic|Null]]&&MatchQ[resolvedAcquisitionMode, Except[DataIndependent]],Null,
 								MatchQ[Lookup[methodPacket,LowCollisionEnergies],Except[Automatic|Null]],Null,
 								MatchQ[Lookup[methodPacket,CollisionEnergies],Except[Automatic]], Lookup[methodPacket,CollisionEnergies],
 								
@@ -15480,7 +16024,7 @@ resolveExperimentLCMSOptions[mySamples:{ObjectP[Object[Sample]]...},myOptions:{_
 							
 							(* Resolve the MRM assay *)
 							resolvedMultipleReactionMonitoringAssay=ToList[Which[
-								
+
 								(* use user specified value *)
 								MatchQ[formattedMultipleReactionMonitoringAssays,Except[Automatic]],formattedMultipleReactionMonitoringAssays,
 								(* If not in QQQ resolve to Null *)
@@ -15504,14 +16048,16 @@ resolveExperimentLCMSOptions[mySamples:{ObjectP[Object[Sample]]...},myOptions:{_
 							resolvedCollisionEnergyMassProfile = Which[
 								MatchQ[collisionEnergyMassProfile, Except[Automatic]], collisionEnergyMassProfile,
 								Or[tripleQuadQ,MatchQ[resolvedAcquisitionMode, MS1FullScan]], Null,
-								(*cannot have both the energy and the mass profile*)
-								MatchQ[resolvedCollisionEnergy, Except[Null]], Null,
+								(*cannot have both the energy and the mass profile unless in DataIndependent mode*)
+								MatchQ[resolvedCollisionEnergy,Except[Null]]&&MatchQ[resolvedAcquisitionMode,Except[DataIndependent]],Null,
 								And[
 									MatchQ[Lookup[methodPacket, LowCollisionEnergies], Except[Automatic | Null]],
 									MatchQ[Lookup[methodPacket, HighCollisionEnergies], Except[Automatic | Null]]
 								],
 								Span[Lookup[methodPacket, LowCollisionEnergies], Lookup[methodPacket, HighCollisionEnergies]],
-								True, Null
+								(* if acquisition mode is DataIndependent but mass profile was not specified, use resolvedCollisionEnergy as the left side and max voltage as the right side *)
+								MatchQ[resolvedAcquisitionMode,DataIndependent],Span[First[ToList[resolvedCollisionEnergy]], 255 Volt],
+								True,Null
 							];
 
 							(*the collision energy options must be compatible withh the acquisition mode*)
@@ -15524,8 +16070,21 @@ resolveExperimentLCMSOptions[mySamples:{ObjectP[Object[Sample]]...},myOptions:{_
 								_,False
 							];
 
-							(*we also check if both are defined at the same time*)
-							collisionEnergyProfileConflictQ=MatchQ[resolvedCollisionEnergy,Except[Null]]&&MatchQ[resolvedCollisionEnergyMassProfile,Except[Null]];
+							(*we also check if CollisionEnergy and CollisionEnergyMassProfile are defined correctly*)
+							collisionEnergyProfileConflictQ=Which[
+								(* in DataIndependent mode , we use CollisionEnergy for scan 1 and CollisionEnergyMassProfile for scan 2*)
+								(* the left side of CollisionEnergyMassProfile--LowCollisionEnergy must be larger than CollisionEnergy *)
+								(* the right side of CollisionEnergyMassProfile--HighCollisionEnergy must be larger than the left side--LowCollisionEnergy*)
+								MatchQ[resolvedAcquisitionMode, DataIndependent],
+								!And[
+									(* the resolvedCollisionEnergy for DataIndependent could be {energy} or energy*)
+									GreaterEqualQ[resolvedCollisionEnergyMassProfile[[1]], First[ToList[resolvedCollisionEnergy]]],
+									GreaterEqualQ[resolvedCollisionEnergyMassProfile[[2]], resolvedCollisionEnergyMassProfile[[1]]]
+								],
+								(* in other mode, we only use one of them *)
+								True,
+								MatchQ[resolvedCollisionEnergy,Except[Null]]&&MatchQ[resolvedCollisionEnergyMassProfile,Except[Null]]
+							];
 
 							resolvedCollisionEnergyMassScan = Which[
 								MatchQ[collisionEnergyMassScan, Except[Automatic]], collisionEnergyMassScan,
@@ -15773,7 +16332,10 @@ resolveExperimentLCMSOptions[mySamples:{ObjectP[Object[Sample]]...},myOptions:{_
 									MatchQ[Lookup[methodPacket,InclusionChargeStates],Except[Automatic|Null|{}]],
 									MatchQ[Lookup[methodPacket,InclusionScanTimes],Except[Automatic|Null|{}]]
 								],{
-									Lookup[methodPacket,InclusionDomains],
+									Map[
+										Apply[Span, #]&,
+										Lookup[methodPacket,InclusionDomains]
+									],
 									Lookup[methodPacket,InclusionMasses],
 									Lookup[methodPacket,InclusionCollisionEnergies],
 									Lookup[methodPacket,InclusionDeclusteringVoltages],
@@ -16278,8 +16840,8 @@ resolveExperimentLCMSOptions[mySamples:{ObjectP[Object[Sample]]...},myOptions:{_
 					standardPackets,
 					standardCategories,
 					bestStandardsMassSpecMethods,
-					Lookup[hplcResolvedOptions, StandardFlowRate],
-					Lookup[hplcResolvedOptions, StandardGradient],
+					Lookup[hplcResolvedOptionsCorrected, StandardFlowRate],
+					Lookup[hplcResolvedOptionsCorrected, StandardGradient],
 					Lookup[expandedStandardOptions, StandardIonMode],
 					Lookup[expandedStandardOptions, StandardMassSpectrometryMethod],
 					Lookup[expandedStandardOptions, StandardESICapillaryVoltage],
@@ -16301,8 +16863,8 @@ resolveExperimentLCMSOptions[mySamples:{ObjectP[Object[Sample]]...},myOptions:{_
 					blankPackets,
 					blankCategories,
 					bestBlanksMassSpecMethods,
-					Lookup[hplcResolvedOptions, BlankFlowRate],
-					Lookup[hplcResolvedOptions, BlankGradient],
+					Lookup[hplcResolvedOptionsCorrected, BlankFlowRate],
+					Lookup[hplcResolvedOptionsCorrected, BlankGradient],
 					Lookup[expandedBlankOptions, BlankIonMode],
 					Lookup[expandedBlankOptions, BlankMassSpectrometryMethod],
 					Lookup[expandedBlankOptions, BlankESICapillaryVoltage],
@@ -16324,10 +16886,10 @@ resolveExperimentLCMSOptions[mySamples:{ObjectP[Object[Sample]]...},myOptions:{_
 					{}, (*no analytes*)
 					{}, (*no sample packets*)
 					{}, (*no categories*)
-					FirstOrDefault@bestColumnPrimeMassSpecMethods,
-					(*this hplc assumes multiple columns, so have to take the first. default to Null, when no good*)
-					FirstOrDefault@Lookup[hplcResolvedOptions, ColumnPrimeFlowRate],
-					FirstOrDefault@Lookup[hplcResolvedOptions, ColumnPrimeGradient],
+					bestColumnPrimeMassSpecMethods,
+
+					Lookup[hplcResolvedOptionsCorrected, ColumnPrimeFlowRate],
+					Lookup[hplcResolvedOptionsCorrected, ColumnPrimeGradient],
 					Lookup[columnFlushPrimeDepth3ExpandedAssociation, ColumnPrimeIonMode],
 					Lookup[columnFlushPrimeDepth3ExpandedAssociation, ColumnPrimeMassSpectrometryMethod],
 					Lookup[columnFlushPrimeDepth3ExpandedAssociation, ColumnPrimeESICapillaryVoltage],
@@ -16349,10 +16911,10 @@ resolveExperimentLCMSOptions[mySamples:{ObjectP[Object[Sample]]...},myOptions:{_
 					{}, (*no analytes*)
 					{}, (*no sample packets*)
 					{}, (*no categories*)
-					FirstOrDefault@bestColumnFlushMassSpecMethods,
+					bestColumnFlushMassSpecMethods,
 					(*this hplc assumes multiple columns, so have to take the first*)
-					FirstOrDefault@Lookup[hplcResolvedOptions, ColumnFlushFlowRate],
-					FirstOrDefault@Lookup[hplcResolvedOptions, ColumnFlushGradient],
+					Lookup[hplcResolvedOptionsCorrected, ColumnFlushFlowRate],
+					Lookup[hplcResolvedOptionsCorrected, ColumnFlushGradient],
 					Lookup[columnFlushPrimeDepth3ExpandedAssociation, ColumnFlushIonMode],
 					Lookup[columnFlushPrimeDepth3ExpandedAssociation, ColumnFlushMassSpectrometryMethod],
 					Lookup[columnFlushPrimeDepth3ExpandedAssociation, ColumnFlushESICapillaryVoltage],
@@ -16499,7 +17061,7 @@ resolveExperimentLCMSOptions[mySamples:{ObjectP[Object[Sample]]...},myOptions:{_
 		{}
 	];
 	collisionEnergyProfileConflictTests=If[gatherTestsQ,
-		Test["CollisionEnergy and CollisionEnergyMassProfile are not defined simultaneously.",
+		Test["CollisionEnergy and CollisionEnergyMassProfile are not correctly defined.",
 			collisionEnergyProfileOverallConflictQ,
 			False
 		],
@@ -16883,7 +17445,7 @@ resolveExperimentLCMSOptions[mySamples:{ObjectP[Object[Sample]]...},myOptions:{_
 					]
 				],
 				PickList[
-					Lookup[hplcResolvedOptions,{Gradient,StandardGradient,BlankGradient,ColumnPrimeGradient,ColumnFlushGradient}],
+					Lookup[hplcResolvedOptionsCorrected,{Gradient,StandardGradient,BlankGradient,ColumnPrimeGradient,ColumnFlushGradient}],
 					acquisitionWindowsTooLongBool
 				]
 			]
@@ -16922,7 +17484,7 @@ resolveExperimentLCMSOptions[mySamples:{ObjectP[Object[Sample]]...},myOptions:{_
 	];
 	
 	souceTemperatureConflictTest=If[gatherTestsQ,
-		Test["For ESI-QQQ as mass analyzer, souce temperature can only be 150 Celsius",
+		Test["For ESI-QQQ as mass analyzer, source temperature can only be 150 Celsius",
 			sourceTemperatureErrorOverallConflictQ,
 			False
 		],
@@ -16971,7 +17533,7 @@ resolveExperimentLCMSOptions[mySamples:{ObjectP[Object[Sample]]...},myOptions:{_
 	];
 	
 	voltagesConflictTest=If[gatherTestsQ,
-		Test["For ESI-QQQ as mass analyzer, souce temperature can only be 150 Celsius",
+		Test["For ESI-QQQ as mass analyzer, source temperature can only be 150 Celsius",
 			invalidVoltagesErrorOverallConflictQ,
 			False
 		],
@@ -17020,7 +17582,7 @@ resolveExperimentLCMSOptions[mySamples:{ObjectP[Object[Sample]]...},myOptions:{_
 	];
 	
 	collisionVoltagesConflictTest=If[gatherTestsQ,
-		Test["For ESI-QQQ as mass analyzer, souce temperature can only be 150 Celsius",
+		Test["For ESI-QQQ as mass analyzer, source temperature can only be 150 Celsius",
 			invalidVoltagesErrorOverallConflictQ,
 			False
 		],
@@ -17067,7 +17629,7 @@ resolveExperimentLCMSOptions[mySamples:{ObjectP[Object[Sample]]...},myOptions:{_
 	];
 
 	memAssaysNotInSameLengthTest=If[gatherTestsQ,
-		Test["For ESI-QQQ as mass analyzer, souce temperature can only be 150 Celsius",
+		Test["For ESI-QQQ as mass analyzer, source temperature can only be 150 Celsius",
 			invalidVoltagesErrorOverallConflictQ,
 			False
 		],
@@ -17159,7 +17721,7 @@ resolveExperimentLCMSOptions[mySamples:{ObjectP[Object[Sample]]...},myOptions:{_
 	];
 	
 	gasflowsConflictTest=If[gatherTestsQ,
-		Test["For ESI-QQQ as mass analyzer, souce temperature can only be 150 Celsius",
+		Test["For ESI-QQQ as mass analyzer, source temperature can only be 150 Celsius",
 			invalidGasFlowErrorOverallConflictQ,
 			False
 		],
@@ -17207,7 +17769,7 @@ resolveExperimentLCMSOptions[mySamples:{ObjectP[Object[Sample]]...},myOptions:{_
 		{}
 	];
 	acqModeMassAnalyzerConflictTest=If[gatherTestsQ,
-		Test["For ESI-QQQ as mass analyzer, souce temperature can only be 150 Celsius",
+		Test["For ESI-QQQ as mass analyzer, source temperature can only be 150 Celsius",
 			invalidAcqMethodErrorOverallConflictQ,
 			False
 		],
@@ -17370,7 +17932,7 @@ resolveExperimentLCMSOptions[mySamples:{ObjectP[Object[Sample]]...},myOptions:{_
 		MultipleReactionMonitoringAssays->resolvedMultipleReactionMonitoringAssays,
 		NeutralLoss->resolvedNeutralLosses,
 
-		StandardFrequency -> Lookup[hplcResolvedOptions,StandardFrequency],
+		StandardFrequency -> Lookup[hplcResolvedOptionsCorrected,StandardFrequency],
 		StandardAnalytes -> ReplaceAll[resolvedStandardAnalytes,{{}:>Null}],
 		StandardIonMode -> resolvedStandardIonModes,
 		StandardMassSpectrometryMethod -> resolvedStandardMassSpectrometryMethods,
@@ -17424,7 +17986,7 @@ resolveExperimentLCMSOptions[mySamples:{ObjectP[Object[Sample]]...},myOptions:{_
 		StandardNeutralLoss->resolvedStandardNeutralLosses,
 		
 
-		BlankFrequency -> Lookup[hplcResolvedOptions,BlankFrequency],
+		BlankFrequency -> Lookup[hplcResolvedOptionsCorrected,BlankFrequency],
 		BlankAnalytes -> ReplaceAll[resolvedBlankAnalytes,{{}:>Null}],
 		BlankIonMode -> resolvedBlankIonModes,
 		BlankMassSpectrometryMethod -> resolvedBlankMassSpectrometryMethods,
@@ -17630,7 +18192,7 @@ resolveExperimentLCMSOptions[mySamples:{ObjectP[Object[Sample]]...},myOptions:{_
 
 	(* Throw Error::InvalidInput if there are invalid inputs. *)
 	If[Length[invalidInputs]>0&&!gatherTestsQ,
-		Message[Error::InvalidInput,ObjectToString[invalidInputs,Cache->simulatedCache]]
+		Message[Error::InvalidInput,ObjectToString[invalidInputs,Simulation -> updatedSimulation]]
 	];
 
 	(* Throw Error::InvalidOption if there are invalid options. *)
@@ -17715,7 +18277,7 @@ resolveExperimentLCMSOptions[mySamples:{ObjectP[Object[Sample]]...},myOptions:{_
 
 DefineOptions[
 	LCMSResourcePackets,
-	Options:>{OutputOption,CacheOption}
+	Options:>{SimulationOption,OutputOption,CacheOption}
 ];
 
 LCMSResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresolvedOptions:{_Rule...},myResolvedOptions:{_Rule...},ops:OptionsPattern[LCMSResourcePackets]]:=Module[
@@ -17773,7 +18335,10 @@ LCMSResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresolvedOptions:{_
 		innerChargeStateSelections,innerChargeStateMassTolerances,innerIsotopeMassDifferences,innerIsotopeRatios,
 		innerIsotopeDetectionMinimums,innerIsotopeRatioTolerances,innerIsotopeMassTolerances,innerCollisionCellExitVoltages,
 		innerMassDetectionStepSizes,innerNeutralLosses,innerDwellTimes,innerMultipleReactionMonitoringAssays,
-		multipleReactionMonitoringAssayPackets,formattedCollisionEnergy, sampleToResourceRules
+		multipleReactionMonitoringAssayPackets,formattedCollisionEnergy, sampleToResourceRules, simulation,
+		hplcCorrectedleftoverOptions, hplcAllOptionsRaw, gradientOptions, gradientCorrectionRules, expandedResolvedOptions,
+		calibrantPrimeBufferResource,calibrantPrimeInfusionSyringeResource,calibrantPrimeInfusionSyringeNeedleResource,
+		calibrantFlushBufferResource,calibrantFlushInfusionSyringeResource,calibrantFlushInfusionSyringeNeedleResource
 	},
 
 	(* Determine the requested return value from the function *)
@@ -17787,10 +18352,13 @@ LCMSResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresolvedOptions:{_
 	messagesQ = !gatherTestsQ;
 
 	(* Fetch passed cache *)
-	cache = OptionValue[Cache];
+	cache = Lookup[ToList[ops], Cache, {}];
+	simulation = Lookup[ToList[ops], Simulation, Simulation[]];
 
 	(*put the options into an association format*)
-	lcmsOptionsAssociation=Association@Last[ExpandIndexMatchedInputs[ExperimentLCMS,{mySamples},myResolvedOptions]];
+	(* If there is only one acquisition window the following call will over-expand MultipleReactionMonitoringAssays *)
+	expandedResolvedOptions = Last[ExpandIndexMatchedInputs[ExperimentLCMS, {mySamples}, myResolvedOptions]];
+	lcmsOptionsAssociation = Association @ expandedResolvedOptions;
 
 	(*get the common options between hplc and lcms*)
 	commonOptions=ToExpression/@Intersection["OptionName"/.OptionDefinition[ExperimentHPLC],"OptionName"/.OptionDefinition[ExperimentLCMS]];
@@ -17860,14 +18428,49 @@ LCMSResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresolvedOptions:{_
 		!MemberQ[Keys@hplcOptionsWithInjectionTable,First@#]&
 	]/.{Automatic->Null};
 
+	(* Some of the HPLC options cannot be Null, so here we need to correct them *)
+	hplcCorrectedleftoverOptions = ReplaceRule[leftoverHPLCOptions,
+		{
+			Scale -> SemiPreparative,
+			ColumnSelection -> False,
+			ColumnPosition -> ConstantArray[PositionA, Length[mySamples]],
+			CollectFractions -> False
+		}
+	];
+
 	(*combine everything in order to pass to the HPLC resource packets function*)
-	hplcAllOptions=Normal@Join[Association@leftoverHPLCOptions,hplcOptionsWithInjectionTable];
+	hplcAllOptionsRaw=Normal@Join[Association@hplcCorrectedleftoverOptions,hplcOptionsWithInjectionTable];
+
+	(* We also need to correct the Gradient options. In HPLC Gradient, ColumnPrimeGradient and ColumnFlushGradient it has an extra entry of "Differential Refractive Index Reference Loading" *)
+	gradientOptions = {Gradient, ColumnPrimeGradient, ColumnFlushGradient, BlankGradient, StandardGradient};
+
+	gradientCorrectionRules = Map[
+		Function[{optionName},
+			Module[{optionValue, correctedOptionValue},
+				optionValue = Lookup[hplcAllOptionsRaw, optionName];
+				(* If the gradient takes the form of List of List, append a None in each inner-inner list *)
+				correctedOptionValue = If[MatchQ[optionValue, {{_List..}..}],
+					Map[
+						Function[{eachGradient},
+							Append[#, None]& /@ eachGradient
+						],
+						optionValue
+					],
+					optionValue
+				];
+				optionName -> correctedOptionValue
+			]
+		],
+		gradientOptions
+	];
+
+	hplcAllOptions = ReplaceRule[hplcAllOptionsRaw, gradientCorrectionRules];
 
 	(*call the HPLC resource packets function*)
 	(*we don't care about the unresolved options so just pass whatever*)
 	{hplcResourcePackets,hplcResourcePacketTests} = If[gatherTestsQ,
-		HPLCResourcePacketsNew[mySamples,MapAt[ToExpression,Options[ExperimentHPLC],{All,1}],hplcAllOptions,Cache->cache,Output->{Result,Tests},InternalUsage->True],
-		{HPLCResourcePacketsNew[mySamples,MapAt[ToExpression,Options[ExperimentHPLC],{All,1}],hplcAllOptions,Cache->cache,InternalUsage->True],{}}
+		HPLCResourcePacketsNew[mySamples,MapAt[ToExpression,Options[ExperimentHPLC],{All,1}],hplcAllOptions,Cache->cache,Simulation->simulation,Output->{Result,Tests},InternalUsage->True],
+		{HPLCResourcePacketsNew[mySamples,MapAt[ToExpression,Options[ExperimentHPLC],{All,1}],hplcAllOptions,Cache->cache,Simulation->simulation,InternalUsage->True],{}}
 	];
 
 	(*extract out the hplc protocol packet*)
@@ -17886,7 +18489,8 @@ LCMSResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresolvedOptions:{_
 	(*we need the resource for the mass spectrometer instrument*)
 	massSpectrometerResource= Resource[
 		Instrument -> msInstrument,
-		Time -> separationTime
+		Time -> separationTime,
+		Name -> "Mass Spectrometer"
 	];
 
 	(*get the model packet for the instrument*)
@@ -17912,8 +18516,8 @@ LCMSResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresolvedOptions:{_
 		],
 		Resource[
 			Sample->calibrant,
-			Amount->3 Milliliter,
-			Container->Model[Container,Vessel,"Narrow Mouth Plastic Reservoir Bottle, 30mL, for Xevo G2-XS QTOF"]
+			Amount->15 Milliliter,
+			Container->Model[Container,Vessel, "id:1ZA60vLx3RB5"] (*"Narrow Mouth Plastic Reservoir Bottle, 30mL, for Xevo G2-XS QTOF"*)
 		]
 	];
 	
@@ -17933,22 +18537,32 @@ LCMSResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresolvedOptions:{_
 		secondCalibrantSyringeNeedleResource
 	}=If[tripleQuadQ,
 		{
-			Resource[Sample->Model[Container, Syringe, "1mL All-Plastic Disposable Syringe"],Name->CreateUUID[]],
+			Resource[Sample->Model[Container, Syringe, "id:o1k9jAKOww7A"](*1mL All-Plastic Disposable Syringe*),Name->CreateUUID[]],
 			If[
 				MatchQ[secondCalibrant,ObjectP[]],
-				Resource[Sample->Model[Container, Syringe, "1mL All-Plastic Disposable Syringe"],Name->CreateUUID[]],
+				Resource[Sample->Model[Container, Syringe, "id:o1k9jAKOww7A"](*1mL All-Plastic Disposable Syringe*),Name->CreateUUID[]],
 				Null
 			],
-			Resource[Sample->Model[Item, Needle, "21g x 1 Inch Single-Use Needle"],Name->CreateUUID[]],
+			Resource[Sample->Model[Item, Needle, "id:P5ZnEj4P88YE"](*21g x 1 Inch Single-Use Needle*),Name->CreateUUID[]],
 			If[
 				MatchQ[secondCalibrant,ObjectP[]],
-				Resource[Sample->Model[Item, Needle, "21g x 1 Inch Single-Use Needle"],Name->CreateUUID[]],
+				Resource[Sample->Model[Item, Needle, "id:P5ZnEj4P88YE"](*21g x 1 Inch Single-Use Needle*),Name->CreateUUID[]],
 				Null
 			]
-			
 		},
 		{Null,Null,Null,Null}
 	];
+
+	(* Create resource for calibrant prime/flush *)
+	(* Prime *)
+	calibrantPrimeBufferResource = Resource[Sample -> Model[Sample, StockSolution, "id:7X104v6zO6X9"](*1:1 LCMS-Grade Methanol/Milli-Q Water*), Amount -> 3 Milliliter, Container -> Model[Container, Vessel, "id:9RdZXvKBeeqL"](*20mL Glass Scintillation Vial*), Name -> "Pre-Calibration Prime Buffer"];
+	calibrantPrimeInfusionSyringeResource = Resource[Sample -> Model[Container, Syringe, "id:o1k9jAKOww7A"](*1mL All-Plastic Disposable Syringe*), Name -> "Pre-Calibration Prime Syringe"];
+	calibrantPrimeInfusionSyringeNeedleResource = Resource[Sample -> Model[Item, Needle, "id:P5ZnEj4P88YE"](*21g x 1 Inch Single-Use Needle*), Name -> "Pre-Calibration Prime Syringe Needle"];
+	(* Flush *)
+	calibrantFlushBufferResource = Resource[Sample -> Model[Sample, StockSolution, "id:7X104v6zO6X9"](*1:1 LCMS-Grade Methanol/Milli-Q Water*), Amount -> 3 Milliliter, Container -> Model[Container, Vessel, "id:9RdZXvKBeeqL"](*20mL Glass Scintillation Vial*), Name -> "Post-Calibration Flush Buffer"];
+	calibrantFlushInfusionSyringeResource = Resource[Sample -> Model[Container, Syringe, "id:o1k9jAKOww7A"](*1mL All-Plastic Disposable Syringe*), Name -> "Post-Calibration Flush Syringe"];
+	calibrantFlushInfusionSyringeNeedleResource = Resource[Sample -> Model[Item, Needle, "id:P5ZnEj4P88YE"](*21g x 1 Inch Single-Use Needle*), Name -> "Post-Calibration Flush Syringe Needle"];
+
 
 	(*get the calibrant model if need be*)
 	calibrantModel=If[MatchQ[calibrant,ObjectP[Model]],
@@ -18187,9 +18801,19 @@ LCMSResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresolvedOptions:{_
 							],
 							ConstantArray[Null,Length@acquisitionWindow]
 						];
-						
-						(*Tranfer MultipleReacitonMonitoringAssays to a assaociation*)
-						multipleReactionMonitoringAssayPackets=Map[
+
+						(*Transform MultipleReacitonMonitoringAssays to a association*)
+
+						(* If we expanded a singleton Null to match acquisition windows just make Null associations. *)
+						multipleReactionMonitoringAssayPackets=If[NullQ[multipleReactionMonitoringAssays],
+							ConstantArray[<|MS1Mass ->Null,
+								CollisionEnergy -> Null,
+								MS2Mass -> Null,
+								DwellTime -> Null
+							|>, Length[multipleReactionMonitoringAssays]],
+							(* Otherwise Map *)
+							(* Note: For Map at level spec 2 we need to Flatten *)
+							Flatten@Map[
 							Function[{eachMRMAssay},
 								If[
 									NullQ[eachMRMAssay],
@@ -18215,8 +18839,11 @@ LCMSResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresolvedOptions:{_
 								]
 							],
 
-							multipleReactionMonitoringAssays
-						];
+							multipleReactionMonitoringAssays,
+							(* If we have multiple acquisition windows multipleReactionMonitoringAssays will be one list level deeper. *)
+							If[Length[formattedAcquisitionWindows] > 1, {2}, {1}]
+						]];
+
 						(* Format CollisionEnergy to avoid this parapmeter is wrongly expanded *)
 						formattedCollisionEnergy=If[
 							Length[formattedAcquisitionWindows]!=Length[collisionEnergy],
@@ -18742,13 +19369,13 @@ LCMSResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresolvedOptions:{_
 	(*estimate a calibration time for *)
 	calibrationTime=If[MatchQ[secondCalibrant,ObjectP[]],40Minute,20Minute];
 	(* Use Level 1 Operators *)
-	operatorResource = Model[User, Emerald, Operator, "Trainee"];
+	operatorResource = $BaselineOperator;
 
 	(*define all of the checkpoints*)
 	checkpoints = If[tripleQuadQ,
 		{
 			{"Picking Resources", 1 Hour, "Buffers and columns required to run LCMS experiments are gathered.",Link[Resource[Operator -> operatorResource, Time -> 1 Hour]]},
-			{"Calibrate the Instrument",calibrationTime, "Check if the intrument is ready to run the sample, and calibrate the voltage offset if needed.",Link[Resource[Operator -> operatorResource, Time -> calibrationTime]]},
+			{"Calibrate the Instrument",calibrationTime, "Check if the instrument is ready to run the sample, and calibrate the voltage offset if needed.",Link[Resource[Operator -> operatorResource, Time -> calibrationTime]]},
 			{"Purging Instrument",1 Hour, "System priming buffers are connected to an LCMS instrument and the instrument is purged at a high flow rate.",Link[Resource[Operator -> operatorResource, Time -> 1 Hour]]},
 			{"Preparing Samples", 90 Minute, "An instrument is configured for the protocol.",Link[Resource[Operator -> operatorResource, Time -> 90 Minute]]},
 			{"Acquiring Data", Lookup[hplcProtocolPacket,SeparationTime], "Samples are injected onto an HPLC and subject to buffer gradients.",Link[Resource[Operator -> operatorResource, Time -> Lookup[hplcProtocolPacket,SeparationTime]]]},
@@ -18770,7 +19397,7 @@ LCMSResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresolvedOptions:{_
 	];
 
 	(* Populate all shared fields using legacy Funtopia function *)
-	sharedFieldPacket = populateSamplePrepFields[mySamples,myResolvedOptions,Cache->cache];
+	sharedFieldPacket = populateSamplePrepFields[mySamples,myResolvedOptions,Cache->cache,Simulation->simulation];
 
 	(*make the protocol packet id*)
 	protocolObjectID=CreateID[Object[Protocol,LCMS]];
@@ -18795,16 +19422,22 @@ LCMSResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresolvedOptions:{_
 			Download[#[Sample], Object] -> #,
 			Nothing
 		]&,
-		Lookup[hplcProtocolPacket,Replace[SamplesIn]] /. {Link[x_Resource, ___] :> x} (* importantly here, we need the resource form in the unit operation object, NOT the raw object.  This is because if we're using PreparatoryUnitOperations we're going to be hosed otherwise *)
+		(* importantly here, we need the resource form in the unit operation object, NOT the raw object.  This is because if we're using PreparatoryUnitOperations we're going to be hosed otherwise *)
+		Flatten@{
+			Lookup[hplcProtocolPacket,Replace[SamplesIn]]/.{Link[x_Resource,___]:>x},
+			Lookup[hplcProtocolPacket,Replace[Blanks]] /. {Link[x_Resource, ___] :> x},
+			Lookup[hplcProtocolPacket,Replace[Standards]] /. {Link[x_Resource, ___] :> x}
+		}
 	]];
 
+	(* importantly here, we need the resource form in the unit operation object, NOT the raw object.  This is because if we're using PreparatoryUnitOperations we're going to be hosed otherwise *)
 	allUnitOperationObjects=Join[
-		ToList@Download[mySamples, Object] /. sampleToResourceRules, (* importantly here, we need the resource form in the unit operation object, NOT the raw object.  This is because if we're using PreparatoryUnitOperations we're going to be hosed otherwise *)
+		ToList@Download[mySamples, Object],
 		ToList@If[primeQ,Null,Nothing],
 		ToList@If[standardsQ,PadRight[Lookup[lcmsOptionsAssociation, Standard],Length[standardPositions],Lookup[lcmsOptionsAssociation, Standard]],Nothing],
 		ToList@If[blanksQ,PadRight[Lookup[lcmsOptionsAssociation, Blank],Length[blankPositions],Lookup[lcmsOptionsAssociation, Blank]],Nothing],
 		ToList@If[flushQ,Null,Nothing]
-	];
+	]/.sampleToResourceRules;
 	allUnitOperationTypes=Join[
 		ToList@ConstantArray[Sample,Length[Download[mySamples,Object]]],
 		ToList@If[primeQ,ColumnPrime,Nothing],
@@ -18916,9 +19549,9 @@ LCMSResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresolvedOptions:{_
 		
 			(*Clean the innerMultipleReactionMonitoringAssays*)
 			cleanedInnerMultipleReactionMonitoringAssays=Which[
+				NullQ[#], Null,
 				MatchQ[#,Except[_List]],
 				ConstantArray[#,Length[innerAcquisitionWindows]],
-				NullQ[#],Null,
 				True,#
 			]&/@innerMultipleReactionMonitoringAssays;
 			
@@ -19091,7 +19724,7 @@ LCMSResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresolvedOptions:{_
 		Function[{eachType,eachPoistion},
 			Module[{eachUnitOperationObjectsNested,eachSamplePositionUOLookUp,cleanedUONestedObjects},
 				
-				(*Generate teh sample UO packet*)
+				(*Generate the sample UO packet*)
 				eachUnitOperationObjectsNested=PickList[allUnitOperationObjectsNested,allUnitOperationTypes,eachType];
 				
 				(*Check the length of each sample type and how many UO packets we have*)
@@ -19172,7 +19805,8 @@ LCMSResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresolvedOptions:{_
 		BufferD->Lookup[hplcProtocolPacket,BufferD],
 		Replace[BufferContainerPlacements]->bufferPlacements,
 		MaxAcceleration->Lookup[hplcProtocolPacket,MaxAcceleration],
-		Replace[InjectionTable]->injectionTableUploadable
+		Replace[InjectionTable]->injectionTableUploadable,
+		MaxPressure->Lookup[hplcProtocolPacket,MaxPressure]
 	];
 	protocolPacketChunk2=Association[
 		(*column primes are multiple in the new HPLC; hence, the FirstOrDefault *)
@@ -19255,7 +19889,7 @@ LCMSResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresolvedOptions:{_
 	protocolPacketChunk3=Association[
 		SampleTemperature->Lookup[hplcProtocolPacket,SampleTemperature],
 		Replace[SampleVolumes]->Lookup[hplcProtocolPacket,Replace[InjectionVolumes]],
-		PlateSeal->Lookup[hplcProtocolPacket,PlateSeal],
+		(* We will create Cover resources in the compiler, when we have the WorkingContainers and can prepare resources that are index matched to the WorkingContainers field *)
 		Replace[GradientAs]->Lookup[hplcProtocolPacket,Replace[GradientA]],
 		Replace[IsocraticGradientA]->Lookup[hplcProtocolPacket,Replace[IsocraticGradientA]],
 		Replace[GradientBs]->Lookup[hplcProtocolPacket,Replace[GradientB]],
@@ -19271,15 +19905,33 @@ LCMSResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresolvedOptions:{_
 
 		Calibrant->Link@calibrantResource,
 		SecondCalibrant->Link[secondCalibrantModel],
+		(* QTOF specific resources *)
+		(* Syringe used to purge MS lines *)
+		Replace[PrimingSyringe] -> If[tripleQuadQ, Null, Link[Resource[Sample -> Model[Item, Consumable, "id:9RdZXvdkxzGZ"], Rent -> True]]],
+
 		(*	QQQ specific other resources*)
 		Replace[UniqueCalibrants]->If[tripleQuadQ,({Link@calibrantResource,Link@secondCalibrantResource}/.{Null->Nothing}),Null],
 		Replace[CalibrantInfusionVolumes]->If[tripleQuadQ,({calibrantResource,secondCalibrantResource}/.{Null->Nothing,_Resource -> 0.5 Milliliter}),Null],
 		Replace[CalibrantInfusionSyringes]->If[tripleQuadQ,({calibrantSyringeResource,secondCalibrantSyringeResource}/.{Null->Nothing}),Null],
 		Replace[CalibrantInfusionSyringeNeedles]->If[tripleQuadQ,({calibrantSyringeNeedleResource,secondCalibrantSyringeNeedleResource}/.{Null->Nothing}),Null],
-		
+		Replace[CalibrationLoopCounts]->If[tripleQuadQ,ConstantArray[0,Length[({calibrantResource,secondCalibrantResource}/.{Null->Nothing})]],Null],
+
+		Sequence @@ If[tripleQuadQ,
+			{
+				CalibrantPrimeBuffer -> calibrantPrimeBufferResource,
+				CalibrantPrimeInfusionSyringe -> calibrantPrimeInfusionSyringeResource,
+				CalibrantPrimeInfusionVolume -> 1 Milliliter,
+				CalibrantPrimeInfusionSyringeNeedle -> calibrantPrimeInfusionSyringeNeedleResource,
+				CalibrantFlushBuffer -> calibrantFlushBufferResource,
+				CalibrantFlushInfusionSyringe -> calibrantFlushInfusionSyringeResource,
+				CalibrantFlushInfusionVolume -> 1 Milliliter,
+				CalibrantFlushInfusionSyringeNeedle -> calibrantFlushInfusionSyringeNeedleResource
+			},
+			{Nothing}
+		],
+
 		(*	QQQ specific other resources *)
 		EstimatedProcessingTime->If[tripleQuadQ,Round[(Lookup[hplcProtocolPacket,SeparationTime]+60Minute),10Minute],Null],
-		InfusionSyringeTubing->If[tripleQuadQ,Link[Object[Plumbing, Tubing, "PEEK tubing for Direct Infusion of Morrison MassSpec"]],Null],
 		SystemPrimeFlushPlate->If[tripleQuadQ,Link[systemPrimeFlushPlateResource],Null],
 		(*---Connectors---*)
 		
@@ -19627,8 +20279,8 @@ LCMSResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresolvedOptions:{_
 
 	(* Check fulfillability to resources *)
 	{resourcesFulfillableQ,resourceTests} = If[gatherTestsQ,
-		Resources`Private`fulfillableResourceQ[allResources,Site->Lookup[myResolvedOptions,Site],Output->{Result,Tests},Cache -> cache],
-		{Resources`Private`fulfillableResourceQ[allResources,Site->Lookup[myResolvedOptions,Site],Cache -> cache],{}}
+		Resources`Private`fulfillableResourceQ[allResources,Site->Lookup[myResolvedOptions,Site],Output->{Result,Tests},Cache -> cache, Simulation -> simulation],
+		{Resources`Private`fulfillableResourceQ[allResources,Site->Lookup[myResolvedOptions,Site],Cache -> cache, Simulation -> simulation],{}}
 	];
 
 	(* Return requested output *)
@@ -19662,7 +20314,7 @@ ExperimentLCMSPreview[myObjects:ListableP[ObjectP[Object[Container]]]|ListableP[
 	(* get the options as a list *)
 	listedOptions = ToList[myOptions];
 
-	(* remove the Output option before passing to the core function because it doens't make sense here *)
+	(* remove the Output option before passing to the core function because it doesn't make sense here *)
 	noOutputOptions = DeleteCases[listedOptions, Output -> _];
 
 	(* return only the preview for ExperimentLCMS *)
@@ -19693,13 +20345,13 @@ DefineOptions[ExperimentLCMSOptions,
 	SharedOptions :> {ExperimentLCMS}
 ];
 
-ExperimentLCMSOptions[myObjects:ListableP[ObjectP[Object[Container]]]|ListableP[(ObjectP[Object[Sample]]|_String)],myOptions:OptionsPattern[]]:=Module[
+ExperimentLCMSOptions[myObjects:ListableP[ObjectP[Object[Container]]]|ListableP[(ObjectP[{Object[Sample],Model[Sample]}]|_String)],myOptions:OptionsPattern[]]:=Module[
 	{listedOptions, noOutputOptions, options},
 
 	(* get the options as a list *)
 	listedOptions = ToList[myOptions];
 
-	(* remove the Output option before passing to the core function because it doens't make sense here *)
+	(* remove the Output option before passing to the core function because it doesn't make sense here *)
 	noOutputOptions = DeleteCases[listedOptions, (Output -> _) | (OutputFormat->_)];
 
 	(* return only the preview for ExperimentLCMS *)
@@ -19736,29 +20388,28 @@ DefineOptions[ValidExperimentLCMSQ,
 ];
 
 
-ValidExperimentLCMSQ[myObject:(ObjectP[Object[Sample]]|_String),myOptions:OptionsPattern[]]:=ValidExperimentLCMSQ[{myObject},myOptions];
-
-ValidExperimentLCMSQ[myObjects:{(ObjectP[Object[Sample]]|_String)...},myOptions:OptionsPattern[]]:=Module[
-	{listedOptions,preparedOptions,lcmsTests,validObjectBooleans,voqWarnings,
+ValidExperimentLCMSQ[myObjects:ListableP[ObjectP[Object[Container]]]|ListableP[(ObjectP[{Object[Sample],Model[Sample]}]|_String)],myOptions:OptionsPattern[]]:=Module[
+	{listedObjects,listedOptions,preparedOptions,lcmsTests,validObjectBooleans,voqWarnings,
 		allTests,verbose,outputFormat},
 
-	(* get the options as a list *)
+	(* get the objects and options as a list *)
+	listedObjects = ToList[myObjects];
 	listedOptions = ToList[myOptions];
 
-	(* remove the Output option before passing to the core function because it doens't make sense here *)
+	(* remove the Output option before passing to the core function because it doesn't make sense here *)
 	preparedOptions = DeleteCases[listedOptions, (Output | Verbose | OutputFormat) -> _];
 
 	(* return only the tests for ExperimentLCMS *)
-	lcmsTests = ExperimentLCMS[myObjects, Append[preparedOptions, Output -> Tests]];
+	lcmsTests = ExperimentLCMS[listedObjects, Append[preparedOptions, Output -> Tests]];
 
 	(* Create warnings for invalid objects *)
-	validObjectBooleans = ValidObjectQ[DeleteCases[myObjects,_String], OutputFormat -> Boolean];
+	validObjectBooleans = ValidObjectQ[DeleteCases[listedObjects,_String], OutputFormat -> Boolean];
 	voqWarnings = MapThread[
 		Warning[StringJoin[ToString[#1, InputForm], " is valid (run ValidObjectQ for more detailed information):"],
 			#2,
 			True
 		]&,
-		{DeleteCases[myObjects,_String], validObjectBooleans}
+		{DeleteCases[listedObjects,_String], validObjectBooleans}
 	];
 
 	(* Make a list of all the tests *)
@@ -19810,7 +20461,7 @@ commonHPLCAndLCMSOptions:={SeparationMode, ColumnSelector, GuardColumn, Column, 
 	ColumnPrimeAbsorbanceWavelength, ColumnPrimeWavelengthResolution, ColumnPrimeUVFilter, ColumnPrimeAbsorbanceSamplingRate,
 	ColumnFlushGradientA, ColumnFlushGradientB, ColumnFlushGradientC, ColumnFlushGradientD, ColumnFlushFlowRate, ColumnFlushGradient, ColumnFlushTemperature,
 	ColumnFlushAbsorbanceWavelength, ColumnFlushWavelengthResolution, ColumnFlushUVFilter, ColumnFlushAbsorbanceSamplingRate,
-	Confirm, Name, Upload, Email
+	Confirm, CanaryBranch, Name, Upload, Email
 };
 
 
@@ -19901,5 +20552,5 @@ DefinePrimitiveSet[
 	{massSpectrometryScanPrimitive}
 ];
 
-(* Assigne the author *)
-Authors[MassSpectrometryScan] = {"weiran.wang"};
+(* Assign the author *)
+Authors[MassSpectrometryScan] = {"ryan.bisbey"};

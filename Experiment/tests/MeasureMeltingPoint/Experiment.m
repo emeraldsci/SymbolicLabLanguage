@@ -65,6 +65,33 @@ DefineTests[ExperimentMeasureMeltingPoint,
 			ObjectP[Object[Protocol, MeasureMeltingPoint]]
 		],
 
+		Example[
+			{Basic, "Successfully create a protocol with some preparation steps:"},
+			ExperimentMeasureMeltingPoint[
+				"destination container " <> $SessionUUID,
+				PreparatoryUnitOperations -> {
+					LabelContainer[
+						Label -> "destination container " <> $SessionUUID,
+						Container -> Model[Container, Vessel, "2mL Tube"]
+					],
+					LabelSample[
+						Label -> "desiccant sample " <> $SessionUUID,
+						Sample -> Model[Sample, "Indicating Drierite"],
+						Amount -> 150 Gram,
+						Container -> Model[Container, Vessel, "1L Glass Bottle"]
+					],
+					LabelContainer[
+						Label -> "desiccant storage container " <> $SessionUUID,
+						Container -> Model[Container, Vessel, "2mL Tube"]
+					],
+					Transfer[Source -> Model[Sample, "Calcium Chloride"], Destination -> {"A1", "destination container " <> $SessionUUID}, Amount -> 1.5 Gram],
+					Grind[Sample -> "destination container " <> $SessionUUID],
+					Desiccate[Sample -> "destination container " <> $SessionUUID, Desiccant -> "desiccant sample " <> $SessionUUID, DesiccantStorageContainer -> "desiccant storage container " <> $SessionUUID]
+				}
+			],
+			ObjectP[Object[Protocol, MeasureMeltingPoint]]
+		],
+
 		(* Output Options *)
 		Example[
 			{Basic, "Generates a list of tests if Output is set to Tests for ExperimentMeasureMeltingPoint:"},
@@ -360,13 +387,12 @@ DefineTests[ExperimentMeasureMeltingPoint,
 				{
 					Object[Sample, "MeasureMeltingPoint Test Sample 1 " <> $SessionUUID]
 				},
-				RecoupSample -> True,
 				Output -> Options
 			];
 			Lookup[options, PreparedSampleLabel],
 			_String,
 			Variables :> {options}
-		].
+		],
 
 			Example[
 				{Options, PreparedSampleLabel, "PreparedSampleLabel is properly resolved for multiple input samples:"},
@@ -377,59 +403,12 @@ DefineTests[ExperimentMeasureMeltingPoint,
 						Object[Sample, "MeasureMeltingPoint Test Capillary Sample 1 " <> $SessionUUID],
 						Object[Sample, "MeasureMeltingPoint Test Capillary Sample 2 " <> $SessionUUID]
 					},
-					RecoupSample -> {True, False, Automatic, Null},
 					Output -> Options
 				];
 				Lookup[options, PreparedSampleLabel],
 				ListableP[_String | NullP],
 				Variables :> {options}
 			],
-
-		Example[
-			{Options, PreparedSampleContainerLabel, "PreparedSampleContainerLabel is properly resolved for a single input sample:"},
-			options = ExperimentMeasureMeltingPoint[
-				{
-					Object[Sample, "MeasureMeltingPoint Test Sample 1 " <> $SessionUUID]
-				},
-				RecoupSample -> True,
-				Output -> Options
-			];
-			Lookup[options, PreparedSampleContainerLabel],
-			_String,
-			Variables :> {options}
-		],
-
-		Example[
-			{Options, PreparedSampleContainerLabel, "PreparedSampleContainerLabel is properly set to a user-specified value:"},
-			options = ExperimentMeasureMeltingPoint[
-				{
-					Object[Sample, "MeasureMeltingPoint Test Sample 1 " <> $SessionUUID]
-				},
-				RecoupSample -> True,
-				PreparedSampleContainerLabel -> "container of melting point prepared-sample",
-				Output -> Options
-			];
-			Lookup[options, PreparedSampleContainerLabel],
-			_String,
-			Variables :> {options}
-		],
-
-		Example[
-			{Options, PreparedSampleContainerLabel, "PreparedSampleContainerLabel is properly resolved for multiple input samples:"},
-			options = ExperimentMeasureMeltingPoint[
-				{
-					Object[Sample, "MeasureMeltingPoint Test Sample 1 " <> $SessionUUID],
-					Object[Sample, "MeasureMeltingPoint Test Sample 17 - 99 Celsius " <> $SessionUUID],
-					Object[Sample, "MeasureMeltingPoint Test Capillary Sample 1 " <> $SessionUUID],
-					Object[Sample, "MeasureMeltingPoint Test Capillary Sample 2 " <> $SessionUUID]
-				},
-				RecoupSample -> {True, False, Automatic, Null},
-				Output -> Options
-			];
-			Lookup[options, PreparedSampleContainerLabel],
-			ListableP[_String | NullP],
-			Variables :> {options}
-		],
 
 		Example[
 			{Options, SealCapillary, "SealCapillary is properly resolved for a single input samples:"},
@@ -732,92 +711,12 @@ DefineTests[ExperimentMeasureMeltingPoint,
 		],
 
 		Example[
-			{Options, RecoupSample, "RecoupSample is properly resolved for a single input sample:"},
+			{Options, PreparedSampleStorageCondition, "PreparedSampleStorageCondition is properly set to the default value (Null) for a single input sample:"},
 			options = ExperimentMeasureMeltingPoint[Object[Sample, "MeasureMeltingPoint Test Sample 1 " <> $SessionUUID],
 				Output -> Options
 			];
-			Lookup[options, RecoupSample],
-			BooleanP,
-			Variables :> {options}
-		],
-
-		Example[
-			{Options, RecoupSample, "RecoupSample is properly set to a user-specified value for a single input sample:"},
-			options = ExperimentMeasureMeltingPoint[Object[Sample, "MeasureMeltingPoint Test Sample 17 - 99 Celsius " <> $SessionUUID],
-				RecoupSample -> True,
-				Output -> Options
-			];
-			Lookup[options, RecoupSample],
-			True,
-			Variables :> {options}
-		],
-
-		Example[
-			{Options, RecoupSample, "RecoupSample is properly resolved for multiple input samples:"},
-			options = ExperimentMeasureMeltingPoint[
-				{
-					Object[Sample, "MeasureMeltingPoint Test Sample 1 " <> $SessionUUID],
-					Object[Sample, "MeasureMeltingPoint Test Sample 17 - 99 Celsius " <> $SessionUUID],
-					Object[Sample, "MeasureMeltingPoint Test Sample 20 - 331 Celsius " <> $SessionUUID],
-					Object[Sample, "MeasureMeltingPoint Test Capillary Sample 1 " <> $SessionUUID],
-					Object[Sample, "MeasureMeltingPoint Test Capillary Sample 2 " <> $SessionUUID]
-				},
-				RecoupSample -> {True, Automatic, False, Automatic, Null},
-				Output -> Options
-			];
-			Lookup[options, RecoupSample],
-			ListableP[BooleanP | NullP],
-			Variables :> {options}
-		],
-
-		Example[
-			{Options, PreparedSampleContainer, "PreparedSampleContainer is properly resolved for a single input sample:"},
-			options = ExperimentMeasureMeltingPoint[Object[Sample, "MeasureMeltingPoint Test Sample 1 " <> $SessionUUID],
-				Output -> Options
-			];
-			Lookup[options, PreparedSampleContainer],
-			ObjectP[Model[Container]] | ObjectP[Object[Container]] | NullP,
-			Variables :> {options}
-		],
-
-		Example[
-			{Options, PreparedSampleContainer, "PreparedSampleContainer is properly resolved for a single input sample when RecoupSample is set to True:"},
-			options = ExperimentMeasureMeltingPoint[Object[Sample, "MeasureMeltingPoint Test Sample 1 " <> $SessionUUID],
-				RecoupSample -> True,
-				Output -> Options
-			];
-			Lookup[options, PreparedSampleContainer],
-			ObjectP[Model[Container]] | ObjectP[Object[Container]],
-			Variables :> {options}
-		],
-
-		Example[
-			{Options, PreparedSampleContainer, "PreparedSampleContainer is properly set to a user-specified value for a single input sample when RecoupSample is set to True:"},
-			options = ExperimentMeasureMeltingPoint[Object[Sample, "MeasureMeltingPoint Test Sample 17 - 99 Celsius " <> $SessionUUID],
-				RecoupSample -> True,
-				PreparedSampleContainer -> Model[Container, Vessel, "50mL Tube"],
-				Output -> Options
-			];
-			Lookup[options, PreparedSampleContainer],
-			ObjectP[Model[Container, Vessel, "50mL Tube"]],
-			Variables :> {options}
-		],
-
-		Example[
-			{Options, PreparedSampleContainer, "PreparedSampleContainer is properly resolved for multiple input samples:"},
-			options = ExperimentMeasureMeltingPoint[
-				{
-					Object[Sample, "MeasureMeltingPoint Test Sample 1 " <> $SessionUUID],
-					Object[Sample, "MeasureMeltingPoint Test Sample 17 - 99 Celsius " <> $SessionUUID],
-					Object[Sample, "MeasureMeltingPoint Test Sample 20 - 331 Celsius " <> $SessionUUID],
-					Object[Sample, "MeasureMeltingPoint Test Capillary Sample 1 " <> $SessionUUID],
-					Object[Sample, "MeasureMeltingPoint Test Capillary Sample 2 " <> $SessionUUID]
-				},
-				RecoupSample -> {True, Automatic, False, Automatic, Automatic},
-				Output -> Options
-			];
-			Lookup[options, PreparedSampleContainer],
-			ListableP[ObjectP[Model[Container]] | ObjectP[Object[Container]] | NullP],
+			Lookup[options, PreparedSampleStorageCondition],
+			NullP,
 			Variables :> {options}
 		],
 
@@ -832,20 +731,8 @@ DefineTests[ExperimentMeasureMeltingPoint,
 		],
 
 		Example[
-			{Options, PreparedSampleStorageCondition, "PreparedSampleStorageCondition is properly set to the default value (Null) for a single input sample when RecoupSample is set to True:"},
-			options = ExperimentMeasureMeltingPoint[Object[Sample, "MeasureMeltingPoint Test Sample 1 " <> $SessionUUID],
-				RecoupSample -> True,
-				Output -> Options
-			];
-			Lookup[options, PreparedSampleStorageCondition],
-			NullP,
-			Variables :> {options}
-		],
-
-		Example[
-			{Options, PreparedSampleStorageCondition, "PreparedSampleStorageCondition is properly set to a user-specified value for a single input sample when RecoupSample is set to True:"},
+			{Options, PreparedSampleStorageCondition, "PreparedSampleStorageCondition is properly set to a user-specified value for a single input sample:"},
 			options = ExperimentMeasureMeltingPoint[Object[Sample, "MeasureMeltingPoint Test Sample 17 - 99 Celsius " <> $SessionUUID],
-				RecoupSample -> True,
 				PreparedSampleStorageCondition -> Model[StorageCondition, "Refrigerator"],
 				Output -> Options
 			];
@@ -864,7 +751,6 @@ DefineTests[ExperimentMeasureMeltingPoint,
 					Object[Sample, "MeasureMeltingPoint Test Capillary Sample 1 " <> $SessionUUID],
 					Object[Sample, "MeasureMeltingPoint Test Capillary Sample 2 " <> $SessionUUID]
 				},
-				RecoupSample -> {True, Automatic, False, Automatic, Automatic},
 				PreparedSampleStorageCondition -> {Model[StorageCondition, "Refrigerator"], Null, Null, Null, Null},
 				Output -> Options
 			];
@@ -884,9 +770,8 @@ DefineTests[ExperimentMeasureMeltingPoint,
 		],
 
 		Example[
-			{Options, CapillaryStorageCondition, "CapillaryStorageCondition is properly set to a user-specified value for a single input sample when RecoupSample is set to True:"},
+			{Options, CapillaryStorageCondition, "CapillaryStorageCondition is properly set to a user-specified value for a single input sample:"},
 			options = ExperimentMeasureMeltingPoint[Object[Sample, "MeasureMeltingPoint Test Sample 17 - 99 Celsius " <> $SessionUUID],
-				RecoupSample -> True,
 				CapillaryStorageCondition -> Model[StorageCondition, "Refrigerator"],
 				Output -> Options
 			];
@@ -1025,7 +910,7 @@ DefineTests[ExperimentMeasureMeltingPoint,
 				Output -> Options
 			];
 			Lookup[options, Grinder],
-			ListableP[ObjectP[Model[Instrument, Grinder]] | ObjectP[Object[Instrument, Grinder]] | NullP],
+			ObjectP[Model[Instrument, Grinder]],
 			Variables :> {options}
 		],
 
@@ -1043,7 +928,7 @@ DefineTests[ExperimentMeasureMeltingPoint,
 				Output -> Options
 			];
 			Lookup[options, Grinder],
-			ListableP[ObjectP[Model[Instrument, Grinder]] | ObjectP[Object[Instrument, Grinder]] | NullP],
+			{ObjectP[Model[Instrument, Grinder]], ObjectP[Model[Instrument, Grinder]], ObjectP[Model[Instrument, Grinder]], Null, Null},
 			Variables :> {options}
 		],
 
@@ -1426,7 +1311,7 @@ DefineTests[ExperimentMeasureMeltingPoint,
 				Output -> Options
 			];
 			Lookup[options, GrindingProfile],
-			ListableP[{{Grinding | Cooling, RPMP | FrequencyP, TimeP}..} | NullP],
+			{{RPMP | FrequencyP, TimeP}},
 			Variables :> {options}
 		],
 
@@ -1468,7 +1353,7 @@ DefineTests[ExperimentMeasureMeltingPoint,
 				Output -> Options
 			];
 			Lookup[options, GrindingProfile],
-			ListableP[{{Grinding | Cooling, RPMP | FrequencyP, TimeP} ..} | NullP],
+			{({({RPMP | FrequencyP, TimeP} | {TimeP}) ..} | Null) ..},
 			Variables :> {options}
 		],
 
@@ -1706,6 +1591,53 @@ DefineTests[ExperimentMeasureMeltingPoint,
 		],
 
 		Example[
+			{Options, CheckDesiccant, "If desiccant model is indicating drierite, CheckDesiccant is resolved to True:"},
+			options = ExperimentMeasureMeltingPoint[
+				Object[Sample, "MeasureMeltingPoint Test Sample 2 " <> $SessionUUID],
+				Output -> Options
+			];
+			Lookup[options, CheckDesiccant],
+			True,
+			Variables :> {options}
+		],
+
+		Example[
+			{Options, CheckDesiccant, "If desiccant model is not indicating drierite, CheckDesiccant is resolved to False:"},
+			options = ExperimentMeasureMeltingPoint[
+				Object[Sample, "MeasureMeltingPoint Test Sample 2 " <> $SessionUUID],
+				Desiccant -> Object[Sample, "MeasureMeltingPoint Test Sample 1 " <> $SessionUUID],
+				Output -> Options
+			];
+			Lookup[options, CheckDesiccant],
+			False,
+			Variables :> {options}
+		],
+
+		Example[
+			{Options, CheckDesiccant, "If desiccation method is vacuum, CheckDesiccant is resolved to Null:"},
+			options = ExperimentMeasureMeltingPoint[
+				Object[Sample, "MeasureMeltingPoint Test Sample 2 " <> $SessionUUID],
+				DesiccationMethod -> Vacuum,
+				Output -> Options
+			];
+			Lookup[options, CheckDesiccant],
+			Null,
+			Variables :> {options}
+		],
+
+		Example[
+			{Options, CheckDesiccant, "If Desiccate is False, CheckDesiccant is resolved to Null:"},
+			options = ExperimentMeasureMeltingPoint[
+				Object[Sample, "MeasureMeltingPoint Test Sample 2 " <> $SessionUUID],
+				Desiccate -> False,
+				Output -> Options
+			];
+			Lookup[options, CheckDesiccant],
+			Null,
+			Variables :> {options}
+		],
+
+		Example[
 			{Options, DesiccantPhase, "DesiccantPhase is properly resolved for a single input sample:"},
 			options = ExperimentMeasureMeltingPoint[
 				Object[Sample, "MeasureMeltingPoint Test Sample 1 " <> $SessionUUID],
@@ -1771,6 +1703,76 @@ DefineTests[ExperimentMeasureMeltingPoint,
 				Output -> Options
 			];
 			Lookup[options, DesiccantPhase],
+			NullP,
+			Variables :> {options}
+		],
+
+		Example[
+			{Options, DesiccantStorageCondition, "DesiccantStorageCondition is properly resolved for a single input sample:"},
+			options = ExperimentMeasureMeltingPoint[
+				Object[Sample, "MeasureMeltingPoint Test Sample 1 " <> $SessionUUID],
+				Output -> Options
+			];
+			Lookup[options, DesiccantStorageCondition],
+			Disposal,
+			Variables :> {options}
+		],
+
+		Example[
+			{Options, DesiccantStorageCondition, "DesiccantStorageCondition is properly resolved for a single input sample that is prepacked in a melting point capillary:"},
+			options = ExperimentMeasureMeltingPoint[
+				Object[Sample, "MeasureMeltingPoint Test Capillary Sample 1 " <> $SessionUUID],
+				Output -> Options
+			];
+			Lookup[options, DesiccantStorageCondition],
+			NullP,
+			Variables :> {options}
+		],
+
+		Example[
+			{Options, DesiccantStorageCondition, "DesiccantStorageCondition is properly set to a user-specified value for a single input sample:"},
+			options = ExperimentMeasureMeltingPoint[
+				Object[Sample, "MeasureMeltingPoint Test Sample 1 " <> $SessionUUID],
+				DesiccantStorageCondition -> AmbientStorage,
+				Output -> Options
+			];
+			Lookup[options, DesiccantStorageCondition],
+			AmbientStorage,
+			Variables :> {options}
+		],
+
+		Example[
+			{Options, DesiccantStorageCondition, "DesiccantStorageCondition is properly resolved to a method of desiccation if at least one sample is Desiccate is set to True:"},
+			options = ExperimentMeasureMeltingPoint[
+				{
+					Object[Sample, "MeasureMeltingPoint Test Sample 1 " <> $SessionUUID],
+					Object[Sample, "MeasureMeltingPoint Test Sample 17 - 99 Celsius " <> $SessionUUID],
+					Object[Sample, "MeasureMeltingPoint Test Sample 20 - 331 Celsius " <> $SessionUUID],
+					Object[Sample, "MeasureMeltingPoint Test Capillary Sample 1 " <> $SessionUUID],
+					Object[Sample, "MeasureMeltingPoint Test Capillary Sample 2 " <> $SessionUUID]
+				},
+				Desiccate -> {True, False, False, False, False},
+				Output -> Options
+			];
+			Lookup[options, DesiccantStorageCondition],
+			Disposal,
+			Variables :> {options}
+		],
+
+		Example[
+			{Options, DesiccantStorageCondition, "DesiccantStorageCondition is automatically set to Null if Desiccate is set to False for all samples:"},
+			options = ExperimentMeasureMeltingPoint[
+				{
+					Object[Sample, "MeasureMeltingPoint Test Sample 1 " <> $SessionUUID],
+					Object[Sample, "MeasureMeltingPoint Test Sample 17 - 99 Celsius " <> $SessionUUID],
+					Object[Sample, "MeasureMeltingPoint Test Sample 20 - 331 Celsius " <> $SessionUUID],
+					Object[Sample, "MeasureMeltingPoint Test Capillary Sample 1 " <> $SessionUUID],
+					Object[Sample, "MeasureMeltingPoint Test Capillary Sample 2 " <> $SessionUUID]
+				},
+				Desiccate -> {False, False, False, False, False},
+				Output -> Options
+			];
+			Lookup[options, DesiccantStorageCondition],
 			NullP,
 			Variables :> {options}
 		],
@@ -2003,7 +2005,7 @@ DefineTests[ExperimentMeasureMeltingPoint,
 				PreparatoryUnitOperations -> {
 					LabelContainer[
 						Label -> "My MeasureMeltingPoint Sample",
-						Container -> Model[Container, Vessel, "2mL tube with no skirt"]
+						Container -> Model[Container, Vessel, "id:pZx9joxq0ko9"]
 					],
 					Transfer[
 						Source -> {
@@ -2018,25 +2020,42 @@ DefineTests[ExperimentMeasureMeltingPoint,
 			], PreparatoryUnitOperations],
 			{SamplePreparationP..}
 		],
-
-		Example[{Options, PreparatoryPrimitives, "Specifies prepared samples for ExperimentMeasureMeltingPoint (PreparatoryPrimitives):"},
-			Lookup[ExperimentMeasureMeltingPoint["My MeasureMeltingPoint Container",
-				PreparatoryPrimitives -> {
-					Define[
-						Name -> "My MeasureMeltingPoint Container",
-						Container -> Model[Container, Vessel, "2mL tube with no skirt"]
-					],
-					Transfer[
-						Source -> Object[Sample, "MeasureMeltingPoint Test Sample 1 " <> $SessionUUID],
-						Amount -> 0.3 Gram,
-						Destination -> "My MeasureMeltingPoint Container"
-					]
-				},
+  
+  		Example[{Options, {PreparedModelContainer, PreparedModelAmount}, "Specify the container in which an input Model[Sample] should be prepared:"},
+			options = ExperimentMeasureMeltingPoint[
+				{Model[Sample, "Sodium Chloride"],Model[Sample, "Sodium Chloride"]},
+				PreparedModelContainer -> Model[Container, Vessel, "2 mL conical tube (no skirt) with cap and sealing ring"],
+				PreparedModelAmount -> 2 Gram,
 				Output -> Options
-			], PreparatoryPrimitives],
-			{Define[_], Transfer[_]}
+			];
+			prepUOs = Lookup[options, PreparatoryUnitOperations];
+			{
+				prepUOs[[-1, 1]][Sample],
+				prepUOs[[-1, 1]][Container],
+				prepUOs[[-1, 1]][Amount],
+				prepUOs[[-1, 1]][Well],
+				prepUOs[[-1, 1]][ContainerLabel]
+			},
+			{
+				{ObjectP[Model[Sample, "Sodium Chloride"]]..},
+				{ObjectP[Model[Container, Vessel, "2 mL conical tube (no skirt) with cap and sealing ring"]]..},
+				{EqualP[2 Gram]..},
+				{"A1", "A1"},
+				{_String, _String}
+			},
+			Variables :> {options, prepUOs}
 		],
-
+		Example[{Options, {PreparedModelContainer, PreparedModelAmount}, "Ensure that PreparedSamples is populated properly if doing model input:"},
+			prot = ExperimentMeasureMeltingPoint[
+				{Model[Sample, "Sodium Chloride"],Model[Sample, "Sodium Chloride"]},
+				PreparedModelContainer -> Model[Container, Vessel, "2 mL conical tube (no skirt) with cap and sealing ring"],
+				PreparedModelAmount -> 2 Gram
+			];
+			Download[prot, PreparedSamples],
+			{{_String, _Symbol, __}..},
+			Variables :> {prot},
+			TimeConstraint -> 600
+		],
 		Example[
 			{Options, Name, "Uses an object name which should be used to refer to the output object in lieu of an automatically generated ID number:"},
 			Lookup[
@@ -2092,20 +2111,104 @@ DefineTests[ExperimentMeasureMeltingPoint,
 		],
 
 		(* ---  Messages --- *)
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a sample that does not exist (name form):"},
+			ExperimentMeasureMeltingPoint[Object[Sample, "Nonexistent sample"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a container that does not exist (name form):"},
+			ExperimentMeasureMeltingPoint[Object[Container, Vessel, "Nonexistent container"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a sample that does not exist (ID form):"},
+			ExperimentMeasureMeltingPoint[Object[Sample, "id:12345678"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a container that does not exist (ID form):"},
+			ExperimentMeasureMeltingPoint[Object[Container, Vessel, "id:12345678"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Do NOT throw a message if we have a simulated sample but a simulation is specified that indicates that it is simulated:"},
+			Module[{containerPackets, containerID, sampleID, samplePackets, simulationToPassIn},
+				containerPackets = UploadSample[
+					Model[Container, Vessel, "2 mL conical tube (no skirt) with cap and sealing ring"],
+					{"Work Surface", Object[Container, Bench, "The Bench of Testing"]},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True
+				];
+				simulationToPassIn = Simulation[containerPackets];
+				containerID = Lookup[First[containerPackets], Object];
+				samplePackets = UploadSample[
+					Model[Sample, "Sodium Chloride"],
+					{"A1", containerID},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True,
+					Simulation -> simulationToPassIn,
+					InitialAmount -> 2 Gram
+				];
+				sampleID = Lookup[First[samplePackets], Object];
+				simulationToPassIn = UpdateSimulation[simulationToPassIn, Simulation[samplePackets]];
+
+				ExperimentMeasureMeltingPoint[sampleID, Simulation -> simulationToPassIn, Output -> Options]
+			],
+			{__Rule}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Do NOT throw a message if we have a simulated container but a simulation is specified that indicates that it is simulated:"},
+			Module[{containerPackets, containerID, sampleID, samplePackets, simulationToPassIn},
+				containerPackets = UploadSample[
+					Model[Container, Vessel, "2 mL conical tube (no skirt) with cap and sealing ring"],
+					{"Work Surface", Object[Container, Bench, "The Bench of Testing"]},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True
+				];
+				simulationToPassIn = Simulation[containerPackets];
+				containerID = Lookup[First[containerPackets], Object];
+				samplePackets = UploadSample[
+					Model[Sample, "Sodium Chloride"],
+					{"A1", containerID},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True,
+					Simulation -> simulationToPassIn,
+					InitialAmount -> 2 Gram
+				];
+				sampleID = Lookup[First[samplePackets], Object];
+				simulationToPassIn = UpdateSimulation[simulationToPassIn, Simulation[samplePackets]];
+
+				ExperimentMeasureMeltingPoint[containerID, Simulation -> simulationToPassIn, Output -> Options]
+			],
+			{__Rule}
+		],
 		Example[
-			{Messages, "InvalidOrderOfOperations", "If Grind or Desiccate are set to False but OrderOfOperations is NOT set to Null, ExtraneousOrderOfOperations is generated:"},
+			{Messages, "UnusedOptions", "Throw an error the sample is prepacked but OrderOfOperations is not Null:"},
 			ExperimentMeasureMeltingPoint[
-				Object[Sample, "MeasureMeltingPoint Test Sample 1 " <> $SessionUUID],
-				Desiccate -> False,
-				Grind -> True,
+				Object[Sample, "MeasureMeltingPoint Test Capillary Sample 1 " <> $SessionUUID],
 				OrderOfOperations -> {Desiccate, Grind}
 			],
-			ObjectP[Object[Protocol, MeasureMeltingPoint]],
-			Messages :> {Warning::ExtraneousOrderOfOperations}
+			$Failed,
+			Messages :> {Error::UnusedOptions, Error::InvalidOption}
 		],
 
 		Example[
-			{Messages, "UndefinedOrderOfOperations", "If Grind and Desiccate are set to True but OrderOfOperations is set to Null, InvalidOrderOfOperations is generated:"},
+			{Messages, "OrderOfOperationsMismatch", "Throw an error if OrderOfOperation pattern is not correct:"},
+			ExperimentMeasureMeltingPoint[
+				Object[Sample, "MeasureMeltingPoint Test Sample 1 " <> $SessionUUID],
+				Desiccate -> True,
+				Grind -> True,
+				OrderOfOperations -> {Desiccate, Grind, Desiccate}
+			],
+			$Failed,
+			Messages :> {Error::OrderOfOperationsMismatch, Error::InvalidOption}
+		],
+
+		Example[
+			{Messages, "OrderOfOperationsMismatch", "If Grind and Desiccate are set to True but OrderOfOperations is set to Null, throw an error:"},
 			ExperimentMeasureMeltingPoint[
 				Object[Sample, "MeasureMeltingPoint Test Sample 1 " <> $SessionUUID],
 				Desiccate -> True,
@@ -2113,18 +2216,55 @@ DefineTests[ExperimentMeasureMeltingPoint,
 				OrderOfOperations -> Null
 			],
 			$Failed,
-			Messages :> {Error::UndefinedOrderOfOperations, Error::InvalidOption}
+			Messages :> {Error::RequiredPreparationOptions, Error::OrderOfOperationsMismatch, Error::InvalidOption}
 		],
 
 		Example[
-			{Messages, "InvalidExpectedMeltingPoint", "An error is thrown if ExpectedMeltingPoint is set to a value greater than 349.9 Celsius:"},
+			{Messages, "OrderOfOperationsMismatch", "Throw an error if both Desiccate and Grind  are not True but order of operations is specified:"},
 			ExperimentMeasureMeltingPoint[
 				Object[Sample, "MeasureMeltingPoint Test Sample 1 " <> $SessionUUID],
-				ExpectedMeltingPoint -> 350Celsius
+				Desiccate -> False,
+				Grind -> True,
+				OrderOfOperations -> {Desiccate, Grind}
+			],
+			$Failed,
+			Messages :> {Error::OrderOfOperationsMismatch, Error::InvalidOption}
+		],
+
+		Example[
+			{Messages, "InvalidPreparedSampleStorageCondition", "Throw an error the PreparedSampleStorageCondition option is not informed:"},
+			ExperimentMeasureMeltingPoint[
+				Object[Sample, "MeasureMeltingPoint Test Sample 1 " <> $SessionUUID]
+			],
+			$Failed,
+			Messages :> {Error::InvalidPreparedSampleStorageCondition, Error::InvalidOption},
+			SetUp :> Upload[<|Object -> Object[Sample, "MeasureMeltingPoint Test Sample 1 " <> $SessionUUID], Model -> Null, StorageCondition -> Null|>],
+			TearDown :> Upload[<|Object -> Object[Sample, "MeasureMeltingPoint Test Sample 1 " <> $SessionUUID], Model -> Link[Model[Sample, "Test solid sample 1 for ExperimentMeasureMeltingPoint Tests " <> $SessionUUID], Objects], StorageCondition -> Link[Model[StorageCondition, "Ambient Storage"]]|>]
+		],
+
+		Example[
+			{Messages, "InvalidExpectedMeltingPoint", "An error is thrown if ExpectedMeltingPoint is set to a value greater than the max temperature of available instruments:"},
+			ExperimentMeasureMeltingPoint[
+				Object[Sample, "MeasureMeltingPoint Test Sample 1 " <> $SessionUUID],
+				ExpectedMeltingPoint -> 400Celsius
 			],
 			$Failed,
 			Messages :> {
 				Error::InvalidExpectedMeltingPoint,
+				Error::InvalidOption
+			}
+		],
+
+		Example[
+			{Messages, "InvalidStartEndTemperatures", "An error is thrown if StartTemperature is equal or greater than EndTemperature:"},
+			ExperimentMeasureMeltingPoint[
+				Object[Sample, "MeasureMeltingPoint Test Sample 1 " <> $SessionUUID],
+				StartTemperature -> 125Celsius,
+				EndTemperature -> 125Celsius
+			],
+			$Failed,
+			Messages :> {
+				Error::InvalidStartEndTemperatures,
 				Error::InvalidOption
 			}
 		],
@@ -2144,37 +2284,166 @@ DefineTests[ExperimentMeasureMeltingPoint,
 		],
 
 		Example[
+			{Messages, "NoAvailableInstruments", "An error is thrown if the specified EndTemperature is greater than the MaxTemperature of the specified Instrument:"},
+			ExperimentMeasureMeltingPoint[
+				Object[Sample, "MeasureMeltingPoint Test Sample 1 " <> $SessionUUID]
+			],
+			$Failed,
+			Messages :> {
+				Error::NoAvailableMeltingPointInstruments,
+				Error::InvalidOption
+			},
+			Stubs :> {
+				$PersonID = Object[User, "Test User with no Site For ExperimentMeasureMeltingPoint 1 " <> $SessionUUID],
+				$Site = Null
+			}
+		],
+
+		Example[
+			{Messages, "InvalidEndTemperatures", "An error is thrown if the specified EndTemperature is greater than the MaxTemperature of the Instrument that are available at the user's experiment sites:"},
+			ExperimentMeasureMeltingPoint[
+				Object[Sample, "MeasureMeltingPoint Test Sample 1 " <> $SessionUUID],
+				EndTemperature -> 385 Celsius
+			],
+			$Failed,
+			Messages :> {
+				Error::InvalidEndTemperatures,
+				Error::InvalidOption
+			},
+			Stubs :> {
+				$PersonID = Object[User, "Test User with One Site For ExperimentMeasureMeltingPoint 1 " <> $SessionUUID],
+				$Site = Object[Container, Site, "ECL-2"]
+			}
+		],
+
+		Example[
+			{Messages, "HighNumberOfReplicates", "An error is thrown if the specified NumberOfReplicates is greater than the capillary slots of the Instrument that are available at the user's experiment sites:"},
+			ExperimentMeasureMeltingPoint[
+				Object[Sample, "MeasureMeltingPoint Test Sample 1 " <> $SessionUUID],
+				NumberOfReplicates -> 4
+			],
+			$Failed,
+			Messages :> {
+				Error::HighNumberOfReplicates,
+				Error::InvalidOption
+			},
+			Stubs :> {
+				$PersonID = Object[User, "Test User with One Site For ExperimentMeasureMeltingPoint 1 " <> $SessionUUID],
+				$Site = Object[Container, Site, "ECL-2"]
+			}
+		],
+
+		Example[
+			{Messages, "InvalidInstrument", "An error is thrown if the specified instrument does not exist at the user's experiment sites:"},
+			ExperimentMeasureMeltingPoint[
+				Object[Sample, "MeasureMeltingPoint Test Sample 1 " <> $SessionUUID],
+				Instrument -> Model[Instrument, MeltingPointApparatus, "Melting Point System MP90"]
+			],
+			$Failed,
+			Messages :> {
+				Error::InvalidInstrument,
+				Error::InvalidOption
+			},
+			Stubs :> {
+				$PersonID = Object[User, "Test User with One Site For ExperimentMeasureMeltingPoint 1 " <> $SessionUUID],
+				$Site = Object[Container, Site, "ECL-2"]
+			}
+		],
+
+		Example[
+			{Messages, "InvalidInstrument", "An error is thrown if the specified EndTemperature is greater than the MaxTemperature of the specified Instrument:"},
+			ExperimentMeasureMeltingPoint[
+				Object[Sample, "MeasureMeltingPoint Test Sample 1 " <> $SessionUUID],
+				EndTemperature -> 380Celsius,
+				Instrument -> Object[Instrument, MeltingPointApparatus, "Persia"]
+			],
+			$Failed,
+			Messages :> {
+				Error::InvalidEndTemperatures,
+				Error::InvalidOption
+			}
+		],
+
+		Example[
+			{Messages, "InvalidEndTemperatures", "Throw an error if the specified EndTemperature is greater than the MaxTemperature of the specified Instrument:"},
+			ExperimentMeasureMeltingPoint[
+				Object[Sample, "MeasureMeltingPoint Test Sample 1 " <> $SessionUUID],
+				EndTemperature -> 380Celsius,
+				Instrument -> Model[Instrument, MeltingPointApparatus, "Melting Point System MP80"]
+			],
+			$Failed,
+			Messages :> {
+				Error::InvalidEndTemperatures,
+				Error::InvalidOption
+			}
+		],
+
+		Example[
+			{Messages, "HighNumberOfReplicates", "An error is thrown if the specified NumberOfReplicates is greater than the NumberOfMeltingPointCapillarySlots of the specified Instrument:"},
+			ExperimentMeasureMeltingPoint[
+				Object[Sample, "MeasureMeltingPoint Test Sample 1 " <> $SessionUUID],
+				NumberOfReplicates -> 4,
+				Instrument -> Object[Instrument, MeltingPointApparatus, "Persia"]
+			],
+			$Failed,
+			Messages :> {
+				Error::HighNumberOfReplicates,
+				Error::InvalidOption
+			}
+		],
+
+		Example[
+			{Messages, "HighNumberOfReplicates", "Throw an error if the specified NumberOfReplicates is greater than the NumberOfMeltingPointCapillarySlots of the specified Instrument:"},
+			ExperimentMeasureMeltingPoint[
+				Object[Sample, "MeasureMeltingPoint Test Sample 1 " <> $SessionUUID],
+				NumberOfReplicates -> 4,
+				Instrument -> Model[Instrument, MeltingPointApparatus, "Melting Point System MP80"]
+			],
+			$Failed,
+			Messages :> {
+				Error::HighNumberOfReplicates,
+				Error::InvalidOption
+			}
+		],
+
+		Example[
 			{Messages, "MismatchedRampRateAndTime", "A warning is thrown if both TemperatureRampRate and RampTime are specified but they do not match:"},
 			ExperimentMeasureMeltingPoint[
 				Object[Sample, "MeasureMeltingPoint Test Sample 1 " <> $SessionUUID],
 				TemperatureRampRate -> 2Celsius / Minute,
-				RampTime -> 5Minute,
-				Output -> Options
+				RampTime -> 5Minute
 			],
-			{_Rule...},
+			ObjectP[Object[Protocol, MeasureMeltingPoint]],
 			Messages :> {Warning::MismatchedRampRateAndTime}
 		],
 
 		Example[
-			{Messages, "InvalidPreparedSampleContainer", "An error is thrown if RecoupSample is False but PreparedSampleContainer is specified:"},
+			{Messages, "LongExperimentTime", "Throw an error if the estimated experiment time is greater than $MaxExperimentTime."},
 			ExperimentMeasureMeltingPoint[
-				Object[Sample, "MeasureMeltingPoint Test Sample 1 " <> $SessionUUID],
-				RecoupSample -> False,
-				PreparedSampleContainer -> Model[Container, Vessel, "50mL Tube"]
+				{
+					Object[Sample, "MeasureMeltingPoint Test Sample 1 " <> $SessionUUID],
+					Object[Sample, "MeasureMeltingPoint Test Sample 2 " <> $SessionUUID],
+					Object[Sample, "MeasureMeltingPoint Test Sample 3 " <> $SessionUUID]
+				},
+				Desiccate -> False,
+				Grind -> False,
+				TemperatureRampRate -> 0.1 Celsius / Minute,
+				StartTemperature -> 25 Celsius,
+				EndTemperature -> 350 Celsius
 			],
 			$Failed,
-			Messages :> {Error::InvalidPreparedSampleContainer, Error::InvalidOption}
+			Messages :> {Error::LongExperimentTime, Error::InvalidOption}
 		],
 
 		Example[
-			{Messages, "InvalidPreparedSampleStorageCondition", "An error is thrown if RecoupSample is False but PreparedSampleStorageCondition is specified:"},
+			{Messages, "UnusedOptions", "A Warning is thrown if Amount is Null but PreparedSampleStorageCondition is specified:"},
 			ExperimentMeasureMeltingPoint[
 				Object[Sample, "MeasureMeltingPoint Test Sample 1 " <> $SessionUUID],
-				RecoupSample -> False,
+				Amount -> Null,
 				PreparedSampleStorageCondition -> Model[StorageCondition, "Refrigerator"]
 			],
 			$Failed,
-			Messages :> {Error::InvalidPreparedSampleStorageCondition, Error::InvalidOption}
+			Messages :> {Error::UnusedOptions, Error::InvalidOption}
 		],
 
 		Example[
@@ -2188,13 +2457,13 @@ DefineTests[ExperimentMeasureMeltingPoint,
 		],
 
 		Example[
-			{Messages, "InvalidDesiccateOptions", "An error is thrown if the input sample is prepacked in a melting point capillary but Desiccate is not False:"},
+			{Messages, "UnusedOptions", "An error is thrown if the input sample is prepacked in a melting point capillary but Desiccate is not False:"},
 			ExperimentMeasureMeltingPoint[
 				Object[Sample, "MeasureMeltingPoint Test Capillary Sample 1 " <> $SessionUUID],
 				Desiccate -> True
 			],
 			$Failed,
-			Messages :> {Error::InvalidDesiccateOptions, Error::InvalidOption}
+			Messages :> {Error::UnusedOptions, Error::InvalidOption}
 		],
 
 		Example[
@@ -2207,11 +2476,11 @@ DefineTests[ExperimentMeasureMeltingPoint,
 				DesiccationMethod -> StandardDesiccant
 			],
 			$Failed,
-			Messages :> {Error::InvalidDesiccationMethodOptions, Error::DesiccationMethodMismatchOptions, Error::InvalidOption}
+			Messages :> {Error::UnusedOptions, Error::InvalidOption}
 		],
 
 		Example[
-			{Messages, "DesiccationMethodMismatchOptions", "An error is thrown if Desiccate is set to False for all input samples but DesiccationMethod is not Null:"},
+			{Messages, "UnusedOptions", "An error is thrown if Desiccate is set to False for all input capillary samples but DesiccationMethod is not Null:"},
 			ExperimentMeasureMeltingPoint[
 				{
 					Object[Sample, "MeasureMeltingPoint Test Sample 1 " <> $SessionUUID],
@@ -2221,11 +2490,11 @@ DefineTests[ExperimentMeasureMeltingPoint,
 				DesiccationMethod -> StandardDesiccant
 			],
 			$Failed,
-			Messages :> {Error::DesiccationMethodMismatchOptions, Error::InvalidOption}
+			Messages :> {Error::UnusedOptions, Error::InvalidOption}
 		],
 
 		Example[
-			{Messages, "DesiccationMethodMismatchOptions", "An error is thrown if Desiccate is set to False for all input samples but DesiccationMethod is not Null:"},
+			{Messages, "UnusedOptions", "An error is thrown if Desiccate is set to False for all input samples but DesiccationMethod is not Null:"},
 			ExperimentMeasureMeltingPoint[
 				{
 					Object[Sample, "MeasureMeltingPoint Test Sample 1 " <> $SessionUUID],
@@ -2235,7 +2504,18 @@ DefineTests[ExperimentMeasureMeltingPoint,
 				DesiccationMethod -> StandardDesiccant
 			],
 			$Failed,
-			Messages :> {Error::DesiccationMethodMismatchOptions, Error::InvalidOption}
+			Messages :> {Error::UnusedOptions, Error::InvalidOption}
+		],
+
+		Example[
+			{Messages, "UnusedOptions", "Throw an error if Desiccate is True but DesiccationMethod is Null."},
+			ExperimentMeasureMeltingPoint[
+				Object[Sample, "MeasureMeltingPoint Test Sample 1 " <> $SessionUUID],
+				Desiccate -> False,
+				DesiccationMethod -> StandardDesiccant
+			],
+			$Failed,
+			Messages :> {Error::UnusedOptions, Error::InvalidOption}
 		],
 
 		Example[
@@ -2248,11 +2528,11 @@ DefineTests[ExperimentMeasureMeltingPoint,
 				Desiccant -> Model[Sample, "Test Indicating Drierite For ExperimentMeasureMeltingPoint Tests " <> $SessionUUID]
 			],
 			$Failed,
-			Messages :> {Error::InvalidDesiccantOptions, Error::DesiccantMismatchOptions, Error::InvalidOption}
+			Messages :> {Error::UnusedOptions, Error::InvalidOption}
 		],
 
 		Example[
-			{Messages, "DesiccantMismatchOptions", "An error is thrown if Desiccate is set to False for all input samples but Desiccant is not Null:"},
+			{Messages, "UnusedOptions", "An error is thrown if Desiccate is set to False for all input samples but Desiccant is not Null:"},
 			ExperimentMeasureMeltingPoint[
 				{
 					Object[Sample, "MeasureMeltingPoint Test Sample 1 " <> $SessionUUID],
@@ -2262,11 +2542,11 @@ DefineTests[ExperimentMeasureMeltingPoint,
 				Desiccant -> Model[Sample, "Test Indicating Drierite For ExperimentMeasureMeltingPoint Tests " <> $SessionUUID]
 			],
 			$Failed,
-			Messages :> {Error::DesiccantMismatchOptions, Error::InvalidOption}
+			Messages :> {Error::UnusedOptions, Error::InvalidOption}
 		],
 
 		Example[
-			{Messages, "DesiccantMismatchOptions", "An error is thrown if Desiccate is set to False for all input samples but Desiccant is not Null:"},
+			{Messages, "UnusedOptions", "An error is thrown if Desiccate is set to False for all input samples, including prepacked capillaries, but Desiccant is not Null:"},
 			ExperimentMeasureMeltingPoint[
 				{
 					Object[Sample, "MeasureMeltingPoint Test Sample 1 " <> $SessionUUID],
@@ -2276,7 +2556,7 @@ DefineTests[ExperimentMeasureMeltingPoint,
 				Desiccant -> Model[Sample, "Test Indicating Drierite For ExperimentMeasureMeltingPoint Tests " <> $SessionUUID]
 			],
 			$Failed,
-			Messages :> {Error::DesiccantMismatchOptions, Error::InvalidOption}
+			Messages :> {Error::UnusedOptions, Error::InvalidOption}
 		],
 
 		Example[
@@ -2289,11 +2569,11 @@ DefineTests[ExperimentMeasureMeltingPoint,
 				DesiccantPhase -> Solid
 			],
 			$Failed,
-			Messages :> {Error::InvalidDesiccantPhaseOptions, Error::DesiccantPhaseMismatchOptions, Error::InvalidOption}
+			Messages :> {Error::UnusedOptions, Error::InvalidOption}
 		],
 
 		Example[
-			{Messages, "DesiccantPhaseMismatchOptions", "An error is thrown if Desiccate is set to False for all input samples but DesiccantPhase is not Null:"},
+			{Messages, "UnusedOptions", "An error is thrown if Desiccate is set to False for all input samples but DesiccantPhase is not Null:"},
 			ExperimentMeasureMeltingPoint[
 				{
 					Object[Sample, "MeasureMeltingPoint Test Sample 1 " <> $SessionUUID],
@@ -2303,11 +2583,11 @@ DefineTests[ExperimentMeasureMeltingPoint,
 				DesiccantPhase -> Liquid
 			],
 			$Failed,
-			Messages :> {Error::DesiccantPhaseMismatchOptions, Error::InvalidOption}
+			Messages :> {Error::UnusedOptions, Error::InvalidOption}
 		],
 
 		Example[
-			{Messages, "DesiccantPhaseMismatchOptions", "An error is thrown if Desiccate is set to False for all input samples but DesiccantPhase is not Null:"},
+			{Messages, "UnusedOptions", "An error is thrown if Desiccate is set to False for all input samples, including capillaries, but DesiccantPhase is not Null:"},
 			ExperimentMeasureMeltingPoint[
 				{
 					Object[Sample, "MeasureMeltingPoint Test Sample 1 " <> $SessionUUID],
@@ -2317,7 +2597,7 @@ DefineTests[ExperimentMeasureMeltingPoint,
 				DesiccantPhase -> Solid
 			],
 			$Failed,
-			Messages :> {Error::DesiccantPhaseMismatchOptions, Error::InvalidOption}
+			Messages :> {Error::UnusedOptions, Error::InvalidOption}
 		],
 
 		Example[
@@ -2330,11 +2610,11 @@ DefineTests[ExperimentMeasureMeltingPoint,
 				DesiccantAmount -> 100Gram
 			],
 			$Failed,
-			Messages :> {Error::InvalidDesiccantAmountOptions, Error::DesiccantAmountMismatchOptions, Error::InvalidOption}
+			Messages :> {Error::UnusedOptions, Error::InvalidOption}
 		],
 
 		Example[
-			{Messages, "DesiccantAmountMismatchOptions", "An error is thrown if Desiccate is set to False for all input samples but DesiccantAmount is not Null:"},
+			{Messages, "UnusedOptions", "An error is thrown if Desiccate is set to False for all input samples but DesiccantAmount is not Null:"},
 			ExperimentMeasureMeltingPoint[
 				{
 					Object[Sample, "MeasureMeltingPoint Test Sample 1 " <> $SessionUUID],
@@ -2344,11 +2624,11 @@ DefineTests[ExperimentMeasureMeltingPoint,
 				DesiccantAmount -> 200Gram
 			],
 			$Failed,
-			Messages :> {Error::DesiccantAmountMismatchOptions, Error::InvalidOption}
+			Messages :> {Error::UnusedOptions, Error::InvalidOption}
 		],
 
 		Example[
-			{Messages, "DesiccantAmountMismatchOptions", "An error is thrown if Desiccate is set to False for all input samples but DesiccantAmount is not Null:"},
+			{Messages, "UnusedOptions", "An error is thrown if Desiccate is set to False for all input samples, including capillaries, but DesiccantAmount is not Null:"},
 			ExperimentMeasureMeltingPoint[
 				{
 					Object[Sample, "MeasureMeltingPoint Test Sample 1 " <> $SessionUUID],
@@ -2358,7 +2638,28 @@ DefineTests[ExperimentMeasureMeltingPoint,
 				DesiccantAmount -> 150Gram
 			],
 			$Failed,
-			Messages :> {Error::DesiccantAmountMismatchOptions, Error::InvalidOption}
+			Messages :> {Error::UnusedOptions, Error::InvalidOption}
+		],
+
+		Example[
+			{Messages, "UnusedOptions", "An error is thrown if Desiccate is False but desiccant storage option is specified:"},
+			ExperimentMeasureMeltingPoint[
+				Object[Sample, "MeasureMeltingPoint Test Sample 1 " <> $SessionUUID],
+				Desiccate -> False,
+				DesiccantStorageContainer -> Model[Container, Vessel, "50mL Tube"]
+			],
+			$Failed,
+			Messages :> {Error::UnusedOptions, Error::InvalidOption}
+		],
+
+		Example[
+			{Messages, "UnusedOptions", "An error is thrown if all input samples are prepacked in melting point capillaries (therefore cannot be desiccated) but desiccant storage option is specified:"},
+			ExperimentMeasureMeltingPoint[
+				Object[Sample, "MeasureMeltingPoint Test Capillary Sample 1 " <> $SessionUUID],
+				DesiccantStorageContainer -> Model[Container, Vessel, "50mL Tube"]
+			],
+			$Failed,
+			Messages :> {Error::UnusedOptions, Error::InvalidOption}
 		],
 
 		Example[
@@ -2371,11 +2672,22 @@ DefineTests[ExperimentMeasureMeltingPoint,
 				Desiccator -> Model[Instrument, Desiccator, "Bel-Art Space Saver Vacuum Desiccator"]
 			],
 			$Failed,
-			Messages :> {Error::InvalidDesiccatorOptions, Error::DesiccatorMismatchOptions, Error::InvalidOption}
+			Messages :> {Error::UnusedOptions, Error::InvalidOption}
 		],
 
 		Example[
-			{Messages, "DesiccatorMismatchOptions", "An error is thrown if Desiccate is set to False for all input samples but Desiccator is not Null:"},
+			{Messages, "RequiredDesiccateOptions", "An error is thrown if Desiccate is True but Desiccator is Null:"},
+			ExperimentMeasureMeltingPoint[
+				Object[Sample, "MeasureMeltingPoint Test Sample 1 " <> $SessionUUID],
+				Desiccate -> True,
+				Desiccator -> Null
+			],
+			$Failed,
+			Messages :> {Error::RequiredDesiccateOptions, Error::InvalidOption}
+		],
+
+		Example[
+			{Messages, "UnusedOptions", "An error is thrown if Desiccate is set to False for all input samples but Desiccator is not Null:"},
 			ExperimentMeasureMeltingPoint[
 				{
 					Object[Sample, "MeasureMeltingPoint Test Sample 1 " <> $SessionUUID],
@@ -2385,11 +2697,11 @@ DefineTests[ExperimentMeasureMeltingPoint,
 				Desiccator -> Model[Instrument, Desiccator, "Bel-Art Space Saver Vacuum Desiccator"]
 			],
 			$Failed,
-			Messages :> {Error::DesiccatorMismatchOptions, Error::InvalidOption}
+			Messages :> {Error::UnusedOptions, Error::InvalidOption}
 		],
 
 		Example[
-			{Messages, "DesiccatorMismatchOptions", "An error is thrown if Desiccate is set to False for all input samples but Desiccator is not Null:"},
+			{Messages, "UnusedOptions", "An error is thrown if Desiccate is set to False for all input samples, including capillaries, but Desiccator is not Null:"},
 			ExperimentMeasureMeltingPoint[
 				{
 					Object[Sample, "MeasureMeltingPoint Test Sample 1 " <> $SessionUUID],
@@ -2399,7 +2711,7 @@ DefineTests[ExperimentMeasureMeltingPoint,
 				Desiccator -> Model[Instrument, Desiccator, "Bel-Art Space Saver Vacuum Desiccator"]
 			],
 			$Failed,
-			Messages :> {Error::DesiccatorMismatchOptions, Error::InvalidOption}
+			Messages :> {Error::UnusedOptions, Error::InvalidOption}
 		],
 
 		Example[
@@ -2412,11 +2724,25 @@ DefineTests[ExperimentMeasureMeltingPoint,
 				DesiccationTime -> 16Hour
 			],
 			$Failed,
-			Messages :> {Error::InvalidDesiccationTimeOptions, Error::DesiccationTimeMismatchOptions, Error::InvalidOption}
+			Messages :> {Error::UnusedOptions, Error::InvalidOption}
 		],
 
 		Example[
-			{Messages, "DesiccationTimeMismatchOptions", "An error is thrown if Desiccate is set to False for all input samples but DesiccationTime is not Null:"},
+			{Messages, "RequiredDesiccateOptions", "An error is thrown if Desiccate is True but DesiccationTime is Null:"},
+			ExperimentMeasureMeltingPoint[
+				{
+					Object[Sample, "MeasureMeltingPoint Test Sample 1 " <> $SessionUUID],
+					Object[Sample, "MeasureMeltingPoint Test Sample 2 " <> $SessionUUID]
+				},
+				Desiccate -> True,
+				DesiccationTime -> Null
+			],
+			$Failed,
+			Messages :> {Error::RequiredDesiccateOptions, Error::InvalidOption}
+		],
+
+		Example[
+			{Messages, "UnusedOptions", "An error is thrown if Desiccate is set to False for all input samples but DesiccationTime is not Null:"},
 			ExperimentMeasureMeltingPoint[
 				{
 					Object[Sample, "MeasureMeltingPoint Test Sample 1 " <> $SessionUUID],
@@ -2426,11 +2752,11 @@ DefineTests[ExperimentMeasureMeltingPoint,
 				DesiccationTime -> 10Hour
 			],
 			$Failed,
-			Messages :> {Error::DesiccationTimeMismatchOptions, Error::InvalidOption}
+			Messages :> {Error::UnusedOptions, Error::InvalidOption}
 		],
 
 		Example[
-			{Messages, "DesiccationTimeMismatchOptions", "An error is thrown if Desiccate is set to False for all input samples but DesiccationTime is not Null:"},
+			{Messages, "UnusedOptions", "An error is thrown if Desiccate is set to False for all input samples (including capillaries) but DesiccationTime is not Null:"},
 			ExperimentMeasureMeltingPoint[
 				{
 					Object[Sample, "MeasureMeltingPoint Test Sample 1 " <> $SessionUUID],
@@ -2440,21 +2766,21 @@ DefineTests[ExperimentMeasureMeltingPoint,
 				DesiccationTime -> 8Hour
 			],
 			$Failed,
-			Messages :> {Error::DesiccationTimeMismatchOptions, Error::InvalidOption}
+			Messages :> {Error::UnusedOptions, Error::InvalidOption}
 		],
 
 		Example[
-			{Messages, "InvalidSampleContainerOptions", "An error is thrown if the input sample is prepacked in a melting point capillary but SampleContainer is not Null:"},
+			{Messages, "UnusedOptions", "An error is thrown if the input sample is prepacked in a melting point capillary but SampleContainer is not Null:"},
 			ExperimentMeasureMeltingPoint[
 				Object[Sample, "MeasureMeltingPoint Test Capillary Sample 1 " <> $SessionUUID],
 				SampleContainer -> Model[Container, Vessel, "50mL Tube"]
 			],
 			$Failed,
-			Messages :> {Error::InvalidSampleContainerOptions, Error::InvalidOption}
+			Messages :> {Error::UnusedOptions, Error::InvalidOption}
 		],
 
 		Example[
-			{Messages, "SampleContainerMismatchOptions", "An error is thrown if Desiccate is set to False but SampleContainer is not Null:"},
+			{Messages, "UnusedOptions", "An error is thrown if Desiccate is set to False but SampleContainer is not Null:"},
 			ExperimentMeasureMeltingPoint[
 				Object[Sample, "MeasureMeltingPoint Test Sample 1 " <> $SessionUUID],
 				Desiccate -> False,
@@ -2462,301 +2788,1132 @@ DefineTests[ExperimentMeasureMeltingPoint,
 			],
 			$Failed,
 			Messages :> {
-				Error::SampleContainerMismatchOptions,
+				Error::UnusedOptions,
 				Error::InvalidOption
 			}
 		],
 
 		Example[
-			{Messages, "InvalidGrindOptions", "An error is thrown if the input sample is prepacked in a melting point capillary but Grind is not False:"},
+			{Messages, "UnusedOptions", "An error is thrown if the input sample is prepacked in a melting point capillary but Grind is not False:"},
 			ExperimentMeasureMeltingPoint[
 				Object[Sample, "MeasureMeltingPoint Test Capillary Sample 1 " <> $SessionUUID],
 				Grind -> True
 			],
 			$Failed,
-			Messages :> {Error::InvalidGrindOptions, Error::InvalidOption}
+			Messages :> {Error::UnusedOptions, Error::InvalidOption}
 		],
 
 		Example[
-			{Messages, "InvalidGrinderTypeOptions", "An error is thrown if the input sample is prepacked in a melting point capillary but GrinderType is not Null:"},
+			{Messages, "UnusedOptions", "An error is thrown if the input sample is prepacked in a melting point capillary but GrinderType is not Null:"},
 			ExperimentMeasureMeltingPoint[
 				Object[Sample, "MeasureMeltingPoint Test Capillary Sample 1 " <> $SessionUUID],
 				GrinderType -> KnifeMill
 			],
 			$Failed,
-			Messages :> {Error::InvalidGrinderTypeOptions, Error::InvalidOption}
+			Messages :> {Error::UnusedOptions, Error::InvalidOption}
 		],
 
 		Example[
-			{Messages, "GrinderTypeMismatchOptions", "An error is thrown if Grind is set to False but GrinderType is not Null:"},
+			{Messages, "UnusedOptions", "An error is thrown if Grind is set to False but GrinderType is not Null:"},
 			ExperimentMeasureMeltingPoint[
 				Object[Sample, "MeasureMeltingPoint Test Sample 1 " <> $SessionUUID],
 				Grind -> False,
 				GrinderType -> KnifeMill
 			],
 			$Failed,
-			Messages :> {Error::GrinderTypeMismatchOptions, Error::InvalidOption}
+			Messages :> {Error::UnusedOptions, Error::InvalidOption}
 		],
 
 		Example[
-			{Messages, "InvalidGrinderOptions", "An error is thrown if the input sample is prepacked in a melting point capillary but Grinder is not Null:"},
+			{Messages, "RequiredPreparationOptions", "An error is thrown if Grind is True but GrinderType is Null:"},
+			ExperimentMeasureMeltingPoint[
+				Object[Sample, "MeasureMeltingPoint Test Sample 1 " <> $SessionUUID],
+				Grind -> True,
+				GrinderType -> Null
+			],
+			$Failed,
+			Messages :> {Error::RequiredPreparationOptions, Error::InvalidOption}
+		],
+
+		Example[
+			{Messages, "UnusedOptions", "An error is thrown if the input sample is prepacked in a melting point capillary but Grinder is not Null:"},
 			ExperimentMeasureMeltingPoint[
 				Object[Sample, "MeasureMeltingPoint Test Capillary Sample 1 " <> $SessionUUID],
 				Grinder -> Model[Instrument, Grinder, "Tube Mill Control"]
 			],
 			$Failed,
-			Messages :> {Error::InvalidGrinderOptions, Error::InvalidOption}
+			Messages :> {Error::UnusedOptions, Error::InvalidOption}
 		],
 
 		Example[
-			{Messages, "GrinderMismatchOptions", "An error is thrown if Grind is set to False but Grinder is not Null:"},
+			{Messages, "UnusedOptions", "An error is thrown if Grind is set to False but Grinder is not Null:"},
 			ExperimentMeasureMeltingPoint[
 				Object[Sample, "MeasureMeltingPoint Test Sample 1 " <> $SessionUUID],
 				Grind -> False,
 				Grinder -> Model[Instrument, Grinder, "Tube Mill Control"]
 			],
 			$Failed,
-			Messages :> {Error::GrinderMismatchOptions, Error::InvalidOption}
+			Messages :> {Error::UnusedOptions, Error::InvalidOption}
 		],
 
 		Example[
-			{Messages, "InvalidFinenessOptions", "An error is thrown if the input sample is prepacked in a melting point capillary but Fineness is not Null:"},
+			{Messages, "RequiredPreparationOptions", "An error is thrown if Grind is True but Grinder is Null:"},
+			ExperimentMeasureMeltingPoint[
+				Object[Sample, "MeasureMeltingPoint Test Sample 1 " <> $SessionUUID],
+				Grind -> True,
+				Grinder -> Null
+			],
+			$Failed,
+			Messages :> {Error::RequiredPreparationOptions, Error::InvalidOption}
+		],
+
+		Example[
+			{Messages, "UnusedOptions", "An error is thrown if the input sample is prepacked in a melting point capillary but Fineness is not Null:"},
 			ExperimentMeasureMeltingPoint[
 				Object[Sample, "MeasureMeltingPoint Test Capillary Sample 1 " <> $SessionUUID],
 				Fineness -> 2Millimeter
 			],
 			$Failed,
-			Messages :> {Error::InvalidFinenessOptions, Error::InvalidOption}
+			Messages :> {Error::UnusedOptions, Error::InvalidOption}
 		],
 
 		Example[
-			{Messages, "FinenessMismatchOptions", "An error is thrown if Grind is set to False but Fineness is not Null:"},
+			{Messages, "UnusedOptions", "An error is thrown if Grind is set to False but Fineness is not Null:"},
 			ExperimentMeasureMeltingPoint[
 				Object[Sample, "MeasureMeltingPoint Test Sample 1 " <> $SessionUUID],
 				Grind -> False,
 				Fineness -> 2Millimeter
 			],
 			$Failed,
-			Messages :> {Error::FinenessMismatchOptions, Error::InvalidOption}
+			Messages :> {Error::UnusedOptions, Error::InvalidOption}
 		],
 
 		Example[
-			{Messages, "InvalidBulkDensityOptions", "An error is thrown if the input sample is prepacked in a melting point capillary but BulkDensity is not Null:"},
+			{Messages, "RequiredPreparationOptions", "An error is thrown if Grind is True but Fineness is Null:"},
+			ExperimentMeasureMeltingPoint[
+				Object[Sample, "MeasureMeltingPoint Test Sample 1 " <> $SessionUUID],
+				Grind -> True,
+				Fineness -> Null
+			],
+			$Failed,
+			Messages :> {Error::RequiredPreparationOptions, Error::InvalidOption}
+		],
+
+		Example[
+			{Messages, "UnusedOptions", "An error is thrown if the input sample is prepacked in a melting point capillary but BulkDensity is not Null:"},
 			ExperimentMeasureMeltingPoint[
 				Object[Sample, "MeasureMeltingPoint Test Capillary Sample 1 " <> $SessionUUID],
 				BulkDensity -> 2Gram / Milliliter
 			],
 			$Failed,
-			Messages :> {Error::InvalidBulkDensityOptions, Error::InvalidOption}
+			Messages :> {Error::UnusedOptions, Error::InvalidOption}
 		],
 
 		Example[
-			{Messages, "BulkDensityMismatchOptions", "An error is thrown if Grind is set to False but BulkDensity is not Null:"},
+			{Messages, "UnusedOptions", "An error is thrown if Grind is set to False but BulkDensity is not Null:"},
 			ExperimentMeasureMeltingPoint[
 				Object[Sample, "MeasureMeltingPoint Test Sample 1 " <> $SessionUUID],
 				Grind -> False,
 				BulkDensity -> 2Gram / Milliliter
 			],
 			$Failed,
-			Messages :> {Error::BulkDensityMismatchOptions, Error::InvalidOption}
+			Messages :> {Error::UnusedOptions, Error::InvalidOption}
 		],
 
 		Example[
-			{Messages, "InvalidGrindingContainerOptions", "An error is thrown if the input sample is prepacked in a melting point capillary but GrindingContainer is not Null:"},
+			{Messages, "RequiredPreparationOptions", "An error is thrown if Grind is True but BulkDensity is Null:"},
+			ExperimentMeasureMeltingPoint[
+				Object[Sample, "MeasureMeltingPoint Test Sample 1 " <> $SessionUUID],
+				Grind -> True,
+				BulkDensity -> Null
+			],
+			$Failed,
+			Messages :> {Error::RequiredPreparationOptions, Error::InvalidOption}
+		],
+
+		Example[
+			{Messages, "UnusedOptions", "An error is thrown if the input sample is prepacked in a melting point capillary but GrindingContainer is not Null:"},
 			ExperimentMeasureMeltingPoint[
 				Object[Sample, "MeasureMeltingPoint Test Capillary Sample 1 " <> $SessionUUID],
 				GrindingContainer -> Model[Container, GrindingContainer, "Grinding Bowl for Automated Mortar Grinder"]
 			],
 			$Failed,
-			Messages :> {Error::InvalidGrindingContainerOptions, Error::InvalidOption}
+			Messages :> {Error::UnusedOptions, Error::InvalidOption}
 		],
 
 		Example[
-			{Messages, "GrindingContainerMismatchOptions", "An error is thrown if Grind is set to False but GrindingContainer is not Null:"},
+			{Messages, "UnusedOptions", "An error is thrown if Grind is set to False but GrindingContainer is not Null:"},
 			ExperimentMeasureMeltingPoint[
 				Object[Sample, "MeasureMeltingPoint Test Sample 1 " <> $SessionUUID],
 				Grind -> False,
 				GrindingContainer -> Model[Container, GrindingContainer, "Grinding Bowl for Automated Mortar Grinder"]
 			],
 			$Failed,
-			Messages :> {Error::GrindingContainerMismatchOptions, Error::InvalidOption}
+			Messages :> {Error::UnusedOptions, Error::InvalidOption}
 		],
 
 		Example[
-			{Messages, "InvalidGrindingBeadOptions", "An error is thrown if the input sample is prepacked in a melting point capillary but GrindingBead is not Null:"},
+			{Messages, "RequiredPreparationOptions", "An error is thrown if Grind is True but GrindingContainer is Null:"},
+			ExperimentMeasureMeltingPoint[
+				Object[Sample, "MeasureMeltingPoint Test Sample 1 " <> $SessionUUID],
+				Grind -> True,
+				GrindingContainer -> Null
+			],
+			$Failed,
+			Messages :> {Error::RequiredPreparationOptions, Error::InvalidOption}
+		],
+
+		Example[
+			{Messages, "UnusedOptions", "An error is thrown if the input sample is prepacked in a melting point capillary but GrindingBead is not Null:"},
 			ExperimentMeasureMeltingPoint[
 				Object[Sample, "MeasureMeltingPoint Test Capillary Sample 1 " <> $SessionUUID],
 				GrindingBead -> Model[Item, GrindingBead, "2.8 mm stainless steel grinding bead"]
 			],
 			$Failed,
-			Messages :> {Error::InvalidGrindingBeadOptions, Error::InvalidOption}
+			Messages :> {Error::UnusedOptions, Error::InvalidOption}
 		],
 
 		Example[
-			{Messages, "GrindingBeadMismatchOptions", "An error is thrown if Grind is set to False but GrindingBead is not Null:"},
+			{Messages, "UnusedOptions", "An error is thrown if Grind is set to False but GrindingBead is not Null:"},
 			ExperimentMeasureMeltingPoint[
 				Object[Sample, "MeasureMeltingPoint Test Sample 1 " <> $SessionUUID],
 				Grind -> False,
 				GrindingBead -> Model[Item, GrindingBead, "2.8 mm stainless steel grinding bead"]
 			],
 			$Failed,
-			Messages :> {Error::GrindingBeadMismatchOptions, Error::InvalidOption}
+			Messages :> {Error::UnusedOptions, Error::InvalidOption}
 		],
 
 		Example[
-			{Messages, "InvalidNumberOfGrindingBeadsOptions", "An error is thrown if the input sample is prepacked in a melting point capillary but NumberOfGrindingBeads is not Null:"},
+			{Messages, "UnusedOptions", "An error is thrown if the input sample is prepacked in a melting point capillary but NumberOfGrindingBeads is not Null:"},
 			ExperimentMeasureMeltingPoint[
 				Object[Sample, "MeasureMeltingPoint Test Capillary Sample 1 " <> $SessionUUID],
 				NumberOfGrindingBeads -> 5
 			],
 			$Failed,
-			Messages :> {Error::InvalidNumberOfGrindingBeadsOptions, Error::InvalidOption}
+			Messages :> {Error::UnusedOptions, Error::InvalidOption}
 		],
 
 		Example[
-			{Messages, "NumberOfGrindingBeadsMismatchOptions", "An error is thrown if Grind is set to False but NumberOfGrindingBeads is not Null:"},
+			{Messages, "UnusedOptions", "An error is thrown if Grind is set to False but NumberOfGrindingBeads is not Null:"},
 			ExperimentMeasureMeltingPoint[
 				Object[Sample, "MeasureMeltingPoint Test Sample 1 " <> $SessionUUID],
 				Grind -> False,
 				NumberOfGrindingBeads -> 5
 			],
 			$Failed,
-			Messages :> {Error::NumberOfGrindingBeadsMismatchOptions, Error::InvalidOption}
+			Messages :> {Error::UnusedOptions, Error::InvalidOption}
 		],
 
 		Example[
-			{Messages, "InvalidGrindingRateOptions", "An error is thrown if the input sample is prepacked in a melting point capillary but GrindingRate is not Null:"},
+			{Messages, "UnusedOptions", "An error is thrown if the input sample is prepacked in a melting point capillary but GrindingRate is not Null:"},
 			ExperimentMeasureMeltingPoint[
 				Object[Sample, "MeasureMeltingPoint Test Capillary Sample 1 " <> $SessionUUID],
 				GrindingRate -> 3000RPM
 			],
 			$Failed,
-			Messages :> {Error::InvalidGrindingRateOptions, Error::InvalidOption}
+			Messages :> {Error::UnusedOptions, Error::InvalidOption}
 		],
 
 		Example[
-			{Messages, "GrindingRateMismatchOptions", "An error is thrown if Grind is set to False but GrindingRate is not Null:"},
+			{Messages, "UnusedOptions", "An error is thrown if Grind is set to False but GrindingRate is not Null:"},
 			ExperimentMeasureMeltingPoint[
 				Object[Sample, "MeasureMeltingPoint Test Sample 1 " <> $SessionUUID],
 				Grind -> False,
 				GrindingRate -> 3000RPM
 			],
 			$Failed,
-			Messages :> {Error::GrindingRateMismatchOptions, Error::InvalidOption}
+			Messages :> {Error::UnusedOptions, Error::InvalidOption}
 		],
 
 		Example[
-			{Messages, "InvalidGrindingTimeOptions", "An error is thrown if the input sample is prepacked in a melting point capillary but GrindingTime is not Null:"},
+			{Messages, "RequiredPreparationOptions", "An error is thrown if Grind is True but GrindingRate is Null:"},
+			ExperimentMeasureMeltingPoint[
+				Object[Sample, "MeasureMeltingPoint Test Sample 1 " <> $SessionUUID],
+				Grind -> True,
+				GrindingRate -> Null
+			],
+			$Failed,
+			Messages :> {Error::RequiredPreparationOptions, Error::InvalidOption}
+		],
+
+		Example[
+			{Messages, "UnusedOptions", "An error is thrown if the input sample is prepacked in a melting point capillary but GrindingTime is not Null:"},
 			ExperimentMeasureMeltingPoint[
 				Object[Sample, "MeasureMeltingPoint Test Capillary Sample 1 " <> $SessionUUID],
 				GrindingTime -> 1Minute
 			],
 			$Failed,
-			Messages :> {Error::InvalidGrindingTimeOptions, Error::InvalidOption}
+			Messages :> {Error::UnusedOptions, Error::InvalidOption}
 		],
 
 		Example[
-			{Messages, "GrindingTimeMismatchOptions", "An error is thrown if Grind is set to False but GrindingTime is not Null:"},
+			{Messages, "UnusedOptions", "An error is thrown if Grind is set to False but GrindingTime is not Null:"},
 			ExperimentMeasureMeltingPoint[
 				Object[Sample, "MeasureMeltingPoint Test Sample 1 " <> $SessionUUID],
 				Grind -> False,
 				GrindingTime -> 1Minute
 			],
 			$Failed,
-			Messages :> {Error::GrindingTimeMismatchOptions, Error::InvalidOption}
+			Messages :> {Error::UnusedOptions, Error::InvalidOption}
 		],
 
 		Example[
-			{Messages, "InvalidNumberOfGrindingStepsOptions", "An error is thrown if the input sample is prepacked in a melting point capillary but NumberOfGrindingSteps is not Null:"},
+			{Messages, "RequiredPreparationOptions", "An error is thrown if Grind is True but GrindingTime is Null:"},
+			ExperimentMeasureMeltingPoint[
+				Object[Sample, "MeasureMeltingPoint Test Sample 1 " <> $SessionUUID],
+				Grind -> True,
+				GrindingTime -> Null
+			],
+			$Failed,
+			Messages :> {Error::RequiredPreparationOptions, Error::InvalidOption}
+		],
+
+		Example[
+			{Messages, "UnusedOptions", "An error is thrown if the input sample is prepacked in a melting point capillary but NumberOfGrindingSteps is not Null:"},
 			ExperimentMeasureMeltingPoint[
 				Object[Sample, "MeasureMeltingPoint Test Capillary Sample 1 " <> $SessionUUID],
 				NumberOfGrindingSteps -> 2
 			],
 			$Failed,
-			Messages :> {Error::InvalidNumberOfGrindingStepsOptions, Error::InvalidOption}
+			Messages :> {Error::UnusedOptions, Error::InvalidOption}
 		],
 
 		Example[
-			{Messages, "NumberOfGrindingStepsMismatchOptions", "An error is thrown if Grind is set to False but NumberOfGrindingSteps is not Null:"},
+			{Messages, "UnusedOptions", "An error is thrown if Grind is set to False but NumberOfGrindingSteps is not Null:"},
 			ExperimentMeasureMeltingPoint[
 				Object[Sample, "MeasureMeltingPoint Test Sample 1 " <> $SessionUUID],
 				Grind -> False,
 				NumberOfGrindingSteps -> 2
 			],
 			$Failed,
-			Messages :> {Error::NumberOfGrindingStepsMismatchOptions, Error::InvalidOption}
+			Messages :> {Error::UnusedOptions, Error::InvalidOption}
 		],
 
 		Example[
-			{Messages, "InvalidCoolingTimeOptions", "An error is thrown if the input sample is prepacked in a melting point capillary but CoolingTime is not Null:"},
+			{Messages, "RequiredPreparationOptions", "An error is thrown if Grind is True but NumberOfGrindingSteps is Null:"},
+			ExperimentMeasureMeltingPoint[
+				Object[Sample, "MeasureMeltingPoint Test Sample 1 " <> $SessionUUID],
+				Grind -> True,
+				NumberOfGrindingSteps -> Null
+			],
+			$Failed,
+			Messages :> {Error::RequiredPreparationOptions, Error::InvalidOption}
+		],
+
+		Example[
+			{Messages, "UnusedOptions", "An error is thrown if the input sample is prepacked in a melting point capillary but CoolingTime is not Null:"},
 			ExperimentMeasureMeltingPoint[
 				Object[Sample, "MeasureMeltingPoint Test Capillary Sample 1 " <> $SessionUUID],
 				CoolingTime -> 5Minute
 			],
 			$Failed,
-			Messages :> {Error::InvalidCoolingTimeOptions, Error::InvalidOption}
+			Messages :> {Error::UnusedOptions, Error::InvalidOption}
 		],
 
 		Example[
-			{Messages, "CoolingTimeMismatchOptions", "An error is thrown if Grind is set to False but CoolingTime is not Null:"},
+			{Messages, "UnusedOptions", "An error is thrown if Grind is set to False but CoolingTime is not Null:"},
 			ExperimentMeasureMeltingPoint[
 				Object[Sample, "MeasureMeltingPoint Test Sample 1 " <> $SessionUUID],
 				Grind -> False,
 				CoolingTime -> 5Minute
 			],
 			$Failed,
-			Messages :> {Error::CoolingTimeMismatchOptions, Error::InvalidOption}
+			Messages :> {Error::UnusedOptions, Error::InvalidOption}
 		],
 
 		Example[
-			{Messages, "InvalidGrindingProfileOptions", "An error is thrown if the input sample is prepacked in a melting point capillary but GrindingProfile is not Null:"},
+			{Messages, "UnusedOptions", "An error is thrown if the input sample is prepacked in a melting point capillary but GrindingProfile is not Null:"},
 			ExperimentMeasureMeltingPoint[
 				Object[Sample, "MeasureMeltingPoint Test Capillary Sample 1 " <> $SessionUUID],
-				GrindingProfile -> {{Grinding, 3000RPM, 30Second}}
+				GrindingProfile -> {{3000RPM, 30Second}}
 			],
 			$Failed,
-			Messages :> {Error::InvalidGrindingProfileOptions, Error::InvalidOption}
+			Messages :> {Error::UnusedOptions, Error::InvalidOption}
 		],
 
 		Example[
-			{Messages, "GrindingProfileMismatchOptions", "An error is thrown if Grind is set to False but GrindingProfile is not Null:"},
+			{Messages, "UnusedOptions", "An error is thrown if Grind is set to False but GrindingProfile is not Null:"},
 			ExperimentMeasureMeltingPoint[
 				Object[Sample, "MeasureMeltingPoint Test Sample 1 " <> $SessionUUID],
 				Grind -> False,
-				GrindingProfile -> {{Grinding, 3000RPM, 30Second}}
+				GrindingProfile -> {{3000RPM, 30Second}}
 			],
 			$Failed,
-			Messages :> {Error::GrindingProfileMismatchOptions, Error::InvalidOption}
+			Messages :> {Error::UnusedOptions, Error::InvalidOption}
+		],
+
+		Example[
+			{Messages, "RequiredPreparationOptions", "An error is thrown if Grind is True but GrindingProfile is Null:"},
+			ExperimentMeasureMeltingPoint[
+				Object[Sample, "MeasureMeltingPoint Test Sample 1 " <> $SessionUUID],
+				Grind -> True,
+				GrindingProfile -> Null
+			],
+			$Failed,
+			Messages :> {Error::RequiredPreparationOptions, Error::InvalidOption}
 		],
 
 		Example[
 			{Messages, "MissingMassInformation", "If Amount is not specified and Mass of the sample is not informed, 1 Gram will be considered to calculate options automatically."},
-			ExperimentMeasureMeltingPoint[
-				Object[Sample, "MeasureMeltingPoint Test Sample 15 No Mass" <> $SessionUUID]
+			Download[
+				ExperimentMeasureMeltingPoint[
+					Object[Sample, "MeasureMeltingPoint Test Sample 15 No Mass" <> $SessionUUID]
+				],
+				Amounts[[1]]
 			],
-			ObjectP[Object[Protocol, MeasureMeltingPoint]],
-			Messages :> {Warning::MissingMassInformation}
+			1 Gram,
+			Messages :> {Warning::MissingMassInformation},
+			EquivalenceFunction -> EqualQ
 		],
 
 		Example[
-			{Messages, "NoPreparedSample", "If the input sample is prepacked in a melting point capillary tube, no new sample is prepared in this experiment by grinding or desiccating, therefore, RecoupSample must be Null if the sample is prepacked in a melting point capillary."},
+			{Messages, "UnusedOptions", "Throw an error if the input sample is prepacked in a melting point capillary tube but Amount is not Null."},
 			ExperimentMeasureMeltingPoint[
 				Object[Sample, "MeasureMeltingPoint Test Capillary Sample 1 " <> $SessionUUID],
-				RecoupSample -> True
+				Amount -> All
 			],
 			$Failed,
-			Messages :> {Error::NoPreparedSampleToRecoup, Error::InvalidOption}
+			Messages :> {Error::UnusedOptions, Error::InvalidOption}
+		],
+
+		(* tests for high level error 3 *)
+		(* 1. the sample is in a capillary, Desiccate/Grind is True, desiccate/grind-related options are not specified *)
+		Example[
+			{Messages, "UnusedOptions", "Throw an error if the input sample is prepacked in a melting point capillary tube but Desiccate and Grind are True."},
+			ExperimentMeasureMeltingPoint[
+				{
+					Object[Sample, "MeasureMeltingPoint Test Capillary Sample 1 " <> $SessionUUID],
+					Object[Sample, "MeasureMeltingPoint Test Capillary Sample 2 " <> $SessionUUID],
+					Object[Sample, "MeasureMeltingPoint Test Capillary Sample 3 " <> $SessionUUID]
+				},
+				Desiccate -> True,
+				Grind -> True
+			],
+			$Failed,
+			Messages :> {Error::UnusedOptions, Error::InvalidOption}
 		],
 
 		Example[
-			{Messages, "NoPreparedSampleToRecoup", "If the input sample is prepacked in a melting point capillary tube, no new sample is prepared in this experiment by grinding or desiccating, therefore, PreparedSampleContainer must be Null if the sample is prepacked in a melting point capillary."},
+			{Messages, "UnusedOptions", "Throw an error if the input sample is prepacked in a melting point capillary tube but Desiccate is True."},
 			ExperimentMeasureMeltingPoint[
-				Object[Sample, "MeasureMeltingPoint Test Capillary Sample 1 " <> $SessionUUID],
-				PreparedSampleContainer -> Model[Container, Vessel, "2mL Tube"]
+				{
+					Object[Sample, "MeasureMeltingPoint Test Capillary Sample 1 " <> $SessionUUID],
+					Object[Sample, "MeasureMeltingPoint Test Capillary Sample 2 " <> $SessionUUID],
+					Object[Sample, "MeasureMeltingPoint Test Capillary Sample 3 " <> $SessionUUID]
+				},
+				Desiccate -> True
 			],
 			$Failed,
-			Messages :> {Error::NoPreparedSample, Error::InvalidPreparedSampleContainer, Error::InvalidOption}
+			Messages :> {Error::UnusedOptions, Error::InvalidOption}
+		],
+
+		Example[
+			{Messages, "UnusedOptions", "Throw an error if the input sample is prepacked in a melting point capillary tube but Grind is True."},
+			ExperimentMeasureMeltingPoint[
+				{
+					Object[Sample, "MeasureMeltingPoint Test Capillary Sample 1 " <> $SessionUUID],
+					Object[Sample, "MeasureMeltingPoint Test Capillary Sample 2 " <> $SessionUUID],
+					Object[Sample, "MeasureMeltingPoint Test Capillary Sample 3 " <> $SessionUUID]
+				},
+				Grind -> True
+			],
+			$Failed,
+			Messages :> {Error::UnusedOptions, Error::InvalidOption}
+		],
+
+		(* 2. the sample is in a capillary, Desiccate/Grind is True or False, desiccate/grind-related options are specified *)
+		Example[
+			{Messages, "UnusedOptions", "Throw an error if the input sample is prepacked in a melting point capillary tube but Desiccate/Grind related options are specified."},
+			ExperimentMeasureMeltingPoint[
+				{
+					Object[Sample, "MeasureMeltingPoint Test Capillary Sample 1 " <> $SessionUUID],
+					Object[Sample, "MeasureMeltingPoint Test Capillary Sample 2 " <> $SessionUUID],
+					Object[Sample, "MeasureMeltingPoint Test Capillary Sample 3 " <> $SessionUUID]
+				},
+				Desiccate -> True,
+				Grind -> True,
+				OrderOfOperations -> {Desiccate, Grind},
+				Amount -> 1 Gram,
+				PreparedSampleStorageCondition -> AmbientStorage,
+				GrinderType -> KnifeMill,
+				Grinder -> Model[Instrument, Grinder, "BeadBug3"],
+				Fineness -> 1 Millimeter,
+				BulkDensity -> 1 Gram/Milliliter,
+				GrindingContainer -> Model[Container, Vessel, "2mL Tube"],
+				GrindingBead -> Model[Item, GrindingBead, "2.8 mm stainless steel grinding bead"],
+				NumberOfGrindingBeads -> Automatic,
+				GrindingRate -> 500 RPM,
+				GrindingTime -> 1 Minute,
+				NumberOfGrindingSteps -> 2,
+				CoolingTime -> Automatic,
+				GrindingProfile -> Automatic,
+				SampleContainer -> Model[Container, Vessel, "2mL Tube"],
+				Desiccator -> Model[Instrument, Desiccator, "Bel-Art Space Saver Vacuum Desiccator"],
+				DesiccationTime -> 10 Hour,
+				DesiccationMethod -> Vacuum,
+				Desiccant -> Model[Sample, "Indicating Drierite"],
+				DesiccantPhase -> Liquid,
+				DesiccantAmount -> 500 Gram,
+				DesiccantStorageContainer -> Model[Container, Vessel, "1L Glass Bottle"]
+			],
+			$Failed,
+			Messages :> {Error::UnusedOptions, Error::InvalidOption}
+		],
+
+		(* 3. the sample is not in capillary, Desiccate or Grind is True, desiccate/grind-related options are set to Null *)
+		Example[
+			{Messages, "RequiredDesiccateOptions", "An error is thrown if Grind and Desiccate are True but Grind/Desiccate related options are Null:"},
+			ExperimentMeasureMeltingPoint[
+				{
+					Object[Sample, "MeasureMeltingPoint Test Sample 1 " <> $SessionUUID],
+					Object[Sample, "MeasureMeltingPoint Test Sample 2 " <> $SessionUUID],
+					Object[Sample, "MeasureMeltingPoint Test Sample 3 " <> $SessionUUID]
+				},
+				Desiccate -> True,
+				Grind -> True,
+
+				Grinder -> Null,
+				GrindingTime -> Null,
+				DesiccationMethod -> Null,
+				Desiccator -> Null,
+
+				GrindingContainer -> Model[Container, Vessel, "2 mL conical tube (no skirt) with cap and sealing ring"],
+				GrindingBead -> Model[Item, GrindingBead, "2.8 mm stainless steel grinding bead"],
+				NumberOfGrindingBeads -> 10,
+				GrindingRate -> 3000 RPM,
+				NumberOfGrindingSteps -> 2,
+				CoolingTime -> Automatic,
+				GrindingProfile -> Automatic,
+				SampleContainer -> Model[Container, Vessel, "2mL Tube"],
+				DesiccationTime -> 10 Hour
+			],
+			$Failed,
+			Messages :> {Error::RequiredDesiccateOptions, Error::RequiredPreparationOptions, Error::InvalidOption}
+		],
+
+		Example[
+			{Messages, "RequiredDesiccateOptions", "An error is thrown if Grind and Desiccate are True but sample-preparation related options are Null:"},
+			ExperimentMeasureMeltingPoint[
+				{
+					Object[Sample, "MeasureMeltingPoint Test Sample 1 " <> $SessionUUID],
+					Object[Sample, "MeasureMeltingPoint Test Sample 2 " <> $SessionUUID],
+					Object[Sample, "MeasureMeltingPoint Test Sample 3 " <> $SessionUUID]
+				},
+				Desiccate -> True,
+				Grind -> True,
+
+				Grinder -> Null,
+				GrindingTime -> Null,
+				DesiccationMethod -> Null,
+				Desiccator -> Null,
+
+				OrderOfOperations -> Null,
+
+				Amount -> 1 Gram,
+				PreparedSampleStorageCondition -> AmbientStorage,
+
+				GrindingContainer -> Model[Container, Vessel, "2 mL conical tube (no skirt) with cap and sealing ring"],
+				GrindingBead -> Model[Item, GrindingBead, "2.8 mm stainless steel grinding bead"],
+				NumberOfGrindingBeads -> 10,
+				GrindingRate -> 3000 RPM,
+				NumberOfGrindingSteps -> 2,
+				CoolingTime -> Automatic,
+				GrindingProfile -> Automatic,
+				SampleContainer -> Model[Container, Vessel, "2mL Tube"],
+				DesiccationTime -> 10 Hour
+			],
+			$Failed,
+			Messages :> {Error::RequiredDesiccateOptions, Error::RequiredPreparationOptions, Error::OrderOfOperationsMismatch, Error::InvalidOption}
+		],
+
+		(* 4 & 8. the sample is not in capillary, Desiccate is True, Grind is False, desiccate related options are set to Null, grind related options are not Null *)
+		Example[
+			{Messages, "UnusedOptions", "An error is thrown if Grind and Desiccate are True but Grind/Desiccate related options are Null:"},
+			ExperimentMeasureMeltingPoint[
+				{
+					Object[Sample, "MeasureMeltingPoint Test Sample 1 " <> $SessionUUID],
+					Object[Sample, "MeasureMeltingPoint Test Sample 2 " <> $SessionUUID],
+					Object[Sample, "MeasureMeltingPoint Test Sample 3 " <> $SessionUUID]
+				},
+				Desiccate -> True,
+				Grind -> False,
+
+				Grinder -> Null,
+				GrindingTime -> Null,
+				DesiccationMethod -> Null,
+				Desiccator -> Null,
+
+				GrindingContainer -> Model[Container, Vessel, "2 mL conical tube (no skirt) with cap and sealing ring"],
+				GrindingBead -> Model[Item, GrindingBead, "2.8 mm stainless steel grinding bead"],
+				NumberOfGrindingBeads -> 10,
+				GrindingRate -> 3000 RPM,
+				NumberOfGrindingSteps -> 2,
+				CoolingTime -> Automatic,
+				GrindingProfile -> Automatic,
+				SampleContainer -> Model[Container, Vessel, "2mL Tube"],
+				DesiccationTime -> 10 Hour
+			],
+			$Failed,
+			Messages :> {Error::UnusedOptions, Error::RequiredDesiccateOptions, Error::InvalidOption}
+		],
+
+		Example[
+			{Messages, "UnusedOptions", "An error is thrown if Desiccate is True but sample preparation options are Null:"},
+			ExperimentMeasureMeltingPoint[
+				{
+					Object[Sample, "MeasureMeltingPoint Test Sample 1 " <> $SessionUUID],
+					Object[Sample, "MeasureMeltingPoint Test Sample 2 " <> $SessionUUID],
+					Object[Sample, "MeasureMeltingPoint Test Sample 3 " <> $SessionUUID]
+				},
+				Desiccate -> True,
+				Grind -> False,
+
+				OrderOfOperations -> {Desiccate, Grind},
+
+				Amount -> Null,
+				PreparedSampleStorageCondition -> AmbientStorage,
+
+				Grinder -> Null,
+				GrindingTime -> Null,
+				DesiccationMethod -> Null,
+				Desiccator -> Null,
+
+				GrindingContainer -> Model[Container, Vessel, "2 mL conical tube (no skirt) with cap and sealing ring"],
+				GrindingBead -> Model[Item, GrindingBead, "2.8 mm stainless steel grinding bead"],
+				NumberOfGrindingBeads -> 10,
+				GrindingRate -> 3000 RPM,
+				NumberOfGrindingSteps -> 2,
+				CoolingTime -> Automatic,
+				GrindingProfile -> Automatic,
+				SampleContainer -> Model[Container, Vessel, "2mL Tube"],
+				DesiccationTime -> 10 Hour
+			],
+			$Failed,
+			Messages :> {Error::UnusedOptions, Error::RequiredDesiccateOptions, Error::OrderOfOperationsMismatch, Error::InvalidOption}
+		],
+
+		(* 5 & 7. the sample is not in capillary, Desiccate is False, Grind is True, desiccate related options are not Null, grind related options are Null *)
+		Example[
+			{Messages, "RequiredGrindOptions", "An error is thrown if Grind is True but Grind related options are Null:"},
+			ExperimentMeasureMeltingPoint[
+				{
+					Object[Sample, "MeasureMeltingPoint Test Sample 1 " <> $SessionUUID],
+					Object[Sample, "MeasureMeltingPoint Test Sample 2 " <> $SessionUUID],
+					Object[Sample, "MeasureMeltingPoint Test Sample 3 " <> $SessionUUID]
+				},
+				Desiccate -> False,
+				Grind -> True,
+
+				Grinder -> Null,
+				GrindingTime -> Null,
+				DesiccationMethod -> Null,
+				Desiccator -> Null,
+
+				GrindingContainer -> Model[Container, Vessel, "2 mL conical tube (no skirt) with cap and sealing ring"],
+				GrindingBead -> Model[Item, GrindingBead, "2.8 mm stainless steel grinding bead"],
+				NumberOfGrindingBeads -> 10,
+				GrindingRate -> 3000 RPM,
+				NumberOfGrindingSteps -> 2,
+				CoolingTime -> Automatic,
+				GrindingProfile -> Automatic,
+				SampleContainer -> Model[Container, Vessel, "2mL Tube"],
+				DesiccationTime -> 10 Hour
+			],
+			$Failed,
+			Messages :> {Error::UnusedOptions, Error::RequiredGrindOptions, Error::InvalidOption}
+		],
+
+		Example[
+			{Messages, "UnusedOptions", "An error is thrown if Grind is True but sample preparation options are Null:"},
+			ExperimentMeasureMeltingPoint[
+				{
+					Object[Sample, "MeasureMeltingPoint Test Sample 1 " <> $SessionUUID],
+					Object[Sample, "MeasureMeltingPoint Test Sample 2 " <> $SessionUUID],
+					Object[Sample, "MeasureMeltingPoint Test Sample 3 " <> $SessionUUID]
+				},
+				Desiccate -> False,
+				Grind -> True,
+
+				OrderOfOperations -> {Desiccate, Grind},
+
+				Amount -> Null,
+				PreparedSampleStorageCondition -> AmbientStorage,
+
+				Grinder -> Null,
+				GrindingTime -> Null,
+				DesiccationMethod -> Null,
+				Desiccator -> Null,
+
+				GrindingContainer -> Model[Container, Vessel, "2 mL conical tube (no skirt) with cap and sealing ring"],
+				GrindingBead -> Model[Item, GrindingBead, "2.8 mm stainless steel grinding bead"],
+				NumberOfGrindingBeads -> 10,
+				GrindingRate -> 3000 RPM,
+				NumberOfGrindingSteps -> 2,
+				CoolingTime -> Automatic,
+				GrindingProfile -> Automatic,
+				SampleContainer -> Model[Container, Vessel, "2mL Tube"],
+				DesiccationTime -> 10 Hour
+			],
+			$Failed,
+			Messages :> {Error::UnusedOptions, Error::RequiredGrindOptions, Error::OrderOfOperationsMismatch, Error::InvalidOption}
+		],
+
+		(* 6. the sample is not in capillary, Desiccate and Grind are False, desiccate/grind-related options are specified *)
+		Example[
+			{Messages, "UnusedOptions", "An error is thrown if Grind and Desiccate are False but Grind/Desiccate related options are specified:"},
+			ExperimentMeasureMeltingPoint[
+				{
+					Object[Sample, "MeasureMeltingPoint Test Sample 1 " <> $SessionUUID],
+					Object[Sample, "MeasureMeltingPoint Test Sample 2 " <> $SessionUUID],
+					Object[Sample, "MeasureMeltingPoint Test Sample 3 " <> $SessionUUID]
+				},
+				Desiccate -> False,
+				Grind -> False,
+
+				Grinder -> Null,
+				GrindingTime -> Null,
+				DesiccationMethod -> Null,
+				Desiccator -> Null,
+
+				GrindingContainer -> Model[Container, Vessel, "2 mL conical tube (no skirt) with cap and sealing ring"],
+				GrindingBead -> Model[Item, GrindingBead, "2.8 mm stainless steel grinding bead"],
+				NumberOfGrindingBeads -> 10,
+				GrindingRate -> 3000 RPM,
+				NumberOfGrindingSteps -> 2,
+				CoolingTime -> Automatic,
+				GrindingProfile -> Automatic,
+				SampleContainer -> Model[Container, Vessel, "2mL Tube"],
+				DesiccationTime -> 10 Hour
+			],
+			$Failed,
+			Messages :> {Error::UnusedOptions, Error::InvalidOption}
+		],
+
+		Example[
+			{Messages, "UnusedOptions", "An error is thrown if Grind and Desiccate are False but sample preparation options are specified:"},
+			ExperimentMeasureMeltingPoint[
+				{
+					Object[Sample, "MeasureMeltingPoint Test Sample 1 " <> $SessionUUID],
+					Object[Sample, "MeasureMeltingPoint Test Sample 2 " <> $SessionUUID],
+					Object[Sample, "MeasureMeltingPoint Test Sample 3 " <> $SessionUUID]
+				},
+				Desiccate -> False,
+				Grind -> False,
+
+				OrderOfOperations -> {Desiccate, Grind},
+
+				Amount -> Null,
+				PreparedSampleStorageCondition -> AmbientStorage,
+
+				Grinder -> Null,
+				GrindingTime -> Null,
+				DesiccationMethod -> Null,
+				Desiccator -> Null,
+
+				GrindingContainer -> Model[Container, Vessel, "2 mL conical tube (no skirt) with cap and sealing ring"],
+				GrindingBead -> Model[Item, GrindingBead, "2.8 mm stainless steel grinding bead"],
+				NumberOfGrindingBeads -> 10,
+				GrindingRate -> 3000 RPM,
+				NumberOfGrindingSteps -> 2,
+				CoolingTime -> Automatic,
+				GrindingProfile -> Automatic,
+				SampleContainer -> Model[Container, Vessel, "2mL Tube"],
+				DesiccationTime -> 10 Hour
+			],
+			$Failed,
+			Messages :> {Error::UnusedOptions, Error::OrderOfOperationsMismatch, Error::InvalidOption}
+		],
+
+		(* not packed and prepacked mix of samples *)
+		(* 1. the sample is in a capillary, Desiccate/Grind is True, desiccate/grind-related options are not specified *)
+		Example[
+			{Messages, "UnusedOptions", "Throw an error if some of the input samples are prepacked in melting point capillaries but Desiccate and Grind are True."},
+			ExperimentMeasureMeltingPoint[
+				{
+					Object[Sample, "MeasureMeltingPoint Test Sample 1 " <> $SessionUUID],
+					Object[Sample, "MeasureMeltingPoint Test Sample 2 " <> $SessionUUID],
+					Object[Sample, "MeasureMeltingPoint Test Sample 3 " <> $SessionUUID],
+					Object[Sample, "MeasureMeltingPoint Test Capillary Sample 1 " <> $SessionUUID],
+					Object[Sample, "MeasureMeltingPoint Test Capillary Sample 2 " <> $SessionUUID],
+					Object[Sample, "MeasureMeltingPoint Test Capillary Sample 3 " <> $SessionUUID]
+				},
+				Desiccate -> True,
+				Grind -> True
+			],
+			$Failed,
+			Messages :> {Error::UnusedOptions, Error::InvalidOption}
+		],
+
+		Example[
+			{Messages, "UnusedOptions", "Throw an error if some of the input samples are prepacked in melting point capillaries but Desiccate is True."},
+			ExperimentMeasureMeltingPoint[
+				{
+					Object[Sample, "MeasureMeltingPoint Test Sample 1 " <> $SessionUUID],
+					Object[Sample, "MeasureMeltingPoint Test Sample 2 " <> $SessionUUID],
+					Object[Sample, "MeasureMeltingPoint Test Sample 3 " <> $SessionUUID],
+					Object[Sample, "MeasureMeltingPoint Test Capillary Sample 1 " <> $SessionUUID],
+					Object[Sample, "MeasureMeltingPoint Test Capillary Sample 2 " <> $SessionUUID],
+					Object[Sample, "MeasureMeltingPoint Test Capillary Sample 3 " <> $SessionUUID]
+				},
+				Desiccate -> True
+			],
+			$Failed,
+			Messages :> {Error::UnusedOptions, Error::InvalidOption}
+		],
+
+		Example[
+			{Messages, "UnusedOptions", "Throw an error if some of the input samples are prepacked in melting point capillaries but Grind is True."},
+			ExperimentMeasureMeltingPoint[
+				{
+					Object[Sample, "MeasureMeltingPoint Test Sample 1 " <> $SessionUUID],
+					Object[Sample, "MeasureMeltingPoint Test Sample 2 " <> $SessionUUID],
+					Object[Sample, "MeasureMeltingPoint Test Sample 3 " <> $SessionUUID],
+					Object[Sample, "MeasureMeltingPoint Test Capillary Sample 1 " <> $SessionUUID],
+					Object[Sample, "MeasureMeltingPoint Test Capillary Sample 2 " <> $SessionUUID],
+					Object[Sample, "MeasureMeltingPoint Test Capillary Sample 3 " <> $SessionUUID]
+				},
+				Grind -> True
+			],
+			$Failed,
+			Messages :> {Error::UnusedOptions, Error::InvalidOption}
+		],
+
+		(* 2. the sample is in a capillary, Desiccate/Grind is True or False, desiccate/grind-related options are specified *)
+		Example[
+			{Messages, "UnusedOptions", "Throw an error if some of the input samples are prepacked in a melting point capillaries but Desiccate/Grind related options are specified."},
+			ExperimentMeasureMeltingPoint[
+				{
+					Object[Sample, "MeasureMeltingPoint Test Sample 1 " <> $SessionUUID],
+					Object[Sample, "MeasureMeltingPoint Test Sample 2 " <> $SessionUUID],
+					Object[Sample, "MeasureMeltingPoint Test Sample 3 " <> $SessionUUID],
+					Object[Sample, "MeasureMeltingPoint Test Capillary Sample 1 " <> $SessionUUID],
+					Object[Sample, "MeasureMeltingPoint Test Capillary Sample 2 " <> $SessionUUID],
+					Object[Sample, "MeasureMeltingPoint Test Capillary Sample 3 " <> $SessionUUID]
+				},
+				Desiccate -> True,
+				Grind -> True,
+				OrderOfOperations -> {Desiccate, Grind},
+				Amount -> 1 Gram,
+				PreparedSampleStorageCondition -> AmbientStorage,
+				GrinderType -> KnifeMill,
+				Grinder -> Model[Instrument, Grinder, "Tube Mill Control"],
+				Fineness -> 1 Millimeter,
+				BulkDensity -> 1 Gram/Milliliter,
+				GrindingContainer -> Automatic,
+				GrindingBead -> Null,
+				NumberOfGrindingBeads -> Automatic,
+				GrindingRate -> 6000 RPM,
+				GrindingTime -> 1 Minute,
+				NumberOfGrindingSteps -> 2,
+				CoolingTime -> Automatic,
+				GrindingProfile -> Automatic,
+				SampleContainer -> Model[Container, Vessel, "2mL Tube"],
+				Desiccator -> Model[Instrument, Desiccator, "Bel-Art Space Saver Vacuum Desiccator"],
+				DesiccationTime -> 10 Hour,
+				DesiccationMethod -> Automatic,
+				Desiccant -> Model[Sample, "Indicating Drierite"],
+				DesiccantPhase -> Automatic,
+				DesiccantAmount -> 500 Gram
+			],
+			$Failed,
+			Messages :> {Error::UnusedOptions, Error::InvalidOption}
+		],
+
+		(* 3. the sample is not in capillary, Desiccate or Grind is True, desiccate/grind-related options are set to Null *)
+		Example[
+			{Messages, "RequiredDesiccateOptions", "An error is thrown if some of the input samples are prepacked in melting point capillaries but Grind and Desiccate are True but Grind/Desiccate related options are Null:"},
+			ExperimentMeasureMeltingPoint[
+				{
+					Object[Sample, "MeasureMeltingPoint Test Sample 1 " <> $SessionUUID],
+					Object[Sample, "MeasureMeltingPoint Test Sample 2 " <> $SessionUUID],
+					Object[Sample, "MeasureMeltingPoint Test Sample 3 " <> $SessionUUID],
+					Object[Sample, "MeasureMeltingPoint Test Capillary Sample 1 " <> $SessionUUID],
+					Object[Sample, "MeasureMeltingPoint Test Capillary Sample 2 " <> $SessionUUID],
+					Object[Sample, "MeasureMeltingPoint Test Capillary Sample 3 " <> $SessionUUID]
+				},
+				Desiccate -> True,
+				Grind -> True,
+
+				Grinder -> Null,
+				GrindingTime -> Null,
+				DesiccationMethod -> Null,
+				Desiccator -> Null,
+
+				GrindingContainer -> Model[Container, Vessel, "2 mL conical tube (no skirt) with cap and sealing ring"],
+				GrindingBead -> Model[Item, GrindingBead, "2.8 mm stainless steel grinding bead"],
+				NumberOfGrindingBeads -> 10,
+				GrindingRate -> 3000 RPM,
+				NumberOfGrindingSteps -> 2,
+				CoolingTime -> Automatic,
+				GrindingProfile -> Automatic,
+				SampleContainer -> Model[Container, Vessel, "2mL Tube"],
+				DesiccationTime -> 10 Hour
+			],
+			$Failed,
+			Messages :> {Error::RequiredDesiccateOptions, Error::UnusedOptions, Error::RequiredPreparationOptions, Error::InvalidOption}
+		],
+
+		Example[
+			{Messages, "RequiredDesiccateOptions", "An error is thrown if some of the input samples are prepacked in melting point capillaries but Grind and Desiccate are True but sample-preparation related options are Null:"},
+			ExperimentMeasureMeltingPoint[
+				{
+					Object[Sample, "MeasureMeltingPoint Test Sample 1 " <> $SessionUUID],
+					Object[Sample, "MeasureMeltingPoint Test Sample 2 " <> $SessionUUID],
+					Object[Sample, "MeasureMeltingPoint Test Sample 3 " <> $SessionUUID],
+					Object[Sample, "MeasureMeltingPoint Test Capillary Sample 1 " <> $SessionUUID],
+					Object[Sample, "MeasureMeltingPoint Test Capillary Sample 2 " <> $SessionUUID],
+					Object[Sample, "MeasureMeltingPoint Test Capillary Sample 3 " <> $SessionUUID]
+				},
+				Desiccate -> True,
+				Grind -> True,
+
+				Grinder -> Null,
+				GrindingTime -> Null,
+				DesiccationMethod -> Null,
+				Desiccator -> Null,
+
+				OrderOfOperations -> Null,
+
+				Amount -> 1 Gram,
+				PreparedSampleStorageCondition -> AmbientStorage,
+
+				GrindingContainer -> Model[Container, Vessel, "2 mL conical tube (no skirt) with cap and sealing ring"],
+				GrindingBead -> Model[Item, GrindingBead, "2.8 mm stainless steel grinding bead"],
+				NumberOfGrindingBeads -> 10,
+				GrindingRate -> 3000 RPM,
+				NumberOfGrindingSteps -> 2,
+				CoolingTime -> Automatic,
+				GrindingProfile -> Automatic,
+				SampleContainer -> Model[Container, Vessel, "2mL Tube"],
+				DesiccationTime -> 10 Hour
+			],
+			$Failed,
+			Messages :> {Error::RequiredDesiccateOptions, Error::UnusedOptions, Error::RequiredPreparationOptions, Error::OrderOfOperationsMismatch, Error::InvalidOption}
+		],
+
+		(* 4 & 8. the sample is not in capillary, Desiccate is True, Grind is False, desiccate related options are set to Null, grind related options are not Null *)
+		Example[
+			{Messages, "UnusedOptions", "An error is thrown if some of the input samples are prepacked in melting point capillaries but Grind and Desiccate are True but Grind/Desiccate related options are Null:"},
+			ExperimentMeasureMeltingPoint[
+				{
+					Object[Sample, "MeasureMeltingPoint Test Sample 1 " <> $SessionUUID],
+					Object[Sample, "MeasureMeltingPoint Test Sample 2 " <> $SessionUUID],
+					Object[Sample, "MeasureMeltingPoint Test Sample 3 " <> $SessionUUID],
+					Object[Sample, "MeasureMeltingPoint Test Capillary Sample 1 " <> $SessionUUID],
+					Object[Sample, "MeasureMeltingPoint Test Capillary Sample 2 " <> $SessionUUID],
+					Object[Sample, "MeasureMeltingPoint Test Capillary Sample 3 " <> $SessionUUID]
+				},
+				Desiccate -> True,
+				Grind -> False,
+
+				Grinder -> Null,
+				GrindingTime -> Null,
+				DesiccationMethod -> Null,
+				Desiccator -> Null,
+
+				GrindingContainer -> Model[Container, Vessel, "2 mL conical tube (no skirt) with cap and sealing ring"],
+				GrindingBead -> Model[Item, GrindingBead, "2.8 mm stainless steel grinding bead"],
+				NumberOfGrindingBeads -> 10,
+				GrindingRate -> 3000 RPM,
+				NumberOfGrindingSteps -> 2,
+				CoolingTime -> Automatic,
+				GrindingProfile -> Automatic,
+				SampleContainer -> Model[Container, Vessel, "2mL Tube"],
+				DesiccationTime -> 10 Hour
+			],
+			$Failed,
+			Messages :> {Error::UnusedOptions, Error::RequiredDesiccateOptions, Error::InvalidOption}
+		],
+
+		Example[
+			{Messages, "UnusedOptions", "An error is thrown if some of the input samples are prepacked in melting point capillaries but Desiccate is True but sample preparation options are Null:"},
+			ExperimentMeasureMeltingPoint[
+				{
+					Object[Sample, "MeasureMeltingPoint Test Sample 1 " <> $SessionUUID],
+					Object[Sample, "MeasureMeltingPoint Test Sample 2 " <> $SessionUUID],
+					Object[Sample, "MeasureMeltingPoint Test Sample 3 " <> $SessionUUID],
+					Object[Sample, "MeasureMeltingPoint Test Capillary Sample 1 " <> $SessionUUID],
+					Object[Sample, "MeasureMeltingPoint Test Capillary Sample 2 " <> $SessionUUID],
+					Object[Sample, "MeasureMeltingPoint Test Capillary Sample 3 " <> $SessionUUID]
+				},
+				Desiccate -> True,
+				Grind -> False,
+
+				OrderOfOperations -> {Desiccate, Grind},
+
+				Amount -> Null,
+				PreparedSampleStorageCondition -> AmbientStorage,
+
+				Grinder -> Null,
+				GrindingTime -> Null,
+				DesiccationMethod -> Null,
+				Desiccator -> Null,
+
+				GrindingContainer -> Model[Container, Vessel, "2 mL conical tube (no skirt) with cap and sealing ring"],
+				GrindingBead -> Model[Item, GrindingBead, "2.8 mm stainless steel grinding bead"],
+				NumberOfGrindingBeads -> 10,
+				GrindingRate -> 3000 RPM,
+				NumberOfGrindingSteps -> 2,
+				CoolingTime -> Automatic,
+				GrindingProfile -> Automatic,
+				SampleContainer -> Model[Container, Vessel, "2mL Tube"],
+				DesiccationTime -> 10 Hour
+			],
+			$Failed,
+			Messages :> {Error::UnusedOptions, Error::RequiredDesiccateOptions, Error::OrderOfOperationsMismatch, Error::InvalidOption}
+		],
+
+		(* 5 & 7. the sample is not in capillary, Desiccate is False, Grind is True, desiccate related options are not Null, grind related options are Null *)
+		Example[
+			{Messages, "UnusedOptions", "An error is thrown if some of the input samples are prepacked in melting point capillaries but Grind is True but Grind related options are Null:"},
+			ExperimentMeasureMeltingPoint[
+				{
+					Object[Sample, "MeasureMeltingPoint Test Sample 1 " <> $SessionUUID],
+					Object[Sample, "MeasureMeltingPoint Test Sample 2 " <> $SessionUUID],
+					Object[Sample, "MeasureMeltingPoint Test Sample 3 " <> $SessionUUID],
+					Object[Sample, "MeasureMeltingPoint Test Capillary Sample 1 " <> $SessionUUID],
+					Object[Sample, "MeasureMeltingPoint Test Capillary Sample 2 " <> $SessionUUID],
+					Object[Sample, "MeasureMeltingPoint Test Capillary Sample 3 " <> $SessionUUID]
+				},
+				Desiccate -> False,
+				Grind -> True,
+
+				Grinder -> Null,
+				GrindingTime -> Null,
+				DesiccationMethod -> Null,
+				Desiccator -> Null,
+
+				GrindingContainer -> Model[Container, Vessel, "2 mL conical tube (no skirt) with cap and sealing ring"],
+				GrindingBead -> Model[Item, GrindingBead, "2.8 mm stainless steel grinding bead"],
+				NumberOfGrindingBeads -> 10,
+				GrindingRate -> 3000 RPM,
+				NumberOfGrindingSteps -> 2,
+				CoolingTime -> Automatic,
+				GrindingProfile -> Automatic,
+				SampleContainer -> Model[Container, Vessel, "2mL Tube"],
+				DesiccationTime -> 10 Hour
+			],
+			$Failed,
+			Messages :> {Error::UnusedOptions, Error::RequiredGrindOptions, Error::InvalidOption}
+		],
+
+		Example[
+			{Messages, "UnusedOptions", "An error is thrown if some of the input samples are prepacked in melting point capillaries but Grind is True but sample preparation options are Null:"},
+			ExperimentMeasureMeltingPoint[
+				{
+					Object[Sample, "MeasureMeltingPoint Test Sample 1 " <> $SessionUUID],
+					Object[Sample, "MeasureMeltingPoint Test Sample 2 " <> $SessionUUID],
+					Object[Sample, "MeasureMeltingPoint Test Sample 3 " <> $SessionUUID],
+					Object[Sample, "MeasureMeltingPoint Test Capillary Sample 1 " <> $SessionUUID],
+					Object[Sample, "MeasureMeltingPoint Test Capillary Sample 2 " <> $SessionUUID],
+					Object[Sample, "MeasureMeltingPoint Test Capillary Sample 3 " <> $SessionUUID]
+				},
+				Desiccate -> False,
+				Grind -> True,
+
+				OrderOfOperations -> {Desiccate, Grind},
+
+				Amount -> Null,
+				PreparedSampleStorageCondition -> AmbientStorage,
+
+				Grinder -> Null,
+				GrindingTime -> Null,
+				DesiccationMethod -> Null,
+				Desiccator -> Null,
+
+				GrindingContainer -> Model[Container, Vessel, "2 mL conical tube (no skirt) with cap and sealing ring"],
+				GrindingBead -> Model[Item, GrindingBead, "2.8 mm stainless steel grinding bead"],
+				NumberOfGrindingBeads -> 10,
+				GrindingRate -> 3000 RPM,
+				NumberOfGrindingSteps -> 2,
+				CoolingTime -> Automatic,
+				GrindingProfile -> Automatic,
+				SampleContainer -> Model[Container, Vessel, "2mL Tube"],
+				DesiccationTime -> 10 Hour
+			],
+			$Failed,
+			Messages :> {Error::UnusedOptions, Error::RequiredGrindOptions, Error::OrderOfOperationsMismatch, Error::InvalidOption}
+		],
+
+		(* 6. the sample is not in capillary, Desiccate and Grind are False, desiccate/grind-related options are specified *)
+		Example[
+			{Messages, "UnusedOptions", "An error is thrown if some of the input samples are prepacked in melting point capillaries but Grind and Desiccate are False but Grind/Desiccate related options are specified:"},
+			ExperimentMeasureMeltingPoint[
+				{
+					Object[Sample, "MeasureMeltingPoint Test Sample 1 " <> $SessionUUID],
+					Object[Sample, "MeasureMeltingPoint Test Sample 2 " <> $SessionUUID],
+					Object[Sample, "MeasureMeltingPoint Test Sample 3 " <> $SessionUUID],
+					Object[Sample, "MeasureMeltingPoint Test Capillary Sample 1 " <> $SessionUUID],
+					Object[Sample, "MeasureMeltingPoint Test Capillary Sample 2 " <> $SessionUUID],
+					Object[Sample, "MeasureMeltingPoint Test Capillary Sample 3 " <> $SessionUUID]
+				},
+				Desiccate -> False,
+				Grind -> False,
+
+				Grinder -> Null,
+				GrindingTime -> Null,
+				DesiccationMethod -> Null,
+				Desiccator -> Null,
+
+				GrindingContainer -> Model[Container, Vessel, "2 mL conical tube (no skirt) with cap and sealing ring"],
+				GrindingBead -> Model[Item, GrindingBead, "2.8 mm stainless steel grinding bead"],
+				NumberOfGrindingBeads -> 10,
+				GrindingRate -> 3000 RPM,
+				NumberOfGrindingSteps -> 2,
+				CoolingTime -> Automatic,
+				GrindingProfile -> Automatic,
+				SampleContainer -> Model[Container, Vessel, "2mL Tube"],
+				DesiccationTime -> 10 Hour
+			],
+			$Failed,
+			Messages :> {Error::UnusedOptions, Error::InvalidOption}
+		],
+
+		Example[
+			{Messages, "UnusedOptions", "An error is thrown if some of the input samples are prepacked in melting point capillaries but Grind and Desiccate are False but sample preparation options are specified:"},
+			ExperimentMeasureMeltingPoint[
+				{
+					Object[Sample, "MeasureMeltingPoint Test Sample 1 " <> $SessionUUID],
+					Object[Sample, "MeasureMeltingPoint Test Sample 2 " <> $SessionUUID],
+					Object[Sample, "MeasureMeltingPoint Test Sample 3 " <> $SessionUUID],
+					Object[Sample, "MeasureMeltingPoint Test Capillary Sample 1 " <> $SessionUUID],
+					Object[Sample, "MeasureMeltingPoint Test Capillary Sample 2 " <> $SessionUUID],
+					Object[Sample, "MeasureMeltingPoint Test Capillary Sample 3 " <> $SessionUUID]
+				},
+				Desiccate -> False,
+				Grind -> False,
+
+				OrderOfOperations -> {Desiccate, Grind},
+
+				Amount -> Null,
+				PreparedSampleStorageCondition -> AmbientStorage,
+
+				Grinder -> Null,
+				GrindingTime -> Null,
+				DesiccationMethod -> Null,
+				Desiccator -> Null,
+
+				GrindingContainer -> Model[Container, Vessel, "2 mL conical tube (no skirt) with cap and sealing ring"],
+				GrindingBead -> Model[Item, GrindingBead, "2.8 mm stainless steel grinding bead"],
+				NumberOfGrindingBeads -> 10,
+				GrindingRate -> 3000 RPM,
+				NumberOfGrindingSteps -> 2,
+				CoolingTime -> Automatic,
+				GrindingProfile -> Automatic,
+				SampleContainer -> Model[Container, Vessel, "2mL Tube"],
+				DesiccationTime -> 10 Hour
+			],
+			$Failed,
+			Messages :> {Error::UnusedOptions, Error::OrderOfOperationsMismatch, Error::InvalidOption}
 		]
+	},
+
+	TurnOffMessages :> {
+		Warning::SamplesOutOfStock,
+		Warning::InstrumentUndergoingMaintenance,
+		Warning::SampleMustBeMoved,
+		Warning::DeprecatedProduct
 	},
 
 	SetUp :> (ClearMemoization[]),
@@ -2765,17 +3922,19 @@ DefineTests[ExperimentMeasureMeltingPoint,
 		$CreatedObjects = {};
 
 		(* Turn off the SamplesOutOfStock warning for unit tests *)
-		Off[Warning::SamplesOutOfStock];
-		Off[Warning::InstrumentUndergoingMaintenance];
-		Off[Warning::SimilarMolecules];
-		Off[Warning::SampleMustBeMoved];
-		Off[Warning::DeprecatedProduct];
+
 
 		Module[
 			{allObjects},
 
 			(* list of test objects*)
 			allObjects = {
+				(* test user *)
+				Object[User, "Test User with no Site For ExperimentMeasureMeltingPoint 1 " <> $SessionUUID],
+				Object[User, "Test User with One Site For ExperimentMeasureMeltingPoint 1 " <> $SessionUUID],
+				Object[Team, Financing, "Test FinancingTeam For ExperimentMeasureMeltingPoint 1 " <> $SessionUUID],
+
+				(* test containers *)
 				Object[Container, Bench, "Test Bench for ExperimentMeasureMelting" <> $SessionUUID],
 				Object[Container, Vessel, "MeasureMeltingPointing test container 1 " <> $SessionUUID],
 				Object[Container, Vessel, "MeasureMeltingPointing test container 2 " <> $SessionUUID],
@@ -2804,23 +3963,23 @@ DefineTests[ExperimentMeasureMeltingPoint,
 
 
 				(* identity models *)
-				Model[Molecule, "Test Molecule with melting point of 99 Celsius" <> $SessionUUID],
-				Model[Molecule, "Test Molecule with melting point of 152 Celsius" <> $SessionUUID],
-				Model[Molecule, "Test Molecule with melting point of 350 Celsius" <> $SessionUUID],
-				Model[Molecule, "Test NaCl Molecule " <> $SessionUUID],
-				Model[Molecule, "Test CaO Molecule " <> $SessionUUID],
-				Model[Molecule, "Test Helium Molecule " <> $SessionUUID],
+				Model[Molecule, "Test Molecule with melting point of 99 Celsius for ExperimentMeasureMeltingPoint Tests " <> $SessionUUID],
+				Model[Molecule, "Test Molecule with melting point of 152 Celsius for ExperimentMeasureMeltingPoint Tests " <> $SessionUUID],
+				Model[Molecule, "Test Molecule with melting point of 350 Celsius for ExperimentMeasureMeltingPoint Tests " <> $SessionUUID],
+				Model[Molecule, "Test NaCl Molecule for ExperimentMeasureMeltingPoint Tests " <> $SessionUUID],
+				Model[Molecule, "Test CaO Molecule for ExperimentMeasureMeltingPoint Tests " <> $SessionUUID],
+				Model[Molecule, "Test Helium Molecule for ExperimentMeasureMeltingPoint Tests " <> $SessionUUID],
 
 				(* sample models *)
-				Model[Sample, "Test solid sample 1 " <> $SessionUUID],
-				Model[Sample, "Test solid sample 99C " <> $SessionUUID],
-				Model[Sample, "Test solid sample 350C " <> $SessionUUID],
-				Model[Sample, "Test solid sample with 3 components " <> $SessionUUID],
-				Model[Sample, "Test liquid sample 1 " <> $SessionUUID],
-				Model[Sample, "Test no-state sample 1 " <> $SessionUUID],
-				Model[Sample, "Test no-StorageCondition sample 1 " <> $SessionUUID],
+				Model[Sample, "Test solid sample 1 for ExperimentMeasureMeltingPoint Tests " <> $SessionUUID],
+				Model[Sample, "Test solid sample 99C for ExperimentMeasureMeltingPoint Tests " <> $SessionUUID],
+				Model[Sample, "Test solid sample 350C for ExperimentMeasureMeltingPoint Tests " <> $SessionUUID],
+				Model[Sample, "Test solid sample with 3 components for ExperimentMeasureMeltingPoint Tests " <> $SessionUUID],
+				Model[Sample, "Test liquid sample 1 for ExperimentMeasureMeltingPoint Tests " <> $SessionUUID],
+				Model[Sample, "Test no-state sample 1 for ExperimentMeasureMeltingPoint Tests " <> $SessionUUID],
+				Model[Sample, "Test no-StorageCondition sample 1 for ExperimentMeasureMeltingPoint Tests " <> $SessionUUID],
 				Model[Sample, "Test Indicating Drierite For ExperimentMeasureMeltingPoint Tests " <> $SessionUUID],
-				Model[Sample, "Test gas sample 1 " <> $SessionUUID],
+				Model[Sample, "Test gas sample 1 for ExperimentMeasureMeltingPoint Tests " <> $SessionUUID],
 
 
 				(* sample objects *)
@@ -2900,22 +4059,31 @@ DefineTests[ExperimentMeasureMeltingPoint,
 					}
 				];
 
-				(*create all models*)
+				(* create all molecule models and test user *)
 				Upload[{
 					<|
 						Type -> Model[Molecule],
-						Name -> "Test Molecule with melting point of 99 Celsius" <> $SessionUUID,
+						Name -> "Test Molecule with melting point of 99 Celsius for ExperimentMeasureMeltingPoint Tests " <> $SessionUUID,
 						MeltingPoint -> 99Celsius
 					|>,
 					<|
 						Type -> Model[Molecule],
-						Name -> "Test Molecule with melting point of 152 Celsius" <> $SessionUUID,
+						Name -> "Test Molecule with melting point of 152 Celsius for ExperimentMeasureMeltingPoint Tests " <> $SessionUUID,
 						MeltingPoint -> 152Celsius
 					|>,
 					<|
 						Type -> Model[Molecule],
-						Name -> "Test Molecule with melting point of 350 Celsius" <> $SessionUUID,
+						Name -> "Test Molecule with melting point of 350 Celsius for ExperimentMeasureMeltingPoint Tests " <> $SessionUUID,
 						MeltingPoint -> 350Celsius
+					|>,
+					<|
+						Type -> Object[User],
+						Name -> "Test User with no Site For ExperimentMeasureMeltingPoint 1 " <> $SessionUUID
+					|>,
+					<|
+						Type -> Object[Team, Financing],
+						Name -> "Test FinancingTeam For ExperimentMeasureMeltingPoint 1 " <> $SessionUUID,
+						Replace@ExperimentSites -> Link[Object[Container, Site, "ECL-2"], FinancingTeams]
 					|>
 				}];
 
@@ -2926,20 +4094,21 @@ DefineTests[ExperimentMeasureMeltingPoint,
 						"InChI=1S/He"
 					},
 					Name -> {
-						"Test NaCl Molecule " <> $SessionUUID,
-						"Test CaO Molecule " <> $SessionUUID,
-						"Test Helium Molecule " <> $SessionUUID
+						"Test NaCl Molecule for ExperimentMeasureMeltingPoint Tests " <> $SessionUUID,
+						"Test CaO Molecule for ExperimentMeasureMeltingPoint Tests " <> $SessionUUID,
+						"Test Helium Molecule for ExperimentMeasureMeltingPoint Tests " <> $SessionUUID
 					},
 					BiosafetyLevel -> {"BSL-1", "BSL-1", "BSL-1"},
 					IncompatibleMaterials -> {{None}, {None}, {None}},
 					MSDSRequired -> {False, False, False},
 					State -> {Solid, Solid, Gas},
-					CAS -> Null
+					CAS -> Null,
+					Force -> True
 				];
 
-				sampleModelPacket99C = UploadSampleModel["Test solid sample 99C " <> $SessionUUID,
+				sampleModelPacket99C = UploadSampleModel["Test solid sample 99C for ExperimentMeasureMeltingPoint Tests " <> $SessionUUID,
 					Composition -> {
-						{100 MassPercent, Model[Molecule, "Test Molecule with melting point of 99 Celsius" <> $SessionUUID]}
+						{100 MassPercent, Model[Molecule, "Test Molecule with melting point of 99 Celsius for ExperimentMeasureMeltingPoint Tests " <> $SessionUUID]}
 					},
 					MSDSRequired -> False,
 					DefaultStorageCondition -> Model[StorageCondition, "Ambient Storage"],
@@ -2956,9 +4125,9 @@ DefineTests[ExperimentMeasureMeltingPoint,
 					Upload -> False
 				];
 
-				sampleModelPacket350C = UploadSampleModel["Test solid sample 350C " <> $SessionUUID,
+				sampleModelPacket350C = UploadSampleModel["Test solid sample 350C for ExperimentMeasureMeltingPoint Tests " <> $SessionUUID,
 					Composition -> {
-						{100 MassPercent, Model[Molecule, "Test Molecule with melting point of 350 Celsius" <> $SessionUUID]}
+						{100 MassPercent, Model[Molecule, "Test Molecule with melting point of 350 Celsius for ExperimentMeasureMeltingPoint Tests " <> $SessionUUID]}
 					},
 					MSDSRequired -> False,
 					DefaultStorageCondition -> Model[StorageCondition, "Ambient Storage"],
@@ -2975,11 +4144,11 @@ DefineTests[ExperimentMeasureMeltingPoint,
 					Upload -> False
 				];
 
-				multipleComponentSampleModelPacket = UploadSampleModel["Test solid sample with 3 components " <> $SessionUUID,
+				multipleComponentSampleModelPacket = UploadSampleModel["Test solid sample with 3 components for ExperimentMeasureMeltingPoint Tests " <> $SessionUUID,
 					Composition -> {
-						{10 MassPercent, Model[Molecule, "Test Molecule with melting point of 350 Celsius" <> $SessionUUID]},
-						{89 MassPercent, Model[Molecule, "Test Molecule with melting point of 152 Celsius" <> $SessionUUID]},
-						{1 MassPercent, Model[Molecule, "Test Molecule with melting point of 99 Celsius" <> $SessionUUID]}
+						{10 MassPercent, Model[Molecule, "Test Molecule with melting point of 350 Celsius for ExperimentMeasureMeltingPoint Tests " <> $SessionUUID]},
+						{89 MassPercent, Model[Molecule, "Test Molecule with melting point of 152 Celsius for ExperimentMeasureMeltingPoint Tests " <> $SessionUUID]},
+						{1 MassPercent, Model[Molecule, "Test Molecule with melting point of 99 Celsius for ExperimentMeasureMeltingPoint Tests " <> $SessionUUID]}
 					},
 					MSDSRequired -> False,
 					DefaultStorageCondition -> Model[StorageCondition, "Ambient Storage"],
@@ -2996,9 +4165,9 @@ DefineTests[ExperimentMeasureMeltingPoint,
 					Upload -> False
 				];
 
-				solidSampleModelPacket = UploadSampleModel["Test solid sample 1 " <> $SessionUUID,
+				solidSampleModelPacket = UploadSampleModel["Test solid sample 1 for ExperimentMeasureMeltingPoint Tests " <> $SessionUUID,
 					Composition -> {
-						{100 MassPercent, Model[Molecule, "Test NaCl Molecule " <> $SessionUUID]}
+						{100 MassPercent, Model[Molecule, "Test NaCl Molecule for ExperimentMeasureMeltingPoint Tests " <> $SessionUUID]}
 					},
 					MSDSRequired -> False,
 					DefaultStorageCondition -> Model[StorageCondition, "Ambient Storage"],
@@ -3017,7 +4186,7 @@ DefineTests[ExperimentMeasureMeltingPoint,
 
 				desiccantModelPacket = UploadSampleModel["Test Indicating Drierite For ExperimentMeasureMeltingPoint Tests " <> $SessionUUID,
 					Composition -> {
-						{100 MassPercent, Model[Molecule, "Test CaO Molecule " <> $SessionUUID]}
+						{100 MassPercent, Model[Molecule, "Test CaO Molecule for ExperimentMeasureMeltingPoint Tests " <> $SessionUUID]}
 					},
 					MSDSRequired -> False,
 					DefaultStorageCondition -> Model[StorageCondition, "Ambient Storage"],
@@ -3034,9 +4203,9 @@ DefineTests[ExperimentMeasureMeltingPoint,
 					Upload -> False
 				];
 
-				gasModelPacket = UploadSampleModel["Test gas sample 1 " <> $SessionUUID,
+				gasModelPacket = UploadSampleModel["Test gas sample 1 for ExperimentMeasureMeltingPoint Tests " <> $SessionUUID,
 					Composition -> {
-						{100 MassPercent, Model[Molecule, "Test Helium Molecule " <> $SessionUUID]}
+						{100 MassPercent, Model[Molecule, "Test Helium Molecule for ExperimentMeasureMeltingPoint Tests " <> $SessionUUID]}
 					},
 					MSDSRequired -> False,
 					DefaultStorageCondition -> Model[StorageCondition, "Ambient Storage"],
@@ -3053,9 +4222,9 @@ DefineTests[ExperimentMeasureMeltingPoint,
 					Upload -> False
 				];
 
-				noStateSampleModelPacket = UploadSampleModel["Test no-state sample 1 " <> $SessionUUID,
+				noStateSampleModelPacket = UploadSampleModel["Test no-state sample 1 for ExperimentMeasureMeltingPoint Tests " <> $SessionUUID,
 					Composition -> {
-						{100 MassPercent, Model[Molecule, "Test NaCl Molecule " <> $SessionUUID]}
+						{100 MassPercent, Model[Molecule, "Test NaCl Molecule for ExperimentMeasureMeltingPoint Tests " <> $SessionUUID]}
 					},
 					MSDSRequired -> False,
 					DefaultStorageCondition -> Model[StorageCondition, "Ambient Storage"],
@@ -3072,9 +4241,9 @@ DefineTests[ExperimentMeasureMeltingPoint,
 					Upload -> False
 				];
 
-				noStorageConditionModelPacket = UploadSampleModel["Test no-StorageCondition sample 1 " <> $SessionUUID,
+				noStorageConditionModelPacket = UploadSampleModel["Test no-StorageCondition sample 1 for ExperimentMeasureMeltingPoint Tests " <> $SessionUUID,
 					Composition -> {
-						{100 MassPercent, Model[Molecule, "Test NaCl Molecule " <> $SessionUUID]}
+						{100 MassPercent, Model[Molecule, "Test NaCl Molecule for ExperimentMeasureMeltingPoint Tests " <> $SessionUUID]}
 					},
 					MSDSRequired -> False,
 					DefaultStorageCondition -> Model[StorageCondition, "Ambient Storage"],
@@ -3091,7 +4260,7 @@ DefineTests[ExperimentMeasureMeltingPoint,
 					Upload -> False
 				];
 
-				liquidSampleModelPacket = UploadSampleModel["Test liquid sample 1 " <> $SessionUUID,
+				liquidSampleModelPacket = UploadSampleModel["Test liquid sample 1 for ExperimentMeasureMeltingPoint Tests " <> $SessionUUID,
 					Composition -> {
 						{100 VolumePercent, Model[Molecule, "Water"]}
 					},
@@ -3116,34 +4285,40 @@ DefineTests[ExperimentMeasureMeltingPoint,
 				(* Remove fields form sample models if needed *)
 				Upload[
 					{
-						<|Object -> Model[Sample, "Test no-state sample 1 " <> $SessionUUID], State -> Null|>
+						<|Object -> Model[Sample, "Test no-state sample 1 for ExperimentMeasureMeltingPoint Tests " <> $SessionUUID], State -> Null|>,
+
+						<|
+							Type -> Object[User],
+							Name -> "Test User with One Site For ExperimentMeasureMeltingPoint 1 " <> $SessionUUID,
+							Replace[FinancingTeams] -> Link[Object[Team, Financing, "Test FinancingTeam For ExperimentMeasureMeltingPoint 1 " <> $SessionUUID], Members]
+						|>
 					}
 				];
 
 				testSampleModels = Flatten@{
-					(*1*)Model[Sample, "Test solid sample 1 " <> $SessionUUID],
-					(*2*)Model[Sample, "Test solid sample 1 " <> $SessionUUID],
-					(*3*)Model[Sample, "Test solid sample 1 " <> $SessionUUID],
-					(*4*)Model[Sample, "Test solid sample 1 " <> $SessionUUID],
-					(*5*)Model[Sample, "Test solid sample 1 " <> $SessionUUID],
-					(*6*)Model[Sample, "Test solid sample 1 " <> $SessionUUID],
-					(*7*)Model[Sample, "Test solid sample 1 " <> $SessionUUID],
-					(*8*)Model[Sample, "Test solid sample 1 " <> $SessionUUID],
-					(*9*)Model[Sample, "Test solid sample 1 " <> $SessionUUID],
-					(*10*)Model[Sample, "Test solid sample 1 " <> $SessionUUID],
-					(*11*)Model[Sample, "Test solid sample 1 " <> $SessionUUID],
-					(*12*)Model[Sample, "Test solid sample 1 " <> $SessionUUID],
+					(*1*)Model[Sample, "Test solid sample 1 for ExperimentMeasureMeltingPoint Tests " <> $SessionUUID],
+					(*2*)Model[Sample, "Test solid sample 1 for ExperimentMeasureMeltingPoint Tests " <> $SessionUUID],
+					(*3*)Model[Sample, "Test solid sample 1 for ExperimentMeasureMeltingPoint Tests " <> $SessionUUID],
+					(*4*)Model[Sample, "Test solid sample 1 for ExperimentMeasureMeltingPoint Tests " <> $SessionUUID],
+					(*5*)Model[Sample, "Test solid sample 1 for ExperimentMeasureMeltingPoint Tests " <> $SessionUUID],
+					(*6*)Model[Sample, "Test solid sample 1 for ExperimentMeasureMeltingPoint Tests " <> $SessionUUID],
+					(*7*)Model[Sample, "Test solid sample 1 for ExperimentMeasureMeltingPoint Tests " <> $SessionUUID],
+					(*8*)Model[Sample, "Test solid sample 1 for ExperimentMeasureMeltingPoint Tests " <> $SessionUUID],
+					(*9*)Model[Sample, "Test solid sample 1 for ExperimentMeasureMeltingPoint Tests " <> $SessionUUID],
+					(*10*)Model[Sample, "Test solid sample 1 for ExperimentMeasureMeltingPoint Tests " <> $SessionUUID],
+					(*11*)Model[Sample, "Test solid sample 1 for ExperimentMeasureMeltingPoint Tests " <> $SessionUUID],
+					(*12*)Model[Sample, "Test solid sample 1 for ExperimentMeasureMeltingPoint Tests " <> $SessionUUID],
 					(*13*)Model[Sample, "Test Indicating Drierite For ExperimentMeasureMeltingPoint Tests " <> $SessionUUID],
-					(*14*)Model[Sample, "Test liquid sample 1 " <> $SessionUUID],
-					(*15*)Model[Sample, "Test solid sample 1 " <> $SessionUUID],
-					(*16*)Model[Sample, "Test liquid sample 1 " <> $SessionUUID],
-					(*17*)Model[Sample, "Test solid sample 99C " <> $SessionUUID],
-					(*18*)Model[Sample, "Test solid sample 350C " <> $SessionUUID],
-					(*19*)Model[Sample, "Test solid sample with 3 components " <> $SessionUUID],
-					(*20*)Model[Sample, "Test solid sample 1 " <> $SessionUUID],
-					(*21*)Model[Sample, "Test solid sample 1 " <> $SessionUUID],
-					(*22*)Model[Sample, "Test solid sample 1 " <> $SessionUUID],
-					(*23*)Model[Sample, "Test solid sample 1 " <> $SessionUUID]
+					(*14*)Model[Sample, "Test liquid sample 1 for ExperimentMeasureMeltingPoint Tests " <> $SessionUUID],
+					(*15*)Model[Sample, "Test solid sample 1 for ExperimentMeasureMeltingPoint Tests " <> $SessionUUID],
+					(*16*)Model[Sample, "Test liquid sample 1 for ExperimentMeasureMeltingPoint Tests " <> $SessionUUID],
+					(*17*)Model[Sample, "Test solid sample 99C for ExperimentMeasureMeltingPoint Tests " <> $SessionUUID],
+					(*18*)Model[Sample, "Test solid sample 350C for ExperimentMeasureMeltingPoint Tests " <> $SessionUUID],
+					(*19*)Model[Sample, "Test solid sample with 3 components for ExperimentMeasureMeltingPoint Tests " <> $SessionUUID],
+					(*20*)Model[Sample, "Test solid sample 1 for ExperimentMeasureMeltingPoint Tests " <> $SessionUUID],
+					(*21*)Model[Sample, "Test solid sample 1 for ExperimentMeasureMeltingPoint Tests " <> $SessionUUID],
+					(*22*)Model[Sample, "Test solid sample 1 for ExperimentMeasureMeltingPoint Tests " <> $SessionUUID],
+					(*23*)Model[Sample, "Test solid sample 1 for ExperimentMeasureMeltingPoint Tests " <> $SessionUUID]
 				};
 
 				testSampleLocations = {
@@ -3302,15 +4477,17 @@ DefineTests[ExperimentMeasureMeltingPoint,
 	),
 	SymbolTearDown :> {
 		Module[{allObjects},
-			On[Warning::SamplesOutOfStock];
-			On[Warning::InstrumentUndergoingMaintenance];
-			On[Warning::SimilarMolecules];
-			On[Warning::SampleMustBeMoved];
-			On[Warning::DeprecatedProduct];
 
 			(* list of test objects*)
 			allObjects = Cases[Flatten[{
 				$CreatedObjects,
+
+				(* test user *)
+				Object[User, "Test User with no Site For ExperimentMeasureMeltingPoint 1 " <> $SessionUUID],
+				Object[User, "Test User with One Site For ExperimentMeasureMeltingPoint 1 " <> $SessionUUID],
+				Object[Team, Financing, "Test FinancingTeam For ExperimentMeasureMeltingPoint 1 " <> $SessionUUID],
+
+				(* test containers *)
 				Object[Container, Bench, "Test Bench for ExperimentMeasureMelting" <> $SessionUUID],
 				Object[Container, Vessel, "MeasureMeltingPointing test container 1 " <> $SessionUUID],
 				Object[Container, Vessel, "MeasureMeltingPointing test container 2 " <> $SessionUUID],
@@ -3339,23 +4516,23 @@ DefineTests[ExperimentMeasureMeltingPoint,
 
 
 				(* identity models *)
-				Model[Molecule, "Test Molecule with melting point of 99 Celsius" <> $SessionUUID],
-				Model[Molecule, "Test Molecule with melting point of 152 Celsius" <> $SessionUUID],
-				Model[Molecule, "Test Molecule with melting point of 350 Celsius" <> $SessionUUID],
-				Model[Molecule, "Test NaCl Molecule " <> $SessionUUID],
-				Model[Molecule, "Test CaO Molecule " <> $SessionUUID],
-				Model[Molecule, "Test Helium Molecule " <> $SessionUUID],
+				Model[Molecule, "Test Molecule with melting point of 99 Celsius for ExperimentMeasureMeltingPoint Tests " <> $SessionUUID],
+				Model[Molecule, "Test Molecule with melting point of 152 Celsius for ExperimentMeasureMeltingPoint Tests " <> $SessionUUID],
+				Model[Molecule, "Test Molecule with melting point of 350 Celsius for ExperimentMeasureMeltingPoint Tests " <> $SessionUUID],
+				Model[Molecule, "Test NaCl Molecule for ExperimentMeasureMeltingPoint Tests " <> $SessionUUID],
+				Model[Molecule, "Test CaO Molecule for ExperimentMeasureMeltingPoint Tests " <> $SessionUUID],
+				Model[Molecule, "Test Helium Molecule for ExperimentMeasureMeltingPoint Tests " <> $SessionUUID],
 
 				(* sample models *)
-				Model[Sample, "Test solid sample 1 " <> $SessionUUID],
-				Model[Sample, "Test solid sample 99C " <> $SessionUUID],
-				Model[Sample, "Test solid sample 350C " <> $SessionUUID],
-				Model[Sample, "Test solid sample with 3 components " <> $SessionUUID],
-				Model[Sample, "Test liquid sample 1 " <> $SessionUUID],
-				Model[Sample, "Test no-state sample 1 " <> $SessionUUID],
-				Model[Sample, "Test no-StorageCondition sample 1 " <> $SessionUUID],
+				Model[Sample, "Test solid sample 1 for ExperimentMeasureMeltingPoint Tests " <> $SessionUUID],
+				Model[Sample, "Test solid sample 99C for ExperimentMeasureMeltingPoint Tests " <> $SessionUUID],
+				Model[Sample, "Test solid sample 350C for ExperimentMeasureMeltingPoint Tests " <> $SessionUUID],
+				Model[Sample, "Test solid sample with 3 components for ExperimentMeasureMeltingPoint Tests " <> $SessionUUID],
+				Model[Sample, "Test liquid sample 1 for ExperimentMeasureMeltingPoint Tests " <> $SessionUUID],
+				Model[Sample, "Test no-state sample 1 for ExperimentMeasureMeltingPoint Tests " <> $SessionUUID],
+				Model[Sample, "Test no-StorageCondition sample 1 for ExperimentMeasureMeltingPoint Tests " <> $SessionUUID],
 				Model[Sample, "Test Indicating Drierite For ExperimentMeasureMeltingPoint Tests " <> $SessionUUID],
-				Model[Sample, "Test gas sample 1 " <> $SessionUUID],
+				Model[Sample, "Test gas sample 1 for ExperimentMeasureMeltingPoint Tests " <> $SessionUUID],
 
 				(* sample objects *)
 				Object[Sample, "MeasureMeltingPoint Test Sample 1 " <> $SessionUUID],
@@ -3435,11 +4612,15 @@ DefineTests[
 			]&)
 		]
 	},
+
+	TurnOffMessages :> {
+		Warning::SamplesOutOfStock,
+		Warning::InstrumentUndergoingMaintenance,
+		Warning::SampleMustBeMoved,
+		Warning::DeprecatedProduct
+	},
+
 	SymbolSetUp :> (
-		(* Turn off warnings related to the state of the lab - is okay if we're using a model with no current instances *)
-		Off[Warning::SamplesOutOfStock];
-		Off[Warning::InstrumentUndergoingMaintenance];
-		Off[Warning::DeprecatedProduct];
 
 		$CreatedObjects = {};
 
@@ -3474,8 +4655,8 @@ DefineTests[
 
 				UploadSample[
 					{
-						Model[Container, Vessel, "2mL tube with no skirt"],
-						Model[Container, Vessel, "2mL tube with no skirt"]
+						Model[Container, Vessel, "id:pZx9joxq0ko9"],
+						Model[Container, Vessel, "id:pZx9joxq0ko9"]
 					},
 					{
 						{"Bench Top Slot", testBench},
@@ -3512,9 +4693,7 @@ DefineTests[
 		(* upload needed objects *)
 	),
 	SymbolTearDown :> (
-		On[Warning::SamplesOutOfStock];
-		On[Warning::InstrumentUndergoingMaintenance];
-		On[Warning::DeprecatedProduct];
+
 		EraseObject[Flatten[{
 			$CreatedObjects,
 
@@ -3560,11 +4739,15 @@ DefineTests[
 			Null
 		]
 	},
+
+	TurnOffMessages :> {
+		Warning::SamplesOutOfStock,
+		Warning::InstrumentUndergoingMaintenance,
+		Warning::SampleMustBeMoved,
+		Warning::DeprecatedProduct
+	},
+
 	SymbolSetUp :> (
-		(* Turn off warnings related to the state of the lab - is okay if we're using a model with no current instances *)
-		Off[Warning::SamplesOutOfStock];
-		Off[Warning::InstrumentUndergoingMaintenance];
-		Off[Warning::DeprecatedProduct];
 
 		$CreatedObjects = {};
 
@@ -3599,8 +4782,8 @@ DefineTests[
 
 				UploadSample[
 					{
-						Model[Container, Vessel, "2mL tube with no skirt"],
-						Model[Container, Vessel, "2mL tube with no skirt"]
+						Model[Container, Vessel, "id:pZx9joxq0ko9"],
+						Model[Container, Vessel, "id:pZx9joxq0ko9"]
 					},
 					{
 						{"Bench Top Slot", testBench},
@@ -3637,9 +4820,6 @@ DefineTests[
 		(* upload needed objects *)
 	),
 	SymbolTearDown :> (
-		On[Warning::SamplesOutOfStock];
-		On[Warning::InstrumentUndergoingMaintenance];
-		On[Warning::DeprecatedProduct];
 
 		EraseObject[Flatten[{
 			$CreatedObjects,
@@ -3697,11 +4877,15 @@ DefineTests[
 			True
 		]
 	},
+
+	TurnOffMessages :> {
+		Warning::SamplesOutOfStock,
+		Warning::InstrumentUndergoingMaintenance,
+		Warning::SampleMustBeMoved,
+		Warning::DeprecatedProduct
+	},
+
 	SymbolSetUp :> (
-		(* Turn off warnings related to the state of the lab - is okay if we're using a model with no current instances *)
-		Off[Warning::SamplesOutOfStock];
-		Off[Warning::InstrumentUndergoingMaintenance];
-		Off[Warning::DeprecatedProduct];
 
 		$CreatedObjects = {};
 
@@ -3736,8 +4920,8 @@ DefineTests[
 
 				UploadSample[
 					{
-						Model[Container, Vessel, "2mL tube with no skirt"],
-						Model[Container, Vessel, "2mL tube with no skirt"]
+						Model[Container, Vessel, "id:pZx9joxq0ko9"],
+						Model[Container, Vessel, "id:pZx9joxq0ko9"]
 					},
 					{
 						{"Bench Top Slot", testBench},
@@ -3774,9 +4958,6 @@ DefineTests[
 		(* upload needed objects *)
 	),
 	SymbolTearDown :> (
-		On[Warning::SamplesOutOfStock];
-		On[Warning::InstrumentUndergoingMaintenance];
-		On[Warning::DeprecatedProduct];
 
 		EraseObject[Flatten[{
 			$CreatedObjects,

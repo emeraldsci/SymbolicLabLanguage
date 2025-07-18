@@ -246,7 +246,71 @@ DefineObjectType[Object[Maintenance, CalibrateVolume], {
 			Pattern :> Alternatives[Automatic,IndexMatching,Average],
 			Description -> "For container models with multiple wells, describes whether the calibration generated has a shared empty distance for all wells (Average), or an individual distance for each well (IndexMatching). Automatic resolves in the parser to the average method if the empty distances measured are homogeneous and IndexMatching otherwise.",
 			Category -> "Method Information"
+		},
+		Impeller -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[Model[Part,StirrerShaft],Object[Part,StirrerShaft]],
+			Description -> "The impeller used in the mixer responsible for stirring to determine the highest safe mix rate of target container.",
+			Category -> "Sample Preparation"
+		},
+		MixInstrument -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[Object[Instrument, OverheadStirrer], Model[Instrument, OverheadStirrer]],
+			Description -> "The OverheadStirrer used for stirring to determine the highest safe mix rate of target container.",
+			Category -> "Sample Preparation"
+		},
+		CurrentMixRate -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterP[0*RPM],
+			Units -> RPM,
+			Description -> "The most recent mix rate used in this maintenance to determine the highest safe mix rate of MixRateContainer.",
+			Category -> "Sample Preparation"
+		},
+		MixRateContainer -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[
+				Model[Container],
+				Object[Container]
+			],
+			Description -> "The specific container this maintenance uses to determine the highest safe mix rate.",
+			Category -> "Sample Preparation"
+		},
+		MaxMixRateReached -> {
+			Format -> Single,
+			Class -> Boolean,
+			Pattern :> BooleanP,
+			Description -> "Indicates if the current mix rate is the highest safe mix rate that can be used by MixRateContainer.",
+			Category -> "Sample Preparation"
+		},
+		MixRateTransferAmount -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterEqualP[0*Liter],
+			Units -> Liter,
+			Description -> "The volume of liquid needed to completely fill the MixRateContainer to its MaxVolume for the purpose of determining the highest safe mix rate.",
+			Category -> "Sample Preparation"
+		},
+		MixRateContainerManipulation -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[Protocol,RoboticSamplePreparation]|Object[Protocol,ManualSamplePreparation]|Object[Notebook,Script],
+			Description -> "The sample manipulations protocol used to transfer the liquid to fill MixRateContainer.",
+			Category -> "Sample Preparation"
+		},
+		MixRateContainerUnitOperations -> {
+			Format -> Multiple,
+			Class -> Expression,
+			Pattern :> SamplePreparationP,
+			Description -> "A list of RoboticSamplePreparation or ManualSamplePreparation unit operations in order that is be performed to fill MixRateContainer.",
+			Category -> "Sample Preparation"
 		}
-		
 	}
 }];

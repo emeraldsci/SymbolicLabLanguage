@@ -58,25 +58,6 @@ DefineTests[ExperimentCrossFlowFiltration,
 			{_Rule..}
 		],
 
-		(* This test is replicating "Test Sample (II)" as a primitive. However, we cannot directly compare the two option sets because prep primitives do not inherit storage conditions from their model. So if a sample is specified, this experiment will return storage conditions for permeate and retentate that are inherited from the sample, while primitives return the default values because there is no storage condition in the primitive sample. With this test, we are checking that the only two differences between the two option sets are the storage conditions of permeate and retentate *)
-		Test[
-			"Preparatory primitive and samples both resolve to the same options:",
-			primitiveOptions=ExperimentCrossFlowFiltration[
-				"My Sample",
-				PreparatoryPrimitives->{
-					Define[Name->"My Sample",Sample->{Model[Container,Vessel,"1L Glass Bottle"],"A1"}],
-					Transfer[Source->Model[Sample,"Cross Flow Test Sample "<> $SessionUUID],Amount->250 Milliliter,Destination->"My Sample"]
-				},
-				Output->Options
-			];
-			sampleOptions=ExperimentCrossFlowFiltration[Object[Sample,"Cross Flow Test Sample (II) "<> $SessionUUID],Output->Options];
-			Keys[Complement[primitiveOptions,sampleOptions]],
-			{PermeateContainerOutLabel, PermeateSampleOutLabel,
-				PreparatoryPrimitives, RetentateContainerOutLabel,
-				RetentateSampleOutLabel, SampleContainerLabel, SampleLabel},
-			Variables:>{primitiveOptions,sampleOptions}
-		],
-		
 		Test[
 			"List overload works properly (important for CC):",
 			ExperimentCrossFlowFiltration[{Object[Sample,"Cross Flow Test Sample (II) "<> $SessionUUID]}],
@@ -259,7 +240,7 @@ DefineTests[ExperimentCrossFlowFiltration,
 				Output->Options
 			];
 			Lookup[options,PrimaryConcentrationTarget],
-			5,
+			3.3,
 			EquivalenceFunction->Equal,
 			Variables:>{options},
 			Messages:>{Warning::AliquotRequired}
@@ -273,7 +254,7 @@ DefineTests[ExperimentCrossFlowFiltration,
 				Output->Options
 			];
 			Lookup[options,PrimaryConcentrationTarget],
-			10,
+			6.7,
 			EquivalenceFunction->Equal,
 			Variables:>{options}
 		],
@@ -421,7 +402,7 @@ DefineTests[ExperimentCrossFlowFiltration,
 				SecondaryConcentrationTarget->2
 			];
 			Download[protocol,ScaleAlarms],
-			{EqualP[Quantity[585, "Grams"]], EqualP[Quantity[3, "Grams"]]},
+			{EqualP[Quantity[585, "Grams"]], EqualP[Quantity[3.1, "Grams"]]},
 			Variables:>{protocol}
 		],
 
@@ -877,6 +858,42 @@ DefineTests[ExperimentCrossFlowFiltration,
 			Variables:>{protocol}
 		],
 		Example[
+			{Options,PrimaryConcentrationTarget,"Specify, by volume, how much liquid will be moved through the filter in each filtration step for each sample when using uPulse:"},
+			options=ExperimentCrossFlowFiltration[
+				{
+					Object[Sample, "Cross Flow Test Sample For uPulse 1" <> $SessionUUID],
+					Object[Sample, "Cross Flow Test Sample For uPulse 2" <> $SessionUUID],
+					Object[Sample, "Cross Flow Test Sample For uPulse 3" <> $SessionUUID]
+				},
+				DiafiltrationTarget->1.1,
+				PrimaryConcentrationTarget->{0Milliliter,20Milliliter,30Milliliter},
+				Instrument->Model[Instrument, CrossFlowFiltration, "\[Micro]PULSE - TFF"],
+				Output->Options
+			];
+			Lookup[options,PrimaryConcentrationTarget],
+			{0Milliliter,20Milliliter,30Milliliter},
+			EquivalenceFunction->Equal,
+			Variables:>{options}
+		],
+		Example[
+			{Options,PrimaryConcentrationTarget,"Specify, by weight, how much liquid will be moved through the filter in each filtration step for each sample when using uPulse:"},
+			options=ExperimentCrossFlowFiltration[
+				{
+					Object[Sample, "Cross Flow Test Sample For uPulse 1" <> $SessionUUID],
+					Object[Sample, "Cross Flow Test Sample For uPulse 2" <> $SessionUUID],
+					Object[Sample, "Cross Flow Test Sample For uPulse 3" <> $SessionUUID]
+				},
+				DiafiltrationTarget->1.1,
+				PrimaryConcentrationTarget->{0Gram,20Gram,30Gram},
+				Instrument->Model[Instrument, CrossFlowFiltration, "\[Micro]PULSE - TFF"],
+				Output->Options
+			];
+			Lookup[options,PrimaryConcentrationTarget],
+			{0Gram,20Gram,30Gram},
+			EquivalenceFunction->Equal,
+			Variables:>{options}
+		],
+		Example[
 			{Options,SecondaryConcentrationTarget,"Specify how much liquid will be moved through the filter in each filtration step:"},
 			options=ExperimentCrossFlowFiltration[
 				Object[Sample,"Cross Flow Test Sample (II) "<> $SessionUUID],
@@ -905,6 +922,44 @@ DefineTests[ExperimentCrossFlowFiltration,
 			{1.5,2,2.5},
 			EquivalenceFunction->Equal,
 			Variables:>{protocol}
+		],
+		Example[
+			{Options,SecondaryConcentrationTarget,"Specify, by volume, how much liquid will be moved through the filter in each filtration step for each sample when using uPulse:"},
+			options=ExperimentCrossFlowFiltration[
+				{
+					Object[Sample, "Cross Flow Test Sample For uPulse 1" <> $SessionUUID],
+					Object[Sample, "Cross Flow Test Sample For uPulse 2" <> $SessionUUID],
+					Object[Sample, "Cross Flow Test Sample For uPulse 3" <> $SessionUUID]
+				},
+				DiafiltrationTarget->1.1,
+				PrimaryConcentrationTarget->{0Milliliter,20Milliliter,30Milliliter},
+				SecondaryConcentrationTarget->{30Milliliter,10Milliliter,0Milliliter},
+				Instrument->Model[Instrument, CrossFlowFiltration, "\[Micro]PULSE - TFF"],
+				Output->Options
+			];
+			Lookup[options,SecondaryConcentrationTarget],
+			{30Milliliter,10Milliliter,0Milliliter},
+			EquivalenceFunction->Equal,
+			Variables:>{options}
+		],
+		Example[
+			{Options,SecondaryConcentrationTarget,"Specify, by weight, how much liquid will be moved through the filter in each filtration step for each sample when using uPulse:"},
+			options=ExperimentCrossFlowFiltration[
+				{
+					Object[Sample, "Cross Flow Test Sample For uPulse 1" <> $SessionUUID],
+					Object[Sample, "Cross Flow Test Sample For uPulse 2" <> $SessionUUID],
+					Object[Sample, "Cross Flow Test Sample For uPulse 3" <> $SessionUUID]
+				},
+				DiafiltrationTarget->1.1,
+				PrimaryConcentrationTarget->{0Gram,20Gram,30Gram},
+				SecondaryConcentrationTarget->{30Gram,10Gram,0Gram},
+				Instrument->Model[Instrument, CrossFlowFiltration, "\[Micro]PULSE - TFF"],
+				Output->Options
+			];
+			Lookup[options,SecondaryConcentrationTarget],
+			{30Gram,10Gram,0Gram},
+			EquivalenceFunction->Equal,
+			Variables:>{options}
 		],
 		Example[
 			{Options,DiafiltrationTarget,"Specify how much liquid will be moved through the filter in each filtration step:"},
@@ -1829,18 +1884,6 @@ DefineTests[ExperimentCrossFlowFiltration,
 			Variables:>{options},
 			Messages:>{Warning::CrossFlowFilterSpecifiedMismatch}
 		],
-		
-		Example[
-			{Options,PreparatoryPrimitives,"Specify a series of manipulations to be performed before the experiment:"},
-			ExperimentCrossFlowFiltration[
-				"My Sample",
-				PreparatoryPrimitives->{
-					Define[Name->"My Sample",Sample->{Model[Container,Vessel,"1L Glass Bottle"],"A1"}],
-					Transfer[Source->Model[Sample,"Cross Flow Test Sample "<> $SessionUUID],Amount->250 Milliliter,Destination->"My Sample"]
-				}
-			],
-			ObjectP[Object[Protocol,CrossFlowFiltration]]
-		],
 
 		Example[
 			{Options,PreparatoryUnitOperations,"Specify a series of manipulations to be performed before the experiment:"},
@@ -1853,7 +1896,30 @@ DefineTests[ExperimentCrossFlowFiltration,
 			],
 			ObjectP[Object[Protocol,CrossFlowFiltration]]
 		],
-
+		Example[{Options, {PreparedModelContainer, PreparedModelAmount}, "Specify the container in which an input Model[Sample] should be prepared:"},
+			options = ExperimentCrossFlowFiltration[
+				{Model[Sample, "Milli-Q water"]},
+				PreparedModelContainer -> Model[Container,Vessel,"1L Glass Bottle"],
+				PreparedModelAmount -> 250 Milliliter,
+				Output -> Options
+			];
+			prepUOs = Lookup[options, PreparatoryUnitOperations];
+			{
+				prepUOs[[-1, 1]][Sample],
+				prepUOs[[-1, 1]][Container],
+				prepUOs[[-1, 1]][Amount],
+				prepUOs[[-1, 1]][Well],
+				prepUOs[[-1, 1]][ContainerLabel]
+			},
+			{
+				{ObjectP[Model[Sample, "id:8qZ1VWNmdLBD"]]},
+				{ObjectP[Model[Container,Vessel,"1L Glass Bottle"]]},
+				{EqualP[250 Milliliter]},
+				{"A1"},
+				{_String}
+			},
+			Variables :> {options, prepUOs}
+		],
 
 		(* ----- Sample Prep Unit Tests ----- *)
 		
@@ -2295,7 +2361,7 @@ DefineTests[ExperimentCrossFlowFiltration,
 				Output->Options
 			];
 			Lookup[options,AliquotSampleLabel],
-			"mySample1",
+			{"mySample1"},
 			Variables:>{options}
 		],
 		
@@ -2436,7 +2502,7 @@ DefineTests[ExperimentCrossFlowFiltration,
 				Output->Options
 			];
 			Lookup[options,AliquotContainer],
-			{1,ObjectP[Model[Container,Vessel,"50mL Tube"]]},
+			{{1, ObjectP[Model[Container, Vessel, "50mL Tube"]]}},
 			Variables:>{options}
 		],
 		
@@ -2473,7 +2539,7 @@ DefineTests[ExperimentCrossFlowFiltration,
 				Output->Options
 			];
 			Lookup[options,DestinationWell],
-			"A1",
+			{"A1"},
 			Variables:>{options}
 		],
 		
@@ -2647,11 +2713,86 @@ DefineTests[ExperimentCrossFlowFiltration,
 		],
 		
 		(* ---------- Messages ---------- *)
+
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a sample that does not exist (name form):"},
+			ExperimentCrossFlowFiltration[Object[Sample, "Nonexistent sample"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a container that does not exist (name form):"},
+			ExperimentCrossFlowFiltration[Object[Container, Vessel, "Nonexistent container"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a sample that does not exist (ID form):"},
+			ExperimentCrossFlowFiltration[Object[Sample, "id:12345678"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a container that does not exist (ID form):"},
+			ExperimentCrossFlowFiltration[Object[Container, Vessel, "id:12345678"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Do NOT throw a message if we have a simulated sample but a simulation is specified that indicates that it is simulated:"},
+			Module[{containerPackets, containerID, sampleID, samplePackets, simulationToPassIn},
+				containerPackets = UploadSample[
+					Model[Container,Vessel,"50mL Tube"],
+					{"Work Surface", Object[Container, Bench, "The Bench of Testing"]},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True
+				];
+				simulationToPassIn = Simulation[containerPackets];
+				containerID = Lookup[First[containerPackets], Object];
+				samplePackets = UploadSample[
+					Model[Sample, "Milli-Q water"],
+					{"A1", containerID},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True,
+					Simulation -> simulationToPassIn,
+					InitialAmount -> 25 Milliliter
+				];
+				sampleID = Lookup[First[samplePackets], Object];
+				simulationToPassIn = UpdateSimulation[simulationToPassIn, Simulation[samplePackets]];
+
+				ExperimentCrossFlowFiltration[sampleID, Simulation -> simulationToPassIn, Output -> Options]
+			],
+			{__Rule}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Do NOT throw a message if we have a simulated container but a simulation is specified that indicates that it is simulated:"},
+			Module[{containerPackets, containerID, sampleID, samplePackets, simulationToPassIn},
+				containerPackets = UploadSample[
+					Model[Container,Vessel,"50mL Tube"],
+					{"Work Surface", Object[Container, Bench, "The Bench of Testing"]},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True
+				];
+				simulationToPassIn = Simulation[containerPackets];
+				containerID = Lookup[First[containerPackets], Object];
+				samplePackets = UploadSample[
+					Model[Sample, "Milli-Q water"],
+					{"A1", containerID},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True,
+					Simulation -> simulationToPassIn,
+					InitialAmount -> 25 Milliliter
+				];
+				sampleID = Lookup[First[samplePackets], Object];
+				simulationToPassIn = UpdateSimulation[simulationToPassIn, Simulation[samplePackets]];
+
+				ExperimentCrossFlowFiltration[containerID, Simulation -> simulationToPassIn, Output -> Options]
+			],
+			{__Rule}
+		],
 		
 		(* ----- Main Function ----- *)
 		
 		Example[
-			{Messages,"CrossFlowKR2ICannotRunMultipleSamples","When using KR2i as the isntrument, an error will be shown if more than one sample is specified:"},
+			{Messages,"CrossFlowKR2ICannotRunMultipleSamples","When using KR2i as the instrument, an error will be shown if more than one sample is specified:"},
 			ExperimentCrossFlowFiltration[
 				{
 					Object[Sample,"Cross Flow Test Sample (II) "<> $SessionUUID],
@@ -2664,7 +2805,7 @@ DefineTests[ExperimentCrossFlowFiltration,
 		],
 		
 		Example[
-			{Messages,"CrossFlowTooManySamples","When using KR2i as the isntrument, an error will be shown if more than one sample is specified:"},
+			{Messages,"CrossFlowTooManySamples","When using uPulse as the instrument, an error will be shown if more than one sample is specified:"},
 			ExperimentCrossFlowFiltration[
 				{
 					Object[Sample,"Cross Flow Test Sample (I) "<> $SessionUUID],
@@ -3167,7 +3308,7 @@ DefineTests[ExperimentCrossFlowFiltration,
 			{Messages,"CrossFlowIncompatibleSample","An error will be shown if the specified sample is incompatible with the instrument:"},
 			ExperimentCrossFlowFiltration[Object[Sample,"Cross Flow Test Sample in Acetone "<> $SessionUUID]],
 			$Failed,
-			Messages:>{Warning::IncompatibleMaterials,Error::InvalidInput}
+			Messages:>{Error::IncompatibleMaterials,Error::InvalidInput}
 		],
 		
 		Example[
@@ -3178,7 +3319,7 @@ DefineTests[ExperimentCrossFlowFiltration,
 				DiafiltrationBuffer->Model[Sample,"Acetone, HPLC Grade"]
 			],
 			$Failed,
-			Messages:>{Warning::IncompatibleMaterials,Error::InvalidOption}
+			Messages:>{Error::IncompatibleMaterials,Error::InvalidOption}
 		],
 		
 		Example[
@@ -3188,7 +3329,7 @@ DefineTests[ExperimentCrossFlowFiltration,
 				FilterPrimeBuffer->Model[Sample,"Acetone, HPLC Grade"]
 			],
 			$Failed,
-			Messages:>{Warning::IncompatibleMaterials,Error::InvalidOption}
+			Messages:>{Error::IncompatibleMaterials,Error::InvalidOption}
 		],
 		
 		Example[
@@ -3198,7 +3339,7 @@ DefineTests[ExperimentCrossFlowFiltration,
 				FilterFlushBuffer->Model[Sample,"Acetone, HPLC Grade"]
 			],
 			$Failed,
-			Messages:>{Warning::IncompatibleMaterials,Error::InvalidOption}
+			Messages:>{Error::IncompatibleMaterials,Error::InvalidOption}
 		],
 		
 		(* ----- Other Checks ----- *)
@@ -3888,9 +4029,9 @@ DefineTests[ExperimentCrossFlowFiltration,
 							Name->"Cross Flow Test Sample Without Volume "<> $SessionUUID,
 							State->Liquid,
 							Replace[Composition]->{
-								{100 VolumePercent,Link[Model[Molecule,"Water"]]},
-								{1 Molar,Link[Model[Molecule,Oligomer,"Test 40mer (Test for ExperimentCrossFlowFiltration) " <> $SessionUUID]]},
-								{1 Molar,Link[Model[Molecule,Protein,"PARP"]]}
+								{100 VolumePercent,Link[Model[Molecule,"Water"]],Now},
+								{1 Molar,Link[Model[Molecule,Oligomer,"Test 40mer (Test for ExperimentCrossFlowFiltration) " <> $SessionUUID]],Now},
+								{1 Molar,Link[Model[Molecule,Protein,"PARP"]],Now}
 							},
 							Replace[IncompatibleMaterials]->None,
 							Container->Link[Object[Container,Vessel,"Cross Flow Test 250 mL Bottle (XIII) "<> $SessionUUID],Contents,2],
@@ -3912,7 +4053,7 @@ DefineTests[ExperimentCrossFlowFiltration,
 							Type->Object[Sample],
 							Name->"Cross Flow Test Sample Solid "<> $SessionUUID,
 							State->Solid,
-							Replace[Composition]->{{100 VolumePercent,Link[Model[Molecule,"Water"]]}},
+							Replace[Composition]->{{100 VolumePercent,Link[Model[Molecule,"Water"]],Now}},
 							Replace[IncompatibleMaterials]->None,
 							Volume->250 Milliliter,
 							Site->Link[$Site],
@@ -3924,7 +4065,7 @@ DefineTests[ExperimentCrossFlowFiltration,
 							Type->Object[Sample],
 							Name->"Cross Flow Test Sample Discarded "<> $SessionUUID,
 							State->Liquid,
-							Replace[Composition]->{{100 VolumePercent,Link[Model[Molecule,"Water"]]}},
+							Replace[Composition]->{{100 VolumePercent,Link[Model[Molecule,"Water"]],Now}},
 							Replace[IncompatibleMaterials]->None,
 							Volume->250 Milliliter,
 							Status->Discarded,
@@ -3937,7 +4078,7 @@ DefineTests[ExperimentCrossFlowFiltration,
 							Type->Object[Sample],
 							Name->"Cross Flow Test Sample Without Container Volume "<> $SessionUUID,
 							State->Liquid,
-							Replace[Composition]->{{100 VolumePercent,Link[Model[Molecule,"Water"]]}},
+							Replace[Composition]->{{100 VolumePercent,Link[Model[Molecule,"Water"]],Now}},
 							Replace[IncompatibleMaterials]->None,
 							Site->Link[$Site],
 							Status->Available,
@@ -4552,8 +4693,8 @@ DefineTests[CrossFlowFiltration,
 				},
 				{
 					{"A1",Object[Container,Vessel,"CrossFlowFiltration Test 50 mL Tube 1 "<> $SessionUUID]},
-					{"A1",Object[Container,Vessel,"CrossFlowFiltration Test 50 mL Tube 1 "<> $SessionUUID]},
-					{"A1",Object[Container,Vessel,"CrossFlowFiltration Test 50 mL Tube 1 "<> $SessionUUID]}
+					{"A1",Object[Container,Vessel,"CrossFlowFiltration Test 50 mL Tube 2 "<> $SessionUUID]},
+					{"A1",Object[Container,Vessel,"CrossFlowFiltration Test 50 mL Tube 3 "<> $SessionUUID]}
 				},
 				Name-> {
 					"CrossFlowFiltration Sample 1 " <> $SessionUUID,

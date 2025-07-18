@@ -71,10 +71,10 @@ DefineTests[
 			{
 				LabelContainer[
 					Label->"output container",
-					Container->Model[Container, Vessel, "50mL Tube"]
+					Container->ObjectP[Model[Container, Vessel, "50mL Tube"]]
 				],
 				Transfer[
-					Source->Model[Sample,"Milli-Q water"],
+					Source->ObjectP[Model[Sample,"Milli-Q water"]],
 					Destination->"output container",
 					Amount->1 Milliliter
 				],
@@ -111,10 +111,10 @@ DefineTests[
 			{
 				LabelContainer[
 					Label->"output container",
-					Container->Model[Container, Vessel, "50mL Tube"]
+					Container->ObjectP[Model[Container, Vessel, "50mL Tube"]]
 				],
 				Transfer[
-					Source->Model[Sample,"Milli-Q water"],
+					Source->ObjectP[Model[Sample,"Milli-Q water"]],
 					Destination->"output container",
 					Amount->1 Milliliter
 				],
@@ -125,6 +125,34 @@ DefineTests[
 				]
 			},
 			TimeConstraint -> 600
+		],
+		Example[{Additional, "If only LabelContainer primitives are supplied, ExperimentStockSolution can output options in CommandCenter:"},
+			ExperimentStockSolution[
+				{
+					LabelContainer[
+						Label->"output container",
+						Container->Model[Container, Vessel, "50mL Tube"]
+					]
+				},
+				Output -> Options
+			],
+			{_Rule..},
+			Stubs :> {$ECLApplication = CommandCenter},
+			Messages :> {Error::InvalidUnitOperationsInput, Error::InvalidInput}
+		],
+		Example[{Additional, "If only LabelContainer primitives are supplied, ExperimentStockSolution will end prematurely as long as Result is requested as output, even in CommandCenter:"},
+			ExperimentStockSolution[
+				{
+					LabelContainer[
+						Label->"output container",
+						Container->Model[Container, Vessel, "50mL Tube"]
+					]
+				},
+				Output -> Result
+			],
+			$Failed,
+			Stubs :> {$ECLApplication = CommandCenter},
+			Messages :> {Error::InvalidUnitOperationsInput, Error::InvalidInput}
 		],
 		Example[{Additional,"Specify a stock solution protocol on a model that has UnitOperations in it:"},
 			Module[{primitives,stockSolutionModel, protocol},
@@ -145,7 +173,7 @@ DefineTests[
 						DefaultStorageCondition -> Freezer,
 						Expires -> True,
 						ShelfLife -> 6 Month,
-						TransportChilled -> True,
+						TransportTemperature->4 Celsius,
 						VolumeIncrements -> 20 Microliter
 					]
 				];
@@ -263,7 +291,60 @@ DefineTests[
 				],
 				{Autoclave, AutoclaveProgram}
 			],
-			{True, Universal}],
+			{True, Universal}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Don't trainwreck if you have objects that do not exist (model input, ID form):"},
+			ExperimentStockSolution[{Model[Sample, StockSolution, "id:123456"]}],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Don't trainwreck if you have objects that do not exist (model input, name form):"},
+			ExperimentStockSolution[{Model[Sample, StockSolution, "Nonexistent object"]}],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Don't trainwreck if you have objects that do not exist (formula input, ID form):"},
+			ExperimentStockSolution[{{10 Gram, Model[Sample, "Sodium Chloride"]}, {100 Milliliter, Model[Sample, "id:123456"]}}],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Don't trainwreck if you have objects that do not exist (formula input, name form):"},
+			ExperimentStockSolution[{{10 Gram, Model[Sample, "Sodium Chloride"]}, {100 Milliliter, Model[Sample, "Nonexistent object"]}}],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Don't trainwreck if you have objects that do not exist (formula input, ID form):"},
+			ExperimentStockSolution[{{10 Gram, Model[Sample, "Sodium Chloride"]}, {100 Milliliter, Model[Sample, "Milli-Q water"]}}, Model[Sample, "id:123456"], 1000 Milliliter],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Don't trainwreck if you have objects that do not exist (formula input, name form):"},
+			ExperimentStockSolution[{{10 Gram, Model[Sample, "Sodium Chloride"]}, {100 Milliliter, Model[Sample, "Milli-Q water"]}}, Model[Sample, "Nonexistent object"], 1000 Milliliter],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Don't trainwreck if you have objects that do not exist (unit operation input):"},
+			ExperimentStockSolution[
+				{
+					LabelContainer[
+						Label->"output container",
+						Container->Model[Container, Vessel, "50mL Tube"]
+					],
+					Transfer[
+						Source->Model[Sample,"id:123456"],
+						Destination->"output container",
+						Amount->10 Milliliter
+					],
+					Mix[
+						Sample->"output container",
+						MixType->Vortex,
+						Time->10 Minute
+					]
+				}
+			],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
 		Example[{Messages,"ConflictingUnitOperationsOptions","Other preparatory options cannot be specified along with UnitOperation inputs:"},
 			ExperimentStockSolution[
 				{
@@ -332,11 +413,12 @@ DefineTests[
 				Model[Sample, StockSolution, "1M NaCl (example)"],
 				Volume -> 25 Milliliter,
 				Autoclave -> True,
-				ContainerOut->Model[Container, Vessel, "id:bq9LA0dBGGR6"]
+				ContainerOut->Model[Container, Vessel, "id:bq9LA0dBGGR6"] (*"50mL Tube"*)
 			],
 			$Failed,
 			TimeConstraint -> 300,
 			Messages:>{
+				Warning::VolumeTooLowForAutoclave,
 				Error::InvalidOption,
 				Error::ContainerOutMaxTemperature
 			}
@@ -344,7 +426,7 @@ DefineTests[
 		Example[{Messages,"ContainerOutTooSmall", "The ContainerOut specified must be less than 3/4 full if autoclaving is specified:"},
 			ExperimentStockSolution[
 				Model[Sample, StockSolution, "1M NaCl (example)"],
-				Volume -> 90 Milliliter,
+				Volume -> 100 Milliliter,
 				Autoclave -> True,
 				ContainerOut->Model[Container, Vessel, "id:jLq9jXvA8ewR"]
 			],
@@ -435,6 +517,18 @@ DefineTests[
 				{ObjectP[Model[Sample,StockSolution]]}
 			},
 			TimeConstraint -> 80
+		],
+		(* Note: in this test, we're specifying 115 mL of stock solution because that would default to a 150mL container without Autoclave, but needs *)
+		(* to go up in size for an autoclaved solution *)
+		Example[{Additional},"If Autoclave -> True, the maximum volume of both PreparatoryContainers and ContainersOut exceeds 4/3 the total volume of the stock solution:",
+			protocol = ExperimentStockSolution[
+				Model[Sample, StockSolution, "1M NaCl (example)"],
+				Volume -> 115 * Milliliter,
+				Autoclave -> True
+			];
+			Download[protocol, {ContainersOut[MaxVolume], PreparatoryContainers[MaxVolume]}],
+			{{GreaterP[115*4/3*Microliter]}, {GreaterP[115*4/3*Microliter]}},
+			Variables :> {protocol}
 		],
 		Example[{Additional, "Can specify a specific sample in the formula overload and populate SamplesIn:"},
 			(
@@ -663,7 +757,7 @@ DefineTests[
 				500 Milliliter
 			],
 			$Failed,
-			Messages:>{Error::FormulaVolumeTooLarge,Error::InvalidOption},
+			Messages:>{Error::FormulaVolumeTooLarge,Error::InvalidOption, Error::InvalidInput},
 			TimeConstraint -> 80
 		],
 		Example[{Options,Autoclave,"Use Autoclave option to indicate if the stock solution should be autoclaved:"},
@@ -881,7 +975,8 @@ DefineTests[
 					FillToVolumeMethod -> Volumetric,
 					Name -> "ExperimentStockSolution test stock solution with tablet formula and volumetric fill-to-volume "<>$SessionUUID
 				]
-			)
+			),
+			TimeConstraint -> 600
 		],
 		Example[{Options,FillToVolumeMethod,"Specify the method by which the volume of the FillToVolume stock solution should be measured when being prepared:"},
 			ExperimentStockSolution[
@@ -897,6 +992,24 @@ DefineTests[
 			],
 			ObjectP[Object[Protocol,StockSolution]],
 			TimeConstraint -> 8020
+		],
+		Test["If FillToVolumeMethod is Volumteric, NumberOfMixes is derived from the stock solution model rather than a default:",
+			Lookup[Download[
+				ExperimentStockSolution[Model[Sample,StockSolution,"Test Stock Solution with Volumetric FtV"<>$SessionUUID]],
+				MixParameters
+			],NumberOfMixes],
+			{10},
+			TimeConstraint -> 80
+		],
+		Test["If FillToVolumeMethod is Volumteric, NumberOfMixes is derived from the option rather than a default or from the model:",
+			Lookup[Download[
+				ExperimentStockSolution[Model[Sample,StockSolution,"Test Stock Solution with Volumetric FtV"<>$SessionUUID],
+					NumberOfMixes->15
+				],
+				MixParameters
+			],NumberOfMixes],
+			{15},
+			TimeConstraint -> 80
 		],
 		Example[{Options,Volume,"If too much precision is provided for the Volume option, round to the nearest 0.1*Milliliter:"},
 			Lookup[ExperimentStockSolution[{Model[Sample,StockSolution,"1M NaCl (example)"]},Volume->6.333333323*Milliliter, Output -> Options], Volume],
@@ -976,6 +1089,28 @@ DefineTests[
 			},
 			TimeConstraint -> 80
 		],
+		Example[{Options,ContainerOut,"If a specific solution Volume is specified, the ContainerOut will be selected using the PreferredContainer function for that volume, with IncompatibleMaterials information considered:"},
+			{
+				Download[
+					ExperimentStockSolution[
+						{
+							{50 Milligram,Model[Sample,"Sodium Chloride"]}
+						},
+						Model[Sample,"Milli-Q water"],
+						1 Liter,
+						IncompatibleMaterials -> {Glass}
+					],
+					ContainersOut[[1]]
+				],
+				PreferredContainer[1 Liter,Type->Vessel, IncompatibleMaterials->{Glass}]
+			},
+			{
+				(* "Corning Reusable Plastic Reagent Bottles with GL-45 PP Screw Cap, 2L" *)
+				ObjectP[Model[Container, Vessel, "id:mnk9jOkn6oMZ"]],
+				ObjectP[Model[Container, Vessel, "id:mnk9jOkn6oMZ"]]
+			},
+			TimeConstraint -> 80
+		],
 		Example[{Options,ContainerOut,"If filtering and ContainerOut is not specified, ContainerOut still automatically set to the PreferredContainer (do not get too cute and resolve to the FiltrateContainerOut of ExperimentFilter):"},
 			Download[ExperimentStockSolution[Model[Sample,StockSolution,"1M NaCl (example)"], Volume -> 500 Milliliter, FilterModel -> Model[Container, Vessel, Filter, "BottleTop Filter, Cellulose, 0.22um, 500mL"]], ContainersOut[[1]]],
 			ObjectP[Model[Container, Vessel, "500mL Glass Bottle"]],
@@ -995,6 +1130,20 @@ DefineTests[
 			],
 			{{"2L Glass Bottle"},{"1000mL Erlenmeyer Flask"}},
 			TimeConstraint -> 500
+		],
+		Example[{Messages,"IncompatibleStockSolutionContainerOut","The ContainerOut should not incompatible with the stock solution model:"},
+			ExperimentStockSolution[
+				{
+					{50 Milligram,Model[Sample,"Sodium Chloride"]}
+				},
+				Model[Sample,"Milli-Q water"],
+				1 Liter,
+				IncompatibleMaterials -> {Glass},
+				ContainerOut->Model[Container, Vessel, "2L Glass Bottle"]
+			],
+			$Failed,
+			Messages:>{Error::IncompatibleStockSolutionContainerOut,Error::InvalidOption},
+			TimeConstraint -> 80
 		],
 		Example[{Messages,"DeprecatedContainerOut","The ContainerOut should not be deprecated:"},
 			ExperimentStockSolution[
@@ -2235,6 +2384,44 @@ DefineTests[
 			Messages:>{Warning::FormulaOptionsUnused},
 			TimeConstraint -> 80
 		],
+		Example[{Options,LightSensitive,"If creating a stock solution that is light-sensitive and uses volumetric flasks, pick a volumetric flask and container out that is opaque:"},
+			Download[
+				Lookup[
+					ExperimentStockSolution[
+						{
+							{20 Gram,Model[Sample, "Reserpine, USP Reference Standard"]}
+						},
+						Model[Sample,"Milli-Q water"],
+						100 Milliliter,
+						FillToVolumeMethod->Volumetric,
+						LightSensitive->True,
+						Upload->False
+					][[1]],
+					Replace[PreparatoryContainers]
+				][[1]],
+				Opaque
+			],
+			True
+		],
+		Example[{Options,LightSensitive,"If creating a stock solution that is NOT light-sensitive and uses volumetric flasks, prefer a volumetric flask and container out that is not opaque:"},
+			Download[
+				Lookup[
+					ExperimentStockSolution[
+						{
+							{20 Gram,Model[Sample,"Sodium Chloride"]}
+						},
+						Model[Sample,"Milli-Q water"],
+						100 Milliliter,
+						FillToVolumeMethod->Volumetric,
+						LightSensitive->False,
+						Upload->False
+					][[1]],
+					Replace[PreparatoryContainers]
+				][[1]],
+				Opaque
+			],
+			(Null|False)
+		],
 		Example[{Options,Expires,"Indicate if stock solution samples of a model created via the formula input should expire after a given amount of time (specifiable via the ShelfLife option). Expired samples may be subjected to automated disposal:"},
 			Download[
 				ExperimentStockSolution[
@@ -2280,6 +2467,21 @@ DefineTests[
 			Messages:>{Error::ExpirationShelfLifeConflict,Error::InvalidOption},
 			TimeConstraint -> 80
 		],
+		Example[{Options,Expires,"If Expires is set to True, ShelfLife/UnsealedShelfLife cannot be set to Null:"},
+			ExperimentStockSolution[
+				{
+					{58.44 Gram,Model[Sample,"Sodium Chloride"]}
+				},
+				Model[Sample,"Milli-Q water"],
+				1 Liter,
+				Expires->True,
+				ShelfLife->1 Year,
+				UnsealedShelfLife->Null
+			],
+			$Failed,
+			Messages:>{Error::ShelfLifeNotSpecified,Error::InvalidOption},
+			TimeConstraint -> 80
+		],
 		Example[{Options,Expires,"This option should only be used with formula input:"},
 			Download[
 				ExperimentStockSolution[
@@ -2291,6 +2493,43 @@ DefineTests[
 			True,
 			Messages:>{Warning::FormulaOptionsUnused},
 			TimeConstraint -> 80
+		],
+		Example[{Options,DiscardThreshold,"Specify the percentage of the prepared stock solution volume below which the sample will be automatically marked as AwaitingDisposal:"},
+			Download[
+				ExperimentStockSolution[
+					{
+						{58.44 Gram,Model[Sample,"Sodium Chloride"]}
+					},
+					Model[Sample,"Milli-Q water"],
+					1 Liter,
+					DiscardThreshold -> 4 Percent
+				],
+				StockSolutionModels[[1]][DiscardThreshold]
+			],
+			EqualP[4 Percent]
+		],
+		Example[{Options,DiscardThreshold,"If a formula is given, the DiscardThreshold option is resolved to 5 Percent:"},
+			Download[
+				ExperimentStockSolution[
+					{
+						{58.44 Gram,Model[Sample,"Sodium Chloride"]}
+					},
+					Model[Sample,"Milli-Q water"],
+					1 Liter
+				],
+				StockSolutionModels[[1]][DiscardThreshold]
+			],
+			EqualP[5 Percent]
+		],
+		Example[{Options,DiscardThreshold,"If a template is given, DiscardThreshold is just Null:"},
+			Lookup[
+				ExperimentStockSolution[
+					Model[Sample,StockSolution,"1M NaCl (example)"],
+					Output -> Options
+				],
+				DiscardThreshold
+			],
+			Null
 		],
 		Example[{Options,ShelfLife,"Specify the length of time after preparation (but without being used) that samples of this stock solution are recommended for use before they should be discarded:"},
 			Download[
@@ -2313,7 +2552,8 @@ DefineTests[
 					{
 						{58.44 Gram,Model[Sample,"Sodium Chloride"]}
 					},
-					Model[Sample,"Milli-Q water"],
+					(* RO Water does not have ShelfLife *)
+					Model[Sample, "RO Water"],
 					1 Liter,
 					Expires->True
 				],
@@ -2369,20 +2609,21 @@ DefineTests[
 			EquivalenceFunction->Equal,
 			TimeConstraint -> 80
 		],
-		Example[{Options,UnsealedShelfLife,"Automatically resolves to Null if Expires is set to True and no formula components have unsealed shelf lives:"},
-			Download[
-				ExperimentStockSolution[
+		Example[{Options,UnsealedShelfLife,"Automatically resolves to match ShelfLife if Expires is set to True and no formula components have unsealed shelf lives:"},
+			Module[
+				{protocol,stockSolutionModel},
+				protocol=ExperimentStockSolution[
 					{
 						{58.44 Gram,Model[Sample,"Sodium Chloride"]}
 					},
 					Model[Sample,"Dichloromethane, Reagent Grade"],
 					1 Liter,
 					Expires->True
-				],
-				StockSolutionModels[[1]][UnsealedShelfLife]
+				];
+				stockSolutionModel=Download[protocol,StockSolutionModels[[1]]];
+				EqualQ[Download[stockSolutionModel,ShelfLife],Download[stockSolutionModel,UnsealedShelfLife]]
 			],
-			Null,
-			EquivalenceFunction->Equal,
+			True,
 			TimeConstraint -> 80
 		],
 		Example[{Options,UnsealedShelfLife,"Automatically resolves to the shortest of the unsealed shelf lives of any formula components:"},
@@ -2484,7 +2725,7 @@ DefineTests[
 			Messages:>{Warning::FormulaOptionsUnused},
 			TimeConstraint -> 80
 		],
-		Example[{Options,TransportWarmed,"Indicate if samples of this stock solution should be heated during transport when used in experiments:"},
+		Example[{Options,TransportTemperature,"Indicate if samples of this stock solution should be heated during transport when used in experiments:"},
 			Download[
 				ExperimentStockSolution[
 					{
@@ -2492,15 +2733,15 @@ DefineTests[
 					},
 					Model[Sample,"Acetonitrile, Biosynthesis Grade"],
 					25 Milliliter,
-					TransportWarmed->50*Celsius
+					TransportTemperature->50*Celsius
 				],
-				StockSolutionModels[[1]][TransportWarmed]
+				StockSolutionModels[[1]][TransportTemperature]
 			],
 			50*Celsius,
 			EquivalenceFunction -> Equal,
 			TimeConstraint -> 80
 		],
-		Example[{Options,TransportChilled,"Indicate if samples of this stock solution should be refrigerated during transport when used in experiments:"},
+		Example[{Options,TransportTemperature,"Indicate if samples of this stock solution should be refrigerated during transport when used in experiments:"},
 			Download[
 				ExperimentStockSolution[
 					{
@@ -2508,20 +2749,20 @@ DefineTests[
 					},
 					Model[Sample,"Acetonitrile, Biosynthesis Grade"],
 					25 Milliliter,
-					TransportChilled->True
+					TransportTemperature->4 Celsius
 				],
-				StockSolutionModels[[1]][TransportChilled]
+				StockSolutionModels[[1]][TransportTemperature]
 			],
-			True,
+			EqualP[4 Celsius],
 			TimeConstraint -> 80
 		],
-		Example[{Options,TransportChilled,"This option should only be used with formula input:"},
+		Example[{Options,TransportTemperature,"This option should only be used with formula input:"},
 			Download[
 				ExperimentStockSolution[
 					Model[Sample,StockSolution,"1M NaCl (example)"],
-					TransportChilled->True
+					TransportTemperature->4 Celsius
 				],
-				StockSolutionModels[[1]][TransportChilled]
+				StockSolutionModels[[1]][TransportTemperature]
 			],
 			Null,
 			Messages:>{Warning::FormulaOptionsUnused},
@@ -2761,6 +3002,34 @@ DefineTests[
 			Messages:>{Warning::FormulaOptionsUnused},
 			TimeConstraint -> 80
 		],
+		Example[{Options,IncompatibleMaterials,"If creating a stock solution that is incompatible with glass and uses volumetric flasks, pick a volumetric flask and container out that is not glass:"},
+			Download[
+				ExperimentStockSolution[Model[Sample, StockSolution, "id:O81aEB1zxYBo"]],
+				{
+					PreparatoryContainers[ContainerMaterials],
+					ContainersOut[ContainerMaterials]
+				}
+			],
+			{
+				(* can't use glass because the sample is incompatible with glass *)
+				{{Polypropylene}},
+				{{Polypropylene}}
+			}
+		],
+		Example[{Options,IncompatibleMaterials,"If creating a stock solution that is incompatible with polypropylene and uses volumetric flasks, pick a volumetric flask and container out that is not polypropylene:"},
+			Download[
+				ExperimentStockSolution[Model[Sample, StockSolution, "id:n0k9mGkZKXW3"]],
+				{
+					PreparatoryContainers[ContainerMaterials],
+					ContainersOut[ContainerMaterials]
+				}
+			],
+			{
+				(* can't use polypropylene because the sample is incompatible with polypropylene *)
+				{{Glass}},
+				{{Glass}}
+			}
+		],
 		Example[{Options,NumberOfReplicates,"Specify the number of times to make the given formula:"},
 			Download[
 				ExperimentStockSolution[
@@ -2839,6 +3108,12 @@ DefineTests[
 			ExperimentStockSolution[Model[Sample,StockSolution,"1M NaCl (example)"],Confirm->True][Status],
 			Processing|ShippingMaterials|Backlogged,
 			TimeConstraint -> 80
+		],
+		Example[{Options,CanaryBranch,"Specify the CanaryBranch on which the protocol is run:"},
+			ExperimentStockSolution[Model[Sample,StockSolution,"1M NaCl (example)"],CanaryBranch->"d1cacc5a-948b-4843-aa46-97406bbfc368"][CanaryBranch],
+			"d1cacc5a-948b-4843-aa46-97406bbfc368",
+			TimeConstraint -> 80,
+			Stubs:>{GitBranchExistsQ[___] = True, $PersonID = Object[User, Emerald, Developer, "id:n0k9mGkqa6Gr"]}
 		],
 		Example[{Messages, "IncubateOptionConflict", "If Incubate -> False but other Incubate options are specified, throw an error:"},
 			ExperimentStockSolution[Model[Sample,StockSolution,"1M NaCl (example)"],Incubate -> False, IncubationTemperature -> 50*Celsius],
@@ -3028,7 +3303,7 @@ DefineTests[
 				{Model[Sample, StockSolution, "Stock Solution with Fixed Aliquot Component"]},
 				Volume -> 20*Milliliter,
 				PreparedResources -> {Object[Resource, Sample, "Fake resource 1 for fixed aliquot cases in ExperimentStockSolution"]},
-				ParentProtocol -> Object[Protocol, SampleManipulation, "Example Transfer Protocol"]
+				ParentProtocol -> Object[Protocol, ManualSamplePreparation, "Test Parent Protocol for ExperimentStockSolution unit test "<>$SessionUUID]
 			],
 			$Failed,
 			Messages :> {
@@ -3048,7 +3323,7 @@ DefineTests[
 			TimeConstraint -> 80
 		],
 
-		Example[{Messages, "BelowFillToVolumeMinimum", "The solvent volume in a FillToVolume stock solution may not be outside of RangeP[$MinStockSolutionSolventVolume, $MaxStockSolutionComponentVolume]:"},
+		Example[{Messages, "BelowFillToVolumeMinimum", "The solvent volume in a FillToVolume stock solution may not be outside of RangeP[$MinStockSolutionUltrasonicSolventVolume, $MaxStockSolutionComponentVolume]:"},
 			ExperimentStockSolution[
 				{
 					{5 Milligram,Model[Sample,"Sodium Chloride"]}
@@ -3061,6 +3336,17 @@ DefineTests[
 				Error::BelowFillToVolumeMinimum,
 				Error::InvalidOption
 			}
+		],
+		Example[{Messages, "BelowFillToVolumeMinimum", "The solvent volume in a Volumetric FillToVolume stock solution has a lower limit:"},
+			ExperimentStockSolution[
+				{
+					{5 Milligram,Model[Sample,"Sodium Chloride"]}
+				},
+				Model[Sample,"Milli-Q water"],
+				2 Milliliter,
+				FillToVolumeMethod->Volumetric
+			],
+			ObjectP[Object[Protocol,StockSolution]]
 		],
 		Example[{Messages, "AboveVolumetricFillToVolumeMaximum", "The solvent volume in a Volumetric FillToVolume stock solution cannot exceed the volume of the largest volumetric flask:"},
 			ExperimentStockSolution[
@@ -3078,20 +3364,37 @@ DefineTests[
 				Error::InvalidOption
 			}
 		],
-		Example[{Messages, "TransportWarmedChilledConflict", "TransportWarmed and TransportChilled cannot both be specified:"},
+		Example[{Messages, "AboveVolumetricFillToVolumeMaximum", "The solvent volume in a light-sensitive Volumetric FillToVolume stock solution cannot exceed the volume of the largest opaque volumetric flask:"},
 			ExperimentStockSolution[
 				{
-					{5 Milliliter,Model[Sample,"Milli-Q water"]},
-					{20 Milliliter,Model[Sample,"Trifluoroacetic acid"]}
+					{5 Milligram,Model[Sample, "Reserpine, USP Reference Standard"]}
 				},
-				TransportWarmed -> 50*Celsius,
-				TransportChilled -> True
+				Model[Sample,"Milli-Q water"],
+				1 Liter,
+				LightSensitive->True,
+				FillToVolumeMethod->Volumetric
 			],
 			$Failed,
 			Messages :> {
-				Error::TransportWarmedChilledConflict, Error::InvalidOption
-			},
-			TimeConstraint -> 80
+				Error::AboveVolumetricFillToVolumeMaximum,
+				Error::InvalidOption
+			}
+		],
+		Example[{Messages, "AboveVolumetricFillToVolumeMaximum", "The solvent volume in a Volumetric FillToVolume stock solution that is incompatible with Glass cannot exceed the volume of the largest polypropylene volumetric flask:"},
+			ExperimentStockSolution[
+				{
+					{5 Milligram,Model[Sample,"Sodium Chloride"]}
+				},
+				Model[Sample,"Milli-Q water"],
+				1 Liter,
+				IncompatibleMaterials -> {Glass},
+				FillToVolumeMethod->Volumetric
+			],
+			$Failed,
+			Messages :> {
+				Error::AboveVolumetricFillToVolumeMaximum,
+				Error::InvalidOption
+			}
 		],
 
 		Example[{Messages, "VolumeOverMaxIncrement", "If the amount requested is one of the volume increments but requires multiple fixed aliquots, populate the FixedAmountsComponents field with the proper duplicity:"},
@@ -3186,7 +3489,7 @@ DefineTests[
 		Test["If scaling up a stock solution to 20 mL (the minimum allowed for pHing) and the sum of all the liquid components of the scaled stock solution amounts are a lot less than 20, still properly generate a stock solution protocol:",
 			ExperimentStockSolution[
 				{Model[Sample, StockSolution, "Concentrated Saline (example)"]},
-				Volume -> 1.7*Milliliter, ContainerOut -> Model[Container, Vessel, "2mL Tube"], ParentProtocol -> Object[Protocol, SampleManipulation, "Example Transfer Protocol"], PreparedResources -> {Object[Resource, Sample, "Resource 1 Prepped by ExpSS Call" <> $SessionUUID]}
+				Volume -> 1.7*Milliliter, ContainerOut -> Model[Container, Vessel, "2mL Tube"], ParentProtocol -> Object[Protocol, ManualSamplePreparation, "Test Parent Protocol for ExperimentStockSolution unit test "<>$SessionUUID], PreparedResources -> {Object[Resource, Sample, "Resource 1 Prepped by ExpSS Call" <> $SessionUUID]}
 			],
 			ObjectP[Object[Protocol, StockSolution]],
 			TimeConstraint -> 500
@@ -3227,7 +3530,7 @@ DefineTests[
 			Download[
 				ExperimentStockSolution[
 					Model[Sample,StockSolution,"1M NaCl (example)"],
-					ParentProtocol->Object[Protocol,SampleManipulation,"Example Transfer Protocol"],
+					ParentProtocol->Object[Protocol, ManualSamplePreparation, "Test Parent Protocol for ExperimentStockSolution unit test "<>$SessionUUID],
 					PreparedResources->{Object[Resource,Sample,"Resource 2 Prepped by ExpSS Call" <> $SessionUUID]}
 				],
 				Author
@@ -3430,7 +3733,7 @@ DefineTests[
 				ExperimentStockSolution[
 					Model[Sample,StockSolution,"1M NaCl (example)"],
 					PreparedResources->{Object[Resource,Sample,"Resource 3 Prepped by ExpSS Call" <> $SessionUUID]},
-					ParentProtocol->Object[Protocol,SampleManipulation,"Example Transfer Protocol"]
+					ParentProtocol->Object[Protocol, ManualSamplePreparation, "Test Parent Protocol for ExperimentStockSolution unit test "<>$SessionUUID]
 				],
 				PreparedResources
 			],
@@ -3569,7 +3872,7 @@ DefineTests[
 					Volume->2 Milliliter,
 					pH->6,
 					PreparedResources->{Object[Resource,Sample,"Resource 7 Prepped by ExpSS Call" <> $SessionUUID]},
-					ParentProtocol->Object[Protocol,SampleManipulation,"Example Transfer Protocol"]
+					ParentProtocol->Object[Protocol, ManualSamplePreparation, "Test Parent Protocol for ExperimentStockSolution unit test "<>$SessionUUID]
 				],
 				{PreparatoryVolumes,RequestedVolumes}
 			],
@@ -3590,7 +3893,7 @@ DefineTests[
 					Model[Sample,StockSolution,"1M NaCl (example)"],
 					Volume->10 Microliter,
 					PreparedResources->{Object[Resource,Sample,"Resource 8 Prepped by ExpSS Call" <> $SessionUUID]},
-					ParentProtocol->Object[Protocol,SampleManipulation,"Example Transfer Protocol"]
+					ParentProtocol->Object[Protocol, ManualSamplePreparation, "Test Parent Protocol for ExperimentStockSolution unit test "<>$SessionUUID]
 				],
 				{PreparatoryVolumes,RequestedVolumes,ContainersOut}
 			];
@@ -3637,11 +3940,11 @@ DefineTests[
 					Volume->2 Milliliter,
 					pH->6,
 					PreparedResources->{Object[Resource,Sample,"Resource 9 Prepped by ExpSS Call" <> $SessionUUID]},
-					ParentProtocol->Object[Protocol,SampleManipulation,"Example Transfer Protocol"]
+					ParentProtocol->Object[Protocol, ManualSamplePreparation, "Test Parent Protocol for ExperimentStockSolution unit test "<>$SessionUUID]
 				],
 				StockSolutionModels[[1]][Authors]
 			],
-			{ObjectP[Object[User,Emerald,Developer,"cam"]]},
+			{ObjectP[Object[User,"Test user for notebook-less test protocols"]]},
 			TimeConstraint -> 80
 		],
 
@@ -3756,8 +4059,153 @@ DefineTests[
 				StockSolutionModels[Base]
 			],
 			{True}
-		]
+		],
+		Example[{Messages, "InvalidModelFormulaForFillToVolume", "Throw an error and return $Failed if the stock solution model has a formula where the combined total volume of its components equal to or exceeds the model's TotalVolume:"},
+			ExperimentStockSolution[
+				Model[Sample, StockSolution, "Test Model with Invalid Formula and TotalVolume For ExperimentStockSolution"]
+			],
+			$Failed,
+			Messages :> {Error::InvalidModelFormulaForFillToVolume, Error::InvalidInput}
+		],
+		(*This goes through formula overload and throws a different error message*)
+		Example[{Messages, "FormulaVolumeTooLarge", "Throw an error and return $Failed if the input formula has the combined total volume of its components equal to or exceeds the model's TotalVolume:"},
+			ExperimentStockSolution[
+				{
+					{80 Gram, Model[Sample, "Sodium Chloride"]},
+					{1000 Milliliter, Model[Sample, "Milli-Q water"]}
+				},
+				Model[Sample, "Milli-Q water"],
+				1 Liter
+			],
+			$Failed,
+			Messages :> {Error::FormulaVolumeTooLarge, Error::InvalidOption, Error::InvalidInput}
+		],
+		(*Warning::VolumeTooLowForAutoclave*)
+		Example[{Messages, "VolumeTooLowForAutoclave", "Throw a warning but respect user input if the specified volume is below 100mL for an Autoclave->True protocol:"},
+			Lookup[ExperimentStockSolution[
+				Model[Sample, StockSolution, "1M NaCl (example)"],
+				Volume -> 50 Milliliter,
+				Autoclave -> True,
+				Output -> Options
+			],
+				Volume
+			],
+			EqualP[50 Milliliter],
+			Messages :> {Warning::VolumeTooLowForAutoclave}
+		],
+		Example[{Messages, "ModelStockSolutionMixRateNotSafe", "Throw a warning if the given model stocksolution contains an unsafe mix rate and replace it to the max safe mix rate:"},
+			Lookup[ExperimentStockSolution[Model[Sample, StockSolution, "Test Stock Solution with mix rate higher than safe mix rate of container" <> $SessionUUID],
+				Output -> Options
+			],
+				MixRate
+			],
+			EqualP[600 RPM],
+			Messages :> {Warning::ModelStockSolutionMixRateNotSafe}
+		],
+		Example[{Messages, "SpecifedMixRateNotSafe", "Given formula, throw an error and return $Failed if the specified MixRate is over safe mix rate:"},
+			ExperimentStockSolution[
+				{
+					{700 Milliliter, Model[Sample, "Milli-Q water"]}
+				},
+				MixRate -> 750 RPM,
+				MixType -> Stir
+			],
+			$Failed,
+			Messages :> {Error::SpecifedMixRateNotSafe, Error::InvalidOption}
+		],
+		Example[{Messages, "SpecifedMixRateNotSafe", "Given model stock solution, throw an error and return $Failed if the specified MixRate is over safe mix rate:"},
+			ExperimentStockSolution[
+				Model[Sample, StockSolution, "1M NaCl (example)"],
+				MixRate -> 750 RPM,
+				MixType -> Stir
+			],
+			$Failed,
+			Messages :> {Error::SpecifedMixRateNotSafe, Error::InvalidOption}
+		],
 
+		Test[{"VolumeTooLowForAutoclave warning is not thrown for formula overload if the specified volume is below 100mL for an Autoclave->True protocol because this volume is not being used:"},
+			Download[
+				ExperimentStockSolution[
+					{
+						{80 Gram, Model[Sample, "Sodium Chloride"]},
+						{500 Milliliter, Model[Sample, "Milli-Q water"]}
+					},
+					Model[Sample, "Milli-Q water"],
+					1 Liter,
+					Volume -> 10Milliliter,
+					Autoclave -> True
+				],
+				RequestedVolumes
+			],
+			{EqualP[1 Liter]},
+			Messages :> {Warning::VolumeOptionUnused}
+		],
+		Test[{"No message is thrown if the specified volume is below 100mL for an Autoclave->True protocol while we are in engine:"},
+			Download[
+				Block[{$ECLApplication=Engine},
+					ExperimentStockSolution[
+						Model[Sample, StockSolution, "1M NaCl (example)"],
+						Volume -> 5 Milliliter,
+						Autoclave -> True,
+						Output -> Options
+					]
+				],
+				RequestedVolumes
+			],
+			{EqualP[5 Milliliter]}
+		],
+		Test[{"No message is thrown but the volume to prepare is bumped to 100 mL if the specified volume is below 100mL for an Autoclave->True protocol that is preparing a resource:"},
+			Download[
+				ExperimentStockSolution[
+					Model[Sample, StockSolution, "1M NaCl (example)"],
+					PreparedResources -> {Object[Resource, Sample, "Resource 1 Prepped by ExpSS Call" <> $SessionUUID]},
+					ParentProtocol -> Object[Protocol, ManualSamplePreparation, "Test Parent Protocol for ExperimentStockSolution unit test "<>$SessionUUID],
+					Volume -> 10 Milliliter,
+					Autoclave -> True
+				],
+				RequestedVolumes
+			],
+			{EqualP[100 Milliliter]}
+		],
+		Test[{"PreparatoryContainers is resolved to an autoclavable container model if Autoclave -> True:"},
+			Download[
+				Block[{$ECLApplication=Engine},
+					ExperimentStockSolution[
+						Model[Sample, StockSolution, "1M NaCl (example)"],
+						Volume -> 50 Milliliter,(* This volume would otherwise have PreparatoryContainers resolved to a 50mL tube which is not autoclavable*)
+						Autoclave -> True
+					]
+				],
+				PreparatoryContainers[MaxTemperature]
+			],
+			{GreaterEqualP[121 Celsius]}
+		],
+		Test[{"Resolved mix options respect the model even when PreparatoryContainers is a volumetric flask:"},
+			Lookup[
+				Download[
+					ExperimentStockSolution[
+						Model[Sample,StockSolution,"Test Stock Solution with Volumetric FtV and Stirring Mix"<>$SessionUUID],
+						Volume -> 1 Liter
+				],
+					ResolvedOptions
+				],
+				{Mix, MixType, MixUntilDissolved, Mixer, MixTime, MaxMixTime, MixRate, NumberOfMixes, MaxNumberOfMixes}
+			],
+			{
+				True, Stir, True, ObjectP[Model[Instrument, OverheadStirrer]],
+				EqualP[30*Minute], EqualP[60*Minute], EqualP[200*RPM], Null, Null
+			}
+		],
+		Example[{Options,MaxNumberOfOverfillingRepreparations,"Indicates how many times the preparation of failed stock solution should be repeated in the event of overfilling:"},
+			Download[
+				ExperimentStockSolution[
+					Model[Sample,StockSolution,"1M NaCl (example)"],
+					MaxNumberOfOverfillingRepreparations->2
+				],
+				MaxNumberOfOverfillingRepreparations
+			],
+			2
+		]
 	},
 	Parallel -> True,
 	SetUp :> (
@@ -3791,7 +4239,8 @@ DefineTests[
 					(* Test object variables *)
 					testBench,
 					fixedAliquotSample,singleUseSample,tabletSample,filterModel1,prod1,prod2,prod3,prod4,ssModel1,ssModel2,ssModel3,
-					resource1,resource2,resource3,resource4,resource5,resource6,resource7,resource8,resource9,resource10,hplcProtocol
+					resource1,resource2,resource3,resource4,resource5,resource6,resource7,resource8,resource9,resource10,hplcProtocol,
+					ssModel4, ssModel5, ssModel6
 				},
 				allObjects=Quiet[
 					Cases[
@@ -3810,6 +4259,8 @@ DefineTests[
 							Model[Sample,StockSolution,"Test Stock Solution with Fixed Aliquot Component"<>$SessionUUID],
 							Model[Sample,StockSolution,"Test Stock Solution with SingleUse Component"<>$SessionUUID],
 							Model[Sample,StockSolution,"Aspirin (tablet) in water"<>$SessionUUID],
+							Model[Sample,StockSolution,"Test Stock Solution with Volumetric FtV"<>$SessionUUID],
+							Model[Sample,StockSolution,"Test Stock Solution with Volumetric FtV and Stirring Mix"<>$SessionUUID],
 							Object[Resource,Sample,"Resource 1 Prepped by ExpSS Call"<>$SessionUUID],
 							Object[Resource,Sample,"Resource 2 Prepped by ExpSS Call"<>$SessionUUID],
 							Object[Resource,Sample,"Resource 3 Prepped by ExpSS Call"<>$SessionUUID],
@@ -3822,7 +4273,9 @@ DefineTests[
 							Object[Resource,Sample,"Resource 10 Prepped by ExpSS Call"<>$SessionUUID],
 							Object[Protocol,HPLC,"Test HPLC protocol with Sample Prep for ExperimentStockSolution unit test "<>$SessionUUID],
 							Object[Container,Vessel,"Test container for sample for ExperimentStockSolution (Formula with Object[Sample] with no Model)"<>$SessionUUID],
-							Object[Sample,"Test sample for ExperimentStockSolution (Formula with Object[Sample] with no Model)"<>$SessionUUID]
+							Object[Sample,"Test sample for ExperimentStockSolution (Formula with Object[Sample] with no Model)"<>$SessionUUID],
+							Object[Protocol,ManualSamplePreparation,"Test Parent Protocol for ExperimentStockSolution unit test "<>$SessionUUID],
+							Model[Sample, StockSolution, "Test Stock Solution with mix rate higher than safe mix rate of container"<>$SessionUUID]
 						}],
 						ObjectP[]
 					]
@@ -3849,7 +4302,10 @@ DefineTests[
 					ssModel1,
 					ssModel2,
 					ssModel3,
-					hplcProtocol
+					ssModel4,
+					ssModel5,
+					hplcProtocol,
+					ssModel6
 				}=CreateID[{
 					Model[Sample],
 					Model[Sample],
@@ -3862,7 +4318,10 @@ DefineTests[
 					Model[Sample,StockSolution],
 					Model[Sample,StockSolution],
 					Model[Sample,StockSolution],
-					Object[Protocol,HPLC]
+					Model[Sample,StockSolution],
+					Model[Sample,StockSolution],
+					Object[Protocol,HPLC],
+					Model[Sample,StockSolution]
 				}];
 
 				testBench = Upload[<|Type -> Object[Container, Bench], Name -> "Test bench for ExperimentStockSolution tests" <> $SessionUUID, DeveloperObject -> True, Site -> Link[$Site], Model -> Link[Model[Container, Bench, "The Bench of Testing"], Objects]|>];
@@ -3919,7 +4378,7 @@ DefineTests[
 						State->Solid,
 						Density->1.4 Kilogram/Liter,
 						Tablet->True,
-						TabletWeight->300 Milligram,
+						SolidUnitWeight->300 Milligram,
 						Expires->False,
 						DefaultStorageCondition->Link[Model[StorageCondition,"Ambient Storage"]],
 						Ventilated->False,
@@ -3932,7 +4391,7 @@ DefineTests[
 						MinVolume->20*Milliliter,
 						MaxVolume->21*Liter,
 						Dimensions->{18*Centimeter,17*Centimeter,6.5*Centimeter},
-						Reusability->False,
+						Reusable->False,
 						FilterType->BottleTop,
 						PoreSize->450*Nanometer,
 						MembraneMaterial->PES,
@@ -4016,7 +4475,8 @@ DefineTests[
 						DeveloperObject->True,
 						State->Liquid,
 						Expires->True,
-						ShelfLife->5 Year,
+						(* Model[Sample,"id:8qZ1VWNmdLBD"] - Milli-Q Water ShelfLife is 1 Year *)
+						ShelfLife->1 Year,
 						UnsealedShelfLife->1 Year,
 						DefaultStorageCondition->Link[Model[StorageCondition,"Ambient Storage"]],
 						MixTime->15 Minute,
@@ -4027,7 +4487,7 @@ DefineTests[
 						Replace[Formula]->{
 							{5 Unit,Link[tabletSample]}
 						},
-						FillToVolumeSolvent->Link[Model[Sample,"Milli-Q water"]],
+						FillToVolumeSolvent->Link[Model[Sample,"id:8qZ1VWNmdLBD"]],
 						TotalVolume->305 Milliliter,
 						FillToVolumeMethod->Ultrasonic,
 						Replace[VolumeIncrements]->{
@@ -4039,10 +4499,115 @@ DefineTests[
 						}
 					|>,
 					<|
+						Object->ssModel4,
+						Name->"Test Stock Solution with Volumetric FtV"<>$SessionUUID,
+						DeveloperObject->True,
+						Replace[Synonyms]->{"Test Stock Solution with Volumetric FtV"<>$SessionUUID},
+						Replace[Composition]->{
+							{100 VolumePercent,Link[Model[Molecule,"Water"]]},
+							{171.116 Millimolar,Link[Model[Molecule,"Sodium Chloride"]]}
+						},
+						State->Liquid,
+						Expires->True,
+						ShelfLife->5 Year,
+						UnsealedShelfLife->1 Year,
+						DefaultStorageCondition->Link[Model[StorageCondition,"id:7X104vnR18vX"]],
+						MSDSRequired->False,
+						BiosafetyLevel->"BSL-1",
+						Replace[IncompatibleMaterials]->{None},
+						Preparable->True,
+						NumberOfMixes->10,
+						MaxNumberOfMixes->25,
+						MixType->Invert,
+						MixUntilDissolved->True,
+						Replace[Formula]->{
+							{10 Gram,Link[singleUseSample]}
+						},
+						FillToVolumeSolvent->Link[Model[Sample,"id:8qZ1VWNmdLBD"]],
+						TotalVolume->1Liter,
+						PreparationType->Formula,
+						Replace[OrderOfOperations]->{FixedReagentAddition,FillToVolume,Incubation},
+						Autoclave->False
+					|>,
+					<|
+						Object->ssModel5,
+						Name->"Test Stock Solution with Volumetric FtV and Stirring Mix"<>$SessionUUID,
+						DeveloperObject->True,
+						Replace[Synonyms]->{"Test Stock Solution with Volumetric FtV and Stirring Mix"<>$SessionUUID},
+						Replace[Composition]->{
+							{100 VolumePercent,Link[Model[Molecule,"Water"]]},
+							{171.116 Millimolar,Link[Model[Molecule,"Sodium Chloride"]]}
+						},
+						State->Liquid,
+						Expires->True,
+						ShelfLife->5 Year,
+						UnsealedShelfLife->1 Year,
+						DefaultStorageCondition->Link[Model[StorageCondition,"id:7X104vnR18vX"]],
+						MSDSRequired->False,
+						BiosafetyLevel->"BSL-1",
+						Replace[IncompatibleMaterials]->{None},
+						Preparable->True,
+						MixTime -> 30 Minute,
+						MaxMixTime -> 60 Minute,
+						MixRate -> 200 RPM,
+						NumberOfMixes -> Null,
+						MaxNumberOfMixes -> Null,
+						MixType -> Stir,
+						MixUntilDissolved->True,
+						Replace[Formula]->{
+							{10 Gram,Link[singleUseSample]}
+						},
+						FillToVolumeSolvent->Link[Model[Sample,"id:8qZ1VWNmdLBD"]],
+						TotalVolume->1Liter,
+						PreparationType->Formula,
+						Replace[OrderOfOperations]->{FixedReagentAddition,FillToVolume,Incubation},
+						Autoclave->False
+					|>,
+					<|
 						Object->hplcProtocol,
 						Name->"Test HPLC protocol with Sample Prep for ExperimentStockSolution unit test "<>$SessionUUID,
 						ImageSample->True,
 						DeveloperObject->True
+					|>,
+					<|
+						Type -> Object[Protocol, ManualSamplePreparation],
+						Name -> "Test Parent Protocol for ExperimentStockSolution unit test "<>$SessionUUID,
+						DeveloperObject -> True,
+						CreatedBy -> Link[Object[User,"Test user for notebook-less test protocols"]],
+						Author -> Link[Object[User,"Test user for notebook-less test protocols"], ProtocolsAuthored],
+						Site -> Link[$Site],
+						Status -> Processing
+					|>,
+					<|
+						Object->ssModel6,
+						Name->"Test Stock Solution with mix rate higher than safe mix rate of container" <> $SessionUUID,
+						DeveloperObject->True,
+						Replace[Synonyms]->{"Test Stock Solution with mix rate higher than safe mix rate of container" <> $SessionUUID},
+						Replace[Composition]->{
+							{Quantity[100., IndependentUnit["VolumePercent"]], Link[Model[Molecule, "Water"]]},
+							{Quantity[1.76, ("Millimoles")/("Liters")],Link[Model[Molecule, "Potassium Phosphate (Dibasic)"]]},
+							{Quantity[8.1, ("Millimoles")/("Liters")], Link[Model[Molecule, "Dibasic Sodium Phosphate"]]},
+							{Quantity[2.7, ("Millimoles")/("Liters")], Link[Model[Molecule, "Potassium Chloride"]]},
+							{Quantity[0.137, ("Moles")/("Liters")], Link[Model[Molecule, "Sodium Chloride"]]}
+						},
+						State->Liquid,
+						Expires->True,
+						ShelfLife->5 Year,
+						UnsealedShelfLife->1 Year,
+						DefaultStorageCondition->Link[Model[StorageCondition,"Ambient Storage"]],
+						MSDSRequired->False,
+						BiosafetyLevel->"BSL-1",
+						Replace[IncompatibleMaterials]->{None},
+						Preparable->True,
+						MixTime->15 Minute,
+						Replace[Formula]->{
+							{Quantity[8.83485, "Milliliters"], Link[Model[Sample, StockSolution, "10x PBS"]]},
+							{Quantity[79.5136, "Milliliters"], Link[Model[Sample, "Milli-Q water"]]}
+						},
+						Autoclave->False,
+						MixRate -> 750 RPM,
+						MixType -> Stir,
+						TotalVolume -> Quantity[0.0883485, "Liters"]
 					|>
 				}];
 				{
@@ -4147,6 +4712,8 @@ DefineTests[
 						Model[Sample,StockSolution,"Test Stock Solution with Fixed Aliquot Component"<>$SessionUUID],
 						Model[Sample,StockSolution,"Test Stock Solution with SingleUse Component"<>$SessionUUID],
 						Model[Sample,StockSolution,"Aspirin (tablet) in water"<>$SessionUUID],
+						Model[Sample,StockSolution,"Test Stock Solution with Volumetric FtV"<>$SessionUUID],
+						Model[Sample,StockSolution,"Test Stock Solution with Volumetric FtV and Stirring Mix"<>$SessionUUID],
 						Object[Resource,Sample,"Resource 1 Prepped by ExpSS Call"<>$SessionUUID],
 						Object[Resource,Sample,"Resource 2 Prepped by ExpSS Call"<>$SessionUUID],
 						Object[Resource,Sample,"Resource 3 Prepped by ExpSS Call"<>$SessionUUID],
@@ -4159,7 +4726,9 @@ DefineTests[
 						Object[Resource,Sample,"Resource 10 Prepped by ExpSS Call"<>$SessionUUID],
 						Object[Protocol,HPLC,"Test HPLC protocol with Sample Prep for ExperimentStockSolution unit test "<>$SessionUUID],
 						Object[Container,Vessel,"Test container for sample for ExperimentStockSolution (Formula with Object[Sample] with no Model)"<>$SessionUUID],
-						Object[Sample,"Test sample for ExperimentStockSolution (Formula with Object[Sample] with no Model)"<>$SessionUUID]
+						Object[Sample,"Test sample for ExperimentStockSolution (Formula with Object[Sample] with no Model)"<>$SessionUUID],
+						Object[Protocol,ManualSamplePreparation,"Test Parent Protocol for ExperimentStockSolution unit test "<>$SessionUUID],
+						Model[Sample, StockSolution, "Test Stock Solution with mix rate higher than safe mix rate of container" <> $SessionUUID]
 					}],
 					ObjectP[]
 				]
@@ -4356,7 +4925,7 @@ DefineTests[
 				OutputFormat->List
 			],
 			KeyValuePattern[Map[Rule[#1, Except[Automatic]] &, DeleteCases[ ToExpression[Options[ExperimentStockSolutionOptions][[All, 1]]], Simulation | OutputFormat | Site | Cache]]],
-			Messages:>{Error::FormulaVolumeTooLarge,Error::InvalidOption}
+			Messages:>{Error::FormulaVolumeTooLarge,Error::InvalidOption,Error::InvalidInput}
 		],
 		Example[{Options,OutputFormat,"Return a list of options instead of a table:"},
 			ExperimentStockSolutionOptions[
@@ -4386,7 +4955,7 @@ DefineTests[
 		],
 		Test["Return resolved options despite: certain preparation steps require a minimum volume; requesting a volume below these thresholds produces an error:",
 			ExperimentStockSolutionOptions[Model[Sample,StockSolution,"1M NaCl (example)"],Volume->5 Milliliter,pH->6.5,OutputFormat->List],
-			KeyValuePattern[Map[Rule[#1, Except[Automatic]] &, DeleteCases[ ToExpression[Options[ExperimentStockSolutionOptions][[All, 1]]], Simulation | OutputFormat | Site | Cache]]],
+			KeyValuePattern[Map[Rule[#1, Except[Automatic]] &, DeleteCases[ ToExpression[Options[ExperimentStockSolutionOptions][[All, 1]]], Simulation | OutputFormat | Site | Cache | Type]]],
 			Messages:>{Error::BelowpHMinimum,Error::InvalidOption}
 		],
 		Example[{Options,Volume,"The Volume option is unused if it differs from the provided total volume of solvent for a fill-to-volume style solution:"},
@@ -4428,7 +4997,7 @@ DefineTests[
 					{50 Milligram,Model[Sample,"Sodium Chloride"]}
 				},
 				Model[Sample,"Milli-Q water"],
-				46 Milliliter,
+				40 Milliliter,
 				ContainerOut->Model[Container,Vessel,"Deprecated Legacy 46mL Tube"],
 				OutputFormat->List
 			],
@@ -4437,7 +5006,7 @@ DefineTests[
 		],
 		Test["Return options despite: The ContainerOut should be able to hold the requested volume of stock solution:",
 			ExperimentStockSolutionOptions[Model[Sample,StockSolution,"1M NaCl (example)"],Volume->2 Liter,ContainerOut->Model[Container,Vessel,"1L Glass Bottle"],OutputFormat->List],
-			KeyValuePattern[Map[Rule[#1, Except[Automatic]] &, DeleteCases[ ToExpression[Options[ExperimentStockSolutionOptions][[All, 1]]], Simulation | OutputFormat | Site | Cache]]],
+			KeyValuePattern[Map[Rule[#1, Except[Automatic]] &, DeleteCases[ ToExpression[Options[ExperimentStockSolutionOptions][[All, 1]]], Simulation | OutputFormat | Site | Cache | Type]]],
 			Messages:>{Error::ContainerOutTooSmall,Error::InvalidOption}
 		],
 		Example[{Options,Mix,"Indicate if the stock solution should be mixed following component combination and filling to volume with solvent; default mixing parameters are drawn from the model:"},
@@ -4653,7 +5222,7 @@ DefineTests[
 
 		Test["Return resolved options despite: Deprecated stock solution models cannot be prepared:",
 			ExperimentStockSolutionOptions[Model[Sample,StockSolution,"Dilute Salt Water, deprecated (example)"],OutputFormat->List],
-			KeyValuePattern[Map[Rule[#1, Except[Automatic]] &, DeleteCases[ ToExpression[Options[ExperimentStockSolutionOptions][[All, 1]]], Simulation | OutputFormat | Site | Cache]]],
+			KeyValuePattern[Map[Rule[#1, Except[Automatic]] &, DeleteCases[ ToExpression[Options[ExperimentStockSolutionOptions][[All, 1]]], Simulation | OutputFormat | Site | Cache | Type]]],
 			Messages:>{
 				Error::DeprecatedStockSolutions,
 				Error::InvalidInput

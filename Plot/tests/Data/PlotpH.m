@@ -27,6 +27,11 @@ DefineTests[PlotpH,
       _?ValidGraphicsQ
     ],
     Example[
+      {Basic,"Plots pH data when given a MeasaurepH protocol object:"},
+      PlotpH[Object[Data, pH, "id:xRO9n3BGjmRw"][Protocol]],
+      SlideView[{ValidGraphicsP[]..}]
+    ],
+    Example[
       {Options,TargetUnits,"Specify units for the XY axes:"},
       PlotpH[Object[Data, pH, "id:xRO9n3BGjmRw"], TargetUnits -> Automatic],
       _?ValidGraphicsQ

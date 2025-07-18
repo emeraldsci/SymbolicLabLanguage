@@ -667,7 +667,8 @@ DefineUsage[UploadMolecule,
 			"Inspect"
 		},
 		Author -> {
-			"thomas"
+			"lei.tian",
+			"lige.tonggu"
 		}
 	}
 ];
@@ -835,7 +836,8 @@ DefineUsage[ValidUploadMoleculeQ,
 			"Inspect"
 		},
 		Author -> {
-			"thomas"
+			"lei.tian",
+			"lige.tonggu"
 		}
 	}
 ];
@@ -1002,7 +1004,8 @@ DefineUsage[UploadMoleculeOptions,
 			"Inspect"
 		},
 		Author -> {
-			"thomas"
+			"lei.tian",
+			"lige.tonggu"
 		}
 	}
 ];
@@ -1945,7 +1948,7 @@ DefineUsage[UploadPipettingMethod,
 			"UploadPipettingMethodModelOptions",
 			"UploadPipettingMethodModelPreview",
 			"ValidUploadPipettingMethodModelQ",
-			"ExperimentSampleManipulation"
+			"ExperimentSamplePreparation"
 		},
 		Author -> {"robert", "alou"}
 	}
@@ -1995,7 +1998,7 @@ DefineUsage[UploadPipettingMethodModelOptions,
 			"UploadPipettingMethod",
 			"UploadPipettingMethodModelPreview",
 			"ValidUploadPipettingMethodModelQ",
-			"ExperimentSampleManipulation"
+			"ExperimentSamplePreparation"
 		},
 		Author -> {"robert", "alou"}
 	}
@@ -2049,7 +2052,7 @@ DefineUsage[UploadPipettingMethodModelPreview,
 			"UploadPipettingMethod",
 			"UploadPipettingMethodModelOptions",
 			"ValidUploadPipettingMethodModelQ",
-			"ExperimentSampleManipulation"
+			"ExperimentSamplePreparation"
 		},
 		Author -> {"robert", "alou"}
 	}
@@ -2103,7 +2106,7 @@ DefineUsage[ValidUploadPipettingMethodModelQ,
 			"UploadPipettingMethod",
 			"UploadPipettingMethodModelOptions",
 			"UploadPipettingMethodModelPreview",
-			"ExperimentSampleManipulation"
+			"ExperimentSamplePreparation"
 		},
 		Author -> {"robert", "alou"}
 	}
@@ -2160,7 +2163,7 @@ DefineUsage[UploadGradientMethod,
 			"Download",
 			"Inspect"
 		},
-		Author -> {"andrey.shur", "lei.tian", "jihan.kim"}
+		Author -> {"xu.yi", "andrey.shur", "lei.tian", "jihan.kim"}
 	}
 ];
 
@@ -2264,7 +2267,7 @@ DefineUsage[UploadGradientMethodOptions,
 			"Download",
 			"Inspect"
 		},
-		Author -> {"andrey.shur", "lei.tian", "jihan.kim"}
+		Author -> {"xu.yi", "andrey.shur", "lei.tian", "jihan.kim"}
 	}
 ];
 

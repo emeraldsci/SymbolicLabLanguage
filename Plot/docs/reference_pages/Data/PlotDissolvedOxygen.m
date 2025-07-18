@@ -31,12 +31,32 @@ DefineUsage[PlotDissolvedOxygen,
             Pattern :> _Graphics
           }
         }
+      },
+      {
+        Definition -> {"PlotDissolvedOxygen[protocol]", "plot"},
+        Description -> "creates a 'plot' of the dissolved oxygen data found in the Data field of 'protocol'.",
+        Inputs :> {
+          {
+            InputName -> "protocol",
+            Description -> "The protocol object containing dissolved oxygen data objects.",
+            Widget -> Alternatives[
+              Widget[Type -> Object, Pattern :> ObjectP[Object[Protocol, MeasureDissolvedOxygen]]]
+            ]
+          }
+        },
+        Outputs :> {
+          {
+            OutputName -> "plot",
+            Description -> "The figure generated from data found in the dissolved oxygen protocol.",
+            Pattern :> ValidGraphicsP[]
+          }
+        }
       }
     },
     SeeAlso -> {
       "ExperimentMeasureDissolvedOxygen",
       "PlotObject"
     },
-    Author -> {"eunbin.go", "ryan.bisbey", "charlene.konkankit", "cgullekson"}
+    Author -> {"dirk.schild", "eunbin.go", "ryan.bisbey", "charlene.konkankit", "cgullekson"}
   }
 ];

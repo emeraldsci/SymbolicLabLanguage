@@ -50,6 +50,14 @@ DefineObjectType[Model[Molecule], {
 			Category -> "Organizational Information",
 			Developer -> True
 		},
+		Verified -> {
+			Format -> Single,
+			Class -> Boolean,
+			Pattern :> BooleanP,
+			Description -> "Indicates if the information in this model has been reviewed for accuracy by an ECL employee.",
+			Category -> "Organizational Information",
+			AdminWriteOnly->True
+		},
 		LegacyObject -> {
 			Format -> Single,
 			Class -> Link,
@@ -512,6 +520,14 @@ DefineObjectType[Model[Molecule], {
 			Pattern:>BooleanP,
 			Description->"Indicates if this sample cannot be safely autoclaved.",
 			Category->"Health & Safety"
+		},
+		DoubleGloveRequired -> {
+			Format -> Single,
+			Class -> Expression,
+			Pattern :> BooleanP,
+			Description -> "Indicates if working with this molecule requires to wear two pairs of gloves.",
+			Category -> "Health & Safety",
+			Developer -> True
 		},
 
 		LightSensitive -> {

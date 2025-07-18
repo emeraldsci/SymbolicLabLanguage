@@ -15,7 +15,7 @@ DefineOptions[ExperimentFluorescencePolarizationPreview,
 	SharedOptions :> {ExperimentFluorescencePolarization}
 ];
 
-ExperimentFluorescencePolarizationPreview[myInput:(ListableP[ObjectP[Object[Sample]]]|ListableP[ObjectP[Object[Container,Plate]]]),myOptions:OptionsPattern[ExperimentFluorescencePolarizationPreview]]:=Module[
+ExperimentFluorescencePolarizationPreview[myInput:(ListableP[ObjectP[{Object[Sample], Model[Sample]}]]|ListableP[ObjectP[Object[Container,Plate]]]),myOptions:OptionsPattern[ExperimentFluorescencePolarizationPreview]]:=Module[
 	{listedOptions},
 
 	listedOptions=ToList[myOptions];
@@ -40,7 +40,7 @@ DefineOptions[ExperimentFluorescencePolarizationOptions,
 	SharedOptions :> {ExperimentFluorescencePolarization}
 ];
 
-ExperimentFluorescencePolarizationOptions[myInput:(ListableP[ObjectP[Object[Sample]]]|ListableP[ObjectP[Object[Container,Plate]]]),myOptions:OptionsPattern[ExperimentFluorescencePolarizationOptions]]:=Module[
+ExperimentFluorescencePolarizationOptions[myInput:(ListableP[ObjectP[{Object[Sample], Model[Sample]}]]|ListableP[ObjectP[Object[Container,Plate]]]),myOptions:OptionsPattern[ExperimentFluorescencePolarizationOptions]]:=Module[
 	{listedOptions,preparedOptions,resolvedOptions},
 
 	listedOptions=ToList[myOptions];
@@ -70,7 +70,7 @@ DefineOptions[ValidExperimentFluorescencePolarizationQ,
 	SharedOptions :> {ExperimentFluorescencePolarization}
 ];
 
-ValidExperimentFluorescencePolarizationQ[myInput:(ListableP[ObjectP[Object[Sample]]]|ListableP[ObjectP[Object[Container,Plate]]]),myOptions:OptionsPattern[ValidExperimentFluorescencePolarizationQ]]:=Module[
+ValidExperimentFluorescencePolarizationQ[myInput:(ListableP[ObjectP[{Object[Sample], Model[Sample]}]]|ListableP[ObjectP[Object[Container,Plate]]]),myOptions:OptionsPattern[ValidExperimentFluorescencePolarizationQ]]:=Module[
 	{listedInput,listedOptions,preparedOptions,functionTests,initialTestDescription,allTests,safeOps,verbose,outputFormat,result},
 
 	listedInput=ToList[myInput];

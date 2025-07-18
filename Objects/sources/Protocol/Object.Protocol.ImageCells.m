@@ -588,7 +588,12 @@ DefineObjectType[Object[Protocol,ImageCells],{
 			Format->Single,
 			Class->Link,
 			Pattern:>_Link,
-			Relation->Alternatives[Object[Protocol,SampleManipulation],Object[Protocol,RoboticSamplePreparation],Object[Protocol,ManualSamplePreparation]],
+			Relation->Alternatives[
+				Object[Protocol,SampleManipulation],
+				Object[Protocol,RoboticSamplePreparation],
+				Object[Protocol,ManualSamplePreparation],
+				Object[Notebook, Script]
+			],
 			Description->"The sample manipulation/preparation protocol generated as a result of the execution of ContainerCalibrationPrimitives.",
 			Category -> "General",
 			Developer->True

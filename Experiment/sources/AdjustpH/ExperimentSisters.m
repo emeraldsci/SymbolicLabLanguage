@@ -7,7 +7,7 @@ DefineOptions[ExperimentAdjustpHPreview,
 	SharedOptions:>{ExperimentAdjustpH}
 ];
 
-ExperimentAdjustpHPreview[mySamples:ListableP[ObjectP[{Object[Container],Object[Sample]}]|_String],mypHs:ListableP[pHP],myOptions:OptionsPattern[ExperimentAdjustpHPreview]]:=Module[
+ExperimentAdjustpHPreview[mySamples:ListableP[ObjectP[{Object[Container],Object[Sample],Model[Sample]}]|_String],mypHs:ListableP[pHP],myOptions:OptionsPattern[ExperimentAdjustpHPreview]]:=Module[
 	{listedOptions},
 
 	listedOptions=ToList[myOptions];
@@ -31,7 +31,7 @@ DefineOptions[ExperimentAdjustpHOptions,
 	SharedOptions :> {ExperimentAdjustpH}
 ];
 
-ExperimentAdjustpHOptions[mySamples:ListableP[ObjectP[{Object[Container],Object[Sample]}]|_String],mypHs:ListableP[pHP],myOptions:OptionsPattern[ExperimentAdjustpHOptions]]:=Module[
+ExperimentAdjustpHOptions[mySamples:ListableP[ObjectP[{Object[Container],Object[Sample],Model[Sample]}]|_String],mypHs:ListableP[pHP],myOptions:OptionsPattern[ExperimentAdjustpHOptions]]:=Module[
 	{listedOptions,noOutputOptions,options},
 
 	(* get the options as a list *)
@@ -62,7 +62,7 @@ DefineOptions[ValidExperimentAdjustpHQ,
 	SharedOptions:>{ExperimentAdjustpH}
 ];
 
-ValidExperimentAdjustpHQ[mySamples:ListableP[ObjectP[{Object[Container],Object[Sample]}]|_String],mypHs:ListableP[pHP],myOptions:OptionsPattern[ValidExperimentAdjustpHQ]]:=Module[
+ValidExperimentAdjustpHQ[mySamples:ListableP[ObjectP[{Object[Container],Object[Sample],Model[Sample]}]|_String],mypHs:ListableP[pHP],myOptions:OptionsPattern[ValidExperimentAdjustpHQ]]:=Module[
 	{listedOptions,preparedOptions,experimentAdjustpHTests,initialTestDescription,allTests,verbose,outputFormat},
 
 	(* Get the options as a list *)

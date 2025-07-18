@@ -197,6 +197,17 @@ DefineObjectType[Object[Program, Transfer], {
 			Description -> "The hand pump used to transfer liquid out of a solvent drum.",
 			Category -> "General"
 		},
+		HandPumpAdapter -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[
+				Model[Part,HandPumpAdapter],
+				Object[Part,HandPumpAdapter]
+			],
+			Description -> "The part used to connect the handpump to the solvent container in order to transfer liquid out.",
+			Category -> "General"
+		},
 		HandPumpWasteContainer -> {
 			Format -> Single,
 			Class -> Link,

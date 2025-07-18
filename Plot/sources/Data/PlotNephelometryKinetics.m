@@ -44,7 +44,8 @@ Warning::Data2D="Since the data is two dimensional, PlotType will be set to List
 Error::PlotNephelometryKineticsDataTypeNotAvailable = "There is no non-null data for `1` for the data objects `2`, so the DataType `3` cannot be specified. Please choose a different data type.";
 Error::PlotNephelometryKineticsObjectNotFound="Specified object `1` cannot be found in the database. Please verify the objects' IDs or names.";
 Error::PlotNephelometryKineticsNoAssociatedObject="Specified input `1` is not associated with a `2` object. Please verify the input object `1`, or associate it with a `2` object.";
-
+Error::NoNephelometryKineticsDataToPlot = "The protocol object does not contain any associated nephelometry kinetics data.";
+Error::NephelometryKineticsProtocolDataNotPlotted = "The data objects linked to the input protocol were not able to be plotted. The data objects may be missing field values that are required for plotting. Please inspect the data objects to ensure that they contain the data to be plotted, and call PlotNephelometryKinetics or PlotObject on an individual data object to identify the missing values.";
 
 
 (* Raw Definition *)
@@ -53,6 +54,77 @@ PlotNephelometryKinetics[primaryData:rawPlotInputP,inputOptions:OptionsPattern[P
 	Object[Data,NephelometryKinetics],
 	PlotNephelometryKinetics,
 	SafeOptions[PlotNephelometryKinetics, ToList[inputOptions]]
+];
+
+(* Protocol Overload *)
+PlotNephelometryKinetics[
+	obj: ObjectP[Object[Protocol, NephelometryKinetics]],
+	ops: OptionsPattern[PlotNephelometryKinetics]
+] := Module[{safeOps, output, data, previewPlot, plots, resolvedOptions, finalResult, outputPlot, outputOptions},
+
+	(* Check the options pattern and return a list of all options, using defaults for unspecified or invalid options *)
+	safeOps=SafeOptions[PlotNephelometryKinetics, ToList[ops]];
+
+	(* Requested output, either a single value or list of Alternatives[Result,Options,Preview,Tests] *)
+	output = ToList[Lookup[safeOps, Output]];
+
+	(* Download the data from the input protocol *)
+	data = Download[obj, Data];
+
+	(* Return an error if there is no data or it is not the correct data type *)
+	If[!MatchQ[data, {ObjectP[Object[Data, NephelometryKinetics]]..}],
+		Message[Error::NoNephelometryKineticsDataToPlot];
+		Return[$Failed]
+	];
+
+	(* If Preview is requested, return a plot with all of the data objects in the protocol overlaid in one plot *)
+	previewPlot = If[MemberQ[output, Preview],
+		PlotNephelometryKinetics[data, Sequence @@ ReplaceRule[safeOps, Output -> Preview]],
+		Null
+	];
+
+	(* If either Result or Options are requested, map over the data objects. Remove anything that failed from the list of plots to be displayed*)
+	{plots, resolvedOptions} = If[MemberQ[output, (Result | Options)],
+		Transpose[
+			(PlotNephelometryKinetics[#, Sequence @@ ReplaceRule[safeOps, Output -> {Result, Options}]]& /@ data) /. $Failed -> Nothing
+		],
+		{{}, {}}
+	];
+
+	(* If all of the data objects failed to plot, return an error *)
+	If[MatchQ[plots, (ListableP[{}] | ListableP[Null])] && MatchQ[previewPlot, (Null | $Failed)],
+		Message[Error::NephelometryKineticsProtocolDataNotPlotted];
+		Return[$Failed],
+		Nothing
+	];
+
+	(* If Result was requested, output the plots in slide view, unless there is only one plot then we can just show it not in slide view. *)
+	outputPlot = If[MemberQ[output, Result],
+		If[Length[plots] > 1,
+			SlideView[plots],
+			First[plots]
+		]
+	];
+
+	(* If Options were requested, just take the first set of options since they are the same for all plots. Make it a List first just in case there is only one option set. *)
+	outputOptions = If[MemberQ[output, Options],
+		First[ToList[resolvedOptions]]
+	];
+
+	(* Prepare our final result *)
+	finalResult = output /. {
+		Result -> outputPlot,
+		Options -> outputOptions,
+		Preview -> previewPlot,
+		Tests -> {}
+	};
+
+	(* Return the result *)
+	If[
+		Length[finalResult] == 1,
+		First[finalResult],
+		finalResult
+	]
 ];
 
 

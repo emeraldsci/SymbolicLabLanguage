@@ -1507,9 +1507,9 @@ ComplementSequenceQ[strdA:_?StrandQ, strdB:_?StrandQ, ops:OptionsPattern[]]:= An
 
 DefineOptions[ReverseComplementSequence,
 	Options :> {
-		{Polymer -> Automatic, PolymerP | Automatic, "The polymer type that defines the potnetial alphabaet a valid sequence should be composed of.  Automatic will attempt to match all known polymer types."},
+		{Polymer -> Automatic, PolymerP | Automatic, "The polymer type that defines the potential alphabet a valid sequence should be composed of.  Automatic will attempt to match all known polymer types."},
 		{ExplicitlyTyped -> Automatic, BooleanP | Automatic, "If true, wraps the Monomers in their polymer type (eg. DNA[\"A\"]).  Automatic will assume true if passed an explicitly typed input sequence and false if not.  If a strand is provided and ExplicitlyTyped is set to false, will strip off all strand and polymer wrappers and return only a raw sequence."},
-		{Motif -> Automatic, BooleanP | Automatic, "If set to true, assumes you're dealing with a motif name you want the ReverseComplementSequence of, if set to false, assumes you want the sequence.  Automatic will attempt to guess but assumes sequences in the ambigous case: e.g. ReverseComplementSequence[\"A\"]."},
+		{Motif -> Automatic, BooleanP | Automatic, "If set to true, assumes you're dealing with a motif name you want the ReverseComplementSequence of, if set to false, assumes you want the sequence.  Automatic will attempt to guess but assumes sequences in the ambiguous case: e.g. ReverseComplementSequence[\"A\"]."},
 		{IncludeModification -> True, True | False, "If False, removes modifications from the returned complement sequence or strand."},
 		{FastTrack -> False, BooleanP, "Skip strict checks.", Category->Hidden}
 	}

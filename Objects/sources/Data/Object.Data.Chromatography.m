@@ -856,6 +856,7 @@ DefineObjectType[Object[Data, Chromatography], {
 			Format->Single,
 			Class->Real,
 			Pattern:>RangeP[0*Percent,100*Percent],
+			Units -> Percent,
 			Description -> "The relative magnitude of the heating element setting used to heat the sheath gas where 100% is the maximum heating power.",
 			Category -> "Detection"
 		},
@@ -1385,10 +1386,10 @@ DefineObjectType[Object[Data, Chromatography], {
 		AirDetectedAlarms -> {
 			Format -> Multiple,
 			Class -> {Real, Expression, Real},
-			Pattern :> {GreaterEqualP[0 * Minute], A|B|Sample, GreaterEqualP[0 * Minute]},
+			Pattern :> {UnitsP[Minute], A|B|Sample, GreaterEqualP[0 * Minute]},
 			Units -> {Minute, None, Minute},
 			Headers -> {"Air Detected Time", "Valve", "Time until Resumed"},
-			Description -> "The times at which the chromatography instrument raised an air detected alarm, relative to the start of the run, the valve that had air in it, and the amount of time it took for the run to be resumed after the air was removed.  Note that valve A controls buffers A, C, E, and G, valve B controls buffers B, D, F, and H, and Sample controls the flow injection samples.",
+			Description -> "The times at which the chromatography instrument raised an air detected alarm, relative to the injection (or if no injection the start of the run), the valve that had air in it, and the amount of time it took for the run to be resumed after the air was removed.  Note that valve A controls buffers A, C, E, and G, valve B controls buffers B, D, F, and H, and Sample controls the flow injection samples.",
 			Category -> "Experimental Results"
 		},
 		StandardData -> {
@@ -1405,6 +1406,14 @@ DefineObjectType[Object[Data, Chromatography], {
 			Pattern :> _Link,
 			Relation -> Object[Data, Chromatography][StandardData],
 			Description -> "The list of all chromatograms associated with this standard.",
+			Category -> "Experimental Results"
+		},
+		RawDataFile -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[EmeraldCloudFile],
+			Description -> "The file containing all raw data of this sample collected by the instrument zipped into one directory.",
 			Category -> "Experimental Results"
 		},
 		SecondaryDataFile -> {
@@ -1453,6 +1462,14 @@ DefineObjectType[Object[Data, Chromatography], {
 			Pattern :> {{GreaterEqualP[0], GreaterP[0], FractionStorageP}..},
 			Description -> "The list of fractions picked by the user during the fraction analysis in the form of {fraction collection start time, fraction collection end time, fraction plate or fraction well index}..",
 			Headers ->{"Collection Start Time", "Collection End Time", "Fraction Plate/Well Index"},
+			Category -> "Analysis & Reports"
+		},
+		AirBubbleLikelihood -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> RangeP[0*Percent,100*Percent],
+			Units -> Percent,
+			Description -> "The probability of air bubble existing in the pressure trace of the chromatograph assigned to this data by a liquid chromatography air bubble anomaly detector machine learning model (unpublished result).",
 			Category -> "Analysis & Reports"
 		},
 		FractionPickingAnalysis -> {

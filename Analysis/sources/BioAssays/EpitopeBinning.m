@@ -417,7 +417,7 @@ AnalyzeEpitopeBinning[
       (* if we have a percent, we need to get the closest part *)
       timeToNormalize = If[MatchQ[Units[fitDomain], TimeP],
 
-        (* if its a time, just subtract from teh max time *)
+        (* if its a time, just subtract from the max time *)
         maxTime - Unitless[UnitConvert[fitDomain, Second]],
 
         (* if its a percent, get the closest part *)
@@ -445,7 +445,7 @@ AnalyzeEpitopeBinning[
   normalizationData = findBinningNormalizationData[dataObjects, normalizationMethod, First[Flatten[binningType]], cacheBall];
 
 
-  (* pass it through the align fucntion to start the curve at (0,0) *)
+  (* pass it through the align function to start the curve at (0,0) *)
   alignedNormalizationData = If[MatchQ[normalizationData, Null|{{}..}|{Null..}],
     Null,
     Map[Flatten[Analysis`Private`alignBLIData[#, 0 Nanometer,  0 Second],1]&, normalizationData, {2}]
@@ -467,7 +467,7 @@ AnalyzeEpitopeBinning[
         (* if we have a percent, we need to get the closest part *)
         timeToNormalize = If[MatchQ[Units[fitDomain], TimeP],
 
-          (* if its a time, just subtract from teh max time *)
+          (* if its a time, just subtract from the max time *)
           maxTime - Unitless[UnitConvert[fitDomain, Second]],
 
           (* if its a percent, get the closest part *)
@@ -494,7 +494,7 @@ AnalyzeEpitopeBinning[
   (* -- PACKAGE DATA -- *)
   (* ------------------ *)
 
-  (* as is, everythign is formatted as a list of lists of either values od quantity arrays *)
+  (* as is, everything is formatted as a list of lists of either values od quantity arrays *)
   (* the desired format is: <|Bound -> Object, Competing -> Object, Raw -> Value, Normalizer -> Value, NormalizedValue -> Value|> *)
 
   (* we have a little helper for PreMix to jsut switch Bound and Competing *)
@@ -560,7 +560,7 @@ AnalyzeEpitopeBinning[
   In this section we:
     (1) use the threshold to identify pairs of objects that go together using the Threshold or SlowBinderThreshold
     (2) check if the pairs also interact the same with other objects
-    (3) group into bins and throw warnings if there are inconsistancies such as a pair that are blockign but dont block behave the same when competing with other antibodies
+    (3) group into bins and throw warnings if there are inconsistencies such as a pair that are blocking but don't block behave the same when competing with other antibodies
   *)
 
   (* create a graph to visualize the bins *)
@@ -903,7 +903,7 @@ resolveAnalyzeEpitopeBinningOptions[
 
   (* make the test for meaningless filter width*)
   mixedInputTest = If[gatherTests,
-    Test["All Data Object inputs or Data Objects associated with teh Protocol inputs are of the same BinningType:",
+    Test["All Data Object inputs or Data Objects associated with the Protocol inputs are of the same BinningType:",
       MatchQ[mixedInputObjects, {}],
       True
     ],
@@ -932,7 +932,7 @@ resolveAnalyzeEpitopeBinningOptions[
     numberOfObjects = Length[DeleteDuplicates[dataObjects]];
     numberOfSolutions = Length/@competingSolutions;
 
-    (* if the lengths dont match, its not a viable experiment *)
+    (* if the lengths don't match, its not a viable experiment *)
     squareAssayBool = And@@Map[If[MatchQ[#, numberOfObjects], True, False]&, numberOfSolutions];
 
     (* if the assay is bad, return all the objects *)
@@ -1148,7 +1148,7 @@ resolveAnalyzeEpitopeBinningOptions[
   (* use helper to check that the normalization type actually exists *)
   requestedNormalizationData = findBinningNormalizationData[dataObjects, normalizationMethod, First[binningType], cache];
 
-  (* becasue of hte output form, we need to serach for empty lists and Nulls at all levels *)
+  (* becasue of hte output form, we need to search for empty lists and Nulls at all levels *)
   missingNormalizationData = Cases[requestedNormalizationData, (Null|{}), Infinity];
 
   (* if the function cant find it, it will return {} or elements with {} or Null. Dont throw the error if they didnt ask for normalization  *)
@@ -1426,7 +1426,7 @@ INPUTS:
 
 (*
 METHOD:
-- The baseline will differ based on teh BaselineType and the BinningType
+- The baseline will differ based on the BaselineType and the BinningType
 - there is a lookup table for the pattern that we are looking for in well data
 -
  *)
@@ -1490,7 +1490,7 @@ findBinningBaseline[
     ]
   ];
 
-  (*TODO: Note if we dont return a valid baseline, this is because the user has messed up and the resolver will error when this guy returns Null*)
+  (*TODO: Note if we don't return a valid baseline, this is because the user has messed up and the resolver will error when this guy returns Null*)
 (* TODO: why is the a map thread? aren't we looking for a very specific value? *)
 (* generate a pattern for the elements of WelInformation that are requested as baselines *)
   requestedBaselinePattern =
@@ -1635,7 +1635,7 @@ findBinningNormalizationData[
     {1,_,_,_,LoadSurface,#}&/@safeSolutions
   ];
 
-  (* get teh positions out  *)
+  (* get the positions out  *)
   potentialNormalizationIndices = Position[safeWellInformation, #]&/@patternToMatch;
 
   (* for each step, lookup the data element by index. Part always returns a list, take the last element. Note that if every sensor is loaded with antigen, the list will be empty but we would like it to return Null*)

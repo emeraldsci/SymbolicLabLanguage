@@ -64,6 +64,80 @@ DefineTests[
 		],
 
 		(* --- Option Resolving -- *)
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a sample that does not exist (name form):"},
+			ExperimentDialysis[Object[Sample, "Nonexistent sample"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a container that does not exist (name form):"},
+			ExperimentDialysis[Object[Container, Vessel, "Nonexistent container"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a sample that does not exist (ID form):"},
+			ExperimentDialysis[Object[Sample, "id:12345678"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a container that does not exist (ID form):"},
+			ExperimentDialysis[Object[Container, Vessel, "id:12345678"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Do NOT throw a message if we have a simulated sample but a simulation is specified that indicates that it is simulated:"},
+			Module[{containerPackets, containerID, sampleID, samplePackets, simulationToPassIn},
+				containerPackets = UploadSample[
+					Model[Container,Vessel,"50mL Tube"],
+					{"Work Surface", Object[Container, Bench, "The Bench of Testing"]},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True
+				];
+				simulationToPassIn = Simulation[containerPackets];
+				containerID = Lookup[First[containerPackets], Object];
+				samplePackets = UploadSample[
+					Model[Sample, "Milli-Q water"],
+					{"A1", containerID},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True,
+					Simulation -> simulationToPassIn,
+					InitialAmount -> 25 Milliliter
+				];
+				sampleID = Lookup[First[samplePackets], Object];
+				simulationToPassIn = UpdateSimulation[simulationToPassIn, Simulation[samplePackets]];
+
+				ExperimentDialysis[sampleID, Simulation -> simulationToPassIn, Output -> Options]
+			],
+			{__Rule}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Do NOT throw a message if we have a simulated container but a simulation is specified that indicates that it is simulated:"},
+			Module[{containerPackets, containerID, sampleID, samplePackets, simulationToPassIn},
+				containerPackets = UploadSample[
+					Model[Container,Vessel,"50mL Tube"],
+					{"Work Surface", Object[Container, Bench, "The Bench of Testing"]},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True
+				];
+				simulationToPassIn = Simulation[containerPackets];
+				containerID = Lookup[First[containerPackets], Object];
+				samplePackets = UploadSample[
+					Model[Sample, "Milli-Q water"],
+					{"A1", containerID},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True,
+					Simulation -> simulationToPassIn,
+					InitialAmount -> 25 Milliliter
+				];
+				sampleID = Lookup[First[samplePackets], Object];
+				simulationToPassIn = UpdateSimulation[simulationToPassIn, Simulation[samplePackets]];
+
+				ExperimentDialysis[containerID, Simulation -> simulationToPassIn, Output -> Options]
+			],
+			{__Rule}
+		],
 
 		Example[{Messages, "InstrumentPrecision", "Mix rates may only be specified in increments of 1 RPM:"},
 			options=ExperimentDialysis[
@@ -511,7 +585,7 @@ DefineTests[
 				Error::InvalidOption
 			}
 		],
-		Example[{Messages, "ConflictingDialysisMethodMixType", "The DialysisMixType is supported with the DialysisMethod:"},
+		Example[{Messages, "ConflictingDialysisMethodMixType", "The DialysisMixType is supported with EquilibriumDialysis dialysis method:"},
 			ExperimentDialysis[
 				Object[Sample, "sample 2 in 50mL tube for ExperimentDialysis testing"<> $SessionUUID],
 				DialysisMixType -> Stir,
@@ -519,6 +593,7 @@ DefineTests[
 			$Failed,
 			Messages :> {
 				Error::ConflictingDialysisMethodMixType,
+				Warning::AliquotRequired,
 				Error::InvalidOption
 			}
 		],
@@ -530,10 +605,11 @@ DefineTests[
 			$Failed,
 			Messages :> {
 				Error::ConfictingEquilibriumDialysateVolume,
+				Warning::AliquotRequired,
 				Error::InvalidOption
 			}
 		],
-		Example[{Messages, "ConflictingDialysisMethodMixType", "The DialysisMixType is supported with the DialysisMethod:"},
+		Example[{Messages, "ConflictingDialysisMethodMixType", "The DialysisMixType is supported with DynamicDialysis dialysis method:"},
 			ExperimentDialysis[
 				{Object[Sample, "sample 2 in 50mL tube for ExperimentDialysis testing"<> $SessionUUID], Object[Sample, "sample 2 in 50mL tube for ExperimentDialysis testing"<> $SessionUUID]},
 				DialysisMixType -> Vortex,
@@ -574,6 +650,7 @@ DefineTests[
 			$Failed,
 			Messages :> {
 				Error::NumberOfDialysisRoundsEquilibriumMismatch,
+				Warning::AliquotRequired,
 				Error::InvalidOption
 			}
 		],
@@ -581,6 +658,54 @@ DefineTests[
 
 		(* --- Options --- *)
 
+		Example[{Options, {PreparedModelContainer, PreparedModelAmount}, "Specify the amount of an input Model[Sample] and the container in which it is to be prepared:"},
+			options = ExperimentDialysis[
+				{Model[Sample, "Milli-Q water"], Model[Sample, "Milli-Q water"]},
+				PreparedModelContainer -> Model[Container, Plate, "96-well 2mL Deep Well Plate"],
+				PreparedModelAmount -> 1 Milliliter,
+				Output -> Options
+			];
+			prepUOs = Lookup[options, PreparatoryUnitOperations];
+			{
+				prepUOs[[-1, 1]][Sample],
+				prepUOs[[-1, 1]][Container],
+				prepUOs[[-1, 1]][Amount],
+				prepUOs[[-1, 1]][Well],
+				prepUOs[[-1, 1]][ContainerLabel]
+			},
+			{
+				{ObjectP[Model[Sample, "id:8qZ1VWNmdLBD"]]..},
+				{ObjectP[Model[Container, Plate, "id:L8kPEjkmLbvW"]]..},
+				{EqualP[1 Milliliter]..},
+				{"A1", "B1"},
+				{_String, _String}
+			},
+			Variables :> {options, prepUOs}
+		],
+		Example[{Options, {PreparedModelContainer, PreparedModelAmount}, "Specify the amount of an input Model[Sample] and the container in which it is to be prepared (pooled samples input):"},
+			options = ExperimentDialysis[
+				{Model[Sample, "Milli-Q water"], {Model[Sample, "Milli-Q water"], Model[Sample, "Milli-Q water"]}},
+				PreparedModelContainer -> Model[Container, Plate, "96-well 2mL Deep Well Plate"],
+				PreparedModelAmount -> 1 Milliliter,
+				Output -> Options
+			];
+			prepUOs = Lookup[options, PreparatoryUnitOperations];
+			{
+				prepUOs[[-1, 1]][Sample],
+				prepUOs[[-1, 1]][Container],
+				prepUOs[[-1, 1]][Amount],
+				prepUOs[[-1, 1]][Well],
+				prepUOs[[-1, 1]][ContainerLabel]
+			},
+			{
+				{ObjectP[Model[Sample, "id:8qZ1VWNmdLBD"]]..},
+				{ObjectP[Model[Container, Plate, "id:L8kPEjkmLbvW"]]..},
+				{EqualP[1 Milliliter]..},
+				{"A1", "B1", "C1"},
+				{_String, _String, _String}
+			},
+			Variables :> {options, prepUOs}
+		],
 		Example[{Options, DialysisMethod, "Specify the type of dialysis to be used on the sample:"},
 			options=ExperimentDialysis[
 				Object[Sample, "sample 2 in 50mL tube for ExperimentDialysis testing"<> $SessionUUID],
@@ -881,7 +1006,8 @@ DefineTests[
 				MolecularWeightCutoff->8 Kilo Dalton
 			];
 			Lookup[options, DialysisMembrane][{Type,MolecularWeightCutoff}],
-			{Model[Container, Plate, Dialysis], 8.`Kilo Dalton}
+			{Model[Container, Plate, Dialysis], 8.`Kilo Dalton},
+			Messages :> {Warning::AliquotRequired}
 		],
 		Example[{Options, DialysisMembrane, "Resolve the dialysis membrane that should be used during dialysis for EquilibriumDialysis:"},
 			options=ExperimentDialysis[
@@ -890,7 +1016,8 @@ DefineTests[
 				DialysisMethod->EquilibriumDialysis
 			];
 			Lookup[options, DialysisMembrane][Type],
-			Model[Container, Plate, Dialysis]
+			Model[Container, Plate, Dialysis],
+			Messages :> {Warning::AliquotRequired}
 		],
 		Example[{Options, DialysisMembrane, "Resolve the dialysis membrane that should be used during dialysis for StaticDialysis by giving a MolecularWeightCutoff:"},
 			options=ExperimentDialysis[
@@ -939,6 +1066,7 @@ DefineTests[
 			$Failed,
 			Messages :> {
 				Error::NoAvailableDialysisMembrane,
+				Warning::AliquotRequired,
 				Error::InvalidOption
 			}
 		],
@@ -1111,7 +1239,8 @@ DefineTests[
 				Output->Options
 			];
 			Lookup[options, DialysisMixType],
-			Vortex
+			Vortex,
+			Messages :> {Warning::AliquotRequired}
 		],
 		Example[{Options, DialysisMixType, "Resolve the type of mixing to stir for static dialysis:"},
 			options=ExperimentDialysis[
@@ -1157,6 +1286,21 @@ DefineTests[
 			];
 			Lookup[options, Instrument][Type],
 			Model[Instrument, OverheadStirrer]
+		],
+		Test["All else being the same, the instrument model with the most active instrument objects is used as the mixing instrument:",
+			options=ExperimentDialysis[
+				Object[Sample, "sample 2 in 50mL tube for ExperimentDialysis testing"<> $SessionUUID],
+				DialysisMixType->Stir,
+				Output->Options
+			];
+			Lookup[options, Instrument],
+			mostInstrumentsModel = Last[
+				SortBy[
+					Search[Model[Instrument, OverheadStirrer]],
+					Count[Transpose[Download[#, {Objects[DeveloperObject], Objects[Status]}]], {(Null|False), Except[Retired]}]&
+				]
+			];
+			ObjectP[mostInstrumentsModel]
 		],
 		Example[{Options, Instrument, "Resolve the instrument to be used during for no mixing and heating:"},
 			options=ExperimentDialysis[
@@ -1663,7 +1807,8 @@ DefineTests[
 				Output->Options
 			];
 			Lookup[options,DialysateVolume],
-			750.` Microliter
+			750.` Microliter,
+			Messages :> {Warning::AliquotRequired}
 		],
 		Example[{Options, DialysateVolume, "Resolve the volume of dialysate the sample should be put into to dialyze the sample for small static dialysis samples:"},
 			options=ExperimentDialysis[
@@ -1690,11 +1835,11 @@ DefineTests[
 		Example[{Options, SecondaryDialysateVolume, "Specify the volume of dialysate the sample should be put into to dialyze the sample in the second round:"},
 			options=ExperimentDialysis[
 				Object[Sample,  "sample 2 in 50mL tube for ExperimentDialysis testing"<> $SessionUUID],
-				SecondaryDialysateVolume->1.1Liter,
+				SecondaryDialysateVolume->2.1Liter,
 				Output->Options
 			];
 			Lookup[options,SecondaryDialysateVolume],
-			1.1Liter,
+			2.1Liter,
 			EquivalenceFunction -> Equal
 		],
 		Example[{Options, SecondaryDialysateVolume, "Resolve the volume of dialysate the sample should be put into to dialyze the sample in the second round:"},
@@ -1709,11 +1854,11 @@ DefineTests[
 		Example[{Options, TertiaryDialysateVolume, "Specify the volume of dialysate the sample should be put into to dialyze the sample in the third round:"},
 			options=ExperimentDialysis[
 				Object[Sample,  "sample 2 in 50mL tube for ExperimentDialysis testing"<> $SessionUUID],
-				TertiaryDialysateVolume->1.1Liter,
+				TertiaryDialysateVolume->2.1Liter,
 				Output->Options
 			];
 			Lookup[options,TertiaryDialysateVolume],
-			1.1Liter,
+			2.1Liter,
 			EquivalenceFunction -> Equal
 		],
 		Example[{Options, TertiaryDialysateVolume, "Resolve the volume of dialysate the sample should be put into to dialyze the sample in the third round:"},
@@ -1730,11 +1875,11 @@ DefineTests[
 		Example[{Options, QuaternaryDialysateVolume, "Specify the volume of dialysate the sample should be put into to dialyze the sample in the fourth round:"},
 			options=ExperimentDialysis[
 				Object[Sample,  "sample 2 in 50mL tube for ExperimentDialysis testing"<> $SessionUUID],
-				QuaternaryDialysateVolume->1.1Liter,
+				QuaternaryDialysateVolume->2.1Liter,
 				Output->Options
 			];
 			Lookup[options,QuaternaryDialysateVolume],
-			1.1Liter,
+			2.1Liter,
 			EquivalenceFunction -> Equal
 		],
 		Example[{Options, QuaternaryDialysateVolume, "Resolve the volume of dialysate the sample should be put into to dialyze the sample in the fourth round:"},
@@ -1910,7 +2055,8 @@ DefineTests[
 				Output->Options
 			];
 			Lookup[options, DialysateSamplingVolume],
-			750` Microliter
+			750` Microliter,
+			Messages :> {Warning::AliquotRequired}
 		],
 		Example[{Options, DialysateSamplingVolume, "Resolve the amount of dialysate should be stored after dynamic dialysis:"},
 			options=ExperimentDialysis[
@@ -2525,20 +2671,6 @@ DefineTests[
 			{SamplePreparationP..},
 			Variables :> {protocol}
 		],
-		Example[{Options, PreparatoryPrimitives, "Use the PreparatoryPrimitives option to prepare samples from models before the experiment is run:"},
-			protocol = ExperimentDialysis[
-				{"salty sample 1", "salty sample 2"},
-				PreparatoryPrimitives -> {
-					Define[Name -> "salty sample 1", Container -> Model[Container, Vessel, "2mL Tube"]],
-					Define[Name -> "salty sample 2", Container -> Model[Container, Vessel, "2mL Tube"]],
-					Transfer[Source -> Model[Sample, StockSolution, "NaCl Solution in Water"], Destination -> "salty sample 1", Amount -> 1000 Microliter],
-					Transfer[Source ->Model[Sample, StockSolution, "NaCl Solution in Water"], Destination -> "salty sample 2", Amount -> 1000 Microliter]
-				}
-			];
-			Download[protocol, PreparatoryPrimitives],
-			{SampleManipulationP..},
-			Variables :> {protocol}
-		],
 		Example[{Options, Incubate, "Set the Incubate option:"},
 			options = ExperimentDialysis[Object[Sample, "sample 2 in 50mL tube for ExperimentDialysis testing"<> $SessionUUID], Incubate -> True, Output -> Options];
 			Lookup[options, Incubate],
@@ -2805,7 +2937,7 @@ DefineTests[
 				Output->Options
 			];
 			Lookup[options,AliquotSampleLabel],
-			"mySample1",
+			{"mySample1"},
 			Variables:>{options}
 		],
 		Example[{Options, AssayVolume, "Set the AssayVolume option:"},
@@ -2881,13 +3013,13 @@ DefineTests[
 		Example[{Options, AliquotContainer, "Set the AliquotContainer option:"},
 			options = ExperimentDialysis[Object[Sample, "sample 2 in 50mL tube for ExperimentDialysis testing"<> $SessionUUID], AliquotContainer -> Model[Container, Vessel, "50mL Tube"], Output -> Options];
 			Lookup[options, AliquotContainer],
-			{1, ObjectP[Model[Container, Vessel, "50mL Tube"]]},
+			{{1, ObjectP[Model[Container, Vessel, "50mL Tube"]]}},
 			Variables :> {options}
 		],
 		Example[{Options, DestinationWell, "Set the DestinationWell option:"},
 			options = ExperimentDialysis[Object[Sample, "sample 2 in 50mL tube for ExperimentDialysis testing"<> $SessionUUID], AliquotContainer -> Model[Container, Plate, "24-well V-bottom 10 mL Deep Well Plate Sterile"], DestinationWell -> "A2", Output -> Options];
 			Lookup[options, DestinationWell],
-			"A2",
+			{"A2"},
 			Variables :> {options}
 		],
 		Example[{Options, ImageSample, "Set the ImageSample option:"},
@@ -2920,6 +3052,15 @@ DefineTests[
 				SamplesInStorageCondition -> {Refrigerator, Freezer}],
 			$Failed,
 			Messages :> {Error::SharedContainerStorageCondition, Error::InvalidOption}
+		],
+		Example[{Options, PreparedModelAmount, "If using model input, the sample preparation options can also be specified:"},
+			ExperimentDialysis[
+				Model[Sample, "Ammonium hydroxide"],
+				PreparedModelAmount -> 0.5 Milliliter,
+				Aliquot -> True,
+				Mix -> True
+			],
+			ObjectP[Object[Protocol, Dialysis]]
 		],
 		(* Tests *)
 		Test["Populate the StirBar, FloatingRacks fields for dialysis membranes that require floating racks:",
@@ -3039,6 +3180,8 @@ DefineTests[
 			Variables :> {prot}
 		]
 	},
+	(* without this, telescope crashes and the test fails *)
+	HardwareConfiguration->HighRAM,
 	Stubs :> {
 		(* I am an important stub that prevents the tester from getting a bunch of notifications *)
 		$PersonID = Object[User, "ExperimentDialysis all site user" <> $SessionUUID]
@@ -3246,7 +3389,7 @@ DefineTests[
 					|>,
 					<|
 						Object -> Object[Sample, "sample 4 in 2L bottle for ExperimentDialysis testing with concentration"<> $SessionUUID],
-						Replace[Composition] -> {{100 VolumePercent, Link[Model[Molecule, "Water"]]}, {5 Millimolar, Link[Model[Molecule, "Acetone"]]}}
+						Replace[Composition] -> {{100 VolumePercent, Link[Model[Molecule, "Water"]], Now}, {5 Millimolar, Link[Model[Molecule, "Acetone"]], Now}}
 					|>,
 					<|
 						Type->Model[Item, DialysisMembrane],
@@ -3652,11 +3795,11 @@ DefineTests[
 			ExperimentDialysisPreview[Object[Sample, "sample 2 in 50mL tube for ExperimentDialysisPreview testing"<> $SessionUUID]],
 			Null
 		],
-		Example[{Basic, "Return Null for mulitple samples:"},
+		Example[{Basic, "Return Null for multiple samples:"},
 			ExperimentDialysisPreview[{{Object[Sample, "sample 2 in 50mL tube for ExperimentDialysisPreview testing"<> $SessionUUID], Object[Sample, "sample 1 in 2mL tube for ExperimentDialysisPreview testing"<> $SessionUUID]}}],
 			Null
 		],
-		Example[{Basic, "Return Null for mulitple poooled samples:"},
+		Example[{Basic, "Return Null for multiple pooled samples:"},
 			ExperimentDialysisPreview[{{Object[Sample, "sample 2 in 50mL tube for ExperimentDialysisPreview testing"<> $SessionUUID],  Object[Sample, "sample 1 in 2mL tube for ExperimentDialysisPreview testing"<> $SessionUUID]}, {Object[Sample, "sample 3 in 2L bottle for ExperimentDialysisPreview testing"<> $SessionUUID]}}],
 			Null
 		]

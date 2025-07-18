@@ -51,7 +51,7 @@ DefineTests[runSyncBilling,
 					Object[Protocol, Incubate, "Test Incubate Protocol in runSyncBilling test"<>$SessionUUID],
 					Object[Protocol, Incubate, "Test Incubate Protocol 2 in runSyncBilling test (subprotocol)"<>$SessionUUID],
 					Object[Protocol, Incubate, "Test Incubate Protocol 3 in runSyncBilling test (incomplete)"<>$SessionUUID],
-					Object[Protocol, SampleManipulation, "Test SM Protocol for runSyncBilling test (no instrument used)"<>$SessionUUID],
+					Object[Protocol, ManualSamplePreparation, "Test MSP Protocol for runSyncBilling test (no instrument used)"<>$SessionUUID],
 					Object[Instrument, FPLC, "Test FPLC instrument for runSyncBilling test"<>$SessionUUID],
 					Object[Instrument, FPLC, "Fake Object FPLC with no PricingLevel for runSyncBilling unit tests"<>$SessionUUID],
 					Object[Instrument, Sonicator, "Test Sonicator instrument for runSyncBilling test"<>$SessionUUID],
@@ -204,8 +204,7 @@ DefineTests[runSyncBilling,
 					CommitmentLength -> 12 Month,
 					NumberOfBaselineUsers -> 10,
 					CommandCenterPrice -> 1000 USD,
-					ConstellationPrice -> 500 USD / (1000000 Unit),
-					IncludedConstellationStorage -> 20000000 Unit,
+					ConstellationPrice -> Null,
 					NumberOfThreads -> 10,
 					LabAccessFee -> 15000USD,
 					PricePerExperiment -> 60 USD,
@@ -250,10 +249,10 @@ DefineTests[runSyncBilling,
 					},
 					IncludedPriorityProtocols -> 1,
 					IncludedInstrumentHours -> 3 Hour,
-					IncludedCleanings -> 1,
+					IncludedCleaningFees -> 10 USD,
 					IncludedStockingFees -> 5 USD,
 					IncludedWasteDisposalFees -> 10 USD,
-					IncludedStorage -> 1 Kilo * Centimeter^3,
+					IncludedStorageFees -> 10 USD,
 					IncludedShipmentFees -> 150 USD,
 					PrivateTutoringFee -> 200 USD
 				|>,
@@ -345,11 +344,11 @@ DefineTests[runSyncBilling,
 				<|
 					Site -> Link[$Site],
 					Status -> Completed,
-					Type -> Object[Protocol, SampleManipulation],
+					Type -> Object[Protocol, ManualSamplePreparation],
 					DateCompleted -> Now - 2 Week,
 					Status -> Completed,
 					Transfer[Notebook] -> Link[objectNotebookID, Objects],
-					Name -> "Test SM Protocol for runSyncBilling test (no instrument used)"<>$SessionUUID
+					Name -> "Test MSP Protocol for runSyncBilling test (no instrument used)"<>$SessionUUID
 				|>,
 				<|
 					Type -> Object[Instrument, FPLC],
@@ -398,21 +397,21 @@ DefineTests[runSyncBilling,
 				Association[
 					Object -> containerID,
 					Sterile -> True,
-					Reusability -> True,
+					Reusable -> True,
 					CleaningMethod -> Handwash,
 					Name -> "Test Container Model for runSyncBilling test (reusable, sterile)"<>$SessionUUID
 				],
 				Association[
 					Object -> containerID2,
 					Sterile -> False,
-					Reusability -> True,
+					Reusable -> True,
 					CleaningMethod -> DishwashPlastic,
 					Name -> "Test Container Model 2 for runSyncBilling test (reusable)"<>$SessionUUID
 				],
 				Association[
 					Object -> containerID3,
 					Sterile -> False,
-					Reusability -> False,
+					Reusable -> False,
 					CleaningMethod -> Null,
 					Name -> "Test Container Model 3 for runSyncBilling test (not reusable)"<>$SessionUUID
 				],
@@ -699,6 +698,12 @@ DefineTests[runSyncBilling,
 
 			(*upload the first set of stuff*)
 			Upload[firstSet];
+			
+			(* update the modelPricing to include OperatorModelPrice *)
+			Upload[<|
+				Object->modelPricingID1,
+				Replace[OperatorModelPrice]->{{Link[operatorModelID],40 USD/Hour},{Link[operatorModelID2],40 USD/Hour}}
+			|>];
 
 			(*put some samples into the containers*)
 			sampleUpload=ECL`InternalUpload`UploadSample[
@@ -1259,7 +1264,7 @@ DefineTests[runSyncBilling,
 					DeveloperObject -> True,
 					Name -> "Test Resource 7 for runSyncBilling tests"<>$SessionUUID
 				],
-				(* private sample that should not get counted in teh parent protocol *)
+				(* private sample that should not get counted in the parent protocol *)
 				Association[
 					Replace[RequestedModels] -> {Link[Model[Sample, "Test Model Sample for runSyncBilling test 2 (private)"<>$SessionUUID], RequestedResources]},
 					Replace[Models] -> Link[Model[Sample, "Test Model Sample for runSyncBilling test 2 (private)"<>$SessionUUID]],
@@ -1455,6 +1460,12 @@ DefineTests[runSyncBilling,
 				|>
 			];
 
+			(* syncbilling to update the bill object*)
+			Block[{$DeveloperSearch = True}, Quiet[
+				SyncBilling[Object[Team, Financing, "A test financing team object for runSyncBilling testing"<>$SessionUUID]],
+				PriceData::MissingBill
+			]];
+
 			Upload[secondUploadList];
 
 
@@ -1476,7 +1487,7 @@ DefineTests[runSyncBilling,
 					Object[Protocol, Incubate, "Test Incubate Protocol in runSyncBilling test"<>$SessionUUID],
 					Object[Protocol, Incubate, "Test Incubate Protocol 2 in runSyncBilling test (subprotocol)"<>$SessionUUID],
 					Object[Protocol, Incubate, "Test Incubate Protocol 3 in runSyncBilling test (incomplete)"<>$SessionUUID],
-					Object[Protocol, SampleManipulation, "Test SM Protocol for runSyncBilling test (no instrument used)"<>$SessionUUID],
+					Object[Protocol, ManualSamplePreparation, "Test MSP Protocol for runSyncBilling test (no instrument used)"<>$SessionUUID],
 					Object[Instrument, FPLC, "Test FPLC instrument for runSyncBilling test"<>$SessionUUID],
 					Object[Instrument, FPLC, "Fake Object FPLC with no PricingLevel for runSyncBilling unit tests"<>$SessionUUID],
 					Object[Instrument, Sonicator, "Test Sonicator instrument for runSyncBilling test"<>$SessionUUID],
@@ -1676,7 +1687,7 @@ DefineTests[SyncBilling,
 					Object[Protocol, Incubate, "Test Incubate Protocol in SyncBilling test"<>$SessionUUID],
 					Object[Protocol, Incubate, "Test Incubate Protocol 2 in SyncBilling test (subprotocol)"<>$SessionUUID],
 					Object[Protocol, Incubate, "Test Incubate Protocol 3 in SyncBilling test (incomplete)"<>$SessionUUID],
-					Object[Protocol, SampleManipulation, "Test SM Protocol for SyncBilling test (no instrument used)"<>$SessionUUID],
+					Object[Protocol, ManualSamplePreparation, "Test MSP Protocol for SyncBilling test (no instrument used)"<>$SessionUUID],
 					Object[Instrument, FPLC, "Test FPLC instrument for SyncBilling test"<>$SessionUUID],
 					Object[Instrument, FPLC, "Fake Object FPLC with no PricingLevel for SyncBilling unit tests"<>$SessionUUID],
 					Object[Instrument, Sonicator, "Test Sonicator instrument for SyncBilling test"<>$SessionUUID],
@@ -1877,8 +1888,7 @@ DefineTests[SyncBilling,
 					CommitmentLength -> 12 Month,
 					NumberOfBaselineUsers -> 10,
 					CommandCenterPrice -> 1000 USD,
-					ConstellationPrice -> 500 USD / (1000000 Unit),
-					IncludedConstellationStorage -> 20000000 Unit,
+					ConstellationPrice -> Null,
 					NumberOfThreads -> 10,
 					LabAccessFee -> 15000USD,
 					PricePerExperiment -> 60 USD,
@@ -1923,10 +1933,10 @@ DefineTests[SyncBilling,
 					},
 					IncludedPriorityProtocols -> 1,
 					IncludedInstrumentHours -> 3 Hour,
-					IncludedCleanings -> 1,
+					IncludedCleaningFees -> 10 USD,
 					IncludedStockingFees -> 5 USD,
 					IncludedWasteDisposalFees -> 10 USD,
-					IncludedStorage -> 1 Kilo * Centimeter^3,
+					IncludedStorageFees -> 10 USD,
 					IncludedShipmentFees -> 150 USD,
 					PrivateTutoringFee -> 200 USD
 				|>,
@@ -1940,8 +1950,7 @@ DefineTests[SyncBilling,
 					CommitmentLength -> 12 Month,
 					NumberOfBaselineUsers -> 10,
 					CommandCenterPrice -> 1000 USD,
-					ConstellationPrice -> 500 USD / (1000000 Unit),
-					IncludedConstellationStorage -> 20000000 Unit,
+					ConstellationPrice -> Null,
 					NumberOfThreads -> 10,
 					LabAccessFee -> 15000USD,
 					PricePerExperiment -> 60 USD,
@@ -1986,10 +1995,10 @@ DefineTests[SyncBilling,
 					},
 					IncludedPriorityProtocols -> 1,
 					IncludedInstrumentHours -> 3 Hour,
-					IncludedCleanings -> 1,
+					IncludedCleaningFees -> 10 USD,
 					IncludedStockingFees -> 5 USD,
 					IncludedWasteDisposalFees -> 10 USD,
-					IncludedStorage -> 1 Kilo * Centimeter^3,
+					IncludedStorageFees -> 10 USD,
 					IncludedShipmentFees -> 150 USD,
 					PrivateTutoringFee -> 200 USD
 				|>,
@@ -2083,11 +2092,11 @@ DefineTests[SyncBilling,
 				<|
 					Site -> Link[$Site],
 					Status -> Completed,
-					Type -> Object[Protocol, SampleManipulation],
+					Type -> Object[Protocol, ManualSamplePreparation],
 					DateCompleted -> Now - 2 Week,
 					Status -> Completed,
 					Transfer[Notebook] -> Link[objectNotebookID, Objects],
-					Name -> "Test SM Protocol for SyncBilling test (no instrument used)"<>$SessionUUID
+					Name -> "Test MSP Protocol for SyncBilling test (no instrument used)"<>$SessionUUID
 				|>,
 				<|
 					Type -> Object[Instrument, FPLC],
@@ -2136,21 +2145,21 @@ DefineTests[SyncBilling,
 				Association[
 					Object -> containerID,
 					Sterile -> True,
-					Reusability -> True,
+					Reusable -> True,
 					CleaningMethod -> Handwash,
 					Name -> "Test Container Model for SyncBilling test (reusable, sterile)"<>$SessionUUID
 				],
 				Association[
 					Object -> containerID2,
 					Sterile -> False,
-					Reusability -> True,
+					Reusable -> True,
 					CleaningMethod -> DishwashPlastic,
 					Name -> "Test Container Model 2 for SyncBilling test (reusable)"<>$SessionUUID
 				],
 				Association[
 					Object -> containerID3,
 					Sterile -> False,
-					Reusability -> False,
+					Reusable -> False,
 					CleaningMethod -> Null,
 					Name -> "Test Container Model 3 for SyncBilling test (not reusable)"<>$SessionUUID
 				],
@@ -2467,6 +2476,18 @@ DefineTests[SyncBilling,
 
 			(*upload the first set of stuff*)
 			Upload[firstSet];
+			
+			(* update the modelPricing to include OperatorModelPrice *)
+			Upload[<|
+				Object->modelPricingID1,
+				Replace[OperatorModelPrice]->{{Link[operatorModelID],40 USD/Hour},{Link[operatorModelID2],40 USD/Hour}}
+			|>];
+			
+			(* update the modelPricing to include OperatorModelPrice *)
+			Upload[<|
+				Object->modelPricingID2,
+				Replace[OperatorModelPrice]->{{Link[operatorModelID],40 USD/Hour},{Link[operatorModelID2],40 USD/Hour}}
+			|>];
 
 			(*put some samples into the containers*)
 			sampleUpload=ECL`InternalUpload`UploadSample[
@@ -3027,7 +3048,7 @@ DefineTests[SyncBilling,
 					DeveloperObject -> True,
 					Name -> "Test Resource 7 for SyncBilling tests"<>$SessionUUID
 				],
-				(* private sample that should not get counted in teh parent protocol *)
+				(* private sample that should not get counted in the parent protocol *)
 				Association[
 					Replace[RequestedModels] -> {Link[Model[Sample, "Test Model Sample for SyncBilling test 2 (private)"<>$SessionUUID], RequestedResources]},
 					Replace[Models] -> Link[Model[Sample, "Test Model Sample for SyncBilling test 2 (private)"<>$SessionUUID]],
@@ -3245,7 +3266,7 @@ DefineTests[SyncBilling,
 					Object[Protocol, Incubate, "Test Incubate Protocol in SyncBilling test"<>$SessionUUID],
 					Object[Protocol, Incubate, "Test Incubate Protocol 2 in SyncBilling test (subprotocol)"<>$SessionUUID],
 					Object[Protocol, Incubate, "Test Incubate Protocol 3 in SyncBilling test (incomplete)"<>$SessionUUID],
-					Object[Protocol, SampleManipulation, "Test SM Protocol for SyncBilling test (no instrument used)"<>$SessionUUID],
+					Object[Protocol, ManualSamplePreparation, "Test MSP Protocol for SyncBilling test (no instrument used)"<>$SessionUUID],
 					Object[Instrument, FPLC, "Test FPLC instrument for SyncBilling test"<>$SessionUUID],
 					Object[Instrument, FPLC, "Fake Object FPLC with no PricingLevel for SyncBilling unit tests"<>$SessionUUID],
 					Object[Instrument, Sonicator, "Test Sonicator instrument for SyncBilling test"<>$SessionUUID],
@@ -3373,7 +3394,7 @@ DefineTests[updateCurrentBillDiscounts,
 				initialBillPacket=Download[Object[Team,Financing,"Test financing team 2 for updateCurrentBillDiscounts"<>$SessionUUID],Packet[CurrentBills[All]]][[1]];
 				updateCurrentBillDiscounts[Object[Team,Financing,"Test financing team 2 for updateCurrentBillDiscounts"<>$SessionUUID]];
 				updatedBillPacket=Download[Object[Team,Financing,"Test financing team 2 for updateCurrentBillDiscounts"<>$SessionUUID],Packet[CurrentBills[All]]][[1]];
-				fieldsToCheck={IncludedPriorityProtocols,IncludedInstrumentHours,IncludedCleanings,IncludedStockingFees,IncludedWasteDisposalFees,IncludedStorage,IncludedShipmentFees};
+				fieldsToCheck={IncludedPriorityProtocols,IncludedInstrumentHours,IncludedCleaningFees,IncludedStockingFees,IncludedWasteDisposalFees,IncludedStorageFees,IncludedShipmentFees};
 				Map[MatchQ[Lookup[initialBillPacket,#],Lookup[updatedBillPacket,#]]&,fieldsToCheck]
 			],
 			ConstantArray[False,7]
@@ -3403,10 +3424,10 @@ DefineTests[updateCurrentBillDiscounts,
 			NumberOfThreads->1,
 			IncludedPriorityProtocols->1,
 			IncludedInstrumentHours->10Hour,
-			IncludedCleanings->10,
+			IncludedCleaningFees->10 USD,
 			IncludedStockingFees->100 USD,
 			IncludedWasteDisposalFees->10 USD,
-			IncludedStorage->1 Kilo * Centimeter^3,
+			IncludedStorageFees->10 USD,
 			IncludedShipmentFees->100 USD
 		|>,
 		<|
@@ -3414,10 +3435,10 @@ DefineTests[updateCurrentBillDiscounts,
 			NumberOfThreads->5,
 			IncludedPriorityProtocols->5,
 			IncludedInstrumentHours->50Hour,
-			IncludedCleanings->50,
+			IncludedCleaningFees->10 USD,
 			IncludedStockingFees->500 USD,
 			IncludedWasteDisposalFees->50 USD,
-			IncludedStorage->5 Kilo * Centimeter^3,
+			IncludedStorageFees->10 USD,
 			IncludedShipmentFees->500 USD,
 			DateStarted->DateObject[{2022,1,2,1,00,00}]
 		|>,
@@ -3426,10 +3447,10 @@ DefineTests[updateCurrentBillDiscounts,
 			NumberOfThreads->1,
 			IncludedPriorityProtocols->1,
 			IncludedInstrumentHours->10Hour,
-			IncludedCleanings->10,
+			IncludedCleaningFees->10 USD,
 			IncludedStockingFees->100 USD,
 			IncludedWasteDisposalFees->10 USD,
-			IncludedStorage->1 Kilo * Centimeter^3,
+			IncludedStorageFees->10 USD,
 			IncludedShipmentFees->100 USD
 		|>
 	}]},
@@ -3485,10 +3506,10 @@ DefineTests[updateCurrentBillDiscounts,
 				NumberOfThreads->1,
 				IncludedPriorityProtocols->1,
 				IncludedInstrumentHours->10Hour,
-				IncludedCleanings->10,
+				IncludedCleaningFees->10 USD,
 				IncludedStockingFees->100 USD,
 				IncludedWasteDisposalFees->10 USD,
-				IncludedStorage->1 Kilo * Centimeter^3,
+				IncludedStorageFees->10 USD,
 				IncludedShipmentFees->100 USD,
 				DateStarted->DateObject[{2022, 1, 2, 1, 00, 00}]
 			|>,
@@ -3500,10 +3521,10 @@ DefineTests[updateCurrentBillDiscounts,
 				NumberOfThreads->5,
 				IncludedPriorityProtocols->5,
 				IncludedInstrumentHours->50Hour,
-				IncludedCleanings->50,
+				IncludedCleaningFees->10 USD,
 				IncludedStockingFees->500 USD,
 				IncludedWasteDisposalFees->50 USD,
-				IncludedStorage->5 Kilo * Centimeter^3,
+				IncludedStorageFees->10 USD,
 				IncludedShipmentFees->500 USD,
 				DateStarted->DateObject[{2022, 1, 2, 1, 00, 00}]
 			|>,
@@ -3515,10 +3536,10 @@ DefineTests[updateCurrentBillDiscounts,
 				NumberOfThreads->1,
 				IncludedPriorityProtocols->1,
 				IncludedInstrumentHours->10Hour,
-				IncludedCleanings->10,
+				IncludedCleaningFees->10 USD,
 				IncludedStockingFees->100 USD,
 				IncludedWasteDisposalFees->10 USD,
-				IncludedStorage->1 Kilo * Centimeter^3,
+				IncludedStorageFees->10 USD,
 				IncludedShipmentFees->100 USD,
 				DateStarted->DateObject[{2022, 1, 2, 1, 00, 00}]
 			|>,
@@ -3586,10 +3607,10 @@ DefineTests[updateCurrentBillDiscounts,
 				},
 				IncludedPriorityProtocols->1,
 				IncludedInstrumentHours->10Hour,
-				IncludedCleanings->10,
+				IncludedCleaningFees->10 USD,
 				IncludedStockingFees->100 USD,
 				IncludedWasteDisposalFees->10 USD,
-				IncludedStorage->1 Kilo * Centimeter^3,
+				IncludedStorageFees->10 USD,
 				IncludedShipmentFees->100 USD,
 				Site->Link[siteID1]
 			|>,
@@ -3604,10 +3625,10 @@ DefineTests[updateCurrentBillDiscounts,
 				},
 				IncludedPriorityProtocols->1,
 				IncludedInstrumentHours->10Hour,
-				IncludedCleanings->10,
+				IncludedCleaningFees->10 USD,
 				IncludedStockingFees->100 USD,
 				IncludedWasteDisposalFees->10 USD,
-				IncludedStorage->1 Kilo * Centimeter^3,
+				IncludedStorageFees->10 USD,
 				IncludedShipmentFees->100 USD,
 				Site->Link[siteID2]
 			|>
@@ -3640,34 +3661,36 @@ DefineTests[updateCurrentBillDiscounts,
 DefineTests[ExportBillingData,
 	{
 		Example[{Basic, "Data can be exported from a bill:"},
-			ExportBillingData[Object[Bill, "Test bill for ExportBillingData"], FileNameJoin[{$TemporaryDirectory, "exportBillingData"}]],
+			ExportBillingData[Object[Bill, "Test bill for ExportBillingData"<>$SessionUUID], FileNameJoin[{$TemporaryDirectory, "exportBillingData"}]],
 			_String
 		],
 		Example[{Basic, "Data can be exported from multiple bills:"},
-			ExportBillingData[{Object[Bill, "Test bill for ExportBillingData"], Object[Bill, "Test empty bill for ExportBillingData"]}, FileNameJoin[{$TemporaryDirectory, "exportBillingData"}]],
+			ExportBillingData[{Object[Bill, "Test bill for ExportBillingData"<>$SessionUUID], Object[Bill, "Test empty bill for ExportBillingData"<>$SessionUUID]}, FileNameJoin[{$TemporaryDirectory, "exportBillingData"}]],
 			{_String, _String}
 		],
 		Example[{Basic, "If there is no data in one of the categories, exports a message about it:"},
 			(* In MM > 12.0.1 on Manifold, Import needs "XLSX" format specified *)
-			importedData=Import[ExportBillingData[Object[Bill, "Test empty bill for ExportBillingData"], FileNameJoin[{$TemporaryDirectory, "exportBillingData"}]], "XLSX"];
+			importedData=Import[ExportBillingData[Object[Bill, "Test empty bill for ExportBillingData"<>$SessionUUID], FileNameJoin[{$TemporaryDirectory, "exportBillingData"}]], "XLSX"];
 			importedData[[2, 1]],
 			{"No Data in the Object for this type of Charges"},
 			Variables :> {importedData}
-		],
+		]
+		(* We do not collapse in ExportBillingData anymore, should have collapsed when generating bills
 		Test["InstrumentTime Charges are collapsed to unique instrument:",
 			(* In MM > 12.0.1 on Manifold, Import needs "XLSX" format specified *)
-			importedData=Import[ExportBillingData[Object[Bill, "Test bill for ExportBillingData"], FileNameJoin[{$TemporaryDirectory, "exportBillingData"}]], "XLSX"];
+			importedData=Import[ExportBillingData[Object[Bill, "Test bill for ExportBillingData"<>$SessionUUID], FileNameJoin[{$TemporaryDirectory, "exportBillingData"}]], "XLSX"];
 			{Length[importedData[[2]]], Length[importedData[[12]]]},
 			{2, 4},
 			Variables :> {importedData}
 		]
+		*)
 	},
 	SetUp :> Module[
 		{allFileNames},
 		(* all possible files that we might have exported *)
 		allFileNames={
-			"ExportBillingData1team"<>DateString[(DateObject[{2021, 3, 1, 1, 00, 0.}, "Instant", "Gregorian", -7.] - Quantity[1, "Day"]), {"Year", "MonthName", "Day"}]<>".xlsx",
-			"ExportBillingData2team"<>DateString[(DateObject[{2021, 3, 1, 1, 00, 0.}, "Instant", "Gregorian", -7.] - Quantity[1, "Day"]), {"Year", "MonthName", "Day"}]<>".xlsx"
+			"ExportBillingData1team"<>$SessionUUID<>DateString[(DateObject[{2021, 3, 1, 1, 00, 0.}, "Instant", "Gregorian", -7.] - Quantity[1, "Day"]), {"Year", "MonthName", "Day"}]<>".xlsx",
+			"ExportBillingData2team"<>$SessionUUID<>DateString[(DateObject[{2021, 3, 1, 1, 00, 0.}, "Instant", "Gregorian", -7.] - Quantity[1, "Day"]), {"Year", "MonthName", "Day"}]<>".xlsx"
 		};
 
 		(* if the file exists, erase it *)
@@ -3680,8 +3703,8 @@ DefineTests[ExportBillingData,
 		{allFileNames},
 		(* all possible files that we might have exported *)
 		allFileNames={
-			"ExportBillingData1team"<>DateString[(DateObject[{2021, 3, 1, 1, 00, 0.}, "Instant", "Gregorian", -7.] - Quantity[1, "Day"]), {"Year", "MonthName", "Day"}]<>".xlsx",
-			"ExportBillingData2team"<>DateString[(DateObject[{2021, 3, 1, 1, 00, 0.}, "Instant", "Gregorian", -7.] - Quantity[1, "Day"]), {"Year", "MonthName", "Day"}]<>".xlsx"
+			"ExportBillingData1team"<>$SessionUUID<>DateString[(DateObject[{2021, 3, 1, 1, 00, 0.}, "Instant", "Gregorian", -7.] - Quantity[1, "Day"]), {"Year", "MonthName", "Day"}]<>".xlsx",
+			"ExportBillingData2team"<>$SessionUUID<>DateString[(DateObject[{2021, 3, 1, 1, 00, 0.}, "Instant", "Gregorian", -7.] - Quantity[1, "Day"]), {"Year", "MonthName", "Day"}]<>".xlsx"
 		};
 
 		(* if the file exists, erase it *)
@@ -3693,7 +3716,7 @@ DefineTests[ExportBillingData,
 	SymbolSetUp :> Module[
 		{
 			billObjectID1, billObjectID2, financingTeamID1, financingTeamID2,
-			uploadPacket, smProtocol1, smProtocol2, allObjects
+			uploadPacket, mspProtocol1, mspProtocol2, allObjects
 		},
 
 		(* make sure that there is a temporary directory we will be working with *)
@@ -3701,12 +3724,12 @@ DefineTests[ExportBillingData,
 
 		(* all objects used for testing *)
 		allObjects={
-			Object[Bill, "Test bill for ExportBillingData"],
-			Object[Bill, "Test empty bill for ExportBillingData"],
-			Object[Team, Financing, "ExportBillingData1team"],
-			Object[Team, Financing, "ExportBillingData2team"],
-			Object[Protocol, SampleManipulation, "Test SM protocol for ExportBillingData"],
-			Object[Protocol, SampleManipulation, "Test SM protocol 2 for ExportBillingData"]
+			Object[Bill, "Test bill for ExportBillingData"<>$SessionUUID],
+			Object[Bill, "Test empty bill for ExportBillingData"<>$SessionUUID],
+			Object[Team, Financing, "ExportBillingData1team"<>$SessionUUID],
+			Object[Team, Financing, "ExportBillingData2team"<>$SessionUUID],
+			Object[Protocol, ManualSamplePreparation, "Test MSP protocol for ExportBillingData"<>$SessionUUID],
+			Object[Protocol, ManualSamplePreparation, "Test MSP protocol 2 for ExportBillingData"<>$SessionUUID]
 		};
 
 		(* erase existing objects *)
@@ -3715,28 +3738,28 @@ DefineTests[ExportBillingData,
 		(* create IDs for test objects *)
 		{financingTeamID1, financingTeamID2}=CreateID[{Object[Team, Financing], Object[Team, Financing]}];
 		{billObjectID1, billObjectID2}=CreateID[{Object[Bill], Object[Bill]}];
-		{smProtocol1, smProtocol2}=CreateID[{Object[Protocol, SampleManipulation], Object[Protocol, SampleManipulation]}];
+		{mspProtocol1, mspProtocol2}=CreateID[{Object[Protocol, ManualSamplePreparation], Object[Protocol, ManualSamplePreparation]}];
 
 		(* form an upload packet *)
 		uploadPacket={
 			<|
 				Object -> financingTeamID1,
-				Name -> "ExportBillingData1team",
+				Name -> "ExportBillingData1team"<>$SessionUUID,
 				DeveloperObject -> True
 			|>,
 			<|
 				Object -> financingTeamID2,
-				Name -> "ExportBillingData2team",
+				Name -> "ExportBillingData2team"<>$SessionUUID,
 				DeveloperObject -> True
 			|>,
 			<|
-				Object -> smProtocol1,
-				Name -> "Test SM protocol for ExportBillingData",
+				Object -> mspProtocol1,
+				Name -> "Test MSP protocol for ExportBillingData"<>$SessionUUID,
 				DeveloperObject -> True
 			|>,
 			<|
-				Object -> smProtocol2,
-				Name -> "Test SM protocol 2 for ExportBillingData",
+				Object -> mspProtocol2,
+				Name -> "Test MSP protocol 2 for ExportBillingData"<>$SessionUUID,
 				DeveloperObject -> True
 			|>,
 			<|
@@ -3749,18 +3772,28 @@ DefineTests[ExportBillingData,
 				Replace[InstrumentTimeCharges] -> {
 					{
 						DateObject[{2021, 1, 1, 2, 19, 3.}, "Instant", "Gregorian", -7.],
-						Link[smProtocol1],
-						Link[Object[Instrument, Balance, "id:4pO6dMWvnrqw"]], 1,
+						Link[$Site],
+						Null,
+						Link[mspProtocol1],
+						Link[Model[Instrument, Balance, "id:vXl9j5qEnav7"]],
+						1,
 						Quantity[0.501181, "Hours"],
-						Quantity[0., "Hours"],
+						100 USD/Hour,
+						50.1181 USD,
+						0 USD/Hour,
 						Quantity[0., "USDollars"]
 					},
 					{
 						DateObject[{2021, 1, 2, 2, 19, 3.}, "Instant", "Gregorian", -7.],
-						Link[smProtocol2],
-						Link[Object[Instrument, Balance, "id:4pO6dMWvnrqw"]], 1,
+						Link[$Site],
+						Null,
+						Link[mspProtocol2],
+						Link[Model[Instrument, Balance, "id:54n6evKx08XN"]],
+						1,
 						Quantity[0.501181, "Hours"],
-						Quantity[0., "Hours"],
+						100 USD/Hour,
+						50.1181 USD,
+						0 USD/Hour,
 						Quantity[0., "USDollars"]
 					}
 				},
@@ -3772,7 +3805,7 @@ DefineTests[ExportBillingData,
 				Replace[CertificationCharges] -> {},
 				Replace[MaterialPurchases] -> {},
 				Replace[ExperimentsCharged] -> {},
-				Name -> "Test bill for ExportBillingData"
+				Name -> "Test bill for ExportBillingData"<>$SessionUUID
 			|>,
 			<|
 				Object -> billObjectID2,
@@ -3790,7 +3823,7 @@ DefineTests[ExportBillingData,
 				Replace[CertificationCharges] -> {},
 				Replace[MaterialPurchases] -> {},
 				Replace[ExperimentsCharged] -> {},
-				Name -> "Test empty bill for ExportBillingData"
+				Name -> "Test empty bill for ExportBillingData"<>$SessionUUID
 			|>};
 
 		(* upload *)
@@ -3802,20 +3835,20 @@ DefineTests[ExportBillingData,
 		(* clean up all the objects used in testing*)
 		(* all objects used for testing *)
 		allObjects={
-			Object[Bill, "Test bill for ExportBillingData"],
-			Object[Bill, "Test empty bill for ExportBillingData"],
-			Object[Team, Financing, "ExportBillingData1team"],
-			Object[Team, Financing, "ExportBillingData2team"],
-			Object[Protocol, SampleManipulation, "Test SM protocol for ExportBillingData"],
-			Object[Protocol, SampleManipulation, "Test SM protocol 2 for ExportBillingData"]
+			Object[Bill, "Test bill for ExportBillingData"<>$SessionUUID],
+			Object[Bill, "Test empty bill for ExportBillingData"<>$SessionUUID],
+			Object[Team, Financing, "ExportBillingData1team"<>$SessionUUID],
+			Object[Team, Financing, "ExportBillingData2team"<>$SessionUUID],
+			Object[Protocol, ManualSamplePreparation, "Test MSP protocol for ExportBillingData"<>$SessionUUID],
+			Object[Protocol, ManualSamplePreparation, "Test MSP protocol 2 for ExportBillingData"<>$SessionUUID]
 		};
 
 		(* erase existing objects *)
 		EraseObject[PickList[allObjects, DatabaseMemberQ[allObjects]], Force -> True, Verbose -> False];
 
 		allFileNames={
-			"ExportBillingData1team"<>DateString[(DateObject[{2021, 3, 1, 1, 00, 0.}, "Instant", "Gregorian", -7.] - Quantity[1, "Day"]), {"Year", "MonthName", "Day"}]<>".xlsx",
-			"ExportBillingData2team"<>DateString[(DateObject[{2021, 3, 1, 1, 00, 0.}, "Instant", "Gregorian", -7.] - Quantity[1, "Day"]), {"Year", "MonthName", "Day"}]<>".xlsx"
+			"ExportBillingData1team"<>$SessionUUID<>DateString[(DateObject[{2021, 3, 1, 1, 00, 0.}, "Instant", "Gregorian", -7.] - Quantity[1, "Day"]), {"Year", "MonthName", "Day"}]<>".xlsx",
+			"ExportBillingData2team"<>$SessionUUID<>DateString[(DateObject[{2021, 3, 1, 1, 00, 0.}, "Instant", "Gregorian", -7.] - Quantity[1, "Day"]), {"Year", "MonthName", "Day"}]<>".xlsx"
 		};
 
 		(* if the file exists, erase it *)

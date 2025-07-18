@@ -205,7 +205,7 @@ DefineTests[ExperimentBioLayerInterferometry,
         Output -> Options
       ];
       Lookup[options,DestinationWell],
-      "A1",
+      {"A1"},
       Variables :> {options}
     ],
     Example[{Options, Instrument, "Set the Instrument for ExperimentBioLayerInterferometry:"},
@@ -3921,7 +3921,7 @@ DefineTests[ExperimentBioLayerInterferometry,
     Example[{Options, AliquotContainer, "The desired type of container that should be used to prepare and house the aliquot samples, with indices indicating grouping of samples in the same plates, if desired:"},
       options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 8 (1.5 mL)" <> $SessionUUID], AliquotContainer -> Model[Container, Plate, "id:kEJ9mqR3XELE"], Output -> Options];
       Lookup[options, AliquotContainer],
-      {1, ObjectP[Model[Container, Plate, "id:kEJ9mqR3XELE"]]},
+      {{1, ObjectP[Model[Container, Plate, "id:kEJ9mqR3XELE"]]}},
       Variables :> {options}
     ],
     Example[{Options, ImageSample, "Indicates if any samples that are modified in the course of the experiment should be freshly imaged after running the experiment:"},
@@ -3992,48 +3992,115 @@ DefineTests[ExperimentBioLayerInterferometry,
       ObjectP[Object[Protocol]],
       TimeConstraint -> 600
     ],
-    Example[{Options,PreparatoryPrimitives,"Specify prepared samples for a bio layer interferometry assay:"},
-      options=ExperimentBioLayerInterferometry["test sample",
-        PreparatoryPrimitives->{
-          Define[
-            Name->"test sample",
-            Container->Model[Container, Vessel, "id:bq9LA0dBGGR6"]
-          ],
-          Transfer[
-            Source->Object[Sample,"ExperimentBLI New Test Chemical 8 (1.5 mL)" <> $SessionUUID],
-            Amount->500*Microliter,
-            Destination->{"test sample","A1"}
-          ]
-        },
-        Output->Options
+    Example[{Options, {PreparedModelContainer, PreparedModelAmount}, "Specify the container in which an input Model[Sample] should be prepared:"},
+      options = ExperimentBioLayerInterferometry[
+        {Model[Sample, "Milli-Q water"], Model[Sample, "Milli-Q water"]},
+        PreparedModelContainer -> Model[Container, Vessel, "50mL Tube"],
+        PreparedModelAmount -> 40 Milliliter,
+        Output -> Options
       ];
-      Lookup[options,AssaySequencePrimitives],
-      {_},
-      Variables:>{options}
+      prepUOs = Lookup[options, PreparatoryUnitOperations];
+      {
+        prepUOs[[-1, 1]][Sample],
+        prepUOs[[-1, 1]][Container],
+        prepUOs[[-1, 1]][Amount],
+        prepUOs[[-1, 1]][Well],
+        prepUOs[[-1, 1]][ContainerLabel]
+      },
+      {
+        {ObjectP[Model[Sample, "id:8qZ1VWNmdLBD"]]..},
+        {ObjectP[Model[Container, Vessel, "50mL Tube"]]..},
+        {EqualP[40 Milliliter]..},
+        {"A1", "A1"},
+        {_String, _String}
+      },
+      Variables :> {options, prepUOs}
     ],
-
+    Example[{Options, PreparedModelAmount, "If using model input, the sample preparation options can also be specified:"},
+      ExperimentBioLayerInterferometry[Model[Sample, "Ammonium hydroxide"], PreparedModelAmount -> 40 Milliliter, Aliquot -> True, Mix -> True],
+      ObjectP[Object[Protocol, BioLayerInterferometry]]
+    ],
     (* make a test warning about low volume also *)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
     (* -------------------------------------------- *)
     (* ----------- WARNINGS AND ERRORS ------------ *)
     (* -------------------------------------------- *)
-
+    Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a sample that does not exist (name form):"},
+      ExperimentBioLayerInterferometry[Object[Sample, "Nonexistent sample"]],
+      $Failed,
+      Messages :> {Download::ObjectDoesNotExist}
+    ],
+    Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a container that does not exist (name form):"},
+      ExperimentBioLayerInterferometry[Object[Container, Vessel, "Nonexistent container"]],
+      $Failed,
+      Messages :> {Download::ObjectDoesNotExist}
+    ],
+    Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a sample that does not exist (ID form):"},
+      ExperimentBioLayerInterferometry[Object[Sample, "id:12345678"]],
+      $Failed,
+      Messages :> {Download::ObjectDoesNotExist}
+    ],
+    Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a container that does not exist (ID form):"},
+      ExperimentBioLayerInterferometry[Object[Container, Vessel, "id:12345678"]],
+      $Failed,
+      Messages :> {Download::ObjectDoesNotExist}
+    ],
+    Example[{Messages, "ObjectDoesNotExist", "Do NOT throw a message if we have a simulated sample but a simulation is specified that indicates that it is simulated:"},
+      Module[
+        {containerPackets, containerID, sampleID, samplePackets, simulationToPassIn},
+        containerPackets = UploadSample[
+          Model[Container,Vessel,"50mL Tube"],
+          {"Work Surface", Object[Container, Bench, "The Bench of Testing"]},
+          Upload -> False,
+          SimulationMode -> True,
+          FastTrack -> True
+        ];
+        simulationToPassIn = Simulation[containerPackets];
+        containerID = Lookup[First[containerPackets], Object];
+        samplePackets = UploadSample[
+          Model[Sample,"Milli-Q water"],
+          {"A1", containerID},
+          Upload -> False,
+          SimulationMode -> True,
+          FastTrack -> True,
+          Simulation -> simulationToPassIn,
+          InitialAmount -> 25 Milliliter
+        ];
+        sampleID = Lookup[First[samplePackets], Object];
+        simulationToPassIn = UpdateSimulation[simulationToPassIn, Simulation[samplePackets]];
+      
+        ExperimentBioLayerInterferometry[sampleID,Simulation -> simulationToPassIn, Output -> Options]
+      ],
+      {__Rule}
+    ],
+    Example[{Messages, "ObjectDoesNotExist", "Do NOT throw a message if we have a simulated container but a simulation is specified that indicates that it is simulated:"},
+      Module[
+        {containerPackets, containerID, sampleID, samplePackets, simulationToPassIn},
+        containerPackets = UploadSample[
+          Model[Container,Vessel,"50mL Tube"],
+          {"Work Surface", Object[Container, Bench, "The Bench of Testing"]},
+          Upload -> False,
+          SimulationMode -> True,
+          FastTrack -> True
+        ];
+        simulationToPassIn = Simulation[containerPackets];
+        containerID = Lookup[First[containerPackets], Object];
+        samplePackets = UploadSample[
+          Model[Sample,"Milli-Q water"],
+          {"A1", containerID},
+          Upload -> False,
+          SimulationMode -> True,
+          FastTrack -> True,
+          Simulation -> simulationToPassIn,
+          InitialAmount -> 25 Milliliter
+        ];
+        sampleID = Lookup[First[samplePackets], Object];
+        simulationToPassIn = UpdateSimulation[simulationToPassIn, Simulation[samplePackets]];
+      
+        ExperimentBioLayerInterferometry[containerID, Simulation -> simulationToPassIn, Output -> Options]
+      ],
+      {__Rule}
+    ],
     Example[{Messages, "BLIMissingTime", "If a required Time value is missing, and error will be thrown:"},
       ExperimentBioLayerInterferometry[
         Object[Sample, "ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
@@ -4457,6 +4524,8 @@ DefineTests[ExperimentBioLayerInterferometry,
       Messages:>{Error::BLITestLoadingSolutionsStorageConditionLengthMismatch, Error::InvalidOption}
     ]
   },
+  (* without this, telescope crashes and the test fails *)
+  HardwareConfiguration->HighRAM,
   (*  build test objects *)
   Stubs:>{
     $EmailEnabled=False
@@ -4748,7 +4817,7 @@ DefineTests[ExperimentBioLayerInterferometry,
             (*this sample is used for the targetConcentration test and needs a composition with a recognizable analyte in it*)
             <|
               Object -> sample8, Model -> Null,
-              Replace[Composition] -> {{90 VolumePercent, Link[Model[Molecule, "id:vXl9j57PmP5D"]]}, {Null, Null}, {0.1 Molar, Link[Model[Molecule, "Sodium Chloride"]]}}
+              Replace[Composition] -> {{90 VolumePercent, Link[Model[Molecule, "id:vXl9j57PmP5D"]], Now}, {Null, Null, Null}, {0.1 Molar, Link[Model[Molecule, "Sodium Chloride"]], Now}}
             |>
 
           }
@@ -5176,7 +5245,7 @@ DefineTests[ValidExperimentBioLayerInterferometryQ,
       False
     ],
     (*insufficientTransferVolumesTests*)
-    (*TODO: uncomment when teh resolver error checking is updated *)
+    (*TODO: uncomment when the resolver error checking is updated *)
     (* Test["When running tests, returns False if the specified dilutions result in transfer volumes which are too small to be accurately measured:",
       ValidExperimentBioLayerInterferometryQ[
         Object[Sample,"ValidExperimentBLIQ New Test Chemical 1 (20 mL)" <> $SessionUUID],

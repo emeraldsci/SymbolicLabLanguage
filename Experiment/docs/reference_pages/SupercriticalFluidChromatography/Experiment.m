@@ -45,7 +45,18 @@ DefineUsage[ExperimentSupercriticalFluidChromatography,{
                 Type -> Object,
                 Pattern :> ObjectP[{Object[Container]}]
               ]
-            }
+            },
+            "Model Sample"->Widget[
+              Type -> Object,
+              Pattern :> ObjectP[Model[Sample]],
+              ObjectTypes -> {Model[Sample]},
+              OpenPaths -> {
+                {
+                  Object[Catalog, "Root"],
+                  "Materials"
+                }
+              }
+            ]
           ]
         },
         IndexName -> "experiment samples"
@@ -90,11 +101,42 @@ DefineUsage[ExperimentSupercriticalFluidChromatographyPreview,{
     Inputs :> {
       IndexMatching[
         {
-          InputName -> "Objects",
-          Description-> "The objects to be separated via Supercritical Fluid Chromatography.",
-          Widget->Widget[
-            Type->Object,
-            Pattern:>ObjectP[NonSelfContainedSampleTypes]
+          InputName -> "Samples",
+          Description-> "The analyte samples which should be injected onto a column, separated, and analyzed via SFC.",
+          Expandable -> False,
+          Widget -> Alternatives[
+            "Sample or Container"->Widget[
+              Type -> Object,
+              Pattern :> ObjectP[{Object[Sample], Object[Container]}],
+              ObjectTypes -> {Object[Sample], Object[Container]},
+              Dereference -> {
+                Object[Container] -> Field[Contents[[All, 2]]]
+              }
+            ],
+            "Container with Well Position"->{
+              "Well Position" -> Alternatives[
+                "A1 to P24" -> Widget[
+                  Type -> Enumeration,
+                  Pattern :>  Alternatives @@ Flatten[AllWells[NumberOfWells -> 384]],
+                  PatternTooltip -> "Enumeration must be any well from A1 to P24."
+                ],
+                "Container Position" -> Widget[
+                  Type -> String,
+                  Pattern :> LocationPositionP,
+                  PatternTooltip -> "Any valid container position.",
+                  Size->Line
+                ]
+              ],
+              "Container" -> Widget[
+                Type -> Object,
+                Pattern :> ObjectP[{Object[Container]}]
+              ]
+            },
+            "Model Sample"->Widget[
+              Type -> Object,
+              Pattern :> ObjectP[Model[Sample]],
+              ObjectTypes -> {Model[Sample]}
+            ]
           ]
         },
         IndexName -> "experiment samples"
@@ -139,11 +181,42 @@ DefineUsage[ExperimentSupercriticalFluidChromatographyOptions,{
     Inputs :> {
       IndexMatching[
         {
-          InputName -> "Objects",
-          Description-> "The objects to be separated via Supercritical Fluid Chromatography.",
-          Widget->Widget[
-            Type->Object,
-            Pattern:>ObjectP[NonSelfContainedSampleTypes]
+          InputName -> "Samples",
+          Description-> "The analyte samples which should be injected onto a column, separated, and analyzed via SFC.",
+          Expandable -> False,
+          Widget -> Alternatives[
+            "Sample or Container"->Widget[
+              Type -> Object,
+              Pattern :> ObjectP[{Object[Sample], Object[Container]}],
+              ObjectTypes -> {Object[Sample], Object[Container]},
+              Dereference -> {
+                Object[Container] -> Field[Contents[[All, 2]]]
+              }
+            ],
+            "Container with Well Position"->{
+              "Well Position" -> Alternatives[
+                "A1 to P24" -> Widget[
+                  Type -> Enumeration,
+                  Pattern :>  Alternatives @@ Flatten[AllWells[NumberOfWells -> 384]],
+                  PatternTooltip -> "Enumeration must be any well from A1 to P24."
+                ],
+                "Container Position" -> Widget[
+                  Type -> String,
+                  Pattern :> LocationPositionP,
+                  PatternTooltip -> "Any valid container position.",
+                  Size->Line
+                ]
+              ],
+              "Container" -> Widget[
+                Type -> Object,
+                Pattern :> ObjectP[{Object[Container]}]
+              ]
+            },
+            "Model Sample"->Widget[
+              Type -> Object,
+              Pattern :> ObjectP[Model[Sample]],
+              ObjectTypes -> {Model[Sample]}
+            ]
           ]
         },
         IndexName -> "experiment samples"
@@ -188,11 +261,42 @@ DefineUsage[ValidExperimentSupercriticalFluidChromatographyQ,{
     Inputs :> {
       IndexMatching[
         {
-          InputName -> "Objects",
-          Description-> "The objects to be separated via Supercritical Fluid Chromatography.",
-          Widget->Widget[
-            Type->Object,
-            Pattern:>ObjectP[NonSelfContainedSampleTypes]
+          InputName -> "Samples",
+          Description-> "The analyte samples which should be injected onto a column, separated, and analyzed via SFC.",
+          Expandable -> False,
+          Widget -> Alternatives[
+            "Sample or Container"->Widget[
+              Type -> Object,
+              Pattern :> ObjectP[{Object[Sample], Object[Container]}],
+              ObjectTypes -> {Object[Sample], Object[Container]},
+              Dereference -> {
+                Object[Container] -> Field[Contents[[All, 2]]]
+              }
+            ],
+            "Container with Well Position"->{
+              "Well Position" -> Alternatives[
+                "A1 to P24" -> Widget[
+                  Type -> Enumeration,
+                  Pattern :>  Alternatives @@ Flatten[AllWells[NumberOfWells -> 384]],
+                  PatternTooltip -> "Enumeration must be any well from A1 to P24."
+                ],
+                "Container Position" -> Widget[
+                  Type -> String,
+                  Pattern :> LocationPositionP,
+                  PatternTooltip -> "Any valid container position.",
+                  Size->Line
+                ]
+              ],
+              "Container" -> Widget[
+                Type -> Object,
+                Pattern :> ObjectP[{Object[Container]}]
+              ]
+            },
+            "Model Sample"->Widget[
+              Type -> Object,
+              Pattern :> ObjectP[Model[Sample]],
+              ObjectTypes -> {Model[Sample]}
+            ]
           ]
         },
         IndexName -> "experiment samples"

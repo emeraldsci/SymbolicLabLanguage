@@ -27,7 +27,8 @@ DefineOptions[DefineComposition,
 								RangeP[0 PercentConfluency, 100 PercentConfluency],
 								GreaterP[0 Cell / Liter],
 								GreaterP[0 CFU / Liter],
-								GreaterP[0 OD600]
+								GreaterP[0 OD600],
+								GreaterP[0 Colony]
 							],
 							Units -> Alternatives[
 								{1, {Molar, {Micromolar, Millimolar, Molar}}},
@@ -46,7 +47,8 @@ DefineOptions[DefineComposition,
 									{1, {CFU, {CFU}}},
 									{-1, {Milliliter, {Liter, Milliliter, Microliter}}}
 								],
-								{1, {OD600, {OD600}}}
+								{1, {OD600, {OD600}}},
+								{1, {Colony, {Colony}}}
 							]
 						],
 						Widget[Type -> Enumeration, Pattern :> Alternatives[Null]]
@@ -54,9 +56,13 @@ DefineOptions[DefineComposition,
 					"Identity Model" -> Alternatives[
 						Widget[Type -> Object, Pattern :> ObjectP[List @@ IdentityModelTypeP]],
 						Widget[Type -> Enumeration, Pattern :> Alternatives[Null]]
+					],
+					"Date " -> Alternatives[
+						Widget[Type -> Date, Pattern :> _?DateObjectQ, TimeSelector -> False],
+						Widget[Type -> Enumeration, Pattern :> Alternatives[Null]]
 					]
 				}],
-				Description -> "The molecular composition of this sample.",
+				Description -> "The various molecular components present in this sample, along with their respective concentrations. The recorded composition is associated with the specific time at which it is defined.",
 				Category -> "Organizational Information"
 			},
 			{

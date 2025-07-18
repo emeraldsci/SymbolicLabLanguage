@@ -1,3 +1,333 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:c54e6e1aa27f1618af0550119a23a0d269f8235b0508dcfbd11fe1ba7cd2ad72
-size 13345
+(* Content-type: application/vnd.wolfram.mathematica *)
+
+(*** Wolfram Notebook File ***)
+(* http://www.wolfram.com/nb *)
+
+(* CreatedBy='Mathematica 12.0' *)
+
+(*CacheID: 234*)
+(* Internal cache information:
+NotebookFileLineBreakTest
+NotebookFileLineBreakTest
+NotebookDataPosition[       158,          7]
+NotebookDataLength[     12812,        323]
+NotebookOptionsPosition[      9227,        252]
+NotebookOutlinePosition[     10620,        288]
+CellTagsIndexPosition[     10577,        285]
+WindowTitle->LocationTracking
+WindowFrame->Normal*)
+
+(* Beginning of Notebook Content *)
+Notebook[{
+Cell[BoxData[GridBox[{
+   {GridBox[{
+      {
+       ItemBox[Cell[BoxData[
+         RowBox[{
+          InterpretationBox[
+           StyleBox[
+            GraphicsBox[{},
+             BaselinePosition->Baseline,
+             ImageSize->{8, 0}],
+            CacheGraphics->False],
+           Spacer[8],
+           Selectable->False], Cell["EMERALD GUIDE", "PacletNameCell",
+           TextAlignment->Center,ExpressionUUID->
+           "7908e89f-b893-47ac-459a-a815c351d89e"], 
+          InterpretationBox[
+           StyleBox[
+            GraphicsBox[{},
+             BaselinePosition->Baseline,
+             ImageSize->{8, 0}],
+            CacheGraphics->False],
+           Spacer[8],
+           Selectable->False]}]],
+         TextAlignment->Center,ExpressionUUID->
+         "867f6861-a9ab-4486-7f3f-3ad8f927adfb"],
+        Background->RGBColor[
+         0.24313725490196078`, 0.27058823529411763`, 0.2980392156862745],
+        ItemSize->Full], ""}
+     },
+     GridBoxAlignment->{"Rows" -> {{Center}}},
+     GridBoxItemSize->{"Columns" -> {Full, 
+         Scaled[0.02]}, "Rows" -> {{2.5}}}], Cell[TextData[{
+     Cell[BoxData[
+      ActionMenuBox[
+       FrameBox[Cell[TextData[{
+         "Functions",
+         " ",
+         Cell[BoxData[
+          GraphicsBox[
+           {RGBColor[183/256., 197/256., 211/256.], Thickness[0.13], 
+            LineBox[{{-1.8, 0.5}, {0, 0}, {1.8, 0.5}}]},
+           AspectRatio->1,
+           ImageSize->20,
+           PlotRange->{{-3, 4}, {-1, 1}}]],ExpressionUUID->
+          "526420d5-1dac-4ce9-8254-c3c8e53f024d"]
+        }],ExpressionUUID->"26932a03-4458-44cf-95f3-94a6ab559a82"],
+        StripOnInput->False], {"\<\"AllWells\"\>":>Documentation`HelpLookup[
+       "paclet:LegacySLL/ref/AllWells"], "\<\"ConvertWell\"\>":>
+       Documentation`HelpLookup[
+       "paclet:LegacySLL/ref/ConvertWell"], "\<\"Location\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Locations/ref/Location"], "\<\"PlotContents\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Locations/ref/PlotContents"], "\<\"PlotLocation\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Locations/ref/PlotLocation"], "\<\"UploadSite\"\>":>
+       Documentation`HelpLookup["paclet:ExternalUpload/ref/UploadSite"]},
+       LineSpacing -> {1.4, 0},
+       Appearance->None,
+       MenuAppearance->Automatic,
+       MenuStyle->"GuideFunction"]],ExpressionUUID->
+      "af9df64d-5d20-41d5-9cc6-595e1dab0504"],
+     "\[ThickSpace]\[ThickSpace]\[ThickSpace]\[ThickSpace]\[ThickSpace]\
+\[ThickSpace]",
+     Cell[BoxData[
+      ActionMenuBox[
+       FrameBox[Cell[TextData[{
+         "Related Guides",
+         " ",
+         Cell[BoxData[
+          GraphicsBox[
+           {RGBColor[183/256., 197/256., 211/256.], Thickness[0.13], 
+            LineBox[{{-1.8, 0.5}, {0, 0}, {1.8, 0.5}}]},
+           AspectRatio->1,
+           ImageSize->20,
+           PlotRange->{{-3, 4}, {-1, 1}}]],ExpressionUUID->
+          "4d7574b8-b21f-4316-b7f3-610dc4bc22f1"]
+        }],ExpressionUUID->"9c768f9d-2f25-4390-b91e-fb1a9a63c877"],
+        StripOnInput->False], {"\<\"SampleShipments\"\>":>
+       Documentation`HelpLookup[
+       "paclet:Docs/guide/SampleShipments"], "\<\"SampleStorage\"\>":>
+       Documentation`HelpLookup["paclet:Docs/guide/SampleStorage"]},
+       LineSpacing -> {1.4, 0},
+       Appearance->None,
+       MenuAppearance->Automatic,
+       MenuStyle->"GuideFunction"]],ExpressionUUID->
+      "0ae9e4b2-021a-4a96-8d35-0adcfa238e21"]
+    }], "AnchorBar",ExpressionUUID->"6b494146-5d13-45c5-9ebe-25e820a1d259"]}
+  }]], "AnchorBarGrid",
+ CellID->1,ExpressionUUID->"7cc53201-2ba0-4137-9485-903d8d06b583"],
+
+Cell["Location Tracking", "GuideTitle",
+ CellID->172959966,ExpressionUUID->"1baa6a84-7cd2-41dc-bd98-78279a3e83c9"],
+
+Cell["\<\
+Collection of functions of assessing physical locations of materials within \
+an ECL facility.\
+\>", "GuideAbstract",
+ CellID->32531180,ExpressionUUID->"8d68817a-54ef-4dc8-a5e6-867141bd6c81"],
+
+Cell["\t", "GuideDelimiterSubsection",
+ CellID->356023935,ExpressionUUID->"49601467-bab5-46e8-873d-09810a9c719a"],
+
+Cell["Physical Location Tracking", "GuideFunctionsSubsection",
+ CellID->214561711,ExpressionUUID->"fbe5ac26-2f61-4bf4-b62f-f578e860884b"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["Location"]],"paclet:Locations/ref/Location"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "8c488905-994a-4c7d-ab4e-e15638f0e582"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Generates a table describing a given sample or containers current location \
+within an ECL facility or its location at a provided date."
+}], "GuideText",
+ CellID->830336362,ExpressionUUID->"60bd1b7b-e760-4404-813f-3b84343bc966"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["PlotLocation"]],"paclet:Locations/ref/PlotLocation"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "730348d0-36be-4279-9a8f-744e763ace3a"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Generates an interactive plot of the location of an object or position \
+within the ECL facility where it is presently located."
+}], "GuideText",
+ CellID->533318019,ExpressionUUID->"1466608b-111c-4328-a84b-b2b4ed4bd628"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["PlotContents"]],"paclet:Locations/ref/PlotContents"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "dff9af58-d7cb-4a46-b7b6-7bff76664de0"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Generates an interactive plot of the current contents of a given container \
+or position within an ECL facility."
+}], "GuideText",
+ CellID->134222793,ExpressionUUID->"344fb6e9-2f98-4d48-a0ad-72de82c492ec"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["UploadSite"]],"paclet:ExternalUpload/ref/UploadSite"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "ce0a5d9e-db8d-4607-86d7-8a0a8fbc6b6b"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Generates or edits address information for the given team."
+}], "GuideText",
+ CellID->572217660,ExpressionUUID->"b9a1f49b-200d-4595-8ef6-122932968003"],
+
+Cell["\t", "GuideDelimiterSubsection",
+ CellID->187595626,ExpressionUUID->"8332de2c-a432-403b-8594-9d662f1708c3"],
+
+Cell["Microplate Positions", "GuideFunctionsSubsection",
+ CellID->229992910,ExpressionUUID->"2c543620-8b29-438a-9130-56c837ac597b"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["AllWells"]],"paclet:LegacySLL/ref/AllWells"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "d2ad7a94-2a10-42ba-831a-a6d29fad54f7"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Returns a matrix of all possible well positions in a microtiter plate."
+}], "GuideText",
+ CellID->85025943,ExpressionUUID->"1bb22c56-dc31-40ec-a7d5-7f1bcb56e308"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["ConvertWell"]],"paclet:LegacySLL/ref/ConvertWell"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "c2b0de2a-3fd5-4ac9-8e13-de4cc8ee9651"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Converts microtiter plate well identifiers  between different index and \
+position formats."
+}], "GuideText",
+ CellID->572590758,ExpressionUUID->"d4a18dae-09aa-4e3b-83a1-90bdc3454a98"],
+
+Cell["", "SectionFooterSpacer",
+ CellID->586998,ExpressionUUID->"f42b1302-bfc7-48c2-9c62-cf41de6d6189"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  InterpretationBox[
+   StyleBox[
+    GraphicsBox[{},
+     BaselinePosition->Baseline,
+     ImageSize->{6, 0}],
+    CacheGraphics->False],
+   Spacer[6]]],ExpressionUUID->"c337f8e1-4019-4e53-bb97-333be932a7ef"],
+ "Related Guides"
+}], "GuideMoreAboutSection",
+ WholeCellGroupOpener->True,
+ CellID->81469877,ExpressionUUID->"b4cd2399-8f6f-4af8-82e0-9ad4e9898eac"],
+
+Cell["", "SectionHeaderSpacer",
+ CellID->177319263,ExpressionUUID->"c052176b-6c61-43e8-a683-ad41bbfeb169"],
+
+Cell[BoxData[
+ TemplateBox[{Cell[
+    TextData["SampleStorage"]],"paclet:Docs/guide/SampleStorage"},
+  "RefLink",
+  BaseStyle->"GuideMoreAboutSub"]], "GuideMoreAboutSub",
+ CellID->479110919,ExpressionUUID->"0280dde7-fe08-47cc-a57a-918ac050ffb2"],
+
+Cell[BoxData[
+ TemplateBox[{Cell[
+    TextData["SampleShipments"]],"paclet:Docs/guide/SampleShipments"},
+  "RefLink",
+  BaseStyle->"GuideMoreAboutSub"]], "GuideMoreAboutSub",
+ CellID->151327421,ExpressionUUID->"bb0c0b65-cfe1-41f3-99e9-8b12495036e0"],
+
+Cell["", "FooterCell",
+ CellID->811847678,ExpressionUUID->"914fbb3b-fff4-4b6f-9f4f-4ff6cbc2c4d2"]
+},
+Saveable->False,
+ScreenStyleEnvironment->"Working",
+WindowSize->{775, 872},
+WindowMargins->{{564, Automatic}, {Automatic, 54}},
+WindowTitle->"LocationTracking",
+Visible->False,
+TaggingRules->{
+ "ModificationHighlight" -> False, "ColorType" -> "GuideColor", 
+  "ExampleCounter" -> 1, "NeedPlatMsgIn" -> None, "RootCaptions" -> "", 
+  "Metadata" -> {
+   "built" -> "Mon 14 Nov 2022 18:44:32", "context" -> "Docs`", 
+    "keywords" -> {
+     "Location", "PlotLocation", "PlotContents", "UploadSite", "AllWells", 
+      "ConvertWell"}, "specialkeywords" -> {}, 
+    "tutorialcollectionlinks" -> {}, "index" -> True, "label" -> "ECL Guide", 
+    "language" -> "en", "paclet" -> "Docs", "status" -> "None", "summary" -> 
+    "Collection of functions of assessing physical locations of materials \
+within an ECL facility.", "synonyms" -> {}, "titlemodifier" -> "", 
+    "Windowtitle" -> "LocationTracking", "title" -> "LocationTracking", 
+    "type" -> "Guide", "uri" -> "Docs/guide/LocationTracking", 
+    "WorkflowDockedCell" -> ""}, "SearchTextTranslated" -> "", "LinkTrails" -> 
+  ""},
+FrontEndVersion->"12.0 for Microsoft Windows (64-bit) (September 6, 2019)",
+StyleDefinitions->"EmeraldReference.nb",
+CharacterEncoding -> "UTF-8"
+]
+(* End of Notebook Content *)
+
+(* Internal cache information *)
+(*CellTagsOutline
+CellTagsIndex->{}
+*)
+(*CellTagsIndex
+CellTagsIndex->{}
+*)
+(*NotebookFileOutline
+Notebook[{
+Cell[588, 21, 3624, 89, 56, "AnchorBarGrid",ExpressionUUID->"7cc53201-2ba0-4137-9485-903d8d06b583",
+ CellID->1],
+Cell[4215, 112, 114, 1, 50, "GuideTitle",ExpressionUUID->"1baa6a84-7cd2-41dc-bd98-78279a3e83c9",
+ CellID->172959966],
+Cell[4332, 115, 201, 4, 31, "GuideAbstract",ExpressionUUID->"8d68817a-54ef-4dc8-a5e6-867141bd6c81",
+ CellID->32531180],
+Cell[4536, 121, 113, 1, 22, "GuideDelimiterSubsection",ExpressionUUID->"49601467-bab5-46e8-873d-09810a9c719a",
+ CellID->356023935],
+Cell[4652, 124, 137, 1, 36, "GuideFunctionsSubsection",ExpressionUUID->"fbe5ac26-2f61-4bf4-b62f-f578e860884b",
+ CellID->214561711],
+Cell[4792, 127, 524, 12, 53, "GuideText",ExpressionUUID->"60bd1b7b-e760-4404-813f-3b84343bc966",
+ CellID->830336362],
+Cell[5319, 141, 524, 12, 59, "GuideText",ExpressionUUID->"1466608b-111c-4328-a84b-b2b4ed4bd628",
+ CellID->533318019],
+Cell[5846, 155, 509, 12, 59, "GuideText",ExpressionUUID->"344fb6e9-2f98-4d48-a0ad-72de82c492ec",
+ CellID->134222793],
+Cell[6358, 169, 456, 11, 38, "GuideText",ExpressionUUID->"b9a1f49b-200d-4595-8ef6-122932968003",
+ CellID->572217660],
+Cell[6817, 182, 113, 1, 22, "GuideDelimiterSubsection",ExpressionUUID->"8332de2c-a432-403b-8594-9d662f1708c3",
+ CellID->187595626],
+Cell[6933, 185, 131, 1, 36, "GuideFunctionsSubsection",ExpressionUUID->"2c543620-8b29-438a-9130-56c837ac597b",
+ CellID->229992910],
+Cell[7067, 188, 458, 11, 32, "GuideText",ExpressionUUID->"1bb22c56-dc31-40ec-a7d5-7f1bcb56e308",
+ CellID->85025943],
+Cell[7528, 201, 486, 12, 38, "GuideText",ExpressionUUID->"d4a18dae-09aa-4e3b-83a1-90bdc3454a98",
+ CellID->572590758],
+Cell[8017, 215, 103, 1, 29, "SectionFooterSpacer",ExpressionUUID->"f42b1302-bfc7-48c2-9c62-cf41de6d6189",
+ CellID->586998],
+Cell[8123, 218, 391, 12, 72, "GuideMoreAboutSection",ExpressionUUID->"b4cd2399-8f6f-4af8-82e0-9ad4e9898eac",
+ CellID->81469877],
+Cell[8517, 232, 106, 1, 14, "SectionHeaderSpacer",ExpressionUUID->"c052176b-6c61-43e8-a683-ad41bbfeb169",
+ CellID->177319263],
+Cell[8626, 235, 245, 5, 24, "GuideMoreAboutSub",ExpressionUUID->"0280dde7-fe08-47cc-a57a-918ac050ffb2",
+ CellID->479110919],
+Cell[8874, 242, 249, 5, 24, "GuideMoreAboutSub",ExpressionUUID->"bb0c0b65-cfe1-41f3-99e9-8b12495036e0",
+ CellID->151327421],
+Cell[9126, 249, 97, 1, 41, "FooterCell",ExpressionUUID->"914fbb3b-fff4-4b6f-9f4f-4ff6cbc2c4d2",
+ CellID->811847678]
+}
+]
+*)
+
+(* End of internal cache information *)
+

@@ -139,12 +139,12 @@ DefineUsage[PreferredContainer,
 			{"containers",{Model[Container]..},"All container models compatible with the given option values."}
 		},
 		SeeAlso -> {
-			"ExperimentSampleManipulation",
+			"ExperimentSamplePreparation",
 			"ExperimentAliquot",
 			"ExperimentStockSolution",
 			"ExperimentFilter",
 			"MaintenanceReceiveInventory"
 		},
-		Author -> {"daniel.shlian", "tyler.pabst", "steven", "hayley", "wyatt", "paul"}
+		Author -> {"hanming.yang", "daniel.shlian", "tyler.pabst", "steven", "hayley", "wyatt", "paul"}
 	}
 ];

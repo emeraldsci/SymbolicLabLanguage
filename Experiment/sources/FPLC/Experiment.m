@@ -41,9 +41,31 @@ DefineOptions[ExperimentFPLC,
 			AllowNull -> False,
 			Widget -> Alternatives[
 				Adder[
-					Widget[Type -> Object, Pattern :> ObjectP[{Model[Item, Column], Object[Item, Column]}]]
+					Widget[
+						Type -> Object,
+						Pattern :> ObjectP[{Model[Item, Column], Object[Item, Column]}],
+						OpenPaths -> {
+							{
+								Object[Catalog, "Root"],
+								"Materials",
+								"Liquid Chromatography",
+								"FPLC Columns"
+							}
+						}
+					]
 				],
-				Widget[Type -> Object, Pattern :> ObjectP[{Model[Item, Column], Object[Item, Column]}]]
+				Widget[
+					Type -> Object,
+					Pattern :> ObjectP[{Model[Item, Column], Object[Item, Column]}],
+					OpenPaths -> {
+						{
+							Object[Catalog, "Root"],
+							"Materials",
+							"Liquid Chromatography",
+							"FPLC Columns"
+						}
+					}
+				]
 			],
 			Category -> "General"
 		},
@@ -79,7 +101,15 @@ DefineOptions[ExperimentFPLC,
 			AllowNull -> False,
 			Widget -> Widget[
 				Type -> Object,
-				Pattern :> ObjectP[{Model[Instrument, FPLC], Object[Instrument, FPLC]}]
+				Pattern :> ObjectP[{Model[Instrument, FPLC], Object[Instrument, FPLC]}],
+				OpenPaths -> {
+					{
+						Object[Catalog, "Root"],
+						"Instruments",
+						"Chromatography",
+						"Fast Protein Liquid Chromatography (FPLC)"
+					}
+				}
 			],
 			Category -> "General"
 		},
@@ -187,7 +217,13 @@ DefineOptions[ExperimentFPLC,
 							Widget[
 								Type -> Object,
 								Pattern :> ObjectP[{Model[Sample], Object[Sample]}],
-								ObjectTypes -> {Model[Sample], Object[Sample]}
+								ObjectTypes -> {Model[Sample], Object[Sample]},
+								OpenPaths -> {
+									{
+										Object[Catalog, "Root"],
+										"Materials"
+									}
+								}
 							],
 							Widget[
 								Type -> Enumeration,
@@ -350,7 +386,15 @@ DefineOptions[ExperimentFPLC,
 			AllowNull -> False,
 			Widget -> Widget[
 				Type -> Object,
-				Pattern :> ObjectP[{Model[Sample], Object[Sample]}]
+				Pattern :> ObjectP[{Model[Sample], Object[Sample]}],
+				OpenPaths -> {
+					{
+						Object[Catalog, "Root"],
+						"Materials",
+						"Liquid Chromatography",
+						"Buffer Systems"
+					}
+				}
 			],
 			Category -> "General"
 		},
@@ -362,7 +406,15 @@ DefineOptions[ExperimentFPLC,
 			AllowNull -> False,
 			Widget -> Widget[
 				Type -> Object,
-				Pattern :> ObjectP[{Model[Sample], Object[Sample]}]
+				Pattern :> ObjectP[{Model[Sample], Object[Sample]}],
+				OpenPaths -> {
+					{
+						Object[Catalog, "Root"],
+						"Materials",
+						"Liquid Chromatography",
+						"Buffer Systems"
+					}
+				}
 			],
 			Category -> "General"
 		},
@@ -374,7 +426,15 @@ DefineOptions[ExperimentFPLC,
 			AllowNull -> True,
 			Widget -> Widget[
 				Type -> Object,
-				Pattern :> ObjectP[{Model[Sample], Object[Sample]}]
+				Pattern :> ObjectP[{Model[Sample], Object[Sample]}],
+				OpenPaths -> {
+					{
+						Object[Catalog, "Root"],
+						"Materials",
+						"Liquid Chromatography",
+						"Buffer Systems"
+					}
+				}
 			],
 			Category -> "General"
 		},
@@ -386,7 +446,15 @@ DefineOptions[ExperimentFPLC,
 			AllowNull -> True,
 			Widget -> Widget[
 				Type -> Object,
-				Pattern :> ObjectP[{Model[Sample], Object[Sample]}]
+				Pattern :> ObjectP[{Model[Sample], Object[Sample]}],
+				OpenPaths -> {
+					{
+						Object[Catalog, "Root"],
+						"Materials",
+						"Liquid Chromatography",
+						"Buffer Systems"
+					}
+				}
 			],
 			Category -> "General"
 		},
@@ -398,7 +466,15 @@ DefineOptions[ExperimentFPLC,
 			AllowNull -> True,
 			Widget -> Widget[
 				Type -> Object,
-				Pattern :> ObjectP[{Model[Sample], Object[Sample]}]
+				Pattern :> ObjectP[{Model[Sample], Object[Sample]}],
+				OpenPaths -> {
+					{
+						Object[Catalog, "Root"],
+						"Materials",
+						"Liquid Chromatography",
+						"Buffer Systems"
+					}
+				}
 			],
 			Category -> "General"
 		},
@@ -410,7 +486,15 @@ DefineOptions[ExperimentFPLC,
 			AllowNull -> True,
 			Widget -> Widget[
 				Type -> Object,
-				Pattern :> ObjectP[{Model[Sample], Object[Sample]}]
+				Pattern :> ObjectP[{Model[Sample], Object[Sample]}],
+				OpenPaths -> {
+					{
+						Object[Catalog, "Root"],
+						"Materials",
+						"Liquid Chromatography",
+						"Buffer Systems"
+					}
+				}
 			],
 			Category -> "General"
 		},
@@ -422,7 +506,15 @@ DefineOptions[ExperimentFPLC,
 			AllowNull -> True,
 			Widget -> Widget[
 				Type -> Object,
-				Pattern :> ObjectP[{Model[Sample], Object[Sample]}]
+				Pattern :> ObjectP[{Model[Sample], Object[Sample]}],
+				OpenPaths -> {
+					{
+						Object[Catalog, "Root"],
+						"Materials",
+						"Liquid Chromatography",
+						"Buffer Systems"
+					}
+				}
 			],
 			Category -> "General"
 		},
@@ -434,7 +526,15 @@ DefineOptions[ExperimentFPLC,
 			AllowNull -> True,
 			Widget -> Widget[
 				Type -> Object,
-				Pattern :> ObjectP[{Model[Sample], Object[Sample]}]
+				Pattern :> ObjectP[{Model[Sample], Object[Sample]}],
+				OpenPaths -> {
+					{
+						Object[Catalog, "Root"],
+						"Materials",
+						"Liquid Chromatography",
+						"Buffer Systems"
+					}
+				}
 			],
 			Category -> "General"
 		},
@@ -1190,7 +1290,15 @@ DefineOptions[ExperimentFPLC,
 				Category -> "Standard",
 				Widget -> Widget[
 					Type -> Object,
-					Pattern :> ObjectP[{Model[Sample], Object[Sample]}]
+					Pattern :> ObjectP[{Model[Sample], Object[Sample]}],
+					OpenPaths -> {
+						{
+							Object[Catalog, "Root"],
+							"Materials",
+							"Liquid Chromatography",
+							"Standards"
+						}
+					}
 				]
 			},
 			{
@@ -1775,7 +1883,22 @@ DefineOptions[ExperimentFPLC,
 				Category -> "Blanks",
 				Widget -> Widget[
 					Type -> Object,
-					Pattern :> ObjectP[{Model[Sample], Object[Sample]}]
+					Pattern :> ObjectP[{Model[Sample], Object[Sample]}],
+					OpenPaths -> {
+						{
+							Object[Catalog, "Root"],
+							"Materials",
+							"Reagents",
+							"Buffers",
+							"HPLC Buffers"
+						},
+						{
+							Object[Catalog, "Root"],
+							"Materials",
+							"Reagents",
+							"Water"
+						}
+					}
 				]
 			},
 			{
@@ -3310,7 +3433,19 @@ DefineOptions[ExperimentFPLC,
 				Units -> {Milliliter, {Milliliter, Microliter}}
 			]
 		},
-		FuntopiaSharedOptions,
+		NonBiologyFuntopiaSharedOptions,
+		ModifyOptions[
+			ModelInputOptions,
+			OptionName -> PreparedModelAmount
+		],
+		ModifyOptions[
+			ModelInputOptions,
+			PreparedModelContainer,
+			{
+				ResolutionDescription -> "If PreparedModelAmount is set to All and the input model has a product associated with both Amount and DefaultContainerModel populated, automatically set to the DefaultContainerModel value in the product. Otherwise, automatically set to Model[Container, Plate, \"96-well 2mL Deep Well Plate\"]."
+			}
+		],
+		SimulationOption,
 		SubprotocolDescriptionOption,
 		SamplesInStorageOption,
 		SamplesOutStorageOption
@@ -3376,11 +3511,11 @@ ExperimentFPLC[mySample : ObjectP[Object[Sample]], myOptions : OptionsPattern[Ex
 (* core sample overload*)
 ExperimentFPLC[mySamples : {ObjectP[Object[Sample]]..}, myOptions : OptionsPattern[ExperimentFPLC]] := Module[
 	{listedOptions, listedSamples, outputSpecification, output, gatherTests, messages, safeOptions, safeOptionTests,
-		validLengths, validLengthTests, upload, confirm, fastTrack, parentProt, inheritedCache, unresolvedOptions,
+		validLengths, validLengthTests, upload, confirm, canaryBranch, fastTrack, parentProt, inheritedCache, unresolvedOptions,
 		applyTemplateOptionTests, combinedOptions, expandedCombinedOptions, resolveOptionsResult, resolvedOptions,
 		resolutionTests, resolvedOptionsNoHidden, returnEarlyQ, allDownloadValues, newCache, allInstrumentObjects,
 		finalizedPackets, resourcePacketTests, allTests, validQ, previewRule, optionsRule, testsRule, resultRule,
-		validSamplePreparationResult, mySamplesWithPreparedSamples, myOptionsWithPreparedSamples, samplePreparationCache,
+		validSamplePreparationResult, mySamplesWithPreparedSamples, myOptionsWithPreparedSamples, updatedSimulation,
 		samplePreparationFields, sampleModelPreparationFields, modelPreparationFields, allGradientObjects, allColumnObjects, allFractionCollectionMethods,
 		allContainerObjects, containerFields, containerModelFields, sampleContainerFields, allContainerModels, allCapModels,
 		containerModelFieldsThroughLinks, sampleContainerModelFields,allSampleObjects,allSampleModels,
@@ -3399,13 +3534,13 @@ ExperimentFPLC[mySamples : {ObjectP[Object[Sample]]..}, myOptions : OptionsPatte
 	(* Simulate our sample preparation. *)
 	validSamplePreparationResult = Check[
 		(* Simulate sample preparation. *)
-		{mySamplesWithPreparedSamplesNamed, myOptionsWithPreparedSamplesNamed, samplePreparationCache} = simulateSamplePreparationPackets[
+		{mySamplesWithPreparedSamplesNamed, myOptionsWithPreparedSamplesNamed, updatedSimulation} = simulateSamplePreparationPacketsNew[
 			ExperimentFPLC,
 			listedSamples,
 			listedOptions
 		],
 		$Failed,
-		{Error::MissingDefineNames}
+		{Download::ObjectDoesNotExist,Error::MissingDefineNames}
 	];
 
 	(* If we are given an invalid define name, return early. *)
@@ -3420,10 +3555,10 @@ ExperimentFPLC[mySamples : {ObjectP[Object[Sample]]..}, myOptions : OptionsPatte
 		SafeOptions[ExperimentFPLC, myOptionsWithPreparedSamplesNamed, Output -> {Result, Tests}, AutoCorrect -> False],
 		{SafeOptions[ExperimentFPLC, myOptionsWithPreparedSamplesNamed, AutoCorrect -> False], Null}
 	];
-
+	
 	(* Sanitize named inputs *)
-	{mySamplesWithPreparedSamples,safeOptions, myOptionsWithPreparedSamples} = sanitizeInputs[mySamplesWithPreparedSamplesNamed, safeOptionsNamed, myOptionsWithPreparedSamplesNamed];
-
+	{mySamplesWithPreparedSamples,safeOptions, myOptionsWithPreparedSamples} = sanitizeInputs[mySamplesWithPreparedSamplesNamed, safeOptionsNamed, myOptionsWithPreparedSamplesNamed,Simulation->updatedSimulation];
+	
 	(* If the specified options don't match their patterns or if the option lengths are invalid, return $Failed*)
 	If[MatchQ[safeOptions, $Failed],
 		Return[outputSpecification /. {
@@ -3451,7 +3586,7 @@ ExperimentFPLC[mySamples : {ObjectP[Object[Sample]]..}, myOptions : OptionsPatte
 	];
 
 	(* get assorted hidden options *)
-	{upload, confirm, fastTrack, parentProt, inheritedCache} = Lookup[safeOptions, {Upload, Confirm, FastTrack, ParentProtocol, Cache}];
+	{upload, confirm, canaryBranch, fastTrack, parentProt, inheritedCache} = Lookup[safeOptions, {Upload, Confirm, CanaryBranch, FastTrack, ParentProtocol, Cache}];
 
 	(* apply the template options *)
 	(* need to specify the definition number (we are number 1 for samples at this point) *)
@@ -3480,12 +3615,15 @@ ExperimentFPLC[mySamples : {ObjectP[Object[Sample]]..}, myOptions : OptionsPatte
 	expandedCombinedOptions = Last[ExpandIndexMatchedInputs[ExperimentFPLC, {mySamplesWithPreparedSamples}, combinedOptions, 1]];
 
 	(* Set up the samplePreparationFields using SamplePreparationCacheFields*)
-	samplePreparationFields = Packet[SamplePreparationCacheFields[Object[Sample], Format -> Sequence], IncompatibleMaterials, LiquidHandlerIncompatible, Tablet, TabletWeight, TransportWarmed, TransportChilled];
+	samplePreparationFields = Packet[SamplePreparationCacheFields[Object[Sample], Format -> Sequence], IncompatibleMaterials, LiquidHandlerIncompatible, Tablet, SolidUnitWeight, TransportTemperature];
 	sampleModelPreparationFields = Packet[Model[Flatten[{IncompatibleMaterials, FilterMaterial, FilterSize, SamplePreparationCacheFields[Model[Sample], Format -> Sequence]}]]];
 	modelPreparationFields = Packet[IncompatibleMaterials, FilterMaterial, FilterSize, SamplePreparationCacheFields[Model[Sample], Format -> Sequence]];
 
 	(* get all the specified gradient and objects *)
-	allGradientObjects = DeleteDuplicates[Cases[combinedOptionsNoCache, ObjectReferenceP[Object[Method, Gradient]], Infinity]];
+	allGradientObjects = Join[
+		DeleteDuplicates[Cases[combinedOptionsNoCache, ObjectReferenceP[Object[Method, Gradient]], Infinity]],
+		fplcSystemGradientSearch["Memoization"]
+	];
 
 	(* get all of the sample objects*)
 	(*don't include cache because that's a bad time when simulating with Prep Primiitves*)
@@ -3619,20 +3757,21 @@ ExperimentFPLC[mySamples : {ObjectP[Object[Sample]]..}, myOptions : OptionsPatte
 				Packet[Connectors]
 			}
 		},
-		Cache -> FlattenCachePackets[{inheritedCache, samplePreparationCache}],
+		Cache -> inheritedCache,
+		Simulation -> updatedSimulation,
 		Date -> Now
 	], {Download::FieldDoesntExist, Download::NotLinkField}];
 
 	(* make the new cache combining what we inherited and the stuff we Downloaded *)
-	newCache = Cases[FlattenCachePackets[{samplePreparationCache, inheritedCache, allDownloadValues}], PacketP[]];
+	newCache = Cases[FlattenCachePackets[{inheritedCache, allDownloadValues}], PacketP[]];
 
 	(* --- Resolve the options! --- *)
 
 	(* resolve all options; if we throw InvalidOption or InvalidInput, we're also getting $Failed and we will return early *)
 	resolveOptionsResult = Check[
 		{resolvedOptions, resolutionTests} = If[gatherTests,
-			resolveFPLCOptions[mySamplesWithPreparedSamples, expandedCombinedOptions, Output -> {Result, Tests}, Cache -> newCache],
-			{resolveFPLCOptions[mySamplesWithPreparedSamples, expandedCombinedOptions, Output -> Result, Cache -> newCache], Null}
+			resolveFPLCOptions[mySamplesWithPreparedSamples, expandedCombinedOptions, Output -> {Result, Tests}, Cache -> newCache, Simulation -> updatedSimulation],
+			{resolveFPLCOptions[mySamplesWithPreparedSamples, expandedCombinedOptions, Output -> Result, Cache -> newCache, Simulation -> updatedSimulation], Null}
 		],
 		$Failed,
 		{Error::InvalidInput, Error::InvalidOption}
@@ -3663,8 +3802,8 @@ ExperimentFPLC[mySamples : {ObjectP[Object[Sample]]..}, myOptions : OptionsPatte
 	(* call the fplcResourcePackets function to create the protocol packets with resources in them *)
 	(* if we're gathering tests, make sure the function spits out both the result and the tests; if we are not gathering tests, the result is enough, and the other can be Null *)
 	{finalizedPackets, resourcePacketTests} = If[gatherTests,
-		fplcResourcePackets[Download[mySamplesWithPreparedSamples, Object], unresolvedOptions, ReplaceRule[resolvedOptions, Output -> {Result, Tests}], Cache -> newCache],
-		{fplcResourcePackets[Download[mySamplesWithPreparedSamples, Object], unresolvedOptions, ReplaceRule[resolvedOptions, Output -> Result], Cache -> newCache], Null}
+		fplcResourcePackets[Download[mySamplesWithPreparedSamples, Object], unresolvedOptions, ReplaceRule[resolvedOptions, Output -> {Result, Tests}], Cache -> newCache, Simulation -> updatedSimulation],
+		{fplcResourcePackets[Download[mySamplesWithPreparedSamples, Object], unresolvedOptions, ReplaceRule[resolvedOptions, Output -> Result], Cache -> newCache, Simulation -> updatedSimulation], Null}
 	];
 
 	(* --- Packaging the return value --- *)
@@ -3704,21 +3843,8 @@ ExperimentFPLC[mySamples : {ObjectP[Object[Sample]]..}, myOptions : OptionsPatte
 		MemberQ[output, Result] && validQ && Length[finalizedPackets] == 1,
 			UploadProtocol[
 				First[finalizedPackets],
-				Confirm -> confirm, Upload -> upload,
-				FastTrack -> fastTrack,
-				ParentProtocol -> parentProt,
-				Priority->Lookup[safeOptions,Priority],
-				StartDate->Lookup[safeOptions,StartDate],
-				HoldOrder->Lookup[safeOptions,HoldOrder],
-				QueuePosition->Lookup[safeOptions,QueuePosition],
-				ConstellationMessage -> {Object[Protocol, FPLC]},
-				Cache -> samplePreparationCache
-			],
-		MemberQ[output, Result] && validQ,
-			UploadProtocol[
-				First[finalizedPackets],
-				Rest[finalizedPackets],
 				Confirm -> confirm,
+				CanaryBranch -> canaryBranch,
 				Upload -> upload,
 				FastTrack -> fastTrack,
 				ParentProtocol -> parentProt,
@@ -3727,7 +3853,25 @@ ExperimentFPLC[mySamples : {ObjectP[Object[Sample]]..}, myOptions : OptionsPatte
 				HoldOrder->Lookup[safeOptions,HoldOrder],
 				QueuePosition->Lookup[safeOptions,QueuePosition],
 				ConstellationMessage -> {Object[Protocol, FPLC]},
-				Cache -> samplePreparationCache
+				Cache -> newCache,
+				Simulation -> updatedSimulation
+			],
+		MemberQ[output, Result] && validQ,
+			UploadProtocol[
+				First[finalizedPackets],
+				Rest[finalizedPackets],
+				Confirm -> confirm,
+				CanaryBranch -> canaryBranch,
+				Upload -> upload,
+				FastTrack -> fastTrack,
+				ParentProtocol -> parentProt,
+				Priority->Lookup[safeOptions,Priority],
+				StartDate->Lookup[safeOptions,StartDate],
+				HoldOrder->Lookup[safeOptions,HoldOrder],
+				QueuePosition->Lookup[safeOptions,QueuePosition],
+				ConstellationMessage -> {Object[Protocol, FPLC]},
+				Cache -> newCache,
+				Simulation -> updatedSimulation
 			],
 		True, $Failed
 	];
@@ -3737,14 +3881,14 @@ ExperimentFPLC[mySamples : {ObjectP[Object[Sample]]..}, myOptions : OptionsPatte
 ];
 
 (* singleton container input *)
-ExperimentFPLC[myContainer : (ObjectP[{Object[Container], Object[Sample]}] | _String), myOptions : OptionsPattern[ExperimentFPLC]] := ExperimentFPLC[{myContainer}, myOptions];
+ExperimentFPLC[myContainer : (ObjectP[{Object[Container], Object[Sample], Model[Sample]}] | _String), myOptions : OptionsPattern[ExperimentFPLC]] := ExperimentFPLC[{myContainer}, myOptions];
 
 (* multiple container input *)
-ExperimentFPLC[myContainers : {(ObjectP[{Object[Container], Object[Sample]}] | _String)..}, myOptions : OptionsPattern[ExperimentFPLC]] := Module[
+ExperimentFPLC[myContainers : {(ObjectP[{Object[Container], Object[Sample], Model[Sample]}] | _String)..}, myOptions : OptionsPattern[ExperimentFPLC]] := Module[
 	{listedOptions, outputSpecification, output, gatherTests, safeOptions, safeOptionTests, containerToSampleResult,
-		containerToSampleTests, inputSamples, samplesOptions, aliquotResults, initialReplaceRules, testsRule, resultRule,
-		previewRule, optionsRule, validSamplePreparationResult, mySamplesWithPreparedSamples, myOptionsWithPreparedSamples,
-		samplePreparationCache, sampleCache, updatedCache,listedContainers},
+		containerToSampleTests, validSamplePreparationResult, mySamplesWithPreparedSamples, myOptionsWithPreparedSamples,
+		updatedSimulation, listedContainers, containerToSampleOutput, containerToSampleSimulation, samples,
+		sampleOptions},
 
 	(* determine the requested return value from the function *)
 	outputSpecification = Quiet[OptionDefault[OptionValue[Output]], OptionValue::nodef];
@@ -3753,18 +3897,19 @@ ExperimentFPLC[myContainers : {(ObjectP[{Object[Container], Object[Sample]}] | _
 	(* deterimine if we should keep a running list of tests; if True, then silence messages *)
 	gatherTests = MemberQ[output, Tests];
 
-	{listedContainers, listedOptions}=removeLinks[ToList[myContainers], ToList[myOptions]];
+	{listedContainers, listedOptions}={ToList[myContainers], ToList[myOptions]};
 
 	(* First, simulate our sample preparation. *)
 	validSamplePreparationResult = Check[
 		(* Simulate sample preparation. *)
-		{mySamplesWithPreparedSamples, myOptionsWithPreparedSamples, samplePreparationCache} = simulateSamplePreparationPackets[
+		{mySamplesWithPreparedSamples, myOptionsWithPreparedSamples, updatedSimulation} = simulateSamplePreparationPacketsNew[
 			ExperimentFPLC,
 			listedContainers,
-			listedOptions
+			listedOptions,
+			DefaultPreparedModelContainer -> Model[Container, Plate, "96-well 2mL Deep Well Plate"]
 		],
 		$Failed,
-		{Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
+		{Download::ObjectDoesNotExist,Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
 	];
 
 	(* If we are given an invalid define name, return early. *)
@@ -3791,54 +3936,57 @@ ExperimentFPLC[myContainers : {(ObjectP[{Object[Container], Object[Sample]}] | _
 	];
 
 	(* convert the containers to samples, and also get the options index matched properly *)
-	{containerToSampleResult, containerToSampleTests} = If[gatherTests,
-		containerToSampleOptions[ExperimentFPLC, mySamplesWithPreparedSamples, safeOptions, Cache -> samplePreparationCache, Output -> {Result, Tests}],
-		{containerToSampleOptions[ExperimentFPLC, mySamplesWithPreparedSamples, safeOptions, Cache -> samplePreparationCache], Null}
-	];
+	containerToSampleResult = If[gatherTests,
+		(* We are gathering tests. This silences any messages being thrown. *)
+		{containerToSampleOutput, containerToSampleTests, containerToSampleSimulation} = containerToSampleOptions[
+			ExperimentFPLC,
+			mySamplesWithPreparedSamples,
+			safeOptions,
+			Output -> {Result, Tests, Simulation},
+			Simulation -> updatedSimulation
+		];
 
-	(* If the specified containers aren't allowed *)
-	If[MatchQ[containerToSampleResult, $Failed],
-		Return[$Failed]
-	];
-
-	(* Update our cache with our new simulated values. *)
-	updatedCache = Flatten[{
-		samplePreparationCache,
-		Lookup[listedOptions, Cache, {}]
-	}];
-
-	(* separate out the samples and the options *)
-	{inputSamples, samplesOptions, sampleCache} = containerToSampleResult;
-
-	(* call ExperimentFPLC and get all its outputs *)
-	aliquotResults = ExperimentFPLC[inputSamples, ReplaceRule[samplesOptions, Cache -> updatedCache]];
-
-	(* create a list of replace rules from the fplc call above and whatever the output specification is *)
-	initialReplaceRules = If[MatchQ[outputSpecification, _List],
-		MapThread[
-			#1 -> #2&,
-			{outputSpecification, aliquotResults}
+		(* Therefore, we have to run the tests to see if we encountered a failure. *)
+		If[RunUnitTest[<|"Tests" -> containerToSampleTests|>, OutputFormat -> SingleBoolean, Verbose -> False],
+			Null,
+			$Failed
 		],
-		{outputSpecification -> aliquotResults}
+
+		(* We are not gathering tests. Simply check for Error::InvalidInput and Error::InvalidOption. *)
+		Check[
+			{containerToSampleOutput, containerToSampleSimulation} = containerToSampleOptions[
+				ExperimentFPLC,
+				mySamplesWithPreparedSamples,
+				myOptionsWithPreparedSamples,
+				Output -> {Result, Simulation},
+				Simulation -> updatedSimulation
+			],
+			$Failed,
+			{Error::EmptyContainers, Error::ContainerEmptyWells, Error::WellDoesNotExist}
+		]
 	];
 
-	(* if we are gathering tests, then prepend the safeOptionsTests and containerToSampleTests to the tests we already have *)
-	testsRule = Tests -> If[gatherTests,
-		Prepend[Lookup[initialReplaceRules, Tests], Flatten[{safeOptionTests, containerToSampleTests}]],
-		Null
-	];
 
-	(* Results rule is just always what was output in the ExperimentFPLC call *)
-	resultRule = Result -> Lookup[initialReplaceRules, Result, Null];
 
-	(* preview is always Null *)
-	previewRule = Preview -> Null;
+	(* If we were given an empty container, return early. *)
+	If[MatchQ[containerToSampleResult, $Failed],
+		(* containerToSampleOptions failed - return $Failed *)
+		outputSpecification /. {
+			Result -> $Failed,
+			Tests -> {safeOptionTests, containerToSampleTests},
+			Options -> $Failed,
+			Preview -> Null,
+			Simulation -> Null,
+			InvalidInputs -> {},
+			InvalidOptions -> {}
+		},
 
-	(* generate the options output rule *)
-	optionsRule = Options -> Lookup[initialReplaceRules, Options, Null];
+		(* Split up our containerToSample result into the samples and sampleOptions. *)
+		{samples, sampleOptions} = containerToSampleOutput;
 
-	(* return the output as we desire it *)
-	outputSpecification /. {previewRule, optionsRule, resultRule, testsRule}
+		(* Call our main function with our samples and converted options. *)
+		ExperimentFPLC[samples, ReplaceRule[sampleOptions, Simulation -> containerToSampleSimulation]]
+	]
 
 ];
 
@@ -3848,7 +3996,7 @@ ExperimentFPLC[myContainers : {(ObjectP[{Object[Container], Object[Sample]}] | _
 
 DefineOptions[
 	resolveFPLCOptions,
-	Options :> {HelperOutputOption, CacheOption}
+	Options :> {HelperOutputOption, CacheOption, SimulationOption}
 ];
 
 resolveFPLCOptions[mySamples : {ObjectP[Object[Sample]]...}, myOptions : {_Rule...}, myResolutionOptions : OptionsPattern[resolveFPLCOptions]] := Module[
@@ -3998,7 +4146,7 @@ resolveFPLCOptions[mySamples : {ObjectP[Object[Sample]]...}, myOptions : {_Rule.
 		sampleLoopDisconnectInstrumentConflicts, sampleLoopDisconnectInstrumentConflictQ, invalidSampleLoopDisconnectInstrumentConflictOptions, sampleLoopDisconnectInstrumentConflictTest,
 		autosamplerTotalVolume, autosamplerLowFlushVolumes, autosamplerLowFlushVolumesQ,resolvedStandardInjectionTypePattern,
 		standardSampleLoopDisconnection,standardSampleLoopDisconnectConflictQ,invalidStandardSampleLoopDisconnectConflictOptions,
-		standardSampleLoopDisconnectConflictTest,resolvedBlankInjectionTypePattern,blankSampleLoopDisconnection,
+		standardSampleLoopDisconnectConflictTest,resolvedBlankInjectionTypePattern,blankSampleLoopDisconnection, simulation, updatedSimulation, allDownloadValues,
 		blankSampleLoopDisconnectConflictQ,invalidBlankSampleLoopDisconnectConflictOptions,blankSampleLoopDisconnectConflictTest
 	},
 
@@ -4013,17 +4161,32 @@ resolveFPLCOptions[mySamples : {ObjectP[Object[Sample]]...}, myOptions : {_Rule.
 
 	(* Fetch our cache from the parent function. *)
 	cache = Lookup[ToList[myResolutionOptions], Cache, {}];
+	simulation = Lookup[ToList[myResolutionOptions], Simulation, Simulation[]];
 
-	(* Seperate out our FPLC options from our Sample Prep options. *)
+	(* Separate out our FPLC options from our Sample Prep options. *)
 	{samplePrepOptions, fplcOptions} = splitPrepOptions[myOptions];
 
 	(* Resolve our sample prep options *)
-	{{simulatedSamples, resolvedSamplePrepOptions, simulatedCache}, samplePrepTests} = If[gatherTests,
-		resolveSamplePrepOptions[ExperimentFPLC, mySamples, samplePrepOptions, Cache -> cache, Output -> {Result, Tests}],
-		{resolveSamplePrepOptions[ExperimentFPLC, mySamples, samplePrepOptions, Cache -> cache, Output -> Result], {}}
+	{{simulatedSamples, resolvedSamplePrepOptions, updatedSimulation}, samplePrepTests} = If[gatherTests,
+		resolveSamplePrepOptionsNew[ExperimentFPLC, mySamples, samplePrepOptions, Cache -> cache, Simulation -> simulation, Output -> {Result, Tests}],
+		{resolveSamplePrepOptionsNew[ExperimentFPLC, mySamples, samplePrepOptions, Cache -> cache, Simulation -> simulation, Output -> Result], {}}
 	];
 
-	(* get the fastAssoc *)
+	(* Download some values that we'll need below *)
+	allDownloadValues = Download[
+		DeleteDuplicates[Join[mySamples, simulatedSamples]],
+		{
+			Packet[Status, Container, Model, Volume, Mass, Count, State, Analytes, Composition, Solvent, IncompatibleMaterials],
+			Packet[Composition[[All, 2]][ExtinctionCoefficients]],
+			Packet[Container[{Model, Name, Contents}]],
+			Packet[Container[Model][{Object, Name, Footprint}]]
+		},
+		Cache -> cache,
+		Simulation -> updatedSimulation
+	];
+
+	(* get the fastAssoc; having a simulatedCache here helps with ObjectToString below *)
+	simulatedCache = FlattenCachePackets[{cache, allDownloadValues}];
 	fastAssoc = makeFastAssocFromCache[simulatedCache];
 
 	(* Determine if we should keep a running list of tests *)
@@ -4075,9 +4238,6 @@ resolveFPLCOptions[mySamples : {ObjectP[Object[Sample]]...}, myOptions : {_Rule.
 		Nothing
 	];
 
-	(* Extract the packets that we need from our downloaded cache. *)
-	(* Remember to download from simulatedSamples, using our simulatedCache *)
-	(* Quiet[Download[...],Download::FieldDoesntExist] *)
 
 	(* If you have Warning:: messages, do NOT throw them when MatchQ[$ECLApplication,Engine]. Warnings should NOT be surfaced in engine. *)
 
@@ -4212,7 +4372,7 @@ resolveFPLCOptions[mySamples : {ObjectP[Object[Sample]]...}, myOptions : {_Rule.
 	(* if we have any not-allowed detectors, throw an error *)
 	notAllowedDetectorsOptions = If[messagesQ && Not[MatchQ[notAllowedDetectors, {}]],
 		(
-			Message[Error::InstrumentDoesNotContainDetector, ObjectToString[notAllowedDetectors], ObjectToString[resolvedInstrument]];
+			Message[Error::InstrumentDoesNotContainDetector, ObjectToString[notAllowedDetectors, Cache->simulatedCache], ObjectToString[resolvedInstrument, Cache->simulatedCache]];
 			{Detector, Instrument}
 		),
 		{}
@@ -4361,8 +4521,8 @@ resolveFPLCOptions[mySamples : {ObjectP[Object[Sample]]...}, myOptions : {_Rule.
 
 	(*get boolean for which sample/instrument combinations are incompatible (based on material). *)
 	{incompatibleBool, incompatibleSamplesTest} = If[gatherTests,
-		CompatibleMaterialsQ[resolvedInstrument, simulatedSamplePackets, Cache -> simulatedCache, Output -> {Result, Tests}],
-		{CompatibleMaterialsQ[resolvedInstrument, simulatedSamplePackets, Cache -> simulatedCache, Output -> Result], Null}
+		CompatibleMaterialsQ[resolvedInstrument, simulatedSamplePackets, Cache -> cache, Simulation -> updatedSimulation, Output -> {Result, Tests}],
+		{CompatibleMaterialsQ[resolvedInstrument, simulatedSamplePackets, Cache -> cache, Simulation -> updatedSimulation, Output -> Result], Null}
 	];
 
 	(* pull out the specified column value *)
@@ -4455,7 +4615,7 @@ resolveFPLCOptions[mySamples : {ObjectP[Object[Sample]]...}, myOptions : {_Rule.
 	];
 	inputSampleObjs = Download[mySamples, Object, Cache -> cache];
 
-	(*we need to make sure that if the injection table is specified that the samples and the input are copacetic*)
+	(*we need to make sure that if the injection table is specified that the samples and the input are compatible*)
 	injectionTableSampleConflictQ = If[injectionTableSpecifiedQ,
 		(*check first if they're the same length. that's already bad*)
 		If[Length[ToList[mySamples]]==Count[injectionTableLookup,{Sample,___}],
@@ -4787,8 +4947,10 @@ resolveFPLCOptions[mySamples : {ObjectP[Object[Sample]]...}, myOptions : {_Rule.
 	defaultStandard = If[MatchQ[resolvedSeparationMode, SizeExclusion | IonExchange],
 		(* "Thermo-Fisher dsDNA Ladder 10-300 bp, 50 ng/uL" *)
 		Model[Sample, StockSolution, Standard, "id:N80DNj1rWzaq"],
-		(* "Peptide HPLC Standard Mix" *)
-		Model[Sample, StockSolution, Standard, "id:R8e1PjpkWx5X"]
+		(* "Peptide HPLC Standard Mix" is the preferred standard but currently not available due to supplier issues *)
+		(*Model[Sample, StockSolution, Standard, "id:R8e1PjpkWx5X"]*)
+		(* Until this can be ordered, use the more expensive alternative *)
+		Model[Sample, StockSolution, Standard, "id:o1k9jAolAnVr"]
 	];
 
 	(*call our shared helper in order to resolve common options related to the Standard and Blank*)
@@ -6238,7 +6400,7 @@ resolveFPLCOptions[mySamples : {ObjectP[Object[Sample]]...}, myOptions : {_Rule.
 		{}
 	];
 	gradientStartEndSpecifiedAdverselyTest = If[gatherTests,
-		Test["If GradientStart, GradientEnd, and GradientDuration are specified, they are copacetic:",
+		Test["If GradientStart, GradientEnd, and GradientDuration are specified, they are compatible:",
 			gradientStartEndSpecifiedAdverselyQ,
 			False
 		],
@@ -6273,7 +6435,7 @@ resolveFPLCOptions[mySamples : {ObjectP[Object[Sample]]...}, myOptions : {_Rule.
 
 	(* generate the test testing for this issue *)
 	gradientInjectionTableSpecifiedDifferentlyTest = If[gatherTests,
-		Test["If InjectionTable is specified as well as Gradient, StandardGradient, BlankGradient, ColumnFlushGradient, and/or ColumnPrimeGradient, they are copacetic:",
+		Test["If InjectionTable is specified as well as Gradient, StandardGradient, BlankGradient, ColumnFlushGradient, and/or ColumnPrimeGradient, they are compatible:",
 			gradientInjectionTableSpecifiedDifferentlyQ,
 			False
 		],
@@ -7077,7 +7239,7 @@ resolveFPLCOptions[mySamples : {ObjectP[Object[Sample]]...}, myOptions : {_Rule.
 
 	(*throw a warning if we have any clashes*)
 	If[messagesQ && Length[allClashOptions] > 0 && Not[engineQ],
-		Message[Warning::BufferConflict, allClashOptions, ObjectToString[allClashSpecifications, Cache -> cache], ObjectToString[allClashGradientValues, Cache -> cache]]
+		Message[Warning::BufferConflict, allClashOptions, ObjectToString[allClashSpecifications, Cache -> simulatedCache], ObjectToString[allClashGradientValues, Cache -> simulatedCache]]
 	];
 
 
@@ -7439,7 +7601,7 @@ resolveFPLCOptions[mySamples : {ObjectP[Object[Sample]]...}, myOptions : {_Rule.
 
 	(* If the volume is insufficent to flush out the whole autosampler sample loop, warn the user *)
 	If[autosamplerLowFlushVolumesQ && messagesQ,
-		Message[Warning::LowAutosamplerFlushVolume,Cases[autosamplerLowFlushVolumes,Except[{}]],PickList[{SampleLoopDisconnect,StandardSampleLoopDisconnect,BlankSampleLoopDisconnect},autosamplerLowFlushVolumes,Except[{}]],ObjectToString[Lookup[resolvedInstrumentModelPacket,Object]],autosamplerTotalVolume]
+		Message[Warning::LowAutosamplerFlushVolume,Cases[autosamplerLowFlushVolumes,Except[{}]],PickList[{SampleLoopDisconnect,StandardSampleLoopDisconnect,BlankSampleLoopDisconnect},autosamplerLowFlushVolumes,Except[{}]],ObjectToString[Lookup[resolvedInstrumentModelPacket,Object],Cache->simulatedCache],autosamplerTotalVolume]
 	];
 
 	(*resolve the sample flow rates*)
@@ -8582,12 +8744,12 @@ resolveFPLCOptions[mySamples : {ObjectP[Object[Sample]]...}, myOptions : {_Rule.
 		ParentProtocol -> Lookup[roundedOptionsAssociation, ParentProtocol],
 		Operator -> Lookup[roundedOptionsAssociation, Operator],
 		Confirm -> Lookup[roundedOptionsAssociation, Confirm],
+		CanaryBranch -> Lookup[roundedOptionsAssociation, CanaryBranch],
 		Name -> Lookup[roundedOptionsAssociation, Name],
 		Upload -> Lookup[roundedOptionsAssociation, Upload],
 		Output -> Lookup[roundedOptionsAssociation, Output],
 		Email -> resolvedEmail,
 		PreparatoryUnitOperations -> Lookup[roundedOptionsAssociation, PreparatoryUnitOperations],
-		PreparatoryPrimitives -> Lookup[roundedOptionsAssociation, PreparatoryPrimitives],
 		SubprotocolDescription -> Lookup[roundedOptionsAssociation, SubprotocolDescription],
 		CollectFractions -> collectFractions,
 		FractionCollectionTemperature -> resolvedFractionCollectionTemperature,
@@ -8609,7 +8771,10 @@ resolveFPLCOptions[mySamples : {ObjectP[Object[Sample]]...}, myOptions : {_Rule.
 	(* --- Aliquot options --- *)
 
 	(* get the current containers that the samples are in *)
-	sampleContainerPackets = Map[fetchPacketFromFastAssoc[#,fastAssoc]&, Download[Lookup[simulatedSamplePackets, Container, {}], Object]];
+	sampleContainerPackets = Map[
+		fastAssocPacketLookup[fastAssoc, #, Container]&,
+		simulatedSamples
+	];
 	sampleContainerModel = Download[If[NullQ[#], Null, Lookup[#, Model, Null]]& /@ sampleContainerPackets, Object];
 
 	(* get whether we're using the avant autosampler *)
@@ -8773,7 +8938,8 @@ resolveFPLCOptions[mySamples : {ObjectP[Object[Sample]]...}, myOptions : {_Rule.
 			RequiredAliquotContainers -> targetAliquotContainers,
 			AliquotWarningMessage -> "because the given samples are not in containers that are compatible with FPLC instruments.",
 			Output -> {Result, Tests},
-			Cache -> cache
+			Cache -> cache,
+			Simulation->updatedSimulation
 		],
 		{
 			resolveAliquotOptions[
@@ -8785,7 +8951,8 @@ resolveFPLCOptions[mySamples : {ObjectP[Object[Sample]]...}, myOptions : {_Rule.
 				RequiredAliquotContainers -> targetAliquotContainers,
 				AliquotWarningMessage -> "because the given samples are not in containers that are compatible with FPLC instruments.",
 				Output -> Result,
-				Cache -> cache
+				Cache -> cache,
+				Simulation->updatedSimulation
 			],
 			{}
 		}
@@ -8887,7 +9054,7 @@ resolveFPLCOptions[mySamples : {ObjectP[Object[Sample]]...}, myOptions : {_Rule.
 									(* if using avant 150 *)
 									avant150Q,
 										(* check container compatibility against autosampler rack *)
-										!CompatibleFootprintQ[Model[Container, Rack, "Avant Autosampler 10 mL Vial Rack"], #, ExactMatch -> False, Cache -> cache],
+										!CompatibleFootprintQ[Model[Container, Rack, "Avant Autosampler 10 mL Vial Rack"], #, ExactMatch -> True, Cache -> cache],
 
 									(* if using AKTA UPC 10 *)
 									True,
@@ -8947,21 +9114,21 @@ resolveFPLCOptions[mySamples : {ObjectP[Object[Sample]]...}, myOptions : {_Rule.
 	(* if the injection volumes are too high, throw an error *)
 	injectionVolumesAutosamplerIncompatibleOptions = If[messagesQ && Not[MatchQ[injectionVolumeAutosamplerIncompatible, {}]],
 		(
-			Message[Error::IncompatibleInjectionVolume, ObjectToString[injectionVolumeAutosamplerIncompatible], ObjectToString[resolvedInstrument], ObjectToString[maxInjectionVolume]];
+			Message[Error::IncompatibleInjectionVolume, ObjectToString[injectionVolumeAutosamplerIncompatible], ObjectToString[resolvedInstrument,Cache->simulatedCache], ObjectToString[maxInjectionVolume]];
 			{Instrument, InjectionType, StandardInjectionType, BlankInjectionType, SampleLoopVolume, InjectionVolume, StandardInjectionVolume, BlankInjectionVolume}
 		),
 		{}
 	];
 	injectionVolumesFlowInjectionIncompatibleOptions = If[messagesQ && Not[MatchQ[injectionVolumeFlowInjectionIncompatible, {}]],
 		(
-			Message[Error::InsufficientInjectionVolume, ObjectToString[injectionVolumeFlowInjectionIncompatible]];
+			Message[Error::InsufficientInjectionVolume, ObjectToString[injectionVolumeFlowInjectionIncompatible,Cache->simulatedCache]];
 			{Instrument, InjectionType, StandardInjectionType, BlankInjectionType, SampleLoopVolume, InjectionVolume, StandardInjectionVolume, BlankInjectionVolume}
 		),
 		{}
 	];
 	injectionVolumesSuperloopIncompatibleOptions = If[messagesQ && Not[MatchQ[injectionVolumeSuperloopIncompatible, {}]],
 		(
-			Message[Error::InjectionVolumeOutOfRange, ObjectToString[injectionVolumeSuperloopIncompatible]];
+			Message[Error::InjectionVolumeOutOfRange, ObjectToString[injectionVolumeSuperloopIncompatible,Cache->simulatedCache]];
 			{Instrument, InjectionType, StandardInjectionType, BlankInjectionType, SampleLoopVolume, InjectionVolume, StandardInjectionVolume, BlankInjectionVolume}
 		),
 		{}
@@ -9065,7 +9232,7 @@ resolveFPLCOptions[mySamples : {ObjectP[Object[Sample]]...}, myOptions : {_Rule.
 	(* get the container of every sample, either as an object (if we're not aliquoting) or as an ordered pair (if we are aliquoting) *)
 	containersOrPair = MapThread[
 		If[NullQ[#2],
-			{{Download[Lookup[#1, Container], Object, Cache -> simulatedCache], Download[Lookup[#1, Container], Object, Cache -> simulatedCache]}, Lookup[#1, Position]},
+			{{Download[Lookup[#1, Container], Object, Cache -> cache, Simulation -> updatedSimulation], Download[Lookup[#1, Container], Object, Cache -> cache, Simulation -> updatedSimulation]}, Lookup[#1, Position]},
 			{#2, #3}
 		]&,
 		{expandedSimulatedSamplePackets, Lookup[resolvedAliquotOptions, AliquotContainer], Lookup[resolvedAliquotOptions, DestinationWell]}
@@ -9244,7 +9411,7 @@ resolveFPLCOptions[mySamples : {ObjectP[Object[Sample]]...}, myOptions : {_Rule.
 
 	(* make a test for if we have the fraction temperature specified *)
 	invalidFractionCollectionTemperatureTest = If[gatherTests,
-		Test["If FractionCollectionTemperature is specified to a value besides Ambient, " <> ObjectToString[resolvedInstrument] <> " must support fraction temperature control:",
+		Test["If FractionCollectionTemperature is specified to a value besides Ambient, " <> ObjectToString[resolvedInstrument,Cache->simulatedCache] <> " must support fraction temperature control:",
 			invalidFractionCollectionTemperatureQ,
 			False
 		],
@@ -9298,7 +9465,7 @@ resolveFPLCOptions[mySamples : {ObjectP[Object[Sample]]...}, myOptions : {_Rule.
 	overMaxFlowRateQ = Not[MatchQ[optionsAboveMaxFlowRate, {}]];
 	overMaxFlowRateOptions = If[messagesQ && overMaxFlowRateQ,
 		(
-			Message[Error::FlowRateAboveMax, ObjectToString[optionsAboveMaxFlowRate], ObjectToString[valuesOverMaxFlowRate], ObjectToString[resolvedInstrument], ObjectToString[resolvedColumn], ObjectToString[actualMaxFlowRate]];
+			Message[Error::FlowRateAboveMax, ObjectToString[optionsAboveMaxFlowRate], ObjectToString[valuesOverMaxFlowRate], ObjectToString[resolvedInstrument,Cache->simulatedCache], ObjectToString[resolvedColumn,Cache->simulatedCache], ObjectToString[actualMaxFlowRate]];
 			Flatten[{Column, Instrument, optionsAboveMaxFlowRate}]
 		),
 		{}
@@ -9357,7 +9524,7 @@ resolveFPLCOptions[mySamples : {ObjectP[Object[Sample]]...}, myOptions : {_Rule.
 		]
 	];
 
-	(* figure out the collectfraction option is copacetic with everything else *)
+	(* figure out the collectfraction option is compatible with everything else *)
 	conflictingFractionQs = MapThread[
 		Function[{collectFraction, absThreshold, slope, slopeDuration, endThreshold, fractionCollectionMode},
 			(*collect fraction can not be on when everything is off and vice versa*)
@@ -9424,7 +9591,7 @@ resolveFPLCOptions[mySamples : {ObjectP[Object[Sample]]...}, myOptions : {_Rule.
 	];
 	conductivityThresholdNotSupportedOptions = If[messagesQ && Not[MatchQ[oldAktaIncompatibleThresholdOptions, {}]],
 		(
-			Message[Error::ConductivityThresholdNotSupported, ObjectToString[resolvedInstrument], oldAktaIncompatibleThresholdOptions];
+			Message[Error::ConductivityThresholdNotSupported, ObjectToString[resolvedInstrument,Cache->simulatedCache], oldAktaIncompatibleThresholdOptions];
 			Flatten[{Instrument, oldAktaIncompatibleThresholdOptions}]
 		),
 		{}
@@ -9443,8 +9610,8 @@ resolveFPLCOptions[mySamples : {ObjectP[Object[Sample]]...}, myOptions : {_Rule.
 
 	(* Check whether the samples are ok *)
 	{validContainerStorageConditionBool, validContainerStorageConditionTests} = If[gatherTests,
-		ValidContainerStorageConditionQ[mySamples, samplesInStorage, Cache->simulatedCache, Output -> {Result, Tests}],
-		{ValidContainerStorageConditionQ[mySamples, samplesInStorage, Cache->simulatedCache, Output -> Result], {}}
+		ValidContainerStorageConditionQ[mySamples, samplesInStorage, Cache->cache, Simulation -> updatedSimulation, Output -> {Result, Tests}],
+		{ValidContainerStorageConditionQ[mySamples, samplesInStorage, Cache->cache, Simulation -> updatedSimulation, Output -> Result], {}}
 	];
 	validContainerStoragConditionInvalidOptions = If[MemberQ[validContainerStorageConditionBool, False], SamplesInStorageCondition, Nothing];
 
@@ -9595,7 +9762,7 @@ resolveFPLCOptions[mySamples : {ObjectP[Object[Sample]]...}, myOptions : {_Rule.
 
 DefineOptions[
 	fplcResourcePackets,
-	Options :> {HelperOutputOption, CacheOption}
+	Options :> {HelperOutputOption, CacheOption, SimulationOption}
 ];
 
 fplcResourcePackets[mySamples : {ObjectP[Object[Sample]]..}, myUnresolvedOptions : {___Rule}, myResolvedOptions : {___Rule}, ops : OptionsPattern[fplcResourcePackets]] := Module[
@@ -9603,15 +9770,20 @@ fplcResourcePackets[mySamples : {ObjectP[Object[Sample]]..}, myUnresolvedOptions
 		outputSpecification, output, gatherTests, messages, numReplicates, protocolPacket, sharedFieldPacket, finalizedPacket,
 		allResourceBlobs, fulfillable, frqTests, testsRule, resultRule, samplesWithReplicates, optionsWithReplicates, totalRunTime,
 		uniqueGradientPackets, allPackets, injectionTable, instrumentResource, sampleLoopResource,
-		systemPrimeGradientMethod, systemFlushGradientMethod, systemPrimeGradientPacket, systemFlushGradientPacket,
-		bufferDeadVolume, systemPrimeGradient, systemFlushGradient,replacedFractionPackets,
+		instrumentSystemPrimeGradientMethod, instrumentSystemFlushGradientMethod, instrumentSystemPrimeGradientPacket, instrumentSystemFlushGradientPacket,
+		bufferDeadVolume, instrumentSystemPrimeGradient, instrumentSystemFlushGradient,replacedFractionPackets,
 		systemPrimeBufferAVolume, systemPrimeBufferBVolume, uniqueSamplePackets, sampleContainers, uniquePlateContainers,
-		systemPrimeBufferAResource, systemPrimeBufferBResource, lowFractionVolumes, medFractionVolumes, highFractionVolumes, veryHighFractionVolumes,
+		systemPrimeBufferAModel, systemPrimeBufferBModel, systemFlushBufferAModel, systemFlushBufferBModel,
+		systemPrimeBufferAResource, systemPrimeBufferBResource, systemPrimeBufferCResource, systemPrimeBufferDResource, systemPrimeBufferEResource, systemPrimeBufferFResource, systemPrimeBufferGResource, systemPrimeBufferHResource, allSystemPrimeBufferResources,
+		systemPrimeBufferTime, systemPrimeBufferFlowRate, systemPrimeGradientTuples,
+		systemFlushBufferAResource, systemFlushBufferBResource, systemFlushBufferCResource, systemFlushBufferDResource, systemFlushBufferEResource, systemFlushBufferFResource, systemFlushBufferGResource, systemFlushBufferHResource, allSystemFlushBufferResources,
+		systemFlushBufferTime, systemFlushBufferFlowRate, systemFlushGradientTuples,
+		lowFractionVolumes, medFractionVolumes, highFractionVolumes, veryHighFractionVolumes,
 		uniqueSamples, uniqueSampleResources, sampleResources, samplePositions, sampleTuples, insertionAssociation, injectionTableInserted, injectionTableWithReplicates,
 		systemFlushBufferAVolume, systemFlushBufferBVolume, makeReverseRules, sampleSampleFlowRate,
 		tableGradients, sampleGradient, standardGradient, blankGradient, columnPrimeGradient, columnFlushGradient,
 		resolvedGradients, gradientMethodInPlaceP, gradientObjectsToMake, injectionTableFull, cache,
-		systemFlushBufferAResource, systemFlushBufferBResource, fractionCollectionVolumes, fractionCollectionVolumesNoNull,
+		fractionCollectionVolumes, fractionCollectionVolumesNoNull,
 		columnResources, fractionPackets, existingFractionCollectionMethods, newFractionPackets,
 		standardPositions, blankPositions, columnPrimePositions, columnFlushPositions,
 		standardLookup, blankLookup, standardMappingRules, blankMappingRules,
@@ -9623,14 +9795,16 @@ fplcResourcePackets[mySamples : {ObjectP[Object[Sample]]..}, myUnresolvedOptions
 		groupedBlanksPositionVolumes, groupedBlankShared, groupedBlank, flatBlankResources, linkedBlankResources,
 		standardPositionsCorresponded, blankPositionsCorresponded, blankContainers,
 		columnPrimeGradientA, columnPrimeGradientB,availableMixers, availableMixerVolumes, mixerResource,
-		columnPrimeFlowRates,columnPrimeFlowDirections, samplePrepOptions, dontNeedThis, simulatedSamples, resolvedSamplePrepOptions, simulatedCache, simulatedFastAssoc,
+		columnPrimeFlowRates,columnPrimeFlowDirections, samplePrepOptions, dontNeedThis, simulatedSamples, resolvedSamplePrepOptions, simulatedFastAssoc,
 		sampleGradientA, sampleGradientB, sampleFlowRates,
 		standardGradientA, standardGradientB, standardFlowRates,
 		blankGradientA, blankGradientB, blankFlowRates,low96WellVolumes, low48WellVolumes,
 		columnFlushGradientA, columnFlushGradientB, fastAssoc,
 		columnFlushFlowRates,columnFlushFlowDirections,bufferCTableAmounts, bufferDTableAmounts, injectionTableUploadable, allGradients, allGradientTuples,
 		allTimes, noAutosamplerQ,bufferAList, bufferBList,
-		systemPrimeBufferPlacements, systemFlushBufferPlacements,uniqueContainers, eachContainerModelPacket, eachContainerModel, connectors,
+		systemPrimeBufferPlacements, systemFlushBufferPlacements,
+		systemPrimeFlushGradientObjects, systemPrimeFlushGradientPackets,
+		uniqueContainers, eachContainerModelPacket, eachContainerModel, connectors,
 		eachMaxVolume,sampleCaps, sampleCapResources, systemPrimeSampleCleaningBufferResources,
 		systemFlushSampleCleaningBufferResources,
 		sampleGradientC, sampleGradientD, sampleBufferC, sampleBufferD, standardGradientC, standardGradientD,
@@ -9642,7 +9816,7 @@ fplcResourcePackets[mySamples : {ObjectP[Object[Sample]]..}, myUnresolvedOptions
 		potentialInstrumentModelPacket, inheritedCache, resolvedInstrument, resolvedInstrumentModelPacket, avant25Q, avant150Q,
 		allInjectionVolumes, largestInjectionVolume, resolvedAliquotAmount, resolvedAssayVolume, dilutionFactor, potentialColumnPackets,
 		potentialColumnModelPackets, resolvedColumns, resolvedColumnModelPackets, allSystemGradients,  allResolvedBuffers, tableFlowRates,
-		flowRatesForNewGradients,
+		flowRatesForNewGradients, simulation, updatedSimulation,
 		makeNullLists, tableFlushTimes, sampleFlushTimes, sampleEquilibrationTime, tableEquilibrationTimes, flushTimeForNewGradients,
 		equilibrationTimesForNewGradients, injectionTableGradients, existingInjectionTableGradients,
 		bufferASelectionResources, bufferBSelectionResources, bufferPlacements,
@@ -9688,9 +9862,10 @@ fplcResourcePackets[mySamples : {ObjectP[Object[Sample]]..}, myUnresolvedOptions
 
 	(*get the cache*)
 	inheritedCache = Lookup[ToList[ops], Cache, {}];
+	simulation = Lookup[ToList[ops], Simulation, Simulation[]];
 
 	(* find all system gradients with AKTA Avant in them (i.e., all the FPLC system flush/prime gradients *)
-	allSystemGradients = Search[Object[Method, Gradient], Name == (___~~"System"~~___~~"AKTA Avant"~~___) && Notebook == Null];
+	allSystemGradients = fplcSystemGradientSearch["Memoization"];
 
 	(* get all the specified buffers *)
 	allResolvedBuffers = Cases[Flatten[
@@ -9714,7 +9889,7 @@ fplcResourcePackets[mySamples : {ObjectP[Object[Sample]]..}, myUnresolvedOptions
 	existingInjectionTableGradients = PickList[injectionTableGradients, DatabaseMemberQ[injectionTableGradients]];
 
 	(* simulate the sample preparation stuff so we have the right containers if we are aliquoting *)
-	{simulatedSamples, simulatedCache} = simulateSamplesResourcePackets[ExperimentFPLC, mySamples, myResolvedOptions, Cache -> inheritedCache];
+	{simulatedSamples, updatedSimulation} = simulateSamplesResourcePacketsNew[ExperimentFPLC, mySamples, myResolvedOptions, Cache -> inheritedCache, Simulation -> simulation];
 
 	(* --- Make our one big Download call --- *)
 
@@ -9739,18 +9914,19 @@ fplcResourcePackets[mySamples : {ObjectP[Object[Sample]]..}, myUnresolvedOptions
 				Packet[Model[{Name, SeparationMode}]]
 			},
 			{
-				Packet[Name, DateCreated, Temperature, FlowRate, InitialFlowRate, Gradient, BufferA, BufferB]
+				Packet[Name, DateCreated, Temperature, FlowRate, InitialFlowRate, Gradient, BufferA, BufferB, BufferC, BufferD, BufferE, BufferF, BufferG, BufferH]
 			},
 			{
 				Packet[Model, Name]
 			}
 		},
-		Cache -> simulatedCache
+		Cache -> inheritedCache,
+		Simulation -> updatedSimulation
 	], {Download::FieldDoesntExist, Download::NotLinkField}];
 
 	(* add what we Downloaded to the new cache *)
-	cache = FlattenCachePackets[{simulatedCache, Cases[Flatten[allDownloadValues], PacketP[]]}];
-	fastAssoc = makeFastAssocFromCache[cache];
+	cache = FlattenCachePackets[{inheritedCache, Cases[Flatten[allDownloadValues], PacketP[]]}];
+	fastAssoc = makeFastAssocFromCache[FlattenCachePackets[{cache, Lookup[First[updatedSimulation], Packets, {}]}]];
 
 	(* pull out the instrument packet and instrument model packet (can't know for sure at this point because the Instrument option could be a model or object) *)
 	potentialInstrumentPacket = allDownloadValues[[1, 1, 1]];
@@ -10125,7 +10301,7 @@ fplcResourcePackets[mySamples : {ObjectP[Object[Sample]]..}, myUnresolvedOptions
 	linkedSampleResources = Link[#]& /@ sampleResources;
 
 	(*for the system prime and flush we will defer to the default method; the gradient we use depends on the separation mode of the column *)
-	{systemPrimeGradientMethod,systemFlushGradientMethod}=With[{avantNumber=Which[avant25Q," 25",avant150Q," 150",True,""]},
+	{instrumentSystemPrimeGradientMethod,instrumentSystemFlushGradientMethod}=With[{avantNumber=Which[avant25Q," 25",avant150Q," 150",True,""]},
 		Switch[Lookup[First[resolvedColumnModelPackets], SeparationMode],
 
 			IonExchange,
@@ -10147,96 +10323,15 @@ fplcResourcePackets[mySamples : {ObjectP[Object[Sample]]..}, myUnresolvedOptions
 	];
 
 	(*get the packet from the cache*)
-	systemPrimeGradientPacket = fetchPacketFromFastAssoc[Download[systemPrimeGradientMethod, Object], fastAssoc];
-	systemFlushGradientPacket = fetchPacketFromFastAssoc[Download[systemFlushGradientMethod, Object], fastAssoc];
+	instrumentSystemPrimeGradientPacket = fetchPacketFromFastAssoc[Download[instrumentSystemPrimeGradientMethod, Object], fastAssoc];
+	instrumentSystemFlushGradientPacket = fetchPacketFromFastAssoc[Download[instrumentSystemFlushGradientMethod, Object], fastAssoc];
 
 	(*get the gradient tuple*)
-	systemPrimeGradient = Lookup[systemPrimeGradientPacket, Gradient];
-	systemFlushGradient = Lookup[systemFlushGradientPacket, Gradient];
+	instrumentSystemPrimeGradient = Lookup[instrumentSystemPrimeGradientPacket, Gradient, Null];
+	instrumentSystemFlushGradient = Lookup[instrumentSystemFlushGradientPacket, Gradient, Null];
 
 	(* tbh don't really know this but should figure it out better *)
 	bufferDeadVolume = 800 Milliliter;
-
-	(* Determine volume of BufferA required for system prime run *)
-	systemPrimeBufferAVolume = calculateBufferUsage[
-		systemPrimeGradient[[All, {1, 2}]], (*the specific gradient*)
-		Max[systemPrimeGradient[[All, 1]]], (*the last time*)
-		systemPrimeGradient[[All, {1, -1}]], (*the flow rate profile*)
-		Last[systemPrimeGradient[[All, 2]]] (*the last percentage*)
-	];
-
-	(* Determine volume of BufferB required for system prime run *)
-	systemPrimeBufferBVolume = calculateBufferUsage[
-		systemPrimeGradient[[All, {1, 3}]], (*the specific gradient*)
-		Max[systemPrimeGradient[[All, 1]]], (*the last time*)
-		systemPrimeGradient[[All, {1, -1}]], (*the flow rate profile*)
-		Last[systemPrimeGradient[[All, 3]]] (*the last percentage*)
-	];
-
-	(* Create resource for SystemPrime's BufferA *)
-	systemPrimeBufferAResource = Resource[
-		Sample -> Lookup[systemPrimeGradientPacket, BufferA],
-		Amount -> systemPrimeBufferAVolume + bufferDeadVolume,
-		Container -> If[systemPrimeBufferAVolume + bufferDeadVolume > 4 Liter,
-			PreferredContainer[systemPrimeBufferAVolume + bufferDeadVolume],
-			Model[Container, Vessel, "Amber Glass Bottle 4 L"]
-		],
-		RentContainer -> True,
-		Name -> CreateUUID[]
-	];
-
-	(* Create resource for SystemPrime's BufferA *)
-	systemPrimeBufferBResource = Resource[
-		Sample -> Lookup[systemPrimeGradientPacket, BufferB],
-		Amount -> systemPrimeBufferBVolume + bufferDeadVolume,
-		Container -> If[systemPrimeBufferBVolume + bufferDeadVolume > 4 Liter,
-			PreferredContainer[systemPrimeBufferBVolume + bufferDeadVolume],
-			Model[Container, Vessel, "Amber Glass Bottle 4 L"]
-		],
-		RentContainer -> True,
-		Name -> CreateUUID[]
-	];
-
-	(* Determine volume of BufferA required for system flush run *)
-	systemFlushBufferAVolume = calculateBufferUsage[
-		systemFlushGradient[[All, {1, 2}]], (*the specific gradient*)
-		Max[systemFlushGradient[[All, 1]]], (*the last time*)
-		systemFlushGradient[[All, {1, -1}]], (*the flow rate profile*)
-		Last[systemFlushGradient[[All, 2]]] (*the last percentage*)
-	];
-
-	(* Determine volume of BufferB required for system flush run *)
-	systemFlushBufferBVolume = calculateBufferUsage[
-		systemFlushGradient[[All, {1, 3}]], (*the specific gradient*)
-		Max[systemFlushGradient[[All, 1]]], (*the last time*)
-		systemFlushGradient[[All, {1, -1}]], (*the flow rate profile*)
-		Last[systemFlushGradient[[All, 3]]] (*the last percentage*)
-	];
-
-
-	(* Create resource for SystemFlush's BufferA *)
-	systemFlushBufferAResource = Resource[
-		Sample -> Lookup[systemFlushGradientPacket, BufferA],
-		Amount -> systemFlushBufferAVolume + bufferDeadVolume,
-		Container -> If[systemFlushBufferAVolume + bufferDeadVolume > 4 Liter,
-			PreferredContainer[systemFlushBufferAVolume + bufferDeadVolume],
-			Model[Container, Vessel, "Amber Glass Bottle 4 L"]
-		],
-		RentContainer -> True,
-		Name -> CreateUUID[]
-	];
-
-	(* Create resource for SystemFlush's BufferA *)
-	systemFlushBufferBResource = Resource[
-		Sample -> Lookup[systemFlushGradientPacket, BufferB],
-		Amount -> systemFlushBufferBVolume + bufferDeadVolume,
-		Container -> If[systemFlushBufferBVolume + bufferDeadVolume > 4 Liter,
-			PreferredContainer[systemFlushBufferBVolume + bufferDeadVolume],
-			Model[Container, Vessel, "Amber Glass Bottle 4 L"]
-		],
-		RentContainer -> True,
-		Name -> CreateUUID[]
-	];
 
 	(*start with the column prime*)
 	{
@@ -10403,9 +10498,10 @@ fplcResourcePackets[mySamples : {ObjectP[Object[Sample]]..}, myUnresolvedOptions
 				(*don't have to do anything if it's already a model or Null*)
 				Null|ObjectP[Model[Sample]],currentBuffer,
 				(*otherwise, if an object, fetch from the cache*)
-				_,Download[Lookup[fetchPacketFromFastAssoc[Download[currentBuffer,Object],fastAssoc],Model],Object]
+				_,Download[fastAssocLookup[fastAssoc, currentBuffer, Model], Object]
 			]
-		],Lookup[expandedResolvedOptions, { BufferA, BufferB, BufferC, BufferD, BufferE, BufferF, BufferG, BufferH }]
+		],
+		Lookup[expandedResolvedOptions, {BufferA, BufferB, BufferC, BufferD, BufferE, BufferF, BufferG, BufferH}]
 	];
 
 	(*only take the initial flow rates -- needed because flow rates can be changing*)
@@ -11009,7 +11105,7 @@ fplcResourcePackets[mySamples : {ObjectP[Object[Sample]]..}, myUnresolvedOptions
 			containerModelVesselsOnly = Lookup[Cases[uniqueSimulatedContainers, ObjectP[Model[Container, Vessel]]], Object, {}];
 
 			(* use the findAspirationCaps helper to... find aspiration caps *)
-			sampleCapsInner = Experiment`Private`findAspirationCap[containerModelVesselsOnly];
+			sampleCapsInner = Experiment`Private`findAspirationCap[containerModelVesselsOnly, LevelSensorType -> HexCap];
 
 			vesselToCapsRules = AssociationThread[containerModelVesselsOnly, sampleCapsInner];
 
@@ -11025,7 +11121,7 @@ fplcResourcePackets[mySamples : {ObjectP[Object[Sample]]..}, myUnresolvedOptions
 					{Cases[injectionTable, {Blank, _, injectionType_, _, _} :> injectionType], blankContainers, Values[flatBlankResources]}
 				]]
 			];
-			blankCapsInner = Experiment`Private`findAspirationCap[DeleteCases[blankContainersForCaps, Null]];
+			blankCapsInner = Experiment`Private`findAspirationCap[DeleteCases[blankContainersForCaps, Null], LevelSensorType -> HexCap];
 			(* need the Download[_, Object] here because sometimes at this point we have the Named form and we want the ID form in order for allVesselToCapRules to work *)
 			blankVesselToCapsRules = AssociationThread[Download[DeleteCases[blankContainersForCaps, Null], Object], blankCapsInner];
 
@@ -11041,7 +11137,7 @@ fplcResourcePackets[mySamples : {ObjectP[Object[Sample]]..}, myUnresolvedOptions
 					{Cases[injectionTable, {Standard, _, injectionType_, _, _} :> injectionType], standardContainers, Values[flatStandardResources]}
 				]]
 			];
-			standardCapsInner = Experiment`Private`findAspirationCap[DeleteCases[standardContainersForCaps, Null]];
+			standardCapsInner = Experiment`Private`findAspirationCap[DeleteCases[standardContainersForCaps, Null], LevelSensorType -> HexCap];
 			(* need the Download[_, Object] here because sometimes at this point we have the Named form and we want the ID form in order for allVesselToCapRules to work *)
 			standardVesselToCapsRules = AssociationThread[Download[DeleteCases[standardContainersForCaps, Null], Object], standardCapsInner];
 
@@ -11155,6 +11251,245 @@ fplcResourcePackets[mySamples : {ObjectP[Object[Sample]]..}, myUnresolvedOptions
 		]
 	];
 
+	(* Determine volume of BufferA and BufferB required for system prime run *)
+	(* BufferC-BufferH for system prime and system flush will repeat A and B, for the buffer lines that we are going to use *)
+	systemPrimeBufferAVolume = calculateBufferUsage[
+		instrumentSystemPrimeGradient[[All, {1, 2}]], (*the specific gradient*)
+		Max[instrumentSystemPrimeGradient[[All, 1]]], (*the last time*)
+		instrumentSystemPrimeGradient[[All, {1, -1}]], (*the flow rate profile*)
+		Last[instrumentSystemPrimeGradient[[All, 2]]] (*the last percentage*)
+	];
+
+	(* Determine volume of BufferB required for system prime run *)
+	systemPrimeBufferBVolume = calculateBufferUsage[
+		instrumentSystemPrimeGradient[[All, {1, 3}]], (*the specific gradient*)
+		Max[instrumentSystemPrimeGradient[[All, 1]]], (*the last time*)
+		instrumentSystemPrimeGradient[[All, {1, -1}]], (*the flow rate profile*)
+		Last[instrumentSystemPrimeGradient[[All, 3]]] (*the last percentage*)
+	];
+
+	(* Create resource for SystemPrime's BufferA *)
+	systemPrimeBufferAModel = Download[Lookup[instrumentSystemPrimeGradientPacket, BufferA, Null],Object];
+	systemPrimeBufferAResource = If[avant150Q || avant25Q,
+		Link@Resource[
+			Sample -> systemPrimeBufferAModel,
+			Amount -> systemPrimeBufferAVolume + bufferDeadVolume,
+			Container -> If[systemPrimeBufferAVolume + bufferDeadVolume > 4 Liter,
+				PreferredContainer[systemPrimeBufferAVolume + bufferDeadVolume],
+				Model[Container, Vessel, "Amber Glass Bottle 4 L"]
+			],
+			RentContainer -> True,
+			Name -> CreateUUID[]
+		],
+		Null
+	];
+
+	(* Create resource for SystemPrime's BufferB *)
+	systemPrimeBufferBModel = Download[Lookup[instrumentSystemPrimeGradientPacket, BufferB, Null],Object];
+	systemPrimeBufferBResource = If[avant150Q || avant25Q,
+		Link@Resource[
+			Sample -> systemPrimeBufferBModel,
+			Amount -> systemPrimeBufferBVolume + bufferDeadVolume,
+			Container -> If[systemPrimeBufferBVolume + bufferDeadVolume > 4 Liter,
+				PreferredContainer[systemPrimeBufferBVolume + bufferDeadVolume],
+				Model[Container, Vessel, "Amber Glass Bottle 4 L"]
+			],
+			RentContainer -> True,
+			Name -> CreateUUID[]
+		],
+		Null
+	];
+	
+	{systemPrimeBufferCResource, systemPrimeBufferDResource, systemPrimeBufferEResource, systemPrimeBufferFResource, systemPrimeBufferGResource, systemPrimeBufferHResource}=If[avant150Q || avant25Q,
+		MapThread[
+			Function[{currentBufferQ,currentBuffer,currentAmount},
+				If[NullQ[currentBufferQ],
+					Null,
+					Link@Resource[
+						Sample -> currentBuffer,
+						Amount -> currentAmount + bufferDeadVolume,
+						Container -> If[currentAmount + bufferDeadVolume > 4 Liter,
+							PreferredContainer[currentAmount + bufferDeadVolume],
+							Model[Container, Vessel, "Amber Glass Bottle 4 L"]
+						],
+						RentContainer -> True,
+						Name -> CreateUUID[]
+					]
+				]
+			],
+			{
+				(* Decide if we need to prime this buffer line from if we use this buffer in the sample run *)
+				Download[Lookup[expandedResolvedOptions, {BufferC, BufferD, BufferE, BufferF, BufferG, BufferH}],Object],
+				(* Repeat the system prime buffer and gradient from A and B *)
+				Flatten[Table[{Lookup[instrumentSystemPrimeGradientPacket, BufferA],Lookup[instrumentSystemPrimeGradientPacket, BufferB]},3]],
+				Flatten[Table[{systemPrimeBufferAVolume,systemPrimeBufferBVolume},3]]
+			}
+		],
+		Table[Null,6]
+	];
+
+	allSystemPrimeBufferResources={
+		(* B/D/F/H - B Buffers B1-B4 *)
+		systemPrimeBufferAResource,systemPrimeBufferCResource, systemPrimeBufferEResource, systemPrimeBufferGResource,
+		(* B/D/F/H - B Buffers B1-B4 *)
+		systemPrimeBufferBResource, systemPrimeBufferDResource, systemPrimeBufferFResource, systemPrimeBufferHResource
+	};
+	(* Repeat the A/B Gradient for all other buffers *)
+	(* SystemPrime and SystemFlush of FPLC always run 100% BufferA first and then 100% BufferB. We will determine the time for each buffer, and then do all As (A/C/E/G) first and then all Bs (B/D/F/H) *)
+	(* Figure out how long we run each buffer for *)
+	systemPrimeBufferTime=instrumentSystemPrimeGradient[[2,1]]-instrumentSystemPrimeGradient[[1,1]];
+	(* Figure out our flow rate *)
+	systemPrimeBufferFlowRate=Lookup[instrumentSystemPrimeGradientPacket, InitialFlowRate, Null];
+	(* Put together the tuples *)
+	systemPrimeGradientTuples=Join@@MapIndexed[
+		Function[
+			{buffer,index},
+			If[NullQ[buffer],
+				Nothing,
+				Module[
+					{previousBufferCount,startTime,endTime,bufferPos,percentTuple},
+					previousBufferCount=Count[
+						allSystemPrimeBufferResources[[1;;(index[[1]]-1)]],
+						Except[Null]
+					];
+					startTime=If[MatchQ[index[[1]],1],
+						(* First time starts at 0.00 Minute *)
+						systemPrimeBufferTime*previousBufferCount,
+						(* First time starts at last time + 0.1 Minute *)
+						systemPrimeBufferTime*previousBufferCount + 0.1Minute
+					];
+					endTime=systemPrimeBufferTime*(previousBufferCount+1);
+					(* Since we do all As first and then all Bs, get the correct index of the buffer in the gradient *)
+					bufferPos=Flatten[Transpose[Partition[Range[8],2]]][[index[[1]]]];
+					percentTuple=ReplacePart[Table[0Percent,8],bufferPos->100Percent];
+					{
+						Join[{startTime},percentTuple, {systemPrimeBufferFlowRate}],
+						Join[{endTime},percentTuple, {systemPrimeBufferFlowRate}]
+					}
+				]
+			]
+		],
+		allSystemPrimeBufferResources
+	];
+
+	(* Determine volume of BufferA required for system flush run *)
+	systemFlushBufferAVolume = calculateBufferUsage[
+		instrumentSystemFlushGradient[[All, {1, 2}]], (*the specific gradient*)
+		Max[instrumentSystemFlushGradient[[All, 1]]], (*the last time*)
+		instrumentSystemFlushGradient[[All, {1, -1}]], (*the flow rate profile*)
+		Last[instrumentSystemFlushGradient[[All, 2]]] (*the last percentage*)
+	];
+
+	(* Determine volume of BufferB required for system flush run *)
+	systemFlushBufferBVolume = calculateBufferUsage[
+		instrumentSystemFlushGradient[[All, {1, 3}]], (*the specific gradient*)
+		Max[instrumentSystemFlushGradient[[All, 1]]], (*the last time*)
+		instrumentSystemFlushGradient[[All, {1, -1}]], (*the flow rate profile*)
+		Last[instrumentSystemFlushGradient[[All, 3]]] (*the last percentage*)
+	];
+
+	(* Create resource for SystemFlush's BufferA *)
+	systemFlushBufferAModel = Download[Lookup[instrumentSystemFlushGradientPacket, BufferA, Null],Object];
+	systemFlushBufferAResource = If[avant150Q || avant25Q,
+		Link@Resource[
+			Sample -> systemFlushBufferAModel,
+			Amount -> systemFlushBufferAVolume + bufferDeadVolume,
+			Container -> If[systemFlushBufferAVolume + bufferDeadVolume > 4 Liter,
+				PreferredContainer[systemFlushBufferAVolume + bufferDeadVolume],
+				Model[Container, Vessel, "Amber Glass Bottle 4 L"]
+			],
+			RentContainer -> True,
+			Name -> CreateUUID[]
+		]
+	];
+
+	(* Create resource for SystemFlush's BufferB *)
+	systemFlushBufferBModel = Download[Lookup[instrumentSystemFlushGradientPacket, BufferB, Null],Object];
+	systemFlushBufferBResource = If[avant150Q || avant25Q,
+		Link@Resource[
+			Sample -> systemFlushBufferBModel,
+			Amount -> systemFlushBufferBVolume + bufferDeadVolume,
+			Container -> If[systemFlushBufferBVolume + bufferDeadVolume > 4 Liter,
+				PreferredContainer[systemFlushBufferBVolume + bufferDeadVolume],
+				Model[Container, Vessel, "Amber Glass Bottle 4 L"]
+			],
+			RentContainer -> True,
+			Name -> CreateUUID[]
+		]
+	];
+
+	{systemFlushBufferCResource, systemFlushBufferDResource, systemFlushBufferEResource, systemFlushBufferFResource, systemFlushBufferGResource, systemFlushBufferHResource}=If[avant150Q || avant25Q,
+		MapThread[
+			Function[{currentBufferQ,currentBuffer,currentAmount},
+				If[NullQ[currentBufferQ],
+					Null,
+					Link@Resource[
+						Sample -> currentBuffer,
+						Amount -> currentAmount + bufferDeadVolume,
+						Container -> If[currentAmount + bufferDeadVolume > 4 Liter,
+							PreferredContainer[currentAmount + bufferDeadVolume],
+							Model[Container, Vessel, "Amber Glass Bottle 4 L"]
+						],
+						RentContainer -> True,
+						Name -> CreateUUID[]
+					]
+				]
+			],
+			{
+				(* Decide if we need to prime this buffer line from if we use this buffer in the sample run *)
+				Download[Lookup[expandedResolvedOptions, {BufferC, BufferD, BufferE, BufferF, BufferG, BufferH}],Object],
+				(* Repeat the system prime buffer A and B *)
+				Flatten[Table[{Lookup[instrumentSystemFlushGradientPacket, BufferA],Lookup[instrumentSystemFlushGradientPacket, BufferB]},3]],
+				Flatten[Table[{systemFlushBufferAVolume,systemFlushBufferBVolume},3]]
+			}
+		],
+		Table[Null,6]
+	];
+
+	allSystemFlushBufferResources={
+		(* B/D/F/H - B Buffers B1-B4 *)
+		systemFlushBufferAResource,systemFlushBufferCResource, systemFlushBufferEResource, systemFlushBufferGResource,
+		(* B/D/F/H - B Buffers B1-B4 *)
+		systemFlushBufferBResource, systemFlushBufferDResource, systemFlushBufferFResource, systemFlushBufferHResource
+	};
+	(* Repeat the A/B Gradient for all other buffers *)
+	(* SystemFlush and SystemFlush of FPLC always run 100% BufferA first and then 100% BufferB. We will determine the time for each buffer, and then do all As (A/C/E/G) first and then all Bs (B/D/F/H) *)
+	(* Figure out how long we run each buffer for *)
+	systemFlushBufferTime=instrumentSystemFlushGradient[[2,1]]-instrumentSystemFlushGradient[[1,1]];
+	(* Figure out our flow rate *)
+	systemFlushBufferFlowRate=Lookup[instrumentSystemFlushGradientPacket, InitialFlowRate];
+	(* Put together the tuples *)
+	systemFlushGradientTuples=Join@@MapIndexed[
+		Function[
+			{buffer,index},
+			If[NullQ[buffer],
+				Nothing,
+				Module[
+					{previousBufferCount,startTime,endTime,bufferPos,percentTuple},
+					previousBufferCount=Count[
+						allSystemFlushBufferResources[[1;;(index[[1]]-1)]],
+						Except[Null]
+					];
+					startTime=If[MatchQ[index[[1]],1],
+						(* First time starts at 0.00 Minute *)
+						systemFlushBufferTime*previousBufferCount,
+						(* First time starts at last time + 0.1 Minute *)
+						systemFlushBufferTime*previousBufferCount + 0.1Minute
+					];
+					endTime=systemFlushBufferTime*(previousBufferCount+1);
+					(* Since we do all As first and then all Bs, get the correct index of the buffer in the gradient *)
+					bufferPos=Flatten[Transpose[Partition[Range[8],2]]][[index[[1]]]];
+					percentTuple=ReplacePart[Table[0Percent,8],bufferPos->100Percent];
+					{
+						Join[{startTime},percentTuple, {systemFlushBufferFlowRate}],
+						Join[{endTime},percentTuple, {systemFlushBufferFlowRate}]
+					}
+				]
+			]
+		],
+		allSystemFlushBufferResources
+	];
+
 	(*additionally, we need to make all of the resources needed for the system buffers*)
 	{systemPrimeSampleCleaningBufferResources,systemFlushSampleCleaningBufferResources}=If[anyFlowInjectionQ,
 		Transpose@MapThread[
@@ -11182,37 +11517,119 @@ fplcResourcePackets[mySamples : {ObjectP[Object[Sample]]..}, myUnresolvedOptions
 	];
 
 	(* Create placement field value for SystemPrime buffers (but only if using the avants) *)
-	(* positions 4 and 5 are the most easily accessible *)
+	(* Only use the buffer positions that we need to prime *)
 	systemPrimeBufferPlacements = If[avant150Q || avant25Q,
-		{
-			{Link[systemPrimeBufferAResource], {"Buffer A1 Slot"}},
-			{Link[systemPrimeBufferBResource], {"Buffer B1 Slot"}},
-			(*if we are doing flow injection, we must place the cleaning solutions for the sample inlet lines*)
-			If[anyFlowInjectionQ,
-				Sequence@@MapIndexed[
-					{Link[#1], {"Sample Slot "<>ToString[First[#2]]}}&,
-					DeleteDuplicates[DeleteCases[systemPrimeSampleCleaningBufferResources, Null]]
-				],
-				Nothing
-			]
-		},
+		Join[
+			(* Place all  *)
+			DeleteCases[
+				Transpose[{
+					allSystemPrimeBufferResources,
+					Join[
+						{"Buffer A" <> ToString[#] <> " Slot"}&/@Range[4],
+						{"Buffer B" <> ToString[#] <> " Slot"}&/@Range[4]
+					]
+				}],
+				{Null,_}
+			],
+			{
+				(*if we are doing flow injection, we must place the cleaning solutions for the sample inlet lines*)
+				If[anyFlowInjectionQ,
+					Sequence@@MapIndexed[
+						{Link[#1], {"Sample Slot "<>ToString[First[#2]]}}&,
+						DeleteDuplicates[DeleteCases[systemPrimeSampleCleaningBufferResources, Null]]
+					],
+					Nothing
+				]
+			}
+		],
 		{}
 	];
 
 	(* Create placement field value for SystemFlush buffers *)
 	systemFlushBufferPlacements = If[avant150Q || avant25Q,
-		{
-			{Link[systemFlushBufferAResource], {"Buffer A1 Slot"}},
-			{Link[systemFlushBufferBResource], {"Buffer B1 Slot"}},
-			(*if we are doing flow injection, we must place the cleaning solutions for the sample inlet lines*)
-			If[anyFlowInjectionQ,
-				Sequence@@MapIndexed[
-					{Link[#1], {"Sample Slot "<>ToString[First[#2]]}}&,
-					DeleteDuplicates[DeleteCases[systemFlushSampleCleaningBufferResources, Null]]
-				],
-				Nothing
-			]
-		}
+		Join[
+			(* Place all  *)
+			DeleteCases[
+				Transpose[{
+					{
+						(* B/D/F/H - B Buffers B1-B4 *)
+						systemFlushBufferAResource,systemFlushBufferCResource, systemFlushBufferEResource, systemFlushBufferGResource,
+						(* B/D/F/H - B Buffers B1-B4 *)
+						systemFlushBufferBResource, systemFlushBufferDResource, systemFlushBufferFResource, systemFlushBufferHResource
+					},
+					Join[
+						{"Buffer A" <> ToString[#] <> " Slot"}&/@Range[4],
+						{"Buffer B" <> ToString[#] <> " Slot"}&/@Range[4]
+					]
+				}],
+				{Null,_}
+			],
+			{
+				(*if we are doing flow injection, we must place the cleaning solutions for the sample inlet lines*)
+				If[anyFlowInjectionQ,
+					Sequence@@MapIndexed[
+						{Link[#1], {"Sample Slot "<>ToString[First[#2]]}}&,
+						DeleteDuplicates[DeleteCases[systemFlushSampleCleaningBufferResources, Null]]
+					],
+					Nothing
+				]
+			}
+		],
+		{}
+	];
+
+	systemPrimeFlushGradientObjects=If[avant150Q || avant25Q,
+		Table[CreateID[Object[Method, Gradient]], 2],
+		{Null,Null}
+	];
+	systemPrimeFlushGradientPackets=If[avant150Q || avant25Q,
+		MapThread[
+			Function[
+				{gradientObjectID,gradientTuple,flowRate,bufferAModel,bufferBModel,bufferResourceList},
+				(* Make the gradient packet *)
+				<|
+					Object -> gradientObjectID,
+					Type -> Object[Method, Gradient],
+					BufferA -> If[NullQ[bufferResourceList[[1]]],Null,Link[bufferAModel]],
+					BufferB -> If[NullQ[bufferResourceList[[2]]],Null,Link[bufferBModel]],
+					BufferC -> If[NullQ[bufferResourceList[[3]]],Null,Link[bufferAModel]],
+					BufferD -> If[NullQ[bufferResourceList[[4]]],Null,Link[bufferBModel]],
+					BufferE -> If[NullQ[bufferResourceList[[5]]],Null,Link[bufferAModel]],
+					BufferF -> If[NullQ[bufferResourceList[[6]]],Null,Link[bufferBModel]],
+					BufferG -> If[NullQ[bufferResourceList[[7]]],Null,Link[bufferAModel]],
+					BufferH -> If[NullQ[bufferResourceList[[8]]],Null,Link[bufferBModel]],
+					Replace[Gradient] -> gradientTuple,
+					GradientA -> gradientTuple[[All,{1,2}]],
+					GradientB -> gradientTuple[[All,{1,3}]],
+					GradientC -> gradientTuple[[All,{1,4}]],
+					GradientD -> gradientTuple[[All,{1,5}]],
+					GradientE -> gradientTuple[[All,{1,6}]],
+					GradientF -> gradientTuple[[All,{1,7}]],
+					GradientG -> gradientTuple[[All,{1,8}]],
+					GradientH -> gradientTuple[[All,{1,9}]],
+					FlowRate -> gradientTuple[[All,{1,-1}]],
+					InitialFlowRate -> flowRate,
+					(* No need for the shortcut options for system gradient methods *)
+					FlushTime -> Null,
+					EquilibrationTime -> Null,
+					GradientStart -> Null,
+					GradientEnd -> Null,
+					GradientDuration -> Null,
+					(* Temperature is always 25 Celsius (i.e., ambient) *)
+					Temperature -> $AmbientTemperature
+				|>
+			],
+			{
+				systemPrimeFlushGradientObjects,
+				{systemPrimeGradientTuples,systemFlushGradientTuples},
+				{systemPrimeBufferFlowRate,systemFlushBufferFlowRate},
+				(* BufferA, BufferB *)
+				{systemPrimeBufferAModel,systemPrimeBufferBModel},
+				{systemFlushBufferAModel,systemFlushBufferBModel},
+				{allSystemPrimeBufferResources,allSystemFlushBufferResources}
+			}
+		],
+		{}
 	];
 
 	(* create an instrument resource *)
@@ -11304,10 +11721,16 @@ fplcResourcePackets[mySamples : {ObjectP[Object[Sample]]..}, myUnresolvedOptions
 		FlowCell -> flowCellResource,
 
 		Replace[SampleCaps]->sampleCapResources,
-		SystemPrimeBufferA -> If[avant150Q || avant25Q, Link[systemPrimeBufferAResource]],
-		SystemPrimeBufferB -> If[avant150Q || avant25Q, Link[systemPrimeBufferBResource]],
+		SystemPrimeBufferA -> systemPrimeBufferAResource,
+		SystemPrimeBufferB -> systemPrimeBufferBResource,
+		SystemPrimeBufferC -> systemPrimeBufferCResource,
+		SystemPrimeBufferD -> systemPrimeBufferDResource,
+		SystemPrimeBufferE -> systemPrimeBufferEResource,
+		SystemPrimeBufferF -> systemPrimeBufferFResource,
+		SystemPrimeBufferG -> systemPrimeBufferGResource,
+		SystemPrimeBufferH -> systemPrimeBufferHResource,
 		Replace[SystemPrimeCleaningBuffers]-> If[anyFlowInjectionQ, Link/@systemPrimeSampleCleaningBufferResources, ConstantArray[Null, Length[injectionTable]]],
-		SystemPrimeGradient -> If[avant150Q || avant25Q, Link[systemPrimeGradientMethod]],
+		SystemPrimeGradient -> If[avant150Q || avant25Q, Link[systemPrimeFlushGradientObjects[[1]]]],
 		
 		Replace[SystemPrimeBufferContainerPlacements] -> systemPrimeBufferPlacements,
 		TubingRinseSolution -> Link[
@@ -11325,10 +11748,16 @@ fplcResourcePackets[mySamples : {ObjectP[Object[Sample]]..}, myUnresolvedOptions
 			]
 		]],
 
-		SystemFlushBufferA -> If[avant150Q || avant25Q, Link[systemFlushBufferAResource]],
-		SystemFlushBufferB -> If[avant150Q || avant25Q, Link[systemFlushBufferBResource]],
+		SystemFlushBufferA -> systemFlushBufferAResource,
+		SystemFlushBufferB -> systemFlushBufferBResource,
+		SystemFlushBufferC -> systemFlushBufferCResource,
+		SystemFlushBufferD -> systemFlushBufferDResource,
+		SystemFlushBufferE -> systemFlushBufferEResource,
+		SystemFlushBufferF -> systemFlushBufferFResource,
+		SystemFlushBufferG -> systemFlushBufferGResource,
+		SystemFlushBufferH -> systemFlushBufferHResource,
 		Replace[SystemFlushCleaningBuffers]-> If[anyFlowInjectionQ, Link/@systemFlushSampleCleaningBufferResources,ConstantArray[Null, Length[injectionTable]]],
-		SystemFlushGradient -> If[avant150Q || avant25Q, Link[systemFlushGradientMethod]],
+		SystemFlushGradient -> If[avant150Q || avant25Q, Link[systemPrimeFlushGradientObjects[[2]]]],
 		Replace[SystemFlushBufferContainerPlacements] -> systemFlushBufferPlacements,
 
 		FlowInjectionPurgeCycle -> Lookup[myResolvedOptions, FlowInjectionPurgeCycle],
@@ -11494,23 +11923,23 @@ fplcResourcePackets[mySamples : {ObjectP[Object[Sample]]..}, myUnresolvedOptions
 		],
 		(* TODO this is totally off but will be more sensible once we have the procedure *)
 		Replace[Checkpoints] -> {
-			{"Picking Resources", 1 Hour, "Buffers and columns required to run FPLC experiments are gathered.", Link[Resource[Operator -> Model[User, Emerald, Operator, "Trainee"], Time -> 1 Hour]]},
-			{"Purging Instrument", 1.5 Hour, "System priming buffers are connected to an FPLC instrument and the instrument is purged at a high flow rate.", Link[Resource[Operator -> Model[User, Emerald, Operator, "Trainee"], Time -> 1.5 Hour]]},
-			{"Priming Instrument", 2 Hour, "System priming buffers are connected to an FPLC instrument and the instrument is primed with each buffer at a high flow rate.", Link[Resource[Operator -> Model[User, Emerald, Operator, "Trainee"], Time -> 2Hour]]},
-			{"Preparing Instrument", 1 Hour, "An instrument is configured for the protocol.", Link[Resource[Operator -> Model[User, Emerald, Operator, "Trainee"], Time -> 1 Hour]]},
-			{"Running Samples", totalRunTime, "Samples are injected onto an FPLC and subject to buffer gradients.", Link[Resource[Operator -> Model[User, Emerald, Operator, "Trainee"], Time -> totalRunTime]]},
-			{"Sample Post-Processing", 1 Hour, "Any measuring of volume, weight, or sample imaging post experiment is performed.", Link[Resource[Operator -> Model[User, Emerald, Operator, "Trainee"], Time -> 1 Hour]]},
-			{"Flushing Instrument", 2 Hour, " Buffers are connected to an FPLC instrument and the instrument is flushed with each buffer at a high flow rate.", Link[Resource[Operator -> Model[User, Emerald, Operator, "Trainee"], Time -> 2Hour]]},
-			{"Exporting Data", 20 Minute, "Acquired chromatography data is exported.", Link[Resource[Operator -> Model[User, Emerald, Operator, "Trainee"], Time -> 20 Minute]]},
-			{"Cleaning Up", 30 Minute, "System buffers are taken down, filters are cleaned, and any measuring of volume on the used system buffers is performed.", Link[Resource[Operator -> Model[User, Emerald, Operator, "Trainee"], Time -> 30 Minute]]},
-			{"Returning Materials", 15 Minute, "Samples are returned to storage.", Link[Resource[Operator -> Model[User, Emerald, Operator, "Trainee"], Time -> 15 Minute]]}
+			{"Picking Resources", 1 Hour, "Buffers and columns required to run FPLC experiments are gathered.", Link[Resource[Operator -> $BaselineOperator, Time -> 1 Hour]]},
+			{"Purging Instrument", 1.5 Hour, "System priming buffers are connected to an FPLC instrument and the instrument is purged at a high flow rate.", Link[Resource[Operator -> $BaselineOperator, Time -> 1.5 Hour]]},
+			{"Priming Instrument", 2 Hour, "System priming buffers are connected to an FPLC instrument and the instrument is primed with each buffer at a high flow rate.", Link[Resource[Operator -> $BaselineOperator, Time -> 2Hour]]},
+			{"Preparing Instrument", 1 Hour, "An instrument is configured for the protocol.", Link[Resource[Operator -> $BaselineOperator, Time -> 1 Hour]]},
+			{"Running Samples", totalRunTime, "Samples are injected onto an FPLC and subject to buffer gradients.", Link[Resource[Operator -> $BaselineOperator, Time -> totalRunTime]]},
+			{"Sample Post-Processing", 1 Hour, "Any measuring of volume, weight, or sample imaging post experiment is performed.", Link[Resource[Operator -> $BaselineOperator, Time -> 1 Hour]]},
+			{"Flushing Instrument", 2 Hour, " Buffers are connected to an FPLC instrument and the instrument is flushed with each buffer at a high flow rate.", Link[Resource[Operator -> $BaselineOperator, Time -> 2Hour]]},
+			{"Exporting Data", 20 Minute, "Acquired chromatography data is exported.", Link[Resource[Operator -> $BaselineOperator, Time -> 20 Minute]]},
+			{"Cleaning Up", 30 Minute, "System buffers are taken down, filters are cleaned, and any measuring of volume on the used system buffers is performed.", Link[Resource[Operator -> $BaselineOperator, Time -> 30 Minute]]},
+			{"Returning Materials", 15 Minute, "Samples are returned to storage.", Link[Resource[Operator -> $BaselineOperator, Time -> 15 Minute]]}
 		},
 		Operator -> Link[Lookup[expandedResolvedOptions, Operator]],
 		SubprotocolDescription -> Lookup[expandedResolvedOptions, SubprotocolDescription]
 	|>;
 
 	(* generate a packet with the shared fields *)
-	sharedFieldPacket = populateSamplePrepFields[mySamples, myResolvedOptions, Cache -> cache];
+	sharedFieldPacket = populateSamplePrepFields[mySamples, myResolvedOptions, Cache -> cache, Simulation -> updatedSimulation];
 
 	(* Merge the shared fields with the specific fields *)
 	finalizedPacket = Join[protocolPacket, sharedFieldPacket];
@@ -11519,6 +11948,7 @@ fplcResourcePackets[mySamples : {ObjectP[Object[Sample]]..}, myUnresolvedOptions
 	allPackets = Flatten[{
 		finalizedPacket,
 		uniqueGradientPackets,
+		systemPrimeFlushGradientPackets,
 		newFractionPackets
 	}];
 
@@ -11529,8 +11959,8 @@ fplcResourcePackets[mySamples : {ObjectP[Object[Sample]]..}, myUnresolvedOptions
 	(* call fulfillableResourceQ on all the resources we created *)
 	{fulfillable, frqTests} = Which[
 		MatchQ[$ECLApplication, Engine], {True, {}},
-		gatherTests, Resources`Private`fulfillableResourceQ[allResourceBlobs, Output -> {Result, Tests}, FastTrack -> Lookup[myResolvedOptions, FastTrack],Site->Lookup[myResolvedOptions,Site], Cache -> cache],
-		True, {Resources`Private`fulfillableResourceQ[allResourceBlobs, FastTrack -> Lookup[myResolvedOptions, FastTrack],Site->Lookup[myResolvedOptions,Site], Messages -> messages, Cache -> cache], Null}
+		gatherTests, Resources`Private`fulfillableResourceQ[allResourceBlobs, Output -> {Result, Tests}, FastTrack -> Lookup[myResolvedOptions, FastTrack],Site->Lookup[myResolvedOptions,Site], Cache -> cache,Simulation->updatedSimulation],
+		True, {Resources`Private`fulfillableResourceQ[allResourceBlobs, FastTrack -> Lookup[myResolvedOptions, FastTrack],Site->Lookup[myResolvedOptions,Site], Messages -> messages, Cache -> cache, Simulation->updatedSimulation],Null}
 	];
 
 	(* generate the tests rule *)
@@ -11583,13 +12013,13 @@ DefineOptions[ExperimentFPLCOptions,
 ];
 
 
-ExperimentFPLCOptions[myInput : ListableP[ObjectP[{Object[Container], Object[Sample]}] | _String], myOptions : OptionsPattern[]] := Module[
+ExperimentFPLCOptions[myInput : ListableP[ObjectP[{Object[Container], Object[Sample], Model[Sample]}] | _String], myOptions : OptionsPattern[]] := Module[
 	{listedOptions, noOutputOptions, options},
 
 	(* get the options as a list *)
 	listedOptions = ToList[myOptions];
 
-	(* remove the Output and OutputFormat option before passing to the core function because it doens't make sense here *)
+	(* remove the Output and OutputFormat option before passing to the core function because it doesn't make sense here *)
 	noOutputOptions = DeleteCases[listedOptions, Alternatives[Output -> _, OutputFormat -> _]];
 
 	(* get only the options for ExperimentFPLC *)
@@ -11603,7 +12033,7 @@ ExperimentFPLCOptions[myInput : ListableP[ObjectP[{Object[Container], Object[Sam
 ];
 
 
-ExperimentFPLCPreview[myInput : ListableP[ObjectP[{Object[Container], Object[Sample]}] | _String], myOptions : OptionsPattern[ExperimentFPLC]] :=
+ExperimentFPLCPreview[myInput : ListableP[ObjectP[{Object[Container], Object[Sample], Model[Sample]}] | _String], myOptions : OptionsPattern[ExperimentFPLC]] :=
 	ExperimentFPLC[myInput, Append[ToList[myOptions], Output -> Preview]];
 
 
@@ -11613,14 +12043,14 @@ DefineOptions[ValidExperimentFPLCQ,
 ];
 
 
-ValidExperimentFPLCQ[myInput : ListableP[ObjectP[{Object[Container], Object[Sample]}] | _String], myOptions : OptionsPattern[ValidExperimentFPLCQ]] := Module[
+ValidExperimentFPLCQ[myInput : ListableP[ObjectP[{Object[Container], Object[Sample], Model[Sample]}] | _String], myOptions : OptionsPattern[ValidExperimentFPLCQ]] := Module[
 	{listedOptions, listedInput, preparedOptions, filterTests, initialTestDescription, allTests, verbose, outputFormat},
 
 	(* get the options as a list *)
 	listedOptions = ToList[myOptions];
 	listedInput = ToList[myInput];
 
-	(* remove the Output option before passing to the core function because it doens't make sense here *)
+	(* remove the Output option before passing to the core function because it doesn't make sense here *)
 	preparedOptions = DeleteCases[listedOptions, (Output | Verbose | OutputFormat) -> _];
 
 	(* return only the tests for ExperimentFPLC *)
@@ -11659,6 +12089,16 @@ ValidExperimentFPLCQ[myInput : ListableP[ObjectP[{Object[Container], Object[Samp
 
 	(* run all the tests as requested *)
 	Lookup[RunUnitTest[<|"ValidExperimentFPLCQ" -> allTests|>, OutputFormat -> outputFormat, Verbose -> verbose], "ValidExperimentFPLCQ"]
+];
+
+(* ::Subsubsection::Closed:: *)
+(*fplcGradientSearch*)
+
+(* Function to search the database for all FPLC System Prime/Flush Gradients. *)
+fplcSystemGradientSearch[fakeString:_String] := fplcSystemGradientSearch[fakeString] = Module[{},
+	(*Add allCentrifugeEquipmentSearch to list of Memoized functions*)
+	AppendTo[$Memoization,Experiment`Private`fplcSystemGradientSearch];
+	Search[Object[Method, Gradient], Name == (___~~"System"~~___~~"AKTA Avant"~~___) && Notebook == Null]
 ];
 
 defaultGradientFPLC[myDefaultFlowRate : FlowRateP] := {

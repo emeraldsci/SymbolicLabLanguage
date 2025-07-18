@@ -21,20 +21,20 @@ DefineOptions[ExperimentMeasureCount,
 		IndexMatching[
 			IndexMatchingInput->"experiment samples",
 			{
-				OptionName -> ParameterizeTablets,
+				OptionName -> ParameterizeSolidUnits,
 				Default -> Automatic,
 				AllowNull-> False,
 				Widget -> Widget[Type->Enumeration, Pattern:>BooleanP],
-				Description-> "For each input, indicates if a small number of tablets should be weighed to determine the average tablet weight of this sample. If specified when TabletWeight is already informed, the newly recorded weight of the tablets will overwrite the existing TabletWeight.",
-				ResolutionDescription-> "Automatic will resolve to True if TabletWeight is unknown and/or TabletParameterizationReplicates is specified, or False if TabletWeight is already informed."
+				Description-> "For each input, indicates if a small number of tablets or sachets should be weighed to determine the average solid unit weight of this sample. If specified when SolidUnitWeight is already informed, the newly recorded weight of the tablets or sachets will overwrite the existing SolidUnitWeight.",
+				ResolutionDescription-> "Automatic will resolve to True if SolidUnitWeight is unknown and/or SolidUnitParameterizationReplicates is specified, or False if SolidUnitWeight is already informed."
 			},
 			{
-				OptionName -> TabletParameterizationReplicates,
+				OptionName -> SolidUnitParameterizationReplicates,
 				Default -> Automatic,
 				AllowNull -> True,
 				Widget-> Widget[Type->Number, Pattern :> RangeP[5, 20, 1]],
-				Description-> "For each input, the number of tablets that should be weighed to determine the average tablet weight of this sample. Cannot be specified if ParameterizeTablets is set to False. If specified when TabletWeight is already informed, the newly recorded weight of the tablets will overwrite the existing TabletWeight.",
-				ResolutionDescription-> "If the TabletWeight is unknown or ParameterizeTablets is set to True, automatically resolves to 10 tablets, if enough are available. If TabletWeight is already informed and/or ParameterizeTablets is set to False, resolves to Null."
+				Description-> "For each input, the number of tablets or sachets that should be weighed to determine the average solid unit weight of this sample. Cannot be specified if ParameterizeSolidUnits is set to False. If specified when SolidUnitWeight is already informed, the newly recorded weight of the tablets or sachets will overwrite the existing SolidUnitWeight.",
+				ResolutionDescription-> "If the SolidUnitWeight is unknown or ParameterizeSolidUnits is set to True, automatically resolves to 10, if enough are available. If SolidUnitWeight is already informed and/or ParameterizeSolidUnits is set to False, resolves to Null."
 			},
 			{
 				OptionName -> MeasureTotalWeight,
@@ -48,15 +48,31 @@ DefineOptions[ExperimentMeasureCount,
 		{
 			OptionName->NumberOfReplicates,
 			Default->Null,
-			Description -> "The number of times to repeat the experiment on each provided sample. Note that if specified, the recorded measurements will be pooled for determining the count of the sample(s): the TabletWeight and the Mass in Object[Sample] (if determined in this experiment) will be calculated from the average of all experimental replicates and the count of the sample is calculated from the average TabletWeight and the average Mass.",
+			Description -> "The number of times to repeat the experiment on each provided sample. Note that if specified, the recorded measurements will be pooled for determining the count of the sample(s): the SolidUnitWeight and the Mass in Object[Sample] (if determined in this experiment) will be calculated from the average of all experimental replicates and the count of the sample is calculated from the average SolidUnitWeight and the average Mass.",
 			AllowNull->True,
 			(* Category->"Protocol",*)
 			Widget->Widget[Type->Number,Pattern:>GreaterEqualP[2,1]]
 		},
 		ProtocolOptions,
 		ImageSampleOption,
+		PreparatoryUnitOperationsOption,
+		ModifyOptions[
+			ModelInputOptions,
+			PreparedModelAmount,
+			{
+				ResolutionDescription -> "Automatically set to 1."
+			}
+		],
+		ModifyOptions[
+			ModelInputOptions,
+			PreparedModelContainer,
+			{
+				ResolutionDescription -> "If PreparedModelAmount is set to All and the input model has a product associated with both Amount and DefaultContainerModel populated, automatically set to the DefaultContainerModel value in the product. Otherwise, automatically set to Model[Container, Vessel, \"50mL Tube\"]."
+			}
+		],
 		SamplesInStorageOptions,
-		SubprotocolDescriptionOption
+		SubprotocolDescriptionOption,
+		SimulationOption
 	}
 ];
 
@@ -64,29 +80,25 @@ DefineOptions[ExperimentMeasureCount,
 (* === ERRORS go there === *)
 
 (* Errors before the resolution *)
-Warning::NonTabletSamples="The field Tablet in the sample(s) `1` do(es) not contain tablets. Remove the sample(s) from the inputs or double check that the sample(s) do(es) contain tablets.";
+Warning::NonTabletOrSachetSamples="The sample(s) `1` do(es) not contain tablets or sachets, as indicated by the fields Tablet and Sachet. Remove the sample(s) from the inputs or double check that the sample(s) do(es) contain tablets or sachets.";
 Error::IncompatibleContainer="The following sample(s), `1`, need(s) to be total-weight measured but are in container(s) that is/are not compatible with ExperimentMeasureWeight. Consider moving the sample(s) into a container that matches MeasureWeightContainerP or remove them from the input before proceeding.";
-Error::ParameterizationRequired="For sample(s) `1`, ParameterizeTablets is set to False, although the TabletWeight is not known. As a result, the count of the sample(s) cannot be determined. Consider setting ParametererizeTablets to True (or leave it blank) in order to parameterize the tablets and record a TabletWeight.";
-Error::InvalidParameterizationOptions="For sample(s) `1`, TabletParameterizationReplicates is specified but ParameterizeTablets is set to False. TabletParameterizationReplicates can only be specified when tablets are being parameterized. Consider setting ParametererizeTablets to True in order to parameterize the tablets, or leave TabletParameterizationReplicates blank if the TabletWeight is known and you would like to use the currently recorded tablet weight to calculate the count.";
-Error::ParameterizationReplicatesRequired="For sample(s) `1`, tablets need to be parameterized (because ParameterizeTablets is True and/or the TabletWeight is not known), however TabletParameterizationReplicates is set to Null. Consider specifying TabletParameterizationReplicates to the number of tablets you would like to use for paramteterization (or leave it blank), or remove the sample(s) `1` from the input before proceeding.";
-Error::TotalWeightRequired="For sample(s) `1`, MeasureTotalWeight is set to False although the Mass of the samples is not known. As a result, the count of the sample(s) cannot be determined.  TabletParameterizationReplicates can only be specified when tablets are being parameterized. Consider setting MeasureTotalWeight to True (or leave it blank) in order to record the total weight of the sample(s).";
+Error::ParameterizationRequired="For sample(s) `1`, ParameterizeSolidUnits is set to False, although the SolidUnitWeight is not known. As a result, the count of the sample(s) cannot be determined. Consider setting ParametererizeSolidUnits to True (or leave it blank) in order to parameterize the tablets or sachets and record a SolidUnitWeight.";
+Error::InvalidParameterizationOptions="For sample(s) `1`, SolidUnitParameterizationReplicates is specified but ParameterizeSolidUnits is set to False. SolidUnitParameterizationReplicates can only be specified when tablets or sachets are being parameterized. Consider setting ParametererizeSolidUnits to True in order to parameterize the tablets or sachets, or leave SolidUnitParameterizationReplicates blank if the SolidUnitWeight is known and you would like to use the currently recorded solid unit weight to calculate the count.";
+Error::ParameterizationReplicatesRequired="For sample(s) `1`, tablets and sachets need to be parameterized (because ParameterizeSolidUnits is True and/or the SolidUnitWeight is not known), however SolidUnitParameterizationReplicates is set to Null. Consider specifying SolidUnitParameterizationReplicates to the number of tablets or sachets you would like to use for paramteterization (or leave it blank), or remove the sample(s) `1` from the input before proceeding.";
+Error::TotalWeightRequired="For sample(s) `1`, MeasureTotalWeight is set to False although the Mass of the samples is not known. As a result, the count of the sample(s) cannot be determined.  SolidUnitParameterizationReplicates can only be specified when tablets or sachets are being parameterized. Consider setting MeasureTotalWeight to True (or leave it blank) in order to record the total weight of the sample(s).";
 (* Warnings before the resolution *)
 Warning::MassKnown="For samples `1`, the MeasureTotalWeight is set to True although the Mass of the sample(s) is known. As a result the total weight of the sample(s) will be re-measured and the Mass in Object[Sample] overwritten with the newly recorded value. Consider leaving MeasureTotalWeight blank or set it to False, if you would like to calculate the count using the currently recorded Mass.";
-Warning::TabletWeightKnown="For sample(s) `1`, the option `2` is specified although the TabletWeight is known. As a result the tablets will be re-parameterized and the TabletWeight overwritten with the newly recorded value. Consider leaving `2` blank if you would like to keep the currently existing TabletWeight.";
+Warning::SolidUnitWeightKnown="For sample(s) `1`, the option `2` is specified although the SolidUnitWeight is known. As a result the tablets or sachets will be re-parameterized and the SolidUnitWeight overwritten with the newly recorded value. Consider leaving `2` blank if you would like to keep the currently existing SolidUnitWeight.";
 
 
 (* ::Subsubsection::Closed:: *)
 (*ExperimentMeasureCount*)
 
 
-ExperimentMeasureCount[myContainers:ListableP[ObjectP[{Object[Container],Object[Sample],Object[Item]}]|_String|{LocationPositionP,_String|ObjectP[Object[Container]]}],myOptions:OptionsPattern[]]:=Module[
-	{listedOptions,listedContainers,outputSpecification,output,gatherTests,validSamplePreparationResult,mySamplesWithPreparedSamples,
-	myOptionsWithPreparedSamples,samplePreparationCache,containerToSampleResult,containerToSampleOutput,samples,sampleCache,
-	sampleOptions,containerToSampleTests,updatedCache},
-
-	(* Make sure we're working with a list of options *)
-	(* Remove temporal links and throw warnings *)
-	{listedContainers,listedOptions}=removeLinks[ToList[myContainers],ToList[myOptions]];
+ExperimentMeasureCount[myContainers:ListableP[ObjectP[{Object[Container],Object[Sample],Object[Item],Model[Sample]}]|_String|{LocationPositionP,_String|ObjectP[Object[Container]]}],myOptions:OptionsPattern[]]:=Module[
+	{outputSpecification,output,gatherTests,validSamplePreparationResult,mySamplesWithPreparedSamples,
+	myOptionsWithPreparedSamples,containerToSampleSimulation,containerToSampleResult,containerToSampleOutput,samples,sampleCache,
+	sampleOptions,containerToSampleTests,updatedSimulation},
 
 	(* Determine the requested return value from the function *)
 	outputSpecification=Quiet[OptionValue[Output]];
@@ -98,31 +110,33 @@ ExperimentMeasureCount[myContainers:ListableP[ObjectP[{Object[Container],Object[
 	(* Simulate our sample preparation. *)
 	validSamplePreparationResult=Check[
 		(* Simulate sample preparation. *)
-		{mySamplesWithPreparedSamples,myOptionsWithPreparedSamples,samplePreparationCache}=simulateSamplePreparationPackets[
+		{mySamplesWithPreparedSamples,myOptionsWithPreparedSamples,updatedSimulation}=simulateSamplePreparationPacketsNew[
 			ExperimentMeasureCount,
-			listedContainers,
-			ToList[listedOptions]
+			ToList[myContainers],
+			ToList[myOptions],
+			DefaultPreparedModelAmount -> 1,
+			DefaultPreparedModelContainer -> Model[Container, Vessel, "50mL Tube"]
 		],
 		$Failed,
-	 	{Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
+	 	{Download::ObjectDoesNotExist, Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
 	];
 
 	(* If we are given an invalid define name, return early. *)
 	If[MatchQ[validSamplePreparationResult,$Failed],
 		(* Return early. *)
-		(* Note: We've already thrown a message above in simulateSamplePreparationPackets. *)
-		ClearMemoization[Experiment`Private`simulateSamplePreparationPackets];Return[$Failed]
+		(* Note: We've already thrown a message above in simulateSamplePreparationPacketsNew. *)
+		Return[$Failed]
 	];
 
 	(* Convert our given containers into samples and sample index-matched options. *)
 	containerToSampleResult=If[gatherTests,
 		(* We are gathering tests. This silences any messages being thrown. *)
-		{containerToSampleOutput,containerToSampleTests}=containerToSampleOptions[
+		{containerToSampleOutput,containerToSampleTests,containerToSampleSimulation}=containerToSampleOptions[
 			ExperimentMeasureCount,
 			mySamplesWithPreparedSamples,
 			myOptionsWithPreparedSamples,
-			Output->{Result,Tests},
-			Cache->samplePreparationCache
+			Output->{Result,Tests,Simulation},
+			Simulation->updatedSimulation
 		];
 
 		(* Therefore, we have to run the tests to see if we encountered a failure. *)
@@ -133,23 +147,17 @@ ExperimentMeasureCount[myContainers:ListableP[ObjectP[{Object[Container],Object[
 
 		(* We are not gathering tests. Simply check for Error::InvalidInput and Error::InvalidOption. *)
 		Check[
-			containerToSampleOutput=containerToSampleOptions[
+			{containerToSampleOutput,containerToSampleSimulation}=containerToSampleOptions[
 				ExperimentMeasureCount,
 				mySamplesWithPreparedSamples,
 				myOptionsWithPreparedSamples,
-				Output->Result,
-				Cache->samplePreparationCache
+				Output->{Result,Simulation},
+				Simulation->updatedSimulation
 			],
 			$Failed,
 			{Error::EmptyContainers, Error::ContainerEmptyWells, Error::WellDoesNotExist}
 		]
 	];
-
-	(* Update our cache with our new simulated values. *)
-	updatedCache=Flatten[{
-		samplePreparationCache,
-		Lookup[listedOptions,Cache,{}]
-	}];
 
 	(* If we were given an empty container, return early. *)
 	If[MatchQ[containerToSampleResult,$Failed],
@@ -162,26 +170,28 @@ ExperimentMeasureCount[myContainers:ListableP[ObjectP[{Object[Container],Object[
 		},
 
 		(* Split up our containerToSample result into the samples and sampleOptions. *)
-		{samples,sampleOptions, sampleCache}=containerToSampleOutput;
+		{samples,sampleOptions}=containerToSampleOutput;
 
 		(* Call our main function with our samples and converted options. *)
-		ExperimentMeasureCount[samples,ReplaceRule[sampleOptions,Cache->Flatten[{updatedCache,sampleCache}]]]
+		ExperimentMeasureCount[samples,ReplaceRule[sampleOptions,Simulation->containerToSampleSimulation]]
 	]
 
 ];
 
 
 ExperimentMeasureCount[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:OptionsPattern[]]:=Module[
-	{listedOptions,listedSamples,outputSpecification,output,gatherTests,messages,validSamplePreparationResult,mySamplesWithPreparedSamples,
-		myOptionsWithPreparedSamples,samplePreparationCache,safeOps,safeOpsTests,validLengths,validLengthTests,
-		upload,confirm,fastTrack,parentProt,cache,templatedOptions,templateTests,inheritedOptions,expandedSafeOps,
-		transferContainerObjects,objectSampleFields,objectContainerFields,modelContainerFields,cacheBall,resolvedOptionsResult,resolvedOptions,resolvedOptionsTests,collapsedResolvedOptions,
-		protocolObject,resourcePackets,resourcePacketTests,allTests,validQ,previewRule,optionsRule,testsRule,resultRule,
-		mySamplesWithPreparedSamplesNamed,myOptionsWithPreparedSamplesNamed,safeOptionsNamed},
+	{
+		listedOptions,listedSamples,outputSpecification,output,gatherTests,messages,validSamplePreparationResult,mySamplesWithPreparedSamples,
+		myOptionsWithPreparedSamples,updatedSimulation,safeOps,safeOptionsNamed,safeOpsTests,validLengths,validLengthTests,
+		upload,confirm,canaryBranch,fastTrack,parentProt,cache,templatedOptions,templateTests,inheritedOptions,expandedSafeOps,
+		objectSampleFields,objectContainerFields,modelContainerFields,cacheBall,resolvedOptionsResult,resolvedOptions,
+		resolvedOptionsTests,collapsedResolvedOptions,resourcePackets,resourcePacketTests,allTests,validQ,previewRule,optionsRule,
+		testsRule,resultRule,mySamplesWithPreparedSamplesNamed,myOptionsWithPreparedSamplesNamed
+	},
 
 	(* Make sure we're working with a list of options *)
 	(* Remove temporal links and throw warnings *)
-	{listedSamples,listedOptions}=removeLinks[ToList[mySamples],ToList[myOptions]];
+	{listedSamples, listedOptions} = removeLinks[ToList[mySamples], ToList[myOptions]];
 
 	(* Determine the requested return value from the function *)
 	outputSpecification=OptionValue[Output];
@@ -194,20 +204,20 @@ ExperimentMeasureCount[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:Op
 	(* Simulate our sample preparation. *)
 	validSamplePreparationResult=Check[
 		(* Simulate sample preparation. *)
-		{mySamplesWithPreparedSamplesNamed,myOptionsWithPreparedSamplesNamed,samplePreparationCache}=simulateSamplePreparationPackets[
+		{mySamplesWithPreparedSamplesNamed,myOptionsWithPreparedSamplesNamed,updatedSimulation}=simulateSamplePreparationPacketsNew[
 			ExperimentMeasureCount,
 			listedSamples,
-			ToList[listedOptions]
+			listedOptions
 		],
 		$Failed,
-	 	{Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
+	 	{Download::ObjectDoesNotExist, Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
 	];
 
 	(* If we are given an invalid define name, return early. *)
 	If[MatchQ[validSamplePreparationResult,$Failed],
 		(* Return early. *)
-		(* Note: We've already thrown a message above in simulateSamplePreparationPackets. *)
-		ClearMemoization[Experiment`Private`simulateSamplePreparationPackets];Return[$Failed]
+		(* Note: We've already thrown a message above in simulateSamplePreparationPacketsNew. *)
+		Return[$Failed]
 	];
 
 	(* Call SafeOptions to make sure all options match pattern *)
@@ -217,7 +227,7 @@ ExperimentMeasureCount[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:Op
 	];
 
 	(*change all Names to objects *)
-	{mySamplesWithPreparedSamples,safeOps,myOptionsWithPreparedSamples}=sanitizeInputs[mySamplesWithPreparedSamplesNamed,safeOptionsNamed,myOptionsWithPreparedSamplesNamed];
+	{mySamplesWithPreparedSamples,safeOps,myOptionsWithPreparedSamples}=sanitizeInputs[mySamplesWithPreparedSamplesNamed,safeOptionsNamed,myOptionsWithPreparedSamplesNamed, Simulation -> updatedSimulation];
 
 	(* Call ValidInputLengthsQ to make sure all options are the right length *)
 	{validLengths,validLengthTests}=If[gatherTests,
@@ -246,7 +256,7 @@ ExperimentMeasureCount[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:Op
 	];
 
 	(* get assorted hidden options *)
-	{upload, confirm, fastTrack, parentProt, cache} = Lookup[safeOps, {Upload, Confirm, FastTrack, ParentProtocol, Cache}];
+	{upload, confirm, canaryBranch, fastTrack, parentProt, cache} = Lookup[safeOps, {Upload, Confirm, CanaryBranch, FastTrack, ParentProtocol, Cache}];
 
 	(* Use any template options to get values for options not specified in myOptions *)
 	{templatedOptions,templateTests}=If[gatherTests,
@@ -271,7 +281,7 @@ ExperimentMeasureCount[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:Op
 	expandedSafeOps=Last[ExpandIndexMatchedInputs[ExperimentMeasureCount,{mySamplesWithPreparedSamples},inheritedOptions]];
 
 	(* Define the fields to download from objects *)
-	objectSampleFields=Union[{TabletWeight,Tablet},SamplePreparationCacheFields[Object[Sample]]];
+	objectSampleFields=Union[{SolidUnitWeight,Tablet,Sachet},SamplePreparationCacheFields[Object[Sample]]];
 
 	(* Define the fields to download from container of objects *)
 	objectContainerFields=SamplePreparationCacheFields[Object[Container]];
@@ -281,28 +291,30 @@ ExperimentMeasureCount[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:Op
 
 	(*-- DOWNLOAD THE INFORMATION THAT WE NEED FOR OUR OPTION RESOLVER AND RESOURCE PACKET FUNCTION --*)
 	cacheBall=FlattenCachePackets[{
-		samplePreparationCache,
+		cache,
 		Quiet[
 			Download[
-				{mySamplesWithPreparedSamples,mySamplesWithPreparedSamples,mySamplesWithPreparedSamples},
+				ToList@mySamplesWithPreparedSamples,
 				{
-					{Packet[objectSampleFields]},
-					{Packet[Container[objectContainerFields]]},
-          {Packet[Container[Model[modelContainerFields]]]}
+					Evaluate@Packet[objectSampleFields],
+					Packet[Container[objectContainerFields]],
+					Packet[Container[Model[modelContainerFields]]]
 				},
-				Cache -> Flatten[{samplePreparationCache,Lookup[safeOps,Cache,{}]}],
+				Cache -> cache,
+				Simulation -> updatedSimulation,
 				Date -> Now
 			],
-		Download::FieldDoesntExist]
+			{Download::FieldDoesntExist, Download::MissingCacheField}
+		]
 	}];
 
 	(* TODO here we should filter out invalid input if we're in a sub protocol like MeasureVolume and MeasureWeight do it as well (see "filteredContainersIn" in MW) - only valid input get's passed into the resolver below *)
-	(* invalid input here would be any samples that are no tablets, are discarded, or are in containers not compatible with MW and we would have to do MW on the entire container *)
+	(* invalid input here would be any samples that are no tablets or sachets, are discarded, or are in containers not compatible with MW and we would have to do MW on the entire container *)
 
 	(* Build the resolved options - check whether we need to return early *)
 	resolvedOptionsResult=If[gatherTests,
 		(* We are gathering tests. This silences any messages being thrown. *)
-		{resolvedOptions,resolvedOptionsTests}=resolveExperimentMeasureCountOptions[mySamplesWithPreparedSamples,expandedSafeOps, Cache->cacheBall,Output->{Result,Tests}];
+		{resolvedOptions,resolvedOptionsTests}=resolveExperimentMeasureCountOptions[mySamplesWithPreparedSamples,expandedSafeOps,Cache->cacheBall,Simulation->updatedSimulation,Output->{Result,Tests}];
 
 		(* Therefore, we have to run the tests to see if we encountered a failure. *)
 		If[RunUnitTest[<|"Tests"->resolvedOptionsTests|>,OutputFormat->SingleBoolean,Verbose->False],
@@ -312,7 +324,7 @@ ExperimentMeasureCount[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:Op
 
 		(* We are not gathering tests. Simply check for Error::InvalidInput and Error::InvalidOption; if those were thrown, we encountered a failure *)
 		Check[
-			{resolvedOptions,resolvedOptionsTests}={resolveExperimentMeasureCountOptions[mySamplesWithPreparedSamples,expandedSafeOps,Cache->cacheBall],{}},
+			{resolvedOptions,resolvedOptionsTests}={resolveExperimentMeasureCountOptions[mySamplesWithPreparedSamples,expandedSafeOps,Cache->cacheBall,Simulation->updatedSimulation],{}},
 			$Failed,
 			{Error::InvalidInput,Error::InvalidOption}
 		]
@@ -338,8 +350,8 @@ ExperimentMeasureCount[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:Op
 
 	(* Build packets with resources *)
 	{resourcePackets,resourcePacketTests} = If[gatherTests,
-		measureCountResourcePackets[mySamplesWithPreparedSamples,templatedOptions,resolvedOptions,Cache->cacheBall,Output->{Result,Tests}],
-		{measureCountResourcePackets[mySamplesWithPreparedSamples,templatedOptions,resolvedOptions,Cache->cacheBall],{}}
+		measureCountResourcePackets[mySamplesWithPreparedSamples,templatedOptions,resolvedOptions,Cache->cacheBall,Simulation->updatedSimulation,Output->{Result,Tests}],
+		{measureCountResourcePackets[mySamplesWithPreparedSamples,templatedOptions,resolvedOptions,Cache->cacheBall,Simulation->updatedSimulation],{}}
 	];
 
 	(* get all the tests together *)
@@ -375,6 +387,7 @@ ExperimentMeasureCount[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:Op
 		UploadProtocol[
 			resourcePackets,
 			Confirm -> confirm,
+			CanaryBranch -> canaryBranch,
 			Upload -> upload,
 			ParentProtocol -> parentProt,
 			Priority->Lookup[safeOps,Priority],
@@ -382,7 +395,8 @@ ExperimentMeasureCount[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:Op
 			HoldOrder->Lookup[safeOps,HoldOrder],
 			QueuePosition->Lookup[safeOps,QueuePosition],
 			ConstellationMessage->Object[Protocol,MeasureCount],
-			Cache->samplePreparationCache
+			Cache->cacheBall,
+			Simulation->updatedSimulation
 		],
 		$Failed
 	];
@@ -404,26 +418,27 @@ ExperimentMeasureCount[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:Op
 
 DefineOptions[
 	resolveExperimentMeasureCountOptions,
-	Options:>{HelperOutputOption,CacheOption}
+	Options:>{HelperOutputOption,CacheOption,SimulationOption}
 ];
 
 resolveExperimentMeasureCountOptions[mySamples:{ObjectP[Object[Sample]]...},myOptions:{_Rule...},myResolutionOptions:OptionsPattern[resolveExperimentMeasureCountOptions]]:=Module[
-	{outputSpecification,output,test,gatherTests,messages,inheritedCache,samplePrepOptions,measureCountOptions,measureCountOptionsAssociation,
-	allSamplePackets,transferContainerPackets,
-	discardedSamplePackets,discardedInvalidInputs,discardedTests,
-	nonTabletBoolean,incompatibleContainerSamples,incompatibleContainerTests,
-	nonTabletSamplePackets,nonTabletInvalidInputs,tabletsTests,nonTabletInvalidInputMessage,
-	replicatesNotRequiredSamples,replicatesNotRequiredWarning,replicatesNotRequiredTests,
-	parameterizationNotRequiredSamples,parameterizationNotRequiredWarning,parameterizationNotRequiredTests,
-	requireParameterizationMismatches,parameterizeTabletsMismatchOption,invalidParameterizeTabletsInputs,
-	invalidParameterizeTabletsOption,parameterizeTabletsOptionInvalidTests,massKnownMismatchSamples,massKnownWarning,massKnownTests,
-	parameterizationOptionsMismatches,parameterizeReplicateMismatchOptions,invalidParameterizeReplicateInput,invalidParameterizeOptions,parameterizeOptionsInvalidTests,
-	replicatesRequiredMismatches,requireReplicatesOptions,invalidRequireReplicatesInput,requireReplicatesInvalidOptions,replicatesRequiredTests,
-	requireTotalWeightMismatches,weightMismatchOptions,invalidTotalWeightInput,invalidTotalWeightOption,totalWeightNeededTests,
-	mapThreadFriendlyOptions,measureTotalWeightList,parameterizeTabletsList,tabletParameterizationReplicatesList,
-	myOptionsInSub,	replicates,name,confirm,template,samplesInStorageCondition,cache,operator,parentProtocol,
-	upload,outputOption,email,imageSample,resolvedEmail,resolvedImageSample,numberOfReplicates,
-	resolvedOptions,allTests,resultRule,testsRule,invalidInputs,invalidOptions},
+	{
+		outputSpecification, output, gatherTests, messages, inheritedCache, simulation, samplePrepOptions, measureCountOptions,
+		measureCountOptionsAssociation, simulatedSamples,resolvedSamplePrepOptions,updatedSimulation,samplePrepTests,
+		allSamplePackets, discardedSamplePackets, discardedInvalidInputs, discardedTests, nonTabletOrSachetBoolean,incompatibleContainerSamples,incompatibleContainerTests,
+		nonTabletOrSachetSamplePackets, nonTabletOrSachetInvalidInputs, tabletOrSachetsTests, nonTabletOrSachetInvalidInputMessage,
+		replicatesNotRequiredSamples,replicatesNotRequiredWarning,replicatesNotRequiredTests,
+		parameterizationNotRequiredSamples,parameterizationNotRequiredWarning,parameterizationNotRequiredTests,
+		requireParameterizationMismatches,parameterizeSolidUnitsMismatchOption, invalidParameterizeSolidUnitsInputs, invalidParameterizeSolidUnitsOption, parameterizeSolidUnitsOptionInvalidTests,
+		massKnownMismatchSamples, massKnownWarning, massKnownTests, parameterizationOptionsMismatches, parameterizeReplicateMismatchOptions,
+		invalidParameterizeReplicateInput, invalidParameterizeOptions, parameterizeOptionsInvalidTests, replicatesRequiredMismatches,
+		requireReplicatesOptions, invalidRequireReplicatesInput, requireReplicatesInvalidOptions, replicatesRequiredTests,
+		requireTotalWeightMismatches, weightMismatchOptions, invalidTotalWeightInputs, invalidTotalWeightOption, totalWeightNeededTests,
+		mapThreadFriendlyOptions, measureTotalWeightList, parameterizeSolidUnitsList, solidUnitParameterizationReplicatesList, replicates,
+		name, confirm, canaryBranch, template, samplesInStorageCondition, operator, parentProtocol, upload, outputOption, email,
+		imageSample, resolvedEmail, resolvedImageSample, numberOfReplicates, resolvedOptions, allTests, resultRule, testsRule,
+		invalidInputs, invalidOptions
+	},
 
 	(*-- SETUP OUR USER SPECIFIED OPTIONS AND CACHE --*)
 
@@ -431,7 +446,7 @@ resolveExperimentMeasureCountOptions[mySamples:{ObjectP[Object[Sample]]...},myOp
 	outputSpecification=OptionValue[Output];
 	output=ToList[outputSpecification];
 
-	(*when OptionValue doesn't work we can use this (make sure to call the funciton with the Output option so we can look it up)*)
+	(*when OptionValue doesn't work we can use this (make sure to call the function with the Output option so we can look it up)*)
 	(* output=Lookup[ToList[myOptions],Output]; *)
 
 	(* Determine if we should keep a running list of tests to return to the user. *)
@@ -440,6 +455,7 @@ resolveExperimentMeasureCountOptions[mySamples:{ObjectP[Object[Sample]]...},myOp
 
 	(* Fetch our cache from the parent function. *)
 	inheritedCache = Lookup[ToList[myResolutionOptions],Cache,{}];
+	simulation = Lookup[ToList[myResolutionOptions],Simulation,{}];
 
 	(* Separate out our MeasureCount options from our Sample Prep options. *)
 	{samplePrepOptions,measureCountOptions}=splitPrepOptions[myOptions];
@@ -447,16 +463,23 @@ resolveExperimentMeasureCountOptions[mySamples:{ObjectP[Object[Sample]]...},myOp
 	(* Convert list of rules to Association so we can Lookup, Append, Join as usual. *)
 	measureCountOptionsAssociation = Association[measureCountOptions];
 
+	(* Resolve our sample prep options. *)
+	{{simulatedSamples,resolvedSamplePrepOptions,updatedSimulation},samplePrepTests}=If[gatherTests,
+		resolveSamplePrepOptionsNew[ExperimentMeasureCount,mySamples,samplePrepOptions,Cache->inheritedCache,Simulation->simulation,Output->{Result,Tests}],
+		{resolveSamplePrepOptionsNew[ExperimentMeasureCount,mySamples,samplePrepOptions,Cache->inheritedCache,Simulation->simulation,Output->Result],{}}
+	];
+
 	(* Extract the packets that we need from our downloaded cache. *)
 	allSamplePackets=Flatten[
 		Quiet[
 			Download[
 				{
-					mySamples
+					ToList[simulatedSamples]
 				},
 				{
-					Packet[Status,Container,Mass,Type,Model,TabletWeight,Tablet,State]
+					Packet[Status,Container,Mass,Type,Model,SolidUnitWeight,Tablet,Sachet,State]
 				},
+				Simulation->updatedSimulation,
 				Cache->inheritedCache,
 				Date->Now
 			],
@@ -480,7 +503,7 @@ resolveExperimentMeasureCountOptions[mySamples:{ObjectP[Object[Sample]]...},myOp
 
 	(* If there are invalid inputs and we are throwing messages, throw an error message *)
 	If[Length[discardedInvalidInputs]>0&&!gatherTests,
-		Message[Error::DiscardedSamples,ObjectToString[discardedInvalidInputs,Cache->inheritedCache]]
+		Message[Error::DiscardedSamples,ObjectToString[discardedInvalidInputs,Simulation->updatedSimulation]]
 	];
 
 	(* If we are gathering tests, create a passing and/or failing test with the appropriate result. *)
@@ -490,14 +513,14 @@ resolveExperimentMeasureCountOptions[mySamples:{ObjectP[Object[Sample]]...},myOp
 				(* when not a single sample is discarded, we know we don't need to throw any failing test *)
 				Nothing,
 				(* otherwise, we throw one failing test for all discarded samples *)
-				Test["The input sample(s) "<>ObjectToString[discardedInvalidInputs,Cache->inheritedCache]<>" is/are not discarded:",True,False]
+				Test["The input sample(s) "<>ObjectToString[discardedInvalidInputs,Simulation->updatedSimulation]<>" is/are not discarded:",True,False]
 			];
 
 			passingTest=If[Length[discardedInvalidInputs]==Length[mySamples],
 				(* when ALL samples are discarded, we know we don't need to throw any passing test *)
 				Nothing,
 				(* otherwise, we throw one passing test for all non-discarded samples *)
-				Test["The input sample(s) "<>ObjectToString[Complement[mySamples,discardedInvalidInputs],Cache->inheritedCache]<>" is/are not discarded:",True,True]
+				Test["The input sample(s) "<>ObjectToString[Complement[mySamples,discardedInvalidInputs],Simulation->updatedSimulation]<>" is/are not discarded:",True,True]
 			];
 
 			{failingTest,passingTest}
@@ -506,48 +529,48 @@ resolveExperimentMeasureCountOptions[mySamples:{ObjectP[Object[Sample]]...},myOp
 		Nothing
 	];
 
-	(* 2. NON-TABLET SAMPLES *)
+	(* 2. NON-TABLET OR SACHET SAMPLES *)
 
-	(* Get the sample packets that are no tablets. *)
-	nonTabletBoolean = Map[
-		If[MatchQ[#,Except[True]],
+	(* Get the sample packets that are no tablets or sachets. *)
+	nonTabletOrSachetBoolean = Map[
+		If[!MemberQ[#,True],
 			True,
 			False
 		]&,
-	Lookup[allSamplePackets,Tablet,{}]
+	Lookup[allSamplePackets, {Tablet,Sachet},{}]
 	];
 
-	nonTabletSamplePackets = PickList[allSamplePackets, nonTabletBoolean, True];
+	nonTabletOrSachetSamplePackets = PickList[allSamplePackets, nonTabletOrSachetBoolean, True];
 
  (*  keep track of the invalid inputs. *)
-	nonTabletInvalidInputs = If[Length[nonTabletSamplePackets]>0,
-		Lookup[nonTabletSamplePackets,Object],
+	nonTabletOrSachetInvalidInputs = If[Length[nonTabletOrSachetSamplePackets]>0,
+		Lookup[nonTabletOrSachetSamplePackets,Object],
 		{}
 	];
 
 	(* If there are invalid inputs and we are throwing messages, throw a warning message *)
   (* NOTE: we're not throwing a hard error since we want to be open to users using a Object[Sample] to register a tablet sample (to list composition), and the Tablet flag is inside Chemical currently. We'll roll with this odd decision and simply throw warning here *)
-	nonTabletInvalidInputMessage=If[Length[nonTabletInvalidInputs]>0&&!gatherTests && !MatchQ[$ECLApplication,Engine],
-		Message[Warning::NonTabletSamples,ObjectToString[nonTabletInvalidInputs,Cache->inheritedCache]],
+	nonTabletOrSachetInvalidInputMessage=If[Length[nonTabletOrSachetInvalidInputs]>0&&!gatherTests && !MatchQ[$ECLApplication,Engine],
+		Message[Warning::NonTabletOrSachetSamples,ObjectToString[nonTabletOrSachetInvalidInputs,Simulation->updatedSimulation]],
 		(* if there are no non-tablet inputs, we don't throw a warning and the list is empty*)
 		{}
 	];
 
 	(* If we are gathering tests, create a passing and/or failing test with the appropriate result. *)
-	tabletsTests=If[gatherTests,
+	tabletOrSachetsTests=If[gatherTests,
 		Module[{failingTest,passingTest},
-			failingTest=If[Length[nonTabletInvalidInputs]==0,
+			failingTest=If[Length[nonTabletOrSachetInvalidInputs]==0,
 				(* when not a single sample is discarded, we know we don't need to throw any failing test *)
 				Nothing,
 				(* otherwise, we throw one failing test for all discarded samples *)
-				Warning["The input sample(s) "<>ObjectToString[nonTabletInvalidInputs,Cache->inheritedCache]<>" contain(s) tablets",True,False]
+				Warning["The input sample(s) "<>ObjectToString[nonTabletOrSachetInvalidInputs,Simulation->updatedSimulation]<>" contain(s) tablets",True,False]
 			];
 
-			passingTest=If[Length[nonTabletInvalidInputs]==Length[mySamples],
+			passingTest=If[Length[nonTabletOrSachetInvalidInputs]==Length[mySamples],
 				(* when ALL samples are discarded, we know we don't need to throw any passing test *)
 				Nothing,
 				(* otherwise, we throw one passing test for all non-discarded samples *)
-				Warning["The input sample(s) "<>ObjectToString[Complement[mySamples,nonTabletInvalidInputs],Cache->inheritedCache]<>" contain(s) tablets:",True,True]
+				Warning["The input sample(s) "<>ObjectToString[Complement[mySamples,nonTabletOrSachetInvalidInputs],Simulation->updatedSimulation]<>" contain(s) tablets:",True,True]
 			];
 
 			{failingTest,passingTest}
@@ -578,7 +601,7 @@ resolveExperimentMeasureCountOptions[mySamples:{ObjectP[Object[Sample]]...},myOp
 
 	(* If there are invalid inputs and we are throwing messages, throw an error message *)
 	If[Length[incompatibleContainerSamples]>0&& messages,
-		Message[Error::IncompatibleContainer,ObjectToString[incompatibleContainerSamples,Cache->inheritedCache]]
+		Message[Error::IncompatibleContainer,ObjectToString[incompatibleContainerSamples,Simulation->updatedSimulation]]
 	];
 
 	(* If we are gathering tests, create a passing and/or failing test with the appropriate result. *)
@@ -588,14 +611,14 @@ resolveExperimentMeasureCountOptions[mySamples:{ObjectP[Object[Sample]]...},myOp
 				(* when not a single sample is discarded, we know we don't need to throw any failing test *)
 				Nothing,
 				(* otherwise, we throw one failing test for all discarded samples *)
-				Test["The container of the following input sample(s), "<>ObjectToString[incompatibleContainerSamples,Cache->inheritedCache]<>", is/are compatible with total weight measurement:",True,False]
+				Test["The container of the following input sample(s), "<>ObjectToString[incompatibleContainerSamples,Simulation->updatedSimulation]<>", is/are compatible with total weight measurement:",True,False]
 			];
 
 			passingTest=If[Length[incompatibleContainerSamples]==Length[mySamples],
 				(* when ALL samples are discarded, we know we don't need to throw any passing test *)
 				Nothing,
 				(* otherwise, we throw one passing test for all non-discarded samples *)
-				Test["The container of the following input sample(s), "<>ObjectToString[Complement[mySamples,incompatibleContainerSamples],Cache->inheritedCache]<>", is/are compatible with total weight measurement:",True,True]
+				Test["The container of the following input sample(s), "<>ObjectToString[Complement[mySamples,incompatibleContainerSamples],Simulation->updatedSimulation]<>", is/are compatible with total weight measurement:",True,True]
 			];
 
 			{failingTest,passingTest}
@@ -612,25 +635,25 @@ resolveExperimentMeasureCountOptions[mySamples:{ObjectP[Object[Sample]]...},myOp
 	(*-- CONFLICTING OPTIONS CHECKS --*)
 
 
-	(* 1. TabletParameterizationReplicates VS TabletWeight Warning *)
+	(* 1. SolidUnitParameterizationReplicates VS SolidUnitWeight Warning *)
 
-	(* collect all samples for which TabletParameterizationReplicates is specified and TabletWeight is informed *)
+	(* collect all samples for which SolidUnitParameterizationReplicates is specified and SolidUnitWeight is informed *)
 	replicatesNotRequiredSamples=MapThread[
-		Function[{replicates,tabletWeight,sampleObject},
-			Switch[{replicates,tabletWeight},
-			(* If the TabletParameterizationReplicates is specified althoug we know the TabletWeight, collect the sample *)
+		Function[{replicates,solidUnitWeight,sampleObject},
+			Switch[{replicates,solidUnitWeight},
+			(* If the SolidUnitParameterizationReplicates is specified although we know the SolidUnitWeight, collect the sample *)
 				{RangeP[5, 20, 1],GreaterEqualP[0*Gram]},
 					sampleObject,
 				_,
 					Nothing
 			]
 		],
-		{Lookup[measureCountOptionsAssociation,TabletParameterizationReplicates],Lookup[allSamplePackets,TabletWeight,{}],mySamples}
+		{Lookup[measureCountOptionsAssociation,SolidUnitParameterizationReplicates],Lookup[allSamplePackets,SolidUnitWeight,{}],mySamples}
 	];
 
 	(* If there are such samples and we are throwing messages, throw a warning message *)
 	replicatesNotRequiredWarning=If[(Length[replicatesNotRequiredSamples]>0 && messages && !MatchQ[$ECLApplication,Engine]),
-		Message[Warning::TabletWeightKnown,ObjectToString[replicatesNotRequiredSamples,Cache->inheritedCache],TabletParameterizationReplicates],
+		Message[Warning::SolidUnitWeightKnown,ObjectToString[replicatesNotRequiredSamples,Simulation->updatedSimulation],SolidUnitParameterizationReplicates],
 		Nothing
 	];
 
@@ -643,13 +666,13 @@ resolveExperimentMeasureCountOptions[mySamples:{ObjectP[Object[Sample]]...},myOp
 
 			(* Create a test for the passing inputs. *)
 			passingInputsTest=If[Length[passingInputs]>0,
-				Warning["For the input sample(s) "<>ObjectToString[passingInputs,Cache->inheritedCache]<>", the option TabletParameterizationReplicates is set to True while the sample(s)'s TabletWeight is unknown:",True,True],
+				Warning["For the input sample(s) "<>ObjectToString[passingInputs,Simulation->updatedSimulation]<>", the option SolidUnitParameterizationReplicates is set to True while the sample(s)'s SolidUnitWeight is unknown:",True,True],
 				Nothing
 			];
 
 			(* Create a test for the non-passing inputs. *)
 			failingInputsTest=If[Length[replicatesNotRequiredSamples]>0,
-				Warning ["For the input sample(s) "<>ObjectToString[replicatesNotRequiredSamples,Cache->inheritedCache]<>", the option TabletParameterizationReplicates is set to True while the sample(s)'s TabletWeight is unknown:",True,False],
+				Warning ["For the input sample(s) "<>ObjectToString[replicatesNotRequiredSamples,Simulation->updatedSimulation]<>", the option SolidUnitParameterizationReplicates is set to True while the sample(s)'s SolidUnitWeight is unknown:",True,False],
 				Nothing
 			];
 
@@ -664,25 +687,25 @@ resolveExperimentMeasureCountOptions[mySamples:{ObjectP[Object[Sample]]...},myOp
 	];
 
 
-	(* 2. ParameterizeTablets VS TabletWeight Warning *)
+	(* 2. ParameterizeSolidUnits VS SolidUnitWeight Warning *)
 
-	(* collect all samples for which ParameterizeTablets is set to True and TabletWeight is informed *)
+	(* collect all samples for which ParameterizeSolidUnits is set to True and SolidUnitWeight is informed *)
 	parameterizationNotRequiredSamples=MapThread[
-		Function[{parameterize,tabletWeight,sampleObject},
-			Switch[{parameterize,tabletWeight},
-			(* If the ParameterizeTablets is specified althoug we know the TabletWeight, collect the sample *)
+		Function[{parameterize,solidUnitWeight,sampleObject},
+			Switch[{parameterize,solidUnitWeight},
+			(* If the ParameterizeSolidUnits is specified althoug we know the SolidUnitWeight, collect the sample *)
 				{True,GreaterEqualP[0*Gram]},
 					sampleObject,
 				_,
 					Nothing
 			]
 		],
-		{Lookup[measureCountOptionsAssociation,ParameterizeTablets],Lookup[allSamplePackets,TabletWeight,{}],mySamples}
+		{Lookup[measureCountOptionsAssociation,ParameterizeSolidUnits],Lookup[allSamplePackets,SolidUnitWeight,{}],mySamples}
 	];
 
 	(* If there are such samples and we are throwing messages, throw a warning message *)
 	parameterizationNotRequiredWarning=If[(Length[parameterizationNotRequiredSamples]>0 && messages && !MatchQ[$ECLApplication,Engine]),
-		Message[Warning::TabletWeightKnown,ObjectToString[parameterizationNotRequiredSamples,Cache->inheritedCache],ParameterizeTablets],
+		Message[Warning::SolidUnitWeightKnown,ObjectToString[parameterizationNotRequiredSamples,Simulation->updatedSimulation],ParameterizeSolidUnits],
 		Nothing
 	];
 
@@ -695,13 +718,13 @@ resolveExperimentMeasureCountOptions[mySamples:{ObjectP[Object[Sample]]...},myOp
 
 			(* Create a test for the passing inputs. *)
 			passingInputsTest=If[Length[passingInputs]>0,
-				Warning["For the input sample(s) "<>ObjectToString[passingInputs,Cache->inheritedCache]<>", the option ParameterizeTablets is set to True while the sample(s)'s TabletWeight is unknown:",True,True],
+				Warning["For the input sample(s) "<>ObjectToString[passingInputs,Simulation->updatedSimulation]<>", the option ParameterizeSolidUnits is set to True while the sample(s)'s SolidUnitWeight is unknown:",True,True],
 				Nothing
 			];
 
 			(* Create a test for the non-passing inputs. *)
 			failingInputsTest=If[Length[parameterizationNotRequiredSamples]>0,
-				Warning ["For the input sample(s) "<>ObjectToString[parameterizationNotRequiredSamples,Cache->inheritedCache]<>", the option ParameterizeTablets is set to True while the sample(s)'s TabletWeight is unknown:",True,False],
+				Warning ["For the input sample(s) "<>ObjectToString[parameterizationNotRequiredSamples,Simulation->updatedSimulation]<>", the option ParameterizeSolidUnits is set to True while the sample(s)'s SolidUnitWeight is unknown:",True,False],
 				Nothing
 			];
 
@@ -715,13 +738,13 @@ resolveExperimentMeasureCountOptions[mySamples:{ObjectP[Object[Sample]]...},myOp
 		{}
 	];
 
-	(* 3. ParameterizeTablets VS TabletWeight Error *)
+	(* 3. ParameterizeSolidUnits VS SolidUnitWeight Error *)
 
-	(* ParametererizeTablets is False when TabletWeight is informed, otherwise we can't perform the experiment *)
+	(* ParameterizeSolidUnits is False when SolidUnitWeight is informed, otherwise we can't perform the experiment *)
 	requireParameterizationMismatches=MapThread[
-		Function[{parameterize,tabletWeight,sampleObject},
-			Switch[{parameterize,tabletWeight},
-			(* If the parameterization boolean is set to False but we don't know the TabletWeight, return the sample with the mismatching option value *)
+		Function[{parameterize,solidUnitWeight,sampleObject},
+			Switch[{parameterize,solidUnitWeight},
+			(* If the parameterization boolean is set to False but we don't know the SolidUnitWeight, return the sample with the mismatching option value *)
 				{False,Null},
 					{parameterize,sampleObject},
 				{False|Automatic,GreaterEqualP[0*Gram]},
@@ -730,38 +753,38 @@ resolveExperimentMeasureCountOptions[mySamples:{ObjectP[Object[Sample]]...},myOp
 					Nothing
 			]
 		],
-		{Lookup[measureCountOptionsAssociation,ParameterizeTablets],Lookup[allSamplePackets,TabletWeight,{}],mySamples}
+		{Lookup[measureCountOptionsAssociation,ParameterizeSolidUnits],Lookup[allSamplePackets,SolidUnitWeight,{}],mySamples}
 	];
 
 	(* Transpose our invalid option and input values if there were mismatches *)
-	{parameterizeTabletsMismatchOption,invalidParameterizeTabletsInputs}=If[MatchQ[requireParameterizationMismatches,{}],
+	{parameterizeSolidUnitsMismatchOption,invalidParameterizeSolidUnitsInputs}=If[MatchQ[requireParameterizationMismatches,{}],
 		{{},{}},
 		Transpose[requireParameterizationMismatches]
 	];
 
 	(* If there are invalid options and we are throwing messages, throw an error message and keep track of our invalid options for Error::InvalidOptions below *)
-	invalidParameterizeTabletsOption=If[(Length[parameterizeTabletsMismatchOption]>0 && messages),
-		Message[Error::ParameterizationRequired,ObjectToString[invalidParameterizeTabletsInputs,Cache->inheritedCache]];
-		{ParameterizeTablets},
+	invalidParameterizeSolidUnitsOption=If[(Length[parameterizeSolidUnitsMismatchOption]>0 && messages),
+		Message[Error::ParameterizationRequired,ObjectToString[invalidParameterizeSolidUnitsInputs,Simulation->updatedSimulation]];
+		{ParameterizeSolidUnits},
 		{}
 	];
 
 	(* If we are gathering tests, create tests with the appropriate results. *)
-	parameterizeTabletsOptionInvalidTests=If[gatherTests,
+	parameterizeSolidUnitsOptionInvalidTests=If[gatherTests,
 		(* We're gathering tests. Create the appropriate tests. *)
 		Module[{passingInputs,passingInputsTest,failingInputsTest},
 			(* Get the inputs that pass this test. *)
-			passingInputs=Complement[mySamples,invalidParameterizeTabletsInputs];
+			passingInputs=Complement[mySamples,invalidParameterizeSolidUnitsInputs];
 
 			(* Create a test for the passing inputs. *)
 			passingInputsTest=If[Length[passingInputs]>0,
-				Test["For the input sample(s) "<>ObjectToString[passingInputs,Cache->inheritedCache]<>", the option ParameterizeTablets is set to False while the sample(s)'s TabletWeight is known:",True,True],
+				Test["For the input sample(s) "<>ObjectToString[passingInputs,Simulation->updatedSimulation]<>", the option ParameterizeSolidUnits is set to False while the sample(s)'s SolidUnitWeight is known:",True,True],
 				Nothing
 			];
 
 			(* Create a test for the non-passing inputs. *)
-			failingInputsTest=If[Length[invalidParameterizeTabletsInputs]>0,
-				Test["For the input sample(s) "<>ObjectToString[invalidParameterizeTabletsInputs,Cache->inheritedCache]<>", the option ParameterizeTablets is set to False while the sample(s)'s TabletWeight is known:",True,False],
+			failingInputsTest=If[Length[invalidParameterizeSolidUnitsInputs]>0,
+				Test["For the input sample(s) "<>ObjectToString[invalidParameterizeSolidUnitsInputs,Simulation->updatedSimulation]<>", the option ParameterizeSolidUnits is set to False while the sample(s)'s SolidUnitWeight is known:",True,False],
 				Nothing
 			];
 
@@ -776,9 +799,9 @@ resolveExperimentMeasureCountOptions[mySamples:{ObjectP[Object[Sample]]...},myOp
 	];
 
 
-	(* 4a. TabletParameterizationReplicates VS ParameterizeTablets Error *)
+	(* 4a. SolidUnitParameterizationReplicates VS ParameterizeSolidUnits Error *)
 
-	(* ParametererizeTablets is False when TabletParametererization is not specified, otherwise we have conflicting options and can't perform the experiment *)
+	(* ParameterizeSolidUnits is False when SolidUnitParameterization is not specified, otherwise we have conflicting options and can't perform the experiment *)
 	parameterizationOptionsMismatches=MapThread[
 		Function[{parameterize,replicates,sampleObject},
 			Switch[{parameterize,replicates},
@@ -793,7 +816,7 @@ resolveExperimentMeasureCountOptions[mySamples:{ObjectP[Object[Sample]]...},myOp
 					Nothing
 			]
 		],
-		{Lookup[measureCountOptionsAssociation,ParameterizeTablets],Lookup[measureCountOptionsAssociation,TabletParameterizationReplicates],mySamples}
+		{Lookup[measureCountOptionsAssociation,ParameterizeSolidUnits],Lookup[measureCountOptionsAssociation,SolidUnitParameterizationReplicates],mySamples}
 	];
 
 	(* Transpose our result if there were mismatches. *)
@@ -804,8 +827,8 @@ resolveExperimentMeasureCountOptions[mySamples:{ObjectP[Object[Sample]]...},myOp
 
 	(* If there are invalid options and we are throwing messages, throw an error message and keep track of our invalid options for Error::InvalidOptions. *)
 	invalidParameterizeOptions=If[(Length[parameterizeReplicateMismatchOptions]>0 && messages),
-		Message[Error::InvalidParameterizationOptions,ObjectToString[invalidParameterizeReplicateInput,Cache->inheritedCache]];
-		{ParameterizeTablets,TabletParameterizationReplicates},
+		Message[Error::InvalidParameterizationOptions,ObjectToString[invalidParameterizeReplicateInput,Simulation->updatedSimulation]];
+		{ParameterizeSolidUnits,SolidUnitParameterizationReplicates},
 		{}
 	];
 
@@ -818,13 +841,13 @@ resolveExperimentMeasureCountOptions[mySamples:{ObjectP[Object[Sample]]...},myOp
 
 			(* Create a test for the passing inputs. *)
 			passingInputsTest=If[Length[passingInputs]>0,
-				Test["For the input sample(s) "<>ObjectToString[passingInputs,Cache->inheritedCache]<>", the option ParameterizeTablets is set to False while the option TabletParameterizationReplicates is not specified:",True,True],
+				Test["For the input sample(s) "<>ObjectToString[passingInputs,Simulation->updatedSimulation]<>", the option ParameterizeSolidUnits is set to False while the option SolidUnitParameterizationReplicates is not specified:",True,True],
 				Nothing
 			];
 
 			(* Create a test for the non-passing inputs. *)
 			failingInputsTest=If[Length[invalidParameterizeReplicateInput]>0,
-				Test["For the input sample(s) "<>ObjectToString[invalidParameterizeReplicateInput,Cache->inheritedCache]<>", the option ParameterizeTablets is set to False while the option TabletParameterizationReplicates is not specified:",True,False],
+				Test["For the input sample(s) "<>ObjectToString[invalidParameterizeReplicateInput,Simulation->updatedSimulation]<>", the option ParameterizeSolidUnits is set to False while the option SolidUnitParameterizationReplicates is not specified:",True,False],
 				Nothing
 			];
 
@@ -839,12 +862,12 @@ resolveExperimentMeasureCountOptions[mySamples:{ObjectP[Object[Sample]]...},myOp
 	];
 
 
-	(* 4b. TabletParameterizationReplicates VS ParameterizeTablets Error *)
+	(* 4b. SolidUnitParameterizationReplicates VS ParameterizeSolidUnits Error *)
 
-	(* If ParametererizeTablets is True (or Automatic while TabletWeight is unknown) when TabletParametererization is Null, we can't perform the experiment *)
+	(* If ParameterizeSolidUnits is True (or Automatic while SolidUnitWeight is unknown) when SolidUnitParameterization is Null, we can't perform the experiment *)
 	replicatesRequiredMismatches=MapThread[
-		Function[{parameterize,tabletWeight,replicates,sampleObject},
-			Switch[{parameterize,tabletWeight,replicates},
+		Function[{parameterize,solidUnitWeight,replicates,sampleObject},
+			Switch[{parameterize,solidUnitWeight,replicates},
 			(* If the parameterization boolean is set to False but the replicates were, return the sample with the mismatch *)
 				{True,_,Null},
 					{parameterize,sampleObject},
@@ -854,7 +877,7 @@ resolveExperimentMeasureCountOptions[mySamples:{ObjectP[Object[Sample]]...},myOp
 					Nothing
 			]
 		],
-		{Lookup[measureCountOptionsAssociation,ParameterizeTablets],Lookup[allSamplePackets,TabletWeight,{}],Lookup[measureCountOptionsAssociation,TabletParameterizationReplicates],mySamples}
+		{Lookup[measureCountOptionsAssociation,ParameterizeSolidUnits],Lookup[allSamplePackets,SolidUnitWeight,{}],Lookup[measureCountOptionsAssociation,SolidUnitParameterizationReplicates],mySamples}
 	];
 
 	(* Transpose our result if there were mismatches. *)
@@ -865,8 +888,8 @@ resolveExperimentMeasureCountOptions[mySamples:{ObjectP[Object[Sample]]...},myOp
 
 	(* If there are invalid options and we are throwing messages, throw an error message and keep track of our invalid options for Error::InvalidOptions. *)
 	requireReplicatesInvalidOptions=If[(Length[requireReplicatesOptions]>0 && messages),
-		Message[Error::ParameterizationReplicatesRequired,ObjectToString[invalidRequireReplicatesInput,Cache->inheritedCache]];
-		{ParameterizeTablets,TabletParameterizationReplicates},
+		Message[Error::ParameterizationReplicatesRequired,ObjectToString[invalidRequireReplicatesInput,Simulation->updatedSimulation]];
+		{ParameterizeSolidUnits,SolidUnitParameterizationReplicates},
 		{}
 	];
 
@@ -879,13 +902,13 @@ resolveExperimentMeasureCountOptions[mySamples:{ObjectP[Object[Sample]]...},myOp
 
 			(* Create a test for the passing inputs. *)
 			passingInputsTest=If[Length[passingInputs]>0,
-				Test["For the input sample(s) "<>ObjectToString[passingInputs,Cache->inheritedCache]<>", the option TabletParameterizationReplicates is Null when the option ParameterizeTablets is set to False and/or tablet weight is known:",True,True],
+				Test["For the input sample(s) "<>ObjectToString[passingInputs,Simulation->updatedSimulation]<>", the option SolidUnitParameterizationReplicates is Null when the option ParameterizeSolidUnits is set to False and/or tablet weight is known:",True,True],
 				Nothing
 			];
 
 			(* Create a test for the non-passing inputs. *)
 			failingInputsTest=If[Length[invalidRequireReplicatesInput]>0,
-				Test["For the input sample(s) "<>ObjectToString[invalidRequireReplicatesInput,Cache->inheritedCache]<>", the option TabletParameterizationReplicates is Null when the option ParameterizeTablets is set to False and/or tablet weight is known:",True,False],
+				Test["For the input sample(s) "<>ObjectToString[invalidRequireReplicatesInput,Simulation->updatedSimulation]<>", the option SolidUnitParameterizationReplicates is Null when the option ParameterizeSolidUnits is set to False and/or tablet/sachet weight is known:",True,False],
 				Nothing
 			];
 
@@ -919,8 +942,8 @@ resolveExperimentMeasureCountOptions[mySamples:{ObjectP[Object[Sample]]...},myOp
 	];
 
 	(* If there are such samples and we are throwing messages, throw a warning message *)
-	massKnownWarning=If[(Length[massKnownMismatchSamples]>0 && messages && !MatchQ[ECLApplication,Engine]),
-		Message[Warning::MassKnown,ObjectToString[massKnownMismatchSamples,Cache->inheritedCache]],
+	massKnownWarning=If[(Length[massKnownMismatchSamples]>0 && messages && !MatchQ[$ECLApplication,Engine]),
+		Message[Warning::MassKnown,ObjectToString[massKnownMismatchSamples,Simulation->updatedSimulation]],
 		Nothing
 	];
 
@@ -933,13 +956,13 @@ resolveExperimentMeasureCountOptions[mySamples:{ObjectP[Object[Sample]]...},myOp
 
 			(* Create a test for the passing inputs. *)
 			passingInputsTest=If[Length[passingInputs]>0,
-				Warning["For the input sample(s) "<>ObjectToString[passingInputs,Cache->inheritedCache]<>", the option MeasureTotalWeight is set to True while the sample(s)'s Mass is unknown:",True,True],
+				Warning["For the input sample(s) "<>ObjectToString[passingInputs,Simulation->updatedSimulation]<>", the option MeasureTotalWeight is set to True while the sample(s)'s Mass is unknown:",True,True],
 				Nothing
 			];
 
 			(* Create a test for the non-passing inputs. *)
 			failingInputsTest=If[Length[massKnownMismatchSamples]>0,
-				Warning ["For the input sample(s) "<>ObjectToString[massKnownMismatchSamples,Cache->inheritedCache]<>", the option MeasureTotalWeight is set to True while the sample's Mass is unknown:",True,False],
+				Warning ["For the input sample(s) "<>ObjectToString[massKnownMismatchSamples,Simulation->updatedSimulation]<>", the option MeasureTotalWeight is set to True while the sample's Mass is unknown:",True,False],
 				Nothing
 			];
 
@@ -980,7 +1003,7 @@ resolveExperimentMeasureCountOptions[mySamples:{ObjectP[Object[Sample]]...},myOp
 
 	(* If there are invalid options and we are throwing messages, throw an error message and keep track of our invalid options for Error::InvalidOptions. *)
 	invalidTotalWeightOption=If[(Length[weightMismatchOptions]>0 && messages),
-		Message[Error::TotalWeightRequired,ObjectToString[invalidTotalWeightInputs,Cache->inheritedCache]];
+		Message[Error::TotalWeightRequired,ObjectToString[invalidTotalWeightInputs,Simulation->updatedSimulation]];
 		{MeasureTotalWeight},
 		{}
 	];
@@ -994,13 +1017,13 @@ resolveExperimentMeasureCountOptions[mySamples:{ObjectP[Object[Sample]]...},myOp
 
 			(* Create a test for the passing inputs. *)
 			passingInputsTest=If[Length[passingInputs]>0,
-				Test["For the input sample(s) "<>ObjectToString[passingInputs,Cache->inheritedCache]<>", the option MeasureTotalWeight is set to False while the sample's Mass is known:",True,True],
+				Test["For the input sample(s) "<>ObjectToString[passingInputs,Simulation->updatedSimulation]<>", the option MeasureTotalWeight is set to False while the sample's Mass is known:",True,True],
 				Nothing
 			];
 
 			(* Create a test for the non-passing inputs. *)
 			failingInputsTest=If[Length[invalidTotalWeightInputs]>0,
-				Test["For the input sample(s) "<>ObjectToString[invalidTotalWeightInputs,Cache->inheritedCache]<>", the option MeasureTotalWeight is set to False while the sample's Mass is known:",True,False],
+				Test["For the input sample(s) "<>ObjectToString[invalidTotalWeightInputs,Simulation->updatedSimulation]<>", the option MeasureTotalWeight is set to False while the sample's Mass is known:",True,False],
 				Nothing
 			];
 
@@ -1021,54 +1044,54 @@ resolveExperimentMeasureCountOptions[mySamples:{ObjectP[Object[Sample]]...},myOp
 	mapThreadFriendlyOptions=OptionsHandling`Private`mapThreadOptions[ExperimentMeasureCount,measureCountOptionsAssociation];
 
 	(* MapThread over each of our samples. *)
-	{measureTotalWeightList,parameterizeTabletsList,tabletParameterizationReplicatesList}=Transpose[
+	{measureTotalWeightList,parameterizeSolidUnitsList,solidUnitParameterizationReplicatesList}=Transpose[
 		MapThread[
 			Function[{samplePacket,options},
-				Module[{specifiedParameterizeTablets,specifiedTabletParameterizationReplicates,specifiedMeasureTotalWeight,
-				tabletWeight,sampleMass,parameterizeTablets,tabletParameterizationReplicates,measureTotalWeight
+				Module[{specifiedParameterizeSolidUnits,specifiedSolidUnitParameterizationReplicates,specifiedMeasureTotalWeight,
+				solidUnitWeight,sampleMass,parameterizeSolidUnits,solidUnitParameterizationReplicates,measureTotalWeight
 				},
 
-					(* pull out the option values for ParameterizeTablets, TabletParameterizationReplicates, MeasureTotalWeight and TransferContainer *)
-					{specifiedParameterizeTablets,specifiedTabletParameterizationReplicates,specifiedMeasureTotalWeight}= Lookup[options,{ParameterizeTablets,TabletParameterizationReplicates,MeasureTotalWeight}];
+					(* pull out the option values for ParameterizeSolidUnits, SolidUnitParameterizationReplicates, MeasureTotalWeight and TransferContainer *)
+					{specifiedParameterizeSolidUnits,specifiedSolidUnitParameterizationReplicates,specifiedMeasureTotalWeight}= Lookup[options,{ParameterizeSolidUnits,SolidUnitParameterizationReplicates,MeasureTotalWeight}];
 
 					(* also pull out some information from the packets that we will need later *)
-					tabletWeight=Lookup[samplePacket,TabletWeight,{}];
+					solidUnitWeight=Lookup[samplePacket,SolidUnitWeight,{}];
 					sampleMass=Lookup[samplePacket,Mass];
 
 					(* === Independent options resolution === *)
 
-					(* resolve the ParameterizeTablets and TabletParameterizationReplicates option values *)
-					{parameterizeTablets,tabletParameterizationReplicates} = Switch[{specifiedParameterizeTablets,specifiedTabletParameterizationReplicates,tabletWeight},
+					(* resolve the ParameterizeSolidUnits and SolidUnitParameterizationReplicates option values *)
+					{parameterizeSolidUnits,solidUnitParameterizationReplicates} = Switch[{specifiedParameterizeSolidUnits,specifiedSolidUnitParameterizationReplicates,solidUnitWeight},
 
-						(* If ParameterizeTablets is Automatic and TabletParameterizationReplicates is specified by the user, we will parameterize *)
-						(* we do this no matter what the TabletWeight says - a warning will have been thrown above that we parameterize although the tablet weight is known *)
-						{Automatic,RangeP[5, 20, 1],_},{True,specifiedTabletParameterizationReplicates},
+						(* If ParameterizeSolidUnits is Automatic and SolidUnitParameterizationReplicates is specified by the user, we will parameterize *)
+						(* we do this no matter what the SolidUnitWeight says - a warning will have been thrown above that we parameterize although the tablet/sachet weight is known *)
+						{Automatic,RangeP[5, 20, 1],_},{True,specifiedSolidUnitParameterizationReplicates},
 
-						(* If ParameterizeTablets is Automatic and TabletParameterizationReplicates is NOT specified by the user, we will not parameterize if the tablet weight is known *)
+						(* If ParameterizeSolidUnits is Automatic and SolidUnitParameterizationReplicates is NOT specified by the user, we will not parameterize if the tablet/sachet weight is known *)
 						{Automatic,Automatic,GreaterEqualP[0*Gram]},{False,Null},
 
-						(* ... and if the Tablet weight is not known, we will parameterize and default the replicates to 10 *)
+						(* ... and if the solid unit weight is not known, we will parameterize and default the replicates to 10 *)
 						{Automatic,Automatic,Null},{True,10},
 
-						(* If ParameterizeTablets is set to True by the user and the TabletParameterizationReplicates specified by the user, we will paramtereize *)
-						(* we do this no matter what the TabletWeight says - a warning will have been thrown above that we parameterize although the tablet weight is known *)
-						{True,RangeP[5, 20, 1],_},{specifiedParameterizeTablets,specifiedTabletParameterizationReplicates},
+						(* If ParameterizeSolidUnits is set to True by the user and the SolidUnitParameterizationReplicates specified by the user, we will paramtereize *)
+						(* we do this no matter what the SolidUnitWeight says - a warning will have been thrown above that we parameterize although the tablet/sachet weight is known *)
+						{True,RangeP[5, 20, 1],_},{specifiedParameterizeSolidUnits,specifiedSolidUnitParameterizationReplicates},
 
-						(* If ParameterizeTablets is set to True by the user and the TabletParameterizationReplicates is not specified, we will paramtereize and default the replicates to 10  *)
-						(* we do this no matter what the TabletWeight says - a warning will have been thrown above that we parameterize although the tablet weight is known *)
-						{True,Automatic,_},{specifiedParameterizeTablets,10},
+						(* If ParameterizeSolidUnits is set to True by the user and the SolidUnitParameterizationReplicates is not specified, we will paramtereize and default the replicates to 10  *)
+						(* we do this no matter what the SolidUnitWeight says - a warning will have been thrown above that we parameterize although the tablet/sachet weight is known *)
+						{True,Automatic,_},{specifiedParameterizeSolidUnits,10},
 
-						(* If ParameterizeTablets is set to False by the user we will not parameterize (no matter what the TabletWeight or the replicates options says *)
-						(* we will already have thrown an Error above if there is a conflict (if for instance no TabletWeight is known or the TabletParameterizationReplicates is specified *)
-						{False,_,_},{specifiedParameterizeTablets,Null},
+						(* If ParameterizeSolidUnits is set to False by the user we will not parameterize (no matter what the SolidUnitWeight or the replicates options says *)
+						(* we will already have thrown an Error above if there is a conflict (if for instance no SolidUnitWeight is known or the SolidUnitParameterizationReplicates is specified *)
+						{False,_,_},{specifiedParameterizeSolidUnits,Null},
 
-						(* if ParameterizeTablets is set to True by the user but the TabletParameterizationReplicates is set to Null, we can't parameterize and return what was specified *)
+						(* if ParameterizeSolidUnits is set to True by the user but the SolidUnitParameterizationReplicates is set to Null, we can't parameterize and return what was specified *)
 						(* we will already have thrown a conflicting options Error above *)
-						{True,Null,_},{specifiedParameterizeTablets,specifiedTabletParameterizationReplicates},
+						{True,Null,_},{specifiedParameterizeSolidUnits,specifiedSolidUnitParameterizationReplicates},
 
-						(* if ParameterizeTablets is set to Automatic and the TabletWeight is not known,but theTabletParameterizationReplicates is set to Null, we can't parameterize and return what was specified *)
+						(* if ParameterizeSolidUnits is set to Automatic and the SolidUnitWeight is not known,but theSolidUnitParameterizationReplicates is set to Null, we can't parameterize and return what was specified *)
 						(* we will already have thrown a conflicting options Error above *)
-						{Automatic,Null,GreaterEqualP[0*Gram]},{True,specifiedTabletParameterizationReplicates},
+						{Automatic,Null,GreaterEqualP[0*Gram]},{True,specifiedSolidUnitParameterizationReplicates},
 
 						(* a catch-all for any other nonsense combination *)
 						_,{False,Null}
@@ -1097,7 +1120,7 @@ resolveExperimentMeasureCountOptions[mySamples:{ObjectP[Object[Sample]]...},myOp
 					];
 
 					(* Gather MapThread results *)
-					{measureTotalWeight,parameterizeTablets,tabletParameterizationReplicates}
+					{measureTotalWeight,parameterizeSolidUnits,solidUnitParameterizationReplicates}
 				]
 			],
 			{allSamplePackets,mapThreadFriendlyOptions}
@@ -1112,12 +1135,12 @@ resolveExperimentMeasureCountOptions[mySamples:{ObjectP[Object[Sample]]...},myOp
 	(*-- UNRESOLVABLE OPTION CHECKS --*)
 
 	(* Check our invalid input and invalid option variables and throw Error::InvalidInput or Error::InvalidOption if necessary. *)
-	invalidInputs=DeleteDuplicates[Flatten[{discardedInvalidInputs,incompatibleContainerSamples,invalidParameterizeTabletsInputs,invalidTotalWeightInputs}]];
-	invalidOptions=DeleteDuplicates[Flatten[{invalidParameterizeTabletsOption,invalidParameterizeOptions,requireReplicatesInvalidOptions,invalidTotalWeightOption}]];
+	invalidInputs=DeleteDuplicates[Flatten[{discardedInvalidInputs,incompatibleContainerSamples,invalidParameterizeSolidUnitsInputs,invalidTotalWeightInputs}]];
+	invalidOptions=DeleteDuplicates[Flatten[{invalidParameterizeSolidUnitsOption,invalidParameterizeOptions,requireReplicatesInvalidOptions,invalidTotalWeightOption}]];
 
 	(* Throw Error::InvalidInput if there are invalid inputs. *)
 	If[Length[invalidInputs]>0,
-		Message[Error::InvalidInput,ObjectToString[invalidInputs,Cache->inheritedCache]]
+		Message[Error::InvalidInput,ObjectToString[invalidInputs,Simulation->updatedSimulation]]
 	];
 
 	(* Throw Error::InvalidOption if there are invalid options. *)
@@ -1127,13 +1150,13 @@ resolveExperimentMeasureCountOptions[mySamples:{ObjectP[Object[Sample]]...},myOp
 
 	(*-- CONTAINER GROUPING RESOLUTION AND ALIQUOTING  --*)
 
-	(* Note: no need for Aliquoting options nor Target containers since we're dealing with tablets. *)
+	(* Note: no need for Aliquoting options nor Target containers since we're dealing with tablets or sachets. *)
 	(* Note: no grouping necessary either - samples have to be done one by one, grouping not applicable *)
 
 	(*-- CONSTRUCT THE RESOLVED OPTIONS AND TESTS OUTPUTS --*)
 
 	(* --- pull out all the shared options from the input options --- *)
-	{replicates, name, confirm, template, samplesInStorageCondition, cache, operator, parentProtocol, upload, outputOption, email, imageSample,numberOfReplicates} = Lookup[myOptions, {NumberOfReplicates,Name, Confirm, Template, SamplesInStorageCondition, Cache, Operator, ParentProtocol, Upload, Output, Email, ImageSample,NumberOfReplicates}];
+	{replicates, name, confirm, canaryBranch, template, samplesInStorageCondition, operator, parentProtocol, upload, outputOption, email, imageSample,numberOfReplicates} = Lookup[myOptions, {NumberOfReplicates,Name, Confirm, CanaryBranch, Template, SamplesInStorageCondition, Operator, ParentProtocol, Upload, Output, Email, ImageSample,NumberOfReplicates}];
 
 	(* resolve the Email option if Automatic *)
 	resolvedEmail = If[!MatchQ[email, Automatic],
@@ -1157,19 +1180,21 @@ resolveExperimentMeasureCountOptions[mySamples:{ObjectP[Object[Sample]]...},myOp
 		measureCountOptions,
 			{
 				MeasureTotalWeight -> measureTotalWeightList,
-				ParameterizeTablets -> parameterizeTabletsList,
-				TabletParameterizationReplicates -> tabletParameterizationReplicatesList,
+				ParameterizeSolidUnits -> parameterizeSolidUnitsList,
+				SolidUnitParameterizationReplicates -> solidUnitParameterizationReplicatesList,
 				NumberOfReplicates -> numberOfReplicates,
 				Confirm -> confirm,
+				CanaryBranch -> canaryBranch,
 				ImageSample -> resolvedImageSample,
 				Name -> name,
 				Template -> template,
 				SamplesInStorageCondition -> samplesInStorageCondition,
-				Cache -> cache,
+				Cache -> inheritedCache,
 				Email -> resolvedEmail,
 				Operator -> operator,
 				Output -> outputOption,
 				ParentProtocol -> parentProtocol,
+				PreparatoryUnitOperations -> Lookup[myOptions,PreparatoryUnitOperations],
 				Upload -> upload
 			}
 	];
@@ -1178,9 +1203,9 @@ resolveExperimentMeasureCountOptions[mySamples:{ObjectP[Object[Sample]]...},myOp
 	allTests=Cases[
 		Flatten[{
 			discardedTests,
-			tabletsTests,
+			tabletOrSachetsTests,
 			incompatibleContainerTests,
-			parameterizeTabletsOptionInvalidTests,
+			parameterizeSolidUnitsOptionInvalidTests,
 			parameterizeOptionsInvalidTests,
 			totalWeightNeededTests,
 			massKnownTests,
@@ -1215,18 +1240,19 @@ resolveExperimentMeasureCountOptions[mySamples:{ObjectP[Object[Sample]]...},myOp
 
 DefineOptions[
 	measureCountResourcePackets,
-	Options:>{HelperOutputOption,CacheOption}
+	Options:>{HelperOutputOption,CacheOption,SimulationOption}
 ];
 
 (* Private function to generate the list of protocol packets containing resource blobs needing for running the procedure *)
 measureCountResourcePackets[mySamples:{ObjectP[Object[Sample]]...},myUnresolvedOptions:Alternatives[{_Rule..},{}],myResolvedOptions:{_Rule..},myResourcePacketOptions:OptionsPattern[measureCountResourcePackets]]:=Module[
-	{outputSpecification,output,gatherTests,messages,expandedInputs,expandedResolvedOptions,resolvedOptionsNoHidden,
-	inheritedCache,downloadPackets,containerPackets,samplePackets,numReplicates,numReplicatesNoNull,samplesIn,samplesInResources,containersIn,
-	parameterizeTabletsBool,expandedParameterizeTabletsBool,expandedResourcesNeedingParameterization,tabletReplicates,
-	expandedTabletReplicates,estimatedWeighingTime,measureTotalWeightBool,expandedMeasureTotalWeightBool,
-	expandedResourcesNeedingTotalWeight,transferContainers,finalTransferContainers,transferContainerResources,
-	transferSamples,transferSamplesResources,operator,protocolPacket,sharedFieldsPacket,finalizedProtocolPacket,allResources,
-	fulfillable,frqTests,previewRule,optionsRule,testsRule,resultRule,parameterizationQ,balance,weighboats,tweezer
+	{
+		outputSpecification,output,gatherTests,messages,expandedInputs,expandedResolvedOptions,resolvedOptionsNoHidden,
+		inheritedCache,simulation,downloadPackets,containerPackets,samplePackets,
+		numReplicates,numReplicatesNoNull,samplesIn,samplesInResources,containersIn,
+		parameterizeSolidUnitsBool,expandedParameterizeSolidUnitsBool,expandedResourcesNeedingParameterization,solidUnitReplicates,
+		expandedSolidUnitReplicates,estimatedWeighingTime,measureTotalWeightBool,expandedMeasureTotalWeightBool,
+		expandedResourcesNeedingTotalWeight,operator,protocolPacket,sharedFieldPacket,finalizedPacket,allResources,
+		fulfillable,frqTests,previewRule,optionsRule,testsRule,resultRule,parameterizationQ,balance,weighboats,tweezer
   },
 
 	(* Determine the requested output format of this function. *)
@@ -1249,16 +1275,19 @@ measureCountResourcePackets[mySamples:{ObjectP[Object[Sample]]...},myUnresolvedO
 	];
 
 	(* get the cache that was passed from the main function *)
-	inheritedCache= Lookup[ToList[myResourcePacketOptions],Cache,{}];
+	inheritedCache=Lookup[ToList[myResourcePacketOptions],Cache,{}];
+	simulation=Lookup[ToList[myResourcePacketOptions],Simulation];
 
 	(* using the inherited cache, download the things we need to create our resource below *)
-	downloadPackets=Download[mySamples,
+	downloadPackets = Download[
+		mySamples,
 		{
-		Packet[Container],
-		Packet[Container[Object]]
+			Packet[Container],
+			Packet[Container[Object]]
 		},
-		Cache->inheritedCache,
-		Date->Now
+		Cache -> inheritedCache,
+		Simulation -> simulation,
+		Date -> Now
 	];
 
 	samplePackets = downloadPackets[[All, 1]];
@@ -1274,46 +1303,46 @@ measureCountResourcePackets[mySamples:{ObjectP[Object[Sample]]...},myUnresolvedO
 	(* get the SamplesIn expanded, accounting for the number of replicates *)
 	samplesIn = Flatten[Map[
 		ConstantArray[#, numReplicatesNoNull]&,
-	Lookup[samplePackets, Object]
+		Lookup[samplePackets, Object]
 	]];
 
 	(* make resources for the expanded SamplesIn *)
 	samplesInResources = Map[
 		Resource[Sample->#, Name->ToString[Unique[]]]&,
-	samplesIn
+		samplesIn
 	];
 
 	(* get the containers in from the sample's containers - these are unique lists and not expanded. *)
 	(* We're not making resources of these since we're not resource-picking them, we have SamplesIn for that *)
 	containersIn = DeleteDuplicates[Lookup[containerPackets,Object]];
 
-	(* === Determine which sample resources to be paramterized (the field TabletWeightParameterizations) === *)
+	(* === Determine which sample resources to be parameterized (the field SolidUnitWeightParameterizations) === *)
 
-	(* extract the ParameterizeTablets option value from the resolved options *)
-	parameterizeTabletsBool=Lookup[expandedResolvedOptions,ParameterizeTablets];
+	(* extract the ParameterizeSolidUnits option value from the resolved options *)
+	parameterizeSolidUnitsBool=Lookup[expandedResolvedOptions,ParameterizeSolidUnits];
 
 	(* expand to account for the number of experimental replicates *)
-	expandedParameterizeTabletsBool=Flatten[Map[
+	expandedParameterizeSolidUnitsBool=Flatten[Map[
 		ConstantArray[#, numReplicatesNoNull]&,
-	parameterizeTabletsBool
+	parameterizeSolidUnitsBool
 	]];
 
 	(* filter the samplesIn resources for those that will get parameterized *)
-	expandedResourcesNeedingParameterization=PickList[samplesInResources,expandedParameterizeTabletsBool,True];
+	expandedResourcesNeedingParameterization=PickList[samplesInResources,expandedParameterizeSolidUnitsBool,True];
 
 	(* also determine the parameterization replicates number *)
-	tabletReplicates=Lookup[expandedResolvedOptions,TabletParameterizationReplicates];
+	solidUnitReplicates=Lookup[expandedResolvedOptions,SolidUnitParameterizationReplicates];
 
 	(* expand to account for the number of experimental replicates - make sure to get rid of the Null's when there is no parameterization *)
-	expandedTabletReplicates=Flatten[
+	expandedSolidUnitReplicates=Flatten[
 	Map[If[NullQ[#],
 		Nothing,
 		ConstantArray[#, numReplicatesNoNull]]&,
-	tabletReplicates
+		solidUnitReplicates
 	]];
 
 	(* also get the estimated time we're going to be using the balance *)
-	(* note that this is only the part where we are parameterizing the tablets - the TotalWeight procedure part has its own time estimates since it's a subprotocol *)
+	(* note that this is only the part where we are parameterizing the tablets/sachets - the TotalWeight procedure part has its own time estimates since it's a subprotocol *)
 	estimatedWeighingTime=If[MatchQ[expandedResourcesNeedingParameterization,{}],
 		3*Minute,
 		5*Minute*Length[expandedResourcesNeedingParameterization]
@@ -1339,8 +1368,8 @@ measureCountResourcePackets[mySamples:{ObjectP[Object[Sample]]...},myUnresolvedO
 
 	(* === figure out whether we need the balance, tweezers, and the weighboat - we'll only create those resources if we're doing parameterization === *)
 
-	(* if ParametererizeTablets is True for at least one sample we're paramterizing *)
-	parameterizationQ = MemberQ[parameterizeTabletsBool,True];
+	(* if ParameterizeSolidUnits is True for at least one sample we're paramterizing *)
+	parameterizationQ = MemberQ[parameterizeSolidUnitsBool,True];
 
 	(* If we are parameterizing, we need balance, tweezers, and weighboats - otherwise we can leave these empty since ExperimentMeasureWeight will take care of its own resources *)
 	balance=If[parameterizationQ,
@@ -1351,11 +1380,11 @@ measureCountResourcePackets[mySamples:{ObjectP[Object[Sample]]...},myUnresolvedO
 		Null
 	];
 
-	(* If we're paramterizing: since we need 1 weighboat for counting out 10 tablets, and 1 for weighing the individual tablet, 'Amount' needs to be twice the amount of samples that are being parameterized *)
-	weighboats=If[parameterizationQ,
+	(* If we're parameterizing: since we need 1 weighboat for counting out 10 tablets/sachets, and 1 for weighing the individual tablet/sachet, 'Amount' needs to be twice the amount of samples that are being parameterized *)
+	weighboats = If[parameterizationQ,
 		Resource[
-			Sample -> Model[Item,Consumable,"Weigh boats, medium"],
-			Amount->2*Length[expandedResourcesNeedingParameterization]
+			Sample -> Model[Item, WeighBoat, "Weigh boats, medium"],
+			Amount -> 2 * Length[expandedResourcesNeedingParameterization]
 		],
 		Null
 	];
@@ -1373,8 +1402,8 @@ measureCountResourcePackets[mySamples:{ObjectP[Object[Sample]]...},myUnresolvedO
 		Object->CreateID[Object[Protocol, MeasureCount]],
 		Replace[SamplesIn]-> Map[Link[#,Protocols]&,samplesInResources],
 		Replace[ContainersIn]-> (Link[Resource[Sample->#],Protocols]&)/@containersIn,
-		Replace[TabletWeightParameterizations] -> expandedResourcesNeedingParameterization,
-		Replace[TabletParameterizationReplicates] -> expandedTabletReplicates,
+		Replace[SolidUnitWeightParameterizations] -> expandedResourcesNeedingParameterization,
+		Replace[SolidUnitParameterizationReplicates] -> expandedSolidUnitReplicates,
 		WeighBoat -> Link[weighboats],
 		Tweezer -> Link[tweezer],
 		Balance-> Link[balance],
@@ -1385,29 +1414,35 @@ measureCountResourcePackets[mySamples:{ObjectP[Object[Sample]]...},myUnresolvedO
 		UnresolvedOptions->myUnresolvedOptions,
 		Replace[Checkpoints]->{
 			{"Picking Resources",5 Minute,"Samples required to execute this protocol are gathered from storage",
-				Resource[Operator -> Model[User,Emerald,Operator,"Trainee"],Time -> 5 Minute]},
-			{"Weighing Tablets",(5*Minute*Length[expandedResourcesNeedingParameterization]+1*Minute),"The weight of a subset of the samples' tablets is determined",
-				Resource[Operator -> Model[User,Emerald,Operator,"Trainee"],Time -> (5*Minute*Length[expandedResourcesNeedingParameterization]+1*Minute)]},
+				Resource[Operator -> $BaselineOperator,Time -> 5 Minute]},
+			{"Weighing Solid Units",(5*Minute*Length[expandedResourcesNeedingParameterization]+1*Minute),"The weight of a subset of the samples' tablets or sachets is determined.",
+				Resource[Operator -> $BaselineOperator,Time -> (5*Minute*Length[expandedResourcesNeedingParameterization]+1*Minute)]},
 			{"Weighing Samples",0 Minute,"Total weight measurements of the provided samples are made.",
-				Resource[Operator -> Model[User,Emerald,Operator,"Trainee"],Time -> 0 Minute]},
+				Resource[Operator -> $BaselineOperator,Time -> 0 Minute]},
 			{"Parsing Data",0 Minute,"The database is updated with the weight and count information of the provided samples.",
 				Null},
 			{"Returning Materials",5 Minute,"Samples are returned to storage.",
-				Resource[Operator -> Model[User,Emerald,Operator,"Trainee"],Time -> 5 Minute]}
+				Resource[Operator -> $BaselineOperator,Time -> 5 Minute]}
 		},
     Template -> Link[Lookup[myResolvedOptions, Template], ProtocolsTemplated],
     ParentProtocol -> Link[Lookup[myResolvedOptions,ParentProtocol],Subprotocols],
     Name->Lookup[myResolvedOptions,Name]
   ];
 
+	(* Generate a packet with the shared fields *)
+	sharedFieldPacket = populateSamplePrepFields[mySamples, myResolvedOptions, Cache -> inheritedCache, Simulation -> simulation];
+
+	(* Merge the shared fields with the specific fields *)
+	finalizedPacket = Join[protocolPacket,sharedFieldPacket];
+
 	(* get all the resources that we are going to create so that we can call FRQ on those *)
-	allResources = DeleteDuplicates[Cases[Flatten[Values[protocolPacket]], _Resource]];
+	allResources = DeleteDuplicates[Cases[Values[finalizedPacket], _Resource, Infinity]];
 
 	(* call fulfillableResourceQ on all the resources we created *)
 	{fulfillable, frqTests} = Which[
     MatchQ[$ECLApplication, Engine], {True, {}},
-    gatherTests, Resources`Private`fulfillableResourceQ[allResources, Site->Lookup[myResolvedOptions,Site], Output -> {Result, Tests}, Cache -> inheritedCache],
-		True, {Resources`Private`fulfillableResourceQ[allResources, Site->Lookup[myResolvedOptions,Site], Messages -> messages, Cache -> inheritedCache], Null}
+    gatherTests, Resources`Private`fulfillableResourceQ[allResources, Site->Lookup[myResolvedOptions,Site], Output -> {Result, Tests}, Cache -> inheritedCache, Simulation -> simulation],
+		True, {Resources`Private`fulfillableResourceQ[allResources, Site->Lookup[myResolvedOptions,Site], Messages -> messages, Cache -> inheritedCache, Simulation -> simulation], Null}
 	];
 
 	(* generate the Preview option; that is always Null *)
@@ -1462,7 +1497,7 @@ ExperimentMeasureCountOptions[myInput:ListableP[ObjectP[{Object[Container]}]] | 
 (* get the options as a list *)
 	listedOptions = ToList[myOptions];
 
-	(* remove the Output and OutputFormat option before passing to the core function because it doens't make sense here *)
+	(* remove the Output and OutputFormat option before passing to the core function because it doesn't make sense here *)
 	noOutputOptions = DeleteCases[listedOptions, Alternatives[Output -> _, OutputFormat->_]];
 
 	(* get only the options for DropShipSamples *)
@@ -1490,7 +1525,7 @@ ExperimentMeasureCountPreview[myInput:ListableP[ObjectP[{Object[Container]}]] | 
 
 	(* get the options as a list *)
 	listedOptions = ToList[myOptions];
-	(* remove the Output option before passing to the core function because it doens't make sense here *)
+	(* remove the Output option before passing to the core function because it doesn't make sense here *)
 	noOutputOptions = DeleteCases[listedOptions, Output -> _];
 
 	ExperimentMeasureCount[myInput,Append[noOutputOptions,Output->Preview]];
@@ -1514,7 +1549,7 @@ ValidExperimentMeasureCountQ[myInput:ListableP[ObjectP[{Object[Container]}]] | L
 	listedOptions = ToList[myOptions];
 	listedInput = ToList[myInput];
 
-	(* remove the Output option before passing to the core function because it doens't make sense here *)
+	(* remove the Output option before passing to the core function because it doesn't make sense here *)
 	preparedOptions = DeleteCases[listedOptions, (Output | Verbose | OutputFormat) -> _];
 
 	(* return only the tests for ExperimentMeasureCount *)

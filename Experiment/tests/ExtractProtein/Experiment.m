@@ -353,6 +353,90 @@ DefineTests[ExperimentExtractProtein,
     (* Messages tests *)
 
     (* - General Errors and Warnings - *)
+    Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a sample that does not exist (name form):"},
+      ExperimentExtractProtein[Object[Sample, "Nonexistent sample"]],
+      $Failed,
+      Messages :> {Download::ObjectDoesNotExist}
+    ],
+    Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a container that does not exist (name form):"},
+      ExperimentExtractProtein[Object[Container, Vessel, "Nonexistent container"]],
+      $Failed,
+      Messages :> {Download::ObjectDoesNotExist}
+    ],
+    Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a sample that does not exist (ID form):"},
+      ExperimentExtractProtein[Object[Sample, "id:12345678"]],
+      $Failed,
+      Messages :> {Download::ObjectDoesNotExist}
+    ],
+    Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a container that does not exist (ID form):"},
+      ExperimentExtractProtein[Object[Container, Vessel, "id:12345678"]],
+      $Failed,
+      Messages :> {Download::ObjectDoesNotExist}
+    ],
+    Example[{Messages, "ObjectDoesNotExist", "Do NOT throw a message if we have a simulated sample but a simulation is specified that indicates that it is simulated:"},
+      Module[{containerPackets, containerID, sampleID, samplePackets, simulationToPassIn},
+        containerPackets = UploadSample[
+          Model[Container,Plate,"96-well 2mL Deep Well Plate"],
+          {"Work Surface", Object[Container, Bench, "The Bench of Testing"]},
+          Upload -> False,
+          SimulationMode -> True,
+          FastTrack -> True
+        ];
+        simulationToPassIn = Simulation[containerPackets];
+        containerID = Lookup[First[containerPackets], Object];
+        samplePackets = UploadSample[
+          {{100 VolumePercent, Model[Cell, Bacteria, "E.coli MG1655"]}},
+          {"A1", containerID},
+          Upload -> False,
+          SimulationMode -> True,
+          FastTrack -> True,
+          Simulation -> simulationToPassIn,
+          InitialAmount -> 0.2 Milliliter,
+          CellType -> Bacterial,
+          CultureAdhesion -> Suspension,Living -> True,
+          State -> Liquid,
+          StorageCondition -> Model[StorageCondition,"id:N80DNj1r04jW"] (*Model[StorageCondition, "Refrigerator"]*)
+        ];
+        sampleID = Lookup[First[samplePackets], Object];
+        simulationToPassIn = UpdateSimulation[simulationToPassIn, Simulation[samplePackets]];
+
+        ExperimentExtractProtein[sampleID, Purification->None, Simulation -> simulationToPassIn, Output -> Options]
+      ],
+      {__Rule},
+      TimeConstraint -> 1800
+    ],
+    Example[{Messages, "ObjectDoesNotExist", "Do NOT throw a message if we have a simulated container but a simulation is specified that indicates that it is simulated:"},
+      Module[{containerPackets, containerID, sampleID, samplePackets, simulationToPassIn},
+        containerPackets = UploadSample[
+          Model[Container,Plate,"96-well 2mL Deep Well Plate"],
+          {"Work Surface", Object[Container, Bench, "The Bench of Testing"]},
+          Upload -> False,
+          SimulationMode -> True,
+          FastTrack -> True
+        ];
+        simulationToPassIn = Simulation[containerPackets];
+        containerID = Lookup[First[containerPackets], Object];
+        samplePackets = UploadSample[
+          {{100 VolumePercent, Model[Cell, Bacteria, "E.coli MG1655"]}},
+          {"A1", containerID},
+          Upload -> False,
+          SimulationMode -> True,
+          FastTrack -> True,
+          Simulation -> simulationToPassIn,
+          InitialAmount -> 0.2 Milliliter,
+          CellType -> Bacterial,
+          CultureAdhesion -> Suspension,Living -> True,
+          State -> Liquid,
+          StorageCondition -> Model[StorageCondition,"id:N80DNj1r04jW"] (*Model[StorageCondition, "Refrigerator"]*)
+        ];
+        sampleID = Lookup[First[samplePackets], Object];
+        simulationToPassIn = UpdateSimulation[simulationToPassIn, Simulation[samplePackets]];
+
+        ExperimentExtractProtein[containerID, Purification->None, Simulation -> simulationToPassIn, Output -> Options]
+      ],
+      {__Rule},
+      TimeConstraint -> 1800
+    ],
     Example[{Messages,"MethodTargetProteinMismatch","Return a warning if the specified method conflicts with the specified target protein:"},
       ExperimentExtractProtein[
         Object[Sample, "ExperimentExtractProtein Suspended Microbial Cell Sample "<>$SessionUUID],
@@ -1745,7 +1829,7 @@ DefineTests[ExperimentExtractProtein,
     ],
 
     (*Test Case: Default resolutions when nothing is set *)
-    Example[{Options, {MagneticBeadSeparationSelectionStrategy,MagneticBeadSeparationMode,MagneticBeadSeparationSampleVolume,MagneticBeads,MagneticBeadVolume,MagneticBeadCollectionStorageCondition,MagnetizationRack}, "If Purification contains MagneticBeadSeparation, unless otherwise specified, 1) MagneticBeadSeparationSelectionStrategy is set to Positive, 2) MagneticBeadSeparationMode is set based on TargetProtein: if TargetProtein is not a Model[Molecule], MagneticBeadSeparationMode is set to IonExchange, 3) If the volume of the sample is less than 50% of the max volume of the container, then all of the sample will be used as the MagneticBeadSeparationSampleVolume, 4) if MagneticBeadSeparationMode is not set to Affinity, MagneticBeads is set to the first one found with the same MagneticBeadSeparationMode, 5) MagneticBeadVolume is set to 1/10 of the MagneticBeadSeparationSampleVolume, 6)MagneticBeadCollectionStorageCondition is set to Disposal, 7) MagnetizationRack is set to Model[Item, MagnetizationRack, \"Alpaqua 96S Super Magnet 96-well Plate Rack\"]:"},
+    Example[{Options, {MagneticBeadSeparationSelectionStrategy,MagneticBeadSeparationMode,MagneticBeadSeparationSampleVolume,MagneticBeads,MagneticBeadVolume,MagneticBeadCollectionStorageCondition,MagnetizationRack}, "If Purification contains MagneticBeadSeparation, unless otherwise specified, 1) MagneticBeadSeparationSelectionStrategy is set to Positive, 2) MagneticBeadSeparationMode is set based on TargetProtein: if TargetProtein is not a Model[Molecule], MagneticBeadSeparationMode is set to IonExchange, 3) If the volume of the sample is less than 50% of the max volume of the container, then all of the sample will be used as the MagneticBeadSeparationSampleVolume, 4) if MagneticBeadSeparationMode is not set to Affinity, MagneticBeads is set to the first one found with the same MagneticBeadSeparationMode, 5) MagneticBeadVolume is set to 1/10 of the MagneticBeadSeparationSampleVolume, 6)MagneticBeadCollectionStorageCondition is set to Disposal, 7) MagnetizationRack is set to Model[Item, MagnetizationRack, \"Alpaqua Magnum FLX Enhanced Universal Magnet 96-well Plate Rack\"]:"},
       ExperimentExtractProtein[
         Object[Sample,"ExperimentExtractProtein Previously Extracted Protein Sample " <> $SessionUUID],
         Purification -> MagneticBeadSeparation,
@@ -1762,7 +1846,7 @@ DefineTests[ExperimentExtractProtein,
             MagneticBeads -> ObjectP[Model[Sample]],
             MagneticBeadVolume -> EqualP[0.02 Milliliter],
             MagneticBeadCollectionStorageCondition -> Disposal,
-            MagnetizationRack -> ObjectP[Model[Item, MagnetizationRack, "Alpaqua 96S Super Magnet 96-well Plate Rack"]]
+            MagnetizationRack -> ObjectP[Model[Item, MagnetizationRack, "id:kEJ9mqJYljjz"]](*Model[Item,MagnetizationRack,"Alpaqua Magnum FLX Enhanced Universal Magnet 96-well Plate Rack"]*)
           }
         ]
       },
@@ -1967,7 +2051,7 @@ DefineTests[ExperimentExtractProtein,
       TimeConstraint -> 1800
     ],
     (*Test Case: PreWashMix is True and No other options are set. Mix type is set to Pipette, and other options are resolved. *)
-    Example[{Options, {MagneticBeadSeparationPreWashMixType,MagneticBeadSeparationPreWashMixTime,MagneticBeadSeparationPreWashMixRate,NumberOfMagneticBeadSeparationPreWashMixes,MagneticBeadSeparationPreWashMixVolume,MagneticBeadSeparationPreWashMixTemperature,MagneticBeadSeparationPreWashMixTipType,MagneticBeadSeparationPreWashMixTipMaterial}, "If MagneticBeadSeparationPreWashMix is set to True, other magnetic bead separation prewash mix options are automatically set. If nothing is specified, MagneticBeadSeparationPreWashMixType is set to set to Pipette. When MagneticBeadSeparationPreWashMixType is Pipette, unless otherwise specified, 1) MagneticBeadSeparationPreWashMixTime and MagneticBeadSeparationPreWashMixRateare set to Null, 2) NumberOfMagneticBeadSeparationPreWashMixes is set to 10, 3) MagneticBeadSeparationPreWashMixVolume is set based on current volume: if 50% of the combined MagneticBeadSeparationPreWashSolutionVolume and magnetic beads volume is less than the MaxRoboticSingleTransferVolume (0.970 mL), MagneticBeadSeparationPreWashMixVolume is automatically set to 50% of the combined MagneticBeadSeparationPreWashSolutionVolume and magnetic beads volume, 4) MagneticBeadSeparationPreWashMixTipType is set to WideBore, 5) MagneticBeadSeparationPreWashMixTipMaterial is set to Polypropylene, 6) MagneticBeadSeparationPreWashMixTemperature is set to Ambient:"},
+    Example[{Options, {MagneticBeadSeparationPreWashMixType,MagneticBeadSeparationPreWashMixTime,MagneticBeadSeparationPreWashMixRate,NumberOfMagneticBeadSeparationPreWashMixes,MagneticBeadSeparationPreWashMixVolume,MagneticBeadSeparationPreWashMixTemperature,MagneticBeadSeparationPreWashMixTipType,MagneticBeadSeparationPreWashMixTipMaterial}, "If MagneticBeadSeparationPreWashMix is set to True, other magnetic bead separation prewash mix options are automatically set. If nothing is specified, MagneticBeadSeparationPreWashMixType is set to set to Pipette. When MagneticBeadSeparationPreWashMixType is Pipette, unless otherwise specified, 1) MagneticBeadSeparationPreWashMixTime and MagneticBeadSeparationPreWashMixRateare set to Null, 2) NumberOfMagneticBeadSeparationPreWashMixes is set to 20, 3) MagneticBeadSeparationPreWashMixVolume is set based on current volume: if 80% of the combined MagneticBeadSeparationPreWashSolutionVolume and magnetic beads volume is less than the MaxRoboticSingleTransferVolume (0.970 mL), MagneticBeadSeparationPreWashMixVolume is automatically set to 80% of the combined MagneticBeadSeparationPreWashSolutionVolume and magnetic beads volume, 4) MagneticBeadSeparationPreWashMixTipType is set to WideBore, 5) MagneticBeadSeparationPreWashMixTipMaterial is set to Polypropylene, 6) MagneticBeadSeparationPreWashMixTemperature is set to Ambient:"},
       ExperimentExtractProtein[
         Object[Sample,"ExperimentExtractProtein Previously Extracted Protein Sample " <> $SessionUUID],
         MagneticBeadVolume -> 0.2 Milliliter,
@@ -1984,8 +2068,8 @@ DefineTests[ExperimentExtractProtein,
             MagneticBeadSeparationPreWashMixTime->Null,
             MagneticBeadSeparationPreWashMixRate -> Null,
             MagneticBeadSeparationPreWashMixTemperature-> Ambient,
-            MagneticBeadSeparationPreWashMixVolume -> EqualP[0.2 Milliliter],
-            NumberOfMagneticBeadSeparationPreWashMixes -> 10,
+            MagneticBeadSeparationPreWashMixVolume -> EqualP[0.32 Milliliter],
+            NumberOfMagneticBeadSeparationPreWashMixes -> 20,
             MagneticBeadSeparationPreWashMixTipType -> WideBore,
             MagneticBeadSeparationPreWashMixTipMaterial -> Polypropylene
           }
@@ -1994,7 +2078,7 @@ DefineTests[ExperimentExtractProtein,
       TimeConstraint -> 1800
     ],
     (*Test Case: PreWashMix is True and some pipetting options are set: MagneticBeadSeparationPreWashMixType->Pipette, another resolution scenario for mix volume when current volume is larger*)
-    Example[{Options, {MagneticBeadSeparationPreWashMixType,MagneticBeadSeparationPreWashMixVolume}, "If MagneticBeadSeparationPreWashMix is set to True, other magnetic bead separation prewash mix options are automatically set. 1) Unless otherwise specified, MagneticBeadSeparationPreWashMixType is set to Pipette if any of the pipetting options are set. 2) When MagneticBeadSeparationPreWashMixType is Pipette, unless otherwise specified, MagneticBeadSeparationPreWashMixVolume is set based on current volume: if 50% of the combined MagneticBeadSeparationPreWashSolutionVolume and magnetic beads volume is greater than the MaxRoboticSingleTransferVolume (0.970 mL), MagneticBeadSeparationPreWashMixVolume is automatically set to the MaxRoboticSingleTransferVolume (0.970 mL):"},
+    Example[{Options, {MagneticBeadSeparationPreWashMixType,MagneticBeadSeparationPreWashMixVolume}, "If MagneticBeadSeparationPreWashMix is set to True, other magnetic bead separation prewash mix options are automatically set. 1) Unless otherwise specified, MagneticBeadSeparationPreWashMixType is set to Pipette if any of the pipetting options are set. 2) When MagneticBeadSeparationPreWashMixType is Pipette, unless otherwise specified, MagneticBeadSeparationPreWashMixVolume is set based on current volume: if 80% of the combined MagneticBeadSeparationPreWashSolutionVolume and magnetic beads volume is greater than the MaxRoboticSingleTransferVolume (0.970 mL), MagneticBeadSeparationPreWashMixVolume is automatically set to the MaxRoboticSingleTransferVolume (0.970 mL):"},
       ExperimentExtractProtein[
         Object[Sample,"ExperimentExtractProtein Previously Extracted Protein Sample " <> $SessionUUID],
         MagneticBeadSeparationPreWashMixTipType -> WideBore,
@@ -2182,7 +2266,7 @@ DefineTests[ExperimentExtractProtein,
       TimeConstraint -> 1800
     ],
     (*Test Case: EquilibrationMix is True and No other options are set. Mix type is set to Pipette, and other options are resolved. *)
-    Example[{Options, {MagneticBeadSeparationEquilibrationMixType,MagneticBeadSeparationEquilibrationMixTime,MagneticBeadSeparationEquilibrationMixRate,NumberOfMagneticBeadSeparationEquilibrationMixes,MagneticBeadSeparationEquilibrationMixVolume,MagneticBeadSeparationEquilibrationMixTemperature,MagneticBeadSeparationEquilibrationMixTipType,MagneticBeadSeparationEquilibrationMixTipMaterial}, "If MagneticBeadSeparationEquilibrationMix is set to True, other magnetic bead separation equilibration mix options are automatically set. If nothing is specified, MagneticBeadSeparationEquilibrationMixType is set to set to Pipette. When MagneticBeadSeparationEquilibrationMixType is Pipette, unless otherwise specified, 1) MagneticBeadSeparationEquilibrationMixTime and MagneticBeadSeparationEquilibrationMixRateare set to Null, 2) NumberOfMagneticBeadSeparationEquilibrationMixes is set to 10, 3) MagneticBeadSeparationEquilibrationMixVolume is set based on current volume: if 50% of the combined MagneticBeadSeparationEquilibrationSolutionVolume and magnetic beads volume is less than the MaxRoboticSingleTransferVolume (0.970 mL), MagneticBeadSeparationEquilibrationMixVolume is automatically set to 50% of the combined MagneticBeadSeparationEquilibrationSolutionVolume and magnetic beads volume, 4) MagneticBeadSeparationEquilibrationMixTipType is set to WideBore, 5) MagneticBeadSeparationEquilibrationMixTipMaterial is set to Polypropylene, 6) MagneticBeadSeparationEquilibrationMixTemperature is set to Ambient:"},
+    Example[{Options, {MagneticBeadSeparationEquilibrationMixType,MagneticBeadSeparationEquilibrationMixTime,MagneticBeadSeparationEquilibrationMixRate,NumberOfMagneticBeadSeparationEquilibrationMixes,MagneticBeadSeparationEquilibrationMixVolume,MagneticBeadSeparationEquilibrationMixTemperature,MagneticBeadSeparationEquilibrationMixTipType,MagneticBeadSeparationEquilibrationMixTipMaterial}, "If MagneticBeadSeparationEquilibrationMix is set to True, other magnetic bead separation equilibration mix options are automatically set. If nothing is specified, MagneticBeadSeparationEquilibrationMixType is set to set to Pipette. When MagneticBeadSeparationEquilibrationMixType is Pipette, unless otherwise specified, 1) MagneticBeadSeparationEquilibrationMixTime and MagneticBeadSeparationEquilibrationMixRateare set to Null, 2) NumberOfMagneticBeadSeparationEquilibrationMixes is set to 20, 3) MagneticBeadSeparationEquilibrationMixVolume is set based on current volume: if 80% of the combined MagneticBeadSeparationEquilibrationSolutionVolume and magnetic beads volume is less than the MaxRoboticSingleTransferVolume (0.970 mL), MagneticBeadSeparationEquilibrationMixVolume is automatically set to 80% of the combined MagneticBeadSeparationEquilibrationSolutionVolume and magnetic beads volume, 4) MagneticBeadSeparationEquilibrationMixTipType is set to WideBore, 5) MagneticBeadSeparationEquilibrationMixTipMaterial is set to Polypropylene, 6) MagneticBeadSeparationEquilibrationMixTemperature is set to Ambient:"},
       ExperimentExtractProtein[
         Object[Sample,"ExperimentExtractProtein Previously Extracted Protein Sample " <> $SessionUUID],
         MagneticBeadVolume -> 0.2 Milliliter,
@@ -2199,8 +2283,8 @@ DefineTests[ExperimentExtractProtein,
             MagneticBeadSeparationEquilibrationMixTime->Null,
             MagneticBeadSeparationEquilibrationMixRate -> Null,
             MagneticBeadSeparationEquilibrationMixTemperature-> Ambient,
-            MagneticBeadSeparationEquilibrationMixVolume -> EqualP[0.2 Milliliter],
-            NumberOfMagneticBeadSeparationEquilibrationMixes -> 10,
+            MagneticBeadSeparationEquilibrationMixVolume -> EqualP[0.32 Milliliter],
+            NumberOfMagneticBeadSeparationEquilibrationMixes -> 20,
             MagneticBeadSeparationEquilibrationMixTipType -> WideBore,
             MagneticBeadSeparationEquilibrationMixTipMaterial -> Polypropylene
           }
@@ -2209,7 +2293,7 @@ DefineTests[ExperimentExtractProtein,
       TimeConstraint -> 1800
     ],
     (*Test Case: EquilibrationMix is True and some pipetting options are set: MagneticBeadSeparationEquilibrationMixType->Pipette, another resolution scenario for mix volume when current volume is larger*)
-    Example[{Options, {MagneticBeadSeparationEquilibrationMixType,MagneticBeadSeparationEquilibrationMixVolume}, "If MagneticBeadSeparationEquilibrationMix is set to True, other magnetic bead separation equilibration mix options are automatically set. 1) Unless otherwise specified, MagneticBeadSeparationEquilibrationMixType is set to Pipette if any of the pipetting options are set. 2) When MagneticBeadSeparationEquilibrationMixType is Pipette, unless otherwise specified, MagneticBeadSeparationEquilibrationMixVolume is set based on current volume: if 50% of the combined MagneticBeadSeparationEquilibrationSolutionVolume and magnetic beads volume is greater than the MaxRoboticSingleTransferVolume (0.970 mL), MagneticBeadSeparationEquilibrationMixVolume is automatically set to the MaxRoboticSingleTransferVolume (0.970 mL):"},
+    Example[{Options, {MagneticBeadSeparationEquilibrationMixType,MagneticBeadSeparationEquilibrationMixVolume}, "If MagneticBeadSeparationEquilibrationMix is set to True, other magnetic bead separation equilibration mix options are automatically set. 1) Unless otherwise specified, MagneticBeadSeparationEquilibrationMixType is set to Pipette if any of the pipetting options are set. 2) When MagneticBeadSeparationEquilibrationMixType is Pipette, unless otherwise specified, MagneticBeadSeparationEquilibrationMixVolume is set based on current volume: if 80% of the combined MagneticBeadSeparationEquilibrationSolutionVolume and magnetic beads volume is greater than the MaxRoboticSingleTransferVolume (0.970 mL), MagneticBeadSeparationEquilibrationMixVolume is automatically set to the MaxRoboticSingleTransferVolume (0.970 mL):"},
       ExperimentExtractProtein[
         Object[Sample,"ExperimentExtractProtein Previously Extracted Protein Sample " <> $SessionUUID],
         MagneticBeadSeparationEquilibrationMixTipType -> WideBore,
@@ -2366,7 +2450,7 @@ DefineTests[ExperimentExtractProtein,
       TimeConstraint -> 1800
     ],
     (*Test Case: LoadingMix is True and No other options are set. Mix type is set to Pipette, and other options are resolved. *)
-    Example[{Options, {MagneticBeadSeparationLoadingMixType,MagneticBeadSeparationLoadingMixTime,MagneticBeadSeparationLoadingMixRate,NumberOfMagneticBeadSeparationLoadingMixes,MagneticBeadSeparationLoadingMixVolume,MagneticBeadSeparationLoadingMixTemperature,MagneticBeadSeparationLoadingMixTipType,MagneticBeadSeparationLoadingMixTipMaterial}, "If MagneticBeadSeparationLoadingMix is set to True, other magnetic bead separation loading mix options are automatically set. If nothing is specified, MagneticBeadSeparationLoadingMixType is set to set to Pipette. When MagneticBeadSeparationLoadingMixType is Pipette, unless otherwise specified, 1) MagneticBeadSeparationLoadingMixTime and MagneticBeadSeparationLoadingMixRateare set to Null, 2) NumberOfMagneticBeadSeparationLoadingMixes is set to 10, 3) MagneticBeadSeparationLoadingMixVolume is set based on current volume: if 50% of the combined MagneticBeadSeparationSampleVolume and magnetic beads volume is less than the MaxRoboticSingleTransferVolume (0.970 mL), MagneticBeadSeparationLoadingMixVolume is automatically set to 50% of the combined MagneticBeadSeparationLoadingSolutionVolume and magnetic beads volume, 4) MagneticBeadSeparationLoadingMixTipType is set to WideBore, 5) MagneticBeadSeparationLoadingMixTipMaterial is set to Polypropylene, 6) MagneticBeadSeparationLoadingMixTemperature is set to Ambient:"},
+    Example[{Options, {MagneticBeadSeparationLoadingMixType,MagneticBeadSeparationLoadingMixTime,MagneticBeadSeparationLoadingMixRate,NumberOfMagneticBeadSeparationLoadingMixes,MagneticBeadSeparationLoadingMixVolume,MagneticBeadSeparationLoadingMixTemperature,MagneticBeadSeparationLoadingMixTipType,MagneticBeadSeparationLoadingMixTipMaterial}, "If MagneticBeadSeparationLoadingMix is set to True, other magnetic bead separation loading mix options are automatically set. If nothing is specified, MagneticBeadSeparationLoadingMixType is set to set to Pipette. When MagneticBeadSeparationLoadingMixType is Pipette, unless otherwise specified, 1) MagneticBeadSeparationLoadingMixTime and MagneticBeadSeparationLoadingMixRateare set to Null, 2) NumberOfMagneticBeadSeparationLoadingMixes is set to 20, 3) MagneticBeadSeparationLoadingMixVolume is set based on current volume: if 80% of the combined MagneticBeadSeparationSampleVolume and magnetic beads volume is less than the MaxRoboticSingleTransferVolume (0.970 mL), MagneticBeadSeparationLoadingMixVolume is automatically set to 80% of the combined MagneticBeadSeparationLoadingSolutionVolume and magnetic beads volume, 4) MagneticBeadSeparationLoadingMixTipType is set to WideBore, 5) MagneticBeadSeparationLoadingMixTipMaterial is set to Polypropylene, 6) MagneticBeadSeparationLoadingMixTemperature is set to Ambient:"},
       ExperimentExtractProtein[
         Object[Sample,"ExperimentExtractProtein Previously Extracted Protein Sample " <> $SessionUUID],
         MagneticBeadVolume -> 0.2 Milliliter,
@@ -2383,8 +2467,8 @@ DefineTests[ExperimentExtractProtein,
             MagneticBeadSeparationLoadingMixTime->Null,
             MagneticBeadSeparationLoadingMixRate -> Null,
             MagneticBeadSeparationLoadingMixTemperature-> Ambient,
-            MagneticBeadSeparationLoadingMixVolume -> EqualP[0.2 Milliliter],
-            NumberOfMagneticBeadSeparationLoadingMixes -> 10,
+            MagneticBeadSeparationLoadingMixVolume -> EqualP[0.32 Milliliter],
+            NumberOfMagneticBeadSeparationLoadingMixes -> 20,
             MagneticBeadSeparationLoadingMixTipType -> WideBore,
             MagneticBeadSeparationLoadingMixTipMaterial -> Polypropylene
           }
@@ -2798,7 +2882,7 @@ DefineTests[ExperimentExtractProtein,
       MagneticBeadSeparationSecondaryWashMixType,MagneticBeadSeparationSecondaryWashMixTime,MagneticBeadSeparationSecondaryWashMixRate,NumberOfMagneticBeadSeparationSecondaryWashMixes,MagneticBeadSeparationSecondaryWashMixVolume,MagneticBeadSeparationSecondaryWashMixTemperature,MagneticBeadSeparationSecondaryWashMixTipType,MagneticBeadSeparationSecondaryWashMixTipMaterial,
       MagneticBeadSeparationTertiaryWashMixType,MagneticBeadSeparationTertiaryWashMixTime,MagneticBeadSeparationTertiaryWashMixRate,NumberOfMagneticBeadSeparationTertiaryWashMixes,MagneticBeadSeparationTertiaryWashMixVolume,MagneticBeadSeparationTertiaryWashMixTemperature,MagneticBeadSeparationTertiaryWashMixTipType,MagneticBeadSeparationTertiaryWashMixTipMaterial,
       MagneticBeadSeparationQuaternaryWashMixType,MagneticBeadSeparationQuaternaryWashMixTime,MagneticBeadSeparationQuaternaryWashMixRate,NumberOfMagneticBeadSeparationQuaternaryWashMixes,MagneticBeadSeparationQuaternaryWashMixVolume,MagneticBeadSeparationQuaternaryWashMixTemperature,MagneticBeadSeparationQuaternaryWashMixTipType,MagneticBeadSeparationQuaternaryWashMixTipMaterial,
-      MagneticBeadSeparationQuinaryWashMixType,MagneticBeadSeparationQuinaryWashMixTime,MagneticBeadSeparationQuinaryWashMixRate,NumberOfMagneticBeadSeparationQuinaryWashMixes,MagneticBeadSeparationQuinaryWashMixVolume,MagneticBeadSeparationQuinaryWashMixTemperature,MagneticBeadSeparationQuinaryWashMixTipType,MagneticBeadSeparationQuinaryWashMixTipMaterial,MagneticBeadSeparationSenaryWashMixType,MagneticBeadSeparationSenaryWashMixTime,MagneticBeadSeparationSenaryWashMixRate,NumberOfMagneticBeadSeparationSenaryWashMixes,MagneticBeadSeparationSenaryWashMixVolume,MagneticBeadSeparationSenaryWashMixTemperature,MagneticBeadSeparationSenaryWashMixTipType,MagneticBeadSeparationSenaryWashMixTipMaterial,MagneticBeadSeparationSeptenaryWashMixType,MagneticBeadSeparationSeptenaryWashMixTime,MagneticBeadSeparationSeptenaryWashMixRate,NumberOfMagneticBeadSeparationSeptenaryWashMixes,MagneticBeadSeparationSeptenaryWashMixVolume,MagneticBeadSeparationSeptenaryWashMixTemperature,MagneticBeadSeparationSeptenaryWashMixTipType,MagneticBeadSeparationSeptenaryWashMixTipMaterial}, "If MagneticBeadSeparationWashMix is set to True, other magnetic bead separation wash mix options are automatically set. If nothing is specified, MagneticBeadSeparationWashMixType is set to set to Pipette. When MagneticBeadSeparationWashMixType is Pipette, unless otherwise specified, 1) MagneticBeadSeparationWashMixTime and MagneticBeadSeparationWashMixRateare set to Null, 2) NumberOfMagneticBeadSeparationWashMixes is set to 10, 3) MagneticBeadSeparationWashMixVolume is set based on current volume: if 50% of the combined MagneticBeadSeparationWashSolutionVolume and magnetic beads volume is less than the MaxRoboticSingleTransferVolume (0.970 mL), MagneticBeadSeparationWashMixVolume is automatically set to 50% of the combined MagneticBeadSeparationWashSolutionVolume and magnetic beads volume, 4) MagneticBeadSeparationWashMixTipType is set to WideBore, 5) MagneticBeadSeparationWashMixTipMaterial is set to Polypropylene, 6) MagneticBeadSeparationWashMixTemperature is set to Ambient. Options of the 7 different wash stages are resolved similarly:"},
+      MagneticBeadSeparationQuinaryWashMixType,MagneticBeadSeparationQuinaryWashMixTime,MagneticBeadSeparationQuinaryWashMixRate,NumberOfMagneticBeadSeparationQuinaryWashMixes,MagneticBeadSeparationQuinaryWashMixVolume,MagneticBeadSeparationQuinaryWashMixTemperature,MagneticBeadSeparationQuinaryWashMixTipType,MagneticBeadSeparationQuinaryWashMixTipMaterial,MagneticBeadSeparationSenaryWashMixType,MagneticBeadSeparationSenaryWashMixTime,MagneticBeadSeparationSenaryWashMixRate,NumberOfMagneticBeadSeparationSenaryWashMixes,MagneticBeadSeparationSenaryWashMixVolume,MagneticBeadSeparationSenaryWashMixTemperature,MagneticBeadSeparationSenaryWashMixTipType,MagneticBeadSeparationSenaryWashMixTipMaterial,MagneticBeadSeparationSeptenaryWashMixType,MagneticBeadSeparationSeptenaryWashMixTime,MagneticBeadSeparationSeptenaryWashMixRate,NumberOfMagneticBeadSeparationSeptenaryWashMixes,MagneticBeadSeparationSeptenaryWashMixVolume,MagneticBeadSeparationSeptenaryWashMixTemperature,MagneticBeadSeparationSeptenaryWashMixTipType,MagneticBeadSeparationSeptenaryWashMixTipMaterial}, "If MagneticBeadSeparationWashMix is set to True, other magnetic bead separation wash mix options are automatically set. If nothing is specified, MagneticBeadSeparationWashMixType is set to set to Pipette. When MagneticBeadSeparationWashMixType is Pipette, unless otherwise specified, 1) MagneticBeadSeparationWashMixTime and MagneticBeadSeparationWashMixRateare set to Null, 2) NumberOfMagneticBeadSeparationWashMixes is set to 20, 3) MagneticBeadSeparationWashMixVolume is set based on current volume: if 80% of the combined MagneticBeadSeparationWashSolutionVolume and magnetic beads volume is less than the MaxRoboticSingleTransferVolume (0.970 mL), MagneticBeadSeparationWashMixVolume is automatically set to 80% of the combined MagneticBeadSeparationWashSolutionVolume and magnetic beads volume, 4) MagneticBeadSeparationWashMixTipType is set to WideBore, 5) MagneticBeadSeparationWashMixTipMaterial is set to Polypropylene, 6) MagneticBeadSeparationWashMixTemperature is set to Ambient. Options of the 7 different wash stages are resolved similarly:"},
       ExperimentExtractProtein[
         Object[Sample,"ExperimentExtractProtein Previously Extracted Protein Sample " <> $SessionUUID],
         MagneticBeadVolume -> 0.2 Milliliter,
@@ -2827,56 +2911,56 @@ DefineTests[ExperimentExtractProtein,
             MagneticBeadSeparationWashMixTime->Null,
             MagneticBeadSeparationWashMixRate -> Null,
             MagneticBeadSeparationWashMixTemperature-> Ambient,
-            MagneticBeadSeparationWashMixVolume -> EqualP[0.2 Milliliter],
-            NumberOfMagneticBeadSeparationWashMixes -> 10,
+            MagneticBeadSeparationWashMixVolume -> EqualP[0.32 Milliliter],
+            NumberOfMagneticBeadSeparationWashMixes -> 20,
             MagneticBeadSeparationWashMixTipType -> WideBore,
             MagneticBeadSeparationWashMixTipMaterial -> Polypropylene,
             MagneticBeadSeparationSecondaryWashMixType -> Pipette,
             MagneticBeadSeparationSecondaryWashMixTime->Null,
             MagneticBeadSeparationSecondaryWashMixRate -> Null,
             MagneticBeadSeparationSecondaryWashMixTemperature-> Ambient,
-            MagneticBeadSeparationSecondaryWashMixVolume -> EqualP[0.2 Milliliter],
-            NumberOfMagneticBeadSeparationSecondaryWashMixes -> 10,
+            MagneticBeadSeparationSecondaryWashMixVolume -> EqualP[0.32 Milliliter],
+            NumberOfMagneticBeadSeparationSecondaryWashMixes -> 20,
             MagneticBeadSeparationSecondaryWashMixTipType -> WideBore,
             MagneticBeadSeparationSecondaryWashMixTipMaterial -> Polypropylene,
             MagneticBeadSeparationTertiaryWashMixType -> Pipette,
             MagneticBeadSeparationTertiaryWashMixTime->Null,
             MagneticBeadSeparationTertiaryWashMixRate -> Null,
             MagneticBeadSeparationTertiaryWashMixTemperature-> Ambient,
-            MagneticBeadSeparationTertiaryWashMixVolume -> EqualP[0.2 Milliliter],
-            NumberOfMagneticBeadSeparationTertiaryWashMixes -> 10,
+            MagneticBeadSeparationTertiaryWashMixVolume -> EqualP[0.32 Milliliter],
+            NumberOfMagneticBeadSeparationTertiaryWashMixes -> 20,
             MagneticBeadSeparationTertiaryWashMixTipType -> WideBore,
             MagneticBeadSeparationTertiaryWashMixTipMaterial -> Polypropylene,
             MagneticBeadSeparationQuaternaryWashMixType -> Pipette,
             MagneticBeadSeparationQuaternaryWashMixTime->Null,
             MagneticBeadSeparationQuaternaryWashMixRate -> Null,
             MagneticBeadSeparationQuaternaryWashMixTemperature-> Ambient,
-            MagneticBeadSeparationQuaternaryWashMixVolume -> EqualP[0.2 Milliliter],
-            NumberOfMagneticBeadSeparationQuaternaryWashMixes -> 10,
+            MagneticBeadSeparationQuaternaryWashMixVolume -> EqualP[0.32 Milliliter],
+            NumberOfMagneticBeadSeparationQuaternaryWashMixes -> 20,
             MagneticBeadSeparationQuaternaryWashMixTipType -> WideBore,
             MagneticBeadSeparationQuaternaryWashMixTipMaterial -> Polypropylene,
             MagneticBeadSeparationQuinaryWashMixType -> Pipette,
             MagneticBeadSeparationQuinaryWashMixTime->Null,
             MagneticBeadSeparationQuinaryWashMixRate -> Null,
             MagneticBeadSeparationQuinaryWashMixTemperature-> Ambient,
-            MagneticBeadSeparationQuinaryWashMixVolume -> EqualP[0.2 Milliliter],
-            NumberOfMagneticBeadSeparationQuinaryWashMixes -> 10,
+            MagneticBeadSeparationQuinaryWashMixVolume -> EqualP[0.32 Milliliter],
+            NumberOfMagneticBeadSeparationQuinaryWashMixes -> 20,
             MagneticBeadSeparationQuinaryWashMixTipType -> WideBore,
             MagneticBeadSeparationQuinaryWashMixTipMaterial -> Polypropylene,
             MagneticBeadSeparationSenaryWashMixType -> Pipette,
             MagneticBeadSeparationSenaryWashMixTime->Null,
             MagneticBeadSeparationSenaryWashMixRate -> Null,
             MagneticBeadSeparationSenaryWashMixTemperature-> Ambient,
-            MagneticBeadSeparationSenaryWashMixVolume -> EqualP[0.2 Milliliter],
-            NumberOfMagneticBeadSeparationSenaryWashMixes -> 10,
+            MagneticBeadSeparationSenaryWashMixVolume -> EqualP[0.32 Milliliter],
+            NumberOfMagneticBeadSeparationSenaryWashMixes -> 20,
             MagneticBeadSeparationSenaryWashMixTipType -> WideBore,
             MagneticBeadSeparationSenaryWashMixTipMaterial -> Polypropylene,
             MagneticBeadSeparationSeptenaryWashMixType -> Pipette,
             MagneticBeadSeparationSeptenaryWashMixTime->Null,
             MagneticBeadSeparationSeptenaryWashMixRate -> Null,
             MagneticBeadSeparationSeptenaryWashMixTemperature-> Ambient,
-            MagneticBeadSeparationSeptenaryWashMixVolume -> EqualP[0.2 Milliliter],
-            NumberOfMagneticBeadSeparationSeptenaryWashMixes -> 10,
+            MagneticBeadSeparationSeptenaryWashMixVolume -> EqualP[0.32 Milliliter],
+            NumberOfMagneticBeadSeparationSeptenaryWashMixes -> 20,
             MagneticBeadSeparationSeptenaryWashMixTipType -> WideBore,
             MagneticBeadSeparationSeptenaryWashMixTipMaterial -> Polypropylene
           }
@@ -2885,7 +2969,7 @@ DefineTests[ExperimentExtractProtein,
       TimeConstraint -> 1800
     ],
     (*Test Case: WashMix is True and some pipetting options are set: MagneticBeadSeparationWashMixType->Pipette, another resolution scenario for mix volume when current volume is larger*)
-    Example[{Options, {MagneticBeadSeparationWashMixType,MagneticBeadSeparationWashMixVolume,MagneticBeadSeparationSecondaryWashMixType,MagneticBeadSeparationSecondaryWashMixVolume,MagneticBeadSeparationTertiaryWashMixType,MagneticBeadSeparationTertiaryWashMixVolume,MagneticBeadSeparationQuaternaryWashMixType,MagneticBeadSeparationQuaternaryWashMixVolume,MagneticBeadSeparationQuinaryWashMixType,MagneticBeadSeparationQuinaryWashMixVolume,MagneticBeadSeparationSenaryWashMixType,MagneticBeadSeparationSenaryWashMixVolume,MagneticBeadSeparationSeptenaryWashMixType,MagneticBeadSeparationSeptenaryWashMixVolume}, "If MagneticBeadSeparationWashMix is set to True, other magnetic bead separation wash mix options are automatically set. 1) Unless otherwise specified, MagneticBeadSeparationWashMixType is set to Pipette if any of the pipetting options are set. 2) When MagneticBeadSeparationWashMixType is Pipette, unless otherwise specified, MagneticBeadSeparationWashMixVolume is set based on current volume: if 50% of the combined MagneticBeadSeparationWashSolutionVolume and magnetic beads volume is greater than the MaxRoboticSingleTransferVolume (0.970 mL), MagneticBeadSeparationWashMixVolume is automatically set to the MaxRoboticSingleTransferVolume (0.970 mL). Options of the 7 different wash stages are resolved similarly:"},
+    Example[{Options, {MagneticBeadSeparationWashMixType,MagneticBeadSeparationWashMixVolume,MagneticBeadSeparationSecondaryWashMixType,MagneticBeadSeparationSecondaryWashMixVolume,MagneticBeadSeparationTertiaryWashMixType,MagneticBeadSeparationTertiaryWashMixVolume,MagneticBeadSeparationQuaternaryWashMixType,MagneticBeadSeparationQuaternaryWashMixVolume,MagneticBeadSeparationQuinaryWashMixType,MagneticBeadSeparationQuinaryWashMixVolume,MagneticBeadSeparationSenaryWashMixType,MagneticBeadSeparationSenaryWashMixVolume,MagneticBeadSeparationSeptenaryWashMixType,MagneticBeadSeparationSeptenaryWashMixVolume}, "If MagneticBeadSeparationWashMix is set to True, other magnetic bead separation wash mix options are automatically set. 1) Unless otherwise specified, MagneticBeadSeparationWashMixType is set to Pipette if any of the pipetting options are set. 2) When MagneticBeadSeparationWashMixType is Pipette, unless otherwise specified, MagneticBeadSeparationWashMixVolume is set based on current volume: if 80% of the combined MagneticBeadSeparationWashSolutionVolume and magnetic beads volume is greater than the MaxRoboticSingleTransferVolume (0.970 mL), MagneticBeadSeparationWashMixVolume is automatically set to the MaxRoboticSingleTransferVolume (0.970 mL). Options of the 7 different wash stages are resolved similarly:"},
       ExperimentExtractProtein[
         Object[Sample,"ExperimentExtractProtein Previously Extracted Protein Sample " <> $SessionUUID],
         MagneticBeadVolume -> 1.0 Milliliter,
@@ -3170,7 +3254,7 @@ DefineTests[ExperimentExtractProtein,
       TimeConstraint -> 1800
     ],
     (*Test Case: ElutionMix is True and No other options are set. Mix type is set to Pipette, and other options are resolved. *)
-    Example[{Options, {MagneticBeadSeparationElutionMixType,MagneticBeadSeparationElutionMixTime,MagneticBeadSeparationElutionMixRate,NumberOfMagneticBeadSeparationElutionMixes,MagneticBeadSeparationElutionMixVolume,MagneticBeadSeparationElutionMixTemperature,MagneticBeadSeparationElutionMixTipType,MagneticBeadSeparationElutionMixTipMaterial}, "If MagneticBeadSeparationElutionMix is set to True, other magnetic bead separation elution mix options are automatically set. If nothing is specified, MagneticBeadSeparationElutionMixType is set to set to Pipette. When MagneticBeadSeparationElutionMixType is Pipette, unless otherwise specified, 1) MagneticBeadSeparationElutionMixTime and MagneticBeadSeparationElutionMixRateare set to Null, 2) NumberOfMagneticBeadSeparationElutionMixes is set to 10, 3) MagneticBeadSeparationElutionMixVolume is set based on current volume: if 50% of the combined MagneticBeadSeparationElutionSolutionVolume and magnetic beads volume is less than the MaxRoboticSingleTransferVolume (0.970 mL), MagneticBeadSeparationElutionMixVolume is automatically set to 50% of the combined MagneticBeadSeparationElutionSolutionVolume and magnetic beads volume, 4) MagneticBeadSeparationElutionMixTipType is set to WideBore, 5) MagneticBeadSeparationElutionMixTipMaterial is set to Polypropylene, 6) MagneticBeadSeparationElutionMixTemperature is set to Ambient:"},
+    Example[{Options, {MagneticBeadSeparationElutionMixType,MagneticBeadSeparationElutionMixTime,MagneticBeadSeparationElutionMixRate,NumberOfMagneticBeadSeparationElutionMixes,MagneticBeadSeparationElutionMixVolume,MagneticBeadSeparationElutionMixTemperature,MagneticBeadSeparationElutionMixTipType,MagneticBeadSeparationElutionMixTipMaterial}, "If MagneticBeadSeparationElutionMix is set to True, other magnetic bead separation elution mix options are automatically set. If nothing is specified, MagneticBeadSeparationElutionMixType is set to set to Pipette. When MagneticBeadSeparationElutionMixType is Pipette, unless otherwise specified, 1) MagneticBeadSeparationElutionMixTime and MagneticBeadSeparationElutionMixRateare set to Null, 2) NumberOfMagneticBeadSeparationElutionMixes is set to 20, 3) MagneticBeadSeparationElutionMixVolume is set based on current volume: if 80% of the combined MagneticBeadSeparationElutionSolutionVolume and magnetic beads volume is less than the MaxRoboticSingleTransferVolume (0.970 mL), MagneticBeadSeparationElutionMixVolume is automatically set to 80% of the combined MagneticBeadSeparationElutionSolutionVolume and magnetic beads volume, 4) MagneticBeadSeparationElutionMixTipType is set to WideBore, 5) MagneticBeadSeparationElutionMixTipMaterial is set to Polypropylene, 6) MagneticBeadSeparationElutionMixTemperature is set to Ambient:"},
       ExperimentExtractProtein[
         Object[Sample,"ExperimentExtractProtein Previously Extracted Protein Sample " <> $SessionUUID],
         MagneticBeadVolume -> 0.2 Milliliter,
@@ -3187,8 +3271,8 @@ DefineTests[ExperimentExtractProtein,
             MagneticBeadSeparationElutionMixTime->Null,
             MagneticBeadSeparationElutionMixRate -> Null,
             MagneticBeadSeparationElutionMixTemperature-> Ambient,
-            MagneticBeadSeparationElutionMixVolume -> EqualP[0.2 Milliliter],
-            NumberOfMagneticBeadSeparationElutionMixes -> 10,
+            MagneticBeadSeparationElutionMixVolume -> EqualP[0.32 Milliliter],
+            NumberOfMagneticBeadSeparationElutionMixes -> 20,
             MagneticBeadSeparationElutionMixTipType -> WideBore,
             MagneticBeadSeparationElutionMixTipMaterial -> Polypropylene
           }
@@ -3197,7 +3281,7 @@ DefineTests[ExperimentExtractProtein,
       TimeConstraint -> 1800
     ],
     (*Test Case: ElutionMix is True and some pipetting options are set: MagneticBeadSeparationElutionMixType->Pipette, another resolution scenario for mix volume when current volume is larger*)
-    Example[{Options, {MagneticBeadSeparationElutionMixType,MagneticBeadSeparationElutionMixVolume}, "If MagneticBeadSeparationElutionMix is set to True, other magnetic bead separation elution mix options are automatically set. 1) Unless otherwise specified, MagneticBeadSeparationElutionMixType is set to Pipette if any of the pipetting options are set. 2) When MagneticBeadSeparationElutionMixType is Pipette, unless otherwise specified, MagneticBeadSeparationElutionMixVolume is set based on current volume: if 50% of the combined MagneticBeadSeparationElutionSolutionVolume and magnetic beads volume is greater than the MaxRoboticSingleTransferVolume (0.970 mL), MagneticBeadSeparationElutionMixVolume is automatically set to the MaxRoboticSingleTransferVolume (0.970 mL):"},
+    Example[{Options, {MagneticBeadSeparationElutionMixType,MagneticBeadSeparationElutionMixVolume}, "If MagneticBeadSeparationElutionMix is set to True, other magnetic bead separation elution mix options are automatically set. 1) Unless otherwise specified, MagneticBeadSeparationElutionMixType is set to Pipette if any of the pipetting options are set. 2) When MagneticBeadSeparationElutionMixType is Pipette, unless otherwise specified, MagneticBeadSeparationElutionMixVolume is set based on current volume: if 80% of the combined MagneticBeadSeparationElutionSolutionVolume and magnetic beads volume is greater than the MaxRoboticSingleTransferVolume (0.970 mL), MagneticBeadSeparationElutionMixVolume is automatically set to the MaxRoboticSingleTransferVolume (0.970 mL):"},
       ExperimentExtractProtein[
         Object[Sample,"ExperimentExtractProtein Previously Extracted Protein Sample " <> $SessionUUID],
         MagneticBeadSeparationElutionMixTipType -> WideBore,
@@ -6099,7 +6183,7 @@ DefineTests[ExperimentExtractProtein,
     $AllowPublicObjects=True
   },
   Parallel -> True,
-  TurnOffMessages :> {Warning::SamplesOutOfStock, Warning::InstrumentUndergoingMaintenance, Warning::DeprecatedProduct,Upload::Warning},
+  TurnOffMessages :> {Warning::SamplesOutOfStock, Warning::InstrumentUndergoingMaintenance, Warning::DeprecatedProduct, Upload::Warning, Warning::ConflictingSourceAndDestinationAsepticHandling},
   SymbolSetUp :> Module[{allObjects,functionName,existingObjects,allSampleObjects},
     $CreatedObjects={};
 
@@ -6595,7 +6679,8 @@ DefineTests[ExtractProtein,
       ExperimentRoboticCellPreparation[
         {
           ExtractProtein[
-            Sample -> Object[Sample, "Suspended Bacterial Cell Sample (Test for ExtractProtein) " <> $SessionUUID]
+            Sample -> Object[Sample, "Suspended Bacterial Cell Sample (Test for ExtractProtein) " <> $SessionUUID],
+            Purification->None
           ]
         }
       ],

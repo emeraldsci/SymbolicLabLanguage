@@ -2,7 +2,7 @@
 (* PlotSanMateoCOVIDCases[] *)
 
 
-Authors[PlotSanMateoCOVIDCases]:={"kevin.hou","hayley"};
+Authors[PlotSanMateoCOVIDCases]:={"dirk.schild", "kevin.hou", "hayley"};
 
 DefineOptions[PlotSanMateoCOVIDCases,
 	Options:>{

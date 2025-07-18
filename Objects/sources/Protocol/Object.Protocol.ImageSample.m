@@ -96,116 +96,6 @@ DefineObjectType[Object[Protocol, ImageSample],{
 			Class -> {
 				(* For both plate and sample imager *)
 				Imager -> Link,
-				ImagingDirection -> Expression,
-				IlluminationDirection -> Expression,
-				SecondaryRack -> Link,
-				ImageFilePrefix -> String,
-				BatchNumber -> Integer,
-				(* Plate imager specific *)
-				Wells -> Expression,
-				PlateMethodFileName -> String,
-				RunTime -> Real,
-				FieldOfView -> Integer,
-				(* Sample imager specific *)
-				ImagingDistance -> Real,
-				Pedestals -> Expression,
-				ExposureTime -> Real,
-				FocalLength -> Integer
-			},
-			Pattern :> {
-				(* For both plate and sample imager *)
-				Imager -> _Link,
-				ImagingDirection -> {ImagingDirectionP..},
-				IlluminationDirection -> {IlluminationDirectionP..},
-				SecondaryRack -> _Link,
-				ImageFilePrefix -> _String,
-				BatchNumber -> _Integer,
-				(* Plate imager specific *)
-				Wells -> {WellPositionP..},
-				PlateMethodFileName -> _String,
-				RunTime -> TimeP,
-				FieldOfView -> DistanceP,
-				(* Sample imager specific *)
-				ImagingDistance -> DistanceP,
-				Pedestals -> ImagingPedestalP,
-				ExposureTime -> TimeP,
-				FocalLength -> DistanceP
-			},
-			Relation -> {
-				(* For both plate and sample imager *)
-				Imager -> Alternatives[
-					Model[Instrument, PlateImager],
-					Object[Instrument, PlateImager],
-					Model[Instrument, SampleImager],
-					Object[Instrument, SampleImager]
-				],
-				ImagingDirection -> Null,
-				IlluminationDirection -> Null,
-				SecondaryRack -> Alternatives[
-					Model[Container,Rack],
-					Object[Container,Rack]
-				],
-				ImageFilePrefix -> Null,
-				BatchNumber -> _Integer,
-				(* Plate imager specific *)
-				Wells -> Null,
-				PlateMethodFileName -> Null,
-				RunTime -> Null,
-				FieldOfView -> Null,
-				(* Sample imager specific *)
-				ImagingDistance -> Null,
-				Pedestals -> Null,
-				ExposureTime -> Null,
-				FocalLength -> Null
-			},
-			Units -> {
-				(* For both plate and sample imager *)
-				Imager -> None,
-				ImagingDirection -> None,
-				IlluminationDirection -> None,
-				SecondaryRack -> None,
-				ImageFilePrefix -> None,
-				BatchNumber -> None,
-				(* Plate imager specific *)
-				Wells -> None,
-				PlateMethodFileName -> None,
-				RunTime -> Minute,
-				FieldOfView -> Millimeter,
-				(* Sample imager specific *)
-				ImagingDistance -> Centimeter,
-				Pedestals -> None,
-				ExposureTime -> Millisecond,
-				FocalLength -> Millimeter
-			},
-			Headers -> {
-				(* For both plate and sample imager *)
-				Imager -> "Imager",
-				ImagingDirection -> "Imaging Direction",
-				IlluminationDirection -> "Illumination Direction",
-				SecondaryRack -> "Secondary Rack",
-				ImageFilePrefix -> "PlateImager Data File Prefix",
-				BatchNumber -> "Batch Number",
-				(* Plate imager specific *)
-				Wells -> "Wells to Image",
-				PlateMethodFileName -> "PlateImager Method File Name",
-				RunTime -> "Run Time",
-				FieldOfView -> "Horizontal Field of View",
-				(* Sample imager specific *)
-				ImagingDistance -> "Distance from Camera",
-				Pedestals -> "Pedestals",
-				ExposureTime -> "Exposure Time",
-				FocalLength -> "Focal Length"
-			},
-			IndexMatching -> BatchLengths,
-			Description -> "For each member of BatchLengths, the imaging parameters shared by all containers in the batch.",
-			Category -> "Batching",
-			Developer -> True
-		},
-		BatchedImagingParametersNew -> {
-			Format -> Multiple,
-			Class -> {
-				(* For both plate and sample imager *)
-				Imager -> Link,
 				ImageContainer -> Boolean,
 				ImagingDirection -> Expression,
 				IlluminationDirection -> Expression,
@@ -221,7 +111,8 @@ DefineObjectType[Object[Protocol, ImageSample],{
 				ImagingDistance -> Real,
 				Pedestals -> Expression,
 				ExposureTime -> Real,
-				FocalLength -> Integer
+				FocalLength -> Integer,
+				Backdrop-> Expression
 			},
 			Pattern :> {
 				(* For both plate and sample imager *)
@@ -241,7 +132,8 @@ DefineObjectType[Object[Protocol, ImageSample],{
 				ImagingDistance -> DistanceP,
 				Pedestals -> ImagingPedestalP,
 				ExposureTime -> TimeP,
-				FocalLength -> DistanceP
+				FocalLength -> DistanceP,
+				Backdrop -> Null
 			},
 			Relation -> {
 				(* For both plate and sample imager *)
@@ -259,7 +151,7 @@ DefineObjectType[Object[Protocol, ImageSample],{
 					Object[Container,Rack]
 				],
 				ImageFilePrefix -> Null,
-				BatchNumber -> _Integer,
+				BatchNumber -> Null,
 				(* Plate imager specific *)
 				Wells -> Null,
 				PlateMethodFileName -> Null,
@@ -269,7 +161,8 @@ DefineObjectType[Object[Protocol, ImageSample],{
 				ImagingDistance -> Null,
 				Pedestals -> Null,
 				ExposureTime -> Null,
-				FocalLength -> Null
+				FocalLength -> Null,
+				Backdrop -> Null
 			},
 			Units -> {
 				(* For both plate and sample imager *)
@@ -289,7 +182,8 @@ DefineObjectType[Object[Protocol, ImageSample],{
 				ImagingDistance -> Centimeter,
 				Pedestals -> None,
 				ExposureTime -> Millisecond,
-				FocalLength -> Millimeter
+				FocalLength -> Millimeter,
+				Backdrop -> None
 			},
 			Headers -> {
 				(* For both plate and sample imager *)
@@ -309,7 +203,8 @@ DefineObjectType[Object[Protocol, ImageSample],{
 				ImagingDistance -> "Distance from Camera",
 				Pedestals -> "Pedestals",
 				ExposureTime -> "Exposure Time",
-				FocalLength -> "Focal Length"
+				FocalLength -> "Focal Length",
+				Backdrop -> "Backdrop"
 			},
 			IndexMatching -> BatchLengths,
 			Description -> "For each member of BatchLengths, the imaging parameters shared by all containers in the batch.",
@@ -471,6 +366,33 @@ DefineObjectType[Object[Protocol, ImageSample],{
 			Description->"The file folders of the image files generated from experiment run.",
 			Category->"General",
 			Developer -> True
+		},
+		(* This field is populated before error messages are thrown in parser so we can record what data files we have at the moment *)
+		(* We will repopulate the field with latest values each time and all data are stored in ObjectLog *)
+		CurrentDataFilePaths->{
+			Format->Multiple,
+			Class->String,
+			Pattern :> FilePathP,
+			Description->"The presented data files paths when the parser throws an error for TooManyImages/NotEnoughImages/MissingImageFile.",
+			Category -> "Experimental Results",
+			Developer->True
+		},
+		CurrentDataFiles -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[EmeraldCloudFile],
+			Description -> "The presented data files from the sample imager when the parser throws an error for TooManyImages/NotEnoughImages.",
+			Category -> "Experimental Results",
+			Developer->True
+		},
+		ImageFilesExported -> {
+			Format -> Single,
+			Class -> Boolean,
+			Pattern :> BooleanP,
+			Description -> "Indicates if the images for the current iteration have been successfully exported.",
+			Category -> "General",
+			Developer->True
 		}
 	}
 }];

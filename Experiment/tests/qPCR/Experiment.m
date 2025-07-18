@@ -188,6 +188,50 @@ DefineTests[
 			Model[Sample, "iTaq Universal Probes Supermix"],
 			EquivalenceFunction->SameObjectQ
 		],
+		Example[{Options, {PreparedModelContainer, PreparedModelAmount}, "Specify the container in which an input Model[Sample] should be prepared:"},
+			options = ExperimentqPCR[
+				{Model[Sample, "Milli-Q water"],
+					Model[Sample, "Milli-Q water"]},
+				{{{Object[Sample, "Test Primer 1 Forward for ExperimentqPCR" <> $SessionUUID],
+					Object[Sample, "Test Primer 1 Reverse for ExperimentqPCR" <> $SessionUUID]}},
+					{{Object[Sample, "Test Primer 2 Forward for ExperimentqPCR" <> $SessionUUID],
+						Object[Sample, "Test Primer 2 Reverse for ExperimentqPCR" <> $SessionUUID]}}},
+				PreparedModelContainer -> Model[Container, Plate, "96-well 2mL Deep Well Plate"],
+				PreparedModelAmount -> 1 Milliliter,
+				Output -> Options
+			];
+			prepUOs = Lookup[options, PreparatoryUnitOperations];
+			{
+				prepUOs[[-1, 1]][Sample],
+				prepUOs[[-1, 1]][Container],
+				prepUOs[[-1, 1]][Amount],
+				prepUOs[[-1, 1]][Well],
+				prepUOs[[-1, 1]][ContainerLabel]
+			},
+			{
+				{ObjectP[Model[Sample, "Milli-Q water"]]..},
+				{ObjectP[Model[Container, Plate, "96-well 2mL Deep Well Plate"]]..},
+				{EqualP[1 Milliliter]..},
+				{"A1", "B1"},
+				{_String, _String}
+			},
+			Variables :> {options, prepUOs}
+		],
+		Example[{Options, {PreparedModelContainer, PreparedModelAmount}, "Specify the container in which an input Model[Sample] should be prepared:"},
+			ExperimentqPCR[
+				{Model[Sample, "Milli-Q water"],
+					Model[Sample, "Milli-Q water"]},
+				{{{Object[Sample, "Test Primer 1 Forward for ExperimentqPCR" <> $SessionUUID],
+					Object[Sample, "Test Primer 1 Reverse for ExperimentqPCR" <> $SessionUUID]}},
+					{{Object[Sample, "Test Primer 2 Forward for ExperimentqPCR" <> $SessionUUID],
+						Object[Sample, "Test Primer 2 Reverse for ExperimentqPCR" <> $SessionUUID]}}},
+				PreparedModelContainer -> Model[Container, Plate, "96-well 2mL Deep Well Plate"],
+				PreparedModelAmount -> 1 Milliliter,
+				Aliquot -> True,
+				Mix -> True
+			],
+			ObjectP[Object[Protocol, qPCR]]
+		],
 		Example[
 			{Messages, "UnknownMasterMix", "If the specified MasterMix is not a model pre-evaluated for use in ExperimentqPCR, a warning is thrown to notify the user that default values will be used for fold concentration, dye content, and reverse transcriptase content:"},
 			Download[
@@ -1447,26 +1491,6 @@ DefineTests[
 		],
 				
 		(* --- Sample prep option tests --- *)
-		Example[{Options, PreparatoryPrimitives, "Use the PreparatoryPrimitives option to prepare samples from models before the experiment is run:"},
-			protocol = ExperimentqPCR[
-				{"10-fold diluted sample", "100-fold diluted sample"},
-				{
-					{{Object[Sample, "Test Primer 1 Forward for ExperimentqPCR"<>$SessionUUID], Object[Sample, "Test Primer 1 Reverse for ExperimentqPCR"<>$SessionUUID]}},
-					{{Object[Sample, "Test Primer 1 Forward for ExperimentqPCR"<>$SessionUUID], Object[Sample, "Test Primer 1 Reverse for ExperimentqPCR"<>$SessionUUID]}}
-				},
-				PreparatoryPrimitives -> {
-					Define[Name -> "10-fold diluted sample", Container -> Model[Container, Vessel, "2mL Tube"]],
-					Define[Name -> "100-fold diluted sample", Container -> Model[Container, Vessel, "2mL Tube"]],
-					Transfer[Source -> Model[Sample, "Milli-Q water"], Destination -> "10-fold diluted sample", Amount -> 900 Microliter],
-					Transfer[Source -> Model[Sample, "Milli-Q water"], Destination -> "100-fold diluted sample", Amount -> 990 Microliter],
-					Transfer[Source -> Object[Sample, "Test Template 1 for ExperimentqPCR"<>$SessionUUID], Destination -> "10-fold diluted sample", Amount -> 100*Microliter],
-					Transfer[Source -> Object[Sample, "Test Template 1 for ExperimentqPCR"<>$SessionUUID], Destination -> "100-fold diluted sample", Amount -> 10*Microliter]
-				}
-			];
-			Download[protocol, PreparatoryPrimitives],
-			{SampleManipulationP..},
-			Variables :> {protocol}
-		],
 		Example[{Options, PreparatoryUnitOperations, "Use the PreparatoryUnitOperations option to prepare samples from models before the experiment is run:"},
 			protocol = ExperimentqPCR[
 				{"10-fold diluted sample", "100-fold diluted sample"},
@@ -1818,31 +1842,34 @@ DefineTests[
 		Example[{Options, AliquotContainer, "Set the AliquotContainer option:"},
 			options = ExperimentqPCR[{Object[Sample, "Test Template 1 for ExperimentqPCR"<>$SessionUUID]}, {{{Object[Sample, "Test Primer 1 Forward for ExperimentqPCR"<>$SessionUUID], Object[Sample, "Test Primer 1 Reverse for ExperimentqPCR"<>$SessionUUID]}}}, AliquotContainer -> Model[Container, Vessel, "2mL Tube"], Output -> Options];
 			Lookup[options, AliquotContainer],
-			{1, ObjectP[Model[Container, Vessel, "2mL Tube"]]},
+			{{1, ObjectP[Model[Container, Vessel, "2mL Tube"]]}},
 			Variables :> {options}
 		],
 		Example[{Options, DestinationWell, "Set the DestinationWell option:"},
 			options = ExperimentqPCR[{Object[Sample, "Test Template 1 for ExperimentqPCR"<>$SessionUUID]}, {{{Object[Sample, "Test Primer 1 Forward for ExperimentqPCR"<>$SessionUUID], Object[Sample, "Test Primer 1 Reverse for ExperimentqPCR"<>$SessionUUID]}}}, DestinationWell -> "A1", Output -> Options];
 			Lookup[options, DestinationWell],
-			"A1",
+			{"A1"},
 			Variables :> {options}
 		],
-		Example[{Options, ImageSample, "Set the ImageSample option:"},
+		Example[{Options, ImageSample, "Set the ImageSample option to True will trigger a warning because we expect the samples for post processing will be Sterile->True:"},
 			options = ExperimentqPCR[{Object[Sample, "Test Template 1 for ExperimentqPCR"<>$SessionUUID]}, {{{Object[Sample, "Test Primer 1 Forward for ExperimentqPCR"<>$SessionUUID], Object[Sample, "Test Primer 1 Reverse for ExperimentqPCR"<>$SessionUUID]}}}, ImageSample -> True, Output -> Options];
 			Lookup[options, ImageSample],
 			True,
+			Messages:> {Warning::PostProcessingSterileSamples},
 			Variables :> {options}
 		],
-		Example[{Options, MeasureWeight, "Set the MeasureWeight option:"},
+		Example[{Options, MeasureWeight, "Set the MeasureWeight option to True will trigger a warning because we expect the samples for post processing will be Sterile->True:"},
 			options = ExperimentqPCR[{Object[Sample, "Test Template 1 for ExperimentqPCR"<>$SessionUUID]}, {{{Object[Sample, "Test Primer 1 Forward for ExperimentqPCR"<>$SessionUUID], Object[Sample, "Test Primer 1 Reverse for ExperimentqPCR"<>$SessionUUID]}}}, MeasureWeight -> True, Output -> Options];
 			Lookup[options, MeasureWeight],
 			True,
+			Messages:> {Warning::PostProcessingSterileSamples},
 			Variables :> {options}
 		],
-		Example[{Options, MeasureVolume, "Set the MeasureVolume option:"},
+		Example[{Options, MeasureVolume, "Set the MeasureVolume option to True will trigger a warning because we expect the samples for post processing will be Sterile->True:"},
 			options = ExperimentqPCR[{Object[Sample, "Test Template 1 for ExperimentqPCR"<>$SessionUUID]}, {{{Object[Sample, "Test Primer 1 Forward for ExperimentqPCR"<>$SessionUUID], Object[Sample, "Test Primer 1 Reverse for ExperimentqPCR"<>$SessionUUID]}}}, MeasureVolume -> True, Output -> Options];
 			Lookup[options, MeasureVolume],
 			True,
+			Messages:> {Warning::PostProcessingSterileSamples},
 			Variables :> {options}
 		],
 		
@@ -1980,11 +2007,159 @@ DefineTests[
 				],
 				AliquotSampleLabel
 			],
-			Null
+			{Null}
 		],
 		
 		
 		(* === Invalid Input Examples === *)
+		(* 384-well plate overloads ObjectDoesNotExist *)
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a sample that does not exist (name form):"},
+			ExperimentqPCR[
+				Object[Sample, "Nonexistent sample"],
+				{
+					{
+						{Model[Sample, "Test Primer Model 1 Forward for ExperimentqPCR"<>$SessionUUID], Model[Sample, "Test Primer Model 1 Reverse for ExperimentqPCR"<>$SessionUUID]}
+					}
+				}
+			],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a container that does not exist (name form):"},
+			ExperimentqPCR[
+				Object[Container, Vessel, "Nonexistent container"],
+				{
+					{
+						{Model[Sample, "Test Primer Model 1 Forward for ExperimentqPCR"<>$SessionUUID], Model[Sample, "Test Primer Model 1 Reverse for ExperimentqPCR"<>$SessionUUID]}
+					}
+				}
+			],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a sample that does not exist (ID form):"},
+			ExperimentqPCR[
+				Object[Sample, "id:12345678"],
+				{
+					{
+						{Model[Sample, "Test Primer Model 1 Forward for ExperimentqPCR"<>$SessionUUID], Model[Sample, "Test Primer Model 1 Reverse for ExperimentqPCR"<>$SessionUUID]}
+					}
+				}
+			],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a container that does not exist (ID form):"},
+			ExperimentqPCR[
+				Object[Container, Vessel, "id:12345678"],
+				{
+					{
+						{Model[Sample, "Test Primer Model 1 Forward for ExperimentqPCR"<>$SessionUUID], Model[Sample, "Test Primer Model 1 Reverse for ExperimentqPCR"<>$SessionUUID]}
+					}
+				}
+			],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a primer sample model that does not exist (name form):"},
+			ExperimentqPCR[
+				Object[Sample, "Test Template 1 for ExperimentqPCR"<>$SessionUUID],
+				{
+					{
+						{Object[Sample, "Test Primer 1 Forward for ExperimentqPCR"<>$SessionUUID], Model[Sample, "Nonexistent model sample"]}
+					}
+				}
+			],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a primer container that does not exist (name form):"},
+			ExperimentqPCR[
+				Object[Sample, "Test Template 1 for ExperimentqPCR"<>$SessionUUID],
+				{
+					{
+						{Object[Sample, "Test Primer 1 Forward for ExperimentqPCR"<>$SessionUUID], Object[Container, Vessel, "Nonexistent container"]}
+					}
+				}
+			],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a primer sample that does not exist (ID form):"},
+			ExperimentqPCR[
+				Object[Sample, "Test Template 1 for ExperimentqPCR"<>$SessionUUID],
+				{
+					{
+						{Object[Sample, "Test Primer 1 Forward for ExperimentqPCR"<>$SessionUUID], Model[Sample, "id:12345678"]}
+					}
+				}
+			],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a container that does not exist (ID form):"},
+			ExperimentqPCR[
+				Object[Sample, "Test Template 1 for ExperimentqPCR"<>$SessionUUID],
+				{
+					{
+						{Object[Sample, "Test Primer 1 Forward for ExperimentqPCR"<>$SessionUUID], Object[Container, Vessel, "id:12345678"]}
+					}
+				}
+			],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+
+		(* Array card overloads ObjectDoesNotExist *)
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a sample that does not exist for an array card qPCR (name form):"},
+			ExperimentqPCR[
+				Object[Sample, "Nonexistent sample"],
+				Object[Container,Plate,Irregular,ArrayCard,"Test Array Card for ExperimentqPCR"<>$SessionUUID]
+			],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a container that does not exist for an array card qPCR (name form):"},
+			ExperimentqPCR[
+				Object[Container, Vessel, "Nonexistent container"],
+				Object[Container,Plate,Irregular,ArrayCard,"Test Array Card for ExperimentqPCR"<>$SessionUUID]
+			],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a sample that does not exist for an array card qPCR (ID form):"},
+			ExperimentqPCR[
+				Object[Sample, "id:12345678"],
+				Object[Container,Plate,Irregular,ArrayCard,"Test Array Card for ExperimentqPCR"<>$SessionUUID]
+			],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a container that does not exist for an array card qPCR (ID form):"},
+			ExperimentqPCR[
+				Object[Container, Vessel, "id:12345678"],
+				Object[Container,Plate,Irregular,ArrayCard,"Test Array Card for ExperimentqPCR"<>$SessionUUID]
+			],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have an array card that does not exist (name form):"},
+			ExperimentqPCR[
+				Object[Sample, "Test Template 1 for ExperimentqPCR"<>$SessionUUID],
+				Object[Container,Plate,Irregular,ArrayCard,"Nonexistent array card"]
+			],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have an array card that does not exist (ID form):"},
+			ExperimentqPCR[
+				Object[Sample, "Test Template 1 for ExperimentqPCR"<>$SessionUUID],
+				Object[Container,Plate,Irregular,ArrayCard,"id:12345678"]
+			],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+
 		Example[
 			{Messages, "DiscardedSamples", "If samples are discarded, an error is displayed:"},
 			ExperimentqPCR[

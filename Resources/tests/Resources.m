@@ -147,6 +147,15 @@ DefineTests[
 			],
 			_?ValidResourceQ
 		],
+		Example[{Additional, "Sterile can be specified to indicate if the sample to be picked must be sterile:"},
+			Resource[
+				Sample -> Model[Sample, "Nuclease-free Water"],
+				Container -> Model[Container, Vessel, "2mL Tube"],
+				Amount -> 100 Microliter,
+				Sterile -> True
+			],
+			_?ValidResourceQ
+		],
 		Example[{Messages, "InvalidResource", "Shows a message when a mandatory key is missing:"},
 			Resource[
 				Sample -> Model[Sample, "Absolute Ethanol, Anhydrous"],
@@ -591,7 +600,23 @@ DefineTests[
 			{{"test", "A1"}, {Null, Null}},
 			Variables :> {protocol, resources}
 		],
-
+		Example[{Additional,UnusedIntegratedInstrument, "Successfully populates UnusedIntegratedInstrument key in Object[Resource,Instrument], if specified in the Resource blob:"},
+			Module[{protocol,resources},
+				protocol=RequireResources[
+					<|
+						Type->Object[Protocol,RoboticSamplePreparation],
+						Replace[RequiredInstruments]->{
+							Link[Resource[Instrument->Model[Instrument,PlateReader,"FLUOstar Omega"],Time->5Minute,UnusedIntegratedInstrument->True]],
+							Link[Resource[Instrument->Model[Instrument,Centrifuge,"VSpin"],Time->5Minute]]
+						},
+						DeveloperObject->True
+					|>
+				];
+				resources=Download[protocol,RequiredResources][[All,1]];
+				Download[resources,UnusedIntegratedInstrument]
+			],
+			{True,Null}
+		],
 		Example[{Options, RootProtocol, "Specify the root protocol (i.e., the highest-level parent of the current protocol) to be placed into all resources:"},
 			protocol = RequireResources[
 				<|
@@ -626,7 +651,7 @@ DefineTests[
 						Instrument -> Link[Resource[Instrument -> Model[Instrument, Electrophoresis, "Ranger"], Time -> Quantity[3, "Hours"]]]
 					|>,
 					<|
-						Type -> Object[Protocol, SampleManipulation],
+						Type -> Object[Protocol, Transfer],
 						Replace[SamplesIn] -> {
 							Link[Resource[Sample -> Object[Sample, "id:3em6ZvL4prMB"], Amount -> 10*Milliliter], Protocols],
 							Link[Resource[Sample -> Model[Sample, "id:M8n3rx0DjPrE"], Amount -> 10*Milliliter], Protocols]
@@ -1246,7 +1271,7 @@ DefineTests[
 		Test["If a subprotocol is requesting a specific sample that the parent protocol already has reserved, do not create a resource for this item:",
 			protocol = RequireResources[
 				<|
-					Type -> Object[Protocol, SampleManipulation],
+					Type -> Object[Protocol, Transfer],
 					Replace[SamplesIn] -> {
 						Link[Resource[Sample -> Object[Sample, "id:3em6ZvL4prMB"], Amount -> 10*Milliliter], Protocols],
 						Link[Resource[Sample -> Model[Sample, "id:M8n3rx0DjPrE"], Amount -> 10*Milliliter], Protocols]
@@ -1336,12 +1361,11 @@ DefineTests[
 		],
 		Test["Sets UpdateCount->False when the resource indicates the count shouldn't be changed and Null when UpdateCount is unspecified or set to True:",
 			protocol = With[
-				{id = CreateID[Object[Protocol,SampleManipulation]]},
+				{id = CreateID[Object[Protocol,Transfer]]},
 				RequireResources[
 					<|
 						Object -> id,
-						Type -> Object[Protocol,SampleManipulation],
-						Replace[PipetteTips] -> {
+						Replace[Tips] -> {
 							Resource[Sample -> Model[Item,Tips, "25 mL plastic barrier serological pipets, sterile"],Amount->1],
 							Resource[Sample -> Model[Item,Tips, "25 mL plastic barrier serological pipets, sterile"],Amount->1,UpdateCount->True],
 							Resource[Sample -> Model[Item,Tips, "1000 uL Hamilton barrier tips, sterile"],Amount->1,UpdateCount->False]
@@ -1560,11 +1584,11 @@ DefineTests[fulfillableResourceQ,
 			fulfillableResourceQ[Resource[Sample -> Model[Sample, "id:GmzlKjPx4PM5"], Amount -> 90*Milliliter]],
 			True
 		],
-		Example[{Basic, "Checks to see if a request on a specific sample has enough volume avilable to be fulfilled:"},
+		Example[{Basic, "Checks to see if a request on a specific sample has enough volume available to be fulfilled:"},
 			fulfillableResourceQ[Object[Resource, Sample, "id:jLq9jXvxpRlx"]],
 			True
 		],
-		Example[{Basic, "Checks to see if a request on a specific sample has enough volume avilable to be fulfilled:"},
+		Example[{Basic, "Checks to see if a request on a specific sample has enough volume available to be fulfilled:"},
 			fulfillableResourceQ[Resource[Sample -> Object[Sample, "id:N80DNj1pLRrl"], Amount -> 75*Microliter]],
 			True
 		],
@@ -1595,7 +1619,11 @@ DefineTests[fulfillableResourceQ,
 				Cache -> {
 					<|Object -> Object[Sample, "id:J8AY5jDZxZ8B"], Simulated -> True|>,
 					<|Object -> Object[Container, Vessel, "id:Q0ht2lIIr0CX"], Simulated -> True|>
-				}
+				},
+				Simulation -> Simulation[{
+					<|Object -> Object[Sample, "id:J8AY5jDZxZ8B"], Simulated -> True|>,
+					<|Object -> Object[Container, Vessel, "id:Q0ht2lIIr0CX"], Simulated -> True|>
+				}]
 			],
 			True
 		],
@@ -1666,30 +1694,10 @@ DefineTests[fulfillableResourceQ,
 				$PersonID = Object[User, Emerald, Developer, "steven"]
 			}
 		],
-		Example[{Messages, "MissingObjects", "If a resource is provided that includes an object that does not exist, throw an error and return False:"},
+		Example[{Messages, "ObjectDoesNotExist", "If a resource is provided that includes an object that does not exist, throw an error and return False:"},
 			fulfillableResourceQ[Resource[Sample -> Object[Sample, "id:2222j3jj3j3"], Amount -> 50*Microliter]],
 			False,
-			Messages :> {Error::MissingObjects, Error::InvalidInput}
-		],
-		Test["If a resource is provided that includes an object that does not exist but Output -> {Result, Tests}, suppres the error and return False + the tests:",
-			fulfillableResourceQ[Resource[Sample -> Object[Sample, "id:2222j3jj3j3"], Amount -> 50*Microliter], Verbose->True, Output -> {Result, Tests}],
-			{
-				False,
-				{__EmeraldTest}
-			}
-		],
-		Example[{Messages, "MissingObjects", "If several resources are provided and only one doesn't exist, still succesfully test the rest of them:"},
-			fulfillableResourceQ[
-				{
-					Resource[Sample -> Object[Sample, "id:2222j3jj3j3"], Amount -> 50*Microliter],
-					Resource[Operator -> Object[User, Emerald, Operator, "id:Z1lqpMzm0Pj9"]],
-					Resource[Sample -> Model[Item,Consumable,"id:vXl9j578pWOd"]],
-					Resource[Sample -> Model[Sample, "id:GmzlKjPx4PM5"], Amount -> 90*Milliliter]
-				},
-				OutputFormat -> Boolean
-			],
-			{False, True, False, True},
-			Messages :> {Error::MissingObjects, Error::NoAvailableModel, Error::InvalidInput}
+			Messages :> {Download::ObjectDoesNotExist}
 		],
 		Example[{Messages, "SamplesMarkedForDisposal", "If the requested sample is marked for disposal, throw an error and return False:"},
 			fulfillableResourceQ[Resource[Sample -> Object[Sample, "id:4pO6dM5wa3Xo"], Amount -> 2*Microliter]],
@@ -2253,9 +2261,9 @@ DefineTests[fulfillableResourceQ,
 			True,
 			Messages :> {Warning::SamplesOutOfStock}
 		],
-		(* weird test; basically, if we had 4 containers of a given model, 3 of which are InUse and owned by a notebook-ed protocol, the previous code would recognize only 1 container is able to be picked, but count the InUse resoures for those containers as still being outstanding *)
+		(* weird test; basically, if we had 4 containers of a given model, 3 of which are InUse and owned by a notebook-ed protocol, the previous code would recognize only 1 container is able to be picked, but count the InUse resources for those containers as still being outstanding *)
 		(* the result would be that it would say another resource of this model is not fulfillable, even if it is Available and not owned *)
-		Test["Don't get confused by notebook-ed protocols already having some containerse InUse if there is enough of an available given container publically anyway:",
+		Test["Don't get confused by notebook-ed protocols already having some containers InUse if there is enough of an available given container publicly anyway:",
 			fulfillableResourceQ[Resource[
 				Sample -> Model[Container, Vessel, "Test vessel for fulfillableResourceQ tests" <> $SessionUUID]
 			]],
@@ -2292,6 +2300,193 @@ DefineTests[fulfillableResourceQ,
 			}],
 			False,
 			Messages :> {Error::ExceedsMaxNumberOfUses, Error::InvalidInput}
+		],
+		Example[{Messages, "InvalidSterileRequest", "If Sterile is set to True in the resource, the requested model must also have Sterile -> True:"},
+			fulfillableResourceQ[
+				Resource[
+					Sample -> Model[Sample, "Test StorageBuffer sample model for fulfillableResourceQ tests" <> $SessionUUID],
+					Sterile -> True,
+					Amount -> 100 Microliter
+				]
+			],
+			False,
+			Messages :> {Error::InvalidSterileRequest, Error::InvalidInput}
+		],
+		Example[{Messages, "InvalidSterileRequest", "If Sterile is set to True in the resource, the requested model must also have Sterile -> True:"},
+			fulfillableResourceQ[
+				Resource[
+					Sample -> Model[Sample, "Test sterile model 1 for fulfillableResourceQ unit tests" <> $SessionUUID],
+					Sterile -> True,
+					Amount -> 100 Microliter
+				]
+			],
+			True
+		],
+		Example[{Messages, "InvalidSterileRequest", "If Sterile is set to True in the resource, the requested sample must also have Sterile -> True:"},
+			fulfillableResourceQ[
+				Resource[
+					Sample -> Object[Sample, "Test sample 1 for fulfillableResourceQ tests" <> $SessionUUID],
+					Sterile -> True,
+					Amount -> 100 Microliter
+				]
+			],
+			False,
+			Messages :> {Error::InvalidSterileRequest, Error::InvalidInput}
+		],
+		Example[{Messages, "InvalidSterileRequest", "If Sterile is set to True in the resource, the requested sample must also have Sterile -> True:"},
+			fulfillableResourceQ[
+				Resource[
+					Sample -> Object[Sample, "Test sterile object 1 for fulfillableResourceQ unit tests" <> $SessionUUID],
+					Sterile -> True,
+					Amount -> 100 Microliter
+				]
+			],
+			True
+		],
+		Example[{Messages, "ContainerNotSterile", "If Sterile is set to True in the resource and Container is specified, the container must also have Sterile -> True:"},
+			fulfillableResourceQ[
+				Resource[
+					Sample -> Model[Sample, "Test sterile model 1 for fulfillableResourceQ unit tests" <> $SessionUUID],
+					Sterile -> True,
+					Amount -> 100 Microliter,
+					Container -> Model[Container, Vessel, "Test vessel for fulfillableResourceQ tests" <> $SessionUUID]
+				]
+			],
+			False,
+			Messages :> {Error::ContainerNotSterile, Error::InvalidInput}
+		],
+		Example[{Messages, "ContainerNotSterile", "If Sterile is set to True in the resource and Container is specified, the container must also have Sterile -> True:"},
+			fulfillableResourceQ[
+				Resource[
+					Sample -> Model[Sample, "Test sterile model 1 for fulfillableResourceQ unit tests" <> $SessionUUID],
+					Sterile -> True,
+					Amount -> 100 Microliter,
+					(* 2mL tubes are Sterile -> True *)
+					Container -> Model[Container, Vessel, "2mL Tube"]
+				]
+			],
+			True
+		],
+
+		Example[{Messages, "SamplesOutOfStock", "If Sterile is set to True but the product tied to the requested model is sterile and we don't have anything available, then Warning::SamplesOutOfStock is thrown as normal:"},
+			fulfillableResourceQ[
+				Resource[
+					Sample -> Model[Sample, "Test sterile model 2 for fulfillableResourceQ unit tests" <> $SessionUUID],
+					Sterile -> True,
+					Amount -> 100 Microliter
+				]
+			],
+			True,
+			Messages :> {Warning::SamplesOutOfStock}
+		],
+		Example[{Messages, "InsufficientTotalVolume", "If Sterile is set to True but the product tied to the requested model is NOT sterile and we don't have anything available, then an error is thrown:"},
+			fulfillableResourceQ[
+				Resource[
+					Sample -> Model[Sample, "Test sterile model 3 for fulfillableResourceQ unit tests" <> $SessionUUID],
+					Sterile -> True,
+					Amount -> 100 Microliter
+				]
+			],
+			False,
+			Messages :> {Error::InsufficientTotalVolume, Error::InvalidInput}
+		],
+
+		(* Instrument Ownership tests *)
+		Example[{Options, Author, "For a single unlisted resource object, if the requested instrument does not have the same notebook as $Notebook, but is a notebook available to the Author, don't throw the InstrumentsNotOwned error:"},
+			fulfillableResourceQ[
+				Object[Resource, Instrument, "Test Resource 3 For fulfillableResourceQ Tests " <> $SessionUUID],
+				Author -> Object[User, "Test Author for fulfillableResourceQ Tests 2 " <> $SessionUUID],
+				OutputFormat -> Boolean
+			],
+			{True},
+			Stubs :> {
+				$Site = Object[Container, Site, "Test Site 1 For fulfillableResourceQ Tests " <> $SessionUUID],
+				$Notebook = Object[LaboratoryNotebook, "fulfillableResourceQ Standard Financing Test Notebook 5 " <> $SessionUUID],
+				$PersonID = Object[User, "Test Author for fulfillableResourceQ Tests 2 " <> $SessionUUID]
+			}
+		],
+		Example[{Options, Author, "For a single unlisted resource, if the requested instrument does not have the same notebook as $Notebook, but is a notebook available to the Author, don't throw the InstrumentsNotOwned error:"},
+			fulfillableResourceQ[
+				Resource[Instrument -> Object[Instrument, HPLC, "Test HPLC Instrument 3 For fulfillableResourceQ Tests " <> $SessionUUID]],
+				Author -> Object[User, "Test Author for fulfillableResourceQ Tests 2 " <> $SessionUUID],
+				OutputFormat -> Boolean
+			],
+			{True},
+			Stubs :> {
+				$Site = Object[Container, Site, "Test Site 1 For fulfillableResourceQ Tests " <> $SessionUUID],
+				$Notebook = Object[LaboratoryNotebook, "fulfillableResourceQ Standard Financing Test Notebook 5 " <> $SessionUUID],
+				$PersonID = Object[User, "Test Author for fulfillableResourceQ Tests 2 " <> $SessionUUID]
+			}
+		],
+		Example[{Options, Author, "If the requested instrument does not have the same notebook as $Notebook, but is a notebook available to the Author, don't throw the InstrumentsNotOwned error:"},
+			fulfillableResourceQ[
+				{
+					Object[Resource, Instrument, "Test Resource 1 For fulfillableResourceQ Tests " <> $SessionUUID],
+					Object[Resource, Instrument, "Test Resource 3 For fulfillableResourceQ Tests " <> $SessionUUID],
+					Object[Resource, Instrument, "Test Resource 4 For fulfillableResourceQ Tests " <> $SessionUUID]
+				},
+				Author -> Object[User, "Test Author for fulfillableResourceQ Tests 2 " <> $SessionUUID],
+				OutputFormat -> Boolean
+			],
+			{True, True, True},
+			Stubs :> {
+				$Site = Object[Container, Site, "Test Site 1 For fulfillableResourceQ Tests " <> $SessionUUID],
+				$Notebook = Object[LaboratoryNotebook, "fulfillableResourceQ Standard Financing Test Notebook 5 " <> $SessionUUID],
+				$PersonID = Object[User, "Test Author for fulfillableResourceQ Tests 2 " <> $SessionUUID]
+			}
+		],
+		Example[{Options, Author, "For an instrument resource, if $Notebook is not the same as the notebook of the requested instrument, but it is available to the Author, don't throw the InstrumentsNotOwned error:"},
+			fulfillableResourceQ[
+				{
+					Resource[Instrument -> Object[Instrument, HPLC, "Test HPLC Instrument 1 For fulfillableResourceQ Tests " <> $SessionUUID]],
+					Resource[Instrument -> Object[Instrument, HPLC, "Test HPLC Instrument 3 For fulfillableResourceQ Tests " <> $SessionUUID]],
+					Resource[Instrument -> Object[Instrument, HPLC, "Test HPLC Instrument 4 For fulfillableResourceQ Tests " <> $SessionUUID]]
+				},
+				Author -> Object[User, "Test Author for fulfillableResourceQ Tests 2 " <> $SessionUUID],
+				OutputFormat -> Boolean
+			],
+			{True, True, True},
+			Stubs :> {
+				$Site = Object[Container, Site, "Test Site 1 For fulfillableResourceQ Tests " <> $SessionUUID],
+				$Notebook = Object[LaboratoryNotebook, "fulfillableResourceQ Standard Financing Test Notebook 5 " <> $SessionUUID],
+				$PersonID = Object[User, "Test Author for fulfillableResourceQ Tests 2 " <> $SessionUUID]
+			}
+		],
+		Example[{Messages, "InstrumentsNotOwned", "If a specific instrument is requested that is not owned by a notebook that the Author has access to, throw an error and return False:"},
+			fulfillableResourceQ[
+				{
+					Object[Resource, Instrument, "Test Resource 1 For fulfillableResourceQ Tests " <> $SessionUUID],
+					Object[Resource, Instrument, "Test Resource 2 For fulfillableResourceQ Tests " <> $SessionUUID],
+					Object[Resource, Instrument, "Test Resource 3 For fulfillableResourceQ Tests " <> $SessionUUID],
+					Object[Resource, Instrument, "Test Resource 4 For fulfillableResourceQ Tests " <> $SessionUUID]
+				},
+				OutputFormat -> Boolean
+			],
+			{True, False, True, True},
+			Messages :> {Error::InstrumentsNotOwned, Error::InvalidInput},
+			Stubs :> {
+				$Site = Object[Container, Site, "Test Site 1 For fulfillableResourceQ Tests " <> $SessionUUID],
+				$Notebook = Object[LaboratoryNotebook, "fulfillableResourceQ Standard Financing Test Notebook 3 " <> $SessionUUID],
+				$PersonID = Object[User, "Test Author for fulfillableResourceQ Tests 2 " <> $SessionUUID]
+			}
+		],
+		Example[{Messages, "InstrumentsNotOwned", "For a resource, throw an error and return False if the author does not have access to a specific instrument:"},
+			fulfillableResourceQ[
+				{
+					Object[Resource, Instrument, "Test Resource 1 For fulfillableResourceQ Tests " <> $SessionUUID],
+					Object[Resource, Instrument, "Test Resource 2 For fulfillableResourceQ Tests " <> $SessionUUID],
+					Object[Resource, Instrument, "Test Resource 3 For fulfillableResourceQ Tests " <> $SessionUUID],
+					Object[Resource, Instrument, "Test Resource 4 For fulfillableResourceQ Tests " <> $SessionUUID]
+				},
+				OutputFormat -> Boolean
+			],
+			{True, False, True, True},
+			Messages :> {Error::InstrumentsNotOwned, Error::InvalidInput},
+			Stubs :> {
+				$Site = Object[Container, Site, "Test Site 1 For fulfillableResourceQ Tests " <> $SessionUUID],
+				$Notebook = Object[LaboratoryNotebook, "fulfillableResourceQ Standard Financing Test Notebook 3 " <> $SessionUUID],
+				$PersonID = Object[User, "Test Author for fulfillableResourceQ Tests 2 " <> $SessionUUID]
+			}
 		]
 	},
 	Stubs :> {
@@ -2309,6 +2504,7 @@ DefineTests[fulfillableResourceQ,
 		Module[{objs, existingObjs},
 			objs = Quiet[Cases[
 				Flatten[{
+					Object[Container, Site, "Test Site 1 For fulfillableResourceQ Tests " <> $SessionUUID],
 					Model[Container, ProteinCapillaryElectrophoresisCartridge, "container cartridge test model" <> $SessionUUID],
 					Object[Container, ProteinCapillaryElectrophoresisCartridge, "test container cartridge with insert (75 uses)" <> $SessionUUID],
 					Model[Container, ProteinCapillaryElectrophoresisCartridgeInsert, "CESDS Cartridge test Insert" <> $SessionUUID],
@@ -2327,9 +2523,16 @@ DefineTests[fulfillableResourceQ,
 					Model[Item, Electrode, ReferenceElectrode, "reference electrode test model" <> $SessionUUID],
 					Object[Item, Electrode, ReferenceElectrode, "test reference electrode (75 uses)" <> $SessionUUID],
 					Object[User, "Test User (fulfillableResourceQ unit tests)" <> $SessionUUID],
+					Object[User, "Test Author for fulfillableResourceQ Tests 2 " <> $SessionUUID],
+					Object[User, "Test Author for fulfillableResourceQ Tests 3 " <> $SessionUUID],
 					Object[Team, Financing, "Test Team (fulfillableResourceQ unit tests)" <> $SessionUUID],
+					Object[Team, Financing, "Test Financing Team for fulfillableResourceQ Tests 2 " <> $SessionUUID],
+					Object[Team, Financing, "Test Financing Team for fulfillableResourceQ Tests 3 " <> $SessionUUID],
 					Object[LaboratoryNotebook, "Test Notebook 1 (fulfillableResourceQ unit tests)" <> $SessionUUID],
 					Object[LaboratoryNotebook, "Test Notebook 2 (fulfillableResourceQ unit tests)" <> $SessionUUID],
+					Object[LaboratoryNotebook, "fulfillableResourceQ Standard Financing Test Notebook 3 " <> $SessionUUID],
+					Object[LaboratoryNotebook, "fulfillableResourceQ Standard Financing Test Notebook 4 " <> $SessionUUID],
+					Object[LaboratoryNotebook, "fulfillableResourceQ Standard Financing Test Notebook 5 " <> $SessionUUID],
 					Object[Product, "Test product 1 for StorageBuffer sample/container for fulfillableResourceQ tests" <> $SessionUUID],
 					Object[Product, "Test product 2 for ProteinCapillaryElectrophoresisCartridge for fulfillableResourceQ tests" <> $SessionUUID],
 					Object[Product, "Test product 3 for ReferenceElectrode for fulfillableResourceQ tests" <> $SessionUUID],
@@ -2343,7 +2546,25 @@ DefineTests[fulfillableResourceQ,
 					Download[
 						Object[Protocol, HPLC, "Test protocol for ownership bug for fulfillableResourceQ tests" <> $SessionUUID],
 						{Object, ProcedureLog[Object], RequiredResources[[All, 1]][Object]}
-					]
+					],
+					Model[Sample, "Test sterile model 1 for fulfillableResourceQ unit tests" <> $SessionUUID],
+					Model[Sample, "Test sterile model 2 for fulfillableResourceQ unit tests" <> $SessionUUID],
+					Model[Sample, "Test sterile model 3 for fulfillableResourceQ unit tests" <> $SessionUUID],
+					Object[Sample, "Test sterile object 1 for fulfillableResourceQ unit tests" <> $SessionUUID],
+					Object[Sample, "Test sterile object 2 for fulfillableResourceQ unit tests" <> $SessionUUID],
+					Object[Container, Vessel, "Test container for sterile object 1 for fulfillableResourceQ unit tests" <> $SessionUUID],
+					Object[Container, Vessel, "Test container for sterile object 2 for fulfillableResourceQ unit tests" <> $SessionUUID],
+					Object[Product, "Test sterile product 1 for fulfillableResourceQ unit tests" <> $SessionUUID],
+					Object[Product, "Test non-sterile product 1 for fulfillableResourceQ unit tests" <> $SessionUUID],
+					Model[Instrument, HPLC, "Test HPLC Model 1 For fulfillableResourceQ Tests " <> $SessionUUID],
+					Object[Instrument, HPLC, "Test HPLC Instrument 1 For fulfillableResourceQ Tests " <> $SessionUUID],
+					Object[Instrument, HPLC, "Test HPLC Instrument 2 For fulfillableResourceQ Tests " <> $SessionUUID],
+					Object[Instrument, HPLC, "Test HPLC Instrument 3 For fulfillableResourceQ Tests " <> $SessionUUID],
+					Object[Instrument, HPLC, "Test HPLC Instrument 4 For fulfillableResourceQ Tests " <> $SessionUUID],
+					Object[Resource, Instrument, "Test Resource 1 For fulfillableResourceQ Tests " <> $SessionUUID],
+					Object[Resource, Instrument, "Test Resource 2 For fulfillableResourceQ Tests " <> $SessionUUID],
+					Object[Resource, Instrument, "Test Resource 3 For fulfillableResourceQ Tests " <> $SessionUUID],
+					Object[Resource, Instrument, "Test Resource 4 For fulfillableResourceQ Tests " <> $SessionUUID]
 				}],
 				ObjectP[]
 			]];
@@ -2355,13 +2576,19 @@ DefineTests[fulfillableResourceQ,
 				{
 					cartridgeContainerModel, cartridgeContainer, cartridgeContainerWithInsert, cartridgeInsertModel,
 					cartridgeInsert, testBench, testContainer1, testContainer2, testContainer3, testContainer4,
-					containerModel, testUser, testTeam, testNotebook1, testNotebook2, testProtocol1, itemWithUses,
+					containerModel, testUser1, testTeam1, testNotebook1, testNotebook2, testProtocol1, itemWithUses,
 					allProtResources, filterModel, testContainer5, stockedContainer1, stockedContainer2, itemModel,
 					stockedContainer3, stockedContainer4, stockedContainer5, waterModel, product, product2, product3,
-					plate, allSamples
+					plate, allSamples, testSterileModel1, testSterileModel2, testSterileModel3, sterileContainer1, sterileContainer2,
+					sterileProduct1, nonSterileProduct1, testSite, testUser2, testUser3, testTeam2, testTeam3, testNotebook3,
+					testNotebook4, testNotebook5,hplcModel1, hplcInstrument1, hplcInstrument2, hplcInstrument3, hplcInstrument4,
+					testInstrumentResource1, testInstrumentResource2, testInstrumentResource3, testInstrumentResource4,
+					linkID1, linkID2, linkID3, linkID4, linkID5, linkID6, linkID7, linkID8, linkID9, linkID10, linkID11,
+					linkID12, linkID13, linkID14
 				},
 
 				{
+					testSite,
 					testBench,
 					cartridgeContainerModel,
 					cartridgeContainerWithInsert,
@@ -2372,15 +2599,34 @@ DefineTests[fulfillableResourceQ,
 					waterModel,
 					itemModel,
 					itemWithUses,
-					testUser,
-					testTeam,
+					testUser1,
+					testUser2,
+					testUser3,
+					testTeam1,
+					testTeam2,
+					testTeam3,
 					testNotebook1,
 					testNotebook2,
+					testNotebook3,
+					testNotebook4,
+					testNotebook5,
 					testProtocol1,
 					product,
 					product2,
-					product3
+					product3,
+					sterileProduct1,
+					nonSterileProduct1,
+					hplcModel1,
+					hplcInstrument1,
+					hplcInstrument2,
+					hplcInstrument3,
+					hplcInstrument4,
+					testInstrumentResource1,
+					testInstrumentResource2,
+					testInstrumentResource3,
+					testInstrumentResource4
 				} = CreateID[{
+					Object[Container, Site],
 					Object[Container, Bench],
 					Model[Container, ProteinCapillaryElectrophoresisCartridge],
 					Object[Container, ProteinCapillaryElectrophoresisCartridge],
@@ -2392,16 +2638,159 @@ DefineTests[fulfillableResourceQ,
 					Model[Item, Electrode, ReferenceElectrode],
 					Object[Item, Electrode, ReferenceElectrode],
 					Object[User],
+					Object[User],
+					Object[User],
 					Object[Team, Financing],
+					Object[Team, Financing],
+					Object[Team, Financing],
+					Object[LaboratoryNotebook],
+					Object[LaboratoryNotebook],
+					Object[LaboratoryNotebook],
 					Object[LaboratoryNotebook],
 					Object[LaboratoryNotebook],
 					Object[Protocol, HPLC],
 					Object[Product],
 					Object[Product],
-					Object[Product]
+					Object[Product],
+					Object[Product],
+					Object[Product],
+					Model[Instrument, HPLC],
+					Object[Instrument, HPLC],
+					Object[Instrument, HPLC],
+					Object[Instrument, HPLC],
+					Object[Instrument, HPLC],
+					Object[Resource, Instrument],
+					Object[Resource, Instrument],
+					Object[Resource, Instrument],
+					Object[Resource, Instrument]
 				}];
 
+				{
+					linkID1, linkID2, linkID3, linkID4, linkID5,
+					linkID6, linkID7, linkID8, linkID9, linkID10,
+					linkID11, linkID12, linkID13, linkID14
+				} =
+					CreateLinkID[14];
+
 				Upload[{
+					<|
+						Object -> testSite,
+						Append[FinancingTeams] -> {
+							Link[testTeam2, ExperimentSites, linkID7],
+							Link[testTeam3, ExperimentSites, linkID11]
+						},
+						Name -> "Test Site 1 For fulfillableResourceQ Tests " <> $SessionUUID
+					|>,
+					<|
+						Object -> hplcModel1,
+						Replace@Objects -> {
+							Link[hplcInstrument1, Model, linkID1],
+							Link[hplcInstrument2, Model, linkID6],
+							Link[hplcInstrument3, Model, linkID12],
+							Link[hplcInstrument4, Model, linkID14]
+						},
+						Name -> "Test HPLC Model 1 For fulfillableResourceQ Tests " <> $SessionUUID
+					|>,
+					<|
+						Object -> hplcInstrument1,
+						Model -> Link[hplcModel1, Objects, linkID1],
+						Name -> "Test HPLC Instrument 1 For fulfillableResourceQ Tests " <> $SessionUUID,
+						Site -> Link[testSite]
+					|>,
+					<|
+						Object -> hplcInstrument2,
+						Model -> Link[hplcModel1, Objects, linkID6],
+						Name -> "Test HPLC Instrument 2 For fulfillableResourceQ Tests " <> $SessionUUID,
+						Site -> Link[testSite]
+					|>,
+					<|
+						Object -> hplcInstrument3,
+						Model -> Link[hplcModel1, Objects, linkID12],
+						Name -> "Test HPLC Instrument 3 For fulfillableResourceQ Tests " <> $SessionUUID,
+						Site -> Link[testSite]
+					|>,
+					<|
+						Object -> hplcInstrument4,
+						Model -> Link[hplcModel1, Objects, linkID14],
+						Name -> "Test HPLC Instrument 4 For fulfillableResourceQ Tests " <> $SessionUUID,
+						Site -> Link[testSite]
+					|>,
+					<|
+						Object -> testUser2,
+						Name -> "Test Author for fulfillableResourceQ Tests 2 " <> $SessionUUID,
+						Append[FinancingTeams] -> {Link[testTeam2, Members, linkID2]},
+						Email -> $SessionUUID <> "fulfillableResourceQ.nonexistent.email2@ecl.com"
+					|>,
+					<|
+						Object -> testUser3,
+						Name -> "Test Author for fulfillableResourceQ Tests 3 " <> $SessionUUID,
+						Append[FinancingTeams] -> {Link[testTeam3, Members, linkID8]},
+						Email -> $SessionUUID <> "fulfillableResourceQ.nonexistent.email3@ecl.com"
+					|>,
+					<|
+						Object -> testTeam2,
+						Append[Members] -> {Link[testUser2, FinancingTeams, linkID2]},
+						Append[Notebooks] -> {
+							Link[testNotebook3, Editors, linkID4],
+							Link[testNotebook5, Editors, linkID13]
+						},
+						Append[NotebooksFinanced] -> {
+							Link[testNotebook3, Financers, linkID3]
+						},
+						Name -> "Test Financing Team for fulfillableResourceQ Tests 2 " <> $SessionUUID,
+						DefaultExperimentSite -> Link[testSite],
+						Append@ExperimentSites -> {Link[testSite, FinancingTeams, linkID7]}
+					|>,
+					<|
+						Object -> testTeam3,
+						Append[Members] -> {Link[testUser3, FinancingTeams, linkID8]},
+						Append[Notebooks] -> {Link[testNotebook4, Editors, linkID9]},
+						Append[NotebooksFinanced] -> {Link[testNotebook4, Financers, linkID10]},
+						Name -> "Test Financing Team for fulfillableResourceQ Tests 3 " <> $SessionUUID,
+						DefaultExperimentSite -> Link[$Site],
+						Replace@ExperimentSites -> Link[testSite, FinancingTeams, linkID11]
+					|>,
+					<|
+						Object -> testNotebook3,
+						Name -> "fulfillableResourceQ Standard Financing Test Notebook 3 " <> $SessionUUID,
+						Append[Financers] -> {Link[testTeam2, NotebooksFinanced, linkID3]},
+						Append[Editors] -> {Link[testTeam2, Notebooks, linkID4]}
+					|>,
+					<|
+						Object -> testNotebook4,
+						Name -> "fulfillableResourceQ Standard Financing Test Notebook 4 " <> $SessionUUID,
+						Append[Financers] -> {Link[testTeam3, NotebooksFinanced, linkID10]},
+						Append[Editors] -> {Link[testTeam3, Notebooks, linkID9]}
+					|>,
+					<|
+						Object -> testNotebook5,
+						Name -> "fulfillableResourceQ Standard Financing Test Notebook 5 " <> $SessionUUID,
+						Append[Editors] -> {Link[testTeam2, Notebooks, linkID13]}
+					|>,
+					<|
+						Object -> testInstrumentResource1,
+						Instrument -> Link[hplcInstrument1],
+						Name -> "Test Resource 1 For fulfillableResourceQ Tests " <> $SessionUUID,
+						Status -> Outstanding
+					|>,
+					<|
+						Object -> testInstrumentResource2,
+						Instrument -> Link[hplcInstrument2],
+						Name -> "Test Resource 2 For fulfillableResourceQ Tests " <> $SessionUUID,
+						Status -> Outstanding
+					|>,
+					<|
+						Object -> testInstrumentResource3,
+						Instrument -> Link[hplcInstrument3],
+						Name -> "Test Resource 3 For fulfillableResourceQ Tests " <> $SessionUUID,
+						Status -> Outstanding
+					|>,
+					<|
+						Object -> testInstrumentResource4,
+						Instrument -> Link[hplcInstrument4],
+						Name -> "Test Resource 4 For fulfillableResourceQ Tests " <> $SessionUUID,
+						Status -> Outstanding
+					|>,
 					<|
 						Object -> testBench,
 						Type -> Object[Container, Bench],
@@ -2434,7 +2823,7 @@ DefineTests[fulfillableResourceQ,
 						MaxMolecularWeightCESDS -> 270 Kilodalton,
 						Expires -> True,
 						ShelfLife -> 12 Month,
-						Reusability -> True,
+						Reusable -> True,
 						DefaultStorageCondition -> Link[Model[StorageCondition, "Ambient Storage"]],
 						Footprint -> MauriceCartridge,
 						Replace[Positions] -> {
@@ -2487,7 +2876,7 @@ DefineTests[fulfillableResourceQ,
 						Replace[Authors] -> {Link[$PersonID]},
 						Expires -> False,
 						DefaultStorageCondition -> Link[Model[StorageCondition, "Ambient Storage"]],
-						Reusability -> False,
+						Reusable -> False,
 						Ampoule -> False,
 						Hermetic -> False,
 						Squeezable -> False,
@@ -2522,7 +2911,7 @@ DefineTests[fulfillableResourceQ,
 						Replace[Authors] -> {Link[$PersonID]},
 						Expires -> False,
 						DefaultStorageCondition -> Link[Model[StorageCondition, "Ambient Storage"]],
-						Reusability -> False,
+						Reusable -> False,
 						Ampoule -> False,
 						Hermetic -> False,
 						Squeezable -> False,
@@ -2555,7 +2944,8 @@ DefineTests[fulfillableResourceQ,
 						Object -> waterModel,
 						DeveloperObject -> True,
 						Name -> "Test StorageBuffer sample model for fulfillableResourceQ tests" <> $SessionUUID,
-						DefaultStorageCondition -> Link[Model[StorageCondition, "Ambient Storage"]]
+						DefaultStorageCondition -> Link[Model[StorageCondition, "Ambient Storage"]],
+						State -> Liquid
 					|>,
 					<|
 						Object -> itemModel,
@@ -2588,35 +2978,35 @@ DefineTests[fulfillableResourceQ,
 						DeveloperObject -> True
 					|>,
 					<|
-						Object -> testUser,
+						Object -> testUser1,
 						DeveloperObject -> True,
 						Name -> "Test User (fulfillableResourceQ unit tests)" <> $SessionUUID
 					|>,
 					<|
-						Object -> testTeam,
+						Object -> testTeam1,
 						DeveloperObject -> True,
 						Name -> "Test Team (fulfillableResourceQ unit tests)" <> $SessionUUID,
-						Replace[Members] -> {Link[testUser, FinancingTeams]}
+						Replace[Members] -> {Link[testUser1, FinancingTeams]}
 					|>,
 					<|
 						Object -> testNotebook1,
 						DeveloperObject -> True,
 						Name -> "Test Notebook 1 (fulfillableResourceQ unit tests)" <> $SessionUUID,
-						Replace[Financers] -> {Link[testTeam, NotebooksFinanced]},
-						Replace[Editors] -> {Link[testTeam, Notebooks]},
-						Replace[Viewers] -> {Link[testTeam, Notebooks]},
-						Replace[Authors] -> {Link[testUser]},
-						Replace[Administrators] -> {Link[testUser]}
+						Replace[Financers] -> {Link[testTeam1, NotebooksFinanced]},
+						Replace[Editors] -> {Link[testTeam1, Notebooks]},
+						Replace[Viewers] -> {Link[testTeam1, Notebooks]},
+						Replace[Authors] -> {Link[testUser1]},
+						Replace[Administrators] -> {Link[testUser1]}
 					|>,
 					<|
 						Object -> testNotebook2,
 						DeveloperObject -> True,
 						Name -> "Test Notebook 2 (fulfillableResourceQ unit tests)" <> $SessionUUID,
-						Replace[Financers] -> {Link[testTeam, NotebooksFinanced]},
-						Replace[Editors] -> {Link[testTeam, Notebooks]},
-						Replace[Viewers] -> {Link[testTeam, Notebooks]},
-						Replace[Authors] -> {Link[testUser]},
-						Replace[Administrators] -> {Link[testUser]}
+						Replace[Financers] -> {Link[testTeam1, NotebooksFinanced]},
+						Replace[Editors] -> {Link[testTeam1, Notebooks]},
+						Replace[Viewers] -> {Link[testTeam1, Notebooks]},
+						Replace[Authors] -> {Link[testUser1]},
+						Replace[Administrators] -> {Link[testUser1]}
 					|>,
 					<|
 						Object -> product,
@@ -2649,8 +3039,82 @@ DefineTests[fulfillableResourceQ,
 						NumberOfItems -> 1,
 						SampleType -> Electrode,
 						EstimatedLeadTime -> 3 Day
+					|>,
+					<|
+						Object -> sterileProduct1,
+						DeveloperObject -> True,
+						Transfer[Notebook] -> Null,
+						Name -> "Test sterile product 1 for fulfillableResourceQ unit tests" <> $SessionUUID,
+						DefaultContainerModel -> Link[Model[Container, Vessel, "2mL Tube"], ProductsContained],
+						Stocked -> True,
+						Sterile -> True,
+						Amount -> 1 Milliliter
+					|>,
+					<|
+						Object -> nonSterileProduct1,
+						DeveloperObject -> True,
+						Transfer[Notebook] -> Null,
+						Name -> "Test non-sterile product 1 for fulfillableResourceQ unit tests" <> $SessionUUID,
+						DefaultContainerModel -> Link[Model[Container, Vessel, "2mL Tube"], ProductsContained],
+						Stocked -> True,
+						Sterile -> False,
+						Amount -> 1 Milliliter
 					|>
 				}];
+
+				testSterileModel1 = UploadSampleModel[
+					"Test sterile model 1 for fulfillableResourceQ unit tests" <> $SessionUUID,
+					Composition -> {
+						{100 VolumePercent, Model[Molecule, "Water"]},
+						{100 Milligram / Milliliter, Model[Molecule, "Sodium Chloride"]}
+					},
+					State -> Liquid,
+					DefaultStorageCondition -> Model[StorageCondition, "Ambient Storage"],
+					Expires -> True,
+					ShelfLife -> 1 Month,
+					UnsealedShelfLife -> 2 Week,
+					MSDSRequired -> False,
+					Flammable -> False,
+					BiosafetyLevel -> "BSL-1",
+					IncompatibleMaterials -> {None},
+					Sterile -> True
+				];
+				testSterileModel2 = UploadSampleModel[
+					"Test sterile model 2 for fulfillableResourceQ unit tests" <> $SessionUUID,
+					Composition -> {
+						{100 VolumePercent, Model[Molecule, "Water"]},
+						{100 Milligram / Milliliter, Model[Molecule, "Sodium Chloride"]}
+					},
+					State -> Liquid,
+					DefaultStorageCondition -> Model[StorageCondition, "Ambient Storage"],
+					Expires -> True,
+					ShelfLife -> 1 Month,
+					UnsealedShelfLife -> 2 Week,
+					MSDSRequired -> False,
+					Flammable -> False,
+					BiosafetyLevel -> "BSL-1",
+					IncompatibleMaterials -> {None},
+					Sterile -> True,
+					Products -> {sterileProduct1}
+				];
+				testSterileModel3 = UploadSampleModel[
+					"Test sterile model 3 for fulfillableResourceQ unit tests" <> $SessionUUID,
+					Composition -> {
+						{100 VolumePercent, Model[Molecule, "Water"]},
+						{100 Milligram / Milliliter, Model[Molecule, "Sodium Chloride"]}
+					},
+					State -> Liquid,
+					DefaultStorageCondition -> Model[StorageCondition, "Ambient Storage"],
+					Expires -> True,
+					ShelfLife -> 1 Month,
+					UnsealedShelfLife -> 2 Week,
+					MSDSRequired -> False,
+					Flammable -> False,
+					BiosafetyLevel -> "BSL-1",
+					IncompatibleMaterials -> {None},
+					Sterile -> True,
+					Products -> {nonSterileProduct1}
+				];
 
 				(* place the insert in its cartridge to make a not empty cartridge *)
 				Upload[<|Object -> cartridgeContainerWithInsert, Replace[Contents] -> {{"Cartridge Insert Slot", Link[cartridgeInsert, Container]}}|>];
@@ -2667,7 +3131,9 @@ DefineTests[fulfillableResourceQ,
 					stockedContainer3,
 					stockedContainer4,
 					stockedContainer5,
-					plate
+					plate,
+					sterileContainer1,
+					sterileContainer2
 				} = ECL`InternalUpload`UploadSample[
 					{
 						containerModel,
@@ -2680,9 +3146,13 @@ DefineTests[fulfillableResourceQ,
 						containerModel,
 						containerModel,
 						containerModel,
-						Model[Container, Plate, "96-well 2mL Deep Well Plate"]
+						Model[Container, Plate, "96-well 2mL Deep Well Plate"],
+						Model[Container, Vessel, "2mL Tube"],
+						Model[Container, Vessel, "2mL Tube"]
 					},
 					{
+						{"Work Surface", testBench},
+						{"Work Surface", testBench},
 						{"Work Surface", testBench},
 						{"Work Surface", testBench},
 						{"Work Surface", testBench},
@@ -2706,38 +3176,57 @@ DefineTests[fulfillableResourceQ,
 						"Test container 3 for fulfillableResourceQ tests" <> $SessionUUID,
 						"Test container 4 for fulfillableResourceQ tests" <> $SessionUUID,
 						"Test container 5 for fulfillableResourceQ tests" <> $SessionUUID,
-						"Test DWP for fulfillableResourceQ tests" <> $SessionUUID
+						"Test DWP for fulfillableResourceQ tests" <> $SessionUUID,
+						"Test container for sterile object 1 for fulfillableResourceQ unit tests" <> $SessionUUID,
+						"Test container for sterile object 2 for fulfillableResourceQ unit tests" <> $SessionUUID
 					},
 					FastTrack -> True,
 					Status->Join[
 						ConstantArray[Available,4],
 						ConstantArray[Stocked,6],
-						{Available}
+						{Available},
+						{Stocked, Stocked}
 					]
 				];
 				allSamples = ECL`InternalUpload`UploadSample[
 					{
 						waterModel,
 						Model[Sample, StockSolution, "1x TBE Buffer"],
-						Model[Sample, StockSolution, "1x TBE Buffer"]
+						Model[Sample, StockSolution, "1x TBE Buffer"],
+						testSterileModel1,
+						testSterileModel1
 					},
 					{
 						{"A1", testContainer5},
 						{"A1",plate},
-						{"A2",plate}
+						{"A2",plate},
+						{"A1", sterileContainer1},
+						{"A1", sterileContainer2}
 					},
 					Name -> {
 						"Test StorageBuffer sample for fulfillableResourceQ tests" <> $SessionUUID,
 						"Test sample 1 for fulfillableResourceQ tests" <> $SessionUUID,
-						"Test sample 2 for fulfillableResourceQ tests" <> $SessionUUID
+						"Test sample 2 for fulfillableResourceQ tests" <> $SessionUUID,
+						"Test sterile object 1 for fulfillableResourceQ unit tests" <> $SessionUUID,
+						"Test sterile object 2 for fulfillableResourceQ unit tests" <> $SessionUUID
 					},
 					InitialAmount -> 1 Milliliter,
-					Status -> {Stocked,Available,Available}
+					Status -> {Stocked,Available,Available, Available, Available},
+					Sterile -> {
+						Automatic,
+						Automatic,
+						Automatic,
+						True,
+						True
+					}
 				];
-				Upload[<|Object -> #, DeveloperObject -> True|>& /@ Join[{testContainer1, testContainer2, testContainer3, testContainer4, testContainer5, stockedContainer1, stockedContainer2, stockedContainer3, stockedContainer4, stockedContainer5, plate}, allSamples]];
+				Upload[<|Object -> #, DeveloperObject -> True|>& /@ Join[{testContainer1, testContainer2, testContainer3, testContainer4, testContainer5, stockedContainer1, stockedContainer2, stockedContainer3, stockedContainer4, stockedContainer5, plate, testContainer1, testContainer2}, allSamples]];
 
 				(* make the user object; this doesn't really need to have anything? *)
-				UploadNotebook[{testContainer1, testContainer2, testContainer3}, testNotebook1];
+				ECL`InternalUpload`UploadNotebook[
+					{testContainer1, testContainer2, testContainer3, hplcInstrument1, hplcInstrument2, hplcInstrument3},
+					{testNotebook1, testNotebook1, testNotebook1, testNotebook3, testNotebook4, testNotebook5}
+				];
 
 				Block[{$Notebook = testNotebook1},
 					ECL`InternalUpload`UploadProtocol[<|
@@ -2755,8 +3244,7 @@ DefineTests[fulfillableResourceQ,
 				];
 				UploadSampleStatus[{testContainer1, testContainer2, testContainer3}, InUse, UpdatedBy -> testProtocol1];
 				allProtResources = Download[testProtocol1, RequiredResources[[All, 1]][Object]];
-				UploadResourceStatus[allProtResources, InUse, UpdatedBy -> testProtocol1, FastTrack -> True]
-
+				UploadResourceStatus[allProtResources, InUse, UpdatedBy -> testProtocol1, FastTrack -> True];
 			]
 		]
 	),
@@ -2764,41 +3252,69 @@ DefineTests[fulfillableResourceQ,
 		Module[{objs, existingObjs},
 			objs = Quiet[Cases[
 				Flatten[{
-					Model[Container, ProteinCapillaryElectrophoresisCartridge, "container cartridge test model" <> $SessionUUID],
-					Object[Container, ProteinCapillaryElectrophoresisCartridge, "test container cartridge with insert (75 uses)" <> $SessionUUID],
-					Model[Container, ProteinCapillaryElectrophoresisCartridgeInsert, "CESDS Cartridge test Insert" <> $SessionUUID],
-					Object[Container, ProteinCapillaryElectrophoresisCartridgeInsert, "test CESDS cartridge Insert" <> $SessionUUID],
-					Model[Container, Vessel, "Test vessel for fulfillableResourceQ tests" <> $SessionUUID],
-					Object[Container, Bench, "Test bench for fulfillableResourceQ tests" <> $SessionUUID],
-					Object[Container, Vessel, "Test container 1 for ownership bug for fulfillableResourceQ tests" <> $SessionUUID],
-					Object[Container, Vessel, "Test container 2 for ownership bug for fulfillableResourceQ tests" <> $SessionUUID],
-					Object[Container, Vessel, "Test container 3 for ownership bug for fulfillableResourceQ tests" <> $SessionUUID],
-					Object[Container, Vessel, "Test container 4 for ownership bug for fulfillableResourceQ tests" <> $SessionUUID],
-					Object[Container, Vessel, "Test container 1 for fulfillableResourceQ tests" <> $SessionUUID],
-					Object[Container, Vessel, "Test container 2 for fulfillableResourceQ tests" <> $SessionUUID],
-					Object[Container, Vessel, "Test container 3 for fulfillableResourceQ tests" <> $SessionUUID],
-					Object[Container, Vessel, "Test container 4 for fulfillableResourceQ tests" <> $SessionUUID],
-					Object[Container, Vessel, "Test container 5 for fulfillableResourceQ tests" <> $SessionUUID],
-					Model[Item, Electrode, ReferenceElectrode, "reference electrode test model" <> $SessionUUID],
-					Object[Item, Electrode, ReferenceElectrode, "test reference electrode (75 uses)" <> $SessionUUID],
-					Object[User, "Test User (fulfillableResourceQ unit tests)" <> $SessionUUID],
-					Object[Team, Financing, "Test Team (fulfillableResourceQ unit tests)" <> $SessionUUID],
-					Object[LaboratoryNotebook, "Test Notebook 1 (fulfillableResourceQ unit tests)" <> $SessionUUID],
-					Object[LaboratoryNotebook, "Test Notebook 2 (fulfillableResourceQ unit tests)" <> $SessionUUID],
-					Object[Product, "Test product 1 for StorageBuffer sample/container for fulfillableResourceQ tests" <> $SessionUUID],
-					Object[Product, "Test product 2 for ProteinCapillaryElectrophoresisCartridge for fulfillableResourceQ tests" <> $SessionUUID],
-					Object[Product, "Test product 3 for ReferenceElectrode for fulfillableResourceQ tests" <> $SessionUUID],
-					Model[Container, Vessel, Filter, "Test filter model 1 with StorageBuffer for fulfillableResourceQ tests" <> $SessionUUID],
-					Object[Container, Vessel, Filter, "Test filter 1 with StorageBuffer for fulfillableResourceQ tests" <> $SessionUUID],
-					Object[Container, Plate, "Test DWP for fulfillableResourceQ tests" <> $SessionUUID],
-					Model[Sample, "Test StorageBuffer sample model for fulfillableResourceQ tests" <> $SessionUUID],
-					Object[Sample, "Test StorageBuffer sample for fulfillableResourceQ tests" <> $SessionUUID],
-					Object[Sample, "Test sample 1 for fulfillableResourceQ tests" <> $SessionUUID],
-					Object[Sample, "Test sample 2 for fulfillableResourceQ tests" <> $SessionUUID],
-					Download[
-						Object[Protocol, HPLC, "Test protocol for ownership bug for fulfillableResourceQ tests" <> $SessionUUID],
-						{Object, ProcedureLog[Object], RequiredResources[[All, 1]][Object]}
-					]
+					{
+						Object[Container, Site, "Test Site 1 For fulfillableResourceQ Tests " <> $SessionUUID],
+						Model[Container, ProteinCapillaryElectrophoresisCartridge, "container cartridge test model" <> $SessionUUID],
+						Object[Container, ProteinCapillaryElectrophoresisCartridge, "test container cartridge with insert (75 uses)" <> $SessionUUID],
+						Model[Container, ProteinCapillaryElectrophoresisCartridgeInsert, "CESDS Cartridge test Insert" <> $SessionUUID],
+						Object[Container, ProteinCapillaryElectrophoresisCartridgeInsert, "test CESDS cartridge Insert" <> $SessionUUID],
+						Model[Container, Vessel, "Test vessel for fulfillableResourceQ tests" <> $SessionUUID],
+						Object[Container, Bench, "Test bench for fulfillableResourceQ tests" <> $SessionUUID],
+						Object[Container, Vessel, "Test container 1 for ownership bug for fulfillableResourceQ tests" <> $SessionUUID],
+						Object[Container, Vessel, "Test container 2 for ownership bug for fulfillableResourceQ tests" <> $SessionUUID],
+						Object[Container, Vessel, "Test container 3 for ownership bug for fulfillableResourceQ tests" <> $SessionUUID],
+						Object[Container, Vessel, "Test container 4 for ownership bug for fulfillableResourceQ tests" <> $SessionUUID],
+						Object[Container, Vessel, "Test container 1 for fulfillableResourceQ tests" <> $SessionUUID],
+						Object[Container, Vessel, "Test container 2 for fulfillableResourceQ tests" <> $SessionUUID],
+						Object[Container, Vessel, "Test container 3 for fulfillableResourceQ tests" <> $SessionUUID],
+						Object[Container, Vessel, "Test container 4 for fulfillableResourceQ tests" <> $SessionUUID],
+						Object[Container, Vessel, "Test container 5 for fulfillableResourceQ tests" <> $SessionUUID],
+						Model[Item, Electrode, ReferenceElectrode, "reference electrode test model" <> $SessionUUID],
+						Object[Item, Electrode, ReferenceElectrode, "test reference electrode (75 uses)" <> $SessionUUID],
+						Object[User, "Test User (fulfillableResourceQ unit tests)" <> $SessionUUID],
+						Object[User, "Test Author for fulfillableResourceQ Tests 2 " <> $SessionUUID],
+						Object[User, "Test Author for fulfillableResourceQ Tests 3 " <> $SessionUUID],
+						Object[Team, Financing, "Test Team (fulfillableResourceQ unit tests)" <> $SessionUUID],
+						Object[Team, Financing, "Test Financing Team for fulfillableResourceQ Tests 2 " <> $SessionUUID],
+						Object[Team, Financing, "Test Financing Team for fulfillableResourceQ Tests 3 " <> $SessionUUID],
+						Object[LaboratoryNotebook, "Test Notebook 1 (fulfillableResourceQ unit tests)" <> $SessionUUID],
+						Object[LaboratoryNotebook, "Test Notebook 2 (fulfillableResourceQ unit tests)" <> $SessionUUID],
+						Object[LaboratoryNotebook, "fulfillableResourceQ Standard Financing Test Notebook 3 " <> $SessionUUID],
+						Object[LaboratoryNotebook, "fulfillableResourceQ Standard Financing Test Notebook 4 " <> $SessionUUID],
+						Object[LaboratoryNotebook, "fulfillableResourceQ Standard Financing Test Notebook 5 " <> $SessionUUID],
+						Object[Product, "Test product 1 for StorageBuffer sample/container for fulfillableResourceQ tests" <> $SessionUUID],
+						Object[Product, "Test product 2 for ProteinCapillaryElectrophoresisCartridge for fulfillableResourceQ tests" <> $SessionUUID],
+						Object[Product, "Test product 3 for ReferenceElectrode for fulfillableResourceQ tests" <> $SessionUUID],
+						Model[Container, Vessel, Filter, "Test filter model 1 with StorageBuffer for fulfillableResourceQ tests" <> $SessionUUID],
+						Object[Container, Vessel, Filter, "Test filter 1 with StorageBuffer for fulfillableResourceQ tests" <> $SessionUUID],
+						Object[Container, Plate, "Test DWP for fulfillableResourceQ tests" <> $SessionUUID],
+						Model[Sample, "Test StorageBuffer sample model for fulfillableResourceQ tests" <> $SessionUUID],
+						Object[Sample, "Test StorageBuffer sample for fulfillableResourceQ tests" <> $SessionUUID],
+						Object[Sample, "Test sample 1 for fulfillableResourceQ tests" <> $SessionUUID],
+						Object[Sample, "Test sample 2 for fulfillableResourceQ tests" <> $SessionUUID],
+						Download[
+							Object[Protocol, HPLC, "Test protocol for ownership bug for fulfillableResourceQ tests" <> $SessionUUID],
+							{Object, ProcedureLog[Object], RequiredResources[[All, 1]][Object]}
+						],
+						Model[Sample, "Test sterile model 1 for fulfillableResourceQ unit tests" <> $SessionUUID],
+						Model[Sample, "Test sterile model 2 for fulfillableResourceQ unit tests" <> $SessionUUID],
+						Model[Sample, "Test sterile model 3 for fulfillableResourceQ unit tests" <> $SessionUUID],
+						Object[Sample, "Test sterile object 1 for fulfillableResourceQ unit tests" <> $SessionUUID],
+						Object[Sample, "Test sterile object 2 for fulfillableResourceQ unit tests" <> $SessionUUID],
+						Object[Container, Vessel, "Test container for sterile object 1 for fulfillableResourceQ unit tests" <> $SessionUUID],
+						Object[Container, Vessel, "Test container for sterile object 2 for fulfillableResourceQ unit tests" <> $SessionUUID],
+						Object[Product, "Test sterile product 1 for fulfillableResourceQ unit tests" <> $SessionUUID],
+						Object[Product, "Test non-sterile product 1 for fulfillableResourceQ unit tests" <> $SessionUUID],
+						Model[Instrument, HPLC, "Test HPLC Model 1 For fulfillableResourceQ Tests " <> $SessionUUID],
+						Object[Instrument, HPLC, "Test HPLC Instrument 1 For fulfillableResourceQ Tests " <> $SessionUUID],
+						Object[Instrument, HPLC, "Test HPLC Instrument 2 For fulfillableResourceQ Tests " <> $SessionUUID],
+						Object[Instrument, HPLC, "Test HPLC Instrument 3 For fulfillableResourceQ Tests " <> $SessionUUID],
+						Object[Instrument, HPLC, "Test HPLC Instrument 4 For fulfillableResourceQ Tests " <> $SessionUUID],
+						Object[Resource, Instrument, "Test Resource 1 For fulfillableResourceQ Tests " <> $SessionUUID],
+						Object[Resource, Instrument, "Test Resource 2 For fulfillableResourceQ Tests " <> $SessionUUID],
+						Object[Resource, Instrument, "Test Resource 3 For fulfillableResourceQ Tests " <> $SessionUUID],
+						Object[Resource, Instrument, "Test Resource 4 For fulfillableResourceQ Tests " <> $SessionUUID]
+					}
 				}],
 				ObjectP[]
 			]];
@@ -2820,11 +3336,10 @@ DefineTests[fulfillableResources,
 			fulfillableResourcesP
 		],
 		Example[{Additional, "SpecificItem", "Works on a resource blob requesting a specific Object:"},
-			Module[{availableItem},
-				availableItem = First@Search[Object[Container, Plate], Status==Available && Missing!=True && DeveloperObject!=True && Restricted!=True && Site==$Site, MaxResults->1];
-				{availableItem, fulfillableResources[Resource[Sample -> availableItem]]}
+			fulfillableResources[
+				Resource[Sample -> Object[Container, Plate, "Test DWP for fulfillableResources unit tests" <> $SessionUUID]]
 			],
-			{ObjectP[], fulfillableResourcesP}
+			fulfillableResourcesP
 		],
 		Example[{Basic, "Checks resource to see if a requested resource can be fulfilled given the current state of the lab:"},
 			fulfillableResources[Resource[Sample -> Model[Sample, "id:GmzlKjPx4PM5"], Amount -> 90*Milliliter]],
@@ -2915,27 +3430,7 @@ DefineTests[fulfillableResources,
 		Example[{Messages, "ContainerNotAutoclaveCompatible", "If a sterile stock solution is requested, it must be in a autoclave compatible container:"},
 			fulfillableResources[Resource[Sample -> Model[Sample, StockSolution, "Test Autoclaved StockSolution for fulfillableResources tests" <> $SessionUUID], Amount -> 50*Microliter, Container -> Model[Container, Vessel, "50mL Tube"]]],
 			fulfillableResourcesP,
-			Messages :> {Error::ContainerNotAutoclaveCompatible, Error::InvalidInput},
-			SetUp :> (
-				If[DatabaseMemberQ[Model[Sample, StockSolution, "Test Autoclaved StockSolution for fulfillableResources tests" <> $SessionUUID]],
-					EraseObject[Model[Sample, StockSolution, "Test Autoclaved StockSolution for fulfillableResources tests" <> $SessionUUID], Force -> True]
-				];
-				Upload[<|
-					Object -> CreateID[Model[Sample, StockSolution]],
-					Type -> Model[Sample, StockSolution],
-					Name -> "Test Autoclaved StockSolution for fulfillableResources tests" <> $SessionUUID,
-					DeveloperObject -> True,
-					Autoclave -> True,
-					AutoclaveProgram -> Universal,
-					Replace[Formula] -> {
-						{500 Milliliter, Link[Model[Sample, "Milli-Q water"]]},
-						{500 Milliliter, Link[Model[Sample, "Methanol"]]}
-					}
-				|>]
-			),
-			TearDown :> (
-				EraseObject[Model[Sample, StockSolution, "Test Autoclaved StockSolution for fulfillableResources tests" <> $SessionUUID], Force -> True]
-			)
+			Messages :> {Error::ContainerNotAutoclaveCompatible, Error::InvalidInput}
 		],
 		Example[{Messages, "OptionLengthMismatch", "If the Subprotocol option is provided but is not index matched with the input, throw an error:"},
 			fulfillableResources[{Resource[Sample -> Model[Sample, "id:GmzlKjPx4PM5"], Amount -> 90*Milliliter], Resource[Sample -> Object[Sample, "id:P5ZnEjdzWMKE"], Amount -> 3*Microliter]},Subprotocol->{False,True, False}],
@@ -3297,6 +3792,8 @@ DefineTests[fulfillableResources,
 			Messages :> {Error::ExceedsMaxVolumesCanBeUsed, Error::InvalidInput}
 		],
 		Example[{Messages, "NonScalableStockSolutionVolumeTooHigh", "Two VolumeOfUses cannot be specified for the same resource (resources with the same name):"},
+			resourceObject = Download[Object[Resource, Sample, "Test Resource for fulfillableResources 1 " <> $SessionUUID], Object];
+			resourceID = Download[Object[Resource, Sample, "Test Resource for fulfillableResources 1 " <> $SessionUUID], ID];
 			Lookup[
 				fulfillableResources[
 					{
@@ -3311,9 +3808,9 @@ DefineTests[fulfillableResources,
 							Rent -> Null,
 							NumberOfUses -> Null,
 							VolumeOfUses -> Quantity[200, "Milliliters"],
-							Name -> "1",
-							Object -> Object[Resource, Sample, "id:Z1lqpMlbdYnW"],
-							ID -> "id:Z1lqpMlbdYnW",
+							Name -> "Test Resource for fulfillableResources 1 " <> $SessionUUID,
+							Object -> resourceObject,
+							ID -> resourceID,
 							Type -> Object[Resource, Sample]
 						|>,
 						<|
@@ -3327,17 +3824,21 @@ DefineTests[fulfillableResources,
 							Rent -> Null,
 							NumberOfUses -> Null,
 							VolumeOfUses -> Quantity[220, "Milliliters"],
-							Name -> "1",
-							Object -> Object[Resource, Sample, "id:Z1lqpMlbdYnW"],
-							ID -> "id:Z1lqpMlbdYnW",
+							Name -> "Test Resource for fulfillableResources 1 " <> $SessionUUID,
+							Object -> resourceObject,
+							ID -> resourceID,
 							Type -> Object[Resource, Sample]
 						|>
 					}
 				],
 				ConflictingVolumeOfUses
 			],
+
 			{ObjectP[Object[Resource, Sample]], ObjectP[Object[Resource, Sample]]},
-			Messages :> {Error::TwoVolumeOfUsesSpecifiedForOneResource, Error::InvalidInput}
+
+			Messages :> {Error::TwoVolumeOfUsesSpecifiedForOneResource, Error::InvalidInput},
+
+			Variables :> {resourceObject, resourceID}
 		],
 		Test["If a specific public sample is requested for a root protocol throw an error:",
 			Lookup[fulfillableResources[{Object[Resource, Sample, "id:vXl9j57q8Gad"]}], SamplesNotOwned],
@@ -3376,6 +3877,7 @@ DefineTests[fulfillableResources,
 				DeprecatedModels -> {},
 				DiscardedSamples -> {},
 				ExpiredSamples -> {},
+				InstrumentsNotOwned -> {},
 				RetiredInstrument -> {},
 				DeprecatedInstrument -> {},
 				DeckLayoutUnavailable -> {},
@@ -3391,6 +3893,8 @@ DefineTests[fulfillableResources,
 				ExceedsMaxVolumeOfUses -> {},
 				ConflictingVolumeOfUses -> {},
 				NonScalableStockSolutionVolumeTooHigh -> {},
+				InvalidSterileRequest -> {},
+				ContainerNotSterile -> {},
 				SamplesOffSite -> {},
 				Site -> ObjectP[Object[Container, Site]]
 			|>
@@ -3430,39 +3934,7 @@ DefineTests[fulfillableResources,
 				fulfillableResources[Resource[Sample -> Model[Plumbing, Tubing, "PharmaPure #16"], Amount -> 1 Meter]],
 				{Fulfillable,SamplesOutOfStock}
 			],
-			{{True},{}},
-			SetUp:>(
-				Upload[{
-					Association[
-						Type -> Object[Plumbing,Tubing],
-						Name -> "fulfillableResources Test tubing 1 "<>$SessionUUID,
-						Model -> Link[Model[Plumbing, Tubing, "PharmaPure #16"],Objects],
-						Size -> 10 Meter,
-						Status -> Available,
-						Transfer[Notebook] -> Null,
-						DeveloperObject -> True
-					],
-					Association[
-						Type -> Object[Plumbing,Tubing],
-						Name -> "fulfillableResources Test tubing 2 "<>$SessionUUID,
-						Model -> Link[Model[Plumbing, Tubing, "PharmaPure #16"],Objects],
-						Size -> 0.5 Meter,
-						Status -> Available,
-						Transfer[Notebook] -> Null,
-						DeveloperObject -> True
-					]
-				}]
-			),
-			TearDown:>(
-				EraseObject[
-					{
-						Object[Plumbing,Tubing,"fulfillableResources Test tubing 1 "<>$SessionUUID],
-						Object[Plumbing,Tubing,"fulfillableResources Test tubing 2 "<>$SessionUUID]
-					},
-					Force->True,
-					Verbose->False
-				]
-			)
+			{{True},{}}
 		],
 		Example[{Additional, "Default Site", "If the same number of resources are at two different sites, use DefaultExperimentSite:"},
 			(*resource request with specification of the Site that does not have the instance, but will have it*)
@@ -3478,9 +3950,162 @@ DefineTests[fulfillableResources,
 			],
 			ObjectP[Object[Container, Site, "Test site 1 for fulfillableResources" <> $SessionUUID]]
 		],
+		Example[{Additional, "Default Site", "When using DefaultExperimentSite, prioritize RootProtocol of the resources over the author:"},
+			(*resource request with specification of the Site that does not have the instance, but will have it*)
+			Lookup[
+				fulfillableResources[
+					{Object[Resource,Sample, "Test sample resource 2 for fulfillableResources "<>$SessionUUID]},
+					Author -> Object[User,"Fake User for fulfillableResources "<>$SessionUUID]
+				],
+				Site
+			],
+			ObjectP[Object[Container, Site, "Test site 3 for fulfillableResources" <> $SessionUUID]]
+		],
 		Example[{Additional,"State conversion", "Properly works with cases of the liquid requested by weight:"},
 			fulfillableResources[Object[Resource,Sample, "Test sample resource 2 for fulfillableResources "<>$SessionUUID]],
 			fulfillableResourcesP
+		],
+
+		(* instrument ownership tests *)
+		Example[{Options, Author, "For a single unlisted instrument resource object, if the instrument does not have the same notebook as $Notebook, but is a notebook available to the Author, don't throw the InstrumentsNotOwned error:"},
+			fulfillableResources[
+				Object[Resource, Instrument, "Test Resource 3 For fulfillableResources Tests " <> $SessionUUID],
+				Author -> Object[User, "Test Author for fulfillableResources Tests 2 " <> $SessionUUID]
+			],
+			fulfillableResourcesP,
+			Stubs :> {
+				$Site = Object[Container, Site, "Test Site 4 For fulfillableResources Tests " <> $SessionUUID],
+				$Notebook = Object[LaboratoryNotebook, "fulfillableResources Standard Financing Test Notebook 4 " <> $SessionUUID],
+				$PersonID = Object[User, "Test Author for fulfillableResources Tests 2 " <> $SessionUUID]
+			}
+		],
+		Example[{Options, Author, "For a single unlisted instrument resource, if the instrument does not have the same notebook as $Notebook, but is a notebook available to the Author, don't throw the InstrumentsNotOwned error:"},
+			fulfillableResources[
+				Resource[Instrument -> Object[Instrument, HPLC, "Test HPLC Instrument 3 For fulfillableResources Tests " <> $SessionUUID]],
+				Author -> Object[User, "Test Author for fulfillableResources Tests 2 " <> $SessionUUID]
+			],
+			fulfillableResourcesP,
+			Stubs :> {
+				$Site = Object[Container, Site, "Test Site 4 For fulfillableResources Tests " <> $SessionUUID],
+				$Notebook = Object[LaboratoryNotebook, "fulfillableResources Standard Financing Test Notebook 4 " <> $SessionUUID],
+				$PersonID = Object[User, "Test Author for fulfillableResources Tests 2 " <> $SessionUUID]
+			}
+		],
+		Example[{Options, Author, "If the instrument does not have the same notebook as $Notebook, but is a notebook available to the Author, don't throw the InstrumentsNotOwned error:"},
+			fulfillableResources[
+				{
+					Object[Resource, Instrument, "Test Resource 1 For fulfillableResources Tests " <> $SessionUUID],
+					Object[Resource, Instrument, "Test Resource 3 For fulfillableResources Tests " <> $SessionUUID],
+					Object[Resource, Instrument, "Test Resource 4 For fulfillableResources Tests " <> $SessionUUID]
+				},
+				Author -> Object[User, "Test Author for fulfillableResources Tests 2 " <> $SessionUUID]
+			],
+			fulfillableResourcesP,
+			Stubs :> {
+				$Site = Object[Container, Site, "Test Site 4 For fulfillableResources Tests " <> $SessionUUID],
+				$Notebook = Object[LaboratoryNotebook, "fulfillableResources Standard Financing Test Notebook 4 " <> $SessionUUID],
+				$PersonID = Object[User, "Test Author for fulfillableResources Tests 2 " <> $SessionUUID]
+			}
+		],
+		Example[{Options, Author, "For instrument resources, if the instrument does not have the same notebook as $Notebook, but is a notebook available to the Author, don't throw the InstrumentsNotOwned error:"},
+			fulfillableResources[
+				{
+					Resource[Instrument -> Object[Instrument, HPLC, "Test HPLC Instrument 1 For fulfillableResources Tests " <> $SessionUUID]],
+					Resource[Instrument -> Object[Instrument, HPLC, "Test HPLC Instrument 3 For fulfillableResources Tests " <> $SessionUUID]],
+					Resource[Instrument -> Object[Instrument, HPLC, "Test HPLC Instrument 4 For fulfillableResources Tests " <> $SessionUUID]]
+				},
+				Author -> Object[User, "Test Author for fulfillableResources Tests 2 " <> $SessionUUID]
+			],
+			fulfillableResourcesP,
+			Stubs :> {
+				$Site = Object[Container, Site, "Test Site 4 For fulfillableResources Tests " <> $SessionUUID],
+				$Notebook = Object[LaboratoryNotebook, "fulfillableResources Standard Financing Test Notebook 4 " <> $SessionUUID],
+				$PersonID = Object[User, "Test Author for fulfillableResources Tests 2 " <> $SessionUUID]
+			}
+		],
+		Example[{Messages, "InstrumentsNotOwned", "For a single unlisted instrument resource object, if a specific instrument is that is not owned by a notebook the Author has access to, throw an error and return False:"},
+			Lookup[
+				fulfillableResources[
+					Object[Resource, Instrument, "Test Resource 2 For fulfillableResources Tests " <> $SessionUUID]
+				],
+				InstrumentsNotOwned
+			],
+			{
+				ObjectP[Object[Resource, Instrument, "Test Resource 2 For fulfillableResources Tests " <> $SessionUUID]]
+			},
+			Messages :> {Error::InstrumentsNotOwned, Error::InvalidInput},
+			Stubs :> {
+				$Site = Object[Container, Site, "Test Site 4 For fulfillableResources Tests " <> $SessionUUID],
+				$Notebook = Object[LaboratoryNotebook, "fulfillableResources Standard Financing Test Notebook 2 " <> $SessionUUID],
+				$PersonID = Object[User, "Test Author for fulfillableResources Tests 2 " <> $SessionUUID]
+			}
+		],
+		Example[{Messages, "InstrumentsNotOwned", "For a single unlisted instrument resource, if a specific instrument is that is not owned by a notebook the Author has access to, throw an error and return False:"},
+			Lookup[
+				Lookup[
+					fulfillableResources[
+						Resource[Instrument -> Object[Instrument, HPLC, "Test HPLC Instrument 2 For fulfillableResources Tests " <> $SessionUUID]]
+					],
+					InstrumentsNotOwned
+				],
+				Instrument
+			],
+			{
+				ObjectP[Object[Instrument, HPLC, "Test HPLC Instrument 2 For fulfillableResources Tests " <> $SessionUUID]]
+			},
+			Messages :> {Error::InstrumentsNotOwned, Error::InvalidInput},
+			Stubs :> {
+				$Site = Object[Container, Site, "Test Site 4 For fulfillableResources Tests " <> $SessionUUID],
+				$Notebook = Object[LaboratoryNotebook, "fulfillableResources Standard Financing Test Notebook 2 " <> $SessionUUID],
+				$PersonID = Object[User, "Test Author for fulfillableResources Tests 2 " <> $SessionUUID]
+			}
+		],
+		Example[{Messages, "InstrumentsNotOwned", "If a specific instrument is that is not owned by a notebook the Author has access to, throw an error and return False:"},
+			Lookup[
+				fulfillableResources[
+					{
+						Object[Resource, Instrument, "Test Resource 1 For fulfillableResources Tests " <> $SessionUUID],
+						Object[Resource, Instrument, "Test Resource 2 For fulfillableResources Tests " <> $SessionUUID],
+						Object[Resource, Instrument, "Test Resource 3 For fulfillableResources Tests " <> $SessionUUID],
+						Object[Resource, Instrument, "Test Resource 4 For fulfillableResources Tests " <> $SessionUUID]
+					}
+				],
+				InstrumentsNotOwned
+			],
+			{
+				ObjectP[Object[Resource, Instrument, "Test Resource 2 For fulfillableResources Tests " <> $SessionUUID]]
+			},
+			Messages :> {Error::InstrumentsNotOwned, Error::InvalidInput},
+			Stubs :> {
+				$Site = Object[Container, Site, "Test Site 4 For fulfillableResources Tests " <> $SessionUUID],
+				$Notebook = Object[LaboratoryNotebook, "fulfillableResources Standard Financing Test Notebook 2 " <> $SessionUUID],
+				$PersonID = Object[User, "Test Author for fulfillableResources Tests 2 " <> $SessionUUID]
+			}
+		],
+		Example[{Messages, "InstrumentsNotOwned", "For instrument resources, if a specific instrument is that is not owned by a notebook the Author has access to, throw an error and return False:"},
+			Lookup[
+				Lookup[
+					fulfillableResources[
+						{
+							Resource[Instrument -> Object[Instrument, HPLC, "Test HPLC Instrument 1 For fulfillableResources Tests " <> $SessionUUID]],
+							Resource[Instrument -> Object[Instrument, HPLC, "Test HPLC Instrument 2 For fulfillableResources Tests " <> $SessionUUID]],
+							Resource[Instrument -> Object[Instrument, HPLC, "Test HPLC Instrument 3 For fulfillableResources Tests " <> $SessionUUID]],
+							Resource[Instrument -> Object[Instrument, HPLC, "Test HPLC Instrument 4 For fulfillableResources Tests " <> $SessionUUID]]
+						}
+					],
+					InstrumentsNotOwned
+				],
+				Instrument
+			],
+			{
+				ObjectP[Object[Instrument, HPLC, "Test HPLC Instrument 2 For fulfillableResources Tests " <> $SessionUUID]]
+			},
+			Messages :> {Error::InstrumentsNotOwned, Error::InvalidInput},
+			Stubs :> {
+				$Site = Object[Container, Site, "Test Site 4 For fulfillableResources Tests " <> $SessionUUID],
+				$Notebook = Object[LaboratoryNotebook, "fulfillableResources Standard Financing Test Notebook 2 " <> $SessionUUID],
+				$PersonID = Object[User, "Test Author for fulfillableResources Tests 2 " <> $SessionUUID]
+			}
 		]
 	},
 	Stubs :> {
@@ -3489,6 +4114,8 @@ DefineTests[fulfillableResources,
 		$PersonID = Download[Object[User, "Fake user 1 for FulfillableResourceQ unit tests"], Object]
 	},
 	SymbolSetUp :> (
+		$CreatedObjects = {};
+
 		Module[{objs, existingObjs},
 			objs = {
 				Object[Container, Bench, "Test bench for fulfillableResources tests" <> $SessionUUID],
@@ -3501,240 +4128,8 @@ DefineTests[fulfillableResources,
 				Object[Sample, "Test transit sample  for fulfillableResources unit tests" <> $SessionUUID],
 				Object[Container, Site, "Test site 1 for fulfillableResources" <> $SessionUUID],
 				Object[Container, Site, "Test site 2 for fulfillableResources" <> $SessionUUID],
-				Model[Instrument, CrystalIncubator, "Test Crystal Incubator Model for fulfillableResources" <> $SessionUUID],
-				Model[Instrument, CrystalIncubator, "Test Siteless Instrument Model for fulfillableResources" <> $SessionUUID],
-				Object[Instrument, CrystalIncubator, "Test Crystal Incubator for fulfillableResources" <> $SessionUUID],
-				Object[Instrument, CrystalIncubator, "Test Crystal Incubator 2 for fulfillableResources" <> $SessionUUID],
-				Object[Instrument, CrystalIncubator, "Test Siteless Instrument for fulfillableResources" <> $SessionUUID],
-				Model[Sample, "Test sample model for fulfillableResources "<>$SessionUUID],
-				Object[Sample, "Test sample 4 for fulfillableResources unit tests" <> $SessionUUID],
-				Object[Resource,Sample, "Test sample resource for fulfillableResources "<>$SessionUUID],
-				Object[Resource,Sample, "Test sample resource 2 for fulfillableResources "<>$SessionUUID],
-				Object[Container,Vessel,"Test tube for fulfillableResources unit tests" <> $SessionUUID]
-			};
-			existingObjs = PickList[objs, DatabaseMemberQ[objs]];
-			EraseObject[existingObjs, Force -> True, Verbose -> False]
-		];
-		Module[{
-			testBench, plate, xtalPlate, samplesInVessels, container1, sample1, site1, site2, testCrystalIncubatorModel,
-			testCrystalIncubatorModel2, testCrystalIncubator, testCrystalIncubator2, testCrystalIncubator3,testSampleModel,
-			tube1,resource1, resource2
-		},
-			(* set up test bench and dishwasher as a location for the vessels/caps *)
-			{testBench,testSampleModel} =Upload[{
-				<|
-					Type->Object[Container,Bench],
-					Model->Link[Model[Container,Bench,"The Bench of Testing"],Objects],
-					Name->"Test bench for fulfillableResources tests"<>$SessionUUID,
-					DeveloperObject->True,
-					Site->Link[$Site]
-				|>,
-				<|
-					Type->Model[Sample],
-					Name->"Test sample model for fulfillableResources "<>$SessionUUID,
-					State->Liquid,
-					Density->1Gram / Milliliter,
-					DefaultStorageCondition->Link[Model[StorageCondition,"Ambient Storage"]]
-				|>
-			}];
-
-			(* set up containers *)
-			{plate, xtalPlate, tube1} = ECL`InternalUpload`UploadSample[
-				{
-					Model[Container, Plate, "96-well 2mL Deep Well Plate"],
-					Model[Container, Plate, Irregular, Crystallization, "MRC Maxi 48 Well Plate"],
-					Model[Container, Vessel, "50mL Tube"]
-				},
-				{
-					{"Bench Top Slot", Object[Container, Bench, "Test bench for fulfillableResources tests" <> $SessionUUID]},
-					{"Bench Top Slot", Object[Container, Bench, "Test bench for fulfillableResources tests" <> $SessionUUID]},
-					{"Bench Top Slot", Object[Container, Bench, "Test bench for fulfillableResources tests" <> $SessionUUID]}
-				},
-				Name -> {
-					"Test DWP for fulfillableResources unit tests" <> $SessionUUID,
-					"Test CrystallizationPlate for fulfillableResources unit tests" <> $SessionUUID,
-					"Test tube for fulfillableResources unit tests" <> $SessionUUID
-				}
-			];
-
-			(* set up samples *)
-			samplesInVessels = ECL`InternalUpload`UploadSample[
-				{
-					Model[Sample, StockSolution, "1x TBE Buffer"],
-					Model[Sample, StockSolution, "1x TBE Buffer"],
-					Model[Sample, StockSolution, "480 mg/L Caffeine in 40% Methanol"],
-					testSampleModel
-				},
-				{
-					{"A1", plate},
-					{"A2", plate},
-					{"A1Drop1", xtalPlate},
-					{"A1", tube1}
-				},
-				InitialAmount -> {1 Milliliter, 1 Milliliter, 10 Microliter,20 Milliliter},
-				Name -> {
-					"Test sample 1 for fulfillableResources unit tests" <> $SessionUUID,
-					"Test sample 2 for fulfillableResources unit tests" <> $SessionUUID,
-					"Test sample 3 for fulfillableResources unit tests" <> $SessionUUID,
-					"Test sample 4 for fulfillableResources unit tests" <> $SessionUUID
-				}
-			];
-			Upload[<|Object -> #, DeveloperObject -> True|>]& /@ Join[{plate, xtalPlate}, samplesInVessels];
-
-			{container1, site1, site2, resource1, resource2} = Upload[{
-				<|
-					Type -> Object[Container, Vessel],
-					Model -> Link[Model[Container, Vessel, "50mL Tube"], Objects],
-					Site -> Link[$Site],
-					DeveloperObject -> True,
-					Name -> "Test tube 1 for fulfillableResources" <> $SessionUUID
-				|>,
-				<|
-					Type -> Object[Container, Site],
-					Name -> "Test site 1 for fulfillableResources" <> $SessionUUID,
-					DeveloperObject -> True,
-					Append[FinancingTeams] -> Link[Object[Team, Financing, "Fake team 2 for FulfillableResourceQ unit tests"], ExperimentSites]
-				|>,
-				<|
-					Type -> Object[Container, Site],
-					Name -> "Test site 2 for fulfillableResources" <> $SessionUUID,
-					DeveloperObject -> True
-				|>,
-				<|
-					Type->Object[Resource,Sample],
-					Name->"Test sample resource for fulfillableResources "<>$SessionUUID,
-					DeveloperObject->True,
-					Amount->1Milliliter,
-					Replace[Models]->{Link[testSampleModel]}
-				|>,
-				<|
-					Type->Object[Resource,Sample],
-					Name->"Test sample resource 2 for fulfillableResources "<>$SessionUUID,
-					DeveloperObject->True,
-					Amount->1Gram,
-					Replace[Models]->{Link[testSampleModel]}
-				|>
-			}];
-			
-			Upload[{
-				<|
-					Type -> Object[Team, Financing],
-					Name -> "Fake team for FulfillableResourceQ unit tests" <> $SessionUUID,
-					Replace[ExperimentSites] -> {
-						Link[site1,FinancingTeams],
-						Link[site2,FinancingTeams]
-					},
-					DefaultExperimentSite -> Link[site1],
-					DeveloperObject -> True
-				|>,
-				<|
-					Type -> Object[Container, Vessel],
-					Model -> Link[Model[Container, Vessel, "50mL Tube"], Objects],
-					Site -> Link[site1],
-					DeveloperObject -> True,
-					Name -> "Test tube 3 for fulfillableResources" <> $SessionUUID
-				|>,
-				<|
-					Type -> Object[Container, Vessel],
-					Model -> Link[Model[Container, Vessel, "50mL Tube"], Objects],
-					Site -> Link[site2],
-					DeveloperObject -> True,
-					Name -> "Test tube 4 for fulfillableResources" <> $SessionUUID
-				|>
-			}];
-			
-			Upload[
-				<|
-					Type -> Object[User],
-					Replace[FinancingTeams] -> Link[Object[Team,Financing,"Fake team for FulfillableResourceQ unit tests" <> $SessionUUID],Members],
-					Name -> "Fake User for fulfillableResources "<>$SessionUUID,
-					DeveloperObject -> True
-				|>
-			];
-
-			sample1 = ECL`InternalUpload`UploadSample[
-				Model[Sample, "Milli-Q water"],
-				{"A1", container1},
-				Name -> "Test transit sample  for fulfillableResources unit tests" <> $SessionUUID,
-				InitialAmount -> 20 Milliliter
-			];
-			(* Change the sample status to Transit *)
-			Upload[<|Object -> sample1, Destination -> Link[site1], Status -> Transit|>];
-
-			(* Create a test instrument *)
-			{testCrystalIncubatorModel,testCrystalIncubatorModel2} =Upload[{
-				<|
-					Type->Model[Instrument,CrystalIncubator],
-					Name->"Test Crystal Incubator Model for fulfillableResources"<>$SessionUUID,
-					MinTemperature->3 Celsius,
-					MaxTemperature->29 Celsius,
-					Append[ImagingModes]->{VisibleLightImaging,UVImaging},
-					Append[MicroscopeModes]->{BrightField,Polarized},
-					MaxPlateDimensions->{130 Millimeter,86 Millimeter,45 Millimeter},
-					Capacity->1,
-					Replace[Positions]-><|Name->"Plate Slot",Footprint->Open,MaxWidth->0.2 Meter,MaxDepth->0.38 Meter,MaxHeight->0.6 Meter|>,
-					Replace[PositionPlotting]-><|Name->"Plate Slot",XOffset->0.4 Meter,YOffset->0.2 Meter,ZOffset->1.48 Meter,CrossSectionalShape->Rectangle,Rotation->0.`|>,
-					Transfer[Notebook]->Null,
-					DeveloperObject->True
-				|>,<|
-					Type->Model[Instrument,CrystalIncubator],
-					Name->"Test Siteless Instrument Model for fulfillableResources"<>$SessionUUID,
-					MinTemperature->3 Celsius,
-					MaxTemperature->29 Celsius,
-					Append[ImagingModes]->{VisibleLightImaging},
-					Append[MicroscopeModes]->{BrightField},
-					MaxPlateDimensions->{130 Millimeter,86 Millimeter,45 Millimeter},
-					Capacity->1,
-					Replace[Positions]-><|Name->"Plate Slot",Footprint->Open,MaxWidth->0.2 Meter,MaxDepth->0.38 Meter,MaxHeight->0.6 Meter|>,
-					Replace[PositionPlotting]-><|Name->"Plate Slot",XOffset->0.4 Meter,YOffset->0.2 Meter,ZOffset->1.48 Meter,CrossSectionalShape->Rectangle,Rotation->0.`|>,
-					Transfer[Notebook]->Null,
-					DeveloperObject->True
-				|>
-			}];
-			{testCrystalIncubator,testCrystalIncubator2,testCrystalIncubator3} =Upload[{
-				<|
-					Type->Object[Instrument,CrystalIncubator],
-					Name->"Test Crystal Incubator for fulfillableResources"<>$SessionUUID,
-					Model->Link[testCrystalIncubatorModel,Objects],
-					DeveloperObject->True,
-					Transfer[Notebook]->Null,
-					Site->Link[$Site]
-				|>,
-				<|
-					Type->Object[Instrument,CrystalIncubator],
-					Name->"Test Crystal Incubator 2 for fulfillableResources"<>$SessionUUID,
-					Model->Link[testCrystalIncubatorModel,Objects],
-					DeveloperObject->True,
-					Transfer[Notebook]->Null,
-					Site->Link[site2]
-				|>,
-				<|
-					Type->Object[Instrument,CrystalIncubator],
-					Name->"Test Siteless Instrument for fulfillableResources"<>$SessionUUID,
-					Model->Link[testCrystalIncubatorModel2,Objects],
-					DeveloperObject->True,
-					Transfer[Notebook]->Null,
-					Site->Null
-				|>
-			}];
-			UploadInstrumentStatus[{testCrystalIncubator,testCrystalIncubator2,testCrystalIncubator3}, ConstantArray[Available,3]];
-			(* Upload a plate to the only storage slot of the test crystal incubator so it can not accept more plates. *)
-			ECL`InternalUpload`UploadLocation[xtalPlate, {"Plate Slot", testCrystalIncubator}];
-		]
-	),
-	SymbolTearDown :> (
-		Module[{objs, existingObjs},
-			objs = {
-				Object[Container, Bench, "Test bench for fulfillableResources tests" <> $SessionUUID],
-				Object[Container, Plate, "Test DWP for fulfillableResources unit tests" <> $SessionUUID],
-				Object[Container, Plate, Irregular, Crystallization, "Test CrystallizationPlate for fulfillableResources unit tests" <> $SessionUUID],
-				Object[Sample, "Test sample 1 for fulfillableResources unit tests" <> $SessionUUID],
-				Object[Sample, "Test sample 2 for fulfillableResources unit tests" <> $SessionUUID],
-				Object[Sample, "Test sample 3 for fulfillableResources unit tests" <> $SessionUUID],
-				Object[Container, Vessel, "Test tube 1 for fulfillableResources" <> $SessionUUID],
-				Object[Sample, "Test transit sample  for fulfillableResources unit tests" <> $SessionUUID],
-				Object[Container, Site, "Test site 1 for fulfillableResources" <> $SessionUUID],
-				Object[Container, Site, "Test site 2 for fulfillableResources" <> $SessionUUID],
+				Object[Container, Site, "Test site 3 for fulfillableResources" <> $SessionUUID],
+				Object[Container, Site, "Test Site 4 For fulfillableResources Tests " <> $SessionUUID],
 				Model[Instrument, CrystalIncubator, "Test Crystal Incubator Model for fulfillableResources" <> $SessionUUID],
 				Model[Instrument, CrystalIncubator, "Test Siteless Instrument Model for fulfillableResources" <> $SessionUUID],
 				Object[Instrument, CrystalIncubator, "Test Crystal Incubator for fulfillableResources" <> $SessionUUID],
@@ -3745,14 +4140,525 @@ DefineTests[fulfillableResources,
 				Object[Resource,Sample, "Test sample resource for fulfillableResources "<>$SessionUUID],
 				Object[Resource,Sample, "Test sample resource 2 for fulfillableResources "<>$SessionUUID],
 				Object[Container,Vessel,"Test tube for fulfillableResources unit tests" <> $SessionUUID],
-				Object[Team,Financing,"Fake team for FulfillableResourceQ unit tests" <> $SessionUUID],
+				Object[Team,Financing,"Fake team 1 for FulfillableResources unit tests" <> $SessionUUID],
+				Object[Team,Financing,"Fake team 2 for FulfillableResources unit tests" <> $SessionUUID],
+				Object[Team, Financing, "Test Financing Team for fulfillableResources Tests 3 " <> $SessionUUID],
+				Object[Team, Financing, "Test Financing Team for fulfillableResources Tests 4 " <> $SessionUUID],
 				Object[Container,Vessel,"Test tube 3 for fulfillableResources" <> $SessionUUID],
 				Object[Container,Vessel,"Test tube 4 for fulfillableResources" <> $SessionUUID],
-				Object[User,"Fake User for fulfillableResources "<>$SessionUUID]
+				Object[User,"Fake User for fulfillableResources "<>$SessionUUID],
+				Object[User, "Test Author for fulfillableResources Tests 2 " <> $SessionUUID],
+				Object[User, "Test Author for fulfillableResources Tests 3 " <> $SessionUUID],
+				Object[Protocol,"Fake protocol for fulfillableResources"<>$SessionUUID],
+				Object[LaboratoryNotebook,"Fake notebook for fulfillableResources"<>$SessionUUID],
+				Object[LaboratoryNotebook, "fulfillableResources Standard Financing Test Notebook 2 " <> $SessionUUID],
+				Object[LaboratoryNotebook, "fulfillableResources Standard Financing Test Notebook 3 " <> $SessionUUID],
+				Object[LaboratoryNotebook, "fulfillableResources Standard Financing Test Notebook 4 " <> $SessionUUID],
+				Model[Sample, StockSolution, "Test Autoclaved StockSolution for fulfillableResources tests" <> $SessionUUID],
+				Object[Resource, Sample, "Test Resource for fulfillableResources 1 " <> $SessionUUID],
+				Object[Plumbing,Tubing,"fulfillableResources Test tubing 1 "<>$SessionUUID],
+				Object[Plumbing,Tubing,"fulfillableResources Test tubing 2 "<>$SessionUUID],
+				Model[Instrument, HPLC, "Test HPLC Model 1 For fulfillableResources Tests " <> $SessionUUID],
+				Object[Instrument, HPLC, "Test HPLC Instrument 1 For fulfillableResources Tests " <> $SessionUUID],
+				Object[Instrument, HPLC, "Test HPLC Instrument 2 For fulfillableResources Tests " <> $SessionUUID],
+				Object[Instrument, HPLC, "Test HPLC Instrument 3 For fulfillableResources Tests " <> $SessionUUID],
+				Object[Instrument, HPLC, "Test HPLC Instrument 4 For fulfillableResources Tests " <> $SessionUUID],
+				Object[Resource, Instrument, "Test Resource 1 For fulfillableResources Tests " <> $SessionUUID],
+				Object[Resource, Instrument, "Test Resource 2 For fulfillableResources Tests " <> $SessionUUID],
+				Object[Resource, Instrument, "Test Resource 3 For fulfillableResources Tests " <> $SessionUUID],
+				Object[Resource, Instrument, "Test Resource 4 For fulfillableResources Tests " <> $SessionUUID]
 			};
 			existingObjs = PickList[objs, DatabaseMemberQ[objs]];
 			EraseObject[existingObjs, Force -> True, Verbose -> False]
-		]
+		];
+		Block[{$DeveloperUpload = True},
+			Module[
+				{
+					testBench, plate, xtalPlate, samplesInVessels, container1, sample1, testSite1, testSite2, testSite3,
+					testSite4, testCrystalIncubatorModel, testCrystalIncubatorModel2, testCrystalIncubator, testCrystalIncubator2,
+					testCrystalIncubator3, testSampleModel, tube1, resource1, resource2, testNotebook1, testNotebook2,
+					testNotebook3, testNotebook4, testUser1, testUser2, testUser3, hplcModel1, hplcInstrument1, hplcInstrument2,
+					hplcInstrument3, hplcInstrument4, testInstrumentResource1, testInstrumentResource2, testInstrumentResource3,
+					testInstrumentResource4, testTeam3, testTeam4, linkID1, linkID2, linkID3, linkID4, linkID5, linkID6,
+					linkID7, linkID8, linkID9, linkID10, linkID11, linkID12, linkID13, linkID14
+				},
+				(* set up test bench and dishwasher as a location for the vessels/caps *)
+				{testBench,testSampleModel} =Upload[{
+					<|
+						Type->Object[Container,Bench],
+						Model->Link[Model[Container,Bench,"The Bench of Testing"],Objects],
+						Name->"Test bench for fulfillableResources tests"<>$SessionUUID,
+						Site->Link[$Site]
+					|>,
+					<|
+						Type->Model[Sample],
+						Name->"Test sample model for fulfillableResources "<>$SessionUUID,
+						State->Liquid,
+						Density->1Gram / Milliliter,
+						DefaultStorageCondition->Link[Model[StorageCondition,"Ambient Storage"]]
+					|>
+				}];
+
+				(* set up containers *)
+				{plate, xtalPlate, tube1} = ECL`InternalUpload`UploadSample[
+					{
+						Model[Container, Plate, "96-well 2mL Deep Well Plate"],
+						Model[Container, Plate, Irregular, Crystallization, "MRC Maxi 48 Well Plate"],
+						Model[Container, Vessel, "50mL Tube"]
+					},
+					{
+						{"Bench Top Slot", Object[Container, Bench, "Test bench for fulfillableResources tests" <> $SessionUUID]},
+						{"Bench Top Slot", Object[Container, Bench, "Test bench for fulfillableResources tests" <> $SessionUUID]},
+						{"Bench Top Slot", Object[Container, Bench, "Test bench for fulfillableResources tests" <> $SessionUUID]}
+					},
+					Name -> {
+						"Test DWP for fulfillableResources unit tests" <> $SessionUUID,
+						"Test CrystallizationPlate for fulfillableResources unit tests" <> $SessionUUID,
+						"Test tube for fulfillableResources unit tests" <> $SessionUUID
+					}
+				];
+
+				(* set up samples *)
+				samplesInVessels = ECL`InternalUpload`UploadSample[
+					{
+						Model[Sample, StockSolution, "1x TBE Buffer"],
+						Model[Sample, StockSolution, "1x TBE Buffer"],
+						Model[Sample, StockSolution, "480 mg/L Caffeine in 40% Methanol"],
+						testSampleModel
+					},
+					{
+						{"A1", plate},
+						{"A2", plate},
+						{"A1Drop1", xtalPlate},
+						{"A1", tube1}
+					},
+					InitialAmount -> {1 Milliliter, 1 Milliliter, 10 Microliter,20 Milliliter},
+					Name -> {
+						"Test sample 1 for fulfillableResources unit tests" <> $SessionUUID,
+						"Test sample 2 for fulfillableResources unit tests" <> $SessionUUID,
+						"Test sample 3 for fulfillableResources unit tests" <> $SessionUUID,
+						"Test sample 4 for fulfillableResources unit tests" <> $SessionUUID
+					}
+				];
+				Upload[<|Object -> #|>& /@ Join[{plate, xtalPlate}, samplesInVessels]];
+
+				{container1, testSite1, testSite2, testSite3, resource1, resource2, testNotebook1, testUser1} = Upload[{
+					<|
+						Type -> Object[Container, Vessel],
+						Model -> Link[Model[Container, Vessel, "50mL Tube"], Objects],
+						Site -> Link[$Site],
+						Name -> "Test tube 1 for fulfillableResources" <> $SessionUUID
+					|>,
+					<|
+						Type -> Object[Container, Site],
+						Name -> "Test site 1 for fulfillableResources" <> $SessionUUID,
+						Append[FinancingTeams] -> Link[Object[Team, Financing, "Fake team 2 for FulfillableResourceQ unit tests"], ExperimentSites]
+					|>,
+					<|
+						Type -> Object[Container, Site],
+						Name -> "Test site 2 for fulfillableResources" <> $SessionUUID
+					|>,
+					<|
+						Type -> Object[Container, Site],
+						Name -> "Test site 3 for fulfillableResources" <> $SessionUUID
+					|>,
+					<|
+						Type->Object[Resource,Sample],
+						Name->"Test sample resource for fulfillableResources "<>$SessionUUID,
+						Amount->1Milliliter,
+						Replace[Models]->{Link[testSampleModel]}
+					|>,
+					<|
+						Type->Object[Resource,Sample],
+						Name->"Test sample resource 2 for fulfillableResources "<>$SessionUUID,
+						Amount->1Gram,
+						Replace[Models]->{Link[testSampleModel]}
+					|>,
+					<|
+						Type->Object[LaboratoryNotebook],
+						Name->"Fake notebook for fulfillableResources"<>$SessionUUID
+					|>,
+					<|
+						Type -> Object[User],
+						Name -> "Fake User for fulfillableResources "<>$SessionUUID
+					|>
+				}];
+
+				Upload[{
+					<|
+						Type -> Object[Team, Financing],
+						Name -> "Fake team 1 for FulfillableResources unit tests" <> $SessionUUID,
+						Replace[Members] -> Link[testUser1, FinancingTeams],
+						Replace[ExperimentSites] -> {
+							Link[testSite1,FinancingTeams],
+							Link[testSite2,FinancingTeams],
+							Link[testSite3,FinancingTeams]
+						},
+						DefaultExperimentSite -> Link[testSite1]
+					|>,
+					<|
+						Type -> Object[Team, Financing],
+						Name -> "Fake team 2 for FulfillableResources unit tests" <> $SessionUUID,
+						Replace[ExperimentSites] -> {
+							Link[testSite1,FinancingTeams],
+							Link[testSite2,FinancingTeams],
+							Link[testSite3,FinancingTeams]
+						},
+						Replace[NotebooksFinanced] -> Link[testNotebook1, Financers],
+						DefaultExperimentSite -> Link[testSite3]
+					|>,
+					<|
+						Type -> Object[Protocol],
+						Name -> "Fake protocol for fulfillableResources"<>$SessionUUID,
+						Replace[SubprotocolRequiredResources] -> Link[resource2, RootProtocol],
+						Notebook -> Link[testNotebook1]
+					|>,
+					<|
+						Type -> Object[Container, Vessel],
+						Model -> Link[Model[Container, Vessel, "50mL Tube"], Objects],
+						Site -> Link[testSite1],
+						Name -> "Test tube 3 for fulfillableResources" <> $SessionUUID
+					|>,
+					<|
+						Type -> Object[Container, Vessel],
+						Model -> Link[Model[Container, Vessel, "50mL Tube"], Objects],
+						Site -> Link[testSite2],
+						Name -> "Test tube 4 for fulfillableResources" <> $SessionUUID
+					|>,
+					<|
+						Type -> Model[Sample, StockSolution],
+						Name -> "Test Autoclaved StockSolution for fulfillableResources tests" <> $SessionUUID,
+						Autoclave -> True,
+						AutoclaveProgram -> Universal,
+						Replace[Formula] -> {
+							{500 Milliliter, Link[Model[Sample, "Milli-Q water"]]},
+							{500 Milliliter, Link[Model[Sample, "Methanol"]]}
+						}
+					|>,
+					<|
+						Type -> Object[Resource, Sample],
+						Name -> "Test Resource for fulfillableResources 1 " <> $SessionUUID
+					|>,
+					<|
+						Type -> Object[Plumbing,Tubing],
+						Name -> "fulfillableResources Test tubing 1 "<>$SessionUUID,
+						Model -> Link[Model[Plumbing, Tubing, "PharmaPure #16"],Objects],
+						Size -> 10 Meter,
+						Status -> Available,
+						Transfer[Notebook] -> Null
+					|>,
+					<|
+						Type -> Object[Plumbing,Tubing],
+						Name -> "fulfillableResources Test tubing 2 "<>$SessionUUID,
+						Model -> Link[Model[Plumbing, Tubing, "PharmaPure #16"],Objects],
+						Size -> 0.5 Meter,
+						Status -> Available,
+						Transfer[Notebook] -> Null
+					|>
+				}];
+
+				(* instrument ownership objects *)
+				{
+					testSite4,
+					testUser2,
+					testUser3,
+					testTeam3,
+					testTeam4,
+					testNotebook2,
+					testNotebook3,
+					testNotebook4,
+					hplcModel1,
+					hplcInstrument1,
+					hplcInstrument2,
+					hplcInstrument3,
+					hplcInstrument4,
+					testInstrumentResource1,
+					testInstrumentResource2,
+					testInstrumentResource3,
+					testInstrumentResource4
+				} = CreateID[{
+					Object[Container, Site],
+					Object[User],
+					Object[User],
+					Object[Team, Financing],
+					Object[Team, Financing],
+					Object[LaboratoryNotebook],
+					Object[LaboratoryNotebook],
+					Object[LaboratoryNotebook],
+					Model[Instrument, HPLC],
+					Object[Instrument, HPLC],
+					Object[Instrument, HPLC],
+					Object[Instrument, HPLC],
+					Object[Instrument, HPLC],
+					Object[Resource, Instrument],
+					Object[Resource, Instrument],
+					Object[Resource, Instrument],
+					Object[Resource, Instrument]
+				}];
+
+				{
+					linkID1, linkID2, linkID3, linkID4, linkID5,
+					linkID6, linkID7, linkID8, linkID9, linkID10,
+					linkID11, linkID12, linkID13, linkID14
+				} =
+					CreateLinkID[14];
+
+				Upload[{
+					<|
+						Object -> testSite4,
+						Append[FinancingTeams] -> {
+							Link[testTeam3, ExperimentSites, linkID7],
+							Link[testTeam4, ExperimentSites, linkID11]
+						},
+						Name ->
+							"Test Site 4 For fulfillableResources Tests " <> $SessionUUID
+					|>,
+					<|
+						Object -> hplcModel1,
+						Replace@Objects -> {
+							Link[hplcInstrument1, Model, linkID1],
+							Link[hplcInstrument2, Model, linkID6],
+							Link[hplcInstrument3, Model, linkID12],
+							Link[hplcInstrument4, Model, linkID14]
+						},
+						Name -> "Test HPLC Model 1 For fulfillableResources Tests " <> $SessionUUID
+					|>,
+					<|
+						Object -> hplcInstrument1,
+						Model -> Link[hplcModel1, Objects, linkID1],
+						Name -> "Test HPLC Instrument 1 For fulfillableResources Tests " <> $SessionUUID,
+						Site -> Link[testSite4]
+					|>,
+					<|
+						Object -> hplcInstrument2,
+						Model -> Link[hplcModel1, Objects, linkID6],
+						Name -> "Test HPLC Instrument 2 For fulfillableResources Tests " <> $SessionUUID,
+						Site -> Link[testSite4]
+					|>,
+					<|
+						Object -> hplcInstrument3,
+						Model -> Link[hplcModel1, Objects, linkID12],
+						Name -> "Test HPLC Instrument 3 For fulfillableResources Tests " <> $SessionUUID,
+						Site -> Link[testSite4]
+					|>,
+					<|
+						Object -> hplcInstrument4,
+						Model -> Link[hplcModel1, Objects, linkID14],
+						Name -> "Test HPLC Instrument 4 For fulfillableResources Tests " <> $SessionUUID,
+						Site -> Link[testSite4]
+					|>,
+					<|
+						Object -> testUser2,
+						Name -> "Test Author for fulfillableResources Tests 2 " <> $SessionUUID,
+						Append[FinancingTeams] -> {Link[testTeam3, Members, linkID2]},
+						Email -> $SessionUUID <> "fulfillableResources.nonexistent.email2@ecl.com"
+					|>,
+					<|
+						Object -> testUser3,
+						Name -> "Test Author for fulfillableResources Tests 3 " <> $SessionUUID,
+						Append[FinancingTeams] -> {Link[testTeam4, Members, linkID8]},
+						Email -> $SessionUUID <> "fulfillableResources.nonexistent.email3@ecl.com"
+					|>,
+					<|
+						Object -> testTeam3,
+						Append[Members] -> {Link[testUser2, FinancingTeams, linkID2]},
+						Append[Notebooks] -> {
+							Link[testNotebook2, Editors, linkID4],
+							Link[testNotebook4, Editors, linkID13]
+						},
+						Append[NotebooksFinanced] -> {
+							Link[testNotebook2, Financers, linkID3]
+						},
+						Name -> "Test Financing Team for fulfillableResources Tests 3 " <> $SessionUUID,
+						DefaultExperimentSite -> Link[testSite4],
+						Append@ExperimentSites -> {Link[testSite4, FinancingTeams, linkID7]}
+					|>,
+					<|
+						Object -> testTeam4,
+						Append[Members] -> {Link[testUser3, FinancingTeams, linkID8]},
+						Append[Notebooks] -> {Link[testNotebook3, Editors, linkID9]},
+						Append[NotebooksFinanced] -> {Link[testNotebook3, Financers, linkID10]},
+						Name -> "Test Financing Team for fulfillableResources Tests 4 " <> $SessionUUID,
+						DefaultExperimentSite -> Link[testSite4],
+						Replace@ExperimentSites -> Link[testSite4, FinancingTeams, linkID11]
+					|>,
+					<|
+						Object -> testNotebook2,
+						Name -> "fulfillableResources Standard Financing Test Notebook 2 " <> $SessionUUID,
+						Append[Financers] -> {Link[testTeam3, NotebooksFinanced, linkID3]},
+						Append[Editors] -> {Link[testTeam3, Notebooks, linkID4]}
+					|>,
+					<|
+						Object -> testNotebook3,
+						Name -> "fulfillableResources Standard Financing Test Notebook 3 " <> $SessionUUID,
+						Append[Financers] -> {Link[testTeam4, NotebooksFinanced, linkID10]},
+						Append[Editors] -> {Link[testTeam4, Notebooks, linkID9]}
+					|>,
+					<|
+						Object -> testNotebook4,
+						Name -> "fulfillableResources Standard Financing Test Notebook 4 " <> $SessionUUID,
+						Append[Editors] -> {Link[testTeam3, Notebooks, linkID13]}
+					|>,
+					<|
+						Object -> testInstrumentResource1,
+						Instrument -> Link[hplcInstrument1],
+						Name -> "Test Resource 1 For fulfillableResources Tests " <> $SessionUUID,
+						Status -> Outstanding
+					|>,
+					<|
+						Object -> testInstrumentResource2,
+						Instrument -> Link[hplcInstrument2],
+						Name -> "Test Resource 2 For fulfillableResources Tests " <> $SessionUUID,
+						Status -> Outstanding
+					|>,
+					<|
+						Object -> testInstrumentResource3,
+						Instrument -> Link[hplcInstrument3],
+						Name -> "Test Resource 3 For fulfillableResources Tests " <> $SessionUUID,
+						Status -> Outstanding
+					|>,
+					<|
+						Object -> testInstrumentResource4,
+						Instrument -> Link[hplcInstrument4],
+						Name -> "Test Resource 4 For fulfillableResources Tests " <> $SessionUUID,
+						Status -> Outstanding
+					|>
+				}];
+
+				(* make the user object; this doesn't really need to have anything? *)
+				ECL`InternalUpload`UploadNotebook[
+					{hplcInstrument1, hplcInstrument2, hplcInstrument3},
+					{testNotebook2, testNotebook3, testNotebook4}
+				];
+				(* end of instrument ownership objects *)
+
+
+				sample1 = ECL`InternalUpload`UploadSample[
+					Model[Sample, "Milli-Q water"],
+					{"A1", container1},
+					Name -> "Test transit sample  for fulfillableResources unit tests" <> $SessionUUID,
+					InitialAmount -> 20 Milliliter
+				];
+				(* Change the sample status to Transit *)
+				Upload[<|Object -> sample1, Destination -> Link[testSite1], Status -> Transit|>];
+
+				(* Create a test instrument *)
+				{testCrystalIncubatorModel,testCrystalIncubatorModel2} =Upload[{
+					<|
+						Type->Model[Instrument,CrystalIncubator],
+						Name->"Test Crystal Incubator Model for fulfillableResources"<>$SessionUUID,
+						MinTemperature->3 Celsius,
+						MaxTemperature->29 Celsius,
+						Append[ImagingModes]->{VisibleLightImaging,UVImaging},
+						Append[MicroscopeModes]->{BrightField,Polarized},
+						MaxPlateDimensions->{130 Millimeter,86 Millimeter,45 Millimeter},
+						Capacity->1,
+						Replace[Positions]-><|Name->"Plate Slot",Footprint->Open,MaxWidth->0.2 Meter,MaxDepth->0.38 Meter,MaxHeight->0.6 Meter|>,
+						Replace[PositionPlotting]-><|Name->"Plate Slot",XOffset->0.4 Meter,YOffset->0.2 Meter,ZOffset->1.48 Meter,CrossSectionalShape->Rectangle,Rotation->0.`|>,
+						Transfer[Notebook]->Null
+					|>,<|
+						Type->Model[Instrument,CrystalIncubator],
+						Name->"Test Siteless Instrument Model for fulfillableResources"<>$SessionUUID,
+						MinTemperature->3 Celsius,
+						MaxTemperature->29 Celsius,
+						Append[ImagingModes]->{VisibleLightImaging},
+						Append[MicroscopeModes]->{BrightField},
+						MaxPlateDimensions->{130 Millimeter,86 Millimeter,45 Millimeter},
+						Capacity->1,
+						Replace[Positions]-><|Name->"Plate Slot",Footprint->Open,MaxWidth->0.2 Meter,MaxDepth->0.38 Meter,MaxHeight->0.6 Meter|>,
+						Replace[PositionPlotting]-><|Name->"Plate Slot",XOffset->0.4 Meter,YOffset->0.2 Meter,ZOffset->1.48 Meter,CrossSectionalShape->Rectangle,Rotation->0.`|>,
+						Transfer[Notebook]->Null
+					|>
+				}];
+				{testCrystalIncubator,testCrystalIncubator2,testCrystalIncubator3} =Upload[{
+					<|
+						Type->Object[Instrument,CrystalIncubator],
+						Name->"Test Crystal Incubator for fulfillableResources"<>$SessionUUID,
+						Model->Link[testCrystalIncubatorModel,Objects],
+						Transfer[Notebook]->Null,
+						Site->Link[$Site]
+					|>,
+					<|
+						Type->Object[Instrument,CrystalIncubator],
+						Name->"Test Crystal Incubator 2 for fulfillableResources"<>$SessionUUID,
+						Model->Link[testCrystalIncubatorModel,Objects],
+						Transfer[Notebook]->Null,
+						Site->Link[testSite2]
+					|>,
+					<|
+						Type->Object[Instrument,CrystalIncubator],
+						Name->"Test Siteless Instrument for fulfillableResources"<>$SessionUUID,
+						Model->Link[testCrystalIncubatorModel2,Objects],
+						Transfer[Notebook]->Null,
+						Site->Null
+					|>
+				}];
+				UploadInstrumentStatus[{testCrystalIncubator,testCrystalIncubator2,testCrystalIncubator3}, ConstantArray[Available,3]];
+				(* Upload a plate to the only storage slot of the test crystal incubator so it can not accept more plates. *)
+				ECL`InternalUpload`UploadLocation[xtalPlate, {"Plate Slot", testCrystalIncubator}];
+			]
+		];
+	),
+	SymbolTearDown :> (
+		Module[{allObjects, existingObjects},
+
+			allObjects = Cases[Flatten[{
+				$CreatedObjects,
+				Object[Container, Bench, "Test bench for fulfillableResources tests" <> $SessionUUID],
+				Object[Container, Plate, "Test DWP for fulfillableResources unit tests" <> $SessionUUID],
+				Object[Container, Plate, Irregular, Crystallization, "Test CrystallizationPlate for fulfillableResources unit tests" <> $SessionUUID],
+				Object[Sample, "Test sample 1 for fulfillableResources unit tests" <> $SessionUUID],
+				Object[Sample, "Test sample 2 for fulfillableResources unit tests" <> $SessionUUID],
+				Object[Sample, "Test sample 3 for fulfillableResources unit tests" <> $SessionUUID],
+				Object[Container, Vessel, "Test tube 1 for fulfillableResources" <> $SessionUUID],
+				Object[Sample, "Test transit sample  for fulfillableResources unit tests" <> $SessionUUID],
+				Object[Container, Site, "Test site 1 for fulfillableResources" <> $SessionUUID],
+				Object[Container, Site, "Test site 2 for fulfillableResources" <> $SessionUUID],
+				Object[Container, Site, "Test site 3 for fulfillableResources" <> $SessionUUID],
+				Object[Container, Site, "Test Site 4 For fulfillableResources Tests " <> $SessionUUID],
+				Model[Instrument, CrystalIncubator, "Test Crystal Incubator Model for fulfillableResources" <> $SessionUUID],
+				Model[Instrument, CrystalIncubator, "Test Siteless Instrument Model for fulfillableResources" <> $SessionUUID],
+				Object[Instrument, CrystalIncubator, "Test Crystal Incubator for fulfillableResources" <> $SessionUUID],
+				Object[Instrument, CrystalIncubator, "Test Crystal Incubator 2 for fulfillableResources" <> $SessionUUID],
+				Object[Instrument, CrystalIncubator, "Test Siteless Instrument for fulfillableResources" <> $SessionUUID],
+				Model[Sample, "Test sample model for fulfillableResources "<>$SessionUUID],
+				Object[Sample, "Test sample 4 for fulfillableResources unit tests" <> $SessionUUID],
+				Object[Resource,Sample, "Test sample resource for fulfillableResources "<>$SessionUUID],
+				Object[Resource,Sample, "Test sample resource 2 for fulfillableResources "<>$SessionUUID],
+				Object[Container,Vessel,"Test tube for fulfillableResources unit tests" <> $SessionUUID],
+				Object[Team,Financing,"Fake team 1 for FulfillableResources unit tests" <> $SessionUUID],
+				Object[Team,Financing,"Fake team 2 for FulfillableResources unit tests" <> $SessionUUID],
+				Object[Team, Financing, "Test Financing Team for fulfillableResources Tests 3 " <> $SessionUUID],
+				Object[Team, Financing, "Test Financing Team for fulfillableResources Tests 4 " <> $SessionUUID],
+				Object[Container,Vessel,"Test tube 3 for fulfillableResources" <> $SessionUUID],
+				Object[Container,Vessel,"Test tube 4 for fulfillableResources" <> $SessionUUID],
+				Object[User,"Fake User for fulfillableResources "<>$SessionUUID],
+				Object[User, "Test Author for fulfillableResources Tests 2 " <> $SessionUUID],
+				Object[User, "Test Author for fulfillableResources Tests 3 " <> $SessionUUID],
+				Object[Protocol,"Fake protocol for fulfillableResources"<>$SessionUUID],
+				Object[LaboratoryNotebook,"Fake notebook for fulfillableResources"<>$SessionUUID],
+				Object[LaboratoryNotebook, "fulfillableResources Standard Financing Test Notebook 2 " <> $SessionUUID],
+				Object[LaboratoryNotebook, "fulfillableResources Standard Financing Test Notebook 3 " <> $SessionUUID],
+				Object[LaboratoryNotebook, "fulfillableResources Standard Financing Test Notebook 4 " <> $SessionUUID],
+				Model[Sample, StockSolution, "Test Autoclaved StockSolution for fulfillableResources tests" <> $SessionUUID],
+				Object[Resource, Sample, "Test Resource for fulfillableResources 1 " <> $SessionUUID],
+				Object[Plumbing,Tubing,"fulfillableResources Test tubing 1 "<>$SessionUUID],
+				Object[Plumbing,Tubing,"fulfillableResources Test tubing 2 "<>$SessionUUID],
+				Model[Instrument, HPLC, "Test HPLC Model 1 For fulfillableResources Tests " <> $SessionUUID],
+				Object[Instrument, HPLC, "Test HPLC Instrument 1 For fulfillableResources Tests " <> $SessionUUID],
+				Object[Instrument, HPLC, "Test HPLC Instrument 2 For fulfillableResources Tests " <> $SessionUUID],
+				Object[Instrument, HPLC, "Test HPLC Instrument 3 For fulfillableResources Tests " <> $SessionUUID],
+				Object[Instrument, HPLC, "Test HPLC Instrument 4 For fulfillableResources Tests " <> $SessionUUID],
+				Object[Resource, Instrument, "Test Resource 1 For fulfillableResources Tests " <> $SessionUUID],
+				Object[Resource, Instrument, "Test Resource 2 For fulfillableResources Tests " <> $SessionUUID],
+				Object[Resource, Instrument, "Test Resource 3 For fulfillableResources Tests " <> $SessionUUID],
+				Object[Resource, Instrument, "Test Resource 4 For fulfillableResources Tests " <> $SessionUUID]
+			}], ObjectP[]];
+
+			existingObjects = PickList[allObjects, DatabaseMemberQ[allObjects]];
+			EraseObject[allObjects, Force -> True, Verbose -> False]
+		];
+		Unset[$CreatedObjects]
 	)
 ];
 
@@ -3983,29 +4889,219 @@ DefineTests[ScanValue,
 		Example[{Basic, "When given a sample returns its container since the sample itself cannot be scanned:"},
 			ScanValue[Object[Sample, "ScanValue Test Sample 1 " <> $SessionUUID], Object[Container, Vessel, "ScanValue Test Container 1 " <> $SessionUUID]],
 			Object[Container, Vessel, "ScanValue Test Container 1 " <> $SessionUUID]
+		],
+		Example[{Basic, "When given a sample with AsepticTransportContainerType -> Bulk, returns the container:"},
+			ScanValue[Object[Item, "ScanValue Test Self-Contained Bulk Aseptic Sample" <> $SessionUUID], Object[Container, Bag, Aseptic, "ScanValue Test Bulk Aseptic Bag" <> $SessionUUID]],
+			ObjectP[Object[Container, Bag, Aseptic, "ScanValue Test Bulk Aseptic Bag" <> $SessionUUID]]
+		],
+		Example[{Basic, "When given a fluid sample with AsepticTransportContainerType -> Bulk, returns the container of the container:"},
+			ScanValue[Object[Sample, "ScanValue Test Fluid Bulk Aseptic Sample" <> $SessionUUID], Object[Container, Vessel, "ScanValue Test Fluid Bulk Aseptic Container" <> $SessionUUID]],
+			ObjectP[Object[Container, Bag, Aseptic, "ScanValue Test Fluid Bulk Aseptic Bag" <> $SessionUUID]]
+		],
+		Example[{Basic, "When given a sample with AsepticTransportContainerType -> Individual, returns the container:"},
+			ScanValue[Object[Item, "ScanValue Test Self-Contained Individual Aseptic Sample" <> $SessionUUID], Object[Container, Bag, Aseptic, "ScanValue Test Individual Aseptic Bag" <> $SessionUUID]],
+			ObjectP[Object[Container, Bag, Aseptic, "ScanValue Test Individual Aseptic Bag" <> $SessionUUID]]
+		],
+		Example[{Basic, "When given a fluid sample with AsepticTransportContainerType -> Individual, returns the container of the container:"},
+			ScanValue[Object[Sample, "ScanValue Test Fluid Individual Aseptic Sample" <> $SessionUUID], Object[Container, Vessel, "ScanValue Test Fluid Individual Aseptic Container" <> $SessionUUID]],
+			ObjectP[Object[Container, Bag, Aseptic, "ScanValue Test Fluid Individual Aseptic Bag" <> $SessionUUID]]
 		]
-    },
-    SymbolSetUp :> Module[{tube1, tube2, rack1, waterSample1, waterSample2},
-		$CreatedObjects = {};
+	},
+    SymbolSetUp :> (
+			Module[{objects,existingObjects},
+				objects=Quiet[Cases[
+					Flatten[{
+						Object[Container, Bench, "Test bench for ScanValue" <> $SessionUUID],
+						Model[Item, "Test sample item for ScanValue" <> $SessionUUID],
+						Model[Sample, "Test sample model for ScanValue" <> $SessionUUID],
+						Model[Container, Vessel, "Test container model for ScanValue" <> $SessionUUID],
+						Model[Container, Bag, Aseptic, "Test bag model for ScanValue" <> $SessionUUID],
+						Object[Container, Bag, Aseptic, "ScanValue Test Bulk Aseptic Bag" <> $SessionUUID],
+						Object[Container, Bag, Aseptic, "ScanValue Test Fluid Bulk Aseptic Bag" <> $SessionUUID],
+						Object[Container, Bag, Aseptic, "ScanValue Test Individual Aseptic Bag" <> $SessionUUID],
+						Object[Container, Bag, Aseptic, "ScanValue Test Fluid Individual Aseptic Bag" <> $SessionUUID],
+						Object[Container, Vessel, "ScanValue Test Fluid Bulk Aseptic Container" <> $SessionUUID],
+						Object[Container, Vessel, "ScanValue Test Fluid Individual Aseptic Container" <> $SessionUUID],
+						Object[Item, "ScanValue Test Self-Contained Bulk Aseptic Sample" <> $SessionUUID],
+						Object[Item, "ScanValue Test Self-Contained Individual Aseptic Sample" <> $SessionUUID],
+						Object[Sample, "ScanValue Test Fluid Bulk Aseptic Sample" <> $SessionUUID],
+						Object[Sample, "ScanValue Test Fluid Individual Aseptic Sample" <> $SessionUUID],
+						Object[Sample, "ScanValue Test Sample 1 " <> $SessionUUID],
+						Object[Sample, "ScanValue Test Sample 2 " <> $SessionUUID],
+						Object[Container, Vessel, "ScanValue Test Container 1 " <> $SessionUUID],
+						Object[Container, Vessel, "ScanValue Test Container 2 " <> $SessionUUID],
+						Object[Container, Rack, "ScanValue Test Rack 1 " <> $SessionUUID]
+					}],
+					ObjectP[]
+				]];
+				existingObjects=PickList[objects,DatabaseMemberQ[objects],True];
+				EraseObject[existingObjects,Force->True,Verbose->False]
+			];
+			Module[{
+				testBench, tube1, tube2, rack1, waterSample1, waterSample2, asepticItemModel, asepticFluidSampleModel, asepticContainerModel, asepticBagModel,
+				asepticSample1, asepticSample2, asepticSample3, asepticSample4, asepticContainer1, asepticContainer2, asepticBag1, asepticBag2, asepticBag3, asepticBag4
+			},
+				$CreatedObjects = {};
 
-		{tube1, tube2, rack1}=Upload[{
-			<|Type -> Object[Container, Vessel], Model -> Link[Model[Container, Vessel, "2mL Tube"],Objects], Name -> "ScanValue Test Container 1 " <> $SessionUUID|>,
-			<|Type -> Object[Container, Vessel], Model -> Link[Model[Container, Vessel, "2mL Tube"],Objects], Name -> "ScanValue Test Container 2 " <> $SessionUUID|>,
-			<|Type -> Object[Container,Rack], Model -> Link[Model[Container, Rack, "id:BYDOjv1VAAml"],Objects], Name -> "ScanValue Test Rack 1 " <> $SessionUUID|>
-		}];
+				{testBench, asepticItemModel, asepticFluidSampleModel, asepticContainerModel, asepticBagModel, tube1, tube2, rack1} = Upload[{
+					<|
+						Type -> Object[Container, Bench],
+						Model -> Link[Model[Container, Bench, "The Bench of Testing"], Objects],
+						Name -> "Test bench for ScanValue" <> $SessionUUID,
+						DeveloperObject -> True,
+						StorageCondition -> Link[Model[StorageCondition, "Ambient Storage"]]
+					|>,
+					<|
+						Type -> Model[Item],
+						Name -> "Test sample item for ScanValue" <> $SessionUUID,
+						DeveloperObject -> True,
+						AsepticTransportContainerType -> Bulk,
+						DefaultStorageCondition -> Link[Model[StorageCondition, "Ambient Storage"]]
+					|>,
+					<|
+						Type -> Model[Sample],
+						Name -> "Test sample model for ScanValue" <> $SessionUUID,
+						DeveloperObject -> True,
+						AsepticTransportContainerType -> Bulk,
+						DefaultStorageCondition -> Link[Model[StorageCondition, "Ambient Storage"]],
+						State -> Liquid
+					|>,
+					<|
+						Type -> Model[Container, Vessel],
+						Name -> "Test container model for ScanValue" <> $SessionUUID,
+						DeveloperObject -> True,
+						DefaultStorageCondition -> Link[Model[StorageCondition, "Ambient Storage"]],
+						Replace[Positions] -> {<|Name -> "A1", Footprint -> Null, MaxWidth -> Null, MaxDepth -> Null, MaxHeight -> Null|>}
+					|>,
+					<|
+						Type -> Model[Container, Bag, Aseptic],
+						Name -> "Test bag model for ScanValue" <> $SessionUUID,
+						DeveloperObject -> True,
+						DefaultStorageCondition -> Link[Model[StorageCondition, "Ambient Storage"]],
+						Replace[Positions] -> {<|Name -> "A1", Footprint -> Null, MaxWidth -> Null, MaxDepth -> Null, MaxHeight -> Null|>}
+					|>,
+					<|Type -> Object[Container, Vessel], Model -> Link[Model[Container, Vessel, "2mL Tube"],Objects], Name -> "ScanValue Test Container 1 " <> $SessionUUID|>,
+					<|Type -> Object[Container, Vessel], Model -> Link[Model[Container, Vessel, "2mL Tube"],Objects], Name -> "ScanValue Test Container 2 " <> $SessionUUID|>,
+					<|Type -> Object[Container,Rack], Model -> Link[Model[Container, Rack, "id:BYDOjv1VAAml"],Objects], Name -> "ScanValue Test Rack 1 " <> $SessionUUID|>
+				}];
 
-		{waterSample1, waterSample2} = ECL`InternalUpload`UploadSample[
-			{Model[Sample, "Milli-Q water"], Model[Sample, "Milli-Q water"]},
-			{{"A1", tube1}, {"A1", tube2}},
-			InitialAmount -> {100 Microliter, 100 Microliter},
-			Name -> {"ScanValue Test Sample 1 " <> $SessionUUID, "ScanValue Test Sample 2 " <> $SessionUUID}
-		];
+				{
+					asepticBag1,
+					asepticBag2,
+					asepticBag3,
+					asepticBag4
+				}=ECL`InternalUpload`UploadSample[
+					{
+						asepticBagModel,
+						asepticBagModel,
+						asepticBagModel,
+						asepticBagModel
+					},
+					{
+						{"Work Surface", testBench},
+						{"Work Surface", testBench},
+						{"Work Surface", testBench},
+						{"Work Surface", testBench}
+					},
+					Status -> Available,
+					Name -> {
+						"ScanValue Test Bulk Aseptic Bag" <> $SessionUUID,
+						"ScanValue Test Fluid Bulk Aseptic Bag" <> $SessionUUID,
+						"ScanValue Test Individual Aseptic Bag" <> $SessionUUID,
+						"ScanValue Test Fluid Individual Aseptic Bag" <> $SessionUUID
+					}
+				];
 
-	],
-	SymbolTearDown :> Module[{},
-		EraseObject[$CreatedObjects, Force -> True, Verbose -> False];
-		Unset[$CreatedObjects];
-	]
+				{asepticContainer1, asepticContainer2} = ECL`InternalUpload`UploadSample[
+					{
+						asepticContainerModel,
+						asepticContainerModel
+					},
+					{
+						{"A1", asepticBag2},
+						{"A1", asepticBag4}
+					},
+					Status -> Available,
+					Name -> {
+						"ScanValue Test Fluid Bulk Aseptic Container" <> $SessionUUID,
+						"ScanValue Test Fluid Individual Aseptic Container" <> $SessionUUID
+					}
+				];
+
+				{
+					asepticSample1,
+					asepticSample2,
+					asepticSample3,
+					asepticSample4,
+					waterSample1,
+					waterSample2
+				}=ECL`InternalUpload`UploadSample[
+					{
+						asepticItemModel,
+						asepticFluidSampleModel,
+						asepticItemModel,
+						asepticFluidSampleModel,
+						Model[Sample, "Milli-Q water"],
+						Model[Sample, "Milli-Q water"]
+					},
+					{
+						{"A1", asepticBag1},
+						{"A1", asepticContainer1},
+						{"A1", asepticBag3},
+						{"A1", asepticContainer2},
+						{"A1", tube1},
+						{"A1", tube2}
+					},
+					Status -> Available,
+					Name -> {
+						"ScanValue Test Self-Contained Bulk Aseptic Sample" <> $SessionUUID,
+						"ScanValue Test Fluid Bulk Aseptic Sample" <> $SessionUUID,
+						"ScanValue Test Self-Contained Individual Aseptic Sample" <> $SessionUUID,
+						"ScanValue Test Fluid Individual Aseptic Sample" <> $SessionUUID,
+						"ScanValue Test Sample 1 " <> $SessionUUID,
+						"ScanValue Test Sample 2 " <> $SessionUUID
+					},
+					InitialAmount -> {
+						Null,
+						100*Milliliter,
+						Null,
+						100*Milliliter,
+						100 Microliter,
+						100 Microliter
+					}
+				];
+
+			]
+		),
+		SymbolTearDown :> Module[{objects,existingObjects},
+			objects=Quiet[Cases[
+				Flatten[{
+					Object[Container, Bench, "Test bench for ScanValue" <> $SessionUUID],
+					Model[Item, "Test sample item for ScanValue" <> $SessionUUID],
+					Model[Sample, "Test sample model for ScanValue" <> $SessionUUID],
+					Model[Container, Vessel, "Test container model for ScanValue" <> $SessionUUID],
+					Model[Container, Bag, Aseptic, "Test bag model for ScanValue" <> $SessionUUID],
+					Object[Container, Bag, Aseptic, "ScanValue Test Bulk Aseptic Bag" <> $SessionUUID],
+					Object[Container, Bag, Aseptic, "ScanValue Test Fluid Bulk Aseptic Bag" <> $SessionUUID],
+					Object[Container, Bag, Aseptic, "ScanValue Test Individual Aseptic Bag" <> $SessionUUID],
+					Object[Container, Bag, Aseptic, "ScanValue Test Fluid Individual Aseptic Bag" <> $SessionUUID],
+					Object[Container, Vessel, "ScanValue Test Fluid Bulk Aseptic Container" <> $SessionUUID],
+					Object[Container, Vessel, "ScanValue Test Fluid Individual Aseptic Container" <> $SessionUUID],
+					Object[Item, "ScanValue Test Self-Contained Bulk Aseptic Sample" <> $SessionUUID],
+					Object[Item, "ScanValue Test Self-Contained Individual Aseptic Sample" <> $SessionUUID],
+					Object[Sample, "ScanValue Test Fluid Bulk Aseptic Sample" <> $SessionUUID],
+					Object[Sample, "ScanValue Test Fluid Individual Aseptic Sample" <> $SessionUUID],
+					Object[Sample, "ScanValue Test Sample 1 " <> $SessionUUID],
+					Object[Sample, "ScanValue Test Sample 2 " <> $SessionUUID],
+					Object[Container, Vessel, "ScanValue Test Container 1 " <> $SessionUUID],
+					Object[Container, Vessel, "ScanValue Test Container 2 " <> $SessionUUID],
+					Object[Container, Rack, "ScanValue Test Rack 1 " <> $SessionUUID]
+				}],
+				ObjectP[]
+			]];
+			existingObjects=PickList[objects,DatabaseMemberQ[objects],True];
+			EraseObject[existingObjects,Force->True,Verbose->False]
+		]
 ];
 
 
@@ -4031,17 +5127,38 @@ DefineTests[ResourcesOnCart,
 				Object[Container, Plate, "ResourcesOnCart Test Plate 2 " <> $SessionUUID]
 			}],
 			{ObjectP[Object[Container, Plate]]}
+		],
+		Example[{Additional, "By default, this function ignores items that's in portable cooler or heater even if they are on cart:"},
+			ResourcesOnCart[
+				{
+					Object[Container, Vessel, "ResourcesOnCart Test 1 " <> $SessionUUID],
+					Object[Container, Vessel, "ResourcesOnCart Test tube in cooler 1 " <> $SessionUUID],
+					Object[Container, Vessel, "ResourcesOnCart Test tube in heater 1 " <> $SessionUUID]
+				}
+			],
+			{ObjectP[Object[Container, Vessel, "ResourcesOnCart Test 1 " <> $SessionUUID]]}
+		],
+		Example[{Options, IncludePortableCooler, "When IncludePortableCooler -> True, function will also include items that are in portable cooler EVEN IF it's not on a cart:"},
+			ResourcesOnCart[{Object[Container, Vessel, "ResourcesOnCart Test tube in cooler 1 " <> $SessionUUID], Object[Container, Vessel, "ResourcesOnCart Test tube in cooler 2 " <> $SessionUUID]}, IncludePortableCooler -> True],
+			{ObjectP[{Object[Container, Vessel, "ResourcesOnCart Test tube in cooler 1 " <> $SessionUUID], Object[Container, Vessel, "ResourcesOnCart Test tube in cooler 2 " <> $SessionUUID]}], ObjectP[{Object[Container, Vessel, "ResourcesOnCart Test tube in cooler 1 " <> $SessionUUID], Object[Container, Vessel, "ResourcesOnCart Test tube in cooler 2 " <> $SessionUUID]}]}
+		],
+		Example[{Options, IncludePortableHeater, "When IncludePortableCooler -> True, function will also include items that are in portable heater EVEN IF it's not on a cart:"},
+			ResourcesOnCart[{Object[Container, Vessel, "ResourcesOnCart Test tube in heater 1 " <> $SessionUUID], Object[Container, Vessel, "ResourcesOnCart Test tube in heater 2 " <> $SessionUUID]}, IncludePortableHeater -> True],
+			{ObjectP[{Object[Container, Vessel, "ResourcesOnCart Test tube in heater 1 " <> $SessionUUID], Object[Container, Vessel, "ResourcesOnCart Test tube in heater 2 " <> $SessionUUID]}], ObjectP[{Object[Container, Vessel, "ResourcesOnCart Test tube in heater 1 " <> $SessionUUID], Object[Container, Vessel, "ResourcesOnCart Test tube in heater 2 " <> $SessionUUID]}]}
 		]
 	},
 	SymbolSetUp :> Module[
 		{tubePacket,cartPacket,capPacket, tube1,tube2, tube3,cap1,pipette,cart,waterSample1,waterSample2,
-		cartPacket2,platePackets,cart2,plate1,plate2,pipettePacket},
+		cartPacket2,platePackets,cart2,plate1,plate2,pipettePacket, cooler1, cooler2, heater1, heater2, coolerPacket, heaterPacket,
+		coolertube1, coolertube2, heatertube1, heatertube2},
 		$CreatedObjects = {};
 
 		tubePacket = <|Type -> Object[Container, Vessel], Model -> Link[Model[Container, Vessel, "2mL Tube"], Objects]|>;
 		capPacket = <|Type -> Object[Item,Cap], Model -> Link[Model[Item, Cap, "Tube Cap, Opaque 13x6mm"], Objects]|>;
 		cartPacket = <|Type -> Object[Container, OperatorCart], Model -> Link[Model[Container, OperatorCart, "Chemistry Lab Cart"], Objects]|>;
 		cartPacket2 = <|Type -> Object[Container, OperatorCart], Model -> Link[Model[Container, OperatorCart, "Chemistry Lab Cart"], Objects]|>;
+		coolerPacket = <| Type -> Object[Instrument, PortableCooler], Model -> Link[Model[Instrument, PortableCooler, "id:R8e1PjpjnEPX"], Objects] |>;
+		heaterPacket = <| Type -> Object[Instrument, PortableHeater], Model -> Link[Model[Instrument, PortableHeater, "id:3em6ZvLv7bZv"], Objects] |>;
 		
 		platePackets = {
 			Association[
@@ -4062,7 +5179,7 @@ DefineTests[ResourcesOnCart,
 				Name -> "ResourcesOnCart Test Pipette 1 " <> $SessionUUID
 		|>;
 
-		{tube1, tube2, tube3, cap1, pipette, cart, cart2, plate1, plate2} = Upload[Flatten@{
+		{tube1, tube2, tube3, cap1, pipette, cart, cart2, plate1, plate2, cooler1, cooler2, heater1, heater2, coolertube1, coolertube2, heatertube1, heatertube2} = Upload[Flatten@{
 			Append[tubePacket, Name -> "ResourcesOnCart Test 1 " <> $SessionUUID],
 			Append[tubePacket, Name -> "ResourcesOnCart Test 2 " <> $SessionUUID],
 			Append[tubePacket, Name -> "ResourcesOnCart Test 3 " <> $SessionUUID],
@@ -4070,7 +5187,15 @@ DefineTests[ResourcesOnCart,
 			pipettePacket,
 			cartPacket,
 			cartPacket2,
-			platePackets
+			platePackets,
+			Append[coolerPacket, Name -> "ResourceOnCart Test cooler on cart "<>$SessionUUID],
+			Append[coolerPacket, Name -> "ResourceOnCart Test cooler off cart "<>$SessionUUID],
+			Append[heaterPacket, Name -> "ResourceOnCart Test heater on cart "<>$SessionUUID],
+			Append[heaterPacket, Name -> "ResourceOnCart Test heater off cart "<>$SessionUUID],
+			Append[tubePacket, Name -> "ResourcesOnCart Test tube in cooler 1 " <> $SessionUUID],
+			Append[tubePacket, Name -> "ResourcesOnCart Test tube in cooler 2 " <> $SessionUUID],
+			Append[tubePacket, Name -> "ResourcesOnCart Test tube in heater 1 " <> $SessionUUID],
+			Append[tubePacket, Name -> "ResourcesOnCart Test tube in heater 2 " <> $SessionUUID]
 		}];
 		UploadCover[tube3, Cover -> cap1];
 		
@@ -4084,8 +5209,14 @@ DefineTests[ResourcesOnCart,
 		];
 
 		ECL`InternalUpload`UploadLocation[
-			{tube1, tube2, tube3, pipette, plate1},
-			{{"Tray Slot", cart}, {"Tray Slot", cart}, {"Tray Slot", cart}, {"Tray Slot", cart}, {"Tray Slot", cart2}},
+			{tube1, tube2, tube3, pipette, plate1, cooler1, heater1},
+			{{"Tray Slot", cart}, {"Tray Slot", cart}, {"Tray Slot", cart}, {"Tray Slot", cart}, {"Tray Slot", cart2}, {"Tray Slot", cart}, {"Tray Slot", cart}},
+			FastTrack -> True
+		];
+
+		ECL`InternalUpload`UploadLocation[
+			{coolertube1, coolertube2, heatertube1, heatertube2},
+			{{"A1", cooler1}, {"A1", cooler2}, {"Sample Slot", heater1}, {"Sample Slot", heater2}},
 			FastTrack -> True
 		]
 	],
@@ -4103,7 +5234,7 @@ DefineTests[ModelInstances,
 		Example[{Basic, "Returns potential samples of isopropanol which can be used to satisfy the requested resource:"},
 			ModelInstances[
 				Object[Resource, Sample, "Sample Resource for ModelInstances unit tests" <> $SessionUUID],
-				Object[Protocol, SampleManipulation, "SampleManipulation ModelInstances unit test " <> $SessionUUID]
+				Object[Protocol, Transfer, "ModelInstances Test Transfer Protocol " <> $SessionUUID]
 			],
 			{_Association..}
 		],
@@ -4127,14 +5258,14 @@ DefineTests[ModelInstances,
 		Example[{Basic, "In the case where a container is requested, empty stocked containers are returned:"},
 			ModelInstances[
 				Object[Resource,Sample, "Container Resource for ModelInstances unit tests" <> $SessionUUID],
-				Object[Protocol,SampleManipulation,"SampleManipulation ModelInstances unit test " <> $SessionUUID]
+				Object[Protocol,Transfer,"ModelInstances Test Transfer Protocol " <> $SessionUUID]
 			],
 			{_Association..}
 		],*)
 		Example[{Options, OutputFormat, "Show a table of potential options along with their key properties:"},
 			ModelInstances[
 				Object[Resource, Sample, "Sample Resource for ModelInstances unit tests" <> $SessionUUID],
-				Object[Protocol, SampleManipulation, "SampleManipulation ModelInstances unit test " <> $SessionUUID],
+				Object[Protocol, Transfer, "ModelInstances Test Transfer Protocol " <> $SessionUUID],
 				OutputFormat -> Table
 			],
 			_Pane
@@ -4142,7 +5273,7 @@ DefineTests[ModelInstances,
 		Example[{Options, Well, "Specify which position the resource should be in for finding the potential samples:"},
 			ModelInstances[
 				Object[Resource, Sample, "Plate Resource Sample 3 for ModelInstances unit tests" <> $SessionUUID],
-				Object[Protocol, SampleManipulation, "SampleManipulation ModelInstances unit test " <> $SessionUUID],
+				Object[Protocol, Transfer, "ModelInstances Test Transfer Protocol " <> $SessionUUID],
 				Well -> "A3"
 			],
 			{_Association..}
@@ -4150,7 +5281,7 @@ DefineTests[ModelInstances,
 		Example[{Options, Well, "Specify which position the resource should be in for finding the potential samples. If the position does not match, return an empty list:"},
 			ModelInstances[
 				Object[Resource, Sample, "Plate Resource Sample 2 for ModelInstances unit tests" <> $SessionUUID],
-				Object[Protocol, SampleManipulation, "SampleManipulation ModelInstances unit test " <> $SessionUUID],
+				Object[Protocol, Transfer, "ModelInstances Test Transfer Protocol " <> $SessionUUID],
 				Well -> "A1"
 			],
 			{}
@@ -4161,11 +5292,11 @@ DefineTests[ModelInstances,
 				50Microliter,
 				{Model[Container, Plate, "96-well 2mL Deep Well Plate"]},
 				{},
-				Object[Protocol, SampleManipulation, "SampleManipulation ModelInstances unit test " <> $SessionUUID],
-				Object[Protocol, SampleManipulation, "SampleManipulation ModelInstances unit test " <> $SessionUUID],
+				Object[Protocol, Transfer, "ModelInstances Test Transfer Protocol " <> $SessionUUID],
+				Object[Protocol, Transfer, "ModelInstances Test Transfer Protocol " <> $SessionUUID],
 				Well -> "A3"
 			],
-			{_Association..}
+			{KeyValuePattern["Value" -> ObjectP[Object[Sample, "Test sample 3 for ModelInstances unit tests" <> $SessionUUID]]]}
 		],
 		Example[{Options, Well, "Specify which position the sample model should be in for finding the potential samples. If the position does not match, return an empty list:"},
 			ModelInstances[
@@ -4173,14 +5304,26 @@ DefineTests[ModelInstances,
 				50Microliter,
 				{Model[Container, Plate, "96-well 2mL Deep Well Plate"]},
 				{},
-				Object[Protocol, SampleManipulation, "SampleManipulation ModelInstances unit test " <> $SessionUUID],
-				Object[Protocol, SampleManipulation, "SampleManipulation ModelInstances unit test " <> $SessionUUID],
-				Well -> "A1"
+				Object[Protocol, Transfer, "ModelInstances Test Transfer Protocol " <> $SessionUUID],
+				Object[Protocol, Transfer, "ModelInstances Test Transfer Protocol " <> $SessionUUID],
+				Well -> "A2"
 			],
 			{}
+		],
+		Example[{Options, Hermetic, "Specify whether samples in hermetic containers should be included as potential instances:"},
+			ModelInstances[
+				Model[Sample, "Test sample model for ModelInstances unit tests" <> $SessionUUID],
+				50Microliter,
+				{},
+				{},
+				Object[Protocol, Transfer, "ModelInstances Test Transfer Protocol " <> $SessionUUID],
+				Object[Protocol, Transfer, "ModelInstances Test Transfer Protocol " <> $SessionUUID],
+				Hermetic -> True
+			],
+			{KeyValuePattern["Value" -> ObjectP[Object[Sample, "Test sample 4 for ModelInstances unit tests" <> $SessionUUID]]]}
 		]
 	},
-	SymbolSetUp :> Module[{allObjects,existsFilter,sampleModel,tube1,tube2,plate,sample1,sample2,sample3,protocol,resources,sampleResource,containerResource,cffProtocolID,
+	SymbolSetUp :> Module[{allObjects,existsFilter,sampleModel,tube1,tube2,tube3,plate,sample1,sample2,sample3,sample4,parentMSPProtocol,transferProtocol,resources,sampleResource,containerResource,cffProtocolID,
 		filterResourcePacket,cffFilterResource,rspProtocolID,rspResourcePacket,rspProtocolResources},
 		$CreatedObjects = {};
 
@@ -4188,10 +5331,13 @@ DefineTests[ModelInstances,
 			Object[Sample, "Test sample 1 for ModelInstances unit tests" <> $SessionUUID],
 			Object[Sample, "Test sample 2 for ModelInstances unit tests" <> $SessionUUID],
 			Object[Sample, "Test sample 3 for ModelInstances unit tests" <> $SessionUUID],
+			Object[Sample, "Test sample 4 for ModelInstances unit tests" <> $SessionUUID],
 			Object[Container, Vessel, "Test tube 1 for ModelInstances unit tests" <> $SessionUUID],
 			Object[Container, Vessel, "Test tube 2 for ModelInstances unit tests" <> $SessionUUID],
+			Object[Container, Vessel, "Test tube 3 for ModelInstances unit tests" <> $SessionUUID],
 			Object[Container,Plate, "Test plate for ModelInstances unit tests" <> $SessionUUID],
-			Object[Protocol, SampleManipulation, "SampleManipulation ModelInstances unit test " <> $SessionUUID],
+			Object[Protocol, ManualSamplePreparation, "ModelInstances Test MSP Protocol " <> $SessionUUID],
+			Object[Protocol, Transfer, "ModelInstances Test Transfer Protocol " <> $SessionUUID],
 			Object[Protocol, RoboticSamplePreparation, "ModelInstances Test RSP Protocol " <> $SessionUUID],
 			Object[Resource, Sample, "Sample Resource for ModelInstances unit tests" <> $SessionUUID],
 			Object[Protocol, CrossFlowFiltration, "ModelInstances Test CFF Protocol " <> $SessionUUID],
@@ -4224,7 +5370,7 @@ DefineTests[ModelInstances,
 			IncompatibleMaterials -> {None}
 		];
 
-		{tube1, tube2, plate} = Upload[{
+		{tube1, tube2, plate, tube3} = Upload[{
 			<|
 				Type -> Object[Container, Vessel],
 				Model -> Link[Model[Container, Vessel, "New 0.5mL Tube with 2mL Tube Skirt"],Objects],
@@ -4239,21 +5385,30 @@ DefineTests[ModelInstances,
 				Type -> Object[Container,Plate],
 				Model -> Link[Model[Container, Plate, "96-well 2mL Deep Well Plate"],Objects],
 				Name -> "Test plate for ModelInstances unit tests" <> $SessionUUID
+			|>,
+			<|
+				Type -> Object[Container, Vessel],
+				Model -> Link[Model[Container, Vessel, "New 0.5mL Tube with 2mL Tube Skirt"],Objects],
+				Name -> "Test tube 3 for ModelInstances unit tests" <> $SessionUUID,
+				Hermetic -> True
 			|>
 		}];
 
-		{sample1, sample2, sample3} = ECL`InternalUpload`UploadSample[
+		{sample1, sample2, sample3, sample4} = ECL`InternalUpload`UploadSample[
 			{
 				Model[Sample, "Isopropanol"],
 				Model[Sample, "Isopropanol"],
+				sampleModel,
 				sampleModel
 			},
 			{
 				{"A1", tube1},
 				{"A1", tube2},
-				{"A3", plate}
+				{"A3", plate},
+				{"A1", tube3}
 			},
 			InitialAmount -> {
+				100 Microliter,
 				100 Microliter,
 				100 Microliter,
 				100 Microliter
@@ -4261,18 +5416,24 @@ DefineTests[ModelInstances,
 			Name -> {
 				"Test sample 1 for ModelInstances unit tests" <> $SessionUUID,
 				"Test sample 2 for ModelInstances unit tests" <> $SessionUUID,
-				"Test sample 3 for ModelInstances unit tests" <> $SessionUUID
+				"Test sample 3 for ModelInstances unit tests" <> $SessionUUID,
+				"Test sample 4 for ModelInstances unit tests" <> $SessionUUID
 			}
 		];
 
-		protocol = ExperimentSampleManipulation[
-			{Transfer[Source -> Model[Sample, "Isopropanol"], Amount -> 50 Microliter, Destination -> Model[Container, Vessel, "2mL Tube"]]},
-			Name -> "SampleManipulation ModelInstances unit test " <> $SessionUUID
+		parentMSPProtocol = Upload[<|Type -> Object[Protocol, ManualSamplePreparation], Name -> "ModelInstances Test MSP Protocol "<>$SessionUUID|>];
+		transferProtocol = ExperimentTransfer[
+			Model[Sample, "Isopropanol"],
+			Model[Container, Vessel, "2mL Tube"],
+			50 Microliter,
+			Name -> "ModelInstances Test Transfer Protocol " <> $SessionUUID,
+			ParentProtocol -> parentMSPProtocol
 		];
 
-		resources = Download[protocol, RequiredResources];
+		resources = Download[transferProtocol, BatchedUnitOperations[[1]][RequiredResources]];
 
-		{sampleResource, containerResource} = Cases[resources, {_, RequiredObjects, _, _}][[All, 1]][Object];
+		sampleResource = FirstCase[resources, {res_, SourceLink, _, _} :> res][Object];
+		containerResource = FirstCase[resources, {res_, DestinationLink, _, _} :> res][Object];
 		
 		cffProtocolID = CreateID[Object[Protocol, CrossFlowFiltration]];
 		filterResourcePacket = <|
@@ -4343,4 +5504,198 @@ DefineTests[ModelInstances,
 		EraseObject[$CreatedObjects, Force -> True, Verbose -> False];
 		Unset[$CreatedObjects];
 	]
-]
+];
+
+
+(* ::Subsection::Closed:: *)
+(*ConsolidationInstances*)
+
+
+DefineTests[
+	ConsolidationInstances,
+	{
+		Test["For a Model[Sample] request with a volume returns a list with possible samples which can be consolidated to fulfill the resource:",
+			ConsolidationInstances[
+				Model[Sample,"Fake Acetonitrile HPLC grade model for resource consolidation testing"],
+				8.5*Liter,
+				{Object[LaboratoryNotebook,"id:eGakldJJ8E7q"]},
+				Object[Protocol,HPLC,"id:dORYzZJJpxjw"],
+				Object[Protocol,HPLC,"id:dORYzZJJpxjw"]
+			],
+			Association[
+				"PossibleSamples" -> {OrderlessPatternSequence[Object[Sample, "id:Z1lqpMzzmEPO"],Object[Sample, "id:dORYzZJJpxjE"], Object[Sample, "id:eGakldJJ8E7x"], Object[Sample, "id:4pO6dM55E0Pz"], Object[Sample, "id:Vrbp1jKKo6Lm"], Object[Sample, "id:4pO6dM555RwM"]]},
+				"SamplesAmounts" -> {OrderlessPatternSequence[Quantity[2.`,"Liters"],Quantity[4.`,"Liters"],Quantity[5.`,"Liters"],Quantity[4.`,"Liters"],Quantity[1.`,"Liters"],Quantity[2.`,"Liters"]]},
+				"UserOwned" -> {OrderlessPatternSequence[False, False, False, True, True, True]},
+				"RequestedModel" -> Model[Sample, "Fake Acetonitrile HPLC grade model for resource consolidation testing"]
+			],
+			Stubs:>{
+				$DeveloperSearch=True,
+				$Site=Null
+			}
+		],
+		Test["For a Model[Sample] request with a mass returns a list with possible samples which can be consolidated to fulfill the resource:",
+			ConsolidationInstances[
+				Model[Sample,"Fake salt chemical model for resource consolidation testing"],
+				8.5*Gram,
+				{Object[LaboratoryNotebook,"id:eGakldJJ8E7q"]},
+				Object[Protocol,HPLC,"id:dORYzZJJpxjw"],
+				Object[Protocol,HPLC,"id:dORYzZJJpxjw"]
+			],
+			Association[
+				"PossibleSamples" -> {OrderlessPatternSequence[Object[Sample, "id:qdkmxzqqe74V"], Object[Sample, "id:R8e1Pjppr9Av"], Object[Sample, "id:O81aEBZZp9dx"], Object[Sample, "id:AEqRl9KKNAra"], Object[Sample, "id:o1k9jAGGZ3xa"]]},
+				"SamplesAmounts" -> {OrderlessPatternSequence[Quantity[2.`,"Grams"],Quantity[4.`,"Grams"],Quantity[5.`,"Grams"],Quantity[4.`,"Grams"],Quantity[1.5`,"Grams"]]},
+				"UserOwned" -> {OrderlessPatternSequence[False, False, False, True, True]},
+				"RequestedModel" -> Model[Sample, "Fake salt chemical model for resource consolidation testing"]
+			],
+			Stubs:>{
+				$DeveloperSearch=True,
+				$Site=Null
+			}
+		],
+		Test["For a Model[Sample,StockSolution] returns a list with possible samples which can be consolidated to fulfill the resource:",
+			ConsolidationInstances[
+				Model[Sample,StockSolution,"Fake 70% Ethanol model for resource consolidation testing"],
+				8.5*Liter,
+				{Object[LaboratoryNotebook,"id:eGakldJJ8E7q"]},
+				Object[Protocol,HPLC,"id:dORYzZJJpxjw"],
+				Object[Protocol,HPLC,"id:dORYzZJJpxjw"]
+			],
+			Association[
+				"PossibleSamples" -> {OrderlessPatternSequence[Object[Sample, "id:Vrbp1jKKo6LE"], Object[Sample, "id:XnlV5jKKRMYB"], Object[Sample, "id:qdkmxzqqe74M"], Object[Sample, "id:n0k9mG881Ld6"], Object[Sample, "id:01G6nvwwlALr"]]},
+				"SamplesAmounts" -> {OrderlessPatternSequence[Quantity[2.`,"Liters"],Quantity[4.`,"Liters"],Quantity[5.`,"Liters"],Quantity[4.`,"Liters"],Quantity[1.5`,"Liters"]]},
+				"UserOwned" -> {OrderlessPatternSequence[False, False, False, True, True]},
+				"RequestedModel"-> Model[Sample,StockSolution,"Fake 70% Ethanol model for resource consolidation testing"]
+			],
+			Stubs:>{
+				$DeveloperSearch=True,
+				$Site=Null
+			}
+		],
+		Test["PossibleSamples includes both user owned and public samples since we'll decide later which samples to use:",
+			ConsolidationInstances[
+				Model[Sample,StockSolution,"Fake 70% Ethanol model for resource consolidation testing"],
+				5.1*Liter,
+				{Object[LaboratoryNotebook,"id:eGakldJJ8E7q"]},
+				Object[Protocol,HPLC,"id:dORYzZJJpxjw"],
+				Object[Protocol,HPLC,"id:dORYzZJJpxjw"]
+			],
+			Association[
+				"PossibleSamples" -> {OrderlessPatternSequence[Object[Sample, "id:Vrbp1jKKo6LE"],Object[Sample, "id:XnlV5jKKRMYB"],Object[Sample, "id:qdkmxzqqe74M"], Object[Sample, "id:n0k9mG881Ld6"], Object[Sample, "id:01G6nvwwlALr"]]},
+				"SamplesAmounts" -> {OrderlessPatternSequence[Quantity[2.`,"Liters"],Quantity[4.`,"Liters"],Quantity[5.`,"Liters"],Quantity[4.`,"Liters"],Quantity[1.5`,"Liters"]]},
+				"UserOwned" -> {OrderlessPatternSequence[False, False, False, True, True]},
+				"RequestedModel" -> Model[Sample, StockSolution, "Fake 70% Ethanol model for resource consolidation testing"]
+			],
+			Stubs:>{
+				$DeveloperSearch=True,
+				$Site=Null
+			}
+		],
+		Module[{assoc},
+			Test["A sample that is InUse by the given protocol can be included in the consolidation:",
+				assoc=ConsolidationInstances[
+					Model[Sample,"Fake Acetonitrile HPLC grade model for resource consolidation testing"],
+					6.9*Liter,
+					{Object[LaboratoryNotebook,"id:eGakldJJ8E7q"]},
+					Object[Protocol,HPLC,"id:dORYzZJJpxjw"],
+					Object[Protocol,HPLC,"id:dORYzZJJpxjw"]
+				];
+				Cases[Transpose[{Lookup[assoc, "PossibleSamples"],Download[Lookup[assoc, "PossibleSamples"], Status]}], {ObjectP[],InUse}][[All, 1]][Name],
+				{"Sample with volume 8 (InUse by same protocol) for resource consolidation testing"},
+				Stubs:>{
+					$DeveloperSearch=True,
+					$Site=Null
+				}
+			]
+		],
+		Test["For a model with no available sets that could fulfill the resource when consolidated, returns an empty list:",
+			ConsolidationInstances[
+				Model[Sample,"Fake chemical model 2 with insufficient sample volumes for resource consolidation testing"],
+				4*Liter,
+				{Object[LaboratoryNotebook,"id:eGakldJJ8E7q"]},
+				Object[Protocol,HPLC,"id:dORYzZJJpxjw"],
+				Object[Protocol,HPLC,"id:dORYzZJJpxjw"]
+			],
+			{},
+			Stubs:>{
+				$DeveloperSearch=True,
+				$Site=Null
+			}
+		],
+		Test["For a Model[Item,Consumable], returns an empty list:",
+			ConsolidationInstances[
+				Model[Item,Consumable,"id:R8e1PjRDbOXn"],
+				Null,
+				{Object[LaboratoryNotebook,"id:eGakldJJ8E7q"]},
+				Object[Protocol,HPLC,"id:dORYzZJJpxjw"],
+				Object[Protocol,HPLC,"id:dORYzZJJpxjw"]
+			],
+			{},
+			Stubs:>{
+				$DeveloperSearch=True,
+				$Site=Null
+			}
+		],
+		Test["For counted items such as Model[Item,Tips], returns an empty list:",
+			ConsolidationInstances[
+				Model[Item,Tips,"id:rea9jl1or6YL"],
+				10,
+				{Object[LaboratoryNotebook,"id:eGakldJJ8E7q"]},
+				Object[Protocol,HPLC,"id:dORYzZJJpxjw"],
+				Object[Protocol,HPLC,"id:dORYzZJJpxjw"]
+			],
+			{},
+			Stubs:>{
+				$DeveloperSearch=True,
+				$Site=Null
+			}
+		],
+		Test["If there are no public or owned samples with total sufficient amount available to fulfill the resource, returns an empty list:",
+			ConsolidationInstances[
+				Model[Sample,"Fake salt chemical model for resource consolidation testing"],
+				20 Gram,
+				{Object[LaboratoryNotebook, "id:eGakldJJ8E7q"]},
+				Object[Protocol, HPLC, "id:dORYzZJJpxjw"],
+				Object[Protocol, HPLC, "id:dORYzZJJpxjw"]
+			],
+			{},
+			Stubs:>{
+				$DeveloperSearch=True,
+				$Site=Null
+			}
+		],
+		Module[{assoc},
+			Test["Samples that have AwaitingDisposal set to True are not included in the available sample set:",
+				assoc=ConsolidationInstances[
+					Model[Sample,"Fake Acetonitrile HPLC grade model for resource consolidation testing"],
+					8.5*Liter,
+					{Object[LaboratoryNotebook,"id:eGakldJJ8E7q"]},
+					Object[Protocol,HPLC,"id:dORYzZJJpxjw"],
+					Object[Protocol,HPLC,"id:dORYzZJJpxjw"]
+				];
+				Download[Lookup[assoc, "PossibleSamples"], AwaitingDisposal],
+				{Null, Null, Null, Null, Null, Null},
+				Stubs:>{
+					$DeveloperSearch=True,
+					$Site=Null
+				}
+			]
+		],
+		Test["Takes in a list of requested models and amounts now:",
+			ConsolidationInstances[
+				{Model[Sample, "Fake Acetonitrile HPLC grade model for resource consolidation testing"], Model[Sample,"Fake salt chemical model for resource consolidation testing"], Model[Item,Tips,"id:rea9jl1or6YL"]},
+				{8.5 * Liter, 20 Gram, 10},
+				{Object[LaboratoryNotebook,"id:eGakldJJ8E7q"]},
+				Object[Protocol,HPLC,"id:dORYzZJJpxjw"],
+				Object[Protocol,HPLC,"id:dORYzZJJpxjw"]
+			],
+			{_Association, {}, {}},
+			Stubs:>{
+				$DeveloperSearch=True,
+				$Site=Null
+			}
+		]
+	}
+];
+
+
+

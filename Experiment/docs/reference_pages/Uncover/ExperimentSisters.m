@@ -43,7 +43,7 @@ DefineUsage[ValidExperimentUncoverQ,
 			"ExperimentManualSamplePreparation"
 		},
 		Tutorials -> {},
-		Author -> {"waseem.vali", "malav.desai"}
+		Author -> {"malav.desai"}
 	}
 ];
 
@@ -84,6 +84,6 @@ DefineUsage[ExperimentUncoverOptions,
 			"ExperimentManualSamplePreparation"
 		},
 		Tutorials -> {},
-		Author -> {"waseem.vali", "malav.desai"}
+		Author -> {"malav.desai"}
 	}
 ];

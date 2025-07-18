@@ -32,16 +32,6 @@ DefineObjectType[Model[Part, Camera], {
 			Description -> "Maximum height (z-dimensions) of the imaged item this model camera can take images.",
 			Category ->"Part Specifications"
 		},
-		Dimensions -> {
-			Format -> Single,
-			Class -> {Real, Real, Real},
-			Pattern :> {GreaterEqualP[0*Meter],GreaterEqualP[0*Meter],GreaterEqualP[0*Meter]},
-			Units ->{Meter,Meter,Meter},
-			Description -> "The external dimensions of this model of camera.",
-			Category -> "Physical Properties",
-			Headers -> {"X Dimension (Width)","Y Dimension (Depth)","Z Dimension (Height)"}
-		},
-		
 		ImageScale -> {
 			Format -> Single,
 			Class -> Real,

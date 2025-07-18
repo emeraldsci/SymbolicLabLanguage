@@ -1011,7 +1011,7 @@ PlotFitOptions[xyIn:analyzeFitDataP,f:FunctionP,ops:OptionsPattern[]]:=Module[
 
 	listedOptions = ToList[ops];
 
-	(* remove the Output and OutputFormat option before passing to the core function because it doens't make sense here *)
+	(* remove the Output and OutputFormat option before passing to the core function because it doesn't make sense here *)
 	noOutputOptions = DeleteCases[listedOptions, Alternatives[Output -> _, OutputFormat->_]];
 
 	options = PlotFit[xyIn,f,Append[noOutputOptions,Output->Options]]/.RuleDelayed->Rule;
@@ -1029,7 +1029,7 @@ PlotFitOptions[in:ObjectP[Object[Analysis,Fit]],ops:OptionsPattern[]]:=Module[
 
 	listedOptions = ToList[ops];
 
-	(* remove the Output and OutputFormat option before passing to the core function because it doens't make sense here *)
+	(* remove the Output and OutputFormat option before passing to the core function because it doesn't make sense here *)
 	noOutputOptions = DeleteCases[listedOptions, Alternatives[Output -> _, OutputFormat->_]];
 
 	options = PlotFit[in,Sequence@@Append[noOutputOptions,Output->Options]]/.RuleDelayed->Rule;

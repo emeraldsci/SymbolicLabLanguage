@@ -27,6 +27,11 @@ DefineTests[PlotDissolvedOxygen,
       _?ValidGraphicsQ
     ],
     Example[
+      {Basic,"Plots DissolvedOxygen data when given a DissolvedOxygen protocol object:"},
+      PlotDissolvedOxygen[Object[Data, DissolvedOxygen, "id:7X104vn3knjk"][Protocol]],
+      _?ValidGraphicsQ
+    ],
+    Example[
       {Options,TargetUnits,"Specify units for the XY axes:"},
       PlotDissolvedOxygen[Object[Data, DissolvedOxygen, "id:7X104vn3knjk"], TargetUnits -> Automatic],
       _?ValidGraphicsQ

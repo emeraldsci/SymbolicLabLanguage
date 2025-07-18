@@ -76,10 +76,7 @@ DefineUsage[EmeraldListPlot3D,
 		"EmeraldListPointPlot3D",
 		"PlotObject"
 	},
-	Author -> {
-		"amir.saadat",
-		"brad"
-	},
+	Author -> {"dirk.schild", "amir.saadat", "brad"},
 	Sync -> Automatic,
 	Preview->True
 }];

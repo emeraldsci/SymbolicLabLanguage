@@ -481,7 +481,6 @@ ResolveDilutionSharedOptions[mySamples:ListableP[ObjectP[Object[Sample]]], myOpt
     multipleTargetAnalyteConcentrationUnitsErrors,
     conflictingTargetAnalyteConcentrationUnitsErrors,
     targetAnalyteTests,
-    invalidMixOptionBool,
 
     (* Resolved mapthread options *)
     resolvedDilutionTypes,
@@ -556,7 +555,7 @@ ResolveDilutionSharedOptions[mySamples:ListableP[ObjectP[Object[Sample]]], myOpt
   ];
 
   (*change all Names to objects *)
-  {listedSamples, safeOps, listedOptions} = sanitizeInputs[ToList[listedSamplesNamed], safeOpsNamed, listedOptionsNamed];
+  {listedSamples, safeOps, listedOptions} = sanitizeInputs[ToList[listedSamplesNamed], safeOpsNamed, listedOptionsNamed, Simulation -> Lookup[safeOpsNamed, Simulation]];
 
   (* Fetch our cache from the parent function. *)
   cache = Lookup[safeOps, Cache, {}];
@@ -1094,7 +1093,7 @@ ResolveDilutionSharedOptions[mySamples:ListableP[ObjectP[Object[Sample]]], myOpt
 
       (* Extract the initial concentration of the TargetAnalyte from the composition *)
       targetAnalyteInitialConcentration = If[!NullQ[resolvedTargetAnalyte],
-        FirstCase[fastAssocLookup[fastAssoc,mySample,Composition], {conc : ConcentrationP | CellConcentrationP | CFUConcentrationP | OD600P, ObjectP[resolvedTargetAnalyte]} :> conc, Null],
+        FirstCase[fastAssocLookup[fastAssoc,mySample,Composition], {conc : ConcentrationP | CellConcentrationP | CFUConcentrationP | OD600P, ObjectP[resolvedTargetAnalyte], _} :> conc, Null],
         Null
       ];
 
@@ -2610,9 +2609,6 @@ ResolveDilutionSharedOptions[mySamples:ListableP[ObjectP[Object[Sample]]], myOpt
       }
     ];
 
-    (* Initialize the InvalidMixOption bool *)
-    invalidMixOptionBool = False;
-
     (* Create unique labels for each sample we are mixing *)
     dilutionLabels = (If[#,CreateUniqueLabel["dilution index"]])&/@resolvedIncubates;
     dilutionLabelsNoNull = dilutionLabels/.Null->Nothing;
@@ -2655,6 +2651,7 @@ ResolveDilutionSharedOptions[mySamples:ListableP[ObjectP[Object[Sample]]], myOpt
     (* Call Mix!! - if we have samples to mix *)
     If[MatchQ[Length[samplesForMix],0],
       (* No samples to Mix  - everything resolves to Null *)
+      invalidMixOptions = {};
       Append[
         ConstantArray[
           ConstantArray[Null,Length[listedSamples]],
@@ -2671,7 +2668,7 @@ ResolveDilutionSharedOptions[mySamples:ListableP[ObjectP[Object[Sample]]], myOpt
             Module[{invalidOptionsBool,resolvedOptions},
 
               (* Run the analysis function to get the resolved options *)
-              {resolvedOptions,invalidOptionsBool} = ModifyFunctionMessages[
+              {resolvedOptions,invalidOptionsBool,invalidMixOptions} = ModifyFunctionMessages[
                 ExperimentMix,
                 {samplesForMix},
                 "",
@@ -2679,12 +2676,7 @@ ResolveDilutionSharedOptions[mySamples:ListableP[ObjectP[Object[Sample]]], myOpt
                 {Sequence@@optionsForMix, OptionsResolverOnly -> True, Output -> Options},
                 Simulation -> currentSimulation,
                 Cache -> combinedCache,
-                Output -> {Result,Boolean}
-              ];
-
-              (* Set the invalid analysis option boolean if appropriate *)
-              If[invalidOptionsBool,
-                invalidMixOptionBool = True
+                Output -> {Result,Boolean,InvalidOptions}
               ];
 
               (* Return the options *)
@@ -3230,10 +3222,7 @@ ResolveDilutionSharedOptions[mySamples:ListableP[ObjectP[Object[Sample]]], myOpt
       {TransferVolume,DiluentVolume,ConcentratedBufferVolume,ConcentratedBufferDiluentVolume},
       {}
     ],
-    If[invalidMixOptionBool,
-      {Incubation},
-      {}
-    ]
+    invalidMixOptions
   }]];
 
   (* Gather the invalid inputs *)

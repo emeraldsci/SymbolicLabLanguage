@@ -13,15 +13,24 @@
 DefineTests[ExperimentDynamicLightScatteringPreview,
   {
     Example[{Basic,"No preview is currently available for ExperimentDynamicLightScattering:"},
-      ExperimentDynamicLightScatteringPreview[Object[Sample,"Fake test 10 mg/mL 40 kDa protein sample for ExperimentDynamicLightScatteringPreview tests" <> $SessionUUID]],
+      ExperimentDynamicLightScatteringPreview[
+        Object[Sample,"Fake test 10 mg/mL 40 kDa protein sample for ExperimentDynamicLightScatteringPreview tests" <> $SessionUUID],
+        Buffer -> Model[Sample, "id:8qZ1VWNmdLBD"]
+      ],
       Null
     ],
     Example[{Additional,"If you wish to understand how the experiment will be performed, try using ExperimentDynamicLightScatteringOptions:"},
-      ExperimentDynamicLightScatteringOptions[Object[Sample,"Fake test 10 mg/mL 40 kDa protein sample for ExperimentDynamicLightScatteringPreview tests" <> $SessionUUID]],
+      ExperimentDynamicLightScatteringOptions[
+        Object[Sample,"Fake test 10 mg/mL 40 kDa protein sample for ExperimentDynamicLightScatteringPreview tests" <> $SessionUUID],
+        Buffer -> Model[Sample, "id:8qZ1VWNmdLBD"]
+      ],
       _Grid
     ],
     Example[{Additional,"The inputs and options can also be checked to verify that the experiment can be safely run using ValidExperimentDynamicLightScatteringQ:"},
-      ValidExperimentDynamicLightScatteringQ[Object[Sample,"Fake test 10 mg/mL 40 kDa protein sample for ExperimentDynamicLightScatteringPreview tests" <> $SessionUUID]],
+      ValidExperimentDynamicLightScatteringQ[
+        Object[Sample,"Fake test 10 mg/mL 40 kDa protein sample for ExperimentDynamicLightScatteringPreview tests" <> $SessionUUID],
+        Buffer -> Model[Sample, "id:8qZ1VWNmdLBD"]
+      ],
       True
     ]
   },
@@ -170,11 +179,17 @@ DefineTests[ExperimentDynamicLightScatteringPreview,
 DefineTests[ExperimentDynamicLightScatteringOptions,
   {
     Example[{Basic,"Display the option values which will be used in the experiment:"},
-      ExperimentDynamicLightScatteringOptions[Object[Sample,"Fake test 10 mg/mL 40 kDa protein sample for ExperimentDynamicLightScatteringOptions tests" <> $SessionUUID]],
+      ExperimentDynamicLightScatteringOptions[
+        Object[Sample,"Fake test 10 mg/mL 40 kDa protein sample for ExperimentDynamicLightScatteringOptions tests" <> $SessionUUID],
+        Buffer -> Model[Sample, "id:8qZ1VWNmdLBD"]
+      ],
       _Grid
     ],
     Example[{Basic,"View any potential issues with provided inputs/options displayed:"},
-      ExperimentDynamicLightScatteringOptions[Object[Sample,"Fake discarded 10 mg/mL 40 kDa protein sample for ExperimentDynamicLightScatteringOptions tests" <> $SessionUUID]],
+      ExperimentDynamicLightScatteringOptions[
+        Object[Sample,"Fake discarded 10 mg/mL 40 kDa protein sample for ExperimentDynamicLightScatteringOptions tests" <> $SessionUUID],
+        Buffer -> Model[Sample, "id:8qZ1VWNmdLBD"]
+      ],
       _Grid,
       Messages:>{
         Error::DiscardedSamples,
@@ -182,7 +197,11 @@ DefineTests[ExperimentDynamicLightScatteringOptions,
       }
     ],
     Example[{Options,OutputFormat,"If OutputFormat -> List, return a list of options:"},
-      ExperimentDynamicLightScatteringOptions[Object[Sample,"Fake test 10 mg/mL 40 kDa protein sample for ExperimentDynamicLightScatteringOptions tests" <> $SessionUUID],OutputFormat->List],
+      ExperimentDynamicLightScatteringOptions[
+        Object[Sample,"Fake test 10 mg/mL 40 kDa protein sample for ExperimentDynamicLightScatteringOptions tests" <> $SessionUUID],
+        Buffer -> Model[Sample, "id:8qZ1VWNmdLBD"],
+        OutputFormat->List
+      ],
       {(_Rule|_RuleDelayed)..}
     ]
   },
@@ -347,19 +366,33 @@ DefineTests[ExperimentDynamicLightScatteringOptions,
 DefineTests[ValidExperimentDynamicLightScatteringQ,
   {
     Example[{Basic,"Verify that the experiment can be run without issues:"},
-      ValidExperimentDynamicLightScatteringQ[Object[Sample,"Fake test 10 mg/mL 40 kDa protein sample for ValidExperimentDynamicLightScatteringQ tests" <> $SessionUUID]],
+      ValidExperimentDynamicLightScatteringQ[
+        Object[Sample,"Fake test 10 mg/mL 40 kDa protein sample for ValidExperimentDynamicLightScatteringQ tests" <> $SessionUUID],
+        Buffer -> Model[Sample, "id:8qZ1VWNmdLBD"]
+      ],
       True
     ],
     Example[{Basic,"Return False if there are problems with the inputs or options:"},
-      ValidExperimentDynamicLightScatteringQ[Object[Sample,"Fake discarded 10 mg/mL 40 kDa protein sample for ValidExperimentDynamicLightScatteringQ tests" <> $SessionUUID]],
+      ValidExperimentDynamicLightScatteringQ[
+        Object[Sample,"Fake discarded 10 mg/mL 40 kDa protein sample for ValidExperimentDynamicLightScatteringQ tests" <> $SessionUUID],
+        Buffer -> Model[Sample, "id:8qZ1VWNmdLBD"]
+      ],
       False
     ],
     Example[{Options,OutputFormat,"Return a test summary:"},
-      ValidExperimentDynamicLightScatteringQ[Object[Sample,"Fake test 10 mg/mL 40 kDa protein sample for ValidExperimentDynamicLightScatteringQ tests" <> $SessionUUID],OutputFormat->TestSummary],
+      ValidExperimentDynamicLightScatteringQ[
+        Object[Sample,"Fake test 10 mg/mL 40 kDa protein sample for ValidExperimentDynamicLightScatteringQ tests" <> $SessionUUID],
+        Buffer -> Model[Sample, "id:8qZ1VWNmdLBD"],
+        OutputFormat->TestSummary
+      ],
       _EmeraldTestSummary
     ],
     Example[{Options,Verbose,"Print verbose messages reporting test passage/failure:"},
-      ValidExperimentDynamicLightScatteringQ[Object[Sample,"Fake test 10 mg/mL 40 kDa protein sample for ValidExperimentDynamicLightScatteringQ tests" <> $SessionUUID],Verbose->True],
+      ValidExperimentDynamicLightScatteringQ[
+        Object[Sample,"Fake test 10 mg/mL 40 kDa protein sample for ValidExperimentDynamicLightScatteringQ tests" <> $SessionUUID],
+        Buffer -> Model[Sample, "id:8qZ1VWNmdLBD"],
+        Verbose->True
+      ],
       True
     ]
   },

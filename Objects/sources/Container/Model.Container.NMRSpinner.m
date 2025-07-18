@@ -14,10 +14,10 @@ DefineObjectType[Model[Container, NMRSpinner], {
 			Category -> "Dimensions & Positions"
 		},
 		(* Note: the following field only exists because these become the contents of NMR tubes for the sake of barcode scanning *)
-		TransportWarmed -> {
+		TransportTemperature -> {
 			Format -> Single,
 			Class -> Real,
-			Pattern :> GreaterP[0*Kelvin],
+			Pattern :> GreaterP[0 * Kelvin],
 			Units -> Celsius,
 			Description -> "The temperature that containers of this model should be incubated at while transported between instruments during experimentation.",
 			Category -> "Storage Information"

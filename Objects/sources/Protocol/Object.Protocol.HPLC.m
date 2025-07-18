@@ -624,6 +624,32 @@ DefineObjectType[Object[Protocol, HPLC], {
 			Developer -> True,
 			Headers -> {"Column Tightening Wrench 1","Column Tightening Wrench 2"}
 		},
+		ColumnAssemblyWrenches -> {
+			Format -> Multiple,
+			Class -> {Link, Link},
+			Pattern :> {_Link, _Link},
+			Relation -> {
+				Alternatives[Model[Item, Wrench], Object[Item, Wrench]],
+				Alternatives[Model[Item, Wrench], Object[Item, Wrench]]
+			},
+			Description -> "For each member of ColumnAssemblyConnections, a wrench to connect a column, join, or fitting in series with another column component.  A wrench in the first index should be compatible with the object in the first index of the ColumnAssemblyConnections field. A wrench in the second index should be compatible with the object in the third index of the ColumnAssemblyConnections field. Null indicates that fingers should be used.",
+			Category->"Column Installation",
+			Developer -> True,
+			Headers -> {"Connector 1 Wrench", "Connector 2 Wrench"}
+		},
+		ColumnConnectionWrenches -> {
+			Format -> Multiple,
+			Class -> {Link, Link},
+			Pattern :> {_Link, _Link},
+			Relation -> {
+				Alternatives[Model[Item, Wrench], Object[Item, Wrench]],
+				Alternatives[Model[Item, Wrench], Object[Item, Wrench]]
+			},
+			Description -> "For each member of ColumnConnections, a wrench to connect a column, join, or fitting in series with the instrument. A wrench in the first index should be compatible with the object in the first index of the ColumnConnections field. A wrench in the second index should be compatible with the object in the third index of the ColumnConnections field. Null indicates that fingers should be used.",
+			Category->"Column Installation",
+			Developer -> True,
+			Headers -> {"Connector 1 Wrench", "Connector 2 Wrench"}
+		},
 		LeakTestFilePath->{
 			Format -> Single,
 			Class -> String,
@@ -696,7 +722,7 @@ DefineObjectType[Object[Protocol, HPLC], {
 			Class -> Link,
 			Pattern :> _Link,
 			Relation -> Alternatives[Object[Item,Cap],Model[Item,Cap]],
-			Description -> "The special caps that have a ultrasonic sensor Assembly to detect level of the solvent A before and after the protocol is run. These are quick connect caps with fixed lenght rigid tubing to maintain a contant dead volume.",
+			Description -> "The special caps that have a ultrasonic sensor Assembly to detect level of the solvent A before and after the protocol is run. These are quick connect caps with fixed length rigid tubing to maintain a contant dead volume.",
 			Category -> "Prime System"
 		},
 		BufferBCap -> {
@@ -704,7 +730,7 @@ DefineObjectType[Object[Protocol, HPLC], {
 			Class -> Link,
 			Pattern :> _Link,
 			Relation -> Alternatives[Object[Item,Cap],Model[Item,Cap]],
-			Description -> "The special caps that have a ultrasonic sensor Assembly to detect level of the solvent B before and after the protocol is run. These are quick connect caps with fixed lenght rigid tubing to maintain a contant dead volume.",
+			Description -> "The special caps that have a ultrasonic sensor Assembly to detect level of the solvent B before and after the protocol is run. These are quick connect caps with fixed length rigid tubing to maintain a contant dead volume.",
 			Category -> "Prime System"
 		},
 		BufferCCap -> {
@@ -712,7 +738,7 @@ DefineObjectType[Object[Protocol, HPLC], {
 			Class -> Link,
 			Pattern :> _Link,
 			Relation -> Alternatives[Object[Item,Cap],Model[Item,Cap]],
-			Description -> "The special caps that have a ultrasonic sensor Assembly to detect level of the solvent C before and after the protocol is run. These are quick connect caps with fixed lenght rigid tubing to maintain a contant dead volume.",
+			Description -> "The special caps that have a ultrasonic sensor Assembly to detect level of the solvent C before and after the protocol is run. These are quick connect caps with fixed length rigid tubing to maintain a contant dead volume.",
 			Category -> "Prime System"
 		},
 		BufferDCap -> {
@@ -720,7 +746,7 @@ DefineObjectType[Object[Protocol, HPLC], {
 			Class -> Link,
 			Pattern :> _Link,
 			Relation -> Alternatives[Object[Item,Cap],Model[Item,Cap]],
-			Description -> "The special caps that have a ultrasonic sensor Assembly to detect level of the solvent D before and after the protocol is run. These are quick connect caps with fixed lenght rigid tubing to maintain a contant dead volume.",
+			Description -> "The special caps that have a ultrasonic sensor Assembly to detect level of the solvent D before and after the protocol is run. These are quick connect caps with fixed length rigid tubing to maintain a contant dead volume.",
 			Category -> "Prime System"
 		},
 		BufferContainerPlacements -> {
@@ -910,7 +936,6 @@ DefineObjectType[Object[Protocol, HPLC], {
 		},
 		DetectionMethodWorklistLength->{
 			Format -> Single,
-			Format -> Single,
 			Class -> Integer,
 			Pattern :> GreaterEqualP[0],
 			Description -> "The number of samples in DetectionMethodWorklist.",
@@ -942,8 +967,7 @@ DefineObjectType[Object[Protocol, HPLC], {
 			Pattern :> _Link,
 			Relation -> Object[Method],
 			Description -> "For each member of ColumnSelectorAssembly, the composition of the buffers within the flow, defined for specific time points during the equilibration of the Columns (column prime).",
-			Category -> "Column Prime",
-			IndexMatching -> ColumnSelectorAssembly
+			Category -> "Column Prime"
 		},
 		ColumnPrimeTemperatures -> {
 			Format -> Multiple,
@@ -951,7 +975,6 @@ DefineObjectType[Object[Protocol, HPLC], {
 			Pattern :> GreaterEqualP[0*Kelvin],
 			Units -> Celsius,
 			Description -> "For each member of ColumnSelectorAssembly, the nominal temperature of the column compartment for each column prime run.",
-			IndexMatching -> ColumnSelectorAssembly,
 			Category -> "Column Prime"
 		},
 		ColumnPrimeGradientAs -> {
@@ -959,8 +982,7 @@ DefineObjectType[Object[Protocol, HPLC], {
 			Class -> Expression, 
 			Pattern :> ({{GreaterEqualP[0 Minute],RangeP[0 Percent,100 Percent]}...}),
 			Description -> "For each member of ColumnSelectorAssembly, the percentage of BufferA in the composition over time, in the form: {Time, % Buffer A} or a single % Buffer A for the entire run during the equilibration of the Columns (column prime).",
-			Category -> "Column Prime",
-			IndexMatching -> ColumnSelectorAssembly
+			Category -> "Column Prime"
 		},
 		ColumnPrimeIsocraticGradientAs -> {
 			Format -> Multiple,
@@ -968,7 +990,6 @@ DefineObjectType[Object[Protocol, HPLC], {
 			Pattern :> RangeP[0 Percent,100 Percent],
 			Units -> Percent,
 			Description -> "For each member of ColumnSelectorAssembly, the constant percentage of BufferA in the mobile phase composition over time during the equilibration of the Columns (column prime).",
-			IndexMatching -> ColumnSelectorAssembly,
 			Category -> "Column Prime"
 		},
 		ColumnPrimeGradientBs -> {
@@ -976,8 +997,7 @@ DefineObjectType[Object[Protocol, HPLC], {
 			Class -> Expression,
 			Pattern :> ({{GreaterEqualP[0 Minute],RangeP[0 Percent,100 Percent]}...}),
 			Description -> "For each member of ColumnSelectorAssembly, the percentage of BufferB in the composition over time, in the form: {Time, % Buffer B} or a single % Buffer B for the entire run during the equilibration of the Columns (column prime).",
-			Category -> "Column Prime",
-			IndexMatching -> ColumnSelectorAssembly
+			Category -> "Column Prime"
 		},
 		ColumnPrimeIsocraticGradientBs -> {
 			Format -> Multiple,
@@ -985,7 +1005,6 @@ DefineObjectType[Object[Protocol, HPLC], {
 			Pattern :> RangeP[0 Percent,100 Percent],
 			Units -> Percent,
 			Description -> "For each member of ColumnSelectorAssembly, the constant percentage of BufferB in the mobile phase composition over time during the equilibration of the Columns (column prime).",
-			IndexMatching -> ColumnSelectorAssembly,
 			Category -> "Column Prime"
 		},
 		ColumnPrimeGradientCs -> {
@@ -993,8 +1012,7 @@ DefineObjectType[Object[Protocol, HPLC], {
 			Class -> Expression,
 			Pattern :> ({{GreaterEqualP[0 Minute],RangeP[0 Percent,100 Percent]}...}),
 			Description -> "For each member of ColumnSelectorAssembly, the percentage of BufferC in the composition over time, in the form: {Time, % Buffer C} or a single % Buffer C for the entire run during the equilibration of the Columns (column prime).",
-			Category -> "Column Prime",
-			IndexMatching -> ColumnSelectorAssembly
+			Category -> "Column Prime"
 		},
 		ColumnPrimeIsocraticGradientCs -> {
 			Format -> Multiple,
@@ -1002,7 +1020,6 @@ DefineObjectType[Object[Protocol, HPLC], {
 			Pattern :> RangeP[0 Percent,100 Percent],
 			Units -> Percent,
 			Description -> "For each member of ColumnSelectorAssembly, the constant percentage of BufferC in the mobile phase composition over time during the equilibration of the Columns (column prime).",
-			IndexMatching -> ColumnSelectorAssembly,
 			Category -> "Column Prime"
 		},
 		ColumnPrimeGradientDs -> {
@@ -1010,8 +1027,7 @@ DefineObjectType[Object[Protocol, HPLC], {
 			Class -> Expression,
 			Pattern :> ({{GreaterEqualP[0 Minute],RangeP[0 Percent,100 Percent]}...}),
 			Description -> "For each member of ColumnSelectorAssembly, the percentage of BufferD in the composition over time, in the form: {Time, % Buffer D} or a single % Buffer D for the entire run during the equilibration of the Columns (column prime).",
-			Category -> "Column Prime",
-			IndexMatching -> ColumnSelectorAssembly
+			Category -> "Column Prime"
 		},
 		ColumnPrimeIsocraticGradientDs -> {
 			Format -> Multiple,
@@ -1019,7 +1035,6 @@ DefineObjectType[Object[Protocol, HPLC], {
 			Pattern :> RangeP[0 Percent,100 Percent],
 			Units -> Percent,
 			Description -> "For each member of ColumnSelectorAssembly, the constant percentage of BufferD in the mobile phase composition over time during the equilibration of the Columns (column prime).",
-			IndexMatching -> ColumnSelectorAssembly,
 			Category -> "Column Prime"
 		},
 		ColumnPrimeFlowRateVariable -> {
@@ -1027,7 +1042,6 @@ DefineObjectType[Object[Protocol, HPLC], {
 			Class -> Expression,
 			Pattern :> ListableP[{GreaterEqualP[0*Minute],GreaterEqualP[0*Milliliter/Minute]}],
 			Description -> "For each member of ColumnSelectorAssembly, the total rate of mobile phase pumped through the instrument for each column prime. Compositions of Buffers in the flow adds up to 100%.",
-			IndexMatching -> ColumnSelectorAssembly,
 			Category -> "Column Prime"
 		},
 		ColumnPrimeFlowRateConstant ->{
@@ -1035,7 +1049,6 @@ DefineObjectType[Object[Protocol, HPLC], {
 			Class -> Real,
 			Pattern :> GreaterEqualP[(0 * Milli * Liter) / Minute],
 			Description -> "For each member of ColumnSelectorAssembly, the constant rate of mobile phase pumped through the instrument for each column prime. Compositions of Buffers in the flow adds up to 100%.",
-			IndexMatching -> ColumnSelectorAssembly,
 			Units -> (Milli * Liter) / Minute,
 			Category -> "Column Prime"
 		},
@@ -1045,8 +1058,7 @@ DefineObjectType[Object[Protocol, HPLC], {
 			Pattern :> GreaterP[0*Centimeter],
 			Units -> Nanometer,
 			Description -> "For each member of ColumnSelectorAssembly, the wavelength of light absorbed in the detector's flow cell for UVVis detectors during the equilibration of the Columns (column prime).",
-			Category -> "Column Prime",
-			IndexMatching -> ColumnSelectorAssembly
+			Category -> "Column Prime"
 		},
 		ColumnPrimeMinAbsorbanceWavelengths -> {
 			Format -> Multiple,
@@ -1054,8 +1066,7 @@ DefineObjectType[Object[Protocol, HPLC], {
 			Pattern :> GreaterP[0*Centimeter],
 			Units -> Nanometer,
 			Description -> "For each member of ColumnSelectorAssembly, the minimum wavelength of light absorbed in the detector's flow cell for the Photo Diode Array (PDA) detector during the equilibration of the Columns (column prime).",
-			Category -> "Column Prime",
-			IndexMatching -> ColumnSelectorAssembly
+			Category -> "Column Prime"
 		},
 		ColumnPrimeMaxAbsorbanceWavelengths -> {
 			Format -> Multiple,
@@ -1063,8 +1074,7 @@ DefineObjectType[Object[Protocol, HPLC], {
 			Pattern :> GreaterP[0*Centimeter],
 			Units -> Nanometer,
 			Description -> "For each member of ColumnSelectorAssembly, the maximum wavelength of light absorbed in the detector's flow cell for the Photo Diode Array (PDA) detector during the equilibration of the Columns (column prime).",
-			Category -> "Column Prime",
-			IndexMatching -> ColumnSelectorAssembly
+			Category -> "Column Prime"
 		},
 		ColumnPrimeWavelengthResolutions -> {
 			Format -> Multiple,
@@ -1072,16 +1082,14 @@ DefineObjectType[Object[Protocol, HPLC], {
 			Pattern :> GreaterP[0*Centimeter],
 			Units -> Nanometer,
 			Description -> "For each member of ColumnSelectorAssembly, the increment in wavelength of light absorbed in the detector's flow cell for a Photo Diode Array (PDA) detector during the equilibration of the Columns (column prime).",
-			Category -> "Column Prime",
-			IndexMatching -> ColumnSelectorAssembly
+			Category -> "Column Prime"
 		},
 		ColumnPrimeUVFilters -> {
 			Format->Multiple,
 			Class->Boolean,
 			Pattern:>BooleanP,
 			Description -> "For each member of ColumnSelectorAssembly, indicates if UV wavelengths (less than 210 nm) is blocked from being transmitted through the sample for Absorbance detectors (UVVis or PhotoDiodeArray) during the equilibration of the Columns (column prime).",
-			Category -> "Column Prime",
-			IndexMatching -> ColumnSelectorAssembly
+			Category -> "Column Prime"
 		},
 		ColumnPrimeAbsorbanceSamplingRates -> {
 			Format->Multiple,
@@ -1089,8 +1097,7 @@ DefineObjectType[Object[Protocol, HPLC], {
 			Pattern:>GreaterP[0*1/Second],
 			Units -> 1/Second,
 			Description -> "For each member of ColumnSelectorAssembly, the frequency of measurement for UVVis or Photo Diode Array (PDA) detectors during the equilibration of the Columns (column prime).",
-			Category -> "Column Prime",
-			IndexMatching -> ColumnSelectorAssembly
+			Category -> "Column Prime"
 		},
 		ColumnPrimeExcitationWavelengths -> {
 			Format -> Multiple,
@@ -1098,7 +1105,7 @@ DefineObjectType[Object[Protocol, HPLC], {
 			Pattern :> GreaterP[0 * Nanometer],
 			Units -> Nanometer,
 			Description -> "For each member of ColumnSelectorAssembly, the 1st of upto 4 monochromator/filter wavelengths used to filter the lamp light before it is passed into the fluorescence flow cell to excite fluorescent compounds during column prime.",
-			IndexMatching->ColumnSelectorAssembly,
+			
 			Category -> "Column Prime"
 		},
 		ColumnPrimeSecondaryExcitationWavelengths -> { 
@@ -1107,7 +1114,7 @@ DefineObjectType[Object[Protocol, HPLC], {
 			Pattern :> GreaterP[0 * Nanometer],
 			Units -> Nanometer,
 			Description -> "For each member of ColumnSelectorAssembly, the 2nd or upto 4 monochromator/filter wavelengths used to filter the lamp light before it is passed into the fluorescence flow cell to excite fluorescent compounds during column prime.",
-			IndexMatching->ColumnSelectorAssembly,
+			
 			Category -> "Column Prime"
 		},
 		ColumnPrimeTertiaryExcitationWavelengths -> {
@@ -1116,7 +1123,7 @@ DefineObjectType[Object[Protocol, HPLC], {
 			Pattern :> GreaterP[0 * Nanometer],
 			Units -> Nanometer,
 			Description -> "For each member of ColumnSelectorAssembly, the 3rd of upto 4 monochromator/filter wavelengths used to filter the lamp light before it is passed into the fluorescence flow cell to excite fluorescent compounds during column prime.",
-			IndexMatching->ColumnSelectorAssembly,
+			
 			Category -> "Column Prime"
 		},
 		ColumnPrimeQuaternaryExcitationWavelengths -> {
@@ -1125,7 +1132,7 @@ DefineObjectType[Object[Protocol, HPLC], {
 			Pattern :> GreaterP[0 * Nanometer],
 			Units -> Nanometer,
 			Description -> "For each member of ColumnSelectorAssembly, the 4th of upto 4 monochromator/filter wavelengths used to filter the lamp light before it is passed into the fluorescence flow cell to excite fluorescent compounds during column prime.",
-			IndexMatching->ColumnSelectorAssembly,
+			
 			Category -> "Column Prime"
 		},
 		ColumnPrimeEmissionWavelengths -> {
@@ -1134,7 +1141,7 @@ DefineObjectType[Object[Protocol, HPLC], {
 			Pattern :> GreaterP[0 * Nanometer],
 			Units -> Nanometer,
 			Description -> "For each member of ColumnSelectorAssembly, the 1st of upto 4 monochromator/filter wavelengths used to filter emitted light in the fluorescence flow cell during column prime before it is measured in the Fluorescence detector.",
-			IndexMatching->ColumnSelectorAssembly,
+			
 			Category -> "Column Prime"
 		},
 		ColumnPrimeSecondaryEmissionWavelengths -> {
@@ -1143,7 +1150,7 @@ DefineObjectType[Object[Protocol, HPLC], {
 			Pattern :> GreaterP[0 * Nanometer],
 			Units -> Nanometer,
 			Description -> "For each member of ColumnSelectorAssembly, the 2nd of upto 4 monochromator/filter wavelengths used to filter emitted light in the fluorescence flow cell during column prime before it is measured in the Fluorescence detector.",
-			IndexMatching->ColumnSelectorAssembly,
+			
 			Category -> "Column Prime"
 		},
 		ColumnPrimeTertiaryEmissionWavelengths -> {
@@ -1152,7 +1159,7 @@ DefineObjectType[Object[Protocol, HPLC], {
 			Pattern :> GreaterP[0 * Nanometer],
 			Units -> Nanometer,
 			Description -> "For each member of ColumnSelectorAssembly, the 3rd of upto 4 monochromator/filter wavelengths used to filter emitted light in the fluorescence flow cell during column prime before it is measured in the Fluorescence detector.",
-			IndexMatching->ColumnSelectorAssembly,
+			
 			Category -> "Column Prime"
 		},
 		ColumnPrimeQuaternaryEmissionWavelengths -> {
@@ -1161,7 +1168,7 @@ DefineObjectType[Object[Protocol, HPLC], {
 			Pattern :> GreaterP[0 Nanometer],
 			Units -> Nanometer,
 			Description -> "For each member of ColumnSelectorAssembly, the 4th of upto 4 monochromator/filter wavelengths used to filter emitted light in the fluorescence flow cell during column prime before it is measured in the Fluorescence detector.",
-			IndexMatching->ColumnSelectorAssembly,
+			
 			Category -> "Column Prime"
 		},
 		ColumnPrimeEmissionCutOffFilters -> {
@@ -1170,7 +1177,7 @@ DefineObjectType[Object[Protocol, HPLC], {
 			Pattern :> GreaterP[0 Nanometer],
 			Units -> Nanometer,
 			Description ->"For each member of ColumnSelectorAssembly, the cut-off wavelength(s) to pre-select the emitted light from the flow downstream of the column and allow only the light with wavelength above the desired value to pass before the light enters emission monochromator for final wavelength selection during column prime.",
-			IndexMatching->ColumnSelectorAssembly,
+			
 			Category -> "Column Prime"
 		},
 		ColumnPrimeFluorescenceGains -> {
@@ -1179,7 +1186,7 @@ DefineObjectType[Object[Protocol, HPLC], {
 			Pattern :> GreaterP[0 Percent],
 			Units -> Percent,
 			Description -> "For each member of ColumnSelectorAssembly, the percentage of maximum amplification of ColumnPrimeExcitationWavelengths/ColumnPrimeEmissionWavelengths channel during column prime on the Fluorescence detector. The percentage value specified here is converted into a unitless factor from 0 to 1000 which the software accepts to modulate the voltage for the Photo Multiplier Tube (PMT).",
-			IndexMatching->ColumnSelectorAssembly,
+			
 			Category -> "Column Prime"
 		},
 		ColumnPrimeSecondaryFluorescenceGains -> {
@@ -1188,7 +1195,7 @@ DefineObjectType[Object[Protocol, HPLC], {
 			Pattern :> GreaterP[0 Percent],
 			Units -> Percent,
 			Description -> "For each member of ColumnSelectorAssembly, the signal amplification of ColumnPrimeSecondaryExcitationWavelengths/ColumnPrimeSecondaryEmissionWavelengths channel during column prime on the Fluorescence detector. It is a unitless factor from 0 to 1000 used by the instrument to modulate the voltage to the Photomultiplier Tube.",
-			IndexMatching->ColumnSelectorAssembly,
+			
 			Category -> "Column Prime"
 		},
 		ColumnPrimeTertiaryFluorescenceGains -> {
@@ -1197,7 +1204,7 @@ DefineObjectType[Object[Protocol, HPLC], {
 			Pattern :> GreaterP[0 Percent],
 			Units -> Percent,
 			Description -> "For each member of ColumnSelectorAssembly, the signal amplification of ColumnPrimeTertiaryExcitationWavelengths/ColumnPrimeTertiaryEmissionWavelengths channel during column prime on the Fluorescence detector. It is a unitless factor from 0 to 1000 used by the instrument to modulate the voltage to the Photomultiplier Tube.",
-			IndexMatching->ColumnSelectorAssembly,
+			
 			Category -> "Column Prime"
 		},
 		ColumnPrimeQuaternaryFluorescenceGains -> {
@@ -1206,7 +1213,7 @@ DefineObjectType[Object[Protocol, HPLC], {
 			Pattern :> GreaterP[0 Percent],
 			Units -> Percent,
 			Description -> "For each member of ColumnSelectorAssembly, the signal amplification of ColumnPrimeQuaternaryExcitationWavelengths/ColumnPrimeQuaternaryEmissionWavelengths channel during column prime on the Fluorescence detector. It is a unitless factor from 0 to 1000 used by the instrument to modulate the voltage to the Photomultiplier Tube.",
-			IndexMatching->ColumnSelectorAssembly,
+			
 			Category -> "Column Prime"
 		},
 		ColumnPrimeFluorescenceFlowCellTemperatures -> {
@@ -1215,7 +1222,7 @@ DefineObjectType[Object[Protocol, HPLC], {
 			Pattern :> GreaterEqualP[0*Kelvin],
 			Units -> Celsius,
 			Description -> "For each member of ColumnSelectorAssembly, the nominal temperature setting inside the fluorescence flow cell chamber of the fluorescence detector during column prime.",
-			IndexMatching->ColumnSelectorAssembly,
+			
 			Category -> "Column Prime"
 		},
 		ColumnPrimeLightScatteringLaserPowers -> {
@@ -1224,7 +1231,7 @@ DefineObjectType[Object[Protocol, HPLC], {
 			Pattern :> RangeP[0*Percent,100*Percent],
 			Units -> Percent,
 			Description -> "For each member of ColumnSelectorAssembly, the laser power used in the Multi-Angle static Light Scattering (MALS) and Dynamic Light Scattering (DLS) detector during column prime.",
-			IndexMatching->ColumnSelectorAssembly,
+			
 			Category -> "Column Prime"
 		},
 		ColumnPrimeLightScatteringFlowCellTemperatures -> {
@@ -1233,7 +1240,7 @@ DefineObjectType[Object[Protocol, HPLC], {
 			Pattern :> GreaterEqualP[0*Kelvin],
 			Units -> Celsius,
 			Description -> "For each member of ColumnSelectorAssembly, the nominal temperature setting inside the Multi-Angle static Light Scattering (MALS) and Dynamic Light Scattering (DLS) flow cell chamber during column prime.",
-			IndexMatching->ColumnSelectorAssembly,
+			
 			Category -> "Column Prime"
 		}, 
 		ColumnPrimeRefractiveIndexMethods -> {
@@ -1241,7 +1248,7 @@ DefineObjectType[Object[Protocol, HPLC], {
 			Class -> Expression,
 			Pattern :> Alternatives[RefractiveIndex,DifferentialRefractiveIndex],
 			Description -> "For each member of ColumnSelectorAssembly, the type of refractive index measurement for the refractive index (RI) detector during column prime. When DifferentialRefractiveIndex is selected, the refractive index difference between the flow downstream sample and the reference solvent is measured. See Figure 2.7.4 for more information.",
-			IndexMatching->ColumnSelectorAssembly,
+			
 			Category -> "Column Prime"
 		},
 		ColumnPrimeRefractiveIndexFlowCellTemperatures -> {
@@ -1250,7 +1257,7 @@ DefineObjectType[Object[Protocol, HPLC], {
 			Pattern :> GreaterEqualP[0*Kelvin],
 			Units -> Celsius,
 			Description -> "For each member of ColumnSelectorAssembly, the nominal temperature setting inside the refractive index flow cell chamber of the refractive index (RI) detector during column prime.",
-			IndexMatching->ColumnSelectorAssembly,
+			
 			Category -> "Column Prime"
 		},
 		ColumnPrimeNebulizerGases -> {
@@ -1258,8 +1265,7 @@ DefineObjectType[Object[Protocol, HPLC], {
 			Class->Boolean,
 			Pattern:>BooleanP,
 			Description -> "For each member of ColumnSelectorAssembly, indicates if sheath gas is turned on for the Evaporative Light Scattering Detector (ELSD) during the equilibration of the Columns (column prime).",
-			Category -> "Column Prime",
-			IndexMatching -> ColumnSelectorAssembly
+			Category -> "Column Prime"
 		},
 		ColumnPrimeNebulizerGasPressures -> {
 			Format->Multiple,
@@ -1267,24 +1273,21 @@ DefineObjectType[Object[Protocol, HPLC], {
 			Pattern:>GreaterP[0*PSI],
 			Units->PSI,
 			Description -> "For each member of ColumnSelectorAssembly, if NebulizerGas is True, the applied pressure to the sheath gas during the equilibration of the Columns (column prime).",
-			Category -> "Column Prime",
-			IndexMatching -> ColumnSelectorAssembly
+			Category -> "Column Prime"
 		},
 		ColumnPrimeNebulizerGasHeatings -> {
 			Format->Multiple,
 			Class->Boolean,
 			Pattern:>BooleanP,
 			Description -> "For each member of ColumnSelectorAssembly, if NebulizerGas is True, indicates if sheath gas is heated or not for the Evaporative Light Scattering Detector (ELSD) during the equilibration of the Columns (column prime).",
-			Category -> "Column Prime",
-			IndexMatching -> ColumnSelectorAssembly
+			Category -> "Column Prime"
 		},
 		ColumnPrimeNebulizerHeatingPowers -> {
 			Format->Multiple,
 			Class->Real,
 			Pattern:>RangeP[0*Percent,100*Percent],
 			Description -> "For each member of ColumnSelectorAssembly, the relative magnitude of the heating element used to heat the sheath gas during the equilibration of the Columns (column prime).",
-			Category -> "Column Prime",
-			IndexMatching -> ColumnSelectorAssembly
+			Category -> "Column Prime"
 		},
 		ColumnPrimeDriftTubeTemperatures -> {
 			Format->Multiple,
@@ -1292,8 +1295,7 @@ DefineObjectType[Object[Protocol, HPLC], {
 			Pattern:>GreaterP[0 Celsius],
 			Units -> Celsius,
 			Description -> "For each member of ColumnSelectorAssembly, the temperature of the chamber through which the sprayed analyte travels during the equilibration of the Columns (column prime).",
-			Category -> "Column Prime",
-			IndexMatching -> ColumnSelectorAssembly
+			Category -> "Column Prime"
 		},
 		ColumnPrimeELSDGains -> {
 			Format->Multiple,
@@ -1301,8 +1303,7 @@ DefineObjectType[Object[Protocol, HPLC], {
 			Pattern:>RangeP[0 Percent, 100 Percent],
 			Units -> Percent,
 			Description -> "For each member of ColumnSelectorAssembly, the percent of maximum voltage sent to the Photo Mulitplier Tube (PMT) for signal amplification for the EvaporativeLightScattering measurement. The percentage value specified here is converted into a unitless factor from 0 to 1000 which the software accepts to modulate the voltage for the PMT.",
-			Category -> "Column Prime",
-			IndexMatching -> ColumnSelectorAssembly
+			Category -> "Column Prime"
 		},
 		ColumnPrimeELSDSamplingRates -> {
 			Format->Multiple,
@@ -1310,8 +1311,7 @@ DefineObjectType[Object[Protocol, HPLC], {
 			Pattern:>GreaterP[0*1/Second],
 			Units -> 1/Second,
 			Description -> "For each member of ColumnSelectorAssembly, the number of times ELSD measurement is made per second by the detector on the instrument for the Evaporative Light Scattering Detector (ELSD) during the equilibration of the Columns (column prime).",
-			Category -> "Column Prime",
-			IndexMatching -> ColumnSelectorAssembly
+			Category -> "Column Prime"
 		},
 
 		(*--Autosampler information--*)
@@ -1321,6 +1321,15 @@ DefineObjectType[Object[Protocol, HPLC], {
 			Class -> String,
 			Pattern :> FilePathP,
 			Description -> "The location of the file used to load the system files describing the autosampler layout into the instrument software.",
+			Category -> "Instrument Setup",
+			Developer -> True
+		},
+		AutosamplerLayoutImage->{
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[EmeraldCloudFile],
+			Description -> "An image that imitates what the autosampler configuration on the instrument software to help the operators confirm the correct layout settings.",
 			Category -> "Instrument Setup",
 			Developer -> True
 		},
@@ -1366,14 +1375,14 @@ DefineObjectType[Object[Protocol, HPLC], {
 			Abstract -> True
 		},
 		PlateSeal -> {
-			Format -> Single,
+			Format -> Multiple,
 			Class -> Link,
 			Pattern :> _Link,
 			Relation -> Alternatives[
 				Object[Item],
 				Model[Item]
 			],
-			Description -> "The package of piercable, adhesive film used to cover the plates containing the samples to be injected in order to mitigate sample evaporation.",
+			Description -> "For each member of WorkingContainers, the piercable, adhesive film to cover plate(s) of injection sample(s) in this experiment in order to mitigate sample evaporation. For non-plate containers, the plate seal is Null.",
 			Category -> "Sample Preparation"
 		},
 		GradientA -> {
@@ -1785,6 +1794,7 @@ DefineObjectType[Object[Protocol, HPLC], {
 			Format->Multiple,
 			Class->Real,
 			Pattern:>RangeP[0*Percent,100*Percent],
+			Units -> Percent,
 			Description -> "For each member of SamplesIn, the relative magnitude of the heating element used to heat the sheath gas.",
 			IndexMatching -> SamplesIn,
 			Category -> "Detection"
@@ -2872,6 +2882,18 @@ DefineObjectType[Object[Protocol, HPLC], {
 			Category -> "Fraction Collection",
 			Developer -> True
 		},
+		CurrentFractionContainers -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[
+				Object[Container],
+				Model[Container]
+			],
+			Description -> "The fraction containers that are currently loaded on the instrument for collecting the fraction samples.",
+			Category -> "Fraction Collection",
+			Developer -> True
+		},
 		UnusedFractionContainers -> {
 			Format -> Multiple,
 			Class -> Link,
@@ -2890,6 +2912,13 @@ DefineObjectType[Object[Protocol, HPLC], {
 			Category -> "General",
 			Developer -> True
 		},
+		SamplesOutUltrasonicIncompatible->{
+			Format -> Single,
+			Class->Boolean,
+			Pattern:>BooleanP,
+			Description->"Indicates if the UltrasonicIncompatible field of the SamplesOut should be overwritten.",
+			Category->"Fraction Collection"
+		},
 
 		(*--- Column Flush ---*)
 		ColumnFlushGradients -> {
@@ -2898,8 +2927,7 @@ DefineObjectType[Object[Protocol, HPLC], {
 			Pattern :> _Link,
 			Relation -> Object[Method],
 			Description -> "For each member of ColumnSelectorAssembly, the method that describes the gradient used for during each column flush (when solvent is run through without injection).",
-			Category -> "Column Flush",
-			IndexMatching -> ColumnSelectorAssembly
+			Category -> "Column Flush"
 		},
 		ColumnFlushTemperatures -> {
 			Format -> Multiple,
@@ -2907,7 +2935,6 @@ DefineObjectType[Object[Protocol, HPLC], {
 			Pattern :> GreaterEqualP[0*Kelvin],
 			Units -> Celsius,
 			Description -> "For each member of ColumnSelectorAssembly, the nominal temperature of the column compartment for each column flush run.",
-			IndexMatching -> ColumnSelectorAssembly,
 			Category -> "Column Flush"
 		},
 		ColumnFlushGradientAs -> {
@@ -2915,8 +2942,7 @@ DefineObjectType[Object[Protocol, HPLC], {
 			Class -> Expression,
 			Pattern :> ({{GreaterEqualP[0 Minute],RangeP[0 Percent,100 Percent]}...}),
 			Description -> "For each member of ColumnSelectorAssembly, the percentage of BufferA in the composition over time, in the form: {Time, % Buffer A} or a single % Buffer A for each column flush run.",
-			Category -> "Column Flush",
-			IndexMatching -> ColumnSelectorAssembly
+			Category -> "Column Flush"
 		},
 		ColumnFlushIsocraticGradientAs -> {
 			Format -> Multiple,
@@ -2924,7 +2950,6 @@ DefineObjectType[Object[Protocol, HPLC], {
 			Pattern :> RangeP[0 Percent,100 Percent],
 			Units -> Percent,
 			Description -> "For each member of ColumnSelectorAssembly, the constant percentage of BufferA in the mobile phase composition over time during the column flush step.",
-			IndexMatching -> ColumnSelectorAssembly,
 			Category -> "Column Flush"
 		},
 		ColumnFlushGradientBs -> {
@@ -2932,8 +2957,7 @@ DefineObjectType[Object[Protocol, HPLC], {
 			Class -> Expression,
 			Pattern :> ({{GreaterEqualP[0 Minute],RangeP[0 Percent,100 Percent]}...}),
 			Description -> "For each member of ColumnSelectorAssembly, the percentage of BufferB in the composition over time, in the form: {Time, % Buffer B} or a single % Buffer B for each column flush run.",
-			Category -> "Column Flush",
-			IndexMatching -> ColumnSelectorAssembly
+			Category -> "Column Flush"
 		},
 		ColumnFlushIsocraticGradientBs -> {
 			Format -> Multiple,
@@ -2941,7 +2965,6 @@ DefineObjectType[Object[Protocol, HPLC], {
 			Pattern :> RangeP[0 Percent,100 Percent],
 			Units -> Percent,
 			Description -> "For each member of ColumnSelectorAssembly, the constant percentage of BufferB in the mobile phase composition over time during the column flush step.",
-			IndexMatching -> ColumnSelectorAssembly,
 			Category -> "Column Flush"
 		},
 		ColumnFlushGradientCs -> {
@@ -2949,8 +2972,7 @@ DefineObjectType[Object[Protocol, HPLC], {
 			Class -> Expression,
 			Pattern :> ({{GreaterEqualP[0 Minute],RangeP[0 Percent,100 Percent]}...}),
 			Description -> "For each member of ColumnSelectorAssembly, the percentage of BufferC in the composition over time, in the form: {Time, % Buffer C} or a single % Buffer C for each column flush run.",
-			Category -> "Column Flush",
-			IndexMatching -> ColumnSelectorAssembly
+			Category -> "Column Flush"
 		},
 		ColumnFlushIsocraticGradientCs -> {
 			Format -> Multiple,
@@ -2958,7 +2980,6 @@ DefineObjectType[Object[Protocol, HPLC], {
 			Pattern :> RangeP[0 Percent,100 Percent],
 			Units -> Percent,
 			Description -> "For each member of ColumnSelectorAssembly, the constant percentage of BufferC in the mobile phase composition over time during the column flush step.",
-			IndexMatching -> ColumnSelectorAssembly,
 			Category -> "Column Flush"
 		},
 		ColumnFlushGradientDs -> {
@@ -2966,8 +2987,7 @@ DefineObjectType[Object[Protocol, HPLC], {
 			Class -> Expression,
 			Pattern :> ({{GreaterEqualP[0 Minute],RangeP[0 Percent,100 Percent]}...}),
 			Description -> "For each member of ColumnSelectorAssembly, the percentage of BufferD in the composition over time, in the form: {Time, % Buffer D} or a single % Buffer D for each column flush run.",
-			Category -> "Column Flush",
-			IndexMatching -> ColumnSelectorAssembly
+			Category -> "Column Flush"
 		},
 		ColumnFlushIsocraticGradientDs -> {
 			Format -> Multiple,
@@ -2975,7 +2995,6 @@ DefineObjectType[Object[Protocol, HPLC], {
 			Pattern :> RangeP[0 Percent,100 Percent],
 			Units -> Percent,
 			Description -> "For each member of ColumnSelectorAssembly, the constant percentage of BufferD in the mobile phase composition over time during the column flush step.",
-			IndexMatching -> ColumnSelectorAssembly,
 			Category -> "Column Flush"
 		},
 		ColumnFlushFlowRateVariable -> {
@@ -2983,7 +3002,6 @@ DefineObjectType[Object[Protocol, HPLC], {
 			Class -> Expression,
 			Pattern :> ListableP[{GreaterEqualP[0*Minute],GreaterEqualP[0*Milliliter/Minute]}],
 			Description -> "For each member of ColumnSelectorAssembly, the time dependent rate of mobile phase pumped through the instrument for each column flush. Compositions of Buffers in the flow adds up to 100%.",
-			IndexMatching -> ColumnSelectorAssembly,
 			Category -> "Column Flush"
 		},
 		ColumnFlushFlowRateConstant -> {
@@ -2992,7 +3010,6 @@ DefineObjectType[Object[Protocol, HPLC], {
 			Units -> (Milli * Liter)/ Minute,
 			Pattern :> GreaterEqualP[(0 * Milli * Liter) / Minute],
 			Description -> "For each member of ColumnSelectorAssembly, the constant rate of mobile phase pumped through the instrument for each column flush. Compositions of Buffers in the flow adds up to 100%.",
-			IndexMatching -> ColumnSelectorAssembly,
 			Category -> "Column Flush"
 		},
 		ColumnFlushAbsorbanceWavelengths -> {
@@ -3001,8 +3018,7 @@ DefineObjectType[Object[Protocol, HPLC], {
 			Pattern :> GreaterP[0*Centimeter],
 			Units -> Nanometer,
 			Description -> "For each member of ColumnSelectorAssembly, the wavelength of light absorbed in the detector's flow cell for UVVis detectors during the column flush.",
-			Category -> "Column Flush",
-			IndexMatching -> ColumnSelectorAssembly
+			Category -> "Column Flush"
 		},
 		ColumnFlushMinAbsorbanceWavelengths -> {
 			Format -> Multiple,
@@ -3010,8 +3026,7 @@ DefineObjectType[Object[Protocol, HPLC], {
 			Pattern :> GreaterP[0*Centimeter],
 			Units -> Nanometer,
 			Description -> "For each member of ColumnSelectorAssembly, the wavelength of light absorbed in the detector's flow cell for a Photo Diode Array (PDA) detector during the column flush.",
-			Category -> "Column Flush",
-			IndexMatching -> ColumnSelectorAssembly
+			Category -> "Column Flush"
 		},
 		ColumnFlushMaxAbsorbanceWavelengths -> {
 			Format -> Multiple,
@@ -3019,8 +3034,7 @@ DefineObjectType[Object[Protocol, HPLC], {
 			Pattern :> GreaterP[0*Centimeter],
 			Units -> Nanometer,
 			Description -> "For each member of ColumnSelectorAssembly, the maximum wavelength of light absorbed in the detector's flow cell for a Photo Diode Array (PDA) detector during the column flush.",
-			Category -> "Column Flush",
-			IndexMatching -> ColumnSelectorAssembly
+			Category -> "Column Flush"
 		},
 		ColumnFlushWavelengthResolutions -> {
 			Format -> Multiple,
@@ -3028,16 +3042,14 @@ DefineObjectType[Object[Protocol, HPLC], {
 			Pattern :> GreaterP[0*Centimeter],
 			Units -> Nanometer,
 			Description -> "For each member of ColumnSelectorAssembly, the increment in wavelength of light absorbed in the detector's flow cell for a Photo Diode Array (PDA) detector during the column flush.",
-			Category -> "Column Flush",
-			IndexMatching -> ColumnSelectorAssembly
+			Category -> "Column Flush"
 		},
 		ColumnFlushUVFilters -> {
 			Format->Multiple,
 			Class->Boolean,
 			Pattern:>BooleanP,
 			Description -> "For each member of ColumnSelectorAssembly, indicates if UV wavelengths (less than 210 nm) is blocked from being transmitted through the sample for Absorbance detectors (UVVis or PhotoDiodeArray) during the column flush.",
-			Category -> "Column Flush",
-			IndexMatching -> ColumnSelectorAssembly
+			Category -> "Column Flush"
 		},
 		ColumnFlushAbsorbanceSamplingRates -> {
 			Format->Multiple,
@@ -3045,8 +3057,7 @@ DefineObjectType[Object[Protocol, HPLC], {
 			Pattern:>GreaterP[0*1/Second],
 			Units -> 1/Second,
 			Description -> "For each member of ColumnSelectorAssembly, the frequency of measurement for UVVis or Photo Diode Array (PDA) detectors during the column flush.",
-			Category -> "Column Flush",
-			IndexMatching -> ColumnSelectorAssembly
+			Category -> "Column Flush"
 		},
 		ColumnFlushExcitationWavelengths -> {
 			Format -> Multiple,
@@ -3054,7 +3065,6 @@ DefineObjectType[Object[Protocol, HPLC], {
 			Pattern :> GreaterP[0 * Nanometer],
 			Units -> Nanometer,
 			Description -> "For each member of ColumnSelectorAssembly, the primary monochromator/filter wavelength used to filter the lamp light before it is passed into the fluorescence flow cell to excite fluorescent compounds during column flush.",
-			IndexMatching->ColumnSelectorAssembly,
 			Category -> "Column Flush"
 		},
 		ColumnFlushSecondaryExcitationWavelengths -> {
@@ -3063,7 +3073,6 @@ DefineObjectType[Object[Protocol, HPLC], {
 			Pattern :> GreaterP[0 * Nanometer],
 			Units -> Nanometer,
 			Description -> "For each member of ColumnSelectorAssembly, the secondary monochromator/filter wavelength used to filter the lamp light before it is passed into the fluorescence flow cell to excite fluorescent compounds during column flush.",
-			IndexMatching->ColumnSelectorAssembly,
 			Category -> "Column Flush"
 		},
 		ColumnFlushTertiaryExcitationWavelengths -> {
@@ -3072,7 +3081,6 @@ DefineObjectType[Object[Protocol, HPLC], {
 			Pattern :> GreaterP[0 * Nanometer],
 			Units -> Nanometer,
 			Description -> "For each member of ColumnSelectorAssembly, the tertiary monochromator/filter wavelength used to filter the lamp light before it is passed into the fluorescence flow cell to excite fluorescent compounds during column flush.",
-			IndexMatching->ColumnSelectorAssembly,
 			Category -> "Column Flush"
 		},
 		ColumnFlushQuaternaryExcitationWavelengths -> {
@@ -3081,7 +3089,6 @@ DefineObjectType[Object[Protocol, HPLC], {
 			Pattern :> GreaterP[0 * Nanometer],
 			Units -> Nanometer,
 			Description -> "For each member of ColumnSelectorAssembly, the quaternary monochromator/filter wavelength used to filter the lamp light before it is passed into the fluorescence flow cell to excite fluorescent compounds during column flush.",
-			IndexMatching->ColumnSelectorAssembly,
 			Category -> "Column Flush"
 		},
 		ColumnFlushEmissionWavelengths -> {
@@ -3090,7 +3097,6 @@ DefineObjectType[Object[Protocol, HPLC], {
 			Pattern :> GreaterP[0 * Nanometer],
 			Units -> Nanometer,
 			Description -> "For each member of ColumnSelectorAssembly, the 1st of upto 4 monochromator/filter wavelength used to filter emitted light from the fluorescence flow cell during column flush before it is measured in the Fluorescence detector.",
-			IndexMatching->ColumnSelectorAssembly,
 			Category -> "Column Flush"
 		},
 		ColumnFlushSecondaryEmissionWavelengths -> {
@@ -3099,7 +3105,6 @@ DefineObjectType[Object[Protocol, HPLC], {
 			Pattern :> GreaterP[0 * Nanometer],
 			Units -> Nanometer,
 			Description -> "For each member of ColumnSelectorAssembly, the 2nd of upto 4 monochromator/filter wavelength used to filter emitted light from the fluorescence flow cell during column flush before it is measured in the Fluorescence detector.",
-			IndexMatching->ColumnSelectorAssembly,
 			Category -> "Column Flush"
 		},
 		ColumnFlushTertiaryEmissionWavelengths -> {
@@ -3108,7 +3113,6 @@ DefineObjectType[Object[Protocol, HPLC], {
 			Pattern :> GreaterP[0 * Nanometer],
 			Units -> Nanometer,
 			Description -> "For each member of ColumnSelectorAssembly, the 3rd of upto 4 monochromator/filter wavelength used to filter emitted light from the fluorescence flow cell during column flush before it is measured in the Fluorescence detector.",
-			IndexMatching->ColumnSelectorAssembly,
 			Category -> "Column Flush"
 		},
 		ColumnFlushQuaternaryEmissionWavelengths -> {
@@ -3117,7 +3121,6 @@ DefineObjectType[Object[Protocol, HPLC], {
 			Pattern :> GreaterP[0 * Nanometer],
 			Units -> Nanometer,
 			Description -> "For each member of ColumnSelectorAssembly, the 4th of upto 4 monochromator/filter wavelength used to filter emitted light from the fluorescence flow cell during column flush before it is measured in the Fluorescence detector.",
-			IndexMatching->ColumnSelectorAssembly,
 			Category -> "Column Flush"
 		},
 		ColumnFlushEmissionCutOffFilters -> {
@@ -3126,7 +3129,6 @@ DefineObjectType[Object[Protocol, HPLC], {
 			Pattern :> GreaterP[0Nanometer],
 			Units -> Nanometer,
 			Description ->"For each member of ColumnSelectorAssembly, the cut-off wavelength(s) to pre-select the emitted light from the flow downstream of the column and allow only the light with wavelength above the desired value to pass before the light enters emission monochromator for final wavelength selection during column flush.",
-			IndexMatching->ColumnSelectorAssembly,
 			Category -> "Column Flush"
 		},
 		ColumnFlushFluorescenceGains -> {
@@ -3135,7 +3137,6 @@ DefineObjectType[Object[Protocol, HPLC], {
 			Pattern :> GreaterP[0 Percent],
 			Units -> Percent,
 			Description -> "For each member of ColumnSelectorAssembly, the percentage of maximum amplification of ColumnFlushExcitationWavelengths/ColumnFlushEmissionWavelengths channel during column prime on the Fluorescence detector. The percentage value specified here is converted into a unitless factor from 0 to 1000 which the software accepts to modulate the voltage for the Photo Multiplier Tube (PMT).",
-			IndexMatching->ColumnSelectorAssembly,
 			Category -> "Column Flush"
 		},
 		ColumnFlushSecondaryFluorescenceGains -> {
@@ -3144,7 +3145,6 @@ DefineObjectType[Object[Protocol, HPLC], {
 			Pattern :> GreaterP[0 Percent],
 			Units -> Percent,
 			Description -> "For each member of ColumnSelectorAssembly, the percentage of maximum amplification of ColumnFlushExcitationWavelengths/ColumnFlushEmissionWavelengths channel during column prime on the Fluorescence detector. The percentage value specified here is converted into a unitless factor from 0 to 1000 which the software accepts to modulate the voltage for the Photo Multiplier Tube (PMT).",
-			IndexMatching->ColumnSelectorAssembly,
 			Category -> "Column Flush"
 		},
 		ColumnFlushTertiaryFluorescenceGains -> {
@@ -3153,7 +3153,6 @@ DefineObjectType[Object[Protocol, HPLC], {
 			Pattern :> GreaterP[0 Percent],
 			Units -> Percent,
 			Description -> "For each member of ColumnSelectorAssembly, the percentage of maximum amplification of ColumnFlushExcitationWavelengths/ColumnFlushEmissionWavelengths channel during column prime on the Fluorescence detector. The percentage value specified here is converted into a unitless factor from 0 to 1000 which the software accepts to modulate the voltage for the Photo Multiplier Tube (PMT).",
-			IndexMatching->ColumnSelectorAssembly,
 			Category -> "Column Flush"
 		},
 		ColumnFlushQuaternaryFluorescenceGains -> {
@@ -3162,7 +3161,6 @@ DefineObjectType[Object[Protocol, HPLC], {
 			Pattern :> GreaterP[0],
 			Units -> None,
 			Description -> "For each member of ColumnSelectorAssembly, the percentage of maximum amplification of ColumnFlushExcitationWavelengths/ColumnFlushEmissionWavelengths channel during column prime on the Fluorescence detector. The percentage value specified here is converted into a unitless factor from 0 to 1000 which the software accepts to modulate the voltage for the Photo Multiplier Tube (PMT).",
-			IndexMatching->ColumnSelectorAssembly,
 			Category -> "Column Flush"
 		},
 		ColumnFlushFluorescenceFlowCellTemperatures -> {
@@ -3171,7 +3169,6 @@ DefineObjectType[Object[Protocol, HPLC], {
 			Pattern :> GreaterEqualP[0*Kelvin],
 			Units -> Celsius,
 			Description -> "For each member of ColumnSelectorAssembly, the nominal temperature setting inside the fluorescence flow cell of the fluorescence detector during column flush.",
-			IndexMatching->ColumnSelectorAssembly,
 			Category -> "Column Flush"
 		},
 		ColumnFlushLightScatteringLaserPowers -> {
@@ -3180,7 +3177,6 @@ DefineObjectType[Object[Protocol, HPLC], {
 			Pattern :> RangeP[10*Percent,100*Percent],
 			Units -> Percent,
 			Description -> "For each member of ColumnSelectorAssembly, the laser power used in the Multi-Angle static Light Scattering (MALS) and Dynamic Light Scattering (DLS) detector during column flush.",
-			IndexMatching->ColumnSelectorAssembly,
 			Category -> "Column Flush"
 		},
 		ColumnFlushLightScatteringFlowCellTemperatures -> {
@@ -3189,7 +3185,6 @@ DefineObjectType[Object[Protocol, HPLC], {
 			Pattern :> GreaterEqualP[0*Kelvin],
 			Units -> Celsius,
 			Description -> "For each member of ColumnSelectorAssembly, the nominal temperature setting inside the Multi-Angle static Light Scattering (MALS) and Dynamic Light Scattering (DLS) flow cell during column flush.",
-			IndexMatching->ColumnSelectorAssembly,
 			Category -> "Column Flush"
 		},
 		ColumnFlushRefractiveIndexMethods -> {
@@ -3197,7 +3192,6 @@ DefineObjectType[Object[Protocol, HPLC], {
 			Class -> Expression,
 			Pattern :> Alternatives[RefractiveIndex,DifferentialRefractiveIndex],
 			Description -> "For each member of ColumnSelectorAssembly, the type of refractive index measurement of the Refractive Index (RI) Detector during column prime. When DifferentialRefractiveIndex is selected, the refractive index difference between the flow downstream sample and the reference solvent is measured. See Figure 2.7.4 for more information.",
-			IndexMatching->ColumnSelectorAssembly,
 			Category -> "Column Flush"
 		},
 		ColumnFlushRefractiveIndexFlowCellTemperatures -> {
@@ -3206,7 +3200,6 @@ DefineObjectType[Object[Protocol, HPLC], {
 			Pattern :> GreaterEqualP[0*Kelvin],
 			Units -> Celsius,
 			Description -> "For each member of ColumnSelectorAssembly, the nominal temperature setting inside the refractive index flow cell of the refractive index (RI) detector during column flush.",
-			IndexMatching->ColumnSelectorAssembly,
 			Category -> "Column Flush"
 		},
 		ColumnFlushNebulizerGases -> {
@@ -3214,8 +3207,7 @@ DefineObjectType[Object[Protocol, HPLC], {
 			Class->Boolean,
 			Pattern:>BooleanP,
 			Description -> "For each member of ColumnSelectorAssembly, indicates if sheath gas is turned on for the Evaporative Light Scattering Detector (ELSD) during the column flush.",
-			Category -> "Column Flush",
-			IndexMatching -> ColumnSelectorAssembly
+			Category -> "Column Flush"
 		},
 		ColumnFlushNebulizerGasPressures -> {
 			Format->Multiple,
@@ -3223,16 +3215,14 @@ DefineObjectType[Object[Protocol, HPLC], {
 			Pattern:>RangeP[20*PSI,60*PSI],
 			Units->PSI,
 			Description -> "For each member of ColumnSelectorAssembly, if NebulizerGas is True, the applied pressure to the sheath gas during the column flush.",
-			Category -> "Column Flush",
-			IndexMatching -> ColumnSelectorAssembly
+			Category -> "Column Flush"
 		},
 		ColumnFlushNebulizerGasHeatings -> {
 			Format->Multiple,
 			Class->Boolean,
 			Pattern:>BooleanP,
 			Description -> "For each member of ColumnSelectorAssembly, if NebulizerGas is True, indicates if sheath gas is heated or not for the Evaporative Light Scattering Detector (ELSD) during the column flush.",
-			Category -> "Column Flush",
-			IndexMatching -> ColumnSelectorAssembly
+			Category -> "Column Flush"
 		},
 		ColumnFlushNebulizerHeatingPowers -> {
 			Format->Multiple,
@@ -3240,8 +3230,7 @@ DefineObjectType[Object[Protocol, HPLC], {
 			Pattern:>RangeP[0*Percent,100*Percent],
 			Units -> Percent,
 			Description -> "For each member of ColumnSelectorAssembly, the relative magnitude of the heating element used to heat the sheath gas during the column flush.",
-			Category -> "Column Flush",
-			IndexMatching -> ColumnSelectorAssembly
+			Category -> "Column Flush"
 		},
 		ColumnFlushDriftTubeTemperatures -> {
 			Format->Multiple,
@@ -3249,8 +3238,7 @@ DefineObjectType[Object[Protocol, HPLC], {
 			Pattern:>GreaterP[0 Celsius],
 			Units -> Celsius,
 			Description -> "For each member of ColumnSelectorAssembly, the set temperature of the chamber thermostat through which the nebulized analytes flow within the EvaporativeLightScattering Detector. The purpose to heat the drift tube is to evaporate any unevaporated solvent remaining in the flow from the nebulizer.",
-			Category -> "Column Flush",
-			IndexMatching -> ColumnSelectorAssembly
+			Category -> "Column Flush"
 		},
 		ColumnFlushELSDGains -> {
 			Format->Multiple,
@@ -3258,8 +3246,7 @@ DefineObjectType[Object[Protocol, HPLC], {
 			Pattern:>RangeP[0 Percent,100 Percent],
 			Units -> Percent,
 			Description -> "For each member of ColumnSelectorAssembly, the percent of maximum voltage sent to the Photo Mulitplier Tube (PMT) for signal amplification for the EvaporativeLightScattering measurement. The percentage value specified here is converted into a unitless factor from 0 to 1000 which the software accepts to modulate the voltage for the PMT.",
-			Category -> "Column Flush",
-			IndexMatching -> ColumnSelectorAssembly
+			Category -> "Column Flush"
 		},
 		ColumnFlushELSDSamplingRates -> {
 			Format->Multiple,
@@ -3267,8 +3254,7 @@ DefineObjectType[Object[Protocol, HPLC], {
 			Pattern:>GreaterP[0*1/Second],
 			Units -> 1/Second,
 			Description -> "For each member of ColumnSelectorAssembly, the frequency of evaporative light scattering measurement. Lower values will be less susceptible to noise but will record less frequently across time. Lower or higher values do not affect the y axis of the measurment.",
-			Category -> "Column Flush",
-			IndexMatching -> ColumnSelectorAssembly
+			Category -> "Column Flush"
 		},
 		(*--- Final Buffer state ---*)
 
@@ -3437,7 +3423,7 @@ DefineObjectType[Object[Protocol, HPLC], {
 			Format -> Single,
 			Class -> String,
 			Pattern :> FilePathP,
-			Description -> "The file path and name of the .bat file which transfers data to the public drive and archives the data from virtual computer after data export.",
+			Description -> "The file path and name of the .bat file which transfers data to the public drive. In addition, for protocols using ChemStation software, the file archives the data from virtual computer after data export.",
 			Category -> "Experimental Results",
 			Developer -> True
 		},
@@ -3492,6 +3478,15 @@ DefineObjectType[Object[Protocol, HPLC], {
 			Units -> PSI,
 			Description -> "The upper limit of the pump pressure which if reached during the run will cause the current injection to be paused. At which point the team checks for any clogs in the lines, if found they are fixed and the protocol resumes with next injection. Otherwiset the protocol is aborted early, and it proceeds directly to flush and column storage.",
 			Category -> "Separation"
+		},
+		DisplayedMaxPressure -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterEqualP[0 * Bar],
+			Units -> Bar,
+			Description -> "The upper limit of the pump pressure in Bar which if reached during the run will cause the current injection to be paused.",
+			Category -> "Separation",
+			Developer -> True
 		},
 		PressureFailure-> {
 			Format -> Single,

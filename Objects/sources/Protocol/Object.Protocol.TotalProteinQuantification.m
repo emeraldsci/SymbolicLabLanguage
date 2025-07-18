@@ -97,13 +97,6 @@ DefineObjectType[Object[Protocol, TotalProteinQuantification], {
 			Description->"The plate in which the ConcentratedProteinStandard is diluted with the ProteinStandardDiluent to the StandardCurveConcentrations.",
 			Category->"Standard Curve"
 		},
-		StandardDilutionPlatePrimitives->{
-			Format->Multiple,
-			Class->Expression,
-			Pattern:>SampleManipulationP,
-			Description -> "A set of instructions specifying the loading and mixing of the ConcentratedProteinStandard and the ProteinStandardDiluent in the StandardDilutionPlate.",
-			Category -> "Standard Curve"
-		},
 		StandardDilutionPlateManipulation->{
 			Format->Single,
 			Class->Link,
@@ -272,7 +265,12 @@ DefineObjectType[Object[Protocol, TotalProteinQuantification], {
 			Format->Single,
 			Class->Link,
 			Pattern:>_Link,
-			Relation->Alternatives[Object[Protocol, AbsorbanceSpectroscopy],Object[Protocol, FluorescenceSpectroscopy],Object[Protocol, RoboticSamplePreparation]],
+			Relation->Alternatives[
+				Object[Protocol, AbsorbanceSpectroscopy],
+				Object[Protocol, FluorescenceSpectroscopy],
+				Object[Protocol, RoboticSamplePreparation],
+				Object[Notebook, Script]
+			],
 			Description->"The Absorbance- or Fluorescence-Spectroscopy protocol performed on the QuantificationPlate.",
 			Category->"Quantification"
 		},

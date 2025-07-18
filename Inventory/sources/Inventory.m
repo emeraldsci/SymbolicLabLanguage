@@ -130,7 +130,7 @@ CancelTransaction[myOrders:{ObjectP[Object[Transaction]]..},myOptions:OptionsPat
 	allDownloadedPackets = Quiet[
 		Download[myOrders,
 			{
-				Packet[OrderQuantities,QuantitiesReceived,Products,Notebook,DateExpected,TrackingNumbers,UserCommunications,OperationsSupportTickets,Creator,Supplier,Status,SamplesOut,ContainersOut,RequestedAutomatically,ShippingPreparation],
+				Packet[OrderQuantities,QuantitiesReceived,Products,Notebook,DateExpected,TrackingNumbers,UserCommunications,InternalCommunications,Creator,Supplier,Status,SamplesOut,ContainersOut,RequestedAutomatically,ShippingPreparation],
 				Packet[Products[{ProductModel,Samples,NumberOfItems,Name}]],
 				(* Additional packets for UploadNotification *)
 				Packet[Notebook[Financers][Members][{FirstName, LastName, Email, TeamEmailPreference, NotebookEmailPreferences}]],
@@ -788,7 +788,7 @@ packageStoreSampleOutputs[maintenancePackets:{_Association...},uploadStorageCond
 			Which[
 				MatchQ[allUpdates,$Failed|{$Failed}],
 				$Failed,
-				
+
 				Lookup[myOptions,Upload],
 				Module[{uploadReturn,confirmReturn},
 					uploadReturn=Upload[allUpdates];
@@ -1173,7 +1173,7 @@ DefineOptions[DiscardSamples,
 				AllowNull -> False,
 				Widget -> Widget[Type->Enumeration, Pattern :> (BooleanP)],
 				Description -> "Indicates if the normally reusable container of a sample should be discarded instead of dishwashed or otherwise reused.",
-				ResolutionDescription -> "Automatically resolves based on Reusability of container model."
+				ResolutionDescription -> "Automatically resolves based on Reusable of container model."
 			}
 		],
 		OutputOption,
@@ -1206,7 +1206,8 @@ DiscardSamples[mySamples:{(ObjectP[{Object[Sample],Object[Item]}]|ObjectP[Object
 		cache, inputPacketSpecs,inputDownloadTuples, newCache,
 		resolvedOptionsResult, resolvedOptions, resolvedOptionsTests, resolvedPackets,
 		resolvedOptionsMinusHiddenOptions, simulation,
-		optionsRule, previewRule, testsRule, resultRule
+		optionsRule, previewRule, testsRule, resultRule,
+		allDownloadTuples
 	},
 
 	(* Make sure we're working with a list of options *)
@@ -1265,35 +1266,43 @@ DiscardSamples[mySamples:{(ObjectP[{Object[Sample],Object[Item]}]|ObjectP[Object
 	(* create packet specs for downloading from each of the input objects *)
 	inputPacketSpecs=Map[
 		Which[
+			MatchQ[#, ObjectP[Object[User]]],
+				{
+					Packet[FinancingTeams],
+					Packet[FinancingTeams[Notebooks]]
+				},
 			MatchQ[#,ObjectP[Object[Container]]],
 				{
-					Packet[Status,Contents,RequestedResources],
-					Packet[Model[{Reusability}]],
+					Packet[Status,Contents,RequestedResources, Notebook],
+					Packet[Model[{Reusable}]],
 					Packet[RequestedResources[{Status}]],
-					Packet[Field[Contents[[All,2]]][{AwaitingDisposal,Status,Container,StorageCondition,RequestedResources}]],
+					Packet[Field[Contents[[All,2]]][{AwaitingDisposal,Status,Container,StorageCondition,RequestedResources, Notebook}]],
 					Packet[Field[Contents[[All,2]]][RequestedResources][{Status}]]
 				},
 			MatchQ[#,NonSelfContainedSampleP],
 				{
-					Packet[AwaitingDisposal,Status,Container,StorageCondition,RequestedResources],
-					Packet[Container[Model][{Reusability}]],
-					Packet[Field[Container[Contents][[All,2]][{AwaitingDisposal,Status,Container,StorageCondition,RequestedResources}]]],
+					Packet[AwaitingDisposal,Status,Container,StorageCondition,RequestedResources, Notebook],
+					Packet[Container[Model][{Reusable}]],
+					Packet[Field[Container[Contents][[All,2]][{AwaitingDisposal,Status,Container,StorageCondition,RequestedResources, Notebook}]]],
 					Packet[RequestedResources[{Status}]]
 				},
 			MatchQ[#,SelfContainedSampleP],
 				{
-					Packet[AwaitingDisposal,Status,Container,StorageCondition,RequestedResources],
+					Packet[AwaitingDisposal,Status,Container,StorageCondition,RequestedResources, Notebook],
 					Packet[RequestedResources[{Status}]]
 				}
 		]&,
-		mySamples
+		Join[{$PersonID}, listedSamples]
 	];
 
 	(* download information from the input samples according to these packet specs. Pass the cache *)
-	inputDownloadTuples=Download[mySamples,inputPacketSpecs, Cache -> cache, Simulation -> simulation];
+	allDownloadTuples=Download[Join[{$PersonID}, listedSamples],inputPacketSpecs, Cache -> cache, Simulation -> simulation];
 
 	(* the rest of the download information is purely for UploadStorageCondition's cache; just flatten and remove duplicates on everything *)
-	newCache = Flatten[{cache, DeleteDuplicatesBy[Cases[Flatten[inputDownloadTuples],PacketP[]],Lookup[#,Object]&]}];
+	newCache = Flatten[{cache, DeleteDuplicatesBy[Cases[Flatten[allDownloadTuples],PacketP[]],Lookup[#,Object]&]}];
+
+	(* isolate the input packets from $PersonID packet *)
+	inputDownloadTuples = Rest[allDownloadTuples];
 
 	(* ------------------------------ resolve all the options ------------------------------  *)
 
@@ -1397,7 +1406,7 @@ resolveDiscardSamplesOptions[mySamples:{ObjectP[{Object[Sample],Object[Item],Obj
 		selfContainedSamplesWithDiscardContainerTests, selfContainedSamplesWithDiscardContainer,
 		discardUpdatePackets, uniqueDiscardUpdatePackets,
 		storageConditionUpdatePackets,storageConditionTests,
-		allTests,resolvedOptions,collapsedOptions, uploadPackets
+		allTests,resolvedOptions,collapsedOptions, uploadPackets, simulation
 	},
 
 	(* Make sure the input Options are safe to use *)
@@ -1439,7 +1448,7 @@ resolveDiscardSamplesOptions[mySamples:{ObjectP[{Object[Sample],Object[Item],Obj
 			If[MatchQ[discardContainer,Automatic],
 				If[NullQ[containerModelPacket],
 					Null,
-					!TrueQ[Lookup[containerModelPacket,Reusability]]
+					!TrueQ[Lookup[containerModelPacket,Reusable]]
 				],
 				discardContainer
 			]
@@ -1454,7 +1463,7 @@ resolveDiscardSamplesOptions[mySamples:{ObjectP[{Object[Sample],Object[Item],Obj
 		MapThread[
 			Function[{inputPacket,containerModelPacket,discardContainer},
 				Test[ToString[Lookup[inputPacket,Object], InputForm]<>" cannot have the option DiscardContainer -> False unless it's container is Reusable.",
-					!( MatchQ[discardContainer,False] && !NullQ[containerModelPacket]&& !TrueQ[Lookup[containerModelPacket,Reusability]] ),
+					!( MatchQ[discardContainer,False] && !NullQ[containerModelPacket]&& !TrueQ[Lookup[containerModelPacket,Reusable]] ),
 					True
 				]
 			],
@@ -1463,10 +1472,10 @@ resolveDiscardSamplesOptions[mySamples:{ObjectP[{Object[Sample],Object[Item],Obj
 		{}
 	];
 
-	(* pick out samples/containers where DiscardContainer is set to False, but Reusability is False; we don't allow this direction *)
+	(* pick out samples/containers where DiscardContainer is set to False, but Reusable is False; we don't allow this direction *)
 	incorrectDiscardOptionNonReusableInputs=MapThread[
 		Function[{inputPacket,containerModelPacket,discardContainer},
-			If[MatchQ[discardContainer,False]&&!NullQ[containerModelPacket]&&!TrueQ[Lookup[containerModelPacket,Reusability]],
+			If[MatchQ[discardContainer,False]&&!NullQ[containerModelPacket]&&!TrueQ[Lookup[containerModelPacket,Reusable]],
 				Lookup[inputPacket,Object],
 				Nothing
 			]
@@ -1586,7 +1595,7 @@ DiscardSamplesOptions[mySamples:{(ObjectP[{Object[Sample],Object[Item]}]|ObjectP
 	(* get the options as a list *)
 	listedOptions = ToList[ops];
 
-	(* remove the Output option before passing to the core function because it doens't make sense here *)
+	(* remove the Output option before passing to the core function because it doesn't make sense here *)
 	noOutputOptions = DeleteCases[listedOptions, (Output | OutputFormat) -> _];
 
 	(* return only the options for DiscardSamples *)
@@ -1625,7 +1634,7 @@ DiscardSamplesPreview[mySamples:{(ObjectP[{Object[Sample],Object[Item]}]|ObjectP
 	(* get the options as a list *)
 	listedOptions = ToList[ops];
 
-	(* remove the Output option before passing to the core function because it doens't make sense here *)
+	(* remove the Output option before passing to the core function because it doesn't make sense here *)
 	noOutputOptions = DeleteCases[listedOptions, Output -> _];
 
 	(* return only the preview for DiscardSamples *)
@@ -2073,7 +2082,7 @@ CancelDiscardSamplesOptions[mySamples:{(ObjectP[{Object[Sample],Object[Item]}]|O
 	(* get the options as a list *)
 	listedOptions = ToList[ops];
 
-	(* remove the Output option before passing to the core function because it doens't make sense here *)
+	(* remove the Output option before passing to the core function because it doesn't make sense here *)
 	noOutputOptions = DeleteCases[listedOptions, (Output | OutputFormat) -> _];
 
 	(* return only the options for CancelDiscardSamples *)
@@ -2112,7 +2121,7 @@ CancelDiscardSamplesPreview[mySamples:{(ObjectP[{Object[Sample],Object[Item]}]|O
 	(* get the options as a list *)
 	listedOptions = ToList[ops];
 
-	(* remove the Output option before passing to the core function because it doens't make sense here *)
+	(* remove the Output option before passing to the core function because it doesn't make sense here *)
 	noOutputOptions = DeleteCases[listedOptions, Output -> _];
 
 	(* return only the preview for CancelDiscardSamples *)
@@ -2388,7 +2397,7 @@ DefineOptions[ShipToUser,
 				Default -> Null,
 				AllowNull -> True,
 				Widget -> Widget[Type -> Object, Pattern :> ObjectP[{Model[Sample, StockSolution], Object[Sample], Model[Sample], Object[Sample]}]],
-				Description -> "The dilution factor by which the concentrated buffer should be diluted in preparing the AliquotSamples to obtain a 1x buffer concentration after dilution of the AliquotSamples which should be used in lieu of the SamplesIn for the transaction.",
+				Description -> "The desired diluent with which the concentrated buffer should be diluted in preparing the AliquotSamples to obtain a 1x buffer concentration after dilution of the AliquotSamples which should be used in lieu of the SamplesIn for the transaction.",
 				ResolutionDescription -> "Automatically resolves from ConcentratedBuffer's PreferredDiluent.",
 				Category -> "AliquotPrep"
 			},
@@ -2433,6 +2442,17 @@ DefineOptions[ShipToUser,
 					Type -> Object,
 					Pattern :> ObjectP[{Model[Sample, StockSolution], Object[Sample], Model[Sample], Object[Sample]}],
 					ObjectTypes -> {Model[Sample, StockSolution], Object[Sample], Model[Sample], Object[Sample]}
+				]
+			},
+			{
+				OptionName -> Fragile,
+				Default -> Automatic,
+				Description -> "Indicates if the item is easily damaged and should be wrapped with a bubble sheet before shipment.",
+				ResolutionDescription -> "This is automatically determined by the Fragile field in the shipped container or item.",
+				AllowNull -> False,
+				Widget -> Widget[
+					Type -> Enumeration,
+					Pattern :> BooleanP | Automatic
 				]
 			}
 		],
@@ -2604,13 +2624,14 @@ DefineOptions[ShipToUser,
 	}
 ];
 
-Error::NoDestination="Destination could not be resolved from the notebook calling this function. Please ensure that your notebook has an associated financing team and that that team has an associated site, or specify a destination with the Destination option.";
-Warning::ContainersSpanShipments="In order to ship samples with the provided ShippingSpeed and ColdPacking specifications, samples that currently occupy the following containers, will be transferred to separate containers.";
-Warning::ContainersIncludeAdditionalSamples="Your input samples occupy a container that contains other samples that are not designated for shipping: `1`. The samples will be transferred to separate containers.";
-Error::SiteNotFound="No site was found for `1`. Please confirm that the samples are located at a site.";
-Error::OwnershipConflict="The inputs `1` do not belong to the your financing team. Please ensure that all inputs belong to a laboratory notebook financed by your team and try again.";
-Error::NotShippable="The inputs `1` cannot be shipped. Please check the inputs to ensure they can be reasonable shipped to destination and try again.";
-
+Error::NoDestination = "Destination could not be resolved from the notebook calling this function. Please ensure that your notebook has an associated financing team and that that team has an associated site, or specify a destination with the Destination option.";
+Warning::ContainersSpanShipments = "In order to ship samples with the provided ShippingSpeed and ColdPacking specifications, samples that currently occupy the following containers, will be transferred to separate containers.";
+Warning::ContainersIncludeAdditionalSamples = "Your input samples occupy a container that contains other samples that are not designated for shipping: `1`. The samples will be transferred to separate containers.";
+Error::SiteNotFound = "No site was found for `1`. Please confirm that the samples are located at a site.";
+Error::OwnershipConflict = "The inputs `1` do not belong to the your financing team. Please ensure that all inputs belong to a laboratory notebook financed by your team and try again.";
+Error::NotShippable = "The inputs `1` cannot be shipped. Please check the inputs to ensure they can be reasonable shipped to destination and try again.";
+Error::NoAvailableSecondaryContainers = "The following inputs `1` cannot be shipped because they are too large and cannot fit in any secondary container used by ECL at this time.  Please divide the sample into multiple smaller containers and try again.";
+Error::HazardousSamplesForShipping = "The following input samples are considered hazardous for shipping and require special handling that's not currently available. Please check these samples: \n`1`.\n The following properties prevent these samples from being shipped:\n {`2`}.";
 
 (* ::Subsubsection::Closed:: *)
 (*ShipToUser Function*)
@@ -3276,10 +3297,11 @@ DefineOptions[shipFromECL,
 
 (*because the behavior is so different, split inputs by model/sample and only resolve the relevant options for each. *)
 (* thread things back together for the options, then split apart again by the source/destination *)
-(* only resolve options appropriate for the parnet input type *)
+(* only resolve options appropriate for the parent input type *)
 
-shipFromECL[mySamples:ListableP[ObjectP[{Object[Sample],Object[Item], Model[Sample], Model[Item], Model[Container]}]], parentFunction:(ShipToUser|ShipBetweenSites),myOptions:OptionsPattern[]]:=Module[
-	{listedSamples, listedOptions, outputSpecification, output, gatherTests, messagesBoolean, safeOptions, safeOptionTests,
+shipFromECL[mySamples : ListableP[ObjectP[{Object[Sample], Object[Item], Model[Sample], Model[Item], Model[Container]}]], parentFunction : (ShipToUser | ShipBetweenSites), myOptions : OptionsPattern[]] := Module[
+	{
+		listedSamples, listedOptions, outputSpecification, output, gatherTests, messagesBoolean, safeOptions, safeOptionTests,
 		validLengths, validLengthTests, bagsAndBoxes, modelBoxes, modelBags, sampleDeepContainers, sampleLocations, fastTrackOption, uploadOption,
 		cacheOption, creator, siteTest, uniqueSampleLocations, downloadedDestination, aliquotContainerPositions, financedNotebooks,
 		sampleContainerContents, storageConditions, unflatSamplePackets, unflatContainerPackets, unflatSampleModelPackets,
@@ -3294,20 +3316,24 @@ shipFromECL[mySamples:ListableP[ObjectP[{Object[Sample],Object[Item], Model[Samp
 		partitionedContainers, partitionedAliquotAmount, partitionedTargetConcentration, partitionedShipmentVolume,
 		partitionedSamplePackets, partitionedContainerPackets, partitionedSampleModelPackets, partitionedContainerModelPackets,
 		partitionedDestinations, partitionedContainersIn, containerTallies, splitContainers, splitContainerTestDescription, splitContainerTest,
-		collapsedResolvedOptions, partitionedAliquotOptionSets, transactionPackets,
+		frqResultsPerGroup,frqTestsPerGroup, collapsedResolvedOptions, partitionedAliquotOptionSets, transactionPackets, nullBagSamples, nullBagTest,
 		reKeyedTransactionPackets, shippingMaterialsPacketsByTransaction, materialsByTransaction, indexGroupingByTransaction,
-		groupedContentsByTransaction, groupedContentModelPacketsByTransaction, boxesByTransaction,
+		groupedContentsByTransaction, groupedContentModelPacketsByTransaction, boxesByTransaction, hazardFieldValuePatterns,
 		iceByTransaction, dryIceByTransaction, paddingByTransaction, bagsByTransaction, plateSealsByTransaction,
 		transactionMaterialsUpdates, transactionStatusPackets, protocolUpdatePackets, mainFunctionTests, allUploads, resolvedOptionsMinusHiddenOptions,
 		optionsRule, previewRule, testsRule, resultRule, samplesWithoutSite, expandedSafeOptions, templatedOptions, inheritedOptions,
 		stowawaySamples, cacheBall, partitionedAliquot, partitionedConcentratedBuffer, partitionedBufferDilutionFactor,
-		partitionedBufferDiluent, partitionedShipmentBuffer, partitionedAliquotSampleStorageCondition,
-		partitionedDestinationWell, partitionedAliquotContainer, resolvedAliquot,
+		partitionedBufferDiluent, partitionedShipmentBuffer, partitionedAliquotSampleStorageCondition, modelHazardFieldValues,
+		partitionedDestinationWell, partitionedAliquotContainer, resolvedAliquot, hazardFields, hazardousSampleRules,
 		resolvedConcentratedBuffer, resolvedBufferDilutionFactor, resolvedBufferDiluent, resolvedShipmentBuffer,
-		resolvedAliquotSampleStorageCondition, resolvedDestinationWell, resolvedAliquotContainer,
+		resolvedAliquotSampleStorageCondition, resolvedDestinationWell, resolvedAliquotContainer, exceptionAmounts,
 		safeOptionsWithoutAssayVolumeAssayBuffer, transactionPacketsExtraFields, partitionedTargetConcentrationAnalyte,
-		resolvedAliquotSampleLabel, partitionedAliquotSampleLabel,resolvedAmount, resolvedContainerModel, partitionedAmount, partitionedContainerModels,
-		partitionedDependentProtocol, partitionedDependentResource,resolvedDependentProtocol, resolvedDependentResource, newTransactions
+		resolvedAliquotSampleLabel, partitionedAliquotSampleLabel, resolvedAmount, resolvedContainerModel, partitionedAmount, partitionedContainerModels,
+		partitionedDependentProtocol, partitionedDependentResource, resolvedDependentProtocol, resolvedDependentResource, newTransactions, resolvedFragile,
+		partitionedFragile, hazardousSampleWithFields, hazardousSamplesTest, listedSampleDownloads, rawUniqueSampleLocationDownloads,
+		notebookDownloads, uniqueSampleLocationDownloads, rawSampleContainerContents, rawUnflatSamplePackets, rawUnflatContainerPackets,
+		rawUnflatSampleModelPackets, rawUnflatContainerModelPackets, rawIceInfo, rawDryIceInfo, rawPeanutInfo, shipmentAmounts,
+		rawPlateSealInfo, rawMaintenanceShippingModelInfo, hazardFieldLookup, objectHazardFieldValues, hazardExceptionPatterns
 	},
 
 	(* ------------ *)
@@ -3352,8 +3378,8 @@ shipFromECL[mySamples:ListableP[ObjectP[{Object[Sample],Object[Item], Model[Samp
 
 	(* Call ValidOptionLengthsQ to make sure all options are the right length *)
 	{validLengths,validLengthTests}=If[gatherTests,
-		ValidInputLengthsQ[shipFromECL,{listedSamples},listedOptions,Output->{Result,Tests}],
-		{ValidInputLengthsQ[shipFromECL,{listedSamples},listedOptions],Null}
+		ValidInputLengthsQ[shipFromECL,{listedSamples, parentFunction},listedOptions,Output->{Result,Tests}],
+		{ValidInputLengthsQ[shipFromECL,{listedSamples, parentFunction},listedOptions],Null}
 	];
 
 	(* If option lengths are invalid return $Failed *)
@@ -3368,8 +3394,8 @@ shipFromECL[mySamples:ListableP[ObjectP[{Object[Sample],Object[Item], Model[Samp
 
 	(*Use any template options to get values for options not specified in myOptions*)
 	{templatedOptions,templateTests}=If[gatherTests,
-		ApplyTemplateOptions[shipFromECL,{listedSamples},listedOptions,Output->{Result,Tests}],
-		{ApplyTemplateOptions[shipFromECL,{listedSamples},listedOptions],Null}];
+		ApplyTemplateOptions[shipFromECL,{listedSamples, parentFunction},listedOptions,Output->{Result,Tests}],
+		{ApplyTemplateOptions[shipFromECL,{listedSamples, parentFunction},listedOptions],Null}];
 
 	(* Return early if the template cannot be used - will only occur if the template object does not exist. *)
 	If[MatchQ[templatedOptions,$Failed],
@@ -3385,7 +3411,7 @@ shipFromECL[mySamples:ListableP[ObjectP[{Object[Sample],Object[Item], Model[Samp
 	inheritedOptions=ReplaceRule[safeOptionsWithoutAssayVolumeAssayBuffer,templatedOptions];
 
 	(* Expand index-matching options *)
-	expandedSafeOptions=Last[ExpandIndexMatchedInputs[shipFromECL,{listedSamples},inheritedOptions]];
+	expandedSafeOptions=Last[ExpandIndexMatchedInputs[shipFromECL,{listedSamples, parentFunction},inheritedOptions]];
 
 	(*Pull out non-listable option values*)
 	{fastTrackOption,uploadOption,cacheOption,creator} = Lookup[expandedSafeOptions,{FastTrack,Upload,Cache,Creator}];
@@ -3460,6 +3486,38 @@ shipFromECL[mySamples:ListableP[ObjectP[{Object[Sample],Object[Item], Model[Samp
 	(* We just want to do the second download on the unique sites to make it faster *)
 	uniqueSampleLocations=DeleteDuplicates[sampleLocations];
 
+	(* hazard fields: the samples with hazard field populated need special handling and will return error in this function *)
+	(* the format for entering hazard fields values:
+	{
+		hazard field name,
+		hazard value pattern: if the hazard value matches the hazard pattern, an error is thrown, unless it matches exception hazard pattern and sample amount is less than exception amount
+		exception hazard pattern: if hazard value matches exception hazard pattern and sample amount is less than exception amount, error is not thrown
+		exception amount: the maximum amount of hazardous sample (hazard value matches exception hazard pattern) that can be shipped without special treatment
+	}*)
+	{hazardFields, hazardFieldValuePatterns, hazardExceptionPatterns, exceptionAmounts} = Transpose[{
+		{Pyrophoric, True, None, 0},
+		{Flammable, True, True, 100 (* Gram or Milliliter *)},
+		{Fuming, True, None, 0},
+		{Acid, True, True, 100 (* Gram or Milliliter *)},
+		{Base, True, True, 100 (* Gram or Milliliter *)},
+		{HazardousBan, True, None, 0},
+		{ParticularlyHazardousSubstance, True, None, 0},
+		{Radioactive, True, None, 0},
+		{
+			NFPA,
+			KeyValuePattern[(_ -> GreaterEqualP[1])] | KeyValuePattern[(Special -> Except[{Null ...} | Null])],
+			KeyValuePattern[(_ -> GreaterEqualP[1])] | KeyValuePattern[(Special -> Acid)],
+			100 (* Gram or Milliliter *)
+		},
+		{
+			DOTHazardClass,
+			Except["Class 0" | Null],
+			"Class 3 Flammable Liquids Hazard",
+			100 (* Gram or Milliliter *)
+		},
+		{BiosafetyLevel, Except["BSL-1" | Null], None, 0}
+	}];
+
 	(* Download all needed information.
 		Get the notebook's team's site,
 		Get the positions of the aliquot container, if one is specified,
@@ -3467,71 +3525,124 @@ shipFromECL[mySamples:ListableP[ObjectP[{Object[Sample],Object[Item], Model[Samp
 		Get the contents of each sample container,Get the storage condition of each sample and the default storage condition of their models,
 		Get the sample models, sample container model, sample model densities, sample container model dimensions,aliquot container model dimensions (needed for predicting packing materials),
 		Get info about the packing materials *)
+
 	{
-		downloadedDestination,
+		listedSampleDownloads,
+		notebookDownloads,
 		aliquotContainerPositions,
-		sampleContainerContents,
-		storageConditions,
-		unflatSamplePackets,
-		unflatContainerPackets,
-		unflatSampleModelPackets,
-		unflatContainerModelPackets,
 		unflatAliquotContainerModelPackets,
 		modelBoxInfo,
 		modelBagInfo,
+		rawUniqueSampleLocationDownloads
+	} = Quiet[
+		Download[
+			{
+				(*1*)listedSamples,
+				(*2*){$Notebook},
+				(*3*)DeleteCases[ToList[Lookup[safeOptions, AliquotContainer]], Automatic | Null],
+				(*4*)(ToList[Lookup[safeOptions, AliquotContainer]] /. Automatic -> Null),
+				(*5*)modelBoxes,
+				(*6*)modelBags,
+				(*7*)uniqueSampleLocations
+			},
+			Evaluate[{
+				(*1*)
+				{
+					Field[Container[Contents[[All, 2]][Object]]],
+					Packet[Model, Container, Fragile, WettedMaterials, ContainerMaterials, Mass, Volume, Sequence @@ hazardFields],
+					Packet[Container[Model]],
+					Packet[Model[Dimensions, Fragile, WettedMaterials, ContainerMaterials, Sequence @@ hazardFields]],
+					Packet[Container[Model][Dimensions, Fragile, WettedMaterials, ContainerMaterials]],
+					{StorageCondition, Model[DefaultStorageCondition], DefaultStorageCondition},
+					{Notebook[Object]}
+				},
+				(*2*)
+				{
+					{Financers[DefaultMailingAddress][Object]},
+					{Financers[NotebooksFinanced][Object]}
+				},
+				(*3*){Positions},
+				(*4*){Packet[Dimensions]},
+				(*5*){Packet[Dimensions, InternalDimensions, Footprint, ContainerMaterials, Positions, AvailableLayouts]},
+				(*6*){Packet[MaxVolume, Dimensions]},
+				(*7*)
+				{
+					Packet[Model[ShippingModel[Ice[Dimensions]]]],
+					Packet[Model[ShippingModel[DryIce[Density]]]],
+					Packet[Model[ShippingModel[Padding[Density]]]],
+					Packet[Model[ShippingModel[PlateSeal[Object]]]],
+					Packet[Model[ShippingModel[{PackageCapacity, PackingMaterialsCapacity}]]]
+				}
+			}],
+			Cache -> cacheOption,
+			Date -> Now
+		], {Download::NotLinkField, Download::ObjectDoesNotExist, Download::FieldDoesntExist}
+	];
+
+	(* extracting info from download *)
+	(* the format of the Download call above was changed to make it faster. this reformating is only for adjusting the download results to match the previous format *)
+
+	(* extract sample info *)
+	rawSampleContainerContents = listedSampleDownloads[[All, 1]];
+	rawUnflatSamplePackets = listedSampleDownloads[[All, 2]];
+	rawUnflatContainerPackets = listedSampleDownloads[[All, 3]];
+	rawUnflatSampleModelPackets = listedSampleDownloads[[All, 4]];
+	rawUnflatContainerModelPackets = listedSampleDownloads[[All, 5]];
+	storageConditions = listedSampleDownloads[[All, 6]];
+	inputObjectNotebooks = listedSampleDownloads[[All, 7]];
+
+	(* reformat sample info *)
+	{
+		sampleContainerContents,
+		unflatSamplePackets,
+		unflatContainerPackets,
+		unflatSampleModelPackets,
+		unflatContainerModelPackets
+	} = Map[(List /@ #)&, {
+		rawSampleContainerContents,
+		rawUnflatSamplePackets,
+		rawUnflatContainerPackets,
+		rawUnflatSampleModelPackets,
+		rawUnflatContainerModelPackets
+	}];
+
+	(* reformat notebook info *)
+	{
+		downloadedDestination,
+		financedNotebooks
+	} = If[!MatchQ[$Notebook, Null],
+
+		{
+			notebookDownloads[[All, 1]],
+			notebookDownloads[[All, 2]]
+		},
+
+		{{Null}, {Null}}
+	];
+
+	(* extract sample location info *)
+	uniqueSampleLocationDownloads = If[MatchQ[#, Null], ConstantArray[Null, 5], #]& /@ rawUniqueSampleLocationDownloads;
+
+	rawIceInfo = uniqueSampleLocationDownloads[[All, 1]];
+	rawDryIceInfo = uniqueSampleLocationDownloads[[All, 2]];
+	rawPeanutInfo = uniqueSampleLocationDownloads[[All, 3]];
+	rawPlateSealInfo = uniqueSampleLocationDownloads[[All, 4]];
+	rawMaintenanceShippingModelInfo = uniqueSampleLocationDownloads[[All, 5]];
+
+	(* reformat sample location info *)
+	{
 		iceInfo,
 		dryIceInfo,
 		peanutInfo,
 		plateSealInfo,
-		maintenanceShippingModelInfo,
-		inputObjectNotebooks,
-		financedNotebooks
-	}=Quiet[
-		Download[
-			{
-				{$Notebook},
-				DeleteCases[ToList[Lookup[safeOptions, AliquotContainer]],Automatic|Null],
-				listedSamples,
-				listedSamples,
-				listedSamples,
-				listedSamples,
-				listedSamples,
-				listedSamples,
-				(ToList[Lookup[safeOptions, AliquotContainer]]/.Automatic->Null),
-				modelBoxes,
-				modelBags,
-				uniqueSampleLocations,
-				uniqueSampleLocations,
-				uniqueSampleLocations,
-				uniqueSampleLocations,
-				uniqueSampleLocations,
-				listedSamples,
-				{$Notebook}
-			},
-			{
-				{Financers[DefaultMailingAddress][Object]},
-				{Positions},
-				{Field[Container[Contents[[All,2]][Object]]]},
-				{StorageCondition,Model[DefaultStorageCondition], DefaultStorageCondition},
-				{Packet[Model,Container]},
-				{Packet[Container[Model]]},
-				{Packet[Model[Dimensions]]},
-				{Packet[Container[Model][Dimensions]]},
-				{Packet[Dimensions]},
-				{Packet[Dimensions,InternalDimensions,Footprint,ContainerMaterials,Positions,AvailableLayouts]},
-				{Packet[MaxVolume,Dimensions]},
-				{Packet[Model[ShippingModel[Ice[Dimensions]]]]},
-				{Packet[Model[ShippingModel[DryIce[Density]]]]},
-				{Packet[Model[ShippingModel[Padding[Density]]]]},
-				{Packet[Model[ShippingModel[PlateSeal[Object]]]]},
-				{Packet[Model[ShippingModel[{PackageCapacity,PackingMaterialsCapacity}]]]},
-				{Notebook[Object]},
-				{Financers[NotebooksFinanced][Object]}
-			},
-			Cache->cacheOption,
-			Date -> Now
-		], {Download::NotLinkField,Download::ObjectDoesNotExist, Download::FieldDoesntExist}
-	];
+		maintenanceShippingModelInfo
+	} = Map[(List /@ #)&, {
+		rawIceInfo,
+		rawDryIceInfo,
+		rawPeanutInfo,
+		rawPlateSealInfo,
+		rawMaintenanceShippingModelInfo
+	}];
 
 	(* Make a cache ball *)
 	cacheBall=Join[(Cache/.safeOptions),Cases[Flatten[{downloadedDestination, aliquotContainerPositions, sampleContainerContents, storageConditions, unflatSamplePackets, unflatContainerPackets, unflatSampleModelPackets, unflatContainerModelPackets, unflatAliquotContainerModelPackets, modelBoxInfo, modelBagInfo, iceInfo, dryIceInfo, peanutInfo, plateSealInfo, maintenanceShippingModelInfo, financedNotebooks}],PacketP[]]];
@@ -3592,17 +3703,6 @@ shipFromECL[mySamples:ListableP[ObjectP[{Object[Sample],Object[Item], Model[Samp
 		Nothing
 	];
 
-	(* If any of the input objects are not owned by the user's financing team, we need to return early *)
-	(* return $Failed for Results, or the options, or all the tests that have been generated so far) *)
-	If[!MatchQ[nonOwnedInputs,{}],
-		Return[outputSpecification/.{
-			Result -> $Failed,
-			Tests -> Flatten[{validLengthTests,safeOptionTests,siteTest,ownedInputsTest}],
-			Options -> $Failed,
-			Preview -> Null
-		}]
-	];
-
 	(* -- B. Stowaway check -- *)
 	(*Find all of the non-self contained samples that occupy the same container as the input samples*)
 	allContainedSamples=Cases[DeleteDuplicates[Flatten[sampleContainerContents]],ObjectP[NonSelfContainedSampleTypes]];
@@ -3657,11 +3757,6 @@ shipFromECL[mySamples:ListableP[ObjectP[{Object[Sample],Object[Item], Model[Samp
 		]
 	];
 
-	(* ----------------------------- *)
-	(* -- Split Into Transactions -- *)
-	(* ----------------------------- *)
-
-	(* ---- Using the resolved options and the downloaded information, determine the partitioning of the samples into individual transactions ---- *)
 
 	(* extract from the resolved Options the ones needed to calculate the partitioning of the samples into separate transactions *)
 	{
@@ -3684,7 +3779,8 @@ shipFromECL[mySamples:ListableP[ObjectP[{Object[Sample],Object[Item], Model[Samp
 		resolvedAmount,
 		resolvedContainerModel,
 		resolvedDependentProtocol,
-		resolvedDependentResource
+		resolvedDependentResource,
+		resolvedFragile
 	} = Map[
 		Lookup[resolvedOptions,#,ConstantArray[Null, Length[listedSamples]]]&,
 		{
@@ -3710,9 +3806,126 @@ shipFromECL[mySamples:ListableP[ObjectP[{Object[Sample],Object[Item], Model[Samp
 			Amount,
 			Container,
 			DependentProtocol,
-			DependentResource
+			DependentResource,
+			Fragile
 		}
 	];
+
+	(* Make sure our resources are valid. We don't need to upload these since they will get created when we go to do the shipment *)
+	(* Right now we just want to make sure we error now rather than downstream after transaction is confirmed *)
+
+	(* -- C. Hazard check -- *)
+	(* Throw an error if the sample is hazardous and requires specific handling *)
+	(* if the input is Model, unflatSampleModelPackets is {$Failed}; if the sample does not have a model, unflatSampleModelPackets is Null. in these cases, return Nulls for modelHazardFieldValues, and hazard fields will be looked up from unflatSamplePackets *)
+	modelHazardFieldValues = If[MatchQ[#, {$Failed | Null}],
+		ConstantArray[Null, Length[hazardFields]],
+		Lookup[#[[1]], hazardFields, {}]
+	]& /@ unflatSampleModelPackets;
+
+	objectHazardFieldValues = Lookup[#, hazardFields, {}]& /@ unflatSamplePackets[[All, 1]];
+
+	(* look up sample amounts to ship *)
+	shipmentAmounts = MapThread[
+		Which[
+			(* for ShipToUser, if the user specified ShipmentVolume, use that as the shipment amount *)
+			VolumeQ[#1], #1,
+
+			(* for ShipBetweenSites, if Amount is determined, use that as the shipment amount *)
+			QuantityQ[#2], #2,
+
+			(* otherwise, lookup mass/volume from sample packet *)
+			True, FirstCase[Lookup[#3, {Mass, Volume}], _?QuantityQ, Null]
+		]&,
+		{resolvedShipmentVolume, resolvedAmount, unflatSamplePackets[[All, 1]]}
+	];
+
+	(* a function to look at hazard fields of the shipping samples and determines red flags for each sample *)
+	hazardFieldLookup[sample_, modelFieldValues_, objectFieldValues_, amount_] := Module[{fieldValueRules},
+
+		fieldValueRules = MapThread[
+			Function[{objectFieldValue, modelFieldValue, hazardField, hazardPattern, hazardExceptionPattern, exceptionAmount},
+				Which[
+					(* in the sample model, if a hazard field is populated but it is less than the exception amount, don't raise red flag *)
+					!MatchQ[hazardExceptionPattern, None] && !MatchQ[modelFieldValue, $Failed] && MatchQ[modelFieldValue, hazardExceptionPattern] && TrueQ[LessEqualQ[amount, exceptionAmount Milliliter] || LessEqualQ[amount, exceptionAmount Gram]],
+						Nothing,
+
+					(* same as previous for sample object *)
+					!MatchQ[hazardExceptionPattern, None] && !MatchQ[objectFieldValue, $Failed] && MatchQ[objectFieldValue, hazardExceptionPattern] && TrueQ[LessEqualQ[amount, exceptionAmount Milliliter] || LessEqualQ[amount, exceptionAmount Gram]],
+						Nothing,
+
+					(* otherwise, determine which hazard fields are populated and what are their values *)
+					!MatchQ[modelFieldValue, $Failed] && MatchQ[modelFieldValue, hazardPattern],
+						hazardField -> modelFieldValue,
+
+					(*  same as previous for sample objects *)
+					!MatchQ[objectFieldValue, $Failed] && MatchQ[objectFieldValue, hazardPattern],
+						hazardField -> objectFieldValue,
+
+					(* if hazard field values do not match any hazard field patterns, do not raise red flag *)
+					True,
+						Nothing
+				]
+			],
+			{modelFieldValues, objectFieldValues, hazardFields, hazardFieldValuePatterns, hazardExceptionPatterns, exceptionAmounts}
+		];
+
+		sample -> fieldValueRules
+	];
+
+	(* for each sample, find the hazardous fields that is populated *)
+	hazardousSampleRules = MapThread[
+		hazardFieldLookup[#1, #2, #3, #4]&,
+		{listedSamples, modelHazardFieldValues, objectHazardFieldValues, shipmentAmounts}
+	];
+
+	(* Throw an error if the sample is hazardous *)
+	hazardousSampleWithFields = Cases[hazardousSampleRules, sampleRule : (ObjectP[] -> {__}) :> sampleRule];
+
+	(* If there are any hazardous samples, throw an error *)
+	hazardousSamplesTest = If[
+		!MatchQ[hazardousSampleWithFields, {}],
+
+		(
+			Message[
+				Error::HazardousSamplesForShipping,
+				ObjectToString[Keys[hazardousSampleWithFields]],
+				StringJoin[StringReplace[ObjectToString[#], "->" -> ":"]& /@ Riffle[Values[hazardousSampleWithFields], "\n"]]
+			];
+
+			(* Give a failing test or throw a message if there are hazardous samples *)
+			If[gatherTests,
+				Test["The following samples are considered hazardous: " <> ObjectToString[Keys[hazardousSampleWithFields]] <> ":", False, True],
+				Nothing
+			]
+		),
+
+		(* Give a passing test or do nothing otherwise. *)
+		If[gatherTests,
+			Test["All samples are safe for shipping:", True, True],
+			Nothing
+		]
+	];
+
+	(* If any of the input objects are hazardous or are not owned by the user's financing team, we need to return early *)
+	(* return $Failed for Results, or the options, or all the tests that have been generated so far) *)
+	If[
+		Or[
+			!MatchQ[nonOwnedInputs, {}],
+			!MatchQ[hazardousSampleWithFields, {}]
+		],
+		Return[outputSpecification /. {
+			Result -> $Failed,
+			Tests -> Flatten[{validLengthTests, safeOptionTests, siteTest, ownedInputsTest, hazardousSamplesTest}],
+			Options -> $Failed,
+			Preview -> Null
+		}]
+	];
+
+	(* ----------------------------- *)
+	(* -- Split Into Transactions -- *)
+	(* ----------------------------- *)
+
+	(* ---- Using the resolved options and the downloaded information, determine the partitioning of the samples into individual transactions ---- *)
 
 	(* Associate each sample with its site, ShippingSpeed option, cold packing option, container, and other listed options *)
 	samplesWithLocationsOptions=Transpose[{
@@ -3742,7 +3955,8 @@ shipFromECL[mySamples:ListableP[ObjectP[{Object[Sample],Object[Item], Model[Samp
 		resolvedAmount,
 		resolvedContainerModel,
 		resolvedDependentProtocol,
-		resolvedDependentResource
+		resolvedDependentResource,
+		resolvedFragile
 	}];
 
 	(*Group samples that have the same site,ShippingSpeed preference,cold packing preference,and shipping info*)
@@ -3781,7 +3995,8 @@ shipFromECL[mySamples:ListableP[ObjectP[{Object[Sample],Object[Item], Model[Samp
 		partitionedAmount,
 		partitionedContainerModels,
 		partitionedDependentProtocol,
-		partitionedDependentResource
+		partitionedDependentResource,
+		partitionedFragile
 	} = Map[
 		partitionedSamplesAndInfo[[All,All,#1]]&,
 		Range[Length[First[samplesWithLocationsOptions]]]
@@ -3843,6 +4058,51 @@ shipFromECL[mySamples:ListableP[ObjectP[{Object[Sample],Object[Item], Model[Samp
 		If[gatherTests,Warning[splitContainerTestDescription,True,True]]
 	];
 
+	(* -- Valid resource check -- *)
+	(* Make sure the model X amounts are valid - otherwise we can get a downstream error when we try to actually create protocols to do the shipments *)
+	{frqResultsPerGroup,frqTestsPerGroup} = Transpose@MapThread[
+		Function[{samples,amounts,destination},
+			Module[{transactionResources},
+				transactionResources = MapThread[
+					If[MatchQ[#1, ObjectP[Model[Sample]]],
+						Resource[Sample -> #1, Amount -> #2, Container -> PreferredContainer[#2]],
+						Nothing
+					]&,
+					{samples, amounts}
+				];
+
+				(* Destination is listed out for each sample in the group, but all destinations are the same within each group (safe to take first) *)
+				Which[
+					(* No destination set - we throw an error elsewhere *)
+					!MatchQ[destination[[1]],ObjectP[Object[Container,Site]]], {True, {}},
+					TrueQ[gatherTests], Resources`Private`fulfillableResourceQ[transactionResources, Output -> {Result, Tests}, Site -> destination[[1]]],
+					True, {Resources`Private`fulfillableResourceQ[transactionResources, Output -> Result, Site -> destination[[1]]], {}}
+				]
+			]
+		],
+		{partitionedSamples, partitionedAmount, partitionedDestinations}
+	];
+
+	(* If we can't actually ship our requested model FRQ will throw an error. This should only happen if we're calling ShipBetweenSites *)
+	(* return $Failed for Results, or the options, or all the tests that have been generated so far) *)
+	If[!MatchQ[frqResultsPerGroup,{True..}],
+		Return[outputSpecification/.{
+			Result -> $Failed,
+			Tests -> Flatten[{
+				validLengthTests,
+				safeOptionTests,
+				siteTest,
+				ownedInputsTest,
+				containedSamplesTest,
+				resolvedOptionsTests,
+				splitContainerTest
+			}],
+			Options -> $Failed,
+			Preview -> Null
+		}]
+	];
+
+
 	(* ------------------------- *)
 	(* -- Create Transactions -- *)
 	(* ------------------------- *)
@@ -3871,7 +4131,8 @@ shipFromECL[mySamples:ListableP[ObjectP[{Object[Sample],Object[Item], Model[Samp
 			aliquotOptionSet,
 			amounts,
 			containers,
-			resources
+			resources,
+			fragile
 		},
 			Join[
 				<|
@@ -3882,12 +4143,15 @@ shipFromECL[mySamples:ListableP[ObjectP[{Object[Sample],Object[Item], Model[Samp
 					Replace[WorkingContainers]->Link[DeleteDuplicates[Download[containersIn,Object]]],
 					Creator->Link[Lookup[resolvedOptions, Creator],TransactionsCreated],
 					Destination->Link[destinations[[1]]],
-					If[MatchQ[parentFunction, ShipToUser],
+					(* for cases where site is not resolved yet, default to ECL-2 as this is a site-to-site model request *)
+					(* cases where site is not resolvable for an object already errored above *)
+					If[MatchQ[sites[[1]], ObjectP[Object[Container, Site]]],
 						Source->Link[sites[[1]]],
-						Nothing
+						Source->Link[Object[Container, Site, "id:kEJ9mqJxOl63"]] (*ECL-2*)
 					],
 					ShippingSpeed->First[shippingSpeed],
 					ColdPacking->First[coldPacking],
+					Replace[Fragile] -> fragile,
 					If[MatchQ[parentFunction, ShipBetweenSites],Replace[Amounts] -> Replace[amounts, (x_Integer:>x*Unit), 1], Nothing],
 					If[MatchQ[parentFunction, ShipBetweenSites],Replace[ContainerModels] -> Link/@containers, Nothing],
 					If[MatchQ[parentFunction, ShipBetweenSites],Replace[Resources]-> Link[resources/.None-> Null, Order], Nothing]
@@ -3910,7 +4174,8 @@ shipFromECL[mySamples:ListableP[ObjectP[{Object[Sample],Object[Item], Model[Samp
 			partitionedAliquotOptionSets,
 			partitionedAmount,
 			partitionedContainerModels,
-			partitionedDependentResource
+			partitionedDependentResource,
+			partitionedFragile
 		}
 	];
 
@@ -3941,20 +4206,20 @@ shipFromECL[mySamples:ListableP[ObjectP[{Object[Sample],Object[Item], Model[Samp
 			{transactionPacket,samplePackets,containerPackets,sampleModelPackets,containerModelPackets,icePacket,dryIcePacket,peanutPacket,plateSealPacket,maintenancePacket},
 			If[MatchQ[samplePackets, {PacketP[Object]..}],
 				calculatePackingMaterials[
-				transactionPacket,
-				samplePackets,
-				containerPackets,
-				sampleModelPackets,
-				containerModelPackets,
-				(aliquotContainerModelPackets/.{Null}->Null),
-				modelBoxPackets,
-				modelBagPackets,
-				icePacket,
-				dryIcePacket,
-				peanutPacket,
-				plateSealPacket,
-				maintenancePacket
-			],
+					transactionPacket,
+					samplePackets,
+					containerPackets,
+					sampleModelPackets,
+					containerModelPackets,
+					(aliquotContainerModelPackets/.{Null}->Null),
+					modelBoxPackets,
+					modelBagPackets,
+					icePacket,
+					dryIcePacket,
+					peanutPacket,
+					plateSealPacket,
+					maintenancePacket
+				],
 				(*The grouped content models and indexes, boxes (which are indexed to the content groups), ice/dry ice/padding and amount (which are indexed to the content groups), plate seals (which are indexed to flattened contents), and secondary containers (which are indexed to flattened contents)
 					{groupedContentsIndexes,groupedContentsModelPackets,boxPacketByGroup,ice,dryIce,padding,bags,plateSeals}*)
 				ConstantArray[{}, 9]
@@ -3965,6 +4230,61 @@ shipFromECL[mySamples:ListableP[ObjectP[{Object[Sample],Object[Item], Model[Samp
 
 	(* Organize the packing materials *)
 	{indexGroupingByTransaction,groupedContentsByTransaction,groupedContentModelPacketsByTransaction,boxesByTransaction,iceByTransaction,dryIceByTransaction,paddingByTransaction,bagsByTransaction,plateSealsByTransaction}=Transpose[materialsByTransaction];
+
+	(* need to return $Failed and throw a message here if we have no bags that are big enough that we can use for secondary containment *)
+	(* this is only for containers proper; for other things, Null is fine here *)
+	nullBagSamples = Flatten[MapThread[
+		Function[{contents, bags},
+			MapThread[
+				If[MatchQ[#2, $Failed],
+					#1,
+					Nothing
+				]&,
+				{Flatten[contents], bags}
+			]
+		],
+		{groupedContentsByTransaction, bagsByTransaction}
+	]];
+
+	If[!MatchQ[nullBagSamples, {}] && !gatherTests,
+		Message[Error::NoAvailableSecondaryContainers, ObjectToString[nullBagSamples]];
+	];
+	nullBagTest = If[gatherTests,
+		Module[{failingTest,passingTest},
+			failingTest=If[MatchQ[nullBagSamples,{}],
+				Nothing,
+				Test["The following samples are small enough that they can fit in a secondary containment bag "<>nullBagSamples<>":", True, False]
+			];
+
+			passingTest=If[Length[nullBagSamples]==Length[listedSamples],
+				Nothing,
+				Test["The following samples are small enough that they can fit in a secondary containment bag "<>nullBagSamples<>":", True, True]
+			];
+
+			{failingTest,passingTest}
+		],
+		Nothing
+	];
+
+	(* If we don't have any bags we can use, return early *)
+	(* return $Failed for Results, or the options, or all the tests that have been generated so far) *)
+	If[!MatchQ[nullBagSamples,{}],
+		Return[outputSpecification/.{
+			Result -> $Failed,
+			Tests -> Flatten[{
+				validLengthTests,
+				safeOptionTests,
+				siteTest,
+				ownedInputsTest,
+				containedSamplesTest,
+				resolvedOptionsTests,
+				splitContainerTest,
+				nullBagTest
+			}],
+			Options -> $Failed,
+			Preview -> Null
+		}]
+	];
 
 	(* Add estimated packing materials to each transaction *)
 	(* only do this for objects, models will have to wait *)
@@ -4033,7 +4353,7 @@ shipFromECL[mySamples:ListableP[ObjectP[{Object[Sample],Object[Item], Model[Samp
 	(*Prepare the Test result if we were asked to do so*)
 	testsRule=Tests->If[MemberQ[output,Tests],
 		(*Join all exisiting tests generated by the top level function and helper functions*)
-		Flatten[{safeOptionTests,validLengthTests,templateTests,resolvedOptionsTests,mainFunctionTests}],
+		Flatten[{safeOptionTests,validLengthTests,templateTests,resolvedOptionsTests,mainFunctionTests,frqTestsPerGroup}],
 		Null
 	];
 
@@ -4069,7 +4389,9 @@ resolveShipFromECLOptions[
 		listedOptions,output,listedOutput,collectTestsBoolean,messagesBoolean,expandedInputs,expandedOptions,creator,resolvedCreator,expandedDestinations,
 		resolvedDestinations,destinationTestDescription,destinationTest,expandedColdPacking,resolvedColdPacking,expandedShippingSpeed,resolvedShippingSpeed,
 		renamedAliquotingOptions,resolvedRenamedAliquotOptions,aliquotTest,resolvedAliquotOptions,allTests,resolvedOptions, email, upload,resolvedEmail,
-		myObjectSamplePosition, samplesOnlyRenamedAliquotingOptions, mySampleObjects, resolvedRenamedAliquotOptionsRaw, fullResolvedAliquotOptions, resolvedContainerModel
+		myObjectSamplePosition, samplesOnlyRenamedAliquotingOptions, mySampleObjects, resolvedRenamedAliquotOptionsRaw, fullResolvedAliquotOptions, resolvedContainerModel,
+		expandedFragile, cache, resolvedAliquotContainers, sampleFragileInfoPackets, aliquotContainerFragileInfoPackets, sampleFragileDownloadField, downloadedFragileResult, resolvedFragile,
+		containerModelFragileInfoPackets
 	},
 
 	(* -------------------------- *)
@@ -4080,6 +4402,7 @@ resolveShipFromECLOptions[
 	listedOptions = ToList[ops];
 	output = OptionDefault[OptionValue[Output]];
 	listedOutput = ToList[output];
+	cache = Lookup[listedOptions, Cache];
 
 	(* determine whether to collect Tests *)
 	collectTestsBoolean = MemberQ[listedOutput,Tests];
@@ -4088,7 +4411,9 @@ resolveShipFromECLOptions[
 	messagesBoolean=!collectTestsBoolean;
 
 	(* Expand any index-matched options from OptionName A to OptionName {A,A,A,...} so that it's safe to MapThread over several options *)
-	{expandedInputs, expandedOptions} = ExpandIndexMatchedInputs[shipFromECL, {mySamples}, myOptions];
+	(* Note: shipFromECL is a helper and the second argument could be ShipToUser or ShipBetweenSites depending on which function is calling it. However, it shouldn't matter here for expanding index-matching option purpose *)
+	(* Thus I am not going to try pass the value from parent function, just use ShipToUser as a placeholder *)
+	{expandedInputs, expandedOptions} = ExpandIndexMatchedInputs[shipFromECL, {mySamples, ShipToUser}, myOptions];
 
 	(* ----------------------- *)
 	(* -- 1. Shared Options -- *)
@@ -4147,7 +4472,7 @@ resolveShipFromECLOptions[
 			{Except[Automatic],_},#1,
 
 			(* If the option is Automatic and the sample storage condition is refrigerator, resolve to Ice *)
-			{Automatic,ObjectP[{Model[StorageCondition,"Refrigerator"],Model[StorageCondition,"Refrigerator, Flammable"],Model[StorageCondition,"Refrigerator, Flammable Acid"],Model[StorageCondition,"Refrigerator, Base"],Model[StorageCondition,"Refrigerator, Acid"],Model[StorageCondition,"Refrigerator, Flammable Pyrophoric"]}]},Ice,
+			{Automatic,ObjectP[{Model[StorageCondition,"Refrigerator"],Model[StorageCondition,"Refrigerator, Flammable"],Model[StorageCondition,"Refrigerator, Flammable Acid"],Model[StorageCondition,"Refrigerator, Flammable Base"],Model[StorageCondition,"Refrigerator, Base"],Model[StorageCondition,"Refrigerator, Acid"],Model[StorageCondition,"Refrigerator, Flammable Pyrophoric"]}]},Ice,
 
 			(* If the option is Automatic and the sample storage condition is freezer,resolve to DryIce *)
 			{Automatic,ObjectP[{Model[StorageCondition,"Freezer"],Model[StorageCondition,"Deep Freezer"],Model[StorageCondition,"Cryogenic Storage"]}]},DryIce,
@@ -4266,20 +4591,79 @@ resolveShipFromECLOptions[
 
 	(* Resolve a ContainerModel for any model inputs given a resource*)
 	resolvedContainerModel = If[Or[!MemberQ[mySamples, ObjectP[{Model[Sample], Model[Item]}]], !MemberQ[Lookup[expandedOptions,DependentResource], ObjectP[Object[Resource, Sample]]]],
-		{},
+		ConstantArray[Null, Length[mySamples]],
 		Module[{dependentResources, containerModelPerResource},
 			(* look up the containerModel from the resource, replace anything that is not an object with Null *)
 			dependentResources = Lookup[expandedOptions,DependentResource]/.None-> Null;
-			containerModelPerResource = Download[dependentResources, ContainerModels[Object]]/.{x:{ObjectP[]..}:>x[[1]], {} -> Null};
+			containerModelPerResource = Download[dependentResources, ContainerModels[Object]]/.{x:{ObjectP[]..} :> x[[1]], {} -> Null};
 
 			(* do not replace anything that has already been specified *)
 			MapThread[If[MatchQ[#1, ObjectP[]],
 				#1,
 				#2
 			]&,
-				{dependentResources, containerModelPerResource}
+				{Lookup[expandedOptions, Container], containerModelPerResource}
 			]
 		]
+	];
+
+	(* ------------------------------- *)
+	(* -- 3. Resolve Fragile option -- *)
+	(* ------------------------------- *)
+
+	expandedFragile = Lookup[expandedOptions, Fragile];
+	resolvedAliquotContainers = Lookup[resolvedAliquotOptions, AliquotContainer] /. {{_Integer, x:ObjectP[Model[Container]]} :> x, {Automatic, Automatic} -> Null,Automatic -> Null};
+
+	(* Determine which field to download to determine the Fragile boolean of input sample *)
+	sampleFragileDownloadField = Join[
+		Map[
+			Switch[#,
+				(* For Object[Sample], download the Container[Model][Fragile] field *)
+				ObjectP[Object[Sample]],
+					{Packet[Container[Model][{Fragile, ContainerMaterials}]]},
+				(* For Other Objects, download the Model[Fragile] field *)
+				ObjectP[Object],
+					{Packet[Model[{Fragile, ContainerMaterials, WettedMaterials}]]},
+				(* For Model input, download the Fragile field *)
+				(* For Model[Sample] input this download is meaningless anyway since we'll need to look at Fragile field of the resolvedContainerModel *)
+				_,
+					{Packet[Fragile, ContainerMaterials, WettedMaterials]}
+			]&,
+			mySamples
+		],
+		ConstantArray[{Packet[Fragile, ContainerMaterials, WettedMaterials]}, Length[resolvedAliquotContainers]],
+		ConstantArray[{Packet[Fragile, ContainerMaterials, WettedMaterials]}, Length[resolvedContainerModel]]
+	];
+
+	downloadedFragileResult = Quiet[
+		Download[
+			Join[mySamples, resolvedAliquotContainers, resolvedContainerModel],
+			Evaluate[sampleFragileDownloadField],
+			Cache -> cache
+		],
+		{Download::FieldDoesntExist}
+	];
+
+	{sampleFragileInfoPackets, aliquotContainerFragileInfoPackets, containerModelFragileInfoPackets} = Partition[downloadedFragileResult, Length[mySamples]];
+
+	resolvedFragile = MapThread[
+		Function[{unresolvedFragile, sampleFragileInfoPacket, aliquotContainerPacket, aliquotContainer, containerModelPacket, modelSampleContainer},
+			Which[
+				(* If user supplied this option, use it as is *)
+				BooleanQ[unresolvedFragile],
+					unresolvedFragile,
+				(* Otherwise, if we are not doing aliquot and we are not requesting Model[Sample] (i.e., resolvedContainerModel is Null) , use Fragile field from sample container *)
+				NullQ[aliquotContainer] && NullQ[modelSampleContainer],
+					determineFragileFromPacket[sampleFragileInfoPacket],
+				(* If we are doing aliquot and we will use Fragile field from the resolved aliquot container *)
+				NullQ[modelSampleContainer],
+					determineFragileFromPacket[aliquotContainerPacket],
+				(* Lastly, we are requesting Model[Sample], thus we determine from the resolvedContainerModels*)
+				True,
+					determineFragileFromPacket[containerModelPacket]
+			]
+		],
+		{expandedFragile, sampleFragileInfoPackets, aliquotContainerFragileInfoPackets, resolvedAliquotContainers, containerModelFragileInfoPackets, resolvedContainerModel}
 	];
 
 	(* ----------------------------------- *)
@@ -4292,14 +4676,15 @@ resolveShipFromECLOptions[
 	(* Update options with the resolved options *)
 	resolvedOptions = ReplaceRule[myOptions,
 		Join[
-			Normal[KeyDrop[resolvedAliquotOptions, {Email, Creator, Destination, ShippingSpeed, ColdPacking}]],
+			Normal[KeyDrop[resolvedAliquotOptions, {Email, Creator, Destination, ShippingSpeed, ColdPacking, Fragile}]],
 			{
 				ColdPacking->resolvedColdPacking,
 				ShippingSpeed->resolvedShippingSpeed,
 				Destination->resolvedDestinations,
 				Creator->resolvedCreator,
 				Email->resolvedEmail,
-				Container -> resolvedContainerModel
+				Container -> resolvedContainerModel,
+				Fragile -> resolvedFragile
 			}
 		]
 	];
@@ -4546,7 +4931,11 @@ calculatePackingMaterials[
 									(MatchQ[Max[Lookup[#,Dimensions]],GreaterP[Max[Lookup[modelPackets,Dimensions]]]])&
 						],
 						(* Sort the selected bags by volume *)
-						Lookup[#,MaxVolume]&]
+						Lookup[#,MaxVolume]&
+					],
+					(* note here that the default is $Failed; we only get this far if we _should_ have a bag but actually do not have a bag *)
+					(* when this happens, we throw an error later *)
+					$Failed
 				],
 				Null
 			]],{Flatten[groupedContentsModelPackets],Lookup[Flatten[groupedContentsModelPackets],Dimensions]}
@@ -4568,102 +4957,136 @@ calculatePackingMaterials[
 (*Options*)
 
 
+ShippingContainerTypeP=Plate|Vessel;
+
+
 DefineOptions[ShipToECL,
 	Options :> {
 		IndexMatching[
 			IndexMatchingInput->"input",
 			{
+				OptionName->Volume,
+				Default->Automatic,
+				AllowNull->True,
+				Widget->Alternatives[
+					Widget[Type->Quantity,Pattern :> GreaterP[0 Milliliter],Units->Alternatives[Microliter,Milliliter,Liter]],
+					Widget[Type->Enumeration,Pattern:>Alternatives[Automatic]]
+				],
+				Description->"The volume of each sample being sent."
+			},
+			{
+				OptionName->Mass,
+				Default->Automatic,
+				AllowNull->True,
+				Widget->Alternatives[
+					Widget[Type->Quantity,Pattern :> GreaterP[0 Gram],Units->Alternatives[Microgram,Gram,Kilogram]],
+					Widget[Type->Enumeration,Pattern:>Alternatives[Automatic]]
+				],
+				Description->"The mass of each sample being sent."
+			},
+			{
+				OptionName->Count,
+				Default->Automatic,
+				AllowNull->True,
+				Widget->Alternatives[
+					Widget[Type->Number, Pattern :> GreaterP[0, 1]],
+					Widget[Type->Enumeration,Pattern:>Alternatives[Automatic]]
+				],
+				Description->"The count of each sample being sent if the sample is in tablet form."
+			},
+			{
 				OptionName -> Position,
 				Default -> Automatic,
 				AllowNull -> True,
-				Widget -> Alternatives[
-					Widget[Type -> String, Pattern :> WellPositionP, Size -> Word, PatternTooltip->"A well position in a plate, specified in the form of a letter character followed by a non-zero digit, for example A1"],
-					Widget[Type->Enumeration,Pattern:>Alternatives[None]]
-				],
+				Widget -> Widget[Type -> String, Pattern :> WellPositionP, Size -> Word, PatternTooltip->"A well position in a plate, specified in the form of a letter character followed by a non-zero digit, for example A1"],
 				Description -> "The position of the sample in the container that is being sent to an ECL facility.",
 				ResolutionDescription -> "Automatically set to A1 for containers with only one position or Null for items.",
-				Category->"Shipment"
+				Category->"Container Information"
+			},
+			{
+				OptionName->ContainerType,
+				Default->Automatic,
+				AllowNull->True,
+				Widget->Alternatives[
+					Widget[Type->Enumeration,Pattern:>ShippingContainerTypeP]
+				],
+				Description->"Indicates if samples are being sent in a multi-well container (Plate), a tube or bottle (Vessel). Use Null when items rather than fluid samples are being sent.",
+				Category->"Container Information"
+			},
+			{
+				OptionName->EmptyContainerSent,
+				Default->False,
+				AllowNull->False,
+				Widget -> Widget[
+					Type -> Enumeration,
+					Pattern :> BooleanP
+				],
+				Description->"Indicates if an empty container for use in parameterization is being sent for this sample. Only one empty container is needed for each unique container model. It's not necessary to provide an empty container if you don't wish samples to be robotically handeled in their current container or if the container model is known.",
+				Category->"Container Information"
+			},
+			{
+				OptionName->ContainerDocumentation,
+				Default->Automatic,
+				AllowNull->True,
+				Widget -> Alternatives[
+					"File Path" -> Widget[Type->String,Pattern:> FilePathP,Size->Line],
+					"Product URL" -> Widget[Type->String,Pattern:> URLP,Size->Line],
+					"Cloud File" -> Widget[Type->Object,Pattern:> ObjectP[Object[EmeraldCloudFile]]],
+					Widget[Type->Enumeration,Pattern:>Alternatives[Automatic]]
+				],
+				Description->"A product listing or specification sheet for the the model of container being sent.",
+				Category->"Container Information"
 			},
 			{
 				OptionName->ContainerModel,
 				Default->Automatic,
 				AllowNull->True,
 				Widget->Alternatives[
-					Widget[Type->Object,Pattern:>ObjectP[Model[Container]],ObjectTypes->{Model[Container]}],
-					Widget[Type->Enumeration,Pattern:>Alternatives[None]]
+					"Existing Object" -> Widget[
+						Type->Object,
+						Pattern:>ObjectP[{Model[Container,Vessel],Model[Container,Plate]}],
+						OpenPaths -> {
+							{
+								Object[Catalog, "Root"],
+								"Containers"
+							}
+						}
+					],
+					"Identifier" -> Widget[Type->String,Pattern:> _String,Size->Line]
 				],
-				Description->"The model of the container of the sample that is being sent to an ECL facility.",
+				Description->"The model of the container of the sample that is being sent to an ECL facility. If the container model is not known, you can use an identifier to indicate which sample are in the same model of container.",
 				ResolutionDescription -> "Required for samples. Automatically set to Null for items.",
-				Category->"Shipment"
+				Category->"Container Information"
 			},
 			{
-				OptionName->ShippedRack,
-				Default->None,
-				AllowNull->True,
-				Widget->Alternatives[
-					Widget[Type->Object,Pattern:>ObjectP[Model[Container, Rack]]],
-					Widget[Type->Enumeration,Pattern:>Alternatives[None]]
-				],
-				Description->"The model of rack that is shipped holding other items in this order. Only specify the number of racks that are physically shipped.",
-				Category->"Shipment"
+				OptionName -> NumberOfWells,
+				Default -> Automatic,
+				AllowNull -> True,
+				Widget -> Widget[Type->Number, Pattern :> RangeP[1,384,1]],
+				Description -> "The number of total positions in the sample's container.",
+				ResolutionDescription -> "Automatically set to 1 when samples are in a vessel and 96 when they're in a plate.",
+				Category->"Container Information"
+			},
+			{
+				OptionName -> PlateFillOrder,
+				Default -> Automatic,
+				AllowNull -> True,
+				Widget -> Widget[Type->Enumeration, Pattern:>Alternatives[Row,Column]],
+				Description -> "Indicates how samples are arranged in the sample's container.",
+				ResolutionDescription -> "Automatically set to Row when samples are in plate.",
+				Category->"Container Information"
 			},
 			{
 				OptionName->CoverModel,
 				Default->Automatic,
 				AllowNull->True,
 				Widget->Alternatives[
-					Widget[Type->Object,Pattern:>ObjectP[Model[Item, Cap]],ObjectTypes->{Model[Item, Cap]}],
-					Widget[Type->Object,Pattern:>ObjectP[Model[Item, Lid]],ObjectTypes->{Model[Item, Lid]}],
-					Widget[Type->Object,Pattern:>ObjectP[Model[Item, PlateSeal]],ObjectTypes->{Model[Item, PlateSeal]}],
-					Widget[Type->Enumeration,Pattern:>Alternatives[None]]
+					"Existing Object" -> Widget[Type -> Object, Pattern :> ObjectP[{Model[Item, Lid], Model[Item, PlateSeal], Model[Item, Cap]}]],
+					"Identifier" -> Widget[Type->String,Pattern:> _String,Size->Line]
 				],
 				Description->"The model of the cover that seals the container in which the sample is being sent to an ECL facility.",
 				ResolutionDescription -> "Required for samples. Automatically set to Null for items.",
-				Category->"Shipment"
-			},
-			{
-				OptionName->ContainerOut,
-				Default->None,
-				AllowNull->True,
-				Widget->Alternatives[
-					Widget[Type->Object,Pattern:>ObjectP[Model[Container]]],
-					Widget[Type->Enumeration,Pattern:>Alternatives[None]]
-				],
-				Description->"The type of container that the sample should be transferred into upon receiving.",
-				Category->"SampleStorage"
-			},
-			{
-				OptionName->Volume,
-				Default->Null,
-				AllowNull->True,
-				Widget->Alternatives[
-					Widget[Type->Quantity,Pattern :> GreaterP[0 Milliliter],Units->Alternatives[Microliter,Milliliter,Liter]],
-					Widget[Type->Enumeration,Pattern:>Alternatives[None]]
-				],
-				Description->"The volume of each sample being sent.",
-				Category->"SampleStorage"
-			},
-			{
-				OptionName->Mass,
-				Default->Null,
-				AllowNull->True,
-				Widget->Alternatives[
-					Widget[Type->Quantity,Pattern :> GreaterP[0 Gram],Units->Alternatives[Microgram,Gram,Kilogram]],
-					Widget[Type->Enumeration,Pattern:>Alternatives[None]]
-				],
-				Description->"The mass of each sample being sent.",
-				Category->"SampleStorage"
-			},
-			{
-				OptionName->Count,
-				Default->Null,
-				AllowNull->True,
-				Widget->Alternatives[
-					Widget[Type->Number, Pattern :> GreaterP[0, 1]],
-					Widget[Type->Enumeration,Pattern:>Alternatives[None]]
-				],
-				Description->"The count of each sample being sent if the sample is in tablet form.",
-				Category->"SampleStorage"
+				Category->"Container Information"
 			},
 			{
 				OptionName->StorageCondition,
@@ -4674,98 +5097,129 @@ DefineOptions[ShipToECL,
 					Pattern :> SampleStorageTypeP
 				],
 				Description->"Storage condition of each sample being sent.",
-				ResolutionDescription->"Automatically resolves based on the default storage conditions of the samples' models.",
-				Category->"SampleStorage"
+				ResolutionDescription->"Automatically determined from the default storage conditions of the samples' models.",
+				Category->"Sample Properties"
 			},
 			{
 				OptionName->NumberOfUses,
 				Default->Automatic,
 				AllowNull->True,
-				Widget->Alternatives[
-					Widget[Type->Number,Pattern :> GreaterEqualP[0,1]],
-					Widget[Type->Enumeration,Pattern:>Alternatives[None]]
-				],
+				Widget->Widget[Type->Number,Pattern :> GreaterEqualP[0,1]],
 				Description->"For columns, the number of times sample has been injected onto the column.",
-				Category->"SampleStorage"
+				Category->"Sample Properties"
 			},
 			{
 				OptionName->Product,
 				Default->Automatic,
 				AllowNull->True,
-				Widget->Alternatives[
-					Widget[Type->Object,Pattern :> ObjectP[Object[Product]],ObjectTypes->{Object[Product]}],
-					Widget[Type->Enumeration,Pattern:>Alternatives[None]]
-				],
+				Widget->Widget[Type->Object,Pattern :> ObjectP[Object[Product]],ObjectTypes->{Object[Product]}],
 				Description->"For commercial samples, the product corresponding to this sample.",
-				Category->"SampleStorage"
-			},
-			{
-				OptionName->TrackingNumber,
-				Default->Automatic,
-				AllowNull->True,
-				Widget->Alternatives[
-					Adder[Widget[Type->String,Pattern :> _String,Size->Word],Orientation->Vertical],
-					Widget[Type->String,Pattern :> _String,Size->Word],
-					Widget[Type->Enumeration,Pattern:>Alternatives[None]]
-				],
-				Description->"The tracking number(s) of the package being shipped by the user to the ECL facility.",
-				ResolutionDescription->"Automatic resolves to Null when creating a new transaction, and resolves to the existing TrackingNumbers value when updating a transaction.",
-				Category->"Shipment"
-			},
-			{
-				OptionName->Shipper,
-				Default->Automatic,
-				AllowNull->True,
-				Widget->Alternatives[
-					Widget[Type->Object,Pattern :> ObjectP[Object[Company,Shipper]],ObjectTypes->{Object[Company,Shipper]}],
-					Widget[Type->Enumeration,Pattern:>Alternatives[None]]
-				],
-				Description->"The company through which the user is shipping the samples.",
-				ResolutionDescription->"Automatic resolves to Null when creating a new transaction, and resolves to the existing Shipper value when updating a transaction.",
-				Category->"Shipment"
-			},
-			{
-				OptionName->DateShipped,
-				Default->Automatic,
-				AllowNull->True,
-				Widget->Alternatives[
-					Widget[Type->Date,Pattern :> _?DateObjectQ,TimeSelector->False],
-					Widget[Type->Enumeration,Pattern:>Alternatives[None]]
-				],
-				Description->"The date the samples were shipped.",
-				ResolutionDescription->"Automatic resolves to Null when creating a new transaction, to Now when updating a transaction with shipping info for the first time, to the existing DateShipped value when updating a transaction.",
-				Category->"Shipment"
-			},
-			{
-				OptionName->ExpectedDeliveryDate,
-				Default->Automatic,
-				AllowNull->True,
-				Widget->Alternatives[
-					Widget[Type->Date,Pattern :> _?DateObjectQ,TimeSelector->False],
-					Widget[Type->Enumeration,Pattern:>Alternatives[None]]
-				],
-				Description->"The date that the samples are expected to be delivered.",
-				ResolutionDescription->"Automatic resolves to Null when creating a new transaction, and resolves to the existing DateExpected value when updating a transaction.",
-				Category->"Shipment"
+				Category->"Sample Properties"
 			}
 		],
-		{
-			OptionName->Destination,
-			Default->Automatic,
-			AllowNull->False,
-			Widget->Widget[Type->Object,Pattern :> ObjectP[Object[Container,Site]],ObjectTypes->{Object[Container,Site]}(*,ContainerToSamples->False*)],
-			Description->"The site where the samples are being sent.",
-			Category->"Shipment"
-		},
 		{
 			OptionName->Source,
 			Default->Automatic,
 			AllowNull->False,
 			Widget->Widget[Type->Object,Pattern :> ObjectP[Object[Container,Site]],ObjectTypes->{Object[Container,Site]}(*,ContainerToSamples->False*)],
-			Description->"The site where the samples are being originating.",
-			ResolutionDescription->"Resolves to the DefaultMailingAddress of the team requesting this transaction.",
-			Category->"Shipment"
+			Description->"The site from which samples are being shipped.",
+			ResolutionDescription->"If unspecified, the DefaultMailingAddress of the team requesting this transaction is used.",
+			Category->"Shipping Information"
 		},
+		{
+			OptionName -> ReceivingTolerance,
+			Default -> 1*Percent,
+			Description -> "Defines the allowable difference between ordered amount and received amount for every item in the transaction. Any difference greater than the ReceivingTolerance will not be received, and will instead by investigated by our Scientific Operations teams.",
+			AllowNull -> False,
+			Widget -> Widget[
+				Type -> Quantity,
+				Pattern :> RangeP[0Percent,100Percent],
+				Units :> Alternatives[Percent]
+			],
+			Category -> "Hidden"
+		},
+		(* All options below except shipped rack can be shared with DropShipSamples *)
+		{
+			OptionName->Destination,
+			Default->Automatic,
+			AllowNull->False,
+			Widget->Widget[Type->Object,Pattern :> ObjectP[Object[Container,Site]],ObjectTypes->{Object[Container,Site]},PreparedContainer->False],
+			Description->"The ECL site the samples are being sent to."
+		},
+		IndexMatching[
+			IndexMatchingInput->"input",
+			{
+				OptionName->DateShipped,
+				Default->Automatic,
+				AllowNull->True,
+				Widget->Widget[Type->Date,Pattern :> _?DateObjectQ,TimeSelector->False],
+				Description->"The date the package was picked up by the shipping company.",
+				ResolutionDescription->"Set to Null when creating a new transaction, to Now when updating a transaction with shipping info for the first time, to the existing DateShipped value when updating a transaction.",
+				Category->"Shipping Information"
+			},
+			{
+				OptionName->ExpectedDeliveryDate,
+				Default->Automatic,
+				AllowNull->True,
+				Widget->Widget[Type->Date,Pattern :> _?DateObjectQ,TimeSelector->False],
+				Description->"The date that the samples are expected to arrive at the ECL facility.",
+				ResolutionDescription->"Automatic resolves to Null when creating a new transaction, and resolves to the existing DateExpected value when updating a transaction.",
+				Category->"Shipping Information"
+			},
+			{
+				OptionName->TrackingNumber,
+				Default->Automatic,
+				AllowNull->True,
+				Widget->Widget[Type->String,Pattern :> _String,Size->Word],
+				Description->"The tracking number(s) of the package(s) being shipped to the ECL facility.",
+				ResolutionDescription->"Automatic resolves to Null when creating a new transaction, and resolves to the existing TrackingNumbers value when updating a transaction.",
+				Category->"Shipping Information"
+			},
+			{
+				OptionName->Shipper,
+				Default->Automatic,
+				AllowNull->True,
+				Widget->Widget[
+					Type->Object,
+					Pattern :> ObjectP[Object[Company,Shipper]],ObjectTypes->{Object[Company,Shipper]},
+					OpenPaths -> {
+						{
+							Object[Catalog, "Root"],
+							"Shipping Companies"
+						}
+					}
+				],
+				Description->"The shipping company responsible for transporting the samples to ECL.",
+				ResolutionDescription->"Automatic resolves to Null when creating a new transaction, and resolves to the existing Shipper value when updating a transaction.",
+				Category->"Shipping Information"
+			},
+			{
+				OptionName->ShippedRack,
+				Default->Null,
+				AllowNull->True,
+				Widget->Widget[Type->Object,Pattern:>ObjectP[Model[Container, Rack]],PreparedContainer->False],
+				Description->"The rack that is shipped holding other items in this order. Only specify the number of racks that are physically shipped.",
+				Category->"Container Information"
+			},
+			{
+				OptionName->ContainerOut,
+				Default->Null,
+				AllowNull->True,
+				Widget->Widget[
+					Type->Object,
+					Pattern:>ObjectP[Model[Container]],
+					OpenPaths -> {
+						{
+							Object[Catalog, "Root"],
+							"Containers"
+						}
+					},
+					PreparedContainer->False
+				],
+				Description->"The type of container to transfer the sample into upon receipt.",
+				Category->"Sample Storage"
+			}
+		],
 		{
 			OptionName->Output,
 			Default->Result,
@@ -4776,50 +5230,6 @@ DefineOptions[ShipToECL,
 			],
 			Category->"Hidden",
 			Description->"Indicate what the function should return."
-		},
-		IndexMatching[
-			IndexMatchingParent -> EmptyContainers,
-			{
-				OptionName->EmptyContainers,
-				Default->Null,
-				AllowNull->True,
-				Widget->Alternatives[
-					Widget[Type->Object,Pattern:>ObjectP[{Model[Container]}]],
-					Adder[
-						Widget[Type->Object,Pattern:>ObjectP[{Model[Container]}]]
-					]
-				],
-				Description->"Containers with no contents in them matching the type of containers the samples being shipped are in. These are required when shipping samples in container types that have not previously been encountered at the ECL. The empty containers will be used for container parameterization, such as recording dimensions, measuring tare weights, and assaying the volume to liquid level relationship of the container, which are used throughout the ECL framework in the conduct of experiments.",
-				Category->"SampleStorage"
-			},
-			{
-				OptionName->EmptyContainerCovers,
-				Default->Null,
-				AllowNull->True,
-				Widget->Alternatives[
-					Widget[Type->Object,Pattern:>ObjectP[{Model[Item, Cap], Model[Item, Lid], Model[Item, PlateSeal]}]],
-					Adder[
-						Alternatives[
-							Widget[Type->Object,Pattern:>ObjectP[{Model[Item, Cap], Model[Item, Lid], Model[Item, PlateSeal]}]],
-							Widget[Type->Enumeration,Pattern:>Alternatives[None]]
-						]
-					]
-				],
-				Description->"Covers which are sealing the matching elements of EmptyContainers. If the container is shipped and/or stored without a cover, please use Null for that member of EmptyContainers.",
-				Category->"SampleStorage"
-			}
-		],
-		{
-			OptionName -> ReceivingTolerance,
-			Default -> 1*Percent,
-			Description -> "Defines the allowable difference between ordered amount and received amount for every item in the transaction. Any difference greater than the ReceivingTolerance will not be received, and will instead by investigated by Systems Diagnostics.",
-			AllowNull -> False,
-			Widget -> Widget[
-				Type -> Quantity,
-				Pattern :> RangeP[0Percent,100Percent],
-				Units :> Alternatives[Percent]
-			],
-			Category -> "Hidden"
 		},
 		EmailOption,
 		UploadOption,
@@ -4835,41 +5245,46 @@ DefineOptions[ShipToECL,
 (*Errors*)
 
 
-Error::NumberOfUsesNotRequired="The NumberOfUses option is not required for `1` because it is not an item for which number of injections is tracked (e.g. columns). Please set it to None or leave it blank.";
-Error::ContainerModelNotRequired="The ContainerModel option is not required for `1` because it is not a sample (and therefore is not in a container). Please set it to None or leave it blank.";
-Error::CoverModelNotRequired="The CoverModel option is not required for `1` because it is not a sample (and therefore is not in a container that has a cover). Please set it to Null or leave it blank.";
-Error::ContainerModelRequired="The ContainerModel option is required for `1` because it is a sample (and therefore will be in a container). Please specify `1` for this sample.";
-Error::CoverModelRequired="The CoverModel option is required for `1` because it is a sample (and therefore will be in a container with a cover). Please specify a CoverModel for this sample.";
-Error::IncompatibleCoverModel="The CoverModel option must not be set when the ContainerModel isself-covering, meaning that either Ampoule or BuiltInCover is True.";
-Error::PositionNotRequired="The Position option is not required for `1` because it is not a sample (and therefore is not in a container). Please set it to None or leave it blank.";
-Error::PositionRequired="The containers `1` have more than one allowed position. Please specify the position where the sample resides.";
+Error::NumberOfUsesNotRequired="The NumberOfUses option is not required for `1` because it is not an item for which number of injections is tracked (e.g. columns). Please set it to Null or leave it blank.";
+Error::IncompatibleCoverModel="The CoverModel option must not be set when the ContainerModel is self-covering, meaning that either Ampoule or BuiltInCover is True.";
+Error::PositionNotRequired="The Position option is not required for `1` because it is not a sample (and therefore is not in a container). Please set it to Null or leave it blank.";
+Error::PositionRequired="Position could not be determined for `1`. If position is not specified for any samples in a container it will be determined automatically by assuming the plate wells are filled according to the specified plate fill order.";
 Error::CountNotRequired="Count is not required for `1` because it is not a tablet.";
-Error::OptionNotRequired="The option `1` is not required for `2`. Please set it to None or leave it blank.";
-Error::OptionRequired="The option `1` must be specified for `2`. Please specify `1` for this sample.";
+Error::ShippingOptionNotRequired="The option `1` is not required for `2`. Please set it to Null or leave it unspecified.";
+Error::ShippingOptionRequired="The option `1` must be specified for `2`. Please specify `1` for this sample.";
 Error::InvalidPosition="The position specified for the input does not exist in the specified container: `1`.";
-Warning::AmountWillBeMeasured="Mass or Volume were not specified for `1`. The amount will be measured upon arrival at the ECL site. This may involve transferring or thawing samples. If you prefer to determine the sample amount yourself, please specify Mass or Volume.";
-Error::ReusedPosition="The inputs `1` were requested to be in the same position of the same container. Please ship samples in separate container positions. An input with the same container model, position, and name is considered to be in the same position.";
-Error::ContainerOutNotRequired="The ContainerOut option is not required for `1` because it is not a sample (and therefore will not be put into a container). Please set it to None or leave it blank.";
+Warning::AmountWillBeMeasured="No amount information was provided for `1`. The amount will be measured upon arrival at the ECL site. This may involve transferring or thawing samples. If you prefer to determine the sample amount yourself, please specify Mass, Volume or Count.";
+Error::ReusedPosition="The inputs `1` appear with other samples in the same positions of the same containers (e.g. both in multiple samples in well A1 of plate 1). Please make sure to specify a unique position for each sample. An input with the same container model, position, and name is considered to be in the same position.";
+Error::InsufficientContainerSpace="The containers `1` do not have sufficient space to hold the indicated samples. If these containers should have sufficient space adjust the ContainerModel or NumberOfWells. Alternatively, modify your container labels to indicate samples are in distinct containers.";
+Error::ContainerOutNotRequired="The ContainerOut option is not required for `1` because it is not a sample (and therefore will not be put into a container). Please set it to Null or leave it blank.";
 Error::ContainersMayNotSpanShipments="Multiple sets of shipping information is specified for each of these containers: `1`, Please specify only one set of shipping information (TrackingNumber, Shipper, DateShipped, DateExpected) for a container. Alternatively, a single value may be specified for each of these options. ";
 Error::NoNotebook = "The notebook could not be found. Please call this function from a notebook so that the financing team, the source of the transaction, and the location of items can be determined.";
-Error::ShipToECLDuplicateName="These names, `1`, are specified more that once for these models, `2`. Please make sure any specified names are unique between any input items, between any vessels in the ContainerModel option, and between any different plate models in the ContainerModel option. (It is allowed to use the same name for a plate as long as the plate is the same model for each instance where the name is used).";
+Error::ShipToECLDuplicateName="These names, `1`, are specified more that once for these models, `2`. Please make sure any specified names are unique between any input items or vessels.";
 Error::AmountNotRequired="Volume and Mass are not required for `1` because it is not a sample.";
 Error::InvalidDates = "The DateShipped `1` is later than the ExpectedDeliveryDate `2`. Please make sure that the shipment date is earlier than the expected delivery date.";
-Error::TrackingNumberAndShipperRequiredTogether = "Tracking number and shipper must either both be provided or not provided. Please set these tracking number/shipper pairs both to a value or to None: `1`";
-Error::NameInUse="These names, `1`, are already in use for types `2`. Use DatabaseMemberQ to verify that an name has not been taken or, alternatively, do not specify a name.";
+Error::TrackingNumberAndShipperRequiredTogether = "Tracking number and shipper must always be provided together. Please set these tracking number/shipper pairs both to a value or to Null: `1`.";
+Error::NameInUse="These names, `1`, are already in use for types `2`. Use DatabaseMemberQ to verify that a name has not been taken or, alternatively, do not specify a name.";
 Error::VolumeExceedsContainerOut="The specified container out, `1`, is too small for the specified volume `2` for input samples `3`.";
 Warning::ContainerOutNotValidated="The volume of `1` is not known. If the volume of the sample exceeds the volume of the specified container out, `2`, the sample will be transferred to a different container.";
 Error::ContainerOutInconsistent="The inputs `1` have different ContainerOut specifications `2`. Please specify only one ContainerOut per unique input, or do not specify ContainerOut.";
 Error::IncompatibleCoverModelType = "The ContainerModels `1` have CoverTypes and/or CoverFootprints fields that do not match the CoverModels `1`. If you are using a new type of cover, set CoverModel -> Automatic to allow for the creation of a new model during receiving.";
+Error::ContainerSpecificationConflict = "Container information must be consistent across all samples in the same container. Please check samples marked as being in the same containers (`1`), and provide additional unique labels to indicate these samples are actually in distinct containers or check `2` for consistency across this container.";
+Error::NoCompatibleRack = "The non-self standing ContainerModels `1` do not have any compatible rack models in the database. Please create a new rack model, order one to the lab, or correct the SelfStanding field of your ContainerModel if you believe that the container is capable of standing unsupported without invalidating results pertaining to the sample contained inside.";
+Error::IncompatibleProvidedRackModel = "The provided rack models `1` are not capable of holding containers of model `2` in an upright orientation. Please check the dimensions of the positions in this rack and ensure they are larger than the sample container but small enough to hold the sample securely or provide a different rack.";
+Error::TransactionStatus = "Once a transaction has been Received or Canceled it can no longer be updated. Please check the Status of `1`.";
 
+Error::ContainerModelTypeMismatch = "When specifying the ContainerModel option, ContainerType is determined automatically and cannot conflict with the type of model provided. Please check `1` and allow ContainerType to be determined automatically or ensure it matches with the provided model.";
+Error::NumberOfWellsMismatch = "The specified number of wells must match the recorded number of wells in the ContainerModel. Please allow number of wells to resolve automatically or don't specify the ContainerModel option in order to parameterize a new container during the receiving process.";
+Error::NonstandardWellNumber = "The samples `1` indicate they are in a vessel, but the NumberOfWells is greater than 1. Please set this to 1 or indicate samples are in a plate.";
+Error::ContainerInformationNotRequired="No information about the container model should be provided for `1` because it is not a sample (and therefore is not in a container). Please don't specify `2` for these items.";
+Error::ContainerInformationRequired="Information about the container is required for samples. Please check `1` and make sure `2` are not set to Null.";
+Warning::EmptyContainerUnneeded = "The specified container model for `1` has already been parameterized so you don't need to send an empty container, though there is no harm in doing so.";
+Warning::ContainerTransferForRoboticUse = "No model information was provided for the following containers: `1`. If you wish to guarantee use of these samples in a robotic process without having them automatically transferred into a new container, please provide container documentation. Note if your samples are already in an Emerald supported container, this can be determined during the receiving process and no information will be needed.";
+Error::PlateOptionsRequired = "As there are multiple samples in `1`, options describing the plate cannot be Null. Please provide unique labels to indicate these samples are actually in vessels or specify `2`.";
+Warning::UnneededContainerDocumentation = "No container documentation is needed for `1` as they are already in a known container model. This documentation will not be used. If a new container model should be created please set ContainerModel to a unique label or leave it unspecified.";
+Error::ConflictingContainerDocumentation = "Container documentation cannot be reused for containers with different properties. If providing documentation please make sure to specify a unique file for each unique type of plate and/or vessel being sent. Check `1`.";
+Error::ContainerDocumentationFiles = "Files specified for container documentation could not be found. Please check `1` and make sure these files exist on your local machine.";
 
-Error::EmptyContainerAbsent = "The samples `1` are arriving in containers that have not been parameterized for use within the ECL. To expedite the onboarding process, please send additional, empty containers of the same model (`2`) and indicate these are included by specifying the EmptyContainers option.";
-Error::IncompatibleEmptyContainerCover = "The EmptyContainers `1` do not have CoverFootprints and/or CoverTypes that can be used with the EmptyContainerCovers `1`.";
-Error::UnusedEmptyContainerCover = "The EmptyContainers `1` are self-covering and do not require a EmptyContainerCover. Please remove `2` from EmptyContainerCovers.";
-Warning::MissingEmptyContainerCover = "The EmptyContainers `1` do not have matching elements of EmptyContainerCovers specified. If these containers are physically covered, please inform the matching index of EmptyContainerCovers to avoid delays in receiving this shipment.";
-Error::EmptyContainerCoverLengthMismatch = "The EmptyContainers and EmptyContainerCovers fields are not the same length. Please specify an EmptyContainerCover (can be None) to match each member of EmptyContainers.";
-Error::NoCompatibleRack = "The non-selfstanding ContainerModels `1` do not have any compatible racks models in the database. Please create a new rack model, order one to the lab, or correct the SelfStanding field of your ContainerModel if you believe that the container is capable of standing unsupported without invalidating results pertaining to the sample contained inside.";
-Error::IncompatibleProvidedRackModel = "The provided rack models `1` are not capable of holding containers of model `2` in an upright orientation.";
 (* ::Subsubsection::Closed:: *)
 (*ShipToECL (model overload)*)
 
@@ -4881,31 +5296,34 @@ ShipToECL[{},myOptions:OptionsPattern[ShipToECL]]:={};
 
 
 (* Creates a transaction object for sending samples to user *)
-ShipToECL[myModels:ListableP[ObjectP[{Model[Item],Model[Sample]}]], myNames:ListableP[_String],myOptions:OptionsPattern[ShipToECL]]:=Module[
+ShipToECL[myModels:ListableP[ObjectP[{Model[Item],Model[Sample]}]], myContainerLabels:ListableP[_String],myOptions:OptionsPattern[ShipToECL]]:=Module[
 	{
-		requestor,safeOptions, sampleObjects,optionPackets, allPackets, modelFields, downloadPackets,cache,newCache,
-		transactionStatuses,expandedTrackingNumber,sourcePosition, team,sampleSourcePackets,
+		safeOptions, requestor, sampleObjects,optionPackets, allPackets, modelFields, downloadPackets,cache,newCache,
+		transactionStatuses,sourcePosition, team,sampleSourcePackets, cleanedInputModels, namedSafeOptions,
 		samplesAndShippingInfo,transactionInfoGroupedByShipping,containerTallies,splitContainers,transactionPackets,
 		partitionedSamples, partitionedContainers, partitionedDateExpected, partitionedTrackingNumber, partitionedShipper,
-		partitionedDateShipped,transactionStatusPackets,notebookTest,listedEmptyContainersLength, listedEmptyContainerCoversLength,
-		outputSpecification,output,listedOptions,collapsedOptions,resolvedOptionsMinusHiddenOptions,gatherTests,safeOptionTests,validLengths,validLengthTests,
+		partitionedDateShipped,transactionStatusPackets,notebookTest,
+		outputSpecification,output,listedOptions,resolvedOptionsForDisplay,gatherTests,safeOptionTests,validLengths,validLengthTests,
 		resolvedOptions,resolvedOptionsTests,resolvedOptionsResult,itemsToMake,itemStorageConditions,newItemPackets,itemObjects,
 		previewRule,optionsRule,testsRule, resultRule,splitContainerTest,messagesBoolean, storageConditionsFields,storageConditions,nameOption,
-		sampleDestinationPackets,nameUniquenessTests, nameInvalidBools,modelContainerFields, containerSourcePackets, partitionedContainerOut,
-		expandedOptions,expandedOptionsWithTrackingNumber, expandedModelSamples, expandedNames,listedModels, listedNames,specifiedContainerModels,specifiedRackModels, rackModelFields,
-		resolvedContainerModels,desiredContainerModels,desiredContainerNames,nonDuplicateContainerModelsAndNames,nonDuplicateContainerModels,
-		nonDuplicateContainerNames,newContainerPackets,newContainerPacketsNoPrice,selectedNewContainerPackets,
-		indexedNewContainerPackets,samplesToMake,samplePositions,sampleLocations,sampleStorageConditions,newSamplePackets,
-		itemIndexes,sampleIndexes,indexObjectRules,indexedCreatedObjects,sampleToContainerRules,indexedCreatedContainers,noneQ,
-		allObjectSampleEHSFields,emptyContainers,emptyContainerCovers, emptyContainerModelContainerFields,emptyContainerCoverModelCoverFields, emptyContainerModels,
-		newEmptyContainerObjectPackets,newEmptyContainerObjectPacketsOnly,validEmptyContainerCoverLengths,validEmptyContainerCoverLengthTests,
-
-		(*variables for cover suport and feature flag*)
-		specifiedCoverModels, modelCoverFields, newContainerObjects, nameToContainerLookup, resolvedCoverModels, desiredCoverModels, desiredCoverNames, nonDuplicateCoverModelsAndNames, nonDuplicateCoverModels, nonDuplicateCoverNames,
-		newCoverPackets,newCoverObjects, nameToCoverLookup, validContainerCoverTuples, crimpCoverModels, selectedContainerCoverTuples, uploadCoverPackets,
-		coverTypes, newCrimpedCoverPackets, selectedContainerCoverUploadPackets, selectedCoverObjects, newEmptyContainerCoverPackets,newEmptyContainerCoverPacketsForUpload,
-		uploadEmptyContainerCoverPackets, emptyContainerCoverModels, resolvedEmptyContainerCoverModels, emptyContainerCoverTuples, newEmptyContainerCoverObjects,
-		partitionedRacks, newRackObjects, newRackPackets
+		sampleDestinationPackets, modelContainerFields, containerSourcePackets, partitionedContainerOut,
+		expandedOptions, expandedModelSamples, expandedNames,listedModels, listedNames,specifiedContainerModels,specifiedRackModels, rackModelFields,
+		resolvedContainerModels, containersAndCoverModels,newCapTuples,newLidTuples,newCapsModels,newLidsModels,
+		coverModelIDLookup,updatedCoverModels,newCoverModelPackets,coverModelIDs,sampleCoversTuples,sampleCoversToCreate,coveredContainers,
+		emptyCoverTuples,emptyCoverModels,coveredEmptyContainers,allNewCoverModels,newCoverUploadPackets,cleanedCoverPackets,
+		newSampleCoverPackets,newSampleCoverObjects,resolvedContainerTypes,containerDocumentationFiles,resolvedNumberOfWells,
+		newUserDocFiles,userDocWebsites,urlFilePaths,newUserDocsUploadPacket,userDocsLookup,
+		mergedUserDocs,containerTypesAndModels,newVesselModelsNeeded,requiredPositionsLookup,
+		newPlateModelsNeeded,newVesselModels,newPlateModels,containerModelIDLookup,updatedContainerModels,newContainerModelPackets,containerModelIDs,
+		desiredContainerModels,desiredContainerNames,nonDuplicateContainerModelsAndNames,nonDuplicateContainerModels,
+		nonDuplicateContainerNames, emptiesSent,nonDuplicateEmptyContainerModelsAndNames,nonDuplicateEmptyContainerModels,
+		nonDuplicateEmptyContainerNames,allNewContainerModels,newContainerUploadPackets,
+		newContainerPackets,newSampleContainerPackets,newEmptyContainerPackets, indexMatchedSampleContainers,
+		samplesToMake,samplePositions,sampleContainers,sampleLocations,sampleStorageConditions,newSamplePackets,
+		itemIndexes,sampleIndexes,indexObjectRules,indexedCreatedObjects,sampleToContainerRules,indexedCreatedContainers,
+		allObjectSampleEHSFields, specifiedCoverModels, modelCoverFields, resolvedCoverModels, newCoverPackets,
+		uploadCoverPackets, newEmptyContainerCoverPackets,
+		newEmptyContainerCoverObjects, partitionedRacks, newRackObjects, newRackPackets, formatCachePacket
 	},
 
 	(* ------------------------ *)
@@ -4926,22 +5344,20 @@ ShipToECL[myModels:ListableP[ObjectP[{Model[Item],Model[Sample]}]], myNames:List
 	messagesBoolean = !gatherTests;
 
 	(* Call SafeOptions to make sure all options match pattern *)
-	{safeOptions,safeOptionTests}=If[gatherTests,
+	{namedSafeOptions,safeOptionTests}=If[gatherTests,
 		SafeOptions[ShipToECL,listedOptions,AutoCorrect->False, Output->{Result,Tests}],
 		{SafeOptions[ShipToECL,listedOptions,AutoCorrect->False],Null}
 	];
 
 	(*If the specified options don't match their patterns return $Failed*)
-	If[MatchQ[safeOptions,$Failed],
+	If[MatchQ[namedSafeOptions,$Failed],
 		Return[outputSpecification/.{
 			Result -> $Failed,
-			Tests -> Append[safeOptionTests, Test["The EmptyContainers and EmptyContainerCovers options have the same length.",True,True]],
+			Tests -> safeOptionTests,
 			Options -> $Failed,
 			Preview -> Null
 		}]
 	];
-
-	cache = Lookup[safeOptions,Cache];
 
 	(* if not gathering tests, then throw an error if notebook is null *)
 	If[!gatherTests && NullQ[$Notebook],
@@ -4961,35 +5377,37 @@ ShipToECL[myModels:ListableP[ObjectP[{Model[Item],Model[Sample]}]], myNames:List
 		Return[outputSpecification/.{
 			Result -> $Failed,
 			Tests -> {notebookTest},
+			Options -> namedSafeOptions,
+			Preview -> Null
+		}]
+	];
+
+	(* If Null of the inputs are listed, list them (otherwise ExpandIndexMatchedInputs doesn't expand them)*)
+	{listedModels, listedNames}=If[MatchQ[{myModels,myContainerLabels}, {Except[_List], Except[_List]}],
+		ToList/@{myModels,myContainerLabels},
+		{myModels,myContainerLabels}
+	];
+
+	(* Expand any single inputs *)
+	{{expandedModelSamples, expandedNames}, expandedOptions}=ExpandIndexMatchedInputs[ShipToECL, {listedModels, listedNames}, namedSafeOptions, 1];
+
+	(* replace all objects referenced by Name to ID and verify IDs exist *)
+	{cleanedInputModels, safeOptions} = Experiment`Private`sanitizeInputs[expandedModelSamples, namedSafeOptions];
+
+	If[MatchQ[safeOptions, $Failed],
+		Return[outputSpecification/.{
+			Result -> $Failed,
+			Tests -> safeOptionTests,
 			Options -> safeOptions,
 			Preview -> Null
 		}]
 	];
 
-	(* If none of the inputs are listed, list them (otherwise ExpandIndexMatchedInputs doesn't expand them)*)
-	{listedModels, listedNames}=If[MatchQ[{myModels,myNames}, {Except[_List], Except[_List]}],
-		ToList/@{myModels,myNames},
-		{myModels,myNames}
-	];
-
-	(* Expand any single inputs *)
-	{{expandedModelSamples, expandedNames}, expandedOptions}=ExpandIndexMatchedInputs[ShipToECL, {listedModels, listedNames}, safeOptions, 1];
-
-	(* Because the TrackingNumber pattern allows a list of tracking numbers as well as a nested list of tracking numbers (for the transaction overload), the expander doesn't know how to handle it, so update it here *)
-	expandedTrackingNumber=With[{trackingNumber=(TrackingNumber/.safeOptions)},
-		If[ListQ[trackingNumber],
-			trackingNumber,
-			ConstantArray[trackingNumber,Length[expandedModelSamples]]
-		]
-	];
-	expandedOptionsWithTrackingNumber=ReplaceRule[expandedOptions,TrackingNumber->expandedTrackingNumber];
-
-
 	(* Call ValidOptionLengthsQ to make sure all options are the right length *)
 	(* Silence the missing option errors *)
 	{validLengths,validLengthTests}=Quiet[If[MemberQ[ToList[outputSpecification],Tests],
-		ValidInputLengthsQ[ShipToECL,{expandedModelSamples, expandedNames},safeOptions,1,Output->{Result,Tests}],
-		{ValidInputLengthsQ[ShipToECL,{expandedModelSamples, expandedNames},safeOptions,1],Null}
+		ValidInputLengthsQ[ShipToECL,{cleanedInputModels, expandedNames},safeOptions,1,Output->{Result,Tests}],
+		{ValidInputLengthsQ[ShipToECL,{cleanedInputModels, expandedNames},safeOptions,1],Null}
 	],
 		Warning::IndexMatchingOptionMissing
 	];
@@ -5007,54 +5425,33 @@ ShipToECL[myModels:ListableP[ObjectP[{Model[Item],Model[Sample]}]], myNames:List
 	(* Get the current user. The person who is logged in is the person making the transaction *)
 	requestor=$PersonID;
 
-	(* get the lengths of the provided EmptyContainer and EmptyContainerCovers options *)
-	listedEmptyContainersLength = Length[ToList[Lookup[safeOptions,EmptyContainers,{}]]];
-	listedEmptyContainerCoversLength = Length[ToList[Lookup[safeOptions,EmptyContainerCovers,{}]]];
-
-	(* check option lengths for empty containers too *)
-	{validEmptyContainerCoverLengths,validEmptyContainerCoverLengthTests} =If[gatherTests,
-		If[!MatchQ[listedEmptyContainersLength, listedEmptyContainerCoversLength],
-			{False, {Test["Each member of EmptyContainers has a matching element of EmptyContainerCovers:", True, False]}},
-			{True, {Test["Each member of EmptyContainers has a matching element of EmptyContainerCovers:", True, True]}}
-		],
-		If[!MatchQ[listedEmptyContainersLength, listedEmptyContainerCoversLength],
-			{False, {}},
-			{True, {}}
-		]
-	];
-
-	(*enforce the index matching of EmptyContainers and EmptyContainerCovers*)
-	If[!validEmptyContainerCoverLengths,
-		If[gatherTests,
-			Nothing,
-			Message[Error::EmptyContainerCoverLengthMismatch]
-		];
-		Return[outputSpecification/.{
-			Result -> $Failed,
-			Tests -> Join[safeOptionTests,validLengthTests,validEmptyContainerCoverLengthTests],
-			Options -> $Failed,
-			Preview -> Null
-		}]
-	];
-
-
 	(* -------------- *)
 	(* -- Download -- *)
 	(* -------------- *)
-
-	(* Note that Empty containers and covers will now always be Models, since Users cant create Objects anyway *)
-	(* Gather the list of provided EmptyContainers and their covers, if any *)
-	emptyContainers = ToList[Lookup[safeOptions,EmptyContainers,{}]/.Null->{}];
-	emptyContainerCovers = DeleteCases[ToList[Lookup[safeOptions,EmptyContainerCovers,{}]/.Null->{}], (Null|None)];
 
 	(* Assemble the fields to download for the any model containers in the options *)
 	specifiedContainerModels = DeleteDuplicates[Cases[Lookup[safeOptions, ContainerModel], ObjectP[]]];
 	specifiedRackModels = DeleteDuplicates[Cases[Lookup[safeOptions, ShippedRack], ObjectP[]]];
 
 	rackModelFields = ConstantArray[{Packet[Positions]}, Length[specifiedRackModels]];
-	modelContainerFields=ConstantArray[{Packet[Positions,Dimensions,VerifiedContainerModel, BuiltInCover, Ampoule, CoverFootprints, CoverTypes, Footprint, SelfStanding]}, Length[specifiedContainerModels]];
-	emptyContainerModelContainerFields=ConstantArray[{Packet[Positions,Dimensions,VerifiedContainerModel,Footprint, BuiltInCover, Ampoule, CoverFootprints, CoverTypes, SelfStanding]}, Length[emptyContainers]];
-	emptyContainerCoverModelCoverFields=ConstantArray[{Packet[CoverFootprint, CoverType, VerifiedCoverModel]}, Length[emptyContainerCovers]];
+	modelContainerFields=ConstantArray[
+		{
+			Packet[
+				Positions,
+				Dimensions,
+				VerifiedContainerModel,
+				BuiltInCover,
+				Ampoule,
+				CoverFootprints,
+				CoverTypes,
+				Footprint,
+				SelfStanding,
+				NumberOfWells,
+				AspectRatio
+			]
+		},
+		Length[specifiedContainerModels]
+	];
 
 	(* Assemble fields to download for any covers *)
 	specifiedCoverModels = DeleteDuplicates[Cases[Lookup[safeOptions, CoverModel], ObjectP[]]];
@@ -5067,11 +5464,47 @@ ShipToECL[myModels:ListableP[ObjectP[{Model[Item],Model[Sample]}]], myNames:List
 	];
 
 	(* Assemble the fields to download for the input models *)
-	modelFields=ConstantArray[{Packet[DefaultStorageCondition,State,Flammable,Acid,Base,Pyrophoric, Dimensions,Tablet, TabletWeight, Density, Composition, Solvent, Sequence@@allObjectSampleEHSFields,Products]},Length[expandedModelSamples]];
+	modelFields=ConstantArray[
+		{
+			Packet[
+				DefaultStorageCondition,
+				State,
+				Flammable,
+				Acid,
+				Base,
+				Pyrophoric,
+				Dimensions,
+				Tablet,
+				SolidUnitWeight,
+				Density,
+				Composition,
+				Solvent,
+				Sequence@@allObjectSampleEHSFields,
+				Products]
+		},
+		Length[cleanedInputModels]
+	];
 
 	(* Get the model storage conditions and assemble fields we want to download from them *)
 	storageConditions=Search[Model[StorageCondition]];
-	storageConditionsFields=ConstantArray[{Packet[Temperature,Flammable,Acid,Base,Pyrophoric,PricingRate,Flammable,StorageCondition,Desiccated,AtmosphericCondition]},Length[storageConditions]];
+	storageConditionsFields=ConstantArray[
+		{
+			Packet[
+				Temperature,
+				Flammable,
+				Acid,
+				Base,
+				Pyrophoric,
+				PricingRate,
+				Flammable,
+				StorageCondition,
+				Desiccated,
+				AtmosphericCondition]
+		},
+		Length[storageConditions]
+	];
+
+	cache = Lookup[safeOptions,Cache];
 
 	(* Download Call *)
 	downloadPackets=Quiet[
@@ -5081,13 +5514,10 @@ ShipToECL[myModels:ListableP[ObjectP[{Model[Item],Model[Sample]}]], myNames:List
 				$Notebook,
 				$Notebook,
 				{Lookup[safeOptions,Source] /. Automatic -> Null},
-				expandedModelSamples,
+				cleanedInputModels,
 				storageConditions,
 				specifiedContainerModels,
-				emptyContainers,
-				emptyContainerCovers,
-				specifiedRackModels(*,
-				specifiedCoverModels*)
+				specifiedRackModels
 			}],
 			Evaluate[Join[
 				{{Financers[DefaultMailingAddress][Object]}},
@@ -5097,10 +5527,7 @@ ShipToECL[myModels:ListableP[ObjectP[{Model[Item],Model[Sample]}]], myNames:List
 				modelFields,
 				storageConditionsFields,
 				modelContainerFields,
-				emptyContainerModelContainerFields,
-				emptyContainerCoverModelCoverFields,
-				rackModelFields(*,
-				modelCoverFields*)
+				rackModelFields
 			]],
 			Cache->cache,
 			Date -> Now
@@ -5110,7 +5537,7 @@ ShipToECL[myModels:ListableP[ObjectP[{Model[Item],Model[Sample]}]], myNames:List
 
 	(* Get the financer of the notebook *)
 	(* Eventually, there will only be one financer per notebook, but for now it is still a multiple *)
-	team=FirstOrDefault[Flatten[downloadPackets[[3]]]];
+	team=FirstOrDefault[Flatten[{downloadPackets[[3]]}]];
 
 	(* Combine the downloaded packets with the old cache to get the new cache. *)
 	newCache = Cases[Flatten[{Lookup[safeOptions,Cache], downloadPackets}], PacketP[]];
@@ -5122,7 +5549,7 @@ ShipToECL[myModels:ListableP[ObjectP[{Model[Item],Model[Sample]}]], myNames:List
 	(* Build the resolved options *)
 	resolvedOptionsResult=If[gatherTests,
 		(* We are gathering tests. This silences any messages being thrown. *)
-		{resolvedOptions,resolvedOptionsTests}=resolveShipToECLOptions[expandedModelSamples,expandedNames,expandedOptionsWithTrackingNumber,Cache->newCache,Output->{Result,Tests}];
+		{resolvedOptions,resolvedOptionsTests}=resolveShipToECLOptions[cleanedInputModels,expandedNames,expandedOptions,Cache->newCache,Output->{Result,Tests}];
 
 		(* Therefore, we have to run the tests to see if we encountered a failure. *)
 		If[RunUnitTest[<|"Tests"->resolvedOptionsTests|>,OutputFormat->SingleBoolean,Verbose->False],
@@ -5132,10 +5559,19 @@ ShipToECL[myModels:ListableP[ObjectP[{Model[Item],Model[Sample]}]], myNames:List
 
 		(* We are not gathering tests. Simply check for Error::InvalidInput and Error::InvalidOption. *)
 		Check[
-			{resolvedOptions,resolvedOptionsTests}={resolveShipToECLOptions[expandedModelSamples,expandedNames,expandedOptionsWithTrackingNumber,Cache->newCache],{}},
+			{resolvedOptions,resolvedOptionsTests}={resolveShipToECLOptions[cleanedInputModels,expandedNames,expandedOptions,Cache->newCache],{}},
 			$Failed,
 			{Error::InvalidInput,Error::InvalidOption}
 		]
+	];
+
+	resolvedOptionsForDisplay=If[MatchQ[resolvedOptions,{(_Rule|_RuleDelayed)..}],
+		CollapseIndexMatchedOptions[
+			ShipToECL,
+			RemoveHiddenOptions[ShipToECL, resolvedOptions],
+			Messages -> False
+		],
+		resolvedOptions
 	];
 
 	(* If option resolution failed, return here *)
@@ -5143,7 +5579,18 @@ ShipToECL[myModels:ListableP[ObjectP[{Model[Item],Model[Sample]}]], myNames:List
 		Return[outputSpecification/.{
 			Result -> $Failed,
 			Tests -> Join[safeOptionTests,validLengthTests,resolvedOptionsTests],
-			Options -> resolvedOptions,
+			Options -> resolvedOptionsForDisplay,
+			Preview -> Null
+		}]
+	];
+
+	(* For speed, we don't want to create all the upload packets if we aren't asking for a result *)
+	(* If these uploads are throwing any errors we need to add to our resolver checks to avoid, but we don't expect that *)
+	If[!MemberQ[ToList[outputSpecification],Result],
+		Return[outputSpecification/.{
+			Result -> Null,
+			Tests -> Join[safeOptionTests,validLengthTests,resolvedOptionsTests],
+			Options -> resolvedOptionsForDisplay,
 			Preview -> Null
 		}]
 	];
@@ -5151,6 +5598,10 @@ ShipToECL[myModels:ListableP[ObjectP[{Model[Item],Model[Sample]}]], myNames:List
 	(* ------------------------ *)
 	(* -- Create new objects -- *)
 	(* ------------------------ *)
+
+	(* We want to upload all our packets at the same time. We will need to send in new packets using the cache option to certain functions *)
+	(* In order to use a packet for a cache any Append/Replace heads must be removed. This is safe since we're only using this for new objects *)
+	formatCachePacket[packet_Association]:=KeyMap[Replace[#, {Replace[field_] :> field, Append[field_] :> field}]&,packet];
 
 	(* We will use the first position of the source site as the container for any items *)
 	sourcePosition = If[MatchQ[Lookup[safeOptions,Source],ObjectP[Object[Container,Site]]],
@@ -5162,200 +5613,241 @@ ShipToECL[myModels:ListableP[ObjectP[{Model[Item],Model[Sample]}]], myNames:List
 	(* -- Make the new containers --  *)
 	(* ------------------------------ *)
 
-	(* -- Containers with contents -- *)
-	(* look up our resolved container models *)
-	resolvedContainerModels = Lookup[resolvedOptions,ContainerModel];
-	desiredContainerModels = Cases[resolvedContainerModels,ObjectP[]];
-	desiredContainerNames = PickList[expandedNames,resolvedContainerModels,ObjectP[]];
+	{resolvedContainerModels,resolvedContainerTypes,containerDocumentationFiles,resolvedNumberOfWells} = Lookup[
+		resolvedOptions,
+		{ContainerModel, ContainerType, ContainerDocumentation, NumberOfWells}
+	];
+
+	(* Prepare user documentation files. FilePathP can match URLs so pull those out first *)
+	userDocWebsites = DeleteDuplicates[Cases[containerDocumentationFiles, URLP]];
+	newUserDocFiles = DeleteDuplicates[Complement[Cases[containerDocumentationFiles, FilePathP],userDocWebsites]];
+
+	(* If the user sent us a url for now we will just stash that in a file. Ultimately we should try to download this, but just URLDownload is unreliable  *)
+	urlFilePaths = FileNameJoin[{$TemporaryDirectory, ToString[CreateUUID[]] <> ".txt"}] & /@ userDocWebsites;
+	MapThread[Export[#1, #2] &, {urlFilePaths, userDocWebsites}];
+
+	(* Create our unique cloud files and then restore index-matching *)
+	newUserDocsUploadPacket = UploadCloudFile[Join[newUserDocFiles,urlFilePaths], Upload->False];
+	userDocsLookup = AssociationThread[Join[newUserDocFiles,userDocWebsites], Lookup[newUserDocsUploadPacket,Object]];
+
+	(* Re-index our docs. We leave this option as a long Automatic so it's not a hidden Null but don't want to try to put that in a field *)
+	mergedUserDocs = Map[
+		Lookup[userDocsLookup, #, #/.Automatic->Null]&,
+		containerDocumentationFiles
+	];
+
+	(* Make new container models - one for each unique string provided *)
+	containerTypesAndModels = Transpose[{resolvedContainerTypes, resolvedContainerModels}];
+
+	(* Get the unique vessel and plate models needed *)
+	newVesselModelsNeeded = DeleteDuplicates[Cases[containerTypesAndModels, {Vessel, _String}]];
+	newPlateModelsNeeded = DeleteDuplicates[Cases[containerTypesAndModels, {Plate, _String}]];
+
+	newVesselModels = CreateID[ConstantArray[Model[Container,Vessel],Length[newVesselModelsNeeded]]];
+	newPlateModels = CreateID[ConstantArray[Model[Container,Plate],Length[newPlateModelsNeeded]]];
+
+	(* Make a lookup to link container model info to their new IDs *)
+	containerModelIDLookup = AssociationThread[
+		Join[newVesselModelsNeeded, newPlateModelsNeeded],
+		Join[newVesselModels, newPlateModels]
+	];
+
+	(* Positions needed in plate - format container model/position info as <|model -> {position, ...}|> *)
+	requiredPositionsLookup = GroupBy[Transpose[Lookup[resolvedOptions, {ContainerModel, Position}]], First -> Last];
+
+	(* Create our packets. We're preserving index matching here so we will end up with some duplicate packets with the same IDs and info *)
+	updatedContainerModels = MapThread[
+		Function[{containerModel, newContainerType, userDocs},
+			If[MatchQ[containerModel, _String],
+				Module[{requiredPositions},
+
+					(* Just make positions for the wells that we know have sample, can't really trust anything beyond that *)
+					(* ValidUploadLocationQ will check that our containers have these positions when we go to make samples *)
+					requiredPositions=Lookup[requiredPositionsLookup,containerModel];
+
+					<|
+						Object -> Lookup[containerModelIDLookup, Key[{newContainerType, containerModel}]],
+						Replace[ProductDocumentationFiles] -> Link[userDocs],
+						ParameterizationPlaceholder -> True,
+						VerifiedContainerModel -> False,
+						Replace[Positions] -> (
+							Map[
+								<|
+									Name -> #,
+									Footprint -> Null,
+									MaxWidth -> Null, MaxDepth -> Null, MaxHeight -> Null
+								|>&,
+								requiredPositions
+							]
+						),
+						(* We add dummy dimensions here so we can store our containers before parameterization *)
+						(* These should get updated during the receive *)
+						(* This is the same strategy used in compileReceiveInventory for products with new containers *)
+						Dimensions -> {1 Millimeter, 1 Millimeter, 1 Millimeter}
+					|>
+				],
+				containerModel
+			]
+		],
+		{resolvedContainerModels, resolvedContainerTypes, mergedUserDocs}
+	];
+
+	(* Get our list of container models to upload *)
+	newContainerModelPackets=DeleteDuplicates[Cases[updatedContainerModels,PacketP[]]];
+
+	containerModelIDs = Map[
+		If[MatchQ[#, PacketP[]],
+			Lookup[#, Object],
+			#
+		]&,
+		updatedContainerModels
+	];
+
+	(* -- Prepare to create the containers holding the samples being shipped  -- *)
+	desiredContainerModels = Cases[containerModelIDs,ObjectP[]];
+	desiredContainerNames = PickList[expandedNames,containerModelIDs,ObjectP[]];
 
 	nonDuplicateContainerModelsAndNames = DeleteDuplicates[Transpose[{desiredContainerModels, desiredContainerNames}]];
 	nonDuplicateContainerModels = nonDuplicateContainerModelsAndNames[[All,1]];
 	nonDuplicateContainerNames = nonDuplicateContainerModelsAndNames[[All,2]];
 
-	newContainerPackets = UploadSample[
-		nonDuplicateContainerModels,
-		ConstantArray[{sourcePosition, Lookup[resolvedOptions, Source]}, Length[nonDuplicateContainerModels]],
-		Name -> nonDuplicateContainerNames, Status -> Transit, Upload -> False, FastTrack -> True, Cache -> {}
-	];
+	(* -- Prepare to create the empty containers -- *)
+	emptiesSent = Lookup[resolvedOptions, EmptyContainerSent];
+	nonDuplicateEmptyContainerModelsAndNames = Cases[DeleteDuplicates[Transpose[{emptiesSent, containerModelIDs, expandedNames}]], {True,_,_}];
+	nonDuplicateEmptyContainerModels = nonDuplicateEmptyContainerModelsAndNames[[All,2]];
+	nonDuplicateEmptyContainerNames = "Empty Container for "<>#&/@nonDuplicateEmptyContainerModelsAndNames[[All,3]];
 
-	(* -- EmptyContainers -- *)
-	(* Gather the models present in EmptyContainers *)
-	emptyContainerModels = Cases[emptyContainers,ObjectP[Model[Container]]];
+	allNewContainerModels=Join[nonDuplicateContainerModels,nonDuplicateEmptyContainerModels];
 
-	(* For each Object[Container] in our EmptyContainers option, create a new object *)
-	newEmptyContainerObjectPackets = UploadSample[
-		emptyContainerModels,
-		ConstantArray[{sourcePosition, Lookup[resolvedOptions, Source]}, Length[emptyContainerModels]],
-		Status -> Transit, Upload -> False, FastTrack -> True, Cache -> {}
+	newContainerUploadPackets = UploadSample[
+		allNewContainerModels,
+		ConstantArray[
+			{sourcePosition, Lookup[resolvedOptions, Source]},
+			Length[allNewContainerModels]
+		],
+		Name -> Join[nonDuplicateContainerNames,nonDuplicateEmptyContainerNames],
+		Status -> Transit, Upload -> False, FastTrack -> True, Cache -> (formatCachePacket/@Cases[updatedContainerModels,PacketP[]]),
+		StorageCondition -> Join[
+			ConstantArray[Automatic,Length[nonDuplicateContainerModels]],
+			ConstantArray[AmbientStorage,Length[nonDuplicateEmptyContainerModels]]
+		]
 	];
 
 	(* Upload sample will return all modified objects, including the Site. We only want the containers created, which are
 	 the first N objects returned, where N is the number of models we generated a container for *)
-	newEmptyContainerObjectPacketsOnly = Take[newEmptyContainerObjectPackets, Length[emptyContainerModels]];
+	newContainerPackets = Take[newContainerUploadPackets, Length[allNewContainerModels]];
+	{newSampleContainerPackets, newEmptyContainerPackets} = TakeDrop[newContainerPackets, Length[nonDuplicateContainerModels]];
 
-	(* Delete the pricing info from the new container packets so that it doesn't get double counted when we upload samples into these packets *)
-	newContainerPacketsNoPrice=DeleteCases[newContainerPackets, KeyValuePattern[{Append[StoragePrices] -> UnitsP[]}]];
-
-	(* Get the new container packets to pass as input to UploadSample when we make the samples *)
-	selectedNewContainerPackets = Take[newContainerPacketsNoPrice, Length[nonDuplicateContainerModels]];
-
-	(* Reindex the container packets to the container model option *)
-	indexedNewContainerPackets = MapThread[Function[{containerModel,containerName},
-		If[MatchQ[containerModel,ObjectP[]],
-			FirstCase[selectedNewContainerPackets,KeyValuePattern[{Name->containerName,Model->LinkP[containerModel]}]],
-			Nothing
-		]
-	],{resolvedContainerModels,expandedNames}];
-
-	(* get teh first set of packets to obtain the new container IDs *)
-	newContainerObjects = Lookup[Take[newContainerPackets, Length[nonDuplicateContainerModels]], Object, {}];
-
-	(*name to container map*)
-	nameToContainerLookup = MapThread[#1 -> #2&,{nonDuplicateContainerNames, newContainerObjects}];
+	(* Reindex the container object packets to our inputs *)
+	indexMatchedSampleContainers = MapThread[
+		Function[{containerModel,containerName},
+			If[MatchQ[containerModel,ObjectP[]],
+				FirstCase[newSampleContainerPackets,KeyValuePattern[{Name->containerName,Model->LinkP[containerModel]}]],
+				Null
+			]
+		],
+		{containerModelIDs,expandedNames}
+	];
 
 	(* ------------------- *)
 	(* -- Upload Covers -- *)
 	(* ------------------- *)
 
-	(* -- Empty container covers -- *)
+	resolvedCoverModels = Lookup[resolvedOptions, CoverModel];
 
-	(* the container cover pairs are already index matched to eachother as enforced in teh resolver *)
-	(* all of the containers will be Models,  *)
-	resolvedEmptyContainerCoverModels = Lookup[resolvedOptions, EmptyContainerCovers];
-	emptyContainerCoverModels = Cases[resolvedEmptyContainerCoverModels, ObjectP[]];
+	(* Get a list of all sample covers needed *)
+	(* Make a new container models - one for each unique string provided *)
+	containersAndCoverModels = Transpose[{resolvedContainerTypes, resolvedCoverModels}];
 
-	(*upload the new cover packets for the empty containers if there are any*)
-	newEmptyContainerCoverPackets = If[MatchQ[emptyContainerCoverModels, {}],
-		{},
-		UploadSample[
-			emptyContainerCoverModels,
-			ConstantArray[{sourcePosition, Lookup[resolvedOptions, Source]}, Length[emptyContainerCoverModels]],
-			Status -> Transit,
-			Upload -> False,
-			FastTrack -> True,
-			Cache -> {}
-		]
+	(* Get the unique vessel and plate models needed *)
+	newCapTuples = DeleteDuplicates[Cases[containersAndCoverModels, {Vessel, _String}]];
+	newLidTuples = DeleteDuplicates[Cases[containersAndCoverModels, {Plate, _String}]];
+
+	newCapsModels = CreateID[ConstantArray[Model[Item, Cap],Length[newCapTuples]]];
+	newLidsModels = CreateID[ConstantArray[Model[Item, PlateSeal],Length[newLidTuples]]];
+
+	(* Make a lookup to link cover model info to their new IDs *)
+	coverModelIDLookup = AssociationThread[
+		Join[newCapTuples, newLidTuples],
+		Join[newCapsModels, newLidsModels]
 	];
 
-	(* remove any packets that deal with location, as these caps are going straight on to the container *)
-	newEmptyContainerCoverPacketsForUpload = DeleteCases[newEmptyContainerCoverPackets, (KeyValuePattern[Append[Contents]->_]|KeyValuePattern[Container -> _])];
-
-	(* get the object to make this a bit easier *)
-	newEmptyContainerCoverObjects = Lookup[Take[newEmptyContainerCoverPackets, Length[emptyContainerCoverModels]], Object, {}];
-
-	(* mapthread the packets together in order to match the empty contaienrs with their covers when applicable *)
-	(* because we know that if empty containers exist, each element of empty containers will have produced a packet *)
-	(* if we dont have any cover packets, dont bother *)
-	emptyContainerCoverTuples = If[MatchQ[newEmptyContainerCoverObjects, {}],
-		{},
-
-		(* if there was a container, then we actually need to figure it out *)
-		Module[{modelPositions, matchedEmptyCoverObjects,matchedCoverReplaceRules},
-			(*get the non Null/None positions*)
-			modelPositions = Flatten[Position[resolvedEmptyContainerCoverModels, ObjectP[]]];
-			(* make rules to swap out the models for their objects *)
-			matchedCoverReplaceRules = MapThread[(#1->#2)&,{modelPositions, newEmptyContainerCoverObjects}];
-			(*apply the rules*)
-			matchedEmptyCoverObjects = ReplacePart[modelPositions, matchedCoverReplaceRules];
-
-			(*now that things are matched up, we can make the tuples*)
-			Cases[Transpose[{Lookup[newEmptyContainerObjectPacketsOnly, Object], matchedEmptyCoverObjects}], {ObjectP[], ObjectP[]}]
-		]
+	(* Note we may end up with duplicate packets here since each plate only needs one lid but we'll have unique ID *)
+	updatedCoverModels = MapThread[
+		Function[{containerType, coverModel},
+			If[StringQ[coverModel],
+				<|
+					Object -> Lookup[coverModelIDLookup, Key[{containerType, coverModel}]],
+					VerifiedCoverModel -> False
+				|>,
+				coverModel
+			]
+		],
+		{resolvedContainerTypes, resolvedCoverModels}
 	];
 
+	(* Get our list of container models to upload *)
+	newCoverModelPackets=DeleteDuplicates[Cases[updatedCoverModels,PacketP[]]];
 
-	(*Upload cover using a lazy fake cache - these are new objects without a current cover so its ok to do this*)
-	uploadEmptyContainerCoverPackets = If[MatchQ[emptyContainerCoverTuples, {}],
-		{},
-		UploadCover[
-			emptyContainerCoverTuples[[All,1]],
-			Cover -> emptyContainerCoverTuples[[All,2]],
-			Upload ->False,
-			Cache -> Join[Map[<|Object -> #, Cover ->Null|>&,emptyContainerCoverTuples[[All,1]]], newEmptyContainerCoverPackets]
-		]
+	(* Pull out cover model IDs from any packets in the list *)
+	coverModelIDs = Map[
+		If[MatchQ[#, PacketP[]],
+			Lookup[#, Object],
+			#
+		]&,
+		updatedCoverModels
 	];
 
 
-	(* -- Sample container covers -- *)
 
-	(*for every container, we can upload a cover*)
-	(*we will have already errored for cases where there is a Model[Item, Cap] in CoverModels but no corresponding Model[Contaienr] in ContainerModels*)
-	(*we dont need to do any special sorting since the containers already do that. Just make sure that the cover end up with the container in the same order*)
+	(* Need one cover per unique sample container (e.g. one lid per plate) *)
+	sampleCoversTuples = DeleteDuplicates[Cases[Transpose[{coverModelIDs, indexMatchedSampleContainers}], {ObjectP[], _}]];
+	sampleCoversToCreate = sampleCoversTuples[[All,1]];
+	coveredContainers = sampleCoversTuples[[All,2]];
 
-	(* look up our resolved cover models *)
-	resolvedCoverModels = Lookup[resolvedOptions,CoverModel];
-	desiredCoverModels = Cases[resolvedCoverModels,ObjectP[]];
-	(*need to make sure here that the containers match the covers 1 to 1*)
-	desiredCoverNames = PickList[expandedNames,resolvedCoverModels,ObjectP[]];
+	(* Assume that if our sample container is covered our empty container is also covered with the same model *)
+	emptyCoverTuples = Cases[DeleteDuplicates[Transpose[{emptiesSent, coverModelIDs, indexMatchedSampleContainers}]], {True,_, _}];
+	emptyCoverModels = emptyCoverTuples[[All,2]];
+	coveredEmptyContainers = Transpose[{newEmptyContainerPackets,emptyCoverTuples}][[All,1]];
 
-	(* process the covers and their names the same as the containers *)
-	nonDuplicateCoverModelsAndNames = DeleteDuplicates[Transpose[{desiredCoverModels, desiredCoverNames}]];
-	nonDuplicateCoverModels = nonDuplicateCoverModelsAndNames[[All,1]];
-	nonDuplicateCoverNames = nonDuplicateCoverModelsAndNames[[All,2]];
+	allNewCoverModels = Join[sampleCoversToCreate, emptyCoverModels];
 
-	(*upload the new cover packets*)
-	newCoverPackets = UploadSample[
-		nonDuplicateCoverModels,
-		ConstantArray[{sourcePosition, Lookup[resolvedOptions, Source]}, Length[nonDuplicateCoverModels]],
-		Name -> nonDuplicateCoverNames,
+	newCoverUploadPackets = UploadSample[
+		allNewCoverModels,
+		ConstantArray[{sourcePosition, Lookup[resolvedOptions, Source]}, Length[allNewCoverModels]],
 		Status -> Transit,
 		Upload -> False,
 		FastTrack -> True,
-		Cache -> {}
+		Cache -> (formatCachePacket/@Cases[updatedCoverModels,PacketP[]])
 	];
 
-	(* check for models that are crimped - if you are wondering why we do this its because there was a feature flag for only uploading Crimped tops *)
-	coverTypes = Download[nonDuplicateCoverModels, CoverType, Cache -> newCache];
-	crimpCoverModels = PickList[nonDuplicateCoverModels, coverTypes, Crimp];
+	(* remove any packets that deal with location, as these caps are going straight on to the container *)
+	cleanedCoverPackets = DeleteCases[newCoverUploadPackets, (KeyValuePattern[Append[Contents]->_]|KeyValuePattern[Container -> _])];
 
-	(* just get the crimp tops *)
-	newCrimpedCoverPackets = If[MatchQ[newCoverPackets, {}],
-			{},
-			Module[{transposedPackets},
-				transposedPackets = Transpose[Partition[newCoverPackets, Length[nonDuplicateCoverModels]]];
-				Download[nonDuplicateCoverModels, CoverType, Cache -> newCache];
-				(* pull out the crimped cover packets and restore the orderign for upload *)
-				Transpose[PickList[transposedPackets, coverTypes, Crimp]/.{}->{{}}]
-			]
-		];
+	(* First N packets gives us our new cover object packets  *)
+	newCoverPackets = Take[cleanedCoverPackets, Length[allNewCoverModels]];
 
-	(* get the first set of packets to obtain the new cover IDs *)
-	newCoverObjects = Lookup[Take[newCoverPackets, Length[nonDuplicateCoverModels]], Object, {}];
+	{newSampleCoverPackets,newEmptyContainerCoverPackets} = TakeDrop[newCoverPackets, Length[sampleCoversToCreate]];
 
-	(* apply teh feature flag for crimped tops *)
-	selectedContainerCoverUploadPackets = If[MatchQ[$ReceiveAllCovers, False],
-		newCrimpedCoverPackets,
-		newCoverPackets
-	];
+	(* get the object to make this a bit easier *)
+	newSampleCoverObjects = Lookup[newSampleCoverPackets, Object, {}];
+	newEmptyContainerCoverObjects = Lookup[newEmptyContainerCoverPackets, Object, {}];
 
-	(* -- associate covers and containers -- *)
-	nameToCoverLookup = MapThread[#1 -> #2&,{nonDuplicateCoverNames, newCoverObjects}];
-
-	(*generate pairs of Cover/Container*)
-	(* delete duplicates for when we have a plate - this will cause an entry for each well which will create extra upload covers *)
-	validContainerCoverTuples = DeleteDuplicates[Cases[Transpose[{expandedNames/.nameToContainerLookup, expandedNames/. nameToCoverLookup}], {ObjectP[Object[Container]], ObjectP[Object[Item]]}]];
-
-	(*remove any non crimp packets if the feature flag is on*)
-	selectedContainerCoverTuples = If[MatchQ[$ReceiveAllCovers, False],
-		DeleteCases[validContainerCoverTuples, {_, Alternatives[crimpCoverModels]}],
-		validContainerCoverTuples
-	];
-
-	(*prep the acutal cover objects for upload*)
-	selectedCoverObjects = If[MatchQ[selectedContainerCoverTuples, {}],
-		{},
-		Link[selectedContainerCoverTuples[[All,2]]]
-	];
-
-	(*Upload cover using a lazy fake cache - these are new objects without a current cover so its ok to do this*)
-	(* make sure to delete duplicates in case we are uploading a plateseal or lid since there may have been multiple created *)
-	uploadCoverPackets = If[MatchQ[selectedContainerCoverTuples, {}],
+	(* Upload cover, sending in cache for upload packets so far  *)
+	uploadCoverPackets = If[MatchQ[{newSampleCoverObjects,newEmptyContainerCoverObjects}, {{},{}}],
 		{},
 		UploadCover[
-			selectedContainerCoverTuples[[All,1]],
-			Cover -> selectedContainerCoverTuples[[All,2]],
+			Join[Lookup[coveredContainers, Object, {}],Lookup[coveredEmptyContainers, Object, {}]],
+			Cover -> Join[newSampleCoverObjects,newEmptyContainerCoverObjects],
 			Upload ->False,
-			Cache -> Join[Map[<|Object -> #, Cover ->Null|>&,selectedContainerCoverTuples[[All,1]]], newCoverPackets]
+			Cache -> (formatCachePacket/@Join[
+				Map[
+					<|Object -> Lookup[#, Object], Cover ->Null|>&,
+					newContainerPackets
+				],
+				newCoverPackets,
+				Cases[updatedCoverModels,PacketP[]]
+			])
 		]
 	];
 
@@ -5365,59 +5857,79 @@ ShipToECL[myModels:ListableP[ObjectP[{Model[Item],Model[Sample]}]], myNames:List
 
 	(* make racks into objects, preserve any ordering so that they will partition correctly  *)
 	{newRackPackets, newRackObjects} =
-			Module[{shippedRacks, rackModels, modelPositions, rackObjectPackets, updatedShippedRacks, indexMatchedRackPackets, matchedRackObjects, transposedRackPackets},
-				shippedRacks = (Lookup[resolvedOptions, ShippedRack]/.None-> Null);
-				rackModels = Cases[shippedRacks, ObjectP[Model[Container, Rack]]];
+		Module[{shippedRacks, rackModels, modelPositions, rackObjectPackets, indexMatchedRackPackets, matchedRackObjects, transposedRackPackets},
+			shippedRacks = Lookup[resolvedOptions, ShippedRack];
+			rackModels = Cases[shippedRacks, ObjectP[Model[Container, Rack]]];
 
-				(* early return if we dont have any racks *)
-				If[MatchQ[rackModels, {}],
-					Return[{{}, shippedRacks}, Module]
-				];
-
-				(* get the positions that the racks are in  *)
-				modelPositions = Flatten[Position[shippedRacks, ObjectP[Model[Container, Rack]]]];
-				rackObjectPackets = UploadSample[rackModels, ConstantArray[{sourcePosition, Lookup[resolvedOptions, Source]}, Length[rackModels]],Status->Transit, StorageCondition->Model[StorageCondition, "Ambient Storage"],Upload->False,FastTrack->True,Cache->newCache];
-				transposedRackPackets = Transpose[Partition[rackObjectPackets, Length[rackModels]]];
-				indexMatchedRackPackets =ReplacePart[shippedRacks, MapThread[(#1->#2)&,{modelPositions, transposedRackPackets}]];
-
-				(* get the rack objects out of the packets *)
-				matchedRackObjects = Map[
-					If[MatchQ[#, Null],
-						Null,
-						FirstCase[Lookup[#, Object], ObjectP[Object[Container, Rack]]]
-					]&,
-					indexMatchedRackPackets
-				];
-
-				{Flatten[rackObjectPackets], matchedRackObjects}
+			(* early return if we don't have any racks *)
+			If[MatchQ[rackModels, {}],
+				Return[{{}, shippedRacks}, Module]
 			];
+
+			(* get the positions that the racks are in  *)
+			modelPositions = Flatten[Position[shippedRacks, ObjectP[Model[Container, Rack]]]];
+			rackObjectPackets = UploadSample[rackModels, ConstantArray[{sourcePosition, Lookup[resolvedOptions, Source]}, Length[rackModels]],Status->Transit, StorageCondition->Model[StorageCondition, "Ambient Storage"],Upload->False,FastTrack->True,Cache->newCache];
+			transposedRackPackets = Transpose[Partition[rackObjectPackets, Length[rackModels]]];
+			indexMatchedRackPackets =ReplacePart[shippedRacks, MapThread[(#1->#2)&,{modelPositions, transposedRackPackets}]];
+
+			(* get the rack objects out of the packets *)
+			matchedRackObjects = Map[
+				If[MatchQ[#, Null],
+					Null,
+					FirstCase[Lookup[#, Object], ObjectP[Object[Container, Rack]]]
+				]&,
+				indexMatchedRackPackets
+			];
+
+			{Flatten[rackObjectPackets], matchedRackObjects}
+		];
 
 	(* ------------------------ *)
 	(* -- Upload new samples -- *)
 	(* ------------------------ *)
 
 	(* Call UploadSample to make the samples. Put each sample in the appropriate container (from above) and position *)
-	samplesToMake = Cases[expandedModelSamples, ObjectP[Model[Sample]]];
-	samplePositions = PickList[Lookup[resolvedOptions,Position], expandedModelSamples, ObjectP[Model[Sample]]];
-	sampleLocations = Transpose[{samplePositions,indexedNewContainerPackets}];
-	sampleStorageConditions = PickList[Lookup[resolvedOptions,StorageCondition], expandedModelSamples, ObjectP[Model[Sample]]];
+	samplesToMake = Cases[cleanedInputModels, ObjectP[Model[Sample]]];
+	samplePositions = PickList[Lookup[resolvedOptions,Position], cleanedInputModels, ObjectP[Model[Sample]]];
+	sampleContainers = PickList[indexMatchedSampleContainers, cleanedInputModels, ObjectP[Model[Sample]]];
+	sampleLocations = Transpose[{samplePositions,sampleContainers}];
+	sampleStorageConditions = PickList[Lookup[resolvedOptions,StorageCondition], cleanedInputModels, ObjectP[Model[Sample]]];
 
-	newSamplePackets = UploadSample[samplesToMake,sampleLocations,Status->Transit, StorageCondition->sampleStorageConditions,Upload->False,FastTrack->True,Cache->newCache];
+	newSamplePackets = UploadSample[
+		samplesToMake,
+		sampleLocations,
+		Status->Transit,
+		StorageCondition->sampleStorageConditions,
+		Upload->False,
+		FastTrack->True,
+		Cache->(formatCachePacket/@Experiment`Private`FlattenCachePackets[
+			{newCache, newContainerPackets, updatedContainerModels}
+		])
+	];
+
 	(* The first packets output by UploadSample are the initial sample packets and they are ordered to match the model input. *)
 	sampleObjects=Lookup[Take[newSamplePackets, Length[samplesToMake]], Object];
 
 	(* - Make the items - *)
 	(* Call UploadSample to make the items. Put each item in the source site. *)
-	itemsToMake = Cases[expandedModelSamples, ObjectP[Model[Item]]];
-	itemStorageConditions = PickList[Lookup[resolvedOptions,StorageCondition], expandedModelSamples, ObjectP[Model[Item]]];
+	itemsToMake = Cases[cleanedInputModels, ObjectP[Model[Item]]];
+	itemStorageConditions = PickList[Lookup[resolvedOptions,StorageCondition], cleanedInputModels, ObjectP[Model[Item]]];
 
-	newItemPackets = UploadSample[itemsToMake,ConstantArray[{sourcePosition, Lookup[resolvedOptions, Source]}, Length[itemsToMake]],Status->Transit, StorageCondition->itemStorageConditions,Upload->False,FastTrack->True,Cache->newCache];
+	newItemPackets = UploadSample[
+		itemsToMake,
+		ConstantArray[{sourcePosition, Lookup[resolvedOptions, Source]}, Length[itemsToMake]],
+		Status->Transit,
+		StorageCondition->itemStorageConditions,
+		Upload->False,FastTrack->True,
+		Cache->Experiment`Private`FlattenCachePackets[{newCache}]
+	];
+
 	(* The first packets output by UploadSample are the initial sample packets and they are ordered to match the model input. *)
 	itemObjects=Lookup[Take[newItemPackets, Length[itemsToMake]], Object];
 
 	(* Get the sample and item objects indexed to the input *)
-	itemIndexes=Flatten[Position[expandedModelSamples, ObjectP[Model[Item]], {1}]];
-	sampleIndexes=Flatten[Position[expandedModelSamples, ObjectP[Model[Sample]], {1}]];
+	itemIndexes=Flatten[Position[cleanedInputModels, ObjectP[Model[Item]], {1}]];
+	sampleIndexes=Flatten[Position[cleanedInputModels, ObjectP[Model[Sample]], {1}]];
 	indexObjectRules=Join[AssociationThread[sampleIndexes, sampleObjects],AssociationThread[itemIndexes, itemObjects]];
 	indexedCreatedObjects=Values[KeySort[indexObjectRules]];
 
@@ -5426,24 +5938,26 @@ ShipToECL[myModels:ListableP[ObjectP[{Model[Item],Model[Sample]}]], myNames:List
 	indexedCreatedContainers = indexedCreatedObjects /. Join[sampleToContainerRules, {ObjectP[Object[Item]] -> Null}];
 
 	(* prepare updates for the samples*)
-	noneQ[in_]:=If[MatchQ[in,None],True,False];
 	optionPackets=MapThread[
 		Function[{object,validatedVolume,validatedMass,validatedCount, validatedProduct,validedNumberOfUses},
 			<|
 				Object->object,
-				If[noneQ[validatedVolume],Nothing,Volume->validatedVolume],
-				If[noneQ[validatedVolume],Nothing,Replace[VolumeLog]->{{Now,validatedVolume,Link[requestor], InitialManufacturerVolume}}],
-				If[noneQ[validatedMass],Nothing,Mass->validatedMass],
-				If[noneQ[validatedMass],Nothing,Replace[MassLog]->{{Now,validatedMass,Link[requestor], InitialManufacturerWeight}}],
-				If[noneQ[validatedCount],Nothing,Count->validatedCount],
-				If[noneQ[validatedCount],Nothing,Replace[CountLog]->{{Now,validatedCount,Link[requestor]}}],
-				If[noneQ[validatedProduct],Nothing,Product->Link[validatedProduct,Samples]],
-				If[noneQ[validedNumberOfUses],Nothing,NumberOfUses->validedNumberOfUses]
-			|>],{
+				If[NullQ[validatedVolume],Nothing,Volume->validatedVolume],
+				If[NullQ[validatedVolume],Nothing,Replace[VolumeLog]->{{Now,validatedVolume,Link[requestor], InitialManufacturerVolume}}],
+				If[NullQ[validatedMass],Nothing,Mass->validatedMass],
+				If[NullQ[validatedMass],Nothing,Replace[MassLog]->{{Now,validatedMass,Link[requestor], InitialManufacturerWeight}}],
+				If[NullQ[validatedCount],Nothing,Count->validatedCount],
+				If[NullQ[validatedCount],Nothing,Replace[CountLog]->{{Now,validatedCount,Link[requestor]}}],
+				If[NullQ[validatedProduct],Nothing,Product->Link[validatedProduct,Samples]],
+				If[NullQ[validedNumberOfUses],Nothing,NumberOfUses->validedNumberOfUses]
+			|>
+		],
+		{
 			indexedCreatedObjects,
-			Lookup[resolvedOptions,Volume],
-			Lookup[resolvedOptions,Mass],
-			Lookup[resolvedOptions,Count],
+			(* Volume, Mass, Count are left automatic in the option resolver to indicate they will be measured *)
+			(Lookup[resolvedOptions,Volume]/.Automatic->Null),
+			(Lookup[resolvedOptions,Mass]/.Automatic->Null),
+			(Lookup[resolvedOptions,Count]/.Automatic->Null),
 			Lookup[resolvedOptions,Product],
 			Lookup[resolvedOptions,NumberOfUses]
 		}
@@ -5452,7 +5966,6 @@ ShipToECL[myModels:ListableP[ObjectP[{Model[Item],Model[Sample]}]], myNames:List
 	(* ------------------------- *)
 	(* -- Clean up for upload -- *)
 	(* ------------------------- *)
-
 
 	(* Associate each sample with its shipping info *)
 	samplesAndShippingInfo = Transpose[{
@@ -5504,7 +6017,7 @@ ShipToECL[myModels:ListableP[ObjectP[{Model[Item],Model[Sample]}]], myNames:List
 		Return[outputSpecification/.{
 			Result -> $Failed,
 			Tests -> Join[safeOptionTests,validLengthTests,resolvedOptionsTests,splitContainerTest],
-			Options -> resolvedOptions,
+			Options -> resolvedOptionsForDisplay,
 			Preview -> Null
 		}]
 	];
@@ -5518,7 +6031,8 @@ ShipToECL[myModels:ListableP[ObjectP[{Model[Item],Model[Sample]}]], myNames:List
 			<|
 				Type -> Object[Transaction,ShipToECL],
 				Object-> CreateID[Object[Transaction,ShipToECL]],
-			(* If there is more than one transaction being made, append an index to the name, otherwise just use the given name. *)
+
+				(* If there is more than one transaction being made, append an index to the name, otherwise just use the given name. *)
 				Name->Which[
 					NullQ[nameOption],Null,
 					Length[partitionedSamples]==1,nameOption,
@@ -5528,143 +6042,117 @@ ShipToECL[myModels:ListableP[ObjectP[{Model[Item],Model[Sample]}]], myNames:List
 				(* The samples being sent by the user (i.e. the samples/items we will receive). This is different from SamplesOut if any transfers are requested. *)
 				Replace[ReceivedSamples]->Link[samples],
 
-			(* The containers being sent by the user (i.e. the containers we will receive). This is different from ContaintersOut if any transfers are requested. *)
-			(* Delete any Sites so that maintenance receive inventory can run: *)
+				(* The containers being sent by the user (i.e. the containers we will receive). This is different from ContainersOut if any transfers are requested. *)
+				(* Delete any Sites so that maintenance receive inventory can run: *)
 				Replace[ReceivedContainers]->Link[DeleteDuplicates[DeleteCases[containers,ObjectP[Object[Container, Site]]]]],
 
 				(* upload our covers *)
-				Replace[ReceivedCovers] -> selectedCoverObjects,
+				Replace[ReceivedCovers] -> Link[Lookup[newSampleCoverPackets, Object,{}]],
 
-			(* Get the subset of samples that will be transferred *)
-				Replace[TransferSamples] -> Link[Flatten[MapThread[If[MatchQ[#1, None], Nothing, #2] &, {containerOuts, samples}]]],
-
-			(* Get the destination containers for things that will be transferred *)
-				Replace[TransferContainers] -> Link[(containerOuts/.None -> Nothing)],
-
+				(* Get the subset of samples that will be transferred *)
+				Replace[TransferSamples] -> Link[Flatten[MapThread[If[MatchQ[#1, Null], Nothing, #2] &, {containerOuts, samples}]]],
 
 				(* Get the destination containers for things that will be transferred *)
-				Replace[EmptyContainers] -> Link/@DeleteCases[
-					Join[emptyContainers,newEmptyContainerObjectPacketsOnly],
-					ObjectP[Model[Container]]
-				],
+				Replace[TransferContainers] -> Link[DeleteCases[containerOuts, Null]],
+
+				Replace[EmptyContainers] -> Link[Lookup[newEmptyContainerPackets, Object,{}]],
 
 				Creator ->Link[requestor, TransactionsCreated],
 				Destination -> Link[Lookup[resolvedOptions, Destination]],
 				Source -> Link[Lookup[resolvedOptions, Source]],
 				ReceivingTolerance -> Lookup[resolvedOptions,ReceivingTolerance],
-				Replace[ShippedRacks]-> Link/@racks
-			|>],
+				Replace[ShippedRacks]-> Link[racks]
+			|>
+		],
 		{partitionedSamples,partitionedContainers,Range[Length[partitionedSamples]],partitionedContainerOut, partitionedRacks}
-	];
-
-	(* --- Validate the Name option (doing this here instead of in option resolution because now we know how many transactions we are making.) --- *)
-
-	nameUniquenessTests=If[!NullQ[nameOption],
-		Module[{resolvedNames},
-
-		(* Get the transaction names *)
-			resolvedNames=Lookup[transactionPackets,Name];
-
-			(* Check if the name is used already *)
-			nameInvalidBools=DatabaseMemberQ[Append[Object[Transaction, ShipToECL], #] & /@ resolvedNames];
-
-			(* If we are giving messages, throw a message if the name is not unique *)
-			If[messagesBoolean && MemberQ[nameInvalidBools,True],
-				Message[Error::NonUniqueName,PickList[resolvedNames,nameInvalidBools],Object[Transaction,ShipToECL]];
-				Message[Error::InvalidOption,Name]
-			];
-
-			(* If we are collecting tests, assemble tests for name uniquness *)
-			If[gatherTests,
-				MapThread[
-					Test["The name "<>#2<>" is unique for Object[Transaction, ShipToECL]:",
-						#1,
-						False
-					]&,{nameInvalidBools,resolvedNames}]
-			]
-		]
-	];
-
-	If[!NullQ[nameOption] && MemberQ[nameInvalidBools,True],
-		Return[outputSpecification/.{
-			Result -> $Failed,
-			Tests -> Join[safeOptionTests,validLengthTests,resolvedOptionsTests,splitContainerTest,nameUniquenessTests],
-			Options -> resolvedOptions,
-			Preview -> Null
-		}]
 	];
 
 	(* Now that we know which samples are in which transaction, populate the source field of the samples *)
 	sampleSourcePackets=Flatten[
 		MapThread[
-			Function[{samples, transaction},
-				Map[<|Object -> #, Source -> Link[transaction]|> &, samples]
-			], {partitionedSamples, transactionPackets}]
+			Function[
+				{samples, transaction},
+				<|Object -> #, Source -> Link[transaction]|>&/@samples
+			],
+			{partitionedSamples, transactionPackets}
+		]
 	];
 
 	(* Now that we know which containers are in which transaction, populate the source field of any new containers that were created *)
 	containerSourcePackets=Flatten[
 		MapThread[
-			Function[{containers, transaction},
-				Map[If[MemberQ[Lookup[selectedNewContainerPackets, Object],#],
-					<|Object -> #, Source -> Link[transaction]|>,
-					Nothing]&, DeleteDuplicates[containers]]
-			], {partitionedContainers, transactionPackets}]
+			Function[
+				{containers, transaction},
+				Map[
+					If[MemberQ[Lookup[newContainerPackets, Object],#],
+						<|Object -> #, Source -> Link[transaction]|>,
+						Nothing
+					]&,
+					DeleteDuplicates[containers]
+				]
+			],
+			{partitionedContainers, transactionPackets}
+		]
 	];
 
 	(* Also populate the Destination of any samples being shipped *)
 	sampleDestinationPackets=<|Object->#,Destination->Link[Lookup[resolvedOptions,Destination]]|>&/@Flatten[partitionedSamples];
 
 	(* Determine the status of each transaction based on whether a Date Shipped is specified *)
-	transactionStatuses=If[MatchQ[#,None|Null|Automatic],Pending,Shipped]&/@(First/@partitionedDateShipped);
+	transactionStatuses=Map[
+		If[MatchQ[#,Null|Automatic],
+			Pending,
+			Shipped
+		]&,
+		First/@partitionedDateShipped
+	];
 
 	(* Use UploadTransaction to update the Status/StatusLog and shipping information. *)
-	transactionStatusPackets=UploadTransaction[transactionPackets,transactionStatuses,Upload->False,FastTrack->True,Cache->newCache,
-		Timestamp->((First/@partitionedDateShipped)/.{Null->Now,None->Now}),
+	transactionStatusPackets=UploadTransaction[
+		transactionPackets,
+		transactionStatuses,
+		Timestamp->(First/@partitionedDateShipped/.{Null->Now}),
 		TrackingNumber -> Map[
-			If[MatchQ[#, Null | Automatic | None],
+			If[MatchQ[#, Null | Automatic],
 				#,
 				ToList[#]
 			]&,
-			((partitionedTrackingNumber[[All, 1]]) /. {Automatic -> Null, None->Null})
+			((partitionedTrackingNumber[[All, 1]]) /. {Automatic -> Null})
 		],
-		Shipper -> ((First/@partitionedShipper)/. {Automatic -> Null, None->Null}),
-		DateExpected -> (First/@(partitionedDateExpected)/. {Automatic -> Null, None->Null}),
+		Shipper -> (First/@partitionedShipper/. {Automatic -> Null}),
+		DateExpected -> (First/@partitionedDateExpected/. {Automatic -> Null}),
+		Upload->False,
+		FastTrack->True,
+		Cache->newCache,
 		Email->(Email/.resolvedOptions)
 	];
 
 	(* Combine the sample packets, the amount packets, and the transaction packet *)
 	allPackets=Join[
-		newContainerPacketsNoPrice,
+		newContainerUploadPackets,
 		newSamplePackets,
 		newItemPackets,
-		selectedContainerCoverUploadPackets,
+		cleanedCoverPackets,
 		optionPackets,
 		transactionPackets,
 		sampleSourcePackets,
 		containerSourcePackets,
 		transactionStatusPackets,
 		sampleDestinationPackets,
-		newEmptyContainerObjectPackets,
+		newEmptyContainerPackets,
 		uploadCoverPackets,
-		newEmptyContainerCoverPackets,
-		uploadEmptyContainerCoverPackets,
-		newRackPackets
+		newRackPackets,
+		newContainerModelPackets,
+		newCoverModelPackets
 	];
 
 	(* ------------------------------------------------------ *)
 	(* --- Generate rules for each possible Output value ---  *)
 	(* ------------------------------------------------------ *)
 
-
 	(* Prepare the Options result *)
-
-	(* get all the safe options without the hidden options *)
-	collapsedOptions=CollapseIndexMatchedOptions[ShipToECL,resolvedOptions,Messages->False,Ignore->listedOptions];
-	resolvedOptionsMinusHiddenOptions = RemoveHiddenOptions[ShipToECL,collapsedOptions];
-
 	optionsRule=Options->If[MemberQ[output,Options],
-		resolvedOptionsMinusHiddenOptions,
+		resolvedOptionsForDisplay,
 		Null
 	];
 
@@ -5673,8 +6161,8 @@ ShipToECL[myModels:ListableP[ObjectP[{Model[Item],Model[Sample]}]], myNames:List
 
 	(* Prepare the Test result *)
 	testsRule=Tests->If[MemberQ[output,Tests],
-	(* Join all existing tests generated by helper functions with any additional tests *)
-		DeleteCases[Flatten[{safeOptionTests,validLengthTests,resolvedOptionsTests,splitContainerTest,nameUniquenessTests}],Null],
+		(* Join all existing tests generated by helper functions with any additional tests *)
+		DeleteCases[Flatten[{safeOptionTests,validLengthTests,resolvedOptionsTests,splitContainerTest}],Null],
 		Null
 	];
 
@@ -5705,30 +6193,36 @@ DefineOptions[
 ];
 
 
-resolveShipToECLOptions[myModels:{ObjectP[{Model[Item],Model[Sample]}]..}, myNames:{_String..}, myOptions:{(_Rule|_RuleDelayed)..}, ops:OptionsPattern[]]:=Module[{
+resolveShipToECLOptions[myModels:{ObjectP[{Model[Item],Model[Sample]}]..}, myContainerLabels:{_String..}, myOptions:{(_Rule|_RuleDelayed)..}, ops:OptionsPattern[]]:=Module[{
 	objects,states,defaultStorageConditions,output,listedOutput,collectTestsBoolean,
-	resolvedOptions,messagesBoolean,allTests,vettedVolumes,vettedDates,
-	vettedNumberOfUses,vettedProducts,vettedTrackingNumbers,vettedShipperes,vettedMasses,
-	vettedStorageConditions,destination,testOrEmpty,warningOrNull,additionalTests,optionDestination,
-	validShippingTrackingBools,shipperTrackingTests,email,upload,resolvedEmail,containerOutInvalidVolumeBools,
+	sampleIDs,friendlyOptions,mapThreadFriendlyOptions,optionsByContainer,resolvedOptions,messagesBoolean,allTests,
+	vettedVolumeTuples,resolvedVolumes,volumeTests, vettedMassTuples,resolvedMasses,massTests,vettedCountTuples,
+	resolvedCounts,countTests, vettedDates, vettedNumberOfUses,vettedProducts,vettedTrackingNumbers,vettedShippers,
+	vettedStorageConditions,destination,testOrEmpty,warningOrNull,sampleOnlyOptions,missingContainerOptionTuples,missingContainerOptions,
+	additionalTests,optionDestination, missingContainerOptionTest,containerOnlyOptions,unneededContainerOptionTuples,
+	plateOnlyOptions,containerConflictTuples,containerConflict, consistentWellNumberOptions,
+	numberOfWellsTest, badVesselWellNumberTuples,badVesselWellNumberSamples,
+	badVesselWellNumberTest,existingContainerCounters,existingCoverCounters,coverModelCounter,containerCoverRules,
+	containerModelCounter,containerModelIdentifier,containerModelIdentifiers,newContainerModelIdentifiers,
+	newContainerModelLabels,containerModelRules,aspectRatioLookup,resolvedWellOptionsByContainer,
+	resolvedOptionsWithWellInfo,resolvedPlateFillOrder,resolvedNumberOfWells,unneededDocTuples,unneededDocs,unneededDocsTest,docsAndPropertySets,
+	reusedDocs,conflictingDocTest,validShippingTrackingBools,shipperTrackingTests,email,upload,resolvedEmail,containerOutInvalidVolumeBools,
 	containerOutInvalidContentBools,containerContentsValidityTests,containerVolumeValidityTests,containerVolumeValidityWarnings,
-	containerOutMaxVolumes,downloadedStuff,tabletBools,vettedCounts,tabletWeights,densities,products,cache,containerModelPositions,
-	containerOption,inputsAndContainerOption,itemsWithContainerSpecified,itemsWithContainerSpecifiedTest,samplesWithoutContainerSpecified,
-	samplesWithoutContainerSpecifiedTest,resolvedContainerModel,resolvedPosition,resolvedRacks, badRacks, noRacksTuples, rackResult,
-	inputsAndPositionAndContainerPositions,itemsWithPositionSpecified,
+	containerOutMaxVolumes,downloadedStuff,fastAssoc,tabletBools,solidUnitWeights,densities,products,cache,containerModelPositions,
+	containerConflictTest,resolvedContainerModels,resolvedContainerTypes,
+	plateOptionTuples,platesMissingOptions,missingPlateOptions,plateOptionsMissingTest,
+	incompatibleCoverContainerTest,plateNamesWithMultipleSamples,hamiltonWarningContainers,hamiltonWarningContainersTest,
+	resolvedCoverModel,selfCoveringTuples,selfCoveredContainerWithCoverSpecified,selfCoveredContainerWithCoverSpecifiedTest,
+	containerCoverTuples,incompatibleCoverContainerPairs, specifiedContainerModels, specifiedContainerTypes, emptiesSent,
+	specifiedDocuments, specifiedCovers, specifiedWells, specifiedFillOrder, filteredContainerModels,inputsAndSpecifiedContainerInfo,containerModelTypeMismatches,
+	containerModelTypeMismatchTest, resolvedPositions, badRacks, noRacksTuples, rackResult, inputsAndPositionAndContainerPositions,itemsWithPositionSpecified,
 	itemsWithPositionSpecifiedTest,samplesWithoutPosition,samplesWithoutPositionTest,samplesWithInvalidPosition,samplesWithInvalidPositionTest,
 	assembledObjects,nameUsedBools,nameInUseTest,duplicateItems,singlePositionAssembledObjects,duplicateSinglePositionContainers,duplicateNameTest,
-	defaultSite,containerModelTypePackets, sourceOption,resolvedSource,sampleContainerInfoTuples,positionEntries,samplesInSamePosition,samplesInSamePositionTest,
-	plateModels,plateNames,differentPlatesWithSameName,toMeasureSampleGrowingList,entriesWithUnverifiedContainers,
-	emptyContainerBadSamples,emptyContainerModels,emptyContainers,emptyContainerModelsP,containerModelVerifieds,samplesWithUnverifiedContainers,
-	remainingUnverifiedContainers,samplesContainersWithUnverifiedContainers,samplesContainersWithUnverifiedContainersTest,
-	resolvedCoverModel, coverOption, inputsAndCoverOption, itemsWithCoverSpecified, itemsWithCoverSpecifiedTest,
-	samplesWithoutCoverSpecified, samplesWithoutCoverSpecifiedTest, emptyContainerModelsList, selfCoveredContainerWithCoverSpecified,
-	selfCoveredContainerWithCoverSpecifiedTest, coverModelTypePackets, emptyCoverModelTypePackets, emptyContainerModelTypePackets, containerCoverTuples,
-	incompatibleCoverContainerPairs, incompatibleCoverContainerTest,emptyContainerCoverTuples, incompatibleEmptyCoverContainerAssociation,
-	incompatibleEmptyCoverContainerTuples, unusedCoverEmptyCoverContainerTuples, missingEmptyCoverContainerTuples,
-	incompatibleEmptyCoverContainerTest, unusedEmptyCoverContainerTest, missingEmptyCoverContainerTest, compatibleRacksPackets, noRacksTest, badRacksTest
-},
+	duplicateNameIssue,defaultSite,containerModelTypePackets, sourceOption,resolvedSource,sampleContainerInfoTuples,positionEntries,
+	duplicatePositionTuples, containersWithReusedPositions, duplicatePositionsSpecified, insufficientSpace,
+	samplesInSamePosition,samplesInSamePositionTest, toMeasureSampleGrowingList,containerModelVerifieds,
+	shippingSpecTuples,numberOfShipments,nameOption,nameUniquenessTest,coverModelTypePackets,compatibleRacksPackets, noRacksTest, badRacksTest,
+	emptyUnneededTest,emptyContainerUnneededLabels,uniqueContainerCoverPairs,userDocWebsites,newUserDocFiles,badDocFiles,missingDocFilesTest},
 
 	(* From resolveShipToECLOptions's options, get Output value *)
 	output=OptionDefault[OptionValue[Output]];
@@ -5739,48 +6233,55 @@ resolveShipToECLOptions[myModels:{ObjectP[{Model[Item],Model[Sample]}]..}, myNam
 	(* Fetch our cache from the parent function. *)
 	cache = Quiet[OptionValue[Cache]];
 
+	(* Reformat our options to a list of associations. Add inputs. Give each input an ID so we can keep track of index-matching even as we re-group *)
+	sampleIDs = Range[Length[myModels]];
+	friendlyOptions = OptionsHandling`Private`mapThreadOptions[ShipToECL, myOptions];
+	mapThreadFriendlyOptions = MapThread[
+		Append[#3, {Model->#1,Label->#2,ID->#4}]&,
+		{myModels,myContainerLabels,friendlyOptions,sampleIDs}
+	];
+
+	(* For certain checks, resolutions we need to consider all samples in a plate at once *)
+	(* Format as <container/item label > -> <|option1->value1 ...|> *)
+	optionsByContainer = GroupBy[mapThreadFriendlyOptions,#[Label]&];
+
 	(* Download some stuff that will help with option resolution *)
 	downloadedStuff=Quiet[Download[
 		{
 			myModels,
-			ToList[(Lookup[myOptions, ContainerOut] /. None -> Null)],
-			ToList[(Lookup[myOptions, ContainerModel] /. (None | Automatic) -> Null)],
-			ToList[(Lookup[myOptions, ContainerModel] /. (None | Automatic) -> Null)],
-			ToList[(Lookup[myOptions, EmptyContainers] /. None -> Null)],
+			ToList[Lookup[myOptions, ContainerOut]],
+			Replace[ToList[Lookup[myOptions, ContainerModel]], (Null | Automatic | _String) -> Null,{1}],
+			Replace[ToList[Lookup[myOptions, ContainerModel]], (Null | Automatic | _String) -> Null,{1}],
 			{$Notebook},
-			ToList[(Lookup[myOptions, CoverModel] /. (None | Automatic) -> Null)],
-			ToList[(Lookup[myOptions, ContainerModel] /. (None | Automatic) -> Null)],
-			ToList[(Lookup[myOptions, EmptyContainerCovers] /. None -> Null)],
-			ToList[(Lookup[myOptions, ShippedRack]/.None-> Null)]
+			Replace[ToList[Lookup[myOptions, CoverModel]], (Null | Automatic | _String) -> Null,{1}],
+			Replace[ToList[Lookup[myOptions, ContainerModel]], (Null | Automatic | _String) -> Null,{1}],
+			Lookup[myOptions, ShippedRack]
 		},
 		{
-			{Object, State, DefaultStorageCondition[StorageCondition], Tablet, TabletWeight, Density,Products},
+			{Object, State, DefaultStorageCondition[StorageCondition], Tablet, SolidUnitWeight, Density,Products},
 			{MaxVolume},
 			{Positions},
 			{VerifiedContainerModel},
-			{Packet[CoverTypes, CoverFootprints, BuiltInCover, Ampoule, VerifiedContainerModel]},
 			{Financers[DefaultMailingAddress][Object]},
 			{Packet[CoverType, CoverFootprint, VerifiedCoverModel]},
-			{Packet[CoverTypes, CoverFootprints, BuiltInCover, Ampoule, VerifiedContainerModel, Footprint, Dimensions, SelfStanding]},
-			{Packet[CoverFootprint, CoverType, VerifiedCoverModel]},
+			{Packet[CoverTypes, CoverFootprints, BuiltInCover, Ampoule, VerifiedContainerModel, Footprint, Dimensions, SelfStanding, NumberOfWells, Positions, AspectRatio]},
 			{Packet[Positions]}
 		},
 		Cache -> cache,
 		Date -> Now
 	], Download::FieldDoesntExist];
 
+	fastAssoc = Experiment`Private`makeFastAssocFromCache[Cases[Flatten[downloadedStuff],PacketP[]]];
+
 	(* Get the downloaded stuff into usable variables *)
-	{objects,states,defaultStorageConditions,tabletBools,tabletWeights,densities,products}=Transpose[downloadedStuff[[1]]];
+	{objects,states,defaultStorageConditions,tabletBools,solidUnitWeights,densities,products}=Transpose[downloadedStuff[[1]]];
 	containerOutMaxVolumes=Flatten[downloadedStuff[[2]]];
 	containerModelPositions=Flatten[downloadedStuff[[3]],1];
 	containerModelVerifieds = Flatten[downloadedStuff[[4]]];
-	emptyContainerModels = Cases[ToList[Lookup[myOptions, EmptyContainers]], ObjectP[]];
-	emptyContainerModelTypePackets = Cases[Flatten[downloadedStuff[[5]]], PacketP[]];
-	defaultSite = FirstOrDefault[Flatten[downloadedStuff[[6]]]];
-	coverModelTypePackets = Cases[Flatten[downloadedStuff[[7]]], PacketP[]];
-	containerModelTypePackets = Cases[Flatten[downloadedStuff[[8]]], PacketP[]];
-	emptyCoverModelTypePackets = Cases[Flatten[downloadedStuff[[9]]], PacketP[]];
-	compatibleRacksPackets = Cases[Flatten[downloadedStuff[[10]]], PacketP[]];
+	defaultSite = FirstOrDefault[Flatten[downloadedStuff[[5]]]];
+	coverModelTypePackets = Cases[Flatten[downloadedStuff[[6]]], PacketP[]];
+	containerModelTypePackets = Cases[Flatten[downloadedStuff[[7]]], PacketP[]];
+	compatibleRacksPackets = Cases[Flatten[downloadedStuff[[8]]], PacketP[]];
 
 	(* testOrEmpty: Simple helper that returns a Test whose expected value is True if makeTest->True, Null otherwise *)
 	testOrEmpty[makeTest:BooleanP,description_,expression_]:=If[makeTest,
@@ -5793,231 +6294,210 @@ resolveShipToECLOptions[myModels:{ObjectP[{Model[Item],Model[Sample]}]..}, myNam
 		{}
 	];
 
+	(* --------------------------------------- *)
+	(* = Container Options Checks = *)
+	(* --------------------------------------- *)
 
-	(* ------------- *)
-	(* = Container = *)
-	(* ------------- *)
-
-	containerOption = Lookup[myOptions,ContainerModel];
-	inputsAndContainerOption = Transpose[{myModels,containerOption}];
-
-	(* This no longer allows contaienrs to be objects, since they are always models anyway *)
-	emptyContainers = ToList[Lookup[myOptions,EmptyContainers,{}]/.Null->{}];
-	emptyContainerModelsList = Cases[emptyContainerModels, ObjectP[]];
-
-	(* When we have models, create a model pattern and when we don't, use Null so it doesn't match with sample containers. *)
-	emptyContainerModelsP = If[Length[emptyContainerModelsList]>0,
-		ObjectP[emptyContainerModelsList],
-		Null
+	{specifiedContainerModels, specifiedContainerTypes, emptiesSent, specifiedDocuments, specifiedCovers, specifiedWells, specifiedFillOrder} = Lookup[
+		myOptions,
+		{ContainerModel,ContainerType, EmptyContainerSent, ContainerDocumentation, CoverModel, NumberOfWells, PlateFillOrder}
 	];
 
-	(* throw an error if any items have the container option specified *)
-	itemsWithContainerSpecified = Cases[inputsAndContainerOption,{ObjectP[Model[Item]],ObjectP[]}][[All,1]];
+	(* Check that none of our required container options are set to Null for samples *)
+	sampleOnlyOptions = {Position,ContainerModel,ContainerType,EmptyContainerSent};
+	missingContainerOptionTuples = Map[
+		Function[optionSet,
+			Module[{optionValues, nullOptionNames},
+				optionValues = Lookup[optionSet,sampleOnlyOptions];
+				nullOptionNames = PickList[sampleOnlyOptions,optionValues,Null];
 
-	If[Length[itemsWithContainerSpecified]>0&&messagesBoolean,
-		Message[Error::ContainerModelNotRequired,itemsWithContainerSpecified];
-		Message[Error::InvalidOption,ContainerModel];
-	];
-
-	(* If we are gathering tests, create a passing and/or failing test with the appropriate result. *)
-	itemsWithContainerSpecifiedTest=If[!messagesBoolean,
-		If[Length[itemsWithContainerSpecified]>0,
-			Test["Any input item models do not have ModelContainer specified:",True,False],
-			Test["Any input item models do not have ModelContainer specified:",True,True]
-		],
-		Nothing
-	];
-
-	(* throw an error if any samples don't have the container option specified *)
-	samplesWithoutContainerSpecified = Cases[inputsAndContainerOption,{ObjectP[Model[Sample]],Except[ObjectP[]]}][[All,1]];
-
-	If[Length[samplesWithoutContainerSpecified]>0&&messagesBoolean,
-		Message[Error::ContainerModelRequired, samplesWithoutContainerSpecified];
-		Message[Error::InvalidOption,ContainerModel];
-	];
-
-	(* If we are gathering tests, create a passing and/or failing test with the appropriate result. *)
-	samplesWithoutContainerSpecifiedTest=If[!messagesBoolean,
-		If[Length[samplesWithoutContainerSpecified]>0,
-			Test["Any input sample models has ModelContainer specified:",True,False],
-			Test["Any input sample models has ModelContainer specified:",True,True]
-		],
-		Nothing
-	];
-
-	(* throw an error if any samples were given a container that is Unverified and an empty container was not provided at the same time *)
-	entriesWithUnverifiedContainers = MapThread[
-		Function[{sample,containerModel,containerModVerified},
-			If[TrueQ[containerModVerified],
-				(* If the container model provided is verified don't worry about this sample *)
-				Nothing,
-
-				(* If it's unverified check the model is part of our accompanying list of model containers *)
-				If[MatchQ[containerModel,emptyContainerModelsP],
-					(* We're being given an empty version of this unverified container so don't sweat it *)
-					Nothing,
-
-					(* This sample is in a container for which we're not getting an empty container and thus cannot quickly parameterize it *)
-					{sample,containerModel}
+				If[MatchQ[Lookup[optionSet,Model],ObjectP[Model[Sample]]] && !MatchQ[nullOptionNames,{}],
+					{Lookup[optionSet,Label],nullOptionNames},
+					Nothing
 				]
 			]
 		],
-		{
-			myModels,
-			containerOption,
-			containerModelVerifieds
-		}
+		mapThreadFriendlyOptions
 	];
 
-	(* Things like Columns won't have a container, so reduce our list to only Model[Sample]s that did not have a valid container provided *)
-	samplesContainersWithUnverifiedContainers = DeleteCases[
-		entriesWithUnverifiedContainers,
-		Except[{ObjectP[Model[Sample]], _}]
+	missingContainerOptions = DeleteDuplicates[Flatten[missingContainerOptionTuples[[All,2]]]];
+
+	If[!MatchQ[missingContainerOptionTuples,{}] && messagesBoolean,
+		Message[Error::ContainerInformationRequired, DeleteDuplicates[missingContainerOptionTuples[[All,1]]],missingContainerOptions];
+		Message[Error::InvalidOption,missingContainerOptions];
 	];
 
-	(* If we have no unaccounted for unverified containers, just return nothing for the test variables. Otherwise transpose the lists *)
-	{samplesWithUnverifiedContainers,remainingUnverifiedContainers} = If[MatchQ[samplesContainersWithUnverifiedContainers,{}],
-
-		(* All of our models are known so no errors are required *)
-		{{},{}},
-
-		(* Some models are coming in unverified containers that don't have a corresponding empty container. Transpose this list so we have bad models/sample and bad container models *)
-		Transpose[samplesContainersWithUnverifiedContainers]
-	];
-
-	emptyContainerBadSamples = DeleteCases[samplesWithUnverifiedContainers,Alternatives@@samplesWithoutContainerSpecified];
-
-	If[Length[emptyContainerBadSamples]>0 && messagesBoolean,
-		Message[Error::EmptyContainerAbsent, emptyContainerBadSamples, Flatten[remainingUnverifiedContainers/.{Null->{},Automatic->{}}]];
-		Message[Error::InvalidOption,{ContainerModel,EmptyContainers}];
-	];
-
-	(* If we are gathering tests, create a passing and/or failing test with the appropriate result. *)
-	samplesContainersWithUnverifiedContainersTest = If[!messagesBoolean,
-		If[Length[samplesWithoutContainerSpecified]>0,
-			Test["Any input ModelContainers specified are either verified or have a corresponding EmptyContainers:",True,False],
-			Test["Any input ModelContainers specified are either verified or have a corresponding EmptyContainers:",True,True]
-		],
+	missingContainerOptionTest = If[!messagesBoolean,
+		Test["All samples have the required container information:",MatchQ[missingContainerOptionTuples,{}],True],
 		Nothing
 	];
 
-	(* Resolve any Automatic container models to Null for items *)
-	resolvedContainerModel = MapThread[
-		Function[{input,specifiedContainer},
-			If[MatchQ[specifiedContainer,Automatic],
-				None,
-				specifiedContainer
+	(* throw an error if any items have the container option specified *)
+	containerOnlyOptions={ContainerModel,ContainerType,ContainerDocumentation,CoverModel,EmptyContainerSent,NumberOfWells,PlateFillOrder};
+	unneededContainerOptionTuples = Map[
+		Function[optionSet,
+			Module[{optionValues, specifiedOptionNames},
+				optionValues = Lookup[optionSet,containerOnlyOptions];
+				specifiedOptionNames = PickList[containerOnlyOptions,optionValues,Except[Null|Automatic|False]];
+
+				If[MatchQ[Lookup[optionSet,Model],ObjectP[Model[Item]]] && !MatchQ[specifiedOptionNames,{}],
+					{Lookup[optionSet,Label],specifiedOptionNames},
+					Nothing
+				]
 			]
 		],
-		{myModels,containerOption}
+		mapThreadFriendlyOptions
 	];
 
-	(* ------------- *)
-	(* === Cover === *)
-	(* ------------- *)
+	If[!MatchQ[unneededContainerOptionTuples,{}]&&messagesBoolean,
+		Message[Error::ContainerInformationNotRequired, DeleteDuplicates[unneededContainerOptionTuples[[All,1]]],DeleteDuplicates[Flatten[unneededContainerOptionTuples[[All,2]]]]];
+		Message[Error::InvalidOption,DeleteDuplicates[Flatten[unneededContainerOptionTuples[[All,2]]]]];
+	];
 
-	(*get the input covermodel option*)
-	coverOption = Lookup[myOptions,CoverModel];
+	(* Check that all the samples marked as being in the same plate have the same options describing that plate *)
+	plateOnlyOptions = {NumberOfWells,PlateFillOrder,ContainerType,ContainerModel,CoverModel,ContainerDocumentation};
+	containerConflictTuples = KeyValueMap[
+		Function[{label,optionSets},
+			Module[{conflictingSpecifications},
+				conflictingSpecifications = Map[
+					Length[DeleteDuplicates[DeleteCases[Lookup[optionSets, #], Automatic]]] > 1&,
+					plateOnlyOptions
+				];
 
-	(*all we can do is resolve any positions that are automatic to Null to match the containers*)
-	resolvedCoverModel = MapThread[
-		Which[
-			MatchQ[#2, Null],
-			#1/.(Automatic -> Null),
+				If[Or@@conflictingSpecifications,
+					{label, PickList[plateOnlyOptions,conflictingSpecifications]},
+					Nothing
+				]
+			]
+		],
+		optionsByContainer
+	];
 
-			(* plates need a plate seal *)
-			MatchQ[#2, ObjectP[Model[Container, Plate]]],
-			#1/.Automatic -> Model[Item, PlateSeal, "Placeholder Model[Item, PlateSeal] For ShipToECL Samples Only"],
+	containerConflict = Length[containerConflictTuples] > 0;
 
-			(* any other form of container needs a cap *)
-			MatchQ[#2, ObjectP[Model[Container, Vessel]]],
-			If[MemberQ[Download[#2, {BuiltInCover, Ampoule}, Cache -> containerModelTypePackets], True],
-				
-				(* if there is some sort of built in cover or the container is a sealed ampoule, we dont need a cover *)
-				#1/.(Automatic -> Null),
-				#1/.Automatic -> Model[Item, Cap, "Placeholder Model[Item, Cap] For ShipToECL Samples Only"]
+	(* If containers have conflicting specifications, throw an error *)
+	If[containerConflict && messagesBoolean,
+		Message[Error::ContainerSpecificationConflict,containerConflictTuples[[All,1]],DeleteDuplicates[Flatten[containerConflictTuples[[All,2]],1]]];
+		Message[Error::InvalidInput,containerConflictTuples[[All,1]]];
+	];
+
+	(* If we are gathering tests, create a passing and/or failing test with the appropriate result. *)
+	containerConflictTest=If[!messagesBoolean,
+		Test["No containers have conflicting options describing their properties:",containerConflict,False],
+		Nothing
+	];
+
+	(* If plate model is specified, check that the number of wells option matches field  *)
+	consistentWellNumberOptions = And@@Map[
+		Module[{containerModel,numberOfWells},
+			{containerModel,numberOfWells} = Lookup[#,{ContainerModel,NumberOfWells}];
+
+			If[MatchQ[containerModel,ObjectP[Model[Container]]] && !MatchQ[numberOfWells,Automatic],
+				MatchQ[Lookup[Experiment`Private`fetchPacketFromFastAssoc[containerModel, fastAssoc],NumberOfWells],numberOfWells],
+				True
 			]
 		]&,
-		{coverOption,resolvedContainerModel/.None-> Null}
+		mapThreadFriendlyOptions
 	];
 
-	(* -- Error checking (feature flagged) -- *)
-
-	(* get the shipped sample models, the cover, and the container fields...these might be Null *)
-	inputsAndCoverOption = Transpose[{myModels,resolvedCoverModel, Quiet[Download[resolvedContainerModel/.None-> Null, {Ampoule, BuiltInCover}, Cache -> containerModelTypePackets]]}];
-
-
-	(* throw an error if any items have the cover option specified *)
-	(* remove any placholders since we dont want to yell at users for this, there is already an error that is thrown for the container *)
-	itemsWithCoverSpecified = Cases[
-		DeleteCases[inputsAndCoverOption, {_,ObjectP[{Model[Item, Cap, "Placeholder Model[Item, Cap] For ShipToECL Samples Only"], Model[Item, PlateSeal, "Placeholder Model[Item, PlateSeal] For ShipToECL Samples Only"]}],_}],
-		{
-			ObjectP[Model[Item]],
-			ObjectP[],
-			_
-		}
-	][[All,1]];
-
-	If[Length[itemsWithCoverSpecified]>0&&messagesBoolean,
-		Message[Error::CoverModelNotRequired,itemsWithCoverSpecified];
-		Message[Error::InvalidOption,CoverModel];
+	If[!consistentWellNumberOptions,
+		Message[Error::NumberOfWellsMismatch];
+		Message[Error::InvalidOption,NumberOfWells];
 	];
 
-	(* If we are gathering tests, create a passing and/or failing test with the appropriate result. *)
-	itemsWithCoverSpecifiedTest=If[!messagesBoolean,
-		If[Length[itemsWithCoverSpecified]>0,
-			Test["Any input item models do not have CoverModel specified:",True,False],
-			Test["Any input item models do not have CoverModel specified:",True,True]
-		],
+	numberOfWellsTest = If[collectTestsBoolean,
+		Test["If NumberOfWells and ContainerModel are specified, the container model's number of wells must match the specified number of wells:",consistentWellNumberOptions,True],
 		Nothing
 	];
 
-	(* throw an error if any samples don't have the cover option specified *)
-	(* we only want to throw this for cases where BuiltInCover and Ampoule are not True *)
-	samplesWithoutCoverSpecified = Cases[
-		inputsAndCoverOption,
-		{
-			ObjectP[Model[Sample]],
-			Except[ObjectP[]],
-			({Except[True], Except[True]}|Null)
-		}
-	][[All,1]];
-
-	If[Length[samplesWithoutCoverSpecified]>0&&messagesBoolean,
-		Message[Error::CoverModelRequired, samplesWithoutCoverSpecified];
-		Message[Error::InvalidOption,CoverModel];
+	(* If ContainerModel or ContainerType suggests a vessel, WellNumber must be set to 1 *)
+	badVesselWellNumberTuples = Cases[
+		Lookup[mapThreadFriendlyOptions,{Model,ContainerModel,ContainerType,NumberOfWells}],
+		{ObjectP[Model[Sample]],ObjectP[Model[Container,Vessel]],_,GreaterP[1]}|{ObjectP[Model[Sample]],_,Vessel,GreaterP[1]}
 	];
 
-	(* If we are gathering tests, create a passing and/or failing test with the appropriate result. *)
-	samplesWithoutCoverSpecifiedTest=If[!messagesBoolean,
-		If[Length[samplesWithoutCoverSpecified]>0,
-			Test["Any input sample model has CoverModel specified if the ContainerModel isn't self covering:",True,False],
-			Test["Any input sample model has CoverModel specified if the ContainerModel isn't self covering:",True,True]
-		],
+	badVesselWellNumberSamples = badVesselWellNumberTuples[[All,1]];
+
+	If[messagesBoolean && !MatchQ[badVesselWellNumberSamples,{}],
+		Message[Error::NonstandardWellNumber,badVesselWellNumberSamples];
+		Message[Error::InvalidOption,NumberOfWells];
+	];
+
+	badVesselWellNumberTest = If[!messagesBoolean,
+		Test["NumberOfWells is set to 1 for any samples in a vessel:",MatchQ[badVesselWellNumberSamples,{}],True],
 		Nothing
 	];
 
-	(* throw an error if the user has specified covers for containers that cant physically have them *)
+	filteredContainerModels = Replace[specifiedContainerModels,Except[ObjectP[]]->Null,{1}];
+
+	(* Container model and type must match *)
+	inputsAndSpecifiedContainerInfo = Transpose[{specifiedContainerModels,specifiedContainerTypes}];
+
+	containerModelTypeMismatches = Cases[inputsAndSpecifiedContainerInfo,{ObjectP[Model[Container,Vessel]],Plate}|{ObjectP[Model[Container,Plate]],Vessel}];
+
+	If[Length[containerModelTypeMismatches]>0&&messagesBoolean,
+		Message[Error::ContainerModelTypeMismatch,DeleteDuplicates[containerModelTypeMismatches[[All,1]]]];
+		Message[Error::InvalidOption,ContainerModel];
+	];
+
+	containerModelTypeMismatchTest = If[!messagesBoolean,
+		Test["ContainerModel and ContainerType must match:",MatchQ[containerModelTypeMismatches,{}],True],
+		Nothing
+	];
+
+	(* check if we actually need the empty container *)
+	emptyContainerUnneededLabels=MapThread[
+		Function[{model,label,containerModel,emptySent},
+			If[
+				And[
+					MatchQ[model,ObjectP[Model[Sample]]],
+					MatchQ[containerModel,ObjectP[]],
+					!TrueQ[Lookup[Experiment`Private`fetchPacketFromFastAssoc[containerModel, fastAssoc], ParameterizationPlaceholder]],
+					TrueQ[emptySent]
+				],
+				label,
+				Nothing
+			]
+		],
+		{myModels,myContainerLabels,specifiedContainerModels,emptiesSent}
+	];
+
+	If[!MatchQ[emptyContainerUnneededLabels,{}]&&messagesBoolean,
+		Message[Warning::EmptyContainerUnneeded,DeleteDuplicates[emptyContainerUnneededLabels]]
+	];
+
+	emptyUnneededTest = If[!messagesBoolean,
+		Warning["An empty container is not sent if an already parameterized container model is provided:",MatchQ[emptyContainerUnneededLabels,{}],True],
+		Nothing
+	];
+
+	(* cover model can't be specified for self covering containers *)
+	selfCoveringTuples = Map[
+		If[MatchQ[#,ObjectP[]],
+			Lookup[Experiment`Private`fetchPacketFromFastAssoc[#,fastAssoc], {BuiltInCover, Ampoule}],
+			Null
+		]&,
+		specifiedContainerModels
+	];
+
+	(* throw an error if the user has specified covers for containers that can't physically have them *)
 	selfCoveredContainerWithCoverSpecified = Cases[
-		inputsAndCoverOption,
+		Transpose[{myModels, specifiedCovers, selfCoveringTuples}],
 		{
 			ObjectP[Model[Sample]],
 			ObjectP[],
 			({True, _}|{_, True})
 		}
-	][[All,1]];
+	];
 
-	If[Length[selfCoveredContainerWithCoverSpecified]>0&&messagesBoolean,
-		Message[Error::IncompatibleCoverModel, selfCoveredContainerWithCoverSpecified];
+	If[!MatchQ[selfCoveredContainerWithCoverSpecified,{}]&&messagesBoolean,
+		Message[Error::IncompatibleCoverModel, selfCoveredContainerWithCoverSpecified[[All,1]]];
 		Message[Error::InvalidOption,CoverModel];
 	];
 
 	(* If we are gathering tests, create a passing and/or failing test with the appropriate result. *)
 	selfCoveredContainerWithCoverSpecifiedTest=If[!messagesBoolean,
-		If[Length[selfCoveredContainerWithCoverSpecified]>0,
-			Test["Containers that are self covering do not have a CoverModel specified:",True,False],
-			Test["Containers that are self covering do not have a CoverModel specified:",True,True]
-		],
+		Test["Containers that are self covering do not have a CoverModel specified:",MatchQ[selfCoveredContainerWithCoverSpecified,{}],True],
 		Nothing
 	];
 
@@ -6027,12 +6507,8 @@ resolveShipToECLOptions[myModels:{ObjectP[{Model[Item],Model[Sample]}]..}, myNam
 	(* remove an instances where the cover is a placeholder since there is nothing to check here *)
 	(*also exclude items since we are throwing a different error for those*)
 	containerCoverTuples = Cases[
-		Transpose[{myModels, resolvedCoverModel, resolvedContainerModel}],
-		{
-			ObjectP[Model[Sample]],
-			Except[ObjectP[{Model[Item, Cap, "Placeholder Model[Item, Cap] For ShipToECL Samples Only"], Model[Item, PlateSeal, "Placeholder Model[Item, PlateSeal] For ShipToECL Samples Only"]}]],
-			ObjectP[]
-		}
+		Transpose[{myModels, specifiedCovers, specifiedContainerModels}],
+		{ObjectP[Model[Sample]], _, ObjectP[]}
 	];
 
 	(* at this point we know that all of the models will have packets in the download, so we can go ahead use the cache *)
@@ -6047,33 +6523,27 @@ resolveShipToECLOptions[myModels:{ObjectP[{Model[Item],Model[Sample]}]..}, myNam
 				(* break up the tuple *)
 				{selectedModel, selectedCover, selectedContainer}=#;
 
-				(* there may be no cover, if thats the case, use Null *)
+				(* there may be no cover, if that's the case, use Null *)
 				{coverType, coverFootprint, verifiedCoverBool} = If[MatchQ[selectedCover, ObjectP[]],
-					Download[selectedCover, {CoverType, CoverFootprint, VerifiedCoverModel},Cache -> coverModelTypePackets],
+					Lookup[Experiment`Private`fetchPacketFromFastAssoc[selectedCover, fastAssoc], {CoverType, CoverFootprint, VerifiedCoverModel}],
 					{Null, Null, Null}
 				];
+
 				{
 					compatibleCoverTypes,
 					compatibleCoverFootprints,
 					builtInCover,
 					ampoule,
 					verifiedContainerBool
-				} = Download[
-					selectedContainer,
-					{
-						CoverTypes,
-						CoverFootprints,
-						BuiltInCover,
-						Ampoule,
-						VerifiedContainerModel
-					},
-					Cache -> containerModelTypePackets
+				} = If[MatchQ[selectedContainer, ObjectP[]],
+					Lookup[Experiment`Private`fetchPacketFromFastAssoc[selectedContainer, fastAssoc], {CoverTypes, CoverFootprints, BuiltInCover, Ampoule, VerifiedContainerModel}],
+					{Null, Null, Null, Null, Null}
 				];
 
 				(* determine if we need to throw an error *)
 				Which[
-					(* if there is no cover, dont bother *)
-					!MatchQ[selectedCover, ObjectP[]],
+					(* if there is no cover, don't bother *)
+					!MatchQ[{selectedCover,selectedContainer}, {ObjectP[],ObjectP[]}],
 					Nothing,
 
 					(* if the container is not coverable but has a cover, we already threw an error for this so just skip it *)
@@ -6084,12 +6554,12 @@ resolveShipToECLOptions[myModels:{ObjectP[{Model[Item],Model[Sample]}]..}, myNam
 					And[MemberQ[compatibleCoverTypes, coverType], MemberQ[compatibleCoverFootprints, coverFootprint]],
 					Nothing,
 
-					(* if the cover or container is not verified, we dont care if the footprint matches since there that gets populated in receiving/parameterization anyway *)
+					(* if the cover or container is not verified, we don't care if the footprint matches since there that gets populated in receiving/parameterization anyway *)
 					(*note that we are not going to check the cover type here either because thats also something we verify and its kind of already pre-enforced since the cover and container are shipped as a set*)
 					MemberQ[{verifiedCoverBool, verifiedContainerBool}, Except[True]],
 					Nothing,
 
-					(* any other scenerio should result in an error ie. a mismatch in the covertype or footprint and no self covered container*)
+					(* any other scenario should result in an error ie. a mismatch in the cover type or footprint and no self covered container*)
 					True,
 					#
 				]
@@ -6106,129 +6576,331 @@ resolveShipToECLOptions[myModels:{ObjectP[{Model[Item],Model[Sample]}]..}, myNam
 
 	(* If we are gathering tests, create a passing and/or failing test with the appropriate result. *)
 	incompatibleCoverContainerTest=If[!messagesBoolean,
-		If[Length[incompatibleCoverContainerPairs]>0,
-			Test["Covers have compatible CoverFootprint and CoverType for the ContainerModel they are covering:",True,False],
-			Test["Covers have compatible CoverFootprint and CoverType for the ContainerModel they are covering:",True,True]
-		],
+		Test["Covers have compatible CoverFootprint and CoverType for the ContainerModel they are covering:",Length[incompatibleCoverContainerPairs]>0,False],
 		Nothing
 	];
 
-	(* -------------------------------- *)
-	(* -- Empty Container and Cover  -- *)
-	(* -------------------------------- *)
+	(* -------------------------------------------- *)
+	(* -- Container Option Resolutions -- *)
+	(* -------------------------------------------- *)
 
-	(*check that the empty containers and their covers make sense - its the same check as above but I'm doing it a little more compactly *)
-	(*these are not index matched to the models, so dont bother*)
-	emptyContainerCoverTuples = Transpose[{ToList[Lookup[myOptions, EmptyContainerCovers]], ToList[Lookup[myOptions, EmptyContainers]]}];
+	(* We need to label each of our containers if the user hasn't done so *)
+	(* In case they start with our naming scheme but leave many automatic find the highest container they label *)
+	(* Find the largest N in any "Container Model N" strings *)
+	existingContainerCounters = Map[
+		StringCases[#, "Container Model " ~~ count : DigitCharacter .. :> ToExpression[count]]&,
+		Cases[Lookup[myOptions, ContainerModel],_String]
+	];
 
-	(* at this point we know that all of the models will have packets in the download, so we can go ahead use the cache *)
-	(*we are going to do two checks at once here, one for if the cover matches, and one for if the container needs a cover but is missing on and one for if the container is not coverable but has a cover specified*)
-	incompatibleEmptyCoverContainerAssociation = If[MatchQ[emptyContainerCoverTuples, {{Null|None,Null|None}..}],
-		{},
-		Map[
-			Module[{selectedCover, selectedContainer, compatibleCoverTypes, compatibleCoverFootprints, coverType, coverFootprint,  builtInCover, ampoule, verifiedContainerBool, verifiedCoverBool},
-				{selectedCover, selectedContainer}=#;
-				{coverType, coverFootprint, verifiedCoverBool} = If[MatchQ[selectedCover, ObjectP[]],
-					Download[selectedCover, {CoverType, CoverFootprint, VerifiedCoverModel},Cache -> emptyCoverModelTypePackets],
-					{Null,Null, Null}
-				];
+	containerModelCounter=Max[existingContainerCounters,1];
 
-				{
-					compatibleCoverTypes,
-					compatibleCoverFootprints,
-					builtInCover,
-					ampoule,
-					verifiedContainerBool
-				} = If[MatchQ[selectedContainer, ObjectP[]],
-					Download[
-					selectedContainer,
-					{
-						CoverTypes,
-						CoverFootprints,
-						BuiltInCover,
-						Ampoule,
-						VerifiedContainerModel
-					},
-					Cache -> emptyContainerModelTypePackets
-				],
-					{Null, Null, Null, Null, Null}
-				];
+	(* Figure out what's giving us info about the container model *)
+	(* If user specified model or docs then each unique item here indicates a unique model *)
+	(* If no info about the model was provided we have to assume each unique container object has a unique container model *)
+	containerModelIdentifier[docs_,model_,label_]:=Which[
+		MatchQ[model,Except[Null|Automatic]],{ContainerModel,model},
+		MatchQ[docs,Except[Null|Automatic]],{ContainerDocumentation,docs},
+		True, {Label,label}
+	];
 
-				Which[
+	(* Get the identifier for each container input *)
+	containerModelIdentifiers=MapThread[
+		Function[{docs,model,label},
+			containerModelIdentifier[docs,model,label]
+		],
+		{specifiedDocuments,specifiedContainerModels,myContainerLabels}
+	];
 
-					(* if theres no cover, decide if it needs one or if we should skip this check *)
-					!MatchQ[selectedCover, ObjectP[]],
-						If[MatchQ[compatibleCoverTypes, {}],
-							(*if theres no specific type of cover on this container, we will not even throw the warning*)
-							{MissingCover -> Nothing,UnusedCover -> Nothing, IncompatibleCover -> Nothing},
+	(* Get the list of identifiers where we need to make a label *)
+	(* If the container model is being identified through the ContainerModel option (use provided their own label or existing model) we don't need to generate a label *)
+	newContainerModelIdentifiers=DeleteDuplicates[DeleteCases[containerModelIdentifiers, {ContainerModel,_}]];
 
-							(* if its possibel to put a cover on, we need to warn the user that they we are interpreting this as there being no cover and that it might cause an issue *)
-							{MissingCover -> #, UnusedCover -> Nothing, IncompatibleCover -> Nothing}
+	(* Generate the list of new labels. We use an ugly Range just to account for the possibility that the user started with our naming scheme but didn't keep going *)
+	newContainerModelLabels=Map[
+		"Container Model "<>ToString[#]&,
+		Range[containerModelCounter,containerModelCounter+Length[newContainerModelIdentifiers]-1]
+	];
+
+	(* Link our identifiers to our new labels *)
+	containerModelRules = AssociationThread[newContainerModelIdentifiers,newContainerModelLabels];
+
+	(* Create a little look-up from NumberOfWells -> aspect ratio since AllWells is not smart *)
+	aspectRatioLookup = <|
+		4 -> 1,
+		6 -> 3/2,
+		12 -> 4/3,
+		24 -> 3/2,
+		48 -> 4/3,
+		96 -> 3/2
+	|>;
+
+	(* Resolve NumberOfWells,PlateFillOrder,Position,ContainerModel,ContainerType for each unique container *)
+	resolvedWellOptionsByContainer = Map[
+		Function[{optionSets},
+			Module[{numberOfSamples,standardWellNumber,wellNumberOptions,wellOrderOptions,containerModelOptions,resolvedContainerModel,
+				wellOrderDefault,containerType,containerDocs,resolvedContainerType,positionOptions,resolvedWellNumber,resolvedWellOrder,
+				containerPositions,arrangedContainerPositions,sampleWells,containerModelPacket},
+
+				(* Don't need to resolve any container options for items *)
+				If[MatchQ[Lookup[optionSets,Model],{ObjectP[Model[Item]]..}],
+					Return[
+						Map[
+							Append[#,
+								{
+									NumberOfWells -> Lookup[#1,NumberOfWells]/.Automatic->Null,
+									PlateFillOrder -> Lookup[#1,PlateFillOrder]/.Automatic->Null,
+									Position -> Lookup[#1,Position]/.Automatic->Null,
+									ContainerModel -> Lookup[#1,ContainerModel]/.Automatic->Null,
+									ContainerType -> Lookup[#1,ContainerType]/.Automatic->Null,
+									ContainerDocumentation -> Lookup[#1,ContainerDocumentation]/.Automatic->Null
+								}
+							]&,
+							optionSets
 						],
+						Module
+					]
+				];
 
-					(* if the container is not coverable but has a cover *)
-					And[MemberQ[{builtInCover, ampoule}, True], MatchQ[selectedCover, ObjectP[]]],
-					{MissingCover -> Nothing, UnusedCover -> #, IncompatibleCover -> Nothing},
+				(* optionSets are grouped by unique container ID so length gives us # of samples in that container *)
+				numberOfSamples = Length[optionSets];
 
-					(* if the cover is not compatible according to CoverType/CoverTypes and CoverFootprint/CompatibleCoverFootprint track that error*)
-					(* only do this check if everything is verified. otherwise we just want ot check cover type *)
-					And[Or[!MemberQ[compatibleCoverTypes, coverType], !MemberQ[compatibleCoverFootprints, coverFootprint]], MatchQ[{verifiedCoverBool, verifiedContainerBool}, {True, True}]],
-					{MissingCover -> Nothing, UnusedCover -> Nothing, IncompatibleCover -> #},
+				(* All the index-matched options should be the same here since we've grouped by samples in the sample container model *)
+				(* Error checking elsewhere looks for conflicts - e.g. where we've said container 1 has model 1 and model 2 at different points *)
+				(* For right now we will just take the first actual value we were given that describes our current container *)
+				containerType = FirstCase[Lookup[optionSets,ContainerType],Except[Automatic],Automatic];
+				containerDocs = FirstCase[Lookup[optionSets,ContainerDocumentation],Except[Automatic],Automatic];
 
-					(* any other scenerio should be fine*)
-					(*note that we skip the check for compatible cover type because that is done during parameterization!*)
+				containerModelOptions = Lookup[optionSets,ContainerModel];
+				wellNumberOptions = Lookup[optionSets,NumberOfWells];
+				wellOrderOptions = Lookup[optionSets,PlateFillOrder];
+				positionOptions = Lookup[optionSets,Position];
+
+				containerModelOptions = Lookup[optionSets,ContainerModel];
+
+				resolvedContainerModel = If[!MatchQ[containerModelOptions,{Automatic..}],
+					FirstCase[containerModelOptions,Except[Automatic]],
+					Lookup[containerModelRules,Key[containerModelIdentifier[containerDocs,Automatic,First[Lookup[optionSets,Label]]]]]
+				];
+
+				resolvedContainerType = Which[
+					MatchQ[containerType,Except[Automatic]],
+						containerType,
+					MatchQ[resolvedContainerModel,ObjectP[Model[Container,Vessel]]],
+						Vessel,
+					MatchQ[resolvedContainerModel,ObjectP[Model[Container,Plate]]],
+						Plate,
+					numberOfSamples>1 || MemberQ[wellNumberOptions, GreaterP[1]],
+						Plate,
 					True,
+						Vessel
+				];
+
+				(* Given our number of samples, determine the most likely plate configuration *)
+				standardWellNumber = Switch[{numberOfSamples,resolvedContainerType},
+					{LessEqualP[1], Vessel}, 1,
+					{LessEqualP[96], Plate}, 96,
+					{LessEqualP[384], Plate}, 384,
+					(* Account for the crazy case where we have an even bigger plate but with our standard 1.5 aspect ratio *)
+					_, 96*Ceiling[Sqrt[(numberOfSamples/96)]]^2
+				];
+
+				wellOrderDefault = Row;
+
+				(* Get any legit user-specified PlateOrder and WellNumber, otherwise use resolved values *)
+				(* We will only replace the automatics below *)
+				resolvedWellNumber = FirstCase[wellNumberOptions, Except[Null|Automatic], standardWellNumber];
+				resolvedWellOrder = FirstCase[wellOrderOptions, Except[Null|Automatic], wellOrderDefault];
+
+				containerModelPacket=Experiment`Private`fetchPacketFromFastAssoc[resolvedContainerModel, fastAssoc];
+
+				(* Get the specified positions of samples in our container, or if not provided determine all positions in the container *)
+				containerPositions = Which[
+                	!MatchQ[positionOptions,{Automatic..}],
+						positionOptions,
+					MatchQ[resolvedContainerModel,ObjectP[Model[Container,Plate]]] && !MemberQ[Lookup[containerModelPacket,{AspectRatio,NumberOfWells}],Null],
+						AllWells[containerModelPacket],
+					MatchQ[resolvedContainerModel,ObjectP[Model[Container,Vessel]]] && !MatchQ[Lookup[containerModelPacket,Positions], {}],
+						Lookup[
+							Lookup[containerModelPacket,Positions,{<|Name->"A1"|>}],
+							Name
+						],
+         			MatchQ[resolvedWellNumber,1],
+						{{"A1"}},
+					True,
+						Quiet[
+							Check[
+								AllWells[NumberOfWells -> resolvedWellNumber, AspectRatio -> Lookup[aspectRatioLookup,resolvedWellNumber,3/2]],
+								{ConstantArray[Null, numberOfSamples]}
+							],
+							ConvertWell::BadRatio
+						]
+				];
+
+				(* Adjust our container positions based on plate fill specification. Don't adjust if we were given positions *)
+				arrangedContainerPositions=If[MatchQ[resolvedWellOrder,Row] || !MatchQ[positionOptions,{Automatic..}],
+					Flatten[containerPositions,1],
+					Flatten[Transpose[containerPositions],1]
+				];
+
+				(* If there aren't enough wells in the container, just loop back. Error elsewhere. *)
+				sampleWells=If[Length[arrangedContainerPositions] >= numberOfSamples,
+					Take[arrangedContainerPositions,numberOfSamples],
+					PadRight[arrangedContainerPositions,numberOfSamples,arrangedContainerPositions]
+				];
+
+				(* Update each option with our new resolved value *)
+				MapThread[
+					Append[#1, {
+						NumberOfWells -> Lookup[#1,NumberOfWells]/.Automatic->resolvedWellNumber,
+						PlateFillOrder -> Lookup[#1,PlateFillOrder]/.Automatic->Row,
+						(* Filling up the plate well-by-well *)
+						Position -> Lookup[#1,Position]/.Automatic->#2,
+						ContainerModel -> Lookup[#1,ContainerModel]/.Automatic->resolvedContainerModel,
+						ContainerType -> Lookup[#1,ContainerType]/.Automatic->resolvedContainerType
+					}
+					]&,
+					{optionSets,sampleWells}
+				]
+			]
+		],
+		optionsByContainer
+	];
+
+	resolvedOptionsWithWellInfo = SortBy[Flatten[Values[resolvedWellOptionsByContainer],1],Lookup[#,ID]&];
+
+	resolvedPlateFillOrder = Lookup[resolvedOptionsWithWellInfo,PlateFillOrder];
+	resolvedNumberOfWells = Lookup[resolvedOptionsWithWellInfo,NumberOfWells];
+	resolvedPositions = Lookup[resolvedOptionsWithWellInfo,Position];
+	resolvedContainerModels = Lookup[resolvedOptionsWithWellInfo,ContainerModel];
+	resolvedContainerTypes = Lookup[resolvedOptionsWithWellInfo,ContainerType];
+
+	(* - For any samples determined to be in plates make sure NumberOfWells, PlateFillOrder aren't missing - *)
+	plateOptionTuples=Transpose[{myModels,myContainerLabels,resolvedContainerTypes,resolvedNumberOfWells,resolvedPlateFillOrder}];
+
+	platesMissingOptions=DeleteDuplicates[Cases[plateOptionTuples,{ObjectP[Model[Sample]],_,Plate,Null,_}|{ObjectP[Model[Sample]],_,Plate,Null,_}][[All,1]]];
+
+	missingPlateOptions={
+		If[MemberQ[plateOptionTuples, {_, _, Plate, Null, _}], NumberOfWells, Nothing],
+		If[MemberQ[plateOptionTuples, {_, _, Plate, _, Null}], PlateFillOrder, Nothing]
+	};
+
+	If[!MatchQ[missingPlateOptions,{}] && messagesBoolean,
+		Message[Error::PlateOptionsRequired,platesMissingOptions,missingPlateOptions];
+		Message[Error::InvalidOption,missingPlateOptions]
+	];
+
+	plateOptionsMissingTest=If[!messagesBoolean,
+		Test["Any samples in plates must have NumberOfWells and PlateFillOrder specified",MatchQ[missingPlateOptions,{}],True]
+	];
+
+	(* - Appropriate Container Documentation - *)
+	(* - We don't need container docs when container model is specified - *)
+	unneededDocTuples = Cases[Transpose[{myContainerLabels,specifiedContainerModels,specifiedDocuments}],{_,ObjectP[],Except[Null|Automatic]}];
+
+	unneededDocs = Length[unneededDocTuples]>0;
+
+	If[unneededDocs && messagesBoolean && !containerConflict,
+		Message[Warning::UnneededContainerDocumentation,DeleteDuplicates[unneededDocTuples[[All,1]]]]
+	];
+
+	unneededDocsTest=If[!messagesBoolean,
+		Test["Container documentation is not provided for samples in containers with existing models",unneededDocs,False],
+		Nothing
+	];
+
+	(* - Unique documents must be specified for unique container properties - *)
+	(* e.g. customer can't give the same file for a sample in a plate and a sample in a vessel  *)
+
+	(* Get sets of options with the same docs specified *)
+	docsAndPropertySets = GatherBy[
+		DeleteCases[Transpose[{specifiedDocuments,specifiedWells,resolvedContainerTypes}],{Null|Automatic,_,_}],
+		First
+	];
+
+	(* Get docs that are being used to describe multiple types of containers *)
+	reusedDocs = DeleteCases[
+		Map[
+			Module[{numberOfUniqueSets},
+				numberOfUniqueSets=DeleteDuplicates[#];
+				If[Length[numberOfUniqueSets]>1,
+					numberOfUniqueSets[[1,1]],
 					Nothing
 				]
-
 			]&,
-			emptyContainerCoverTuples
-		]
-	];
-
-	(* collect the error tuples *)
-	incompatibleEmptyCoverContainerTuples = Lookup[incompatibleEmptyCoverContainerAssociation, IncompatibleCover, Nothing];
-	unusedCoverEmptyCoverContainerTuples = Lookup[incompatibleEmptyCoverContainerAssociation, UnusedCover, Nothing];
-	missingEmptyCoverContainerTuples = Lookup[incompatibleEmptyCoverContainerAssociation, MissingCover, Nothing];
-
-	(* throw the errors for bad EmptyContainer/EmptyContainerCovers pairings *)
-	If[Length[incompatibleEmptyCoverContainerTuples]>0&&messagesBoolean,
-		Message[Error::IncompatibleEmptyContainerCover, incompatibleEmptyCoverContainerTuples[[All,2]], incompatibleEmptyCoverContainerTuples[[All,1]]];
-		Message[Error::InvalidOption,EmptyContainerCovers];
-	];
-
-	If[Length[unusedCoverEmptyCoverContainerTuples]>0&&messagesBoolean,
-		Message[Error::UnusedEmptyContainerCover, unusedCoverEmptyCoverContainerTuples[[All,2]], unusedCoverEmptyCoverContainerTuples[[All,1]]];
-		Message[Error::InvalidOption,EmptyContainerCovers];
-	];
-
-	If[Length[missingEmptyCoverContainerTuples]>0&&messagesBoolean,
-		Message[Warning::MissingEmptyContainerCover, missingEmptyCoverContainerTuples[[All,2]]];
-	];
-
-	(* If we are gathering tests, create a passing and/or failing test with the appropriate result. *)
-	incompatibleEmptyCoverContainerTest=If[!messagesBoolean,
-		If[Length[incompatibleEmptyCoverContainerTuples]>0,
-			Test["EmptyContainerCovers have compatible CoverFootprint and CoverType for the EmptyContainers they are covering:",True,False],
-			Test["EmptyContainerCovers have compatible CoverFootprint and CoverType for the EmptyContainers they are covering:",True,True]
+			docsAndPropertySets
 		],
+		Null
+	];
+
+	(* Throw an error unless we've already detected a more fundamental problem with our container options *)
+	If[Length[reusedDocs]>0 && messagesBoolean && !containerConflict && !unneededDocs,
+		Message[Error::ConflictingContainerDocumentation,reusedDocs];
+		Message[Error::InvalidOption, ContainerDocumentation]
+	];
+
+	conflictingDocTest=If[!messagesBoolean,
+		Test["The same container documentation is not used to describe two different types of containers",Length[reusedDocs],0],
 		Nothing
 	];
 
-	unusedEmptyCoverContainerTest=If[!messagesBoolean,
-		If[Length[unusedCoverEmptyCoverContainerTuples]>0,
-			Test["EmptyContainers that are self-covering do not have EmptyContainerCovers:",True,False],
-			Test["EmptyContainers that are self-covering do not have EmptyContainerCovers:",True,True]
-		],
+	(* - Documentation files must exist - *)
+	userDocWebsites = DeleteDuplicates[Cases[specifiedDocuments, URLP]];
+	newUserDocFiles = DeleteDuplicates[Complement[Cases[specifiedDocuments, FilePathP],userDocWebsites]];
+
+	badDocFiles = PickList[newUserDocFiles,FileExistsQ/@newUserDocFiles,False];
+
+	(* Throw an error unless we've already detected a more fundamental problem with our container options *)
+	If[Length[badDocFiles]>0 && messagesBoolean && Length[reusedDocs]==0 && !containerConflict && !unneededDocs,
+		Message[Error::ContainerDocumentationFiles,badDocFiles];
+		Message[Error::InvalidOption, ContainerDocumentation]
+	];
+
+	missingDocFilesTest=If[!messagesBoolean,
+		Test["Any container documentation files were found:",Length[badDocFiles],0],
 		Nothing
 	];
 
-	missingEmptyCoverContainerTest=If[!messagesBoolean,
-		If[Length[missingEmptyCoverContainerTuples]>0,
-			Test["EmptyContainers that have CoverTypes have a matching entry in EmptyContainerCovers:",True,False],
-			Test["EmptyContainers that have CoverTypes have a matching entry in EmptyContainerCovers:",True,True]
+	(* - Resolve Cover Model - *)
+
+	(* We are going to name our unique cover models. Make sure we don't overlap with any user-specified names *)
+	existingCoverCounters = Map[
+		StringCases[#, "Cover Model " ~~ count : DigitCharacter .. :> ToExpression[count]]&,
+		Cases[Lookup[myOptions, CoverModel],_String]
+	];
+
+	coverModelCounter=Max[existingCoverCounters,0];
+
+	(* Get unique tuples for all our container model <> cover model pairs *)
+	uniqueContainerCoverPairs = DeleteDuplicates[Transpose[{resolvedContainerModels,specifiedCovers}]];
+
+	(* We want to make a new cover model for each unique container model unless one was already specified  *)
+	(* Without any other info we have to assume that if something has a unique container model it must have a corresponding unique cover model *)
+	containerCoverRules=MapThread[
+		Function[{containerModel, cover},
+			Which[
+				(* Cover specified *)
+				MatchQ[cover,Except[Automatic]], containerModel->cover,
+
+				(* No container model therefore no corresponding cover *)
+				MatchQ[containerModel,Null], Null->Null,
+
+				(* Cover built in, no object needed *)
+				MatchQ[containerModel,ObjectP[]] && MemberQ[Lookup[Experiment`Private`fetchPacketFromFastAssoc[containerModel,fastAssoc], {BuiltInCover, Ampoule}],True], containerModel->Null,
+
+
+				(* Otherwise make new cover *)
+				True, (coverModelCounter=coverModelCounter+1; containerModel -> "Cover Model " <> ToString[coverModelCounter])
+			]
 		],
-		Nothing
+		Transpose[uniqueContainerCoverPairs] (* Convert back to list of containers and list of covers *)
+	];
+
+	resolvedCoverModel=MapThread[
+		If[MatchQ[#2,Except[Automatic]],
+			#2,
+			Lookup[containerCoverRules,#1]
+		]&,
+		{resolvedContainerModels,specifiedCovers}
 	];
 
 	(* ----------- *)
@@ -6246,7 +6918,7 @@ resolveShipToECLOptions[myModels:{ObjectP[{Model[Item],Model[Sample]}]..}, myNam
 					Return[{Rack -> rack, BadRack -> Null, NoRacks -> Null}, Module],
 
 					(* container model is self standing *)
-					MatchQ[Download[container, SelfStanding, Cache -> containerModelTypePackets], True],
+					MatchQ[Lookup[Experiment`Private`fetchPacketFromFastAssoc[container, fastAssoc], SelfStanding], True],
 					Return[{Rack -> rack, BadRack -> Null, NoRacks -> Null}, Module],
 
 					True,
@@ -6281,7 +6953,7 @@ resolveShipToECLOptions[myModels:{ObjectP[{Model[Item],Model[Sample]}]..}, myNam
 
 				(* either check the rack, or find a new one *)
 				If[MatchQ[rack, ObjectP[]],
-					(* check the rack - dont search for a new one *)
+					(* check the rack - don't search for a new one *)
 					Module[{positions, positionTuples, workablePositions},
 						positions = Lookup[FirstCase[compatibleRacksPackets, PacketP[rack]], Positions];
 						positionTuples = Lookup[positions, {Footprint, MaxWidth, MaxDepth}];
@@ -6307,11 +6979,10 @@ resolveShipToECLOptions[myModels:{ObjectP[{Model[Item],Model[Sample]}]..}, myNam
 
 			]
 		],
-		{resolvedContainerModel, (Lookup[myOptions, ShippedRack]/.None-> Null)}
+		{resolvedContainerModels, (Lookup[myOptions, ShippedRack]/.Null-> Null)}
 	];
 
-
-	(* racks that were provided but dont actually work *)
+	(* racks that were provided but don't actually work *)
 	badRacks = DeleteCases[Lookup[rackResult, BadRack], Null];
 	(* things we couldnt find a rack for that were automatic *)
 	noRacksTuples = DeleteCases[Lookup[rackResult, NoRacks], Null];
@@ -6329,51 +7000,21 @@ resolveShipToECLOptions[myModels:{ObjectP[{Model[Item],Model[Sample]}]..}, myNam
 
 	(* If we are gathering tests, create a passing and/or failing test with the appropriate result. *)
 	badRacksTest=If[!messagesBoolean,
-		If[Length[badRacks]>0,
-			Test["The provided ShippedRack models are capable of supporting the ContainerModel they are matched with:",True,False],
-			Test["The provided ShippedRack models are capable of supporting the ContainerModel they are matched with:",True,True]
-		],
+		Test["The provided ShippedRack models are capable of supporting the ContainerModel they are matched with:",Length[badRacks]>0,False],
 		Nothing
 	];
 
 	noRacksTest=If[!messagesBoolean,
-		If[Length[noRacksTuples]>0,
-			Test["An appropriate ShippedRack is able to be found for ContainerModels that are not capable of standing unsupported:",True,False],
-			Test["An appropriate ShippedRack is able to be found for ContainerModels that are not capable of standing unsupported:",True,True]
-		],
+		Test["An appropriate ShippedRack is able to be found for ContainerModels that are not capable of standing unsupported:",Length[noRacksTuples]>0,False],
 		Nothing
 	];
 
 
-	(* ------------ *)
-	(* = Position = *)
-	(* ------------ *)
+	(* ------------------------------------ *)
+	(* = Position Error Checks = *)
+	(* ------------------------------------ *)
 
-	(* Resolve any Automatic container models to Null for items *)
-	resolvedPosition = MapThread[
-		Function[{input,specifiedPosition,containerModel},
-			Which[
-			(* If the option is not Automatic, keep it *)
-				MatchQ[specifiedPosition,Except[Automatic]], specifiedPosition,
-
-				(* If the input is an item, Automatic resolves to None *)
-				MatchQ[input,ObjectP[Model[Item]]], None,
-
-				(* if we don't have the ContainerModel specified, this gets set to None *)
-				NullQ[containerModel], None,
-
-				(* automatic for samples in single position containers resolves to the single position *)
-				Length[containerModel]==1, containerModel[[1]][Name],
-
-				(* Otherwise , keep option value as Automatic since we can't  resolve it (sample is in unspecified container or multi-position container). We error below. *)
-				True, specifiedPosition
-			]
-		],
-		{myModels, Lookup[myOptions, Position], containerModelPositions}
-	];
-
-
-	inputsAndPositionAndContainerPositions = Transpose[{myModels,resolvedPosition,containerModelPositions}];
+	inputsAndPositionAndContainerPositions = Transpose[{myModels,resolvedPositions,containerModelPositions}];
 
 	(* throw an error if any items have the position option specified *)
 	itemsWithPositionSpecified = Cases[inputsAndPositionAndContainerPositions,{ObjectP[Model[Item]],_String,_}][[All,1]];
@@ -6385,37 +7026,34 @@ resolveShipToECLOptions[myModels:{ObjectP[{Model[Item],Model[Sample]}]..}, myNam
 
 	(* If we are gathering tests, create a passing and/or failing test with the appropriate result. *)
 	itemsWithPositionSpecifiedTest=If[!messagesBoolean,
-		If[Length[itemsWithPositionSpecified]>0,
-			Test["Any input item models do not have Position specified:",True,False],
-			Test["Any input item models do not have Position specified:",True,True]
-		],
+		Test["Any input item models do not have Position specified:",False,Length[itemsWithPositionSpecified]>0],
 		Nothing
 	];
 
-	(* throw an error if any samples don't have the position option. We already resolved the ones that we could for samples in single position containers. *)
+	(* throw an error if any samples don't have the position option *)
 	samplesWithoutPosition = Cases[inputsAndPositionAndContainerPositions,{ObjectP[Model[Sample]],Except[_String],_}][[All,1]];
 
-	If[Length[samplesWithoutPosition]>0&&messagesBoolean,
+	(* Throw an error about position being Null because we couldn't resolve it unless the issue is that the user set it Null *)
+	If[Length[samplesWithoutPosition]>0 && messagesBoolean && !MemberQ[missingContainerOptions, Position],
 		Message[Error::PositionRequired, samplesWithoutPosition];
 		Message[Error::InvalidOption,Position];
 	];
 
 	(* If we are gathering tests, create a passing and/or failing test with the appropriate result. *)
 	samplesWithoutPositionTest=If[!messagesBoolean,
-		If[Length[samplesWithoutPosition]>0,
-			Test["Any input sample models has Position specified or is in a single-position container:",True,False],
-			Test["Any input sample models has Position specified or is in a single-position container:",True,True]
-		],
+		Test["Any input sample models have Position specified or are in single-position containers:",False,Length[samplesWithoutPosition]>0],
 		Nothing
 	];
 
-	(* throw an error if any samples is in a position that does not exist in the container. *)
+	(* throw an error if any samples are in a position that does not exist in the container. *)
 	samplesWithInvalidPosition = Map[
-	(* If the input is a sample AND the position is specified AND the container is specified AND the specified position is not one of the container positions *)
+		(* If the input is a sample AND the position is specified AND the container is specified AND the specified position is not one of the container positions *)
 		If[MatchQ[#[[1]], ObjectP[Model[Sample]]] && MatchQ[#[[2]], _String] && ! NullQ[#[[3]]] && !MemberQ[Name /. #[[3]], #[[2]]],
 			<|"Input"->#[[1]], "SpecifiedPosition"->#[[2]], "PossiblePositions"->Lookup[#[[3]],Name]|>,
 			Nothing
-		]&,inputsAndPositionAndContainerPositions];
+		]&,
+		inputsAndPositionAndContainerPositions
+	];
 
 	If[Length[samplesWithInvalidPosition]>0&&messagesBoolean,
 		Message[Error::InvalidPosition,samplesWithInvalidPosition];
@@ -6424,51 +7062,63 @@ resolveShipToECLOptions[myModels:{ObjectP[{Model[Item],Model[Sample]}]..}, myNam
 
 	(* If we are gathering tests, create a passing and/or failing test with the appropriate result. *)
 	samplesWithInvalidPositionTest=If[!messagesBoolean,
-		If[Length[samplesWithInvalidPosition]>0,
-			Test["Any input sample models with Position and ModelContainer specified have specified a position that exists inside the container:",True,False],
-			Test["Any input sample models with Position and ModelContainer specified have specified a position that exists inside the container:",True,True]
-		],
+		Test["Any input sample models with Position and ModelContainer specified have specified a position that exists inside the container:",Length[samplesWithInvalidPosition]>0,False],
 		Nothing
 	];
 
-
-	(* Error if trying to put 2 samples into same position of a container *)
-	sampleContainerInfoTuples = DeleteCases[Transpose[{myModels,resolvedContainerModel,myNames,resolvedPosition}],{ObjectP[Model[Item]],___}];
+	(* Error if trying to put 2 samples into same position of a plate *)
+	(* Consider just plates, where position is not Null for this check *)
+	sampleContainerInfoTuples = DeleteCases[
+		Transpose[{
+			myModels,
+			resolvedContainerModels,
+			myContainerLabels,
+			resolvedPositions
+		}],
+		{ObjectP[Model[Item]],___} | {_,ObjectP[Model[Container,Vessel]],___} | {___, Null}
+	];
 	positionEntries = GatherBy[sampleContainerInfoTuples, {#[[2]], #[[3]], #[[4]]} &];
-	samplesInSamePosition = Flatten[Select[positionEntries, Length[#] > 1 &][[All, All, 1]]];
+	duplicatePositionTuples = Select[positionEntries, Length[#] > 1 &];
+	samplesInSamePosition = Flatten[duplicatePositionTuples[[All, All, 1]]];
+	containersWithReusedPositions = DeleteDuplicates[Flatten[duplicatePositionTuples[[All, All, 3]]]];
 
-	If[Length[samplesInSamePosition]>0&&messagesBoolean,
+	(* If samples are in the same well it's either because the user directly specified this
+	or because they specified more samples than will fit in the given container and we had no choice but to reuse wells when resolving position *)
+	duplicatePositionsSpecified=!MatchQ[Lookup[myOptions,Position],{Automatic..}] && Length[samplesInSamePosition]>0;
+	insufficientSpace=MatchQ[Lookup[myOptions,Position],{Automatic..}] && Length[samplesInSamePosition]>0;
+
+	If[duplicatePositionsSpecified&&messagesBoolean,
 		Message[Error::ReusedPosition,samplesInSamePosition];
 		Message[Error::InvalidOption,Position];
 	];
 
-	samplesInSamePositionTest=If[!messagesBoolean,
-		If[Length[samplesInSamePosition]>0,
-			Test["Any input sample models are specified with a unique Name, Position, and ModelContainer:",True,False],
-			Test["Any input sample models are specified with a unique Name, Position, and ModelContainer:",True,True]
-		],
-		Nothing
+	If[insufficientSpace&&messagesBoolean,
+		Message[Error::InsufficientContainerSpace,containersWithReusedPositions];
+		Message[Error::InvalidInput,containersWithReusedPositions];
 	];
 
+	samplesInSamePositionTest=If[!messagesBoolean,
+		Test["No samples are implicitly or explicitly in the same well of a container:",Length[samplesInSamePosition]>0,False],
+		Nothing
+	];
 
 	(* -------------- *)
 	(* = Input Names =*)
 	(* -------------- *)
 
-
 	(* Throw an error if the name already exists in the database. If the input is an item, apply the name to an object of the item type. If the input is a sample, use the specified container instead. *)
-	assembledObjects = MapThread[Function[{inputModel, inputName, containerModel},
+	assembledObjects = MapThread[Function[{inputModel, inputName, containerType},
 		Which[
 			MatchQ[inputModel,ObjectP[Model[Item]]],
-			Append[(Download[inputModel,Type] /. Model -> Object), inputName],
-
-			MatchQ[containerModel,ObjectP[Model[Container]]],
-			Append[(Download[containerModel,Type] /. Model -> Object), inputName],
-
+				Append[(Download[inputModel,Type] /. Model -> Object), inputName],
+			MatchQ[containerType,Plate],
+				Append[Object[Container,Plate], inputName],
+			MatchQ[containerType,Vessel],
+				Append[Object[Container,Vessel], inputName],
 			True,
-			Null
+				Null
 		]
-	], {myModels, myNames,resolvedContainerModel}];
+	], {myModels, myContainerLabels, resolvedContainerTypes}];
 
 	nameUsedBools = DatabaseMemberQ[DeleteDuplicates[assembledObjects]];
 
@@ -6478,20 +7128,19 @@ resolveShipToECLOptions[myModels:{ObjectP[{Model[Item],Model[Sample]}]..}, myNam
 	];
 
 	nameInUseTest=If[!messagesBoolean,
-		If[MemberQ[nameUsedBools, True]>0,
-			Test["The input names are not already in use for the objects to which they will be applied:",True,False],
-			Test["The input names are not already in use for the objects to which they will be applied:",True,True]
-		],
+		Test["The input names are not already in use for the objects to which they will be applied:",MemberQ[nameUsedBools, True],False],
 		Nothing
 	];
 
 	(* Throw an error if a name is used for multiple items or a name is used for multiple single-position containers *)
-	duplicateItems =Select[Tally[Cases[assembledObjects, ObjectP[Object[Item]]]], (#[[2]] > 1) &];
+	duplicateItems = Select[Tally[Cases[assembledObjects, ObjectP[Object[Item]]]], (#[[2]] > 1) &];
 
 	singlePositionAssembledObjects = PickList[assembledObjects, containerModelPositions, _?(Length[#] == 1 &)];
-	duplicateSinglePositionContainers =Select[Tally[singlePositionAssembledObjects], (#[[2]] > 1) &];
+	duplicateSinglePositionContainers = Select[Tally[singlePositionAssembledObjects], (#[[2]] > 1) &];
 
-	If[Length[Join[duplicateItems,duplicateSinglePositionContainers]]>0&&messagesBoolean,
+	duplicateNameIssue = Length[Join[duplicateItems,duplicateSinglePositionContainers]] > 0;
+
+	If[duplicateNameIssue&&messagesBoolean,
 		Message[Error::ShipToECLDuplicateName,
 			Join[duplicateItems,duplicateSinglePositionContainers][[All, 1]][[All,-1]],
 			Download[Join[duplicateItems,duplicateSinglePositionContainers][[All,1]],Type]];
@@ -6499,33 +7148,9 @@ resolveShipToECLOptions[myModels:{ObjectP[{Model[Item],Model[Sample]}]..}, myNam
 	];
 
 	duplicateNameTest=If[!messagesBoolean,
-		If[Length[Join[duplicateItems,duplicateSinglePositionContainers]]>0,
-			Test["The input names are not used more than once of an item or a single-position container:",True,False],
-			Test["The input names are not used more than once of an item or a single-position container:",True,True]
-		],
+		Test["The input names are not used more than once of an item or a single-position container:",duplicateNameIssue,False],
 		Nothing
 	];
-
-	(* Throw an error if a name is used for multiple plates of different models (the same name may be used for plates of the same model to indicate that samples should occupy the sample plate.) *)
-	plateModels = Cases[resolvedContainerModel,ObjectP[Model[Container,Plate]]];
-	plateNames = PickList[myNames,resolvedContainerModel,ObjectP[Model[Container,Plate]]];
-	differentPlatesWithSameName = Flatten[Select[GatherBy[DeleteDuplicates[Transpose[{plateModels,plateNames}]],Last], Length[#] > 1 &],1];
-
-	If[Length[differentPlatesWithSameName]>0&&messagesBoolean,
-		Message[Error::ShipToECLDuplicateName,
-			differentPlatesWithSameName[[All,2]],
-			differentPlatesWithSameName[[All,1]]];
-		Message[Error::InvalidInput,"name"];
-	];
-
-	duplicateNameTest=If[!messagesBoolean,
-		If[Length[differentPlatesWithSameName]>0,
-			Test["The input names are not used more than once for different plate models:",True,False],
-			Test["The input names are not used more than once for different plate models:",True,True]
-		],
-		Nothing
-	];
-
 
 	(* --------- *)
 	(* = Source =*)
@@ -6546,7 +7171,7 @@ resolveShipToECLOptions[myModels:{ObjectP[{Model[Item],Model[Sample]}]..}, myNam
 	(* Resolve the destination to ECL-2 *)
 	optionDestination=Lookup[myOptions,Destination];
 	destination=Switch[optionDestination,
-		Alternatives[Automatic,Null,None], $Site,
+		Alternatives[Automatic,Null,Null], $Site,
 		_, optionDestination
 	];
 
@@ -6570,8 +7195,8 @@ resolveShipToECLOptions[myModels:{ObjectP[{Model[Item],Model[Sample]}]..}, myNam
 	(* = Volume =*)
 	(* --------- *)
 
-	vettedVolumes=MapThread[
-		Function[{object,volume,mass,density},
+	vettedVolumeTuples=MapThread[
+		Function[{object,state,volume,mass,density},
 			Module[{testDescription},
 				testDescription=ToString[object,InputForm]<>" does not require a Volume:";
 				Which[
@@ -6590,23 +7215,32 @@ resolveShipToECLOptions[myModels:{ObjectP[{Model[Item],Model[Sample]}]..}, myNam
 					],
 
 					(* If it doesn't have a volume but mass and density are known, calculate the volume *)
-					NullQ[volume]&&MatchQ[mass,MassP]&&MatchQ[density,_?QuantityQ],
-					{(mass/density),{}},
+					MatchQ[volume,Automatic]&&MatchQ[mass,MassP]&&MatchQ[density,_?QuantityQ],
+					{RoundOptionPrecision[(mass/density), 10^-1 Microliter],{}},
 
-					(* in all other cases default to None *)
+					(* Sample is not a liquid, no volume expected *)
+					!MatchQ[state,Liquid],
+					{Null,{}},
+
+					(* in all other cases leave volume automatic indicating we will measure it *)
 					True,
-					{None,{}}
+					{Automatic,{}}
 				]
 			]
-		],{objects,Lookup[myOptions,Volume],Lookup[myOptions,Mass],densities}
+		],
+		{objects,states,Lookup[myOptions,Volume],Lookup[myOptions,Mass],densities}
 	];
+
+	resolvedVolumes=vettedVolumeTuples[[All,1]];
+	volumeTests=vettedVolumeTuples[[All,2]];
+
 
 	(* -------- *)
 	(* = Mass = *)
 	(* -------- *)
 
-	vettedMasses=MapThread[
-		Function[{object,mass,count,tabletWeight,density,volume},
+	vettedMassTuples=MapThread[
+		Function[{object,mass,state,count,solidUnitWeight,density,volume},
 			Module[{testDescription},
 				testDescription=ToString[object,InputForm]<>" does not require a Mass:";
 				Which[
@@ -6625,27 +7259,35 @@ resolveShipToECLOptions[myModels:{ObjectP[{Model[Item],Model[Sample]}]..}, myNam
 					],
 
 					(* If it doesn't have a mass, but it has tablet weight and a count, calculate the mass *)
-					NullQ[mass]&&MatchQ[count,_Integer]&&MatchQ[tabletWeight,MassP],
-					{count*tabletWeight,{}},
+					MatchQ[mass,Automatic]&&MatchQ[count,_Integer]&&MatchQ[solidUnitWeight,MassP],
+					{count*solidUnitWeight,{}},
 
 					(* If it doesn't have a mass but volume and density are known, calculate the mass *)
-					NullQ[mass]&&MatchQ[volume,VolumeP]&&MatchQ[density,_?QuantityQ],
-					{(volume*density),{}},
+					MatchQ[mass,Automatic]&&MatchQ[volume,VolumeP]&&MatchQ[density,_?QuantityQ],
+					{RoundOptionPrecision[(volume*density), 10^-1 Milligram],{}},
 
-					(* in all other cases default to None *)
+					(* no need for mass if not a solid *)
+					!MatchQ[state,Solid],
+					{Null,{}},
+
+
+					(* in all other cases leave mass automatic indicating we will measure it *)
 					True,
-					{None,{}}
+					{Automatic,{}}
 				]
 			]
-		],{objects,Lookup[myOptions,Mass],Lookup[myOptions,Count],tabletWeights,densities,Lookup[myOptions,Volume]}
+		],{objects,Lookup[myOptions,Mass],states,Lookup[myOptions,Count],solidUnitWeights,densities,Lookup[myOptions,Volume]}
 	];
+
+	resolvedMasses=vettedMassTuples[[All,1]];
+	massTests=vettedMassTuples[[All,2]];
 
 	(* -------- *)
 	(* = Count = *)
 	(* -------- *)
 
-	vettedCounts=MapThread[
-		Function[{object,tabletBool,count,tabletWeight,mass},
+	vettedCountTuples=MapThread[
+		Function[{object,tabletBool,count,solidUnitWeight,mass},
 			Module[{testDescription},
 				testDescription=ToString[object,InputForm]<>" does not require a Count:";
 				Which[
@@ -6664,15 +7306,59 @@ resolveShipToECLOptions[myModels:{ObjectP[{Model[Item],Model[Sample]}]..}, myNam
 					],
 
 					(* If it does not have a count but we know the mass and tablet weight, calculate the count *)
-					NullQ[count]&&TrueQ[tabletBool]&&MatchQ[tabletWeight,MassP]&&MatchQ[mass,MassP],
-					{Round[mass/tabletWeight], {}},
+					MatchQ[count,Automatic]&&TrueQ[tabletBool]&&MatchQ[solidUnitWeight,MassP]&&MatchQ[mass,MassP],
+					{Round[mass/solidUnitWeight], {}},
 
-					(* in all other cases default to None *)
+					(* Leave count as automatic to indicate it will be measured *)
+					TrueQ[tabletBool],
+					{Automatic,{}},
+
+					(* in all other cases default to Null *)
 					True,
-					{None,{}}
+					{Null,{}}
 				]
 			]
-		],{objects, tabletBools,Lookup[myOptions,Count],tabletWeights,Lookup[myOptions,Mass]}
+		],{objects, tabletBools,Lookup[myOptions,Count],solidUnitWeights,Lookup[myOptions,Mass]}
+	];
+
+	resolvedCounts=vettedCountTuples[[All,1]];
+	countTests=vettedCountTuples[[All,2]];
+
+	(* - Check if we may want to use on the hamilton now that volume is resolved - *)
+
+	(* If multiple samples in the same plate were sent, and no container info was provided, we need to throw a warning *)
+	(* Use 15 as an arbitrary cut-off here. If they're only sending us a few samples in a plate it's fine if we transfer them out *)
+	plateNamesWithMultipleSamples = Cases[Tally[myContainerLabels],{_,GreaterP[15]}][[All,1]];
+
+	(* If being sent a sample we might want to use robotically throw a warning if we have no container info*)
+	hamiltonWarningContainers = MapThread[
+		Function[{model,containerName,containerModel,docs,emptySent,volume,state},
+			If[
+				And[
+					MemberQ[plateNamesWithMultipleSamples,containerName],
+					MatchQ[model,ObjectP[Model[Sample]]],
+					!MatchQ[containerModel,ObjectP[Model[Container]]],
+					MatchQ[docs,Null|Automatic],
+					MatchQ[emptySent,False],
+					Or[
+						MatchQ[state, Liquid],
+						VolumeQ[volume]
+					]
+				],
+				containerName,
+				Nothing
+			]
+		],
+		{myModels,myContainerLabels,specifiedContainerModels,specifiedDocuments,emptiesSent,resolvedVolumes,states}
+	];
+
+	If[!MatchQ[hamiltonWarningContainers,{}] && messagesBoolean,
+		Message[Warning::ContainerTransferForRoboticUse, DeleteDuplicates[hamiltonWarningContainers]];
+	];
+
+	hamiltonWarningContainersTest = If[!MatchQ[hamiltonWarningContainers,{}] && messagesBoolean,
+		Warning["Samples may need to be transferred into a new container for robotic use.",True,MatchQ[hamiltonWarningContainers,{}]],
+		Nothing
 	];
 
 	(* ----------------- *)
@@ -6712,8 +7398,8 @@ resolveShipToECLOptions[myModels:{ObjectP[{Model[Item],Model[Sample]}]..}, myNam
 				(* If container out is not specified, valid *)
 				MatchQ[containerOut,Except[ObjectP[Model[Container]]]],False,
 
-				(* If volume is not specified, indeterminant *)
-				MatchQ[volume,None],Null,
+				(* If volume is not specified, indeterminate *)
+				MatchQ[volume,Null|Automatic],Null,
 
 				(* If volume is specified and volume > container volume, invalid *)
 				(volume > containerMaxVolume),True,
@@ -6724,12 +7410,12 @@ resolveShipToECLOptions[myModels:{ObjectP[{Model[Item],Model[Sample]}]..}, myNam
 				(*Otherwise, valid *)
 				True,False
 			]
-		],{objects,Lookup[myOptions,ContainerOut],vettedVolumes[[All,1]],containerOutMaxVolumes}
+		],{objects,Lookup[myOptions,ContainerOut],resolvedVolumes,containerOutMaxVolumes}
 	];
 
 	(* If we are throwing messages, throw message about container out being too small *)
 	If[messagesBoolean&&MemberQ[containerOutInvalidVolumeBools,True],
-		Message[Error::VolumeExceedsContainerOut,PickList[Lookup[myOptions,ContainerOut],containerOutInvalidVolumeBools],PickList[vettedVolumes[[All,1]],containerOutInvalidVolumeBools],PickList[objects,containerOutInvalidVolumeBools]];
+		Message[Error::VolumeExceedsContainerOut,PickList[Lookup[myOptions,ContainerOut],containerOutInvalidVolumeBools],PickList[resolvedVolumes,containerOutInvalidVolumeBools],PickList[objects,containerOutInvalidVolumeBools]];
 		Message[Error::InvalidOption,ContainerOut]
 	];
 
@@ -6805,7 +7491,7 @@ resolveShipToECLOptions[myModels:{ObjectP[{Model[Item],Model[Sample]}]..}, myNam
 
 					(* in all other cases, it doesn't matter*)
 					{_,_},
-						{None,{}}
+						{Null,{}}
 				]
 			]
 		],{objects,Lookup[myOptions,NumberOfUses]}
@@ -6828,40 +7514,44 @@ resolveShipToECLOptions[myModels:{ObjectP[{Model[Item],Model[Sample]}]..}, myNam
 				productRequired="The Product option for "<>ToString[object,InputForm]<>" must be specified:";
 
 				Switch[{product,requiresProduct,Length[potentialProducts]},
-				(* if Product is required and option was specified, then all set *)
-					{ObjectP[Object[Product]],True,_},{product,testOrEmpty[collectTestsBoolean,productRequired,True]},
+					(* if Product is required and option was specified, then all set *)
+					{ObjectP[Object[Product]],True,_},
+						{product,testOrEmpty[collectTestsBoolean,productRequired,True]},
 
-				(* if Product is required and we have 1 in the Model's Products field, then use that *)
-					{Except[ObjectP[Object[Product]]],True,1},{potentialProducts[[1]],{}},
+					(* if Product is required and we have 1 in the Model's Products field, then use that *)
+					{Except[ObjectP[Object[Product]]],True,1},
+						{potentialProducts[[1]],{}},
 
-				(* if Product is required, and it was not specified and the Model has more or fewer than 1 Product, then error out*)
+					(* if Product is required, and it was not specified and the Model has more or fewer than 1 Product, then error out*)
 					{Except[ObjectP[Object[Product]]],True,Except[1]},
-					If[messagesBoolean,
-						Message[Error::OptionRequired,Product,object];
-						Message[Error::InvalidOption,Product];
-					];{product,testOrEmpty[collectTestsBoolean,productRequired,False]},
+						If[messagesBoolean,
+							Message[Error::ShippingOptionRequired,Product,object];
+							Message[Error::InvalidOption,Product];
+						];
+						{product,testOrEmpty[collectTestsBoolean,productRequired,False]},
 
-					(* in all other cases, it doesn't matter (if there is a product then use it, if there isn't then use None) *)
-					{_,_,_},{product/.{Null->None,Automatic->None},{}}
+					(* in all other cases, it doesn't matter (if there is a product then use it, if there isn't then use Null) *)
+					{_,_,_},
+						{product/.{Null->Null,Automatic->Null},{}}
 				]
 			]
 		],{objects,Lookup[myOptions,Product],products}
 	];
 
 	(* = TrackingNumber = *)
-	(* just replace anything that's an Automatic with a None *)
-	vettedTrackingNumbers=ReplaceAll[Lookup[myOptions,TrackingNumber],{Automatic->None}];
+	(* just replace anything that's an Automatic with a Null *)
+	vettedTrackingNumbers=ReplaceAll[Lookup[myOptions,TrackingNumber],{Automatic->Null}];
 
 	(* = Shipper = *)
-	(* just replace anything that's an Automatic with a None *)
-	vettedShipperes=ReplaceAll[Lookup[myOptions,Shipper],{Automatic->None}];
+	(* just replace anything that's an Automatic with a Null *)
+	vettedShippers=ReplaceAll[Lookup[myOptions,Shipper],{Automatic->Null}];
 
 	(* Shipper and TrackingNumber must be given together *)
-	validShippingTrackingBools=MatchQ[#, {None, None} | {Except[None], Except[None]}] & /@ Transpose[{vettedTrackingNumbers, vettedShipperes}];
+	validShippingTrackingBools=MatchQ[#, {Null, Null} | {Except[Null], Except[Null]}] & /@ Transpose[{vettedTrackingNumbers, vettedShippers}];
 
 	(* If we are throwing messages, give a message if any shippers are given without a tracking number or vice versa *)
 	If[messagesBoolean&&MemberQ[validShippingTrackingBools,False],
-		Message[Error::TrackingNumberAndShipperRequiredTogether,DeleteDuplicates[PickList[Transpose[{vettedTrackingNumbers, vettedShipperes}],validShippingTrackingBools,False]]];
+		Message[Error::TrackingNumberAndShipperRequiredTogether,DeleteDuplicates[PickList[Transpose[{vettedTrackingNumbers, vettedShippers}],validShippingTrackingBools,False]]];
 		Message[Error::InvalidOption,TrackingNumber];
 		Message[Error::InvalidOption,Shipper]
 	];
@@ -6871,7 +7561,9 @@ resolveShipToECLOptions[myModels:{ObjectP[{Model[Item],Model[Sample]}]..}, myNam
 			Test["Shipper and TrackingNumber are either both provided or are both not provided:",
 				#1,
 				True
-			]&,{validShippingTrackingBools}]
+			]&,
+			{validShippingTrackingBools}
+		]
 	];
 
 	(* = DateShipped & ExpectedDeliveryDate = *)
@@ -6891,29 +7583,58 @@ resolveShipToECLOptions[myModels:{ObjectP[{Model[Item],Model[Sample]}]..}, myNam
 							{dateShipped,dateExpected,testOrEmpty[collectTestsBoolean,testDescription,False]},
 							{dateShipped,dateExpected,testOrEmpty[collectTestsBoolean,testDescription,True]}
 						],
-					{_?DateObjectQ,Alternatives[Automatic,None]},
-						{dateShipped,None,{}},
-					{Alternatives[Automatic,None],_?DateObjectQ},
-						{None,dateExpected,{}},
-					{Alternatives[Automatic,None],Alternatives[Automatic,None]},
-						{None,None,{}}
+					{_?DateObjectQ,Alternatives[Automatic,Null]},
+						{dateShipped,Null,{}},
+					{Alternatives[Automatic,Null],_?DateObjectQ},
+						{Null,dateExpected,{}},
+					{Alternatives[Automatic,Null],Alternatives[Automatic,Null]},
+						{Null,Null,{}}
 				]
 			]
 		],{Lookup[myOptions,DateShipped], Lookup[myOptions,ExpectedDeliveryDate]}
 	];
 
+	(* -- Validate transaction name -- *)
+	(* We'll create a transaction for each unique set of shipping info *)
+	shippingSpecTuples=Transpose[Lookup[myOptions, {ExpectedDeliveryDate, TrackingNumber, Shipper, DateShipped}]] /. Automatic -> Null;
+	numberOfShipments=Length[DeleteDuplicates[shippingSpecTuples]];
+
+	nameOption=Lookup[myOptions,Name];
+	nameUniquenessTest=If[!NullQ[nameOption],
+		Module[{resolvedNames,nameInvalidBools},
+
+			(* Get the transaction names. Warning: this convention is used when naming transactions in ShipToECL proper and must match here *)
+			resolvedNames=If[numberOfShipments>1,
+				nameOption<>"_"<>ToString[#]&/@Range[numberOfShipments],
+				{nameOption}
+			];
+
+			(* Check if the name is used already *)
+			nameInvalidBools=DatabaseMemberQ[Append[Object[Transaction, ShipToECL], #] & /@ resolvedNames];
+
+			(* If we are giving messages, throw a message if the name is not unique *)
+			If[messagesBoolean && MemberQ[nameInvalidBools,True],
+				Message[Error::NonUniqueName,PickList[resolvedNames,nameInvalidBools],Object[Transaction,ShipToECL]];
+				Message[Error::InvalidOption,Name]
+			];
+
+			(* If we are collecting tests, assemble tests for name uniqueness *)
+			If[!messagesBoolean,
+				Test["The name of the transaction(s) is unique:", !MemberQ[nameInvalidBools,True], True]
+			]
+		]
+	];
+
+	(* Mass/Volume *)
+
 	(* add an additional a warning if neither mass nor volume were specified to for samples that needs at least one*)
 	toMeasureSampleGrowingList = {};(* Initialize a growing list *)
 	additionalTests=MapThread[
-		Function[{object, volume, mass},
-			Module[{type,testDescription,noneQ},
+		Function[{object, volume, mass, count},
+			Module[{type,testDescription},
 				type=Download[object,Type];
-				testDescription="Mass or Volume were not specified for " <> ToString[object,InputForm] <> " The amount will be measured upon arrival at the ECL site. This may involve transferring or thawing samples.";
-				noneQ[in_]:=If[MatchQ[in,None],True,False];
-				If[And[
-					And[noneQ[volume],noneQ[mass]],
-					MatchQ[type, TypeP[NonSelfContainedModelTypes]]
-				],
+				testDescription="Mass, Volume or Count were not specified for " <> ToString[object,InputForm] <> " The amount will be measured upon arrival at the ECL site. This may involve transferring or thawing samples.";
+				If[MatchQ[volume,Null|Automatic] && MatchQ[mass,Null|Automatic] && MatchQ[count,Null|Automatic] && MatchQ[type, TypeP[NonSelfContainedModelTypes]],
 					If[messagesBoolean,
 						toMeasureSampleGrowingList = Append[toMeasureSampleGrowingList,object],
 						warningOrNull[collectTestsBoolean,testDescription,False]
@@ -6921,7 +7642,7 @@ resolveShipToECLOptions[myModels:{ObjectP[{Model[Item],Model[Sample]}]..}, myNam
 					{}
 				]
 			]
-		],{objects,vettedVolumes[[All,1]], vettedMasses[[All,1]]}
+		],{objects,resolvedVolumes, resolvedMasses, resolvedCounts}
 	];
 
 	If[messagesBoolean && MatchQ[toMeasureSampleGrowingList,{ObjectP[]..}],
@@ -6933,9 +7654,9 @@ resolveShipToECLOptions[myModels:{ObjectP[{Model[Item],Model[Sample]}]..}, myNam
 	(* ---------------------- *)
 
 	resolvedOptions=ReplaceRule[myOptions,{
-		Volume->vettedVolumes[[All,1]],
-		Mass->vettedMasses[[All,1]],
-		Count->vettedCounts[[All,1]],
+		Volume->resolvedVolumes,
+		Mass->resolvedMasses,
+		Count->resolvedCounts,
 		StorageCondition->vettedStorageConditions[[All,1]],
 		Email->resolvedEmail,
 
@@ -6943,36 +7664,36 @@ resolveShipToECLOptions[myModels:{ObjectP[{Model[Item],Model[Sample]}]..}, myNam
 
 		Product->vettedProducts[[All,1]],
 		TrackingNumber->vettedTrackingNumbers,
-		Shipper->vettedShipperes,
+		Shipper->vettedShippers,
 		DateShipped->vettedDates[[All,1]],
 		ExpectedDeliveryDate->vettedDates[[All,2]],
 		(* this is just handled by option resolution, which has a default *)
 		Destination->destination,
 
-		ContainerModel -> resolvedContainerModel,
+		ContainerType -> resolvedContainerTypes,
+		ContainerModel -> resolvedContainerModels,
 		CoverModel -> resolvedCoverModel,
-		Position -> resolvedPosition,
-		Source->resolvedSource
+		Position -> resolvedPositions,
+		Source->resolvedSource,
+
+		NumberOfWells -> resolvedNumberOfWells,
+		PlateFillOrder -> resolvedPlateFillOrder
 	}];
 
 	allTests=Flatten[{
-		vettedVolumes[[All,2]],
-		vettedMasses[[All,2]],
-		vettedCounts[[All,2]],
+		volumeTests,
+		massTests,
+		countTests,
 		vettedStorageConditions[[All,2]],
 		vettedNumberOfUses[[All,2]],
 		vettedProducts[[All,2]],
 		vettedDates[[All,3]],
 		additionalTests,
 		shipperTrackingTests,
-		ToList[containerContentsValidityTests],
-		ToList[containerVolumeValidityTests],
-		ToList[containerVolumeValidityWarnings],
-		itemsWithContainerSpecifiedTest,
-		itemsWithCoverSpecifiedTest,
-		samplesWithoutCoverSpecifiedTest,
-		samplesWithoutContainerSpecifiedTest,
-		samplesContainersWithUnverifiedContainersTest,
+		containerContentsValidityTests,
+		containerVolumeValidityTests,
+		containerVolumeValidityWarnings,
+		containerConflictTest,
 		itemsWithPositionSpecifiedTest,
 		samplesWithoutPositionTest,
 		samplesWithInvalidPositionTest,
@@ -6980,14 +7701,22 @@ resolveShipToECLOptions[myModels:{ObjectP[{Model[Item],Model[Sample]}]..}, myNam
 		samplesInSamePositionTest,
 		selfCoveredContainerWithCoverSpecifiedTest,
 		incompatibleCoverContainerTest,
-		missingEmptyCoverContainerTest,
-		unusedEmptyCoverContainerTest,
-		incompatibleEmptyCoverContainerTest,
 		noRacksTest,
-		badRacksTest
+		badRacksTest,
+		numberOfWellsTest,
+		missingContainerOptionTest,
+		badVesselWellNumberTest,
+		containerModelTypeMismatchTest,
+		hamiltonWarningContainersTest,
+		emptyUnneededTest,
+		nameUniquenessTest,
+		plateOptionsMissingTest,
+		unneededDocsTest,
+		conflictingDocTest,
+		missingDocFilesTest
 	}];
 
-	output/.{Tests->allTests,Result->resolvedOptions}
+	output/.{Tests->DeleteCases[allTests,Null],Result->resolvedOptions}
 ];
 
 
@@ -7013,7 +7742,7 @@ DefineOptions[ShipToECLOptions,
 ShipToECLOptions[{},myOptions:OptionsPattern[ShipToECLOptions]]:={};
 
 (* Generating a transaction overload *)
-ShipToECLOptions[myModels:ListableP[ObjectP[{Model[Item],Model[Sample]}]], myNames:ListableP[_String],myOptions:OptionsPattern[ShipToECLOptions]]:=Module[{
+ShipToECLOptions[myModels:ListableP[ObjectP[{Model[Item],Model[Sample]}]], myContainerLabels:ListableP[_String],myOptions:OptionsPattern[ShipToECLOptions]]:=Module[{
 	listedOptions,noOutputOptions,options},
 
 (* get the options as a list *)
@@ -7023,7 +7752,7 @@ ShipToECLOptions[myModels:ListableP[ObjectP[{Model[Item],Model[Sample]}]], myNam
 	noOutputOptions = DeleteCases[listedOptions, Alternatives[Output -> _, OutputFormat->_]];
 
 	(* get only the options for ShipToECL *)
-	options=ShipToECL[myModels,myNames, Append[noOutputOptions, Output -> Options]];
+	options=ShipToECL[myModels,myContainerLabels, Append[noOutputOptions, Output -> Options]];
 
 	(* Return the option as a list or table *)
 	If[MatchQ[Lookup[listedOptions,OutputFormat,Table],Table],
@@ -7039,8 +7768,8 @@ DefineOptions[ShipToECLPreview,SharedOptions :> {ShipToECL}];
 (* Empty list case *)
 ShipToECLPreview[{},myOptions:OptionsPattern[ShipToECLPreview]]:=Null;
 
-ShipToECLPreview[myModels:ListableP[ObjectP[{Model[Item],Model[Sample]}]], myNames:ListableP[_String],myOptions:OptionsPattern[ShipToECLOptions]]:=Module[{},
-	ShipToECL[myModels,myNames,Append[ToList[myOptions],Output->Preview]]
+ShipToECLPreview[myModels:ListableP[ObjectP[{Model[Item],Model[Sample]}]], myContainerLabels:ListableP[_String],myOptions:OptionsPattern[ShipToECLOptions]]:=Module[{},
+	ShipToECL[myModels,myContainerLabels,Append[ToList[myOptions],Output->Preview]]
 ];
 
 DefineOptions[ValidShipToECLQ,
@@ -7055,14 +7784,14 @@ DefineOptions[ValidShipToECLQ,
 (* Empty list case *)
 ValidShipToECLQ[{},myOptions:OptionsPattern[ValidShipToECLQ]]:={};
 
-ValidShipToECLQ[myModels:ListableP[ObjectP[{Model[Item],Model[Sample]}]], myNames:ListableP[_String],myOptions:OptionsPattern[ValidShipToECLQ]]:=Module[
+ValidShipToECLQ[myModels:ListableP[ObjectP[{Model[Item],Model[Sample]}]], myContainerLabels:ListableP[_String],myOptions:OptionsPattern[ValidShipToECLQ]]:=Module[
 	{preparedOptions,functionTests,initialTestDescription,allTests,verbose, outputFormat},
 
 (* Remove the Verbose option and add Output->Tests to get the options ready for <Function> *)
 	preparedOptions=Normal@KeyDrop[Append[ToList[myOptions],Output->Tests],{Verbose,OutputFormat}];
 
 	(* Call the function to get a list of tests *)
-	functionTests=ShipToECL[myModels,myNames,preparedOptions];
+	functionTests=ShipToECL[myModels,myContainerLabels,preparedOptions];
 
 	initialTestDescription="All provided options and inputs match their provided patterns (no further testing can proceed if this test fails):";
 
@@ -7109,17 +7838,15 @@ ShipToECL[myTransaction:ObjectP[Object[Transaction,ShipToECL]], myOptions:Option
 ShipToECL[myTransactions:{ObjectP[Object[Transaction,ShipToECL]]..},myOptions:OptionsPattern[ShipToECL]]:=Module[
 	{
 		listedOptions,outputSpecification,output,gatherTests,validLengths,validLengthTests,
-		resolvedOptionsResult,resolvedOptionsTests,safeOptionTests,samplesOut,safeOptions,
-		fastTrackOption,uploadOption,cacheOption,transactionPackets,
-		statuses,resolvedOptions,
+		resolvedOptionsResult,resolvedOptionsTests,safeOptionTests,namedSafeOptions,samplesOut,safeOptions,
+		fastTrackOption,uploadOption,cacheOption,transactionPackets, resolvedOptions,
 		optionsRule,previewRule,testsRule,resultRule,messagesBoolean,listedInputs,
 		emailOption,resolvedEmail,collapsedOptions,resolvedOptionsMinusHiddenOptions,allPackets,
-		nameOption,nameUpdatePackets
+		nameOption,nameUpdatePackets,currentStatuses,endStateTransactions,statusTest
 	},
 
 	(* Make sure we're working with a list of options *)
 	listedOptions=ToList[myOptions];
-	listedInputs=ToList[myTransactions];
 
 	(* Determine the requested return value from the function *)
 	outputSpecification=OptionValue[Output];
@@ -7132,13 +7859,13 @@ ShipToECL[myTransactions:{ObjectP[Object[Transaction,ShipToECL]]..},myOptions:Op
 	messagesBoolean = !gatherTests;
 
 	(* Call SafeOptions to make sure all options match pattern *)
-	{safeOptions,safeOptionTests}=If[gatherTests,
+	{namedSafeOptions,safeOptionTests}=If[gatherTests,
 		SafeOptions[ShipToECL,listedOptions,AutoCorrect->False, Output->{Result,Tests}],
 		{SafeOptions[ShipToECL,listedOptions,AutoCorrect->False],Null}
 	];
 
 	(*If the specified options don't match their patterns return $Failed*)
-	If[MatchQ[safeOptions,$Failed],
+	If[MatchQ[namedSafeOptions,$Failed],
 		Return[outputSpecification/.{
 			Result -> $Failed,
 			Tests -> safeOptionTests,
@@ -7147,16 +7874,28 @@ ShipToECL[myTransactions:{ObjectP[Object[Transaction,ShipToECL]]..},myOptions:Op
 		}]
 	];
 
-	samplesOut = Download[myTransactions, ReceivedSamples[Object], Date -> Now];
+	(* replace all objects referenced by Name to ID and verify IDs exist *)
+	{listedInputs, safeOptions} = Experiment`Private`sanitizeInputs[ToList[myTransactions], namedSafeOptions];
+
+	If[MatchQ[safeOptions, $Failed],
+		Return[outputSpecification/.{
+			Result -> $Failed,
+			Tests -> safeOptionTests,
+			Options -> safeOptions,
+			Preview -> Null
+		}]
+	];
+
+	{currentStatuses,samplesOut} = Transpose[Download[myTransactions, {Status,ReceivedSamples[Object]}, Date -> Now]];
 
 	(* Pull out couple of option values *)
 	{fastTrackOption,uploadOption,cacheOption,emailOption}=Lookup[safeOptions,{FastTrack,Upload,Cache,Email}];
 
 	(* Resolve Email option if Automatic *)
 	resolvedEmail = If[!MatchQ[emailOption, Automatic],
-	(* If Email!=Automatic, use the supplied value *)
+		(* If Email!=Automatic, use the supplied value *)
 		emailOption,
-	(* If BOTH Upload->True and Result is a member of Output, send emails. Otherwise, DO NOT send emails *)
+		(* If BOTH Upload->True and Result is a member of Output, send emails. Otherwise, DO NOT send emails *)
 		If[And[uploadOption, MemberQ[output, emailOption]],
 			True,
 			False
@@ -7165,10 +7904,12 @@ ShipToECL[myTransactions:{ObjectP[Object[Transaction,ShipToECL]]..},myOptions:Op
 
 	(* Call ValidOptionLengthsQ to make sure all options are the right length *)
 	(* Silence the missing option errors *)
-	{validLengths,validLengthTests}=Quiet[If[gatherTests,
-		ValidInputLengthsQ[ShipToECL,{listedInputs},listedOptions,2,Output->{Result,Tests}],
-		{ValidInputLengthsQ[ShipToECL,{listedInputs},listedOptions,2],Null}
-	],Warning::IndexMatchingOptionMissing
+	{validLengths,validLengthTests}=Quiet[
+		If[gatherTests,
+			ValidInputLengthsQ[ShipToECL,{listedInputs},listedOptions,2,Output->{Result,Tests}],
+			{ValidInputLengthsQ[ShipToECL,{listedInputs},listedOptions,2],Null}
+		],
+		Warning::IndexMatchingOptionMissing
 	];
 
 	(* If option lengths are invalid return $Failed *)
@@ -7194,11 +7935,10 @@ ShipToECL[myTransactions:{ObjectP[Object[Transaction,ShipToECL]]..},myOptions:Op
 		{Error::InvalidInput,Error::InvalidOption}
 	];
 
-	(* If the DateShipped is explicitly specified as Null, set the status to Pending to allow the user a way to clear the DateShipped/Shipped status *)
-	statuses=Map[
-		If[MatchQ[#, Alternatives[Null,None]],Pending,Shipped]&,
-		Lookup[resolvedOptions, DateShipped]
-	];
+	(* get all the safe options without the hidden options *)
+	collapsedOptions=CollapseIndexMatchedOptions[ShipToECL,resolvedOptions,Messages->False,Ignore->listedOptions];
+	resolvedOptionsMinusHiddenOptions = RemoveHiddenOptions[ShipToECL,collapsedOptions];
+
 	(* Update the Name if given *)
 	nameOption=Name/.resolvedOptions;
 	nameUpdatePackets=If[NullQ[nameOption],
@@ -7214,25 +7954,55 @@ ShipToECL[myTransactions:{ObjectP[Object[Transaction,ShipToECL]]..},myOptions:Op
 		]
 	];
 
+	(* Transactions shouldn't be changed once they've reached an end state *)
+	endStateTransactions = PickList[myTransactions,currentStatuses,Received|Canceled];
+
+	statusTest=If[gatherTests,
+		Test["The transactions being updated are still Pending or Shipping",endStateTransactions,{}],
+		Null
+	];
+
+	statusTest=If[!MatchQ[endStateTransactions,{}] && !gatherTests,
+		Message[Error::TransactionStatus,endStateTransactions]
+	];
+
+	If[MemberQ[currentStatuses,Received|Canceled],
+		Return[outputSpecification/.{
+			Result -> $Failed,
+			Tests -> Join[safeOptionTests,validLengthTests,resolvedOptionsTests,statusTest],
+			Options -> resolvedOptionsMinusHiddenOptions,
+			Preview -> Null
+		}]
+	];
+
+	(* Leave status as pending if no shipping info provided *)
+	(* Move from Pending to Shipped since shipping info was provided *)
+	newStatuses=MapThread[
+		If[
+			MatchQ[#1,Pending] && MatchQ[#2,{(Null|{})..}],
+				Pending,
+				Shipped
+		]&,
+		{
+			currentStatuses,
+			Transpose[Lookup[resolvedOptions,{DateShipped,TrackingNumber,ExpectedDeliveryDate}]]
+		}
+	];
+
 	(* Use UploadTransaction to update the Status/StatusLog and shipping information. *)
 	transactionPackets=UploadTransaction[
 		myTransactions,
-		statuses,
+		newStatuses,
 		Upload->False,FastTrack->True,
 		Cache->cacheOption,
-		Timestamp->Lookup[resolvedOptions,DateShipped]/.{None->Automatic},
+		Timestamp->Lookup[resolvedOptions,DateShipped]/.{Null->Automatic},
 		TrackingNumber -> Replace[Lookup[resolvedOptions,TrackingNumber], {{} -> Null, x_String :> ToList[x]}, 1],
 		Shipper -> Lookup[resolvedOptions, Shipper],
 		DateExpected -> Lookup[resolvedOptions, ExpectedDeliveryDate],
 		Email -> resolvedEmail
 	];
 
-
 	(* --- Generate rules for each possible Output value ---  *)
-
-	(* get all the safe options without the hidden options *)
-	collapsedOptions=CollapseIndexMatchedOptions[ShipToECL,resolvedOptions,Messages->False,Ignore->listedOptions];
-	resolvedOptionsMinusHiddenOptions = RemoveHiddenOptions[ShipToECL,collapsedOptions];
 
 	(* Prepare the Options result if we were asked to do so *)
 	optionsRule=Options->If[MemberQ[output,Options],
@@ -7244,8 +8014,8 @@ ShipToECL[myTransactions:{ObjectP[Object[Transaction,ShipToECL]]..},myOptions:Op
 	previewRule=Preview->If[MemberQ[output,Preview],Null,Null];
 
 	(* Prepare the Test result if we were asked to do so *)
+	(* Join all existing tests generated by helper functions with any additional tests *)
 	testsRule=Tests->If[MemberQ[output,Tests],
-	(* Join all exisiting tests generated by helper functions with any additional tests *)
 		DeleteCases[Flatten[{safeOptionTests,validLengthTests,resolvedOptionsTests}],Null],
 		Null
 	];
@@ -7279,7 +8049,7 @@ resolveShipToECLOptions[myTransactions:{ObjectP[]..},myObjects:{{ObjectP[]..}..}
 		matchedToInput,messagesBoolean,notNeededOption,testDescription,vettedVolumes,vettedMasses,
 		vettedStorageConditions,vettedNumberOfUses,
 		vettedProducts,vettedDestinations,destinationsInObject,resolvedOptions,allTests,
-		dateShippedInObjects,dateExpectedInObjects,valueOrNone,shipperInObjects,vettedShippers,
+		dateShippedInObjects,dateExpectedInObjects,valueOrNull,shipperInObjects,vettedShippers,
 		trackingNumberObjects,testOrEmpty,vettedTrackingNumbers,validShippingTrackingBools,shipperTrackingTests,resolvedDateShippedOption,
 		resolvedExpectedDeliveryDateOption,invalidDateOrderBools,invalidDateTests,
 		nameUniquenessTests,vettedCounts},
@@ -7299,8 +8069,8 @@ resolveShipToECLOptions[myTransactions:{ObjectP[]..},myObjects:{{ObjectP[]..}..}
 	(* Print messages whenever we're not getting tests instead *)
 	messagesBoolean=!collectTestsBoolean;
 
-	(* if the value is Null or Automatic, then replace with with None*)
-	valueOrNone[in_]:=If[MatchQ[in, Alternatives[Null,Automatic]],None,in];
+	(* if the value is Null or Automatic, then replace with with Null*)
+	valueOrNull[in_]:=If[MatchQ[in, Alternatives[Null,Automatic]],Null,in];
 
 	(* testOrEmpty: Simple helper that returns a Test whose expected value is True if makeTest->True, {} otherwise *)
 	testOrEmpty[makeTest:BooleanP,description_,expression_]:=If[makeTest,
@@ -7313,7 +8083,6 @@ resolveShipToECLOptions[myTransactions:{ObjectP[]..},myObjects:{{ObjectP[]..}..}
 
 	matchedToInput={TrackingNumber,Shipper,DateShipped,ExpectedDeliveryDate,Destination};
 
-	(* TODO expandedOptions=ExpandIndexMatchedOptions[ShipToECL,myInputs,myOptions];*)
 	(* options that are index matched to the samples in in the transactions *)
 	expandedOptionsToSamples=Map[
 		If[!ListQ[#/.myOptions],
@@ -7338,9 +8107,9 @@ resolveShipToECLOptions[myTransactions:{ObjectP[]..},myObjects:{{ObjectP[]..}..}
 	notNeededOption[testObjects_,testOption_,testOptionValues_]:=MapThread[
 		Function[{object,optionValue},
 			Switch[optionValue,
-				Except[Alternatives[None,Null,Automatic]],
+				Except[Alternatives[Null,Null,Automatic]],
 				If[messagesBoolean,
-					Message[Error::OptionNotRequired,testOption, object];
+					Message[Error::ShippingOptionNotRequired,testOption, object];
 					Message[Error::InvalidOption,testOption],
 					{optionValue,Test[testDescription[optionValue],True,False]}
 				],
@@ -7360,13 +8129,13 @@ resolveShipToECLOptions[myTransactions:{ObjectP[]..},myObjects:{{ObjectP[]..}..}
 		Function[{destinationInObject,destinationInOption},
 			Switch[destinationInOption,
 			(* if they don't touch this option then it doesn't really matter, but return what's in the object*)
-				Alternatives[None,Null,Automatic],
+				Alternatives[Null,Null,Automatic],
 				{destinationInObject,{}},
 			(* if they decide to change the option, then warn them that you cannot do that since they've already set the destination when they created the original transaction*)
-				Except[Alternatives[None,Null,Automatic]],
+				Except[Alternatives[Null,Null,Automatic]],
 				If[
 					messagesBoolean,
-					Message[Error::OptionNotRequired,Destination, myTransactions];
+					Message[Error::ShippingOptionNotRequired,Destination, myTransactions];
 					Message[Error::InvalidOption,Destination],
 					{destinationInOption,Test["bob",True,False]}
 				]
@@ -7379,13 +8148,13 @@ resolveShipToECLOptions[myTransactions:{ObjectP[]..},myObjects:{{ObjectP[]..}..}
 	vettedShippers=MapThread[
 		Function[{shipperInObject,shipperInOption},
 			Switch[shipperInOption,
-				(* if they don't touch this option then it doesn't really matter, but return what's in the object or if that's null then return a none*)
+				(* if they don't touch this option then it doesn't really matter, but return what's in the object or if that's null then return a Null*)
 				(* Automatic should either give whatever is currently in the field *)
 				Alternatives[Null,Automatic],
-					{valueOrNone[shipperInObject],{}},
-				(* None should remove the shipper, so leave it as None *)
-				Alternatives[None],
-					{None,{}},
+					{valueOrNull[shipperInObject],{}},
+				(* Null should remove the shipper, so leave it as Null *)
+				Alternatives[Null],
+					{Null,{}},
 				(* else just use whatever they give us*)
 				_,{shipperInOption,{}}
 			]
@@ -7395,13 +8164,13 @@ resolveShipToECLOptions[myTransactions:{ObjectP[]..},myObjects:{{ObjectP[]..}..}
 	(* = DateShipped & ExpectedDeliveryDate = *)
 	resolvedDateShippedOption=MapThread[
 		If[MatchQ[#1,Automatic],
-			valueOrNone[#2],
+			valueOrNull[#2],
 			#1]&,{Lookup[expandedOptionsToInput,DateShipped],dateShippedInObjects}
 	];
 
 	resolvedExpectedDeliveryDateOption=MapThread[
 		If[MatchQ[#1,Automatic],
-			valueOrNone[#2],
+			valueOrNull[#2],
 			#1]&,{Lookup[expandedOptionsToInput,ExpectedDeliveryDate],dateExpectedInObjects}
 	];
 
@@ -7429,21 +8198,20 @@ resolveShipToECLOptions[myTransactions:{ObjectP[]..},myObjects:{{ObjectP[]..}..}
 	vettedTrackingNumbers=MapThread[
 		Function[{trackingNumberInObject,trackingNumberInOption},
 			Switch[trackingNumberInOption,
-			(* if they don't touch this option then it doesn't really matter, but return what's in the object value or if that's null then return a none*)
+			(* if they don't touch this option then it doesn't really matter, but return what's in the object value or if that's null then return a Null*)
 				Alternatives[Null,Automatic],
-				{valueOrNone[trackingNumberInObject],{}},
-			(* None should remove the shipper, so leave it as None *)
-				Alternatives[None],
-				{None,{}},
+				{valueOrNull[trackingNumberInObject],{}},
+			(* Null should remove the shipper, so leave it as Null *)
+				Alternatives[Null],
+				{Null,{}},
 			(* else just use whatever they give us*)
-				_,{valueOrNone[trackingNumberInOption],{}}
+				_,{valueOrNull[trackingNumberInOption],{}}
 			]
 		],{trackingNumberObjects,Lookup[expandedOptionsToInput,TrackingNumber]}
 	];
 
-
 	(* Shipper and TrackingNumber must be given together *)
-	validShippingTrackingBools=MatchQ[#, {None | {}, None} | {Except[None] | Except[{}], Except[None]}] & /@ Transpose[{vettedTrackingNumbers[[All, 1]], vettedShippers[[All, 1]]}];
+	validShippingTrackingBools=MatchQ[#, {Null | {}, Null} | {Except[Null] | Except[{}], Except[Null]}] & /@ Transpose[{vettedTrackingNumbers[[All, 1]], vettedShippers[[All, 1]]}];
 
 	(* If we are throwing messages, give a message if any shippers are given without a tracking number or vice versa *)
 	If[messagesBoolean&&MemberQ[validShippingTrackingBools,False],
@@ -7526,7 +8294,7 @@ resolveShipToECLOptions[myTransactions:{ObjectP[]..},myObjects:{{ObjectP[]..}..}
 		vettedShippers[[All,2]],
 		shipperTrackingTests,
 		invalidDateTests,
-		ToList[nameUniquenessTests]
+		nameUniquenessTests
 	}];
 
 	output/.{Tests->allTests,Result->resolvedOptions}
@@ -7552,7 +8320,7 @@ ShipToECLOptions[myTransactions:{ObjectP[Object[Transaction,ShipToECL]]..}, myOp
 (* get the options as a list *)
 	listedOptions = ToList[myOptions];
 
-	(* remove the Output option before passing to the core function because it doens't make sense here *)
+	(* remove the Output option before passing to the core function because it doesn't make sense here *)
 	noOutputOptions = DeleteCases[listedOptions, Alternatives[Output -> _, OutputFormat->_]];
 
 	(* get only the options for ShipToECL *)
@@ -7629,7 +8397,6 @@ ValidShipToECLQ[myTransactions:{ObjectP[Object[Transaction,ShipToECL]]..},myOpti
 	Lookup[RunUnitTest[<|"ValidShipToECLQ" -> allTests|>, OutputFormat -> outputFormat, Verbose -> verbose], "ValidShipToECLQ"]
 ];
 
-
 (* ::Subsection:: *)
 (*DropShipSamples*)
 
@@ -7654,7 +8421,7 @@ DefineOptions[DropShipSamples,
 				OptionName->Provider,
 				Default->Null,
 				Widget->Widget[Type->Object,Pattern:>ObjectP[{Object[Company, Service],Object[Company, Supplier]}],ObjectBuilderFunctions->{UploadCompanyObject}],
-				Description->"The company that is providing the samples. This option is required for model sample inputs. If this option is given for product inputs, it must match the supplier of the product.",
+				Description->"The company that is providing the samples. Note that the some companies may have both a supplier and service objects; this option is required to be set to a service object for model sample inputs. If this option is given for product inputs, it must match the supplier of the product.",
 				AllowNull->True,
 				Category->"Sample Information"
 			},
@@ -7776,6 +8543,50 @@ DefineOptions[DropShipSamples,
 				],
 				Description->"The model of rack that is shipped holding other items in this order.",
 				Category->"Shipment"
+			},
+			{
+				OptionName -> Sterile,
+				Default -> Null,
+				AllowNull -> True,
+				Widget -> Widget[
+					Type -> Enumeration,
+					Pattern :> BooleanP
+				],
+				Description -> "Indicates that samples of this product arrive sterile from the manufacturer.",
+				Category -> "Sample Information"
+			},
+			{
+				OptionName -> SealedContainer,
+				Default -> Null,
+				Description -> "Indicates whether the items of this order arrive as sealed containers with caps or lids. If SealedContainer -> True, no special storage handling will be performed, even if Sterile -> True.",
+				AllowNull -> True,
+				Category -> "Sample Information",
+				Widget -> Widget[
+					Type -> Enumeration,
+					Pattern :> BooleanP
+				]
+			},
+			{
+				OptionName -> AsepticShippingContainerType,
+				Default -> Null,
+				Description -> "The manner in which an aseptic item is packed and shipped by the manufacturer. A value of None indicates that the product is not shipped in any specifically aseptic packaging, while a value of Null indicates no available information.",
+				AllowNull -> True,
+				Category -> "Sample Information",
+				Widget -> Widget[
+					Type -> Enumeration,
+					Pattern :> AsepticShippingContainerTypeP
+				]
+			},
+			{
+				OptionName -> AsepticRebaggingContainerType,
+				Default -> Null,
+				Description -> "Describes the type of container this item will be transferred to if they arrive in a non-resealable aseptic shipping container.",
+				AllowNull -> True,
+				Category -> "Sample Information",
+				Widget -> Widget[
+					Type -> Enumeration,
+					Pattern :> AsepticTransportContainerTypeP
+				]
 			}
 		],
 		{
@@ -7799,20 +8610,20 @@ DefineOptions[DropShipSamples,
 	}
 ];
 
-Error::VolumeNotRequired="Volume is not required for these models, `1`. Please set Volume for these models to None, or leave them as Automatic.";
-Error::MassNotRequired="Mass is not required for these models, `1`. Please set Mass for these models to None, or leave them as Automatic.";
-Error::CountNotRequired="Count is not required for these models, `1` since they are not tablets. Please set Count for these models to None, or leave them as Automatic.";
+Error::VolumeNotRequired="Volume is not expected for these models as they are not liquid samples, `1`. Please set Volume for these models to Null, or leave them as Automatic.";
+Error::MassNotRequired="Mass is not expected for these models as they are not solid samples, `1`. Please set Mass for these models to Null, or leave them as Automatic.";
+Error::CountNotRequired="Count is not expected for these models, `1` since they are not tablets. Please set Count for these models to Null, or leave them as Automatic.";
 Error::InvalidDates = "The specified DateShipped is later than the ExpectedDeliveryDate in these cases: `1`. Please make sure that the shipment date is earlier than the expected delivery date.";
 Error::ModelsHaveConflictingMass="These model inputs `1` were specified multiple times with conflicting Mass options. Because these models are indistinguishable when they arrive at ECL, we will not know which instance of the model goes with which value. If the models will have different values, please specify either ProductDocumentation or ExperimentallyMeasure. If all instances of the model in this transaction will have the same mass, you may alternatively specify numerical amount values that are consistent for all inputs of this model. To help keep options consistent within the same model, you may specify a quantity of that model instead of entering the same model multiple times.";
 Error::ModelsHaveConflictingCount="These model inputs `1` were specified multiple times with conflicting Count options. Because these models are indistinguishable when they arrive at ECL, we will not know which instance of the model goes with which value. If the models will have different values, please specify either ProductDocumentation or ExperimentallyMeasure. If all instances of the model in this transaction will have the same count, you may alternatively specify numerical amount values that are consistent for all inputs of this model. To help keep options consistent within the same model, you may specify a quantity of that model instead of entering the same model multiple times.";
 Error::ModelsHaveConflictingVolume="These model inputs `1` were specified multiple times with conflicting Volume options. Because these models are indistinguishable when they arrive at ECL, we will not know which instance of the model goes with which value. If the models will have different values, please specify either ProductDocumentation or ExperimentallyMeasure. If all instances of the model in this transaction will have the same volume, you may alternatively specify numerical amount values that are consistent for all inputs of this model. To help keep options consistent within the same model, you may specify a quantity of that model instead of entering the same model multiple times.";
 Error::OptionMustMatchModelsInTransactions = "This option's length does not match the length of the transaction samples: `1`. The transaction samples has length `2`; please provide an option list of this length, or, alternatively, supply a single option value to be used for all samples in the transactions.";
-Error::ProductSupplierConflict="The input company for these products `1` is `2`, but the supplier of these products is `3`. Please specify check that your company input matches the supplier of the products. Alternatively, you make leave the company Null for product inputs (company is only required for model inputs).";
-Error::CompanyRequiredForModelInputs="These model sample inputs `1` must be provided alongside a service company input. Please specify the service company. Alternatively, specify the samples as a product if you do not want to specify the service company.";
-Error::MassDiscrepancy="The mass for `1` was specified as `2`, but this differs from the Amount field of the product. Please update the amount to reflect the product amount (or to be Null, if the product is a kit), or allow the amount to be automatically resolved.";
-Error::CountDiscrepancy="The count for `1` was specified as `2`, but this differs from the Amount field of the product. Please update the amount to reflect the product amount (or to be Null, if the product is a kit), or allow the amount to be automatically resolved.";
-Error::VolumeDiscrepancy="The volume for `1` was specified as `2`, but this differs from the Amount field of the product. Please update the amount to reflect the product amount (or to be Null, if the product is a kit), or allow the amount to be automatically resolved.";
-Error::MassCountDisagree="Mass and count are both specified for `1` but do not agree based on the known tablet weight. Please make sure that mass and count are in agreement if tablet weight is known, or only specify one of these options and allow the other to automatically resolve";
+Error::ProductSupplierConflict="The input company for these products `1` is `2`, but the supplier of these products is `3`. Please specify check that your company input matches the supplier of the products. Alternatively, you make leave the company unspecified for product inputs (company is only required for model inputs).";
+Error::CompanyRequiredForModelInputs="These model inputs `1` must have Provider specified. Please specify the service company. Alternatively, specify the samples as a product if you do not want to specify the service company.";
+Error::MassDiscrepancy="The mass for `1` was specified as `2`, but this differs from the Amount field of the product. Please update the amount to reflect the product amount (or to be Null, if the product is a kit), or allow the amount to be automatically determined.";
+Error::CountDiscrepancy="The count for `1` was specified as `2`, but this differs from the Amount field of the product. Please update the amount to reflect the product amount (or to be Null, if the product is a kit), or allow the amount to be automatically determined.";
+Error::VolumeDiscrepancy="The volume for `1` was specified as `2`, but this differs from the Amount field of the product. Please update the amount to reflect the product amount (or to be Null, if the product is a kit), or allow the amount to be automatically determined.";
+Error::MassCountDisagree="Mass and count are both specified for `1` but do not agree based on the known tablet weight. Please make sure that mass and count are in agreement if tablet weight is known, or only specify one of these options and allow the other to be automatically determined.";
 Warning::SampleMayBeTransferred="Although a volume was specified for these models, `1`, the density is not known. If the sample arrives in a container that is not parameterized for liquid level detection, your sample will be transferred to another container upon arrival. If this is not desired, please populate the Density of the models.";
 Warning::MeasurementMayRequireTransfer="Please be aware that these models, `1`, may be transferred to another container in order to experimentally determine the amount. If this is not desired, please specify an amount or specify ProductDocumentation to indicate that the amount should be found on the documents that ship with the sample.";
 Warning::NewServiceProviderForModel="The specified service providers, `2`, are not known for these models, `1`. The model will be updated with this service provider. No action is needed on your part.";
@@ -7831,7 +8642,8 @@ DropShipSamples[myInputs:ListableP[ObjectP[{Model[Sample],Model[Item],Object[Pro
 		expandedTrackingNumber,downloadedStuff,containerOutMaxVolumes, expandedOptionsWithTrackingNumber,expandedInputs,
 		modelInputs,productInputs,productInputPackets,modelCompanies,
 		productModelPackets,orderedInputPackets,orderedModelPackets, kitComponentModelPackets,
-		modelContainerPackets, productContainerPackets, rackPackets, racks
+		modelContainerPackets, productContainerPackets, rackPackets, racks, partitionedSteriles, partitionedSealedContainers,
+		partitionedAsepticShippingContainerTypes, partitionedAsepticRebaggingContainerTypes
 	},
 
 	(* Make sure we're working with a list of options *)
@@ -7860,22 +8672,11 @@ DropShipSamples[myInputs:ListableP[ObjectP[{Model[Sample],Model[Item],Object[Pro
 		}]
 	];
 
-	(* Expand index matched options and inputs. *)
-	{{expandedInputs,orderNumberInput},expandedOptions}=ExpandIndexMatchedInputs[DropShipSamples, {ToList[myInputs],myOrderNumbers}, safeOptions, 1];
-
-	(* Because the TrackingNumber pattern allows a list of tracking numbers as well as a nested list of tracking numbers (for the transaction overload), the expander doesn't know how to handle it, so update it here *)
-	expandedTrackingNumber=With[{trackingNumber=(TrackingNumber/.safeOptions)},
-		If[ListQ[trackingNumber],
-			trackingNumber,
-		ConstantArray[trackingNumber,Length[expandedInputs]]
-			]
-	];
-	expandedOptionsWithTrackingNumber=ReplaceRule[expandedOptions,TrackingNumber->expandedTrackingNumber];
 
 	(* Call ValidInputLengthsQ to make sure all options are the right length *)
 	{validLengths,validLengthTests}=If[gatherTests,
-		ValidInputLengthsQ[DropShipSamples,{expandedInputs, orderNumberInput},expandedOptionsWithTrackingNumber, 1, Output->{Result,Tests}],
-		{ValidInputLengthsQ[DropShipSamples,{expandedInputs, orderNumberInput},expandedOptionsWithTrackingNumber, 1],Null}
+		ValidInputLengthsQ[DropShipSamples,{myInputs, myOrderNumbers},safeOptions, 1, Output->{Result,Tests}],
+		{ValidInputLengthsQ[DropShipSamples,{myInputs, myOrderNumbers},safeOptions, 1],Null}
 	];
 
 	(* If option lengths are invalid return $Failed *)
@@ -7887,6 +8688,19 @@ DropShipSamples[myInputs:ListableP[ObjectP[{Model[Sample],Model[Item],Object[Pro
 			Preview -> Null
 		}]
 	];
+
+	(* Expand index matched options and inputs. *)
+	{{expandedInputs,orderNumberInput},expandedOptions}=ExpandIndexMatchedInputs[DropShipSamples, {ToList[myInputs],myOrderNumbers}, safeOptions, 1];
+
+	(* Because the TrackingNumber pattern allows a list of tracking numbers as well as a nested list of tracking numbers (for the transaction overload), the expander doesn't know how to handle it, so update it here *)
+	expandedTrackingNumber=With[{trackingNumber=(TrackingNumber/.safeOptions)},
+		If[ListQ[trackingNumber],
+			trackingNumber,
+			ConstantArray[trackingNumber,Length[expandedInputs]]
+		]
+	];
+	expandedOptionsWithTrackingNumber=ReplaceRule[expandedOptions,TrackingNumber->expandedTrackingNumber];
+
 
 	(* We want to download different stuff from products vs models, so separate them out here *)
 	modelInputs=Cases[expandedInputs,ObjectP[{Model[Sample],Model[Item]}]];
@@ -7908,11 +8722,11 @@ DropShipSamples[myInputs:ListableP[ObjectP[{Model[Sample],Model[Item],Object[Pro
 			racks
 		},
 		{
-			{Packet[Deprecated, State, Density, ServiceProviders, Products, Tablet, TabletWeight, KitProducts]},
+			{Packet[Deprecated, State, Density, ServiceProviders, Products, Tablet, SolidUnitWeight, KitProducts]},
 			{Packet[Supplier,NumberOfItems,ProductModel, Amount,CountPerSample, KitComponents, DefaultContainerModel]},
-			{Packet[ProductModel[{Deprecated, State, Density, ServiceProviders, Products,Tablet,TabletWeight}]]},
+			{Packet[ProductModel[{Deprecated, State, Density, ServiceProviders, Products,Tablet,SolidUnitWeight}]]},
 			{MaxVolume},
-			{Packet[KitComponents[[All, ProductModel]][{Deprecated, State, Density, ServiceProviders, Products, Tablet, TabletWeight}]]},
+			{Packet[KitComponents[[All, ProductModel]][{Deprecated, State, Density, ServiceProviders, Products, Tablet, SolidUnitWeight}]]},
 			{Packet[Products[Deprecated]]},
 			{Packet[KitProducts[Deprecated]]},
 			(* If the input was a model, get the dimensions of the default container and themodel itself if it is a container *)
@@ -8038,7 +8852,7 @@ DropShipSamples[myInputs:ListableP[ObjectP[{Model[Sample],Model[Item],Object[Pro
 			statusPackets, allPackets,expandedMassOption,expandedVolumeOption,
 			expandedShipperOption,expandedDateExpectedOption, expandedTrackingNumberOption,expandedDateShippedOption,destination,
 			nameOption,partitionedContainerOut,specifiedAndKnownProviders,expandedCountOption,partitionedValidatedCount,
-			transactionPacketsExtraFields, expandedRackOption, partitionedShippedRacks
+			transactionPacketsExtraFields, expandedRackOption, partitionedShippedRacks, requiresAsepticCertification
 		},
 
 			(* Pull out expanded resolved option values *)
@@ -8064,6 +8878,15 @@ DropShipSamples[myInputs:ListableP[ObjectP[{Model[Sample],Model[Item],Object[Pro
 			(* Get the quantity option *)
 			quantityOption=Lookup[resolvedOptions,Quantity];
 
+			(* We need to ascertain if there is a possibility that we will need to use the biosafety cabinet, and thus require aseptic certification, to receive this. *)
+			(* This is true if 1) Sterile is True and 2) AsepticShippingContainerType is not Individual *)
+			requiresAsepticCertification = Or@@MapThread[
+				Function[{sterile, asepticShippingContainerType},
+					MatchQ[sterile, True] && !MatchQ[asepticShippingContainerType, Individual]
+				],
+				{Lookup[resolvedOptions, Sterile], Lookup[resolvedOptions, AsepticShippingContainerType]}
+			];
+
 			(* Group each set of transaction info together *)
 			groupedInputsAndInfo = Transpose[{
 				orderedInputPackets,
@@ -8078,7 +8901,11 @@ DropShipSamples[myInputs:ListableP[ObjectP[{Model[Sample],Model[Item],Object[Pro
 				expandedDateShippedOption,
 				Lookup[expandedOptions,ContainerOut],
 				expandedCountOption,
-				expandedRackOption
+				expandedRackOption,
+				Lookup[resolvedOptions,Sterile],
+				Lookup[resolvedOptions,SealedContainer],
+				Lookup[resolvedOptions,AsepticShippingContainerType],
+				Lookup[resolvedOptions,AsepticRebaggingContainerType]
 			}];
 
 			(* Group inputs that have the same service provider, order number, shipping info *)
@@ -8098,7 +8925,11 @@ DropShipSamples[myInputs:ListableP[ObjectP[{Model[Sample],Model[Item],Object[Pro
 				partitionedExpandedDateShipped,
 				partitionedContainerOut,
 				partitionedValidatedCount,
-				partitionedShippedRacks
+				partitionedShippedRacks,
+				partitionedSteriles,
+				partitionedSealedContainers,
+				partitionedAsepticShippingContainerTypes,
+				partitionedAsepticRebaggingContainerTypes
 			} = Map[
 				transactionInfoGroupedByShipping[[All, All, #1]] &,
 				Range[Length[First[groupedInputsAndInfo]]]
@@ -8106,7 +8937,8 @@ DropShipSamples[myInputs:ListableP[ObjectP[{Model[Sample],Model[Item],Object[Pro
 
 			(* Construct the drop ship transaction packets *)
 			transactionPackets = MapThread[
-				Function[{inputPackets, orderNumbers, quantities, masses, volumes,  providers,index,containerOuts,counts, rack},
+				Function[{inputPackets, orderNumbers, quantities, masses, volumes,  providers,index,containerOuts,counts, rack,
+					sterile, sealedContainer, asepticShippingContainerType, asepticRebaggingContainerType},
 					<|
 						Object -> CreateID[Object[Transaction, DropShipping]],
 						Creator -> Link[requestor, TransactionsCreated],
@@ -8148,10 +8980,21 @@ DropShipSamples[myInputs:ListableP[ObjectP[{Model[Sample],Model[Item],Object[Pro
 						Replace[Volume]->Flatten[Map[If[MatchQ[#,GreaterP[0 Liter]],#1,0Liter]&,volumes]],
 						Replace[Count]->Flatten[Map[If[MatchQ[#,GreaterP[0]],#1,0]&,counts]],
 						ReceivingTolerance->Lookup[resolvedOptions,ReceivingTolerance],
-						Replace[ShippedRacks]-> Link/@(rack/.None-> Null)
+						Replace[ShippedRacks]-> Link/@(rack/.None-> Null),
+
+						(* Get the sterile fields in here *)
+						Replace[Sterile]->sterile,
+						Replace[SealedContainer]->sealedContainer,
+						Replace[AsepticShippingContainerType]->asepticShippingContainerType,
+						Replace[AsepticRebaggingContainerType]->asepticRebaggingContainerType,
+						RequiresAsepticCertification -> requiresAsepticCertification
 					|>
 				],
-				{partitionedModelPackets, partitionedOrderNumberInput, partitionedQuantityInput, partitionedValidatedMass,partitionedValidatedVolume,partitionedServiceInput,Range[Length[partitionedModelPackets]],partitionedContainerOut,partitionedValidatedCount, partitionedShippedRacks}
+				{
+					partitionedModelPackets, partitionedOrderNumberInput, partitionedQuantityInput, partitionedValidatedMass,partitionedValidatedVolume,partitionedServiceInput,
+					Range[Length[partitionedModelPackets]],partitionedContainerOut,partitionedValidatedCount, partitionedShippedRacks,
+					partitionedSteriles,partitionedSealedContainers,partitionedAsepticShippingContainerTypes,partitionedAsepticRebaggingContainerTypes
+				}
 			];
 
 			(* Determine what status to give the drop shipped packets. If a date shipped is specified, status is Shipped. Otherwise, status is ordered. *)
@@ -8224,12 +9067,11 @@ DropShipSamples[myTransactions: ListableP[ObjectP[Object[Transaction, DropShippi
 		}]
 	];
 
-	{{expandedTransactions},expandedOptions}=ExpandIndexMatchedInputs[DropShipSamples, {listedTransactions}, safeOptions,2];
 
 	(* Call ValidInputLengthsQ to make sure all options are the right length *)
 	{validLengths,validLengthTests}=If[gatherTests,
-		ValidInputLengthsQ[DropShipSamples,{listedTransactions},expandedOptions,2,Output->{Result,Tests}],
-		{ValidInputLengthsQ[DropShipSamples,{listedTransactions},expandedOptions,2],Null}
+		ValidInputLengthsQ[DropShipSamples,{listedTransactions},safeOptions,2,Output->{Result,Tests}],
+		{ValidInputLengthsQ[DropShipSamples,{listedTransactions},safeOptions,2],Null}
 	];
 
 	(* If option lengths are invalid return $Failed *)
@@ -8241,6 +9083,8 @@ DropShipSamples[myTransactions: ListableP[ObjectP[Object[Transaction, DropShippi
 			Preview -> Null
 		}]
 	];
+
+	{{expandedTransactions},expandedOptions}=ExpandIndexMatchedInputs[DropShipSamples, {listedTransactions}, safeOptions,2];
 
 	(* Download call *)
 	{transactionPackets, modelsProductsPacketsByTransaction, productModelPacketsByTransaction} = Transpose[
@@ -8267,10 +9111,12 @@ DropShipSamples[myTransactions: ListableP[ObjectP[Object[Transaction, DropShippi
 						UserCommunications,
 						SamplesOut,
 						ReceivedItems,
-						ReceivingTolerance
+						ReceivingTolerance,
+						DateCreated,
+						Destination
 					],
-					Packet[OrderedItems[{State, Density,Tablet,TabletWeight}]],
-					Packet[OrderedItems[ProductModel][{State, Density,Tablet,TabletWeight}]]
+					Packet[OrderedItems[{State, Density,Tablet,SolidUnitWeight}]],
+					Packet[OrderedItems[ProductModel][{State, Density,Tablet,SolidUnitWeight}]]
 				},
 				Date -> Now
 			],
@@ -8623,9 +9469,9 @@ resolveDropShipSamplesOptions[
 				Lookup[inputPacket,Amount],
 
 
-				(* Tablet models automatically resolve to a Mass if Count and TabletWeight are known *)
-				MatchQ[massOption,Automatic|Null] && MatchQ[inputPacket,ObjectP[Model[Sample]]] && TrueQ[Lookup[inputPacket,Tablet,Null]] && IntegerQ[countOption] && MatchQ[Lookup[inputPacket,TabletWeight,Null],MassP],
-				Lookup[inputPacket,TabletWeight]*countOption,
+				(* Tablet models automatically resolve to a Mass if Count and SolidUnitWeight are known *)
+				MatchQ[massOption,Automatic|Null] && MatchQ[inputPacket,ObjectP[Model[Sample]]] && TrueQ[Lookup[inputPacket,Tablet,Null]] && IntegerQ[countOption] && MatchQ[Lookup[inputPacket,SolidUnitWeight,Null],MassP],
+				Lookup[inputPacket,SolidUnitWeight]*countOption,
 
 				(* Solid NonSelfContainedSampleTypes automatically resolve to ExperimentallyMeasure *)
 				MatchQ[massOption,Automatic|Null] && MatchQ[inputPacket,ObjectP[Model[Sample]]] && MatchQ[Lookup[inputPacket,State],Solid],
@@ -8670,11 +9516,11 @@ resolveDropShipSamplesOptions[
 			Lookup[inputPacket,CountPerSample],
 
 
-			(* Tablet models automatically resolve to a number if Mass and TabletWeight are known *)
-			MatchQ[countOption,Automatic|Null] && MatchQ[inputPacket,ObjectP[Model[Sample]]] && TrueQ[Lookup[inputPacket,Tablet,Null]] && MatchQ[massOption,MassP] && MatchQ[Lookup[inputPacket,TabletWeight,Null],MassP],
-			Round[massOption/Lookup[inputPacket,TabletWeight]],
+			(* Tablet models automatically resolve to a number if Mass and SolidUnitWeight are known *)
+			MatchQ[countOption,Automatic|Null] && MatchQ[inputPacket,ObjectP[Model[Sample]]] && TrueQ[Lookup[inputPacket,Tablet,Null]] && MatchQ[massOption,MassP] && MatchQ[Lookup[inputPacket,SolidUnitWeight,Null],MassP],
+			Round[massOption/Lookup[inputPacket,SolidUnitWeight]],
 
-			(* Tablet models automatically resolve to ExperimentallyMeasure if Mass and TabletWeight are not known*)
+			(* Tablet models automatically resolve to ExperimentallyMeasure if Mass and SolidUnitWeight are not known*)
 			MatchQ[countOption,Automatic|Null] && MatchQ[inputPacket,ObjectP[Model[Sample]]] && TrueQ[Lookup[inputPacket,Tablet,Null]],
 			ExperimentallyMeasure,
 
@@ -8692,8 +9538,8 @@ resolveDropShipSamplesOptions[
 	massCountAgreeBools=MapThread[
 		Function[{mass,count,modelPackets},
 			(* note that if modelPackets is a list of models, then we're dealing with a kit, and so that will just always be True *)
-			If[MassQ[mass]&&IntegerQ[count]&&MatchQ[modelPackets, PacketP[]] && MassQ[Lookup[modelPackets, TabletWeight]],
-				Equal[Round[mass],(count*Lookup[modelPackets, TabletWeight])],
+			If[MassQ[mass]&&IntegerQ[count]&&MatchQ[modelPackets, PacketP[]] && MassQ[Lookup[modelPackets, SolidUnitWeight]],
+				Equal[Round[mass],(count*Lookup[modelPackets, SolidUnitWeight])],
 				True
 			]
 		],
@@ -8832,7 +9678,7 @@ resolveDropShipSamplesOptions[
 
 	(* If we are throwing messages, throw message about container out not being allowed for items *)
 	If[messagesBoolean&&MemberQ[containerOutInvalidContentBools,True],
-		Message[Error::OptionNotRequired,ContainerOut,PickList[Lookup[myInputPackets,Object],containerOutInvalidContentBools]]
+		Message[Error::ShippingOptionNotRequired,ContainerOut,PickList[Lookup[myInputPackets,Object],containerOutInvalidContentBools]]
 	];
 
 	(* If we are collecting tests, assemble test for container out being allowed only for samples *)
@@ -9188,7 +10034,7 @@ resolveDropShipSamplesOptions[
 
 	(* entries where a rack was required but the provided value was Null *)
 	invalidRackRules = Select[rackResult, MatchQ[Lookup[#, InvalidRack], True]&];
-	(* racks that were provided but dont actually work *)
+	(* racks that were provided but don't actually work *)
 	noRackRules = Select[rackResult, MatchQ[Lookup[#, NoRacks], True]&];
 
 
@@ -9770,7 +10616,7 @@ DropShipSamplesOptions[myInputs:ListableP[ObjectP[{Model[Sample],Model[Item],Obj
 (* get the options as a list *)
 	listedOptions = ToList[myOptions];
 
-	(* remove the Output and OutputFormat option before passing to the core function because it doens't make sense here *)
+	(* remove the Output and OutputFormat option before passing to the core function because it doesn't make sense here *)
 	noOutputOptions = DeleteCases[listedOptions, Alternatives[Output -> _, OutputFormat->_]];
 
 	(* get only the options for DropShipSamples *)
@@ -9791,7 +10637,7 @@ DropShipSamplesOptions[myTransactions: ListableP[ObjectP[Object[Transaction, Dro
 (* get the options as a list *)
 	listedOptions = ToList[myOptions];
 
-	(* remove the Output and OutputFormat option before passing to the core function because it doens't make sense here *)
+	(* remove the Output and OutputFormat option before passing to the core function because it doesn't make sense here *)
 	noOutputOptions = DeleteCases[listedOptions, Alternatives[Output -> _, OutputFormat->_]];
 
 	(* get only the options for DropShipSamples *)
@@ -9985,7 +10831,7 @@ DefineOptions[OrderSamples,
 			},
 			{
 				OptionName->Destination,
-				Default->$Site,
+				Default->Automatic,
 				Description->"The site where the samples are being delivered.",
 				AllowNull->False,
 				Category->"Order",
@@ -10071,7 +10917,7 @@ DefineOptions[OrderSamples,
 					Widget[Type->Enumeration,Pattern:>Alternatives[None]]
 				],
 				Description->"The model of rack that is shipped holding other items in this order.",
-				Category->"Shipment"
+				Category->"Container Information"
 			}
 		],
 		{
@@ -10171,7 +11017,7 @@ OrderSamples[myObjects:{(ObjectP[Object[Product]]|ObjectP[Model])...},myOrderAmo
 		mergedModelProductNotebooks,dependentProtPacks,expandedProductCreators,expandedModelCreators,mergedModelCreators,
 		possibleAuthors,
 		allInputContainers, modelContainerPackets, productContainerPackets, rackPackets, racks,
-		rackResult, invalidRackRules, noRackRules, invalidRacksTest, noRacksTest
+		rackResult, invalidRackRules, noRackRules, invalidRacksTest, noRacksTest, resolvedSites
 	},
 
 	(* ------------- *)
@@ -10285,7 +11131,7 @@ OrderSamples[myObjects:{(ObjectP[Object[Product]]|ObjectP[Model])...},myOrderAmo
 			},
 
 			(* Info on input products *)
-			{Packet[Deprecated,NotForSale,NumberOfItems,Amount,Supplier,ProductModel,KitComponents,Name,CountPerSample,DefaultContainerModel,Stocked]},
+			{Packet[Deprecated,NotForSale,NumberOfItems,Amount,Supplier,ProductModel,KitComponents,Name,CountPerSample,DefaultContainerModel,Stocked,Sterile,AsepticShippingContainerType]},
 
 			(* Info on resources *)
 			{Packet[Object,Amount,Models,Notebook]},
@@ -10294,7 +11140,7 @@ OrderSamples[myObjects:{(ObjectP[Object[Product]]|ObjectP[Model])...},myOrderAmo
 			{Packet[MaxVolume]},
 
 			(* Info on dependent protocols *)
-			{Packet[Author]},
+			{Packet[Author,Site]},
 
 			(* If the input was a model, get the dimensions of the default container and themodel itself if it is a container *)
 			{
@@ -10403,6 +11249,23 @@ OrderSamples[myObjects:{(ObjectP[Object[Product]]|ObjectP[Model])...},myOrderAmo
 		And[Lookup[safeOps,Upload], MemberQ[output, Result]]
 	];
 
+	(* -- Site -- *)
+
+	resolvedSites = MapThread[
+		Function[{destination, dependentProtocolOption, dependentProtocolPacket},
+			Which[
+				(*If Site !=Automatic get it from expanded safeOps.*)
+				!MatchQ[destination,Automatic], destination,
+				(*If a site is not specified in options, use the site of the DependentProtocol*)
+				MatchQ[dependentProtocolOption,ObjectP[ProtocolTypes[]]],Download[Lookup[dependentProtocolPacket,Site],Object],
+				(*Otherwise use $Site*)
+				True, $Site
+			]
+		],
+		(*Note: dependentProtPacks must be downloaded as a flattened list or the site object will be wrapped in  nest list causing a mismatch with the Destination Field of Object[Transaction, Order].*)
+		{Lookup[expandedSafeOps,Destination], Lookup[expandedSafeOps,DependentProtocol], Flatten[dependentProtPacks]}
+	];
+
 	(* --- Generate rules for each possible Output value ---  *)
 
 	(* Prepare the Options result if we were asked to do so *)
@@ -10411,7 +11274,8 @@ OrderSamples[myObjects:{(ObjectP[Object[Product]]|ObjectP[Model])...},myOrderAmo
 		{
 			Creator -> resolvedCreators,
 			InternalOrder -> resolvedInternalOrderQ,
-			Email -> resolvedEmailQ
+			Email -> resolvedEmailQ,
+			Destination-> resolvedSites
 		}
 	];
 
@@ -10430,7 +11294,7 @@ OrderSamples[myObjects:{(ObjectP[Object[Product]]|ObjectP[Model])...},myOrderAmo
 
 	(* Extract index-matched option values corresponding to product inputs *)
 	expandedProductShippingSpeeds = Lookup[expandedSafeOps,ShippingSpeed][[productPositions]];
-	expandedProductDestinations = Lookup[expandedSafeOps,Destination][[productPositions]];
+	expandedProductDestinations = Lookup[resolvedOptions,Destination][[productPositions]];
 	expandedProductDependentProtocols = Lookup[expandedSafeOps,DependentProtocol][[productPositions]];
 	expandedProductDependentResources = Flatten[resPacks][[productPositions]];
 	expandedProductCreators = resolvedCreators[[productPositions]];
@@ -10439,7 +11303,7 @@ OrderSamples[myObjects:{(ObjectP[Object[Product]]|ObjectP[Model])...},myOrderAmo
 	productContainerOuts = Flatten[containersOutPacks[[productPositions]]];
 	(* Extract index-matched option values corresponding to model inputs *)
 	expandedModelShippingSpeeds = Lookup[expandedSafeOps,ShippingSpeed][[modelPositions]];
-	expandedModelDestinations = Lookup[expandedSafeOps,Destination][[modelPositions]];
+	expandedModelDestinations = Lookup[resolvedOptions,Destination][[modelPositions]];
 	expandedModelDependentProtocols = Lookup[expandedSafeOps,DependentProtocol][[modelPositions]];
 	expandedModelDependentResources = Flatten[resPacks][[modelPositions]];
 	expandedModelCreators = resolvedCreators[[modelPositions]];
@@ -10658,7 +11522,7 @@ OrderSamples[myObjects:{(ObjectP[Object[Product]]|ObjectP[Model])...},myOrderAmo
 
 	(* If we are throwing messages, throw message about container out not being allowed for items *)
 	If[!gatherTestsQ&&MemberQ[containerOutInvalidContentBools,True],
-		Message[Error::OptionNotRequired,ContainerOut,PickList[Join[products, modelProducts,If[doubleResolvedInternalOrderQ,models,{}]],containerOutInvalidContentBools]]
+		Message[Error::ShippingOptionNotRequired,ContainerOut,PickList[Join[products, modelProducts,If[doubleResolvedInternalOrderQ,models,{}]],containerOutInvalidContentBools]]
 	];
 
 	(* If we are collecting tests, assemble test for container out being allowed only for samples *)
@@ -10908,7 +11772,7 @@ OrderSamples[myObjects:{(ObjectP[Object[Product]]|ObjectP[Model])...},myOrderAmo
 
 	(* entries where a rack was required but the provided value was Null *)
 	invalidRackRules = Select[rackResult, MatchQ[Lookup[#, InvalidRack], True]&];
-	(* racks that were provided but dont actually work *)
+	(* racks that were provided but don't actually work *)
 	noRackRules = Select[rackResult, MatchQ[Lookup[#, NoRacks], True]&];
 
 
@@ -11080,7 +11944,8 @@ OrderSamples[myObjects:{(ObjectP[Object[Product]]|ObjectP[Model])...},myOrderAmo
 	result = If[TrueQ[Lookup[safeOps,Upload]],
 		(
 			allUploads = Upload[allUpdates];
-			DeleteDuplicates[Cases[allUploads,ObjectP[Object[Transaction,Order]]]]
+			(*Only output order packets with Destinations*)
+			DeleteDuplicates[Cases[allUploads,ObjectP[Object[Transaction,Order],Destination]]]
 		),
 		allUpdates
 	];
@@ -11217,7 +12082,7 @@ ValidOrderSamplesQ[myObjects:{(ObjectP[Object[Product]]|ObjectP[Model])...},myOr
 	(* get the options as a list *)
 	listedOptions = ToList[ops];
 
-	(* remove the Output option before passing to the core function because it doens't make sense here *)
+	(* remove the Output option before passing to the core function because it doesn't make sense here *)
 	preparedOptions = DeleteCases[listedOptions, (Output | Verbose | OutputFormat) -> _];
 
 	(* return only the tests for OrderSamples *)
@@ -12206,7 +13071,7 @@ RestrictSamplesOptions[mySamples:{ObjectP[{Object[Sample], Object[Container], Ob
 	(* get the options as a list *)
 	listedOptions = ToList[ops];
 
-	(* remove the Output option before passing to the core function because it doens't make sense here *)
+	(* remove the Output option before passing to the core function because it doesn't make sense here *)
 	noOutputOptions = DeleteCases[listedOptions,(OutputFormat->_)| (Output->_)];
 
 	(* return only the options for RestrictSamples *)
@@ -12239,7 +13104,7 @@ RestrictSamplesPreview[mySamples:{ObjectP[{Object[Sample], Object[Container], Ob
 	(* get the options as a list *)
 	listedOptions = ToList[ops];
 
-	(* remove the Output option before passing to the core function because it doens't make sense here *)
+	(* remove the Output option before passing to the core function because it doesn't make sense here *)
 	noOutputOptions = DeleteCases[listedOptions, Output -> _];
 
 	(* return only the preview for RestrictSamples *)
@@ -12270,7 +13135,7 @@ ValidRestrictSamplesQ[mySamples:{ObjectP[{Object[Sample], Object[Container], Obj
 	(* get the options as a list *)
 	listedOptions = ToList[ops];
 
-	(* remove the Output option before passing to the core function because it doens't make sense here *)
+	(* remove the Output option before passing to the core function because it doesn't make sense here *)
 	preparedOptions = DeleteCases[listedOptions, (Output | Verbose | OutputFormat) -> _];
 
 	(* return only the tests for RestrictSamples *)
@@ -12478,7 +13343,7 @@ UnrestrictSamplesOptions[mySamples:{ObjectP[{Object[Sample], Object[Container], 
 (* get the options as a list *)
 	listedOptions = ToList[ops];
 
-	(* remove the Output option before passing to the core function because it doens't make sense here *)
+	(* remove the Output option before passing to the core function because it doesn't make sense here *)
 	noOutputOptions = DeleteCases[listedOptions,(OutputFormat->_)| (Output->_)];
 
 	(* return only the options for UnrestrictSamples *)
@@ -12512,7 +13377,7 @@ UnrestrictSamplesPreview[mySamples:{ObjectP[{Object[Sample], Object[Container], 
 (* get the options as a list *)
 	listedOptions = ToList[ops];
 
-	(* remove the Output option before passing to the core function because it doens't make sense here *)
+	(* remove the Output option before passing to the core function because it doesn't make sense here *)
 	noOutputOptions = DeleteCases[listedOptions, Output -> _];
 
 	(* return only the preview for UnrestrictSamples *)
@@ -12543,7 +13408,7 @@ ValidUnrestrictSamplesQ[mySamples:{ObjectP[{Object[Sample], Object[Container], O
 (* get the options as a list *)
 	listedOptions = ToList[ops];
 
-	(* remove the Output option before passing to the core function because it doens't make sense here *)
+	(* remove the Output option before passing to the core function because it doesn't make sense here *)
 	preparedOptions = DeleteCases[listedOptions, (Output | Verbose | OutputFormat) -> _];
 
 	(* return only the tests for UnrestrictSamples *)
@@ -12604,5 +13469,42 @@ rackFootprintsAndDimensions[]:= rackFootprintsAndDimensions[] = Module[{searchRe
 			Sequence@@DeleteDuplicates[Transpose[{ConstantArray[#1, Length[footprint]], footprint, dimensionTuples}]]
 		]&,
 		{searchResult, rackPositions}
+	]
+];
+
+(* ::Subsubsection::Closed:: *)
+(*determineFragileFromPacket*)
+determineFragileFromPacket[myPacket:Alternatives[Null, {Null}, PacketP[], {PacketP[]}]] := Module[{fragile, wettedMaterials, containerMaterials, packet, type},
+
+	(* If we don't have a packet input, return False. That means we should look at other object anyway *)
+	If[NullQ[myPacket],
+		Return[False]
+	];
+
+	(* Correct the input. It could be {packet} or packet *)
+	packet = If[MatchQ[myPacket, {PacketP[]}],
+		First[myPacket],
+		myPacket
+	];
+
+	(* Extract these three field values *)
+	{fragile, wettedMaterials, containerMaterials, type} = Lookup[packet, {Fragile, WettedMaterials, ContainerMaterials, Type}];
+
+	Which[
+		(* Always treat columns as Fragile and request wrapping *)
+		MatchQ[type, TypeP[Model[Item, Column]]],
+			True,
+		(* If fragile field is populated, use it *)
+		BooleanQ[fragile],
+			fragile,
+		(* If Fragile field is not populated, determine from the ContainerMaterials field for containers *)
+		MatchQ[containerMaterials, _List],
+			Or@@(MemberQ[containerMaterials, #]& /@ {Glass, SilicateGlass, GlassFiber, BorosilicateGlass, Quartz, Silicone, Silica, GlassyCarbon, Graphite, OpticalGlass, Porcelain, UVQuartz, ESQuartz, FusedQuartz, IRQuartz}),
+		(* For other items which ContainerMaterials field doesn't exist, look at WettedMaterials field instead *)
+		MatchQ[wettedMaterials, _List],
+			Or@@(MemberQ[containerMaterials, #]& /@ {Glass, SilicateGlass, GlassFiber, BorosilicateGlass, Quartz, Silicone, Silica, GlassyCarbon, Graphite, OpticalGlass, Porcelain, UVQuartz, ESQuartz, FusedQuartz, IRQuartz}),
+		(* Catch All. Be on the safe side and use True if for any reason we get to this step *)
+		True,
+			True
 	]
 ];

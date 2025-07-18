@@ -1,7 +1,7 @@
 (* ::Package:: *)
 
 (* ::Text:: *)
-(*\[Copyright] 2011-2023 Emerald Cloud Lab, Inc.*)
+(*\[Copyright] 2011-2024 Emerald Cloud Lab, Inc.*)
 
 
 (* ::Subsection:: *)
@@ -27,6 +27,11 @@ DefineUsage[ValidExperimentPelletQ,
 									Dereference -> {
 										Object[Container] -> Field[Contents[[All, 2]]]
 									}
+								],
+								"Model Sample"->Widget[
+									Type->Object,
+									Pattern:>ObjectP[Model[Sample]],
+									ObjectTypes->{Model[Sample]}
 								],
 								"Container with Well Position"->{
 									"Well Position" -> Alternatives[
@@ -105,6 +110,11 @@ DefineUsage[ExperimentPelletOptions,
 										Object[Container] -> Field[Contents[[All, 2]]]
 									}
 								],
+								"Model Sample"->Widget[
+									Type->Object,
+									Pattern:>ObjectP[Model[Sample]],
+									ObjectTypes->{Model[Sample]}
+								],
 								"Container with Well Position"->{
 									"Well Position" -> Alternatives[
 										"A1 to H12" -> Widget[
@@ -180,6 +190,11 @@ DefineUsage[ExperimentPelletPreview,
 									Dereference -> {
 										Object[Container] -> Field[Contents[[All, 2]]]
 									}
+								],
+								"Model Sample"->Widget[
+									Type->Object,
+									Pattern:>ObjectP[Model[Sample]],
+									ObjectTypes->{Model[Sample]}
 								],
 								"Container with Well Position"->{
 									"Well Position" -> Alternatives[

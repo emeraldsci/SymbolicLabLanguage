@@ -170,9 +170,24 @@ DefineOptions[
 			ResolutionDescription->"Resolves to the pH of the HighCalibrationBuffer, if known.",
 			Category->"Calibration"
 		},
-		FuntopiaSharedOptions,
+		ModifyOptions[
+			ModelInputOptions,
+			PreparedModelAmount,
+			{
+				ResolutionDescription -> "Automatically set to 35 Milliliter."
+			}
+		],
+		ModifyOptions[
+			ModelInputOptions,
+			PreparedModelContainer,
+			{
+				ResolutionDescription -> "If PreparedModelAmount is set to All and the input model has a product associated with both Amount and DefaultContainerModel populated, automatically set to the DefaultContainerModel value in the product. Otherwise, automatically set to Model[Container, Vessel, \"50mL Tube\"]."
+			}
+		],
+		NonBiologyFuntopiaSharedOptions,
 		SamplesInStorageOption,
-		InSituOption
+		InSituOption,
+		SimulationOption
 	}
 ];
 
@@ -200,7 +215,7 @@ Error::AcquisitionTimeConflict="The sample(s), `1`, have their AcquisitionTime->
 
 (*Issues after resolving the options*)
 Error::IncompatibleInstrument="The following sample(s) `1` cannot be measured with the specified instrument `2` due to a problem with physical dimensions (e.g. probe can't reach or fit the opening). Please choose a different instrument or choose a different sample to be measured.";
-Error::NoAvailableInstruments="The following sample(s) `1`, though chemically compatible with some available instruments, cannot find compatible instruments to meet all the specified and resolved options for physical (e.g. liquid level too short, probe cannot reach) or chemical reasons. Consider running ExperimentMeasurepHOptions with relaxed options to find compatible instruments or setting Aliquot->True.";
+Error::NoAvailablepHInstruments="The following sample(s) `1`, though chemically compatible with some available instruments, cannot find compatible instruments to meet all the specified and resolved options for physical (e.g. liquid level too short, probe cannot reach) or chemical reasons. Consider running ExperimentMeasurepHOptions with relaxed options to find compatible instruments or setting Aliquot->True.";
 Error::ConflictingReferencepHValues="The given pH values for the option(s), `1`, do not agree with the pH field in the corresponding reference buffer(s) pH field. Either leave this option alone for it to be automatically resolved or update the pH in the Model[Sample] to accurately reflect the pH of the buffer.";
 Error::MediumCalibrationOptionsRequiredTogether="The options `1` must either both be specified or both not be specified (both set to Null). Please change the value of these options.";
 Error::LowAndHighpHValuesMustBeSpecified="The options {LowCalibrationBufferpH,HighCalibrationBufferpH} are current set to `1`. These options cannot be set to Null. Please either inform the pH field in the Model[Sample] of your reference solutions (for the function to automatically resolve the values) or manually specify them.";
@@ -215,9 +230,9 @@ measurepHContainerP=ObjectP[{Object[Container,Vessel]}];
 measurepHContainerModelsP=ObjectP[{Model[Container,Vessel]}];
 
 (*container overload function*)
-ExperimentMeasurepH[myContainers:ListableP[ObjectP[{Object[Container],Object[Sample]}]|_String|{LocationPositionP,_String|ObjectP[Object[Container]]}],myOptions:OptionsPattern[]]:=Module[
+ExperimentMeasurepH[myContainers:ListableP[ObjectP[{Object[Container],Object[Sample], Model[Sample]}]|_String|{LocationPositionP,_String|ObjectP[Object[Container]]}],myOptions:OptionsPattern[]]:=Module[
 	{listedOptions,outputSpecification,output,gatherTests,validSamplePreparationResult,mySamplesWithPreparedSamples,myOptionsWithPreparedSamples,sampleCache,
-	samplePreparationCache,containerToSampleResult,containerToSampleOutput,samples,sampleOptions,containerToSampleTests,updatedCache},
+	updatedSimulation,containerToSampleResult,containerToSampleOutput,samples,sampleOptions,containerToSampleTests,updatedCache,containerToSampleSimulation},
 	(* Make sure we're working with a list of options *)
 	listedOptions=ToList[myOptions];
 
@@ -230,31 +245,32 @@ ExperimentMeasurepH[myContainers:ListableP[ObjectP[{Object[Container],Object[Sam
 	(* First, simulate our sample preparation. *)
 	validSamplePreparationResult=Check[
 		(* Simulate sample preparation. *)
-		{mySamplesWithPreparedSamples,myOptionsWithPreparedSamples,samplePreparationCache}=simulateSamplePreparationPackets[
+		{mySamplesWithPreparedSamples,myOptionsWithPreparedSamples,updatedSimulation}=simulateSamplePreparationPacketsNew[
 			ExperimentMeasurepH,
 			ToList[myContainers],
-			ToList[myOptions]
+			ToList[myOptions],
+			DefaultPreparedModelAmount -> 35 Milliliter,
+			DefaultPreparedModelContainer -> Model[Container, Vessel, "50mL Tube"]
 		],
 		$Failed,
-		{Error::MissingDefineNames,Error::InvalidInput,Error::InvalidOption}
+		{Download::ObjectDoesNotExist, Error::MissingDefineNames,Error::InvalidInput,Error::InvalidOption}
 	];
 
 	(* If we are given an invalid define name, return early. *)
 	If[MatchQ[validSamplePreparationResult,$Failed],
 		(* Return early. *)
-		(* Note: We've already thrown a message above in simulateSamplePreparationPackets. *)
-		ClearMemoization[Experiment`Private`simulateSamplePreparationPackets];Return[$Failed]
+		Return[$Failed]
 	];
 
 	(* Convert our given containers into samples and sample index-matched options. *)
 	containerToSampleResult=If[gatherTests,
 		(* We are gathering tests. This silences any messages being thrown. *)
-		{containerToSampleOutput,containerToSampleTests}=containerToSampleOptions[
+		{containerToSampleOutput, containerToSampleTests, containerToSampleSimulation} = containerToSampleOptions[
 			ExperimentMeasurepH,
 			mySamplesWithPreparedSamples,
 			myOptionsWithPreparedSamples,
-			Output->{Result,Tests},
-			Cache->samplePreparationCache
+			Output -> {Result, Tests, Simulation},
+			Simulation -> updatedSimulation
 		];
 
 		(* Therefore, we have to run the tests to see if we encountered a failure. *)
@@ -265,23 +281,17 @@ ExperimentMeasurepH[myContainers:ListableP[ObjectP[{Object[Container],Object[Sam
 
 		(* We are not gathering tests. Simply check for Error::InvalidInput and Error::InvalidOption. *)
 		Check[
-			containerToSampleOutput=containerToSampleOptions[
+			{containerToSampleOutput, containerToSampleSimulation} = containerToSampleOptions[
 				ExperimentMeasurepH,
 				mySamplesWithPreparedSamples,
 				myOptionsWithPreparedSamples,
-				Output->Result,
-				Cache->samplePreparationCache
+				Output -> {Result, Simulation},
+				Simulation -> updatedSimulation
 			],
 			$Failed,
 			{Error::EmptyContainers, Error::ContainerEmptyWells, Error::WellDoesNotExist}
 		]
 	];
-
-	(* Update our cache with our new simulated values. *)
-	updatedCache=Flatten[{
-		samplePreparationCache,
-		Lookup[listedOptions,Cache,{}]
-	}];
 
 	(* If we were given an empty container, return early. *)
 	If[MatchQ[containerToSampleResult,$Failed],
@@ -293,10 +303,10 @@ ExperimentMeasurepH[myContainers:ListableP[ObjectP[{Object[Container],Object[Sam
 			Preview -> Null
 		},
 		(* Split up our containerToSample result into the samples and sampleOptions. *)
-		{samples,sampleOptions, sampleCache}=containerToSampleOutput;
+		{samples, sampleOptions} = containerToSampleOutput;
 
 		(* Call our main function with our samples and converted options. *)
-		ExperimentMeasurepH[samples,ReplaceRule[sampleOptions,Cache->Flatten[{updatedCache,sampleCache}]]]
+		ExperimentMeasurepH[samples, ReplaceRule[sampleOptions, Simulation -> containerToSampleSimulation]]
 	]
 ];
 
@@ -309,7 +319,7 @@ ExperimentMeasurepH[myContainers:ListableP[ObjectP[{Object[Container],Object[Sam
 (*main function*)
 ExperimentMeasurepH[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:OptionsPattern[]]:=Module[
 	{listedOptions,outputSpecification,output,gatherTests,validSamplePreparationResult,mySamplesWithPreparedSamples,
-		myOptionsWithPreparedSamples,samplePreparationCache,safeOps,safeOpsTests,validLengths,validLengthTests,allInstrumentModels,
+		myOptionsWithPreparedSamples,updatedSimulation,safeOps,safeOpsTests,validLengths,validLengthTests,allInstrumentModels,
 		templatedOptions,templateTests,inheritedOptions,expandedSafeOps,cacheBall,resolvedOptionsResult,specifiedInstrumentModels,
 		resolvedOptions,resolvedOptionsTests,collapsedResolvedOptions,protocolObject,resourcePackets,resourcePacketTests,objectSamplePacketFields,
 		(*Everything needed for downloading*)
@@ -328,22 +338,21 @@ ExperimentMeasurepH[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:Optio
 	{listedSamples, listedOptions}=removeLinks[ToList[mySamples], ToList[myOptions]];
 
 	(* Simulate our sample preparation. *)
-	validSamplePreparationResult=Check[
+	validSamplePreparationResult = Check[
 		(* Simulate sample preparation. *)
-		{mySamplesWithPreparedSamplesNamed,myOptionsWithPreparedSamplesNamed,samplePreparationCache}=simulateSamplePreparationPackets[
+		{mySamplesWithPreparedSamplesNamed, myOptionsWithPreparedSamplesNamed, updatedSimulation} = simulateSamplePreparationPacketsNew[
 			ExperimentMeasurepH,
 			listedSamples,
 			listedOptions
 		],
 		$Failed,
-	 	{Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
+	 	{Download::ObjectDoesNotExist, Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
 	];
 
 	(* If we are given an invalid define name, return early. *)
 	If[MatchQ[validSamplePreparationResult,$Failed],
 		(* Return early. *)
-		(* Note: We've already thrown a message above in simulateSamplePreparationPackets. *)
-		ClearMemoization[Experiment`Private`simulateSamplePreparationPackets];Return[$Failed]
+		Return[$Failed]
 	];
 
 	(* Call SafeOptions to make sure all options match pattern *)
@@ -353,13 +362,7 @@ ExperimentMeasurepH[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:Optio
 	];
 
 	(* Call sanitize-inputs to clean any named objects *)
-	{mySamplesWithPreparedSamples,safeOps, myOptionsWithPreparedSamples} = sanitizeInputs[mySamplesWithPreparedSamplesNamed,safeOpsNamed, myOptionsWithPreparedSamplesNamed];
-
-	(* Call ValidInputLengthsQ to make sure all options are the right length *)
-	{validLengths,validLengthTests}=If[gatherTests,
-		ValidInputLengthsQ[ExperimentMeasurepH,{mySamplesWithPreparedSamples},myOptionsWithPreparedSamples,Output->{Result,Tests}],
-		{ValidInputLengthsQ[ExperimentMeasurepH,{mySamplesWithPreparedSamples},myOptionsWithPreparedSamples],Null}
-	];
+	{mySamplesWithPreparedSamples,safeOps, myOptionsWithPreparedSamples} = sanitizeInputs[mySamplesWithPreparedSamplesNamed,safeOpsNamed, myOptionsWithPreparedSamplesNamed, Simulation -> updatedSimulation];
 
 	(* If the specified options don't match their patterns or if option lengths are invalid return $Failed *)
 	If[MatchQ[safeOps,$Failed],
@@ -369,6 +372,12 @@ ExperimentMeasurepH[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:Optio
 			Options -> $Failed,
 			Preview -> Null
 		}]
+	];
+
+	(* Call ValidInputLengthsQ to make sure all options are the right length *)
+	{validLengths,validLengthTests}=If[gatherTests,
+		ValidInputLengthsQ[ExperimentMeasurepH,{mySamplesWithPreparedSamples},myOptionsWithPreparedSamples,Output->{Result,Tests}],
+		{ValidInputLengthsQ[ExperimentMeasurepH,{mySamplesWithPreparedSamples},myOptionsWithPreparedSamples],Null}
 	];
 
 	(* If option lengths are invalid return $Failed (or the tests up to this point) *)
@@ -439,7 +448,6 @@ ExperimentMeasurepH[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:Optio
 
 	(* Download our information. *)
 	cacheBall=FlattenCachePackets[{
-		samplePreparationCache,
 		Quiet[Download[
 			{
 				mySamplesList,
@@ -479,10 +487,10 @@ ExperimentMeasurepH[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:Optio
 					Packet[VolumeCalibrations[{LiquidLevelDetectorModel,CalibrationFunction,DateCreated}]]
 				},
 				{
-					Packet[pH,TransportWarmed,Name,Sterile,LiquidHandlerIncompatible,Tablet,TabletWeight,State]
+					Packet[pH,TransportTemperature,Name,Sterile,LiquidHandlerIncompatible,Tablet,SolidUnitWeight,State]
 				},
 				{
-					Packet[pH,TransportWarmed,Name,Deprecated,Sterile,LiquidHandlerIncompatible,Tablet,TabletWeight,State]
+					Packet[pH,TransportTemperature,Name,Deprecated,Sterile,LiquidHandlerIncompatible,Tablet,SolidUnitWeight,State]
 				},
 				{
 					Packet[Model,Volume]
@@ -491,7 +499,8 @@ ExperimentMeasurepH[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:Optio
 					Packet[WasteBeaker]
 				}
 			},
-			Cache->Flatten[{samplePreparationCache,ToList[Lookup[safeOps,Cache,{}]]}],
+			Cache -> Lookup[safeOps, Cache, {}],
+			Simulation -> updatedSimulation,
 			Date -> Now
 			(*some containers don't have a link to VolumeCalibrations. Need to silence those.*)
 		],
@@ -502,7 +511,7 @@ ExperimentMeasurepH[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:Optio
 	(* Build the resolved options *)
 	resolvedOptionsResult=If[gatherTests,
 	(* We are gathering tests. This silences any messages being thrown. *)
-		{resolvedOptions,resolvedOptionsTests}=resolveExperimentMeasurepHOptions[mySamplesWithPreparedSamples,expandedSafeOps,Cache->cacheBall,Output->{Result,Tests}];
+		{resolvedOptions,resolvedOptionsTests}=resolveExperimentMeasurepHOptions[mySamplesWithPreparedSamples,expandedSafeOps,Cache->cacheBall,Simulation -> updatedSimulation, Output->{Result,Tests}];
 
 		(* Therefore, we have to run the tests to see if we encountered a failure. *)
 		If[RunUnitTest[<|"Tests"->resolvedOptionsTests|>,OutputFormat->SingleBoolean,Verbose->False],
@@ -512,7 +521,7 @@ ExperimentMeasurepH[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:Optio
 
 	(* We are not gathering tests. Simply check for Error::InvalidInput and Error::InvalidOption. *)
 		Check[
-			{resolvedOptions,resolvedOptionsTests}={resolveExperimentMeasurepHOptions[mySamplesWithPreparedSamples,expandedSafeOps,Cache->cacheBall],{}},
+			{resolvedOptions,resolvedOptionsTests}={resolveExperimentMeasurepHOptions[mySamplesWithPreparedSamples,expandedSafeOps,Cache->cacheBall,Simulation -> updatedSimulation],{}},
 			$Failed,
 			{Error::InvalidInput,Error::InvalidOption}
 		]
@@ -538,8 +547,8 @@ ExperimentMeasurepH[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:Optio
 
 	(* Build packets with resources *)
 	{resourcePackets,resourcePacketTests}=If[gatherTests,
-		measurepHResourcePackets[mySamplesWithPreparedSamples,templatedOptions,resolvedOptions,collapsedResolvedOptions,Cache->cacheBall,Output->{Result,Tests}],
-		{measurepHResourcePackets[mySamplesWithPreparedSamples,templatedOptions,resolvedOptions,collapsedResolvedOptions,Cache->cacheBall],{}}
+		measurepHResourcePackets[mySamplesWithPreparedSamples,templatedOptions,resolvedOptions,collapsedResolvedOptions,Cache->cacheBall,Simulation -> updatedSimulation,Output->{Result,Tests}],
+		{measurepHResourcePackets[mySamplesWithPreparedSamples,templatedOptions,resolvedOptions,collapsedResolvedOptions,Cache->cacheBall, Simulation -> updatedSimulation],{}}
 	];
 
 	(* If we don't have to return the Result, don't bother calling UploadProtocol[...]. *)
@@ -556,15 +565,17 @@ ExperimentMeasurepH[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:Optio
 	protocolObject = If[!MatchQ[resourcePackets,$Failed],
 		UploadProtocol[
 			resourcePackets,
-			Upload->Lookup[safeOps,Upload],
-			Confirm->Lookup[safeOps,Confirm],
-			ParentProtocol->Lookup[safeOps,ParentProtocol],
-			Priority->Lookup[safeOps,Priority],
- 			StartDate->Lookup[safeOps,StartDate],
- 			HoldOrder->Lookup[safeOps,HoldOrder],
- 			QueuePosition->Lookup[safeOps,QueuePosition],
-			ConstellationMessage->Object[Protocol,MeasurepH],
-			Cache->samplePreparationCache
+			Upload -> Lookup[safeOps,Upload],
+			Confirm -> Lookup[safeOps,Confirm],
+			CanaryBranch -> Lookup[safeOps,CanaryBranch],
+			ParentProtocol -> Lookup[safeOps,ParentProtocol],
+			Priority -> Lookup[safeOps,Priority],
+ 			StartDate -> Lookup[safeOps,StartDate],
+ 			HoldOrder -> Lookup[safeOps,HoldOrder],
+ 			QueuePosition -> Lookup[safeOps,QueuePosition],
+			ConstellationMessage -> Object[Protocol,MeasurepH],
+			Cache -> cacheBall,
+			Simulation -> updatedSimulation
 		],
 		$Failed
 	];
@@ -585,12 +596,15 @@ ExperimentMeasurepH[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:Optio
 
 DefineOptions[
 	resolveExperimentMeasurepHOptions,
-	Options:>{HelperOutputOption,CacheOption,SimulationOption}
+	Options:>{
+		{InternalUsage -> False, BooleanP, "Indicates if this function is being called from another function (e.g. ExperimentAdjustpH) or not."},
+		HelperOutputOption,CacheOption,SimulationOption
+	}
 ];
 
 resolveExperimentMeasurepHOptions[mySamples:{ObjectP[Object[Sample]]...},myOptions:{_Rule...},myResolutionOptions:OptionsPattern[resolveExperimentMeasurepHOptions]]:=Module[
 	{outputSpecification,output,gatherTests,cache,samplePrepOptions,measurepHOptions,simulatedSamples,consolidateAliquots,
-	resolvedSamplePrepOptions,simulatedCache,measurepHOptionsAssociation,invalidInputs,invalidOptions,acquisitionTimeLookup,objectSamplePacketFields,
+	resolvedSamplePrepOptions,updatedSimulation,measurepHOptionsAssociation,invalidInputs,invalidOptions,acquisitionTimeLookup,objectSamplePacketFields, internalUsage, internalUsageQ,
 
 		(*download variables*)
 		cacheFailedRemoved,probeLookup,specifiedProbeObjects, specifiedProbeModels,
@@ -600,6 +614,7 @@ resolveExperimentMeasurepHOptions[mySamples:{ObjectP[Object[Sample]]...},myOptio
 		instrumentObjectPackets,volumeCalibrationPackets,latestVolumeCalibrationPacket,combinedContainerPackets,instrumentModelPackets,potentialContainerPackets,
 		potentialContainerModelPackets,firstPotentialCalibration,combinedPotentialContainerPackets,incompatibleWithInstrumentBool,pHProbeConflictBool,
 		pHProbeConflictOptions, pHProbeConflictTests,certainCalibrationRequiredOptions, certainCalibrationRequiredTests,washSolution, washSolutionDownloadValues,
+		incompatibleRoboticInstrumentBool, incompatibleInputsRoboticInstrument, incompatibleInputsRoboticInstrumentOptions, incompatibleInputsRoboticInstrumentTests,
 
 		(*Input validation variables*)
 		lowestVolume,minVolumeLookup,discardedSampleBool,discardedSamplePackets,discardedInvalidInputs,discardedTests,lowVolumeBool,lowVolumePackets,lowVolumeInvalidInputs,lowVolumeInputsTests,
@@ -629,7 +644,7 @@ resolveExperimentMeasurepHOptions[mySamples:{ObjectP[Object[Sample]]...},myOptio
 		(*for final resolution*)
 		resolvedInstrumentModelPackets,minVolumeInstrument,resolvedProbePackets,minVolumeContainer,minDepth,displacedVolume,
 		calibrationFunction,minDepthToVolume,minVolume,requiredAliquotAmounts,
-		name, confirm, template, samplesInStorageCondition, originalCache, operator, parentProtocol, upload, outputOption, email, imageSample,resolvedEmail,resolvedImageSample,
+		name, confirm, canaryBranch, template, samplesInStorageCondition, originalCache, operator, parentProtocol, upload, outputOption, email, imageSample,resolvedEmail,resolvedImageSample,
 		surfaceRecoupWarningSamples, numberOfReplicates,allTests,testsRule,resolvedOptions,resultRule,resolvedPostProcessingOptions,
 		recoupAliquotConflictBool, recoupAliquotConflictOptions, recoupAliquotConflictTests, recoupProbeConflictTest, simulation
 	},
@@ -640,21 +655,25 @@ resolveExperimentMeasurepHOptions[mySamples:{ObjectP[Object[Sample]]...},myOptio
 	outputSpecification=OptionValue[Output];
 	output=ToList[outputSpecification];
 
+	(* Determine whether this function is just for internal usage (for AdjustpH) or not *)
+	internalUsage = OptionValue[InternalUsage];
+	internalUsageQ = MatchQ[internalUsage, True];
+
 	(* Determine if we should keep a running list of tests to return to the user. *)
 	gatherTests=MemberQ[output,Tests];
 
 	(* Fetch our cache from the parent function. *)
 	cache=Lookup[ToList[myResolutionOptions],Cache,{}];
-	simulation=Lookup[ToList[myResolutionOptions],Simulation,Null];
+	simulation=Lookup[ToList[myResolutionOptions],Simulation,Simulation[]];
 
 	(*There is a chance that the container has no volume calibration. Remove such and check if we can resolve SamplePrepOptions*)
 	cacheFailedRemoved = Cases[cache,Except[$Failed]];
 
-	(* Seperate out our MeasurepH options from our Sample Prep options. *)
+	(* Separate out our MeasurepH options from our Sample Prep options. *)
 	{samplePrepOptions,measurepHOptions}=splitPrepOptions[myOptions];
 
 	(* Resolve our sample prep options *)
-	{simulatedSamples,resolvedSamplePrepOptions,simulatedCache}=resolveSamplePrepOptions[ExperimentMeasurepH,mySamples,samplePrepOptions,Cache->cacheFailedRemoved(*cache*)];
+	{simulatedSamples,resolvedSamplePrepOptions,updatedSimulation}=resolveSamplePrepOptionsNew[ExperimentMeasurepH,mySamples,samplePrepOptions,Simulation -> simulation, Cache->cacheFailedRemoved(*cache*)];
 
 	(* Convert list of rules to Association so we can Lookup, Append, Join as usual. *)
 	measurepHOptionsAssociation = Association[measurepHOptions];
@@ -737,17 +756,17 @@ resolveExperimentMeasurepHOptions[mySamples:{ObjectP[Object[Sample]]...},myOptio
 					Packet[VolumeCalibrations[{LiquidLevelDetectorModel,CalibrationFunction,DateCreated}]]
 				},
 				{
-					Packet[pH,TransportWarmed,Name,Deprecated,Sterile,LiquidHandlerIncompatible,Tablet,TabletWeight,State]
+					Packet[pH,TransportTemperature,Name,Deprecated,Sterile,LiquidHandlerIncompatible,Tablet,SolidUnitWeight,State]
 				},
 				{
-					Packet[pH,TransportWarmed,Name,Deprecated,Sterile,LiquidHandlerIncompatible,Tablet,TabletWeight,State]
+					Packet[pH,TransportTemperature,Name,Deprecated,Sterile,LiquidHandlerIncompatible,Tablet,SolidUnitWeight,State]
 				},
 				{
 					Packet[Model,Volume]
 				}
 			},
-			Cache->simulatedCache,
-			Simulation->simulation (*TODO: this needs to be further worked on when it is time to integrate measurepH to the new framework*)
+			Cache -> cacheFailedRemoved,
+			Simulation -> updatedSimulation
 		]
 	],$Failed->Nothing,1];
 	(*split the download packet based on object type*)
@@ -831,7 +850,7 @@ resolveExperimentMeasurepHOptions[mySamples:{ObjectP[Object[Sample]]...},myOptio
 
 	(* If there are invalid inputs and we are throwing messages, throw an error message *)
 	If[Length[discardedInvalidInputs]>0&&!gatherTests,
-		Message[Error::DiscardedSamples,ObjectToString[discardedInvalidInputs,Cache->simulatedCache]]
+		Message[Error::DiscardedSamples,ObjectToString[discardedInvalidInputs,Simulation -> updatedSimulation]]
 	];
 
 	(* If we are gathering tests, create a passing and/or failing test with the appropriate result. *)
@@ -841,13 +860,13 @@ resolveExperimentMeasurepHOptions[mySamples:{ObjectP[Object[Sample]]...},myOptio
 			(* when not a single sample is discarded, we know we don't need to throw any failing test *)
 				Nothing,
 			(* otherwise, we throw one failing test for all discarded samples *)
-				Test["The input sample(s) "<>ObjectToString[discardedInvalidInputs,Cache->simulatedCache]<>" is/are not discarded:",True,False]
+				Test["The input sample(s) "<>ObjectToString[discardedInvalidInputs,Simulation -> updatedSimulation]<>" is/are not discarded:",True,False]
 			];
 			passingTest=If[Length[discardedInvalidInputs]==Length[simulatedSamples],
 			(* when ALL samples are discarded, we know we don't need to throw any passing test *)
 				Nothing,
 			(* otherwise, we throw one passing test for all non-discarded samples *)
-				Test["The input sample(s) "<>ObjectToString[Complement[simulatedSamples,discardedInvalidInputs],Cache->simulatedCache]<>" is/are not discarded:",True,True]
+				Test["The input sample(s) "<>ObjectToString[Complement[simulatedSamples,discardedInvalidInputs],Simulation -> updatedSimulation]<>" is/are not discarded:",True,True]
 			];
 			{failingTest,passingTest}
 		],
@@ -864,7 +883,7 @@ resolveExperimentMeasurepHOptions[mySamples:{ObjectP[Object[Sample]]...},myOptio
 
 	(* If there are invalid inputs and we are throwing messages, throw an error message *)
 	If[deprecatedInstrumentQ&&!gatherTests,
-		Message[Error::DeprecatedInstrumentModel,ObjectToString[instrumentLookup,Cache->simulatedCache]]
+		Message[Error::DeprecatedInstrumentModel,ObjectToString[instrumentLookup,Simulation -> updatedSimulation]]
 	];
 
 	deprecatedInstrumentOptions=If[deprecatedInstrumentQ,{Instrument},{}];
@@ -885,8 +904,7 @@ resolveExperimentMeasurepHOptions[mySamples:{ObjectP[Object[Sample]]...},myOptio
 	sampleInstrumentCombinations=Map[{#,samplePackets}&,instrumentModelPackets];
 
 	(*get boolean for which sample/instrument combinations are incompatible (based on material and pH). *)
-	incompatibleBool=Map[compatiblepHMeterQ[First[#],Last[#],Cache->simulatedCache,OutputFormat->Boolean]&,sampleInstrumentCombinations];
-
+	incompatibleBool=Map[compatiblepHMeterQ[First[#],Last[#], Cache -> cache, Simulation -> updatedSimulation, OutputFormat -> Boolean]&,sampleInstrumentCombinations];
 
 	(*arrange into matrix where each column is the sample and the rows are the instruments*)
 	incompatibleBoolMatrix=Map[Not,incompatibleBool,{2}];
@@ -934,8 +952,8 @@ resolveExperimentMeasurepHOptions[mySamples:{ObjectP[Object[Sample]]...},myOptio
 
 	incompatibleWithInstrumentBool=MapThread[
 		Which[
-			MatchQ[#1,ObjectP[Model[Part,pHProbe]]], Not[compatiblepHMeterQ[#1,#3,Cache->simulatedCache]],
-			MatchQ[#2,ObjectP[Model[Instrument,pHMeter]]], Not[compatiblepHMeterQ[#2,#3,Cache->simulatedCache]],
+			MatchQ[#1,ObjectP[Model[Part,pHProbe]]], Not[compatiblepHMeterQ[#1,#3,Cache -> cache, Simulation -> updatedSimulation]],
+			MatchQ[#2,ObjectP[Model[Instrument,pHMeter]]], Not[compatiblepHMeterQ[#2,#3,Cache -> cache, Simulation -> updatedSimulation]],
 			True,False
 		]&,
 		{probeLookupModelPackets,instrumentLookupModelPackets,samplePackets}
@@ -946,7 +964,7 @@ resolveExperimentMeasurepHOptions[mySamples:{ObjectP[Object[Sample]]...},myOptio
 
 	(* If there are incompatible samples and we are throwing messages, throw an error message *)
 	If[Length[incompatibleInputsAnyInstrument]>0&&!gatherTests,
-	 Message[Error::IncompatibleSample,ObjectToString[incompatibleInputsAnyInstrument,Cache->simulatedCache]]
+	 Message[Error::IncompatibleSample,ObjectToString[incompatibleInputsAnyInstrument,Simulation -> updatedSimulation]]
 	];
 
 	(* If we are gathering tests, create a passing and/or failing test with the appropriate result. *)
@@ -956,13 +974,13 @@ resolveExperimentMeasurepHOptions[mySamples:{ObjectP[Object[Sample]]...},myOptio
 				(* when not a single sample is chemically incompatible, we know we don't need to throw any failing test *)
 				Nothing,
 				(* otherwise, we throw one failing test for all discarded samples *)
-				Test["The input sample(s) "<>ObjectToString[incompatibleInputsAnyInstrument,Cache->simulatedCache]<>" is/are chemically compatible with an available pH Meter:",True,False]
+				Test["The input sample(s) "<>ObjectToString[incompatibleInputsAnyInstrument,Simulation -> updatedSimulation]<>" is/are chemically compatible with an available pH Meter:",True,False]
 			];
 			passingTest=If[Length[incompatibleInputsAnyInstrument]==Length[simulatedSamples],
 				(* when ALL samples are chemically incompatible, we know we don't need to throw any passing test *)
 				Nothing,
 				(* otherwise, we throw one passing test for all non-discarded samples *)
-				Test["The input sample(s) "<>ObjectToString[Complement[simulatedSamples,incompatibleInputsAnyInstrument],Cache->simulatedCache]<>" is/are chemically compatible with an available pH Meter:",True,True]
+				Test["The input sample(s) "<>ObjectToString[Complement[simulatedSamples,incompatibleInputsAnyInstrument],Simulation -> updatedSimulation]<>" is/are chemically compatible with an available pH Meter:",True,True]
 			];
 			{failingTest,passingTest}
 		],
@@ -975,7 +993,7 @@ resolveExperimentMeasurepHOptions[mySamples:{ObjectP[Object[Sample]]...},myOptio
 
 	(* If it is compatible with specific instrument, throw an error *)
 	incompatibleInputsSpecificInstrumentOptions=If[Length[incompatibleInputsSpecificInstrument]>0&&!gatherTests,
-		Message[Error::IncompatibleSampleInstrument,ObjectToString[incompatibleInputsSpecificInstrument,Cache->simulatedCache],ObjectToString[PickList[instrumentLookup,incompatibleWithInstrumentBool],Cache->simulatedCache]];
+		Message[Error::IncompatibleSampleInstrument,ObjectToString[incompatibleInputsSpecificInstrument,Simulation -> updatedSimulation],ObjectToString[PickList[instrumentLookup,incompatibleWithInstrumentBool],Simulation -> updatedSimulation]];
 		{Instrument},
 		{}
 	];
@@ -987,13 +1005,57 @@ resolveExperimentMeasurepHOptions[mySamples:{ObjectP[Object[Sample]]...},myOptio
 				(* when not a single sample is chemically incompatible, we know we don't need to throw any failing test *)
 				Nothing,
 				(* otherwise, we throw one failing test for all discarded samples *)
-				Test["The input sample(s) "<>ObjectToString[incompatibleInputsSpecificInstrument,Cache->simulatedCache]<>" is/are chemically compatible with the specified pH Meter, if it indeed was specified:",True,False]
+				Test["The input sample(s) "<>ObjectToString[incompatibleInputsSpecificInstrument,Simulation -> updatedSimulation]<>" is/are chemically compatible with the specified pH Meter, if it indeed was specified:",True,False]
 			];
 			passingTest=If[Length[incompatibleInputsSpecificInstrument]==Length[simulatedSamples],
 				(* when ALL samples are chemically incompatible, we know we don't need to throw any passing test *)
 				Nothing,
 				(* otherwise, we throw one passing test for all non-discarded samples *)
-				Test["The input sample(s) "<>ObjectToString[Complement[simulatedSamples,incompatibleInputsSpecificInstrument],Cache->simulatedCache]<>" is/are chemically compatible with the specified pH Meter, if it indeed was specified:",True,True]
+				Test["The input sample(s) "<>ObjectToString[Complement[simulatedSamples,incompatibleInputsSpecificInstrument],Simulation -> updatedSimulation]<>" is/are chemically compatible with the specified pH Meter, if it indeed was specified:",True,True]
+			];
+			{failingTest,passingTest}
+		],
+		(* if we're not gathering tests, do Nothing *)
+		Nothing
+	];
+
+
+	(*We only allow robotic mode in AdjustpH,so if InternalUsage is not Ture,give a conflict for given model/object of Model[Instrument,pHMeter,"SevenExcellence (for pH) for Robotic Titration"]*)
+	incompatibleRoboticInstrumentBool = If[!internalUsageQ,
+		MapThread[
+			Which[
+				MatchQ[#1,ObjectP[Model[Instrument,pHMeter]]],MatchQ[#1, ObjectP[Model[Instrument, pHMeter, "id:R8e1PjeAn4B4"]]],
+				MatchQ[#1,ObjectP[Object[Instrument,pHMeter]]], MatchQ[#2, ObjectP[Model[Instrument, pHMeter, "id:R8e1PjeAn4B4"]]],
+				True,False
+			]&,
+			{instrumentLookup,instrumentLookupModels}
+		],
+		ConstantArray[False, Length[samplePackets]]
+	];
+	(*get the samples that correspond to incompatible robotic instrument*)
+	incompatibleInputsRoboticInstrument=PickList[Lookup[samplePackets,Object],incompatibleRoboticInstrumentBool];
+
+	(* If there are samples specified with robotic instrument but not in AdjustpH, throw an error *)
+	incompatibleInputsRoboticInstrumentOptions=If[Length[incompatibleInputsRoboticInstrument]>0&&!gatherTests,
+		Message[Error::IncompatibleRoboticInstrument,ObjectToString[incompatibleInputsRoboticInstrument,Simulation -> updatedSimulation],ObjectToString[PickList[instrumentLookup,incompatibleRoboticInstrumentBool],Simulation -> updatedSimulation]];
+		{Instrument},
+		{}
+	];
+
+	(* If we are gathering tests, create a passing and/or failing test with the appropriate result. *)
+	incompatibleInputsRoboticInstrumentTests=If[gatherTests,
+		Module[{failingTest,passingTest},
+			failingTest=If[Length[incompatibleInputsRoboticInstrument]==0,
+				(* when not a single sample is given robotic pHMeter, we know we don't need to throw any failing test *)
+				Nothing,
+				(* otherwise, we throw one failing test for all discarded samples *)
+				Test["The input sample(s) "<>ObjectToString[incompatibleInputsRoboticInstrument,Simulation -> updatedSimulation]<>" can not use pH Meter that is under robotic mode unless in AdjustpH:",True,False]
+			];
+			passingTest=If[Length[incompatibleInputsRoboticInstrument]==Length[simulatedSamples],
+				(* when ALL samples are given robotic pHMeter, we know we don't need to throw any passing test *)
+				Nothing,
+				(* otherwise, we throw one passing test for all non-discarded samples *)
+				Test["The input sample(s) "<>ObjectToString[Complement[simulatedSamples,incompatibleInputsRoboticInstrument],Simulation -> updatedSimulation]<>" can not use pH Meter that is under robotic mode unless in AdjustpH:",True,True]
 			];
 			{failingTest,passingTest}
 		],
@@ -1023,13 +1085,13 @@ resolveExperimentMeasurepHOptions[mySamples:{ObjectP[Object[Sample]]...},myOptio
 				(* when not a single sample is chemically incompatible, we know we don't need to throw any failing test *)
 				Nothing,
 				(* otherwise, we throw one failing test for all discarded samples *)
-				Test["The input sample(s) "<>ObjectToString[noVolumeInputs,Cache->simulatedCache]<>" have an associated volume value:",True,False]
+				Test["The input sample(s) "<>ObjectToString[noVolumeInputs,Simulation -> updatedSimulation]<>" have an associated volume value:",True,False]
 			];
 			passingTest=If[Length[noVolumeInputs]==Length[simulatedSamples],
 				(* when ALL samples are chemically incompatible, we know we don't need to throw any passing test *)
 				Nothing,
 				(* otherwise, we throw one passing test for all non-discarded samples *)
-				Test["The input sample(s) "<>ObjectToString[Complement[simulatedSamples,noVolumeInputs],Cache->simulatedCache]<>" have an associated volume value:",True,True]
+				Test["The input sample(s) "<>ObjectToString[Complement[simulatedSamples,noVolumeInputs],Simulation -> updatedSimulation]<>" have an associated volume value:",True,True]
 			];
 			{failingTest,passingTest}
 		],
@@ -1039,7 +1101,7 @@ resolveExperimentMeasurepHOptions[mySamples:{ObjectP[Object[Sample]]...},myOptio
 
 	(*throw the error if we're not gathering tests*)
 	If[Length[noVolumeInputs]>0&&!gatherTests,
-		Message[Error::NoVolume,ObjectToString[noVolumeInputs,Cache->simulatedCache]]
+		Message[Error::NoVolume,ObjectToString[noVolumeInputs,Simulation -> updatedSimulation]]
 	];
 
 	(*CHECK INSTRUMENT AND PROBETYPE CONFLICT*)
@@ -1059,7 +1121,7 @@ resolveExperimentMeasurepHOptions[mySamples:{ObjectP[Object[Sample]]...},myOptio
 	(*keep track of the invalid options*)
 
 	probeInstrumentConflictOptions=If[Length[probeInstrumentConflictInputs]>0&&!gatherTests,
-		Message[Error::ConflictingInstrumentProbeType,ObjectToString[probeInstrumentConflictInputs,Cache->simulatedCache]];
+		Message[Error::ConflictingInstrumentProbeType,ObjectToString[probeInstrumentConflictInputs,Simulation -> updatedSimulation]];
 		{Instrument,ProbeType},
 		{}
 	];
@@ -1089,7 +1151,7 @@ resolveExperimentMeasurepHOptions[mySamples:{ObjectP[Object[Sample]]...},myOptio
 
 	(* If there are low volumes and we are throwing messages, throw an error message *)
 	If[Length[lowVolumeInvalidInputs]>0&&!gatherTests,
-		Message[Error::InsufficientVolume,ObjectToString[lowVolumeInvalidInputs,Cache->simulatedCache],ObjectToString[lowestVolume]]
+		Message[Error::InsufficientVolume,ObjectToString[lowVolumeInvalidInputs,Simulation -> updatedSimulation],ObjectToString[lowestVolume]]
 	];
 
 	(* If we are gathering tests, create a passing and/or failing test with the appropriate result. *)
@@ -1099,13 +1161,13 @@ resolveExperimentMeasurepHOptions[mySamples:{ObjectP[Object[Sample]]...},myOptio
 				(* when not a single sample is chemically incompatible, we know we don't need to throw any failing test *)
 				Nothing,
 				(* otherwise, we throw one failing test for all discarded samples *)
-				Test["The input sample(s) "<>ObjectToString[lowVolumeInvalidInputs,Cache->simulatedCache]<>" do have sufficient volume for measurement:",True,False]
+				Test["The input sample(s) "<>ObjectToString[lowVolumeInvalidInputs,Simulation -> updatedSimulation]<>" do have sufficient volume for measurement:",True,False]
 			];
 			passingTest=If[Length[noVolumeInputs]==Length[simulatedSamples],
 				(* when ALL samples are chemically incompatible, we know we don't need to throw any passing test *)
 				Nothing,
 				(* otherwise, we throw one passing test for all non-discarded samples *)
-				Test["The input sample(s) "<>ObjectToString[Complement[simulatedSamples,lowVolumeInvalidInputs],Cache->simulatedCache]<>" do have sufficient volume for measurement:",True,True]
+				Test["The input sample(s) "<>ObjectToString[Complement[simulatedSamples,lowVolumeInvalidInputs],Simulation -> updatedSimulation]<>" do have sufficient volume for measurement:",True,True]
 			];
 			{failingTest,passingTest}
 		],
@@ -1477,7 +1539,8 @@ resolveExperimentMeasurepHOptions[mySamples:{ObjectP[Object[Sample]]...},myOptio
 									resolvedProbeType,
 									probe
 								],
-								Cache->simulatedCache
+								Cache -> cache,
+								Simulation -> updatedSimulation
 							];
 
 							(*check if it's in the returned list*)
@@ -1518,8 +1581,8 @@ resolveExperimentMeasurepHOptions[mySamples:{ObjectP[Object[Sample]]...},myOptio
 
 				(*get our resolved instrument packet*)
 				resolvedInstrumentModelPacket=If[MatchQ[resolvedInstrument,ObjectP[Model[Instrument]]],
-					fetchPacketFromCache[resolvedInstrument,simulatedCache],
-					fetchPacketFromCache[Lookup[fetchPacketFromCache[instrumentModelRes,Flatten[allInstrumentObjDownloadValues]],Model],simulatedCache]
+					fetchPacketFromCache[resolvedInstrument, cache],
+					fetchPacketFromCache[Lookup[fetchPacketFromCache[instrumentModelRes,Flatten[allInstrumentObjDownloadValues]],Model], cache]
 				];
 
 				(* Resolve AcquisitionTime based on our resolved probe type. Resolve to 5 Second if Immersion/Surface *)
@@ -1632,7 +1695,7 @@ resolveExperimentMeasurepHOptions[mySamples:{ObjectP[Object[Sample]]...},myOptio
 
 	(*If there are inputs where these options are conflicting, specify the options*)
 	If[Length[surfaceAliquotConflictInputs]>0&&!gatherTests&&!MatchQ[$ECLApplication,Engine],
-		Message[Warning::SurfaceAliquotConflict,ObjectToString[surfaceAliquotConflictInputs,Cache->simulatedCache]];
+		Message[Warning::SurfaceAliquotConflict,ObjectToString[surfaceAliquotConflictInputs,Simulation -> updatedSimulation]];
 	];
 
 	(* Gather the invalid options. *)
@@ -1640,7 +1703,7 @@ resolveExperimentMeasurepHOptions[mySamples:{ObjectP[Object[Sample]]...},myOptio
 
 	(* Throw an error if necessary. *)
 	If[Length[invalidpHOptions]>0,
-		Message[Error::ConflictingReferencepHValues,ObjectToString[invalidpHOptions,Cache->simulatedCache]];
+		Message[Error::ConflictingReferencepHValues,ObjectToString[invalidpHOptions,Simulation -> updatedSimulation]];
 	];
 
 	(* Create a test. *)
@@ -1725,7 +1788,7 @@ resolveExperimentMeasurepHOptions[mySamples:{ObjectP[Object[Sample]]...},myOptio
 
 	(*check if incompatible with specified instrument and container*)
 	incompatibleWInstrumentOptions=If[Length[incompatibleWInstrumentInputs]>0&&!gatherTests,
-		Message[Error::IncompatibleInstrument,ObjectToString[incompatibleWInstrumentInputs,Cache->simulatedCache],ObjectToString[PickList[instrumentLookup,incompatibleWInstrumentErrorList,True],Cache->simulatedCache]];
+		Message[Error::IncompatibleInstrument,ObjectToString[incompatibleWInstrumentInputs,Simulation -> updatedSimulation],ObjectToString[PickList[instrumentLookup,incompatibleWInstrumentErrorList,True],Simulation -> updatedSimulation]];
 		{Instrument,AliquotContainer},
 		{}
 	];
@@ -1737,13 +1800,13 @@ resolveExperimentMeasurepHOptions[mySamples:{ObjectP[Object[Sample]]...},myOptio
 				(* when not a single sample is discarded, we know we don't need to throw any failing test *)
 				Nothing,
 				(* otherwise, we throw one failing test for all discarded samples *)
-				Test["If the input sample(s) "<>ObjectToString[incompatibleWInstrumentInputs,Cache->simulatedCache]<>" have a specified Instrument, the instrument can physical reach the sample based on the aliquot options:",True,False]
+				Test["If the input sample(s) "<>ObjectToString[incompatibleWInstrumentInputs,Simulation -> updatedSimulation]<>" have a specified Instrument, the instrument can physical reach the sample based on the aliquot options:",True,False]
 			];
 			passingTest=If[Length[incompatibleWInstrumentInputs]==Length[simulatedSamples],
 				(* when ALL samples are discarded, we know we don't need to throw any passing test *)
 				Nothing,
 				(* otherwise, we throw one passing test for all non-discarded samples *)
-				Test["If the input sample(s) "<>ObjectToString[Complement[simulatedSamples,incompatibleWInstrumentInputs],Cache->simulatedCache]<>" have a specified Instrument, the instrument can physical reach the sample based on the aliquot options:",True,True]
+				Test["If the input sample(s) "<>ObjectToString[Complement[simulatedSamples,incompatibleWInstrumentInputs],Simulation -> updatedSimulation]<>" have a specified Instrument, the instrument can physical reach the sample based on the aliquot options:",True,True]
 			];
 			{failingTest,passingTest}
 		],
@@ -1761,7 +1824,7 @@ resolveExperimentMeasurepHOptions[mySamples:{ObjectP[Object[Sample]]...},myOptio
 	(* output an error if the container is too big for any instrument *)
 	(* don't double complain if we already indicated the instrument was deprecated *)
 	If[Length[noSuitableInstrumentInputs]>0&&!gatherTests&&!deprecatedInstrumentQ,
-		Message[Error::NoAvailableInstruments,ObjectToString[noSuitableInstrumentInputs,Cache->simulatedCache]]
+		Message[Error::NoAvailablepHInstruments,ObjectToString[noSuitableInstrumentInputs,Simulation -> updatedSimulation]]
 	];
 
 	(* If we are gathering tests, create a passing and/or failing test with the appropriate result. *)
@@ -1771,13 +1834,13 @@ resolveExperimentMeasurepHOptions[mySamples:{ObjectP[Object[Sample]]...},myOptio
 				(* when not a single sample is discarded, we know we don't need to throw any failing test *)
 				Nothing,
 				(* otherwise, we throw one failing test for all discarded samples *)
-				Test["If the input sample(s) "<>ObjectToString[noSuitableInstrumentInputs,Cache->simulatedCache]<>" have specified options, there exists instruments meeting these options for both physical (e.g. probe reaching the liquid) and chemical reasons:",True,False]
+				Test["If the input sample(s) "<>ObjectToString[noSuitableInstrumentInputs,Simulation -> updatedSimulation]<>" have specified options, there exists instruments meeting these options for both physical (e.g. probe reaching the liquid) and chemical reasons:",True,False]
 			];
 			passingTest=If[Length[noSuitableInstrumentInputs]==Length[simulatedSamples],
 				(* when ALL samples are discarded, we know we don't need to throw any passing test *)
 				Nothing,
 				(* otherwise, we throw one passing test for all non-discarded samples *)
-				Test["If the input sample(s) "<>ObjectToString[Complement[simulatedSamples,noSuitableInstrumentInputs],Cache->simulatedCache]<>" have specified options, there exists instruments meeting these options for both physical (e.g. probe reaching the liquid) and chemical reasons:",True,True]
+				Test["If the input sample(s) "<>ObjectToString[Complement[simulatedSamples,noSuitableInstrumentInputs],Simulation -> updatedSimulation]<>" have specified options, there exists instruments meeting these options for both physical (e.g. probe reaching the liquid) and chemical reasons:",True,True]
 			];
 			{failingTest,passingTest}
 		],
@@ -1821,7 +1884,7 @@ resolveExperimentMeasurepHOptions[mySamples:{ObjectP[Object[Sample]]...},myOptio
 
 	(* Throw an error if needed. *)
 	If[Length[acquisitionConflictResults]>0&&!gatherTests,
-		Message[Error::AcquisitionTimeConflict,ObjectToString[acquisitionConflictResults[[All,1]],Cache->simulatedCache],ObjectToString[acquisitionConflictResults[[All,2]],Cache->simulatedCache],ObjectToString[acquisitionConflictResults[[All,3]],Cache->simulatedCache]];
+		Message[Error::AcquisitionTimeConflict,ObjectToString[acquisitionConflictResults[[All,1]],Simulation -> updatedSimulation],ObjectToString[acquisitionConflictResults[[All,2]],Simulation -> updatedSimulation],ObjectToString[acquisitionConflictResults[[All,3]],Simulation -> updatedSimulation]];
 	];
 
 	(* Gather tests. *)
@@ -1831,13 +1894,13 @@ resolveExperimentMeasurepHOptions[mySamples:{ObjectP[Object[Sample]]...},myOptio
 				(* when not a single sample is discarded, we know we don't need to throw any failing test *)
 				Nothing,
 				(* otherwise, we throw one failing test for all discarded samples *)
-				Test["The input sample(s) "<>ObjectToString[acquisitionConflictResults[[All,1]],Cache->simulatedCache]<>" have valid specified acquisition times:",True,False]
+				Test["The input sample(s) "<>ObjectToString[acquisitionConflictResults[[All,1]],Simulation -> updatedSimulation]<>" have valid specified acquisition times:",True,False]
 			];
 			passingTest=If[Length[acquisitionConflictResults]==Length[simulatedSamples],
 				(* when ALL samples are discarded, we know we don't need to throw any passing test *)
 				Nothing,
 				(* otherwise, we throw one passing test for all non-discarded samples *)
-				Test["The input sample(s) "<>ObjectToString[Complement[simulatedSamples,acquisitionConflictResults[[All,1]]],Cache->simulatedCache]<>" have valid specified acquisition times:",True,True]
+				Test["The input sample(s) "<>ObjectToString[Complement[simulatedSamples,acquisitionConflictResults[[All,1]]],Simulation -> updatedSimulation]<>" have valid specified acquisition times:",True,True]
 			];
 			{failingTest,passingTest}
 		],
@@ -1871,12 +1934,12 @@ resolveExperimentMeasurepHOptions[mySamples:{ObjectP[Object[Sample]]...},myOptio
 	(* Check our invalid input and invalid option variables and throw Error::InvalidInput or Error::InvalidOption if necessary. *)
 	invalidInputs=DeleteDuplicates[Flatten[{discardedInvalidInputs,noVolumeInputs,incompatibleInputsAnyInstrument,incompatibleInputsSpecificInstrument,lowVolumeInvalidInputs,incompatibleWInstrumentInputs,noSuitableInstrumentInputs,acquisitionConflictInvalidInputs}]];
 
-	invalidOptions=DeleteDuplicates[Flatten[{deprecatedInstrumentOptions,incompatibleInputsSpecificInstrumentOptions,probeInstrumentConflictOptions,incompatibleWInstrumentOptions,acquisitionConflictInvalidOptions,invalidpHOptions,invalidMediumCalibrationOptions,invalidLowHighpHOptions,
+	invalidOptions=DeleteDuplicates[Flatten[{deprecatedInstrumentOptions,incompatibleInputsSpecificInstrumentOptions,incompatibleInputsRoboticInstrumentOptions, probeInstrumentConflictOptions,incompatibleWInstrumentOptions,acquisitionConflictInvalidOptions,invalidpHOptions,invalidMediumCalibrationOptions,invalidLowHighpHOptions,
 		temperatureCorrectionConflictOptions,pHProbeConflictOptions,certainCalibrationRequiredOptions, recoupAliquotConflictOptions}]];
 
 	(* Throw Error::InvalidInput if there are invalid inputs. *)
 	If[Length[invalidInputs]>0&&!gatherTests,
-		Message[Error::InvalidInput,ObjectToString[invalidInputs,Cache->simulatedCache]]
+		Message[Error::InvalidInput,ObjectToString[invalidInputs,Simulation -> updatedSimulation]]
 	];
 
 	(* Throw Error::InvalidOption if there are invalid options. *)
@@ -1940,15 +2003,16 @@ resolveExperimentMeasurepHOptions[mySamples:{ObjectP[Object[Sample]]...},myOptio
 
 	(* Resolve Aliquot Options *)
 
-	resolvedAliquotOptions=resolveAliquotOptions[
+	resolvedAliquotOptions = resolveAliquotOptions[
 		ExperimentMeasurepH,
 		mySamples,
 		simulatedSamples,
 		ReplaceRule[myOptions, resolvedSamplePrepOptions],
-		Cache->simulatedCache,
-		RequiredAliquotContainers->targetContainers,
-		RequiredAliquotAmounts->RoundOptionPrecision[requiredAliquotAmounts,1 Microliter,Round->Down],
-		AliquotWarningMessage->Null
+		Cache -> cache,
+		Simulation -> updatedSimulation,
+		RequiredAliquotContainers -> targetContainers,
+		RequiredAliquotAmounts -> RoundOptionPrecision[requiredAliquotAmounts, 1 Microliter, Round -> Down],
+		AliquotWarningMessage -> Null
 	];
 
 	(* RecoupSample x ProbeType *)
@@ -1976,7 +2040,7 @@ resolveExperimentMeasurepHOptions[mySamples:{ObjectP[Object[Sample]]...},myOptio
 	resolvedPostProcessingOptions=resolvePostProcessingOptions[myOptions];
 
 	(* pull out all the shared options from the input options *)
-	{name, confirm, template, samplesInStorageCondition, originalCache, operator, parentProtocol, upload, outputOption, email, imageSample} = Lookup[myOptions, {Name, Confirm, Template, SamplesInStorageCondition, Cache, Operator, ParentProtocol, Upload, Output, Email, ImageSample}];
+	{name, confirm, canaryBranch, template, samplesInStorageCondition, originalCache, operator, parentProtocol, upload, outputOption, email, imageSample} = Lookup[myOptions, {Name, Confirm, CanaryBranch, Template, SamplesInStorageCondition, Cache, Operator, ParentProtocol, Upload, Output, Email, ImageSample}];
 
 	(* resolve the Email option if Automatic *)
 	resolvedEmail = If[!MatchQ[email, Automatic],
@@ -2008,6 +2072,7 @@ resolveExperimentMeasurepHOptions[mySamples:{ObjectP[Object[Sample]]...},myOptio
 				AcquisitionTime->acquisitionTimeList,
 				NumberOfReplicates -> numberOfReplicates,
 				Confirm -> confirm,
+				CanaryBranch -> canaryBranch,
 				ImageSample -> resolvedImageSample,
 				Name -> name,
 				Template -> template,
@@ -2031,6 +2096,7 @@ resolveExperimentMeasurepHOptions[mySamples:{ObjectP[Object[Sample]]...},myOptio
 			discardedTests,
 			incompatibleInputsAnyInstrumentTests,
 			incompatibleInputsSpecificInstrumentTests,
+			incompatibleInputsRoboticInstrumentTests,
 			noVolumeInputsTests,
 			lowVolumeInputsTests,
 			incompatibleWInstrumentTests,
@@ -2074,13 +2140,14 @@ resolveExperimentMeasurepHOptions[mySamples:{ObjectP[Object[Sample]]...},myOptio
 DefineOptions[measurepHResourcePackets,
 	Options:>{
 		CacheOption,
-		HelperOutputOption
+		HelperOutputOption,
+		SimulationOption
 	}
 ];
 
 
 measurepHResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresolvedOptions:{___Rule},myResolvedOptions:{___Rule},myCollapsedResolvedOptions:{___Rule},myOptions:OptionsPattern[]]:=Module[
-	{outputSpecification, output, gatherTests, cache, samplesWithoutLinks, probeTypes, instruments, instrumentObjects,
+	{outputSpecification, output, gatherTests, safeOps, cache, samplesWithoutLinks, probeTypes, instruments, instrumentObjects,
 		probePositions, aquisitionTimes, probeSamples, probeInstruments, groupedProbeResult, groupedProbeSamples, probeNumberOfAcquisitions,
 		groupedProbeInstruments, groupedProbePositions, probeResult, batchSamples, batchLengths, uuid, id, instrumentResource, optionsWithReplicates, instrumentResources, probeBatchLengths,
 		probeInstrumentResources, insitu, lowCalibrationBufferProbe, mediumCalibrationBufferProbe, highCalibrationBufferProbe, protocolPacket, probeRecoupSample, recoupSample, numberOfReplicates, samplesWithReplicates, washSolution, probeDirtyWashSolution,
@@ -2097,9 +2164,11 @@ measurepHResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresolvedOptio
 	(* Determine if we should keep a running list of tests to return to the user. *)
 	gatherTests=MemberQ[output,Tests];
 
-	(* Fetch our cache from the parent function. *)
-	cache=Lookup[ToList[myOptions],Cache];
-	simulation=Lookup[ToList[myResolvedOptions],Simulation,Null];
+	(* Get the safe options for this function *)
+	safeOps = SafeOptions[measurepHResourcePackets, ToList[myOptions]];
+
+	(* Lookup helper options *)
+	{cache, simulation} = Lookup[safeOps, {Cache, Simulation}];
 
 	parentProtocol=Lookup[myResolvedOptions,ParentProtocol];
 	(* Extract the packets that we need from our downloaded cache. *)
@@ -2316,6 +2385,8 @@ measurepHResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresolvedOptio
 			Replace[TemperatureCorrection]->temperatureCorrections[[probePositions]][[probeMeasurementOrder]],
 			Replace[DataFilePath]->ConstantArray[Null, Length[probeInstrumentResources]],
 			Replace[CalibrationFilePath]->ConstantArray[Null, Length[probeInstrumentResources]],
+			Replace[InitialDataFilePath]->ConstantArray[Null, Length[probeInstrumentResources]],
+			Replace[InitialCalibrationFilePath]->ConstantArray[Null, Length[probeInstrumentResources]],
 			Replace[ProbePorts]->ConstantArray[Null, Length[probeInstrumentResources]],
 			Replace[ProbeBatchName]->ConstantArray[Null, Length[probeInstrumentResources]],
 
@@ -2336,7 +2407,7 @@ measurepHResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresolvedOptio
 						RecoupSample->recoupBool,
 						SampleName -> sampleName,
 						DropletContainer -> If[MatchQ[probeType,Surface],
-							Link[Model[Container, Vessel, "Glass Droplet Container"]]
+							Link[Resource[Sample->Model[Container, Vessel, "Glass Droplet Container"],Rent->True]]
 						],
 						DropletPrimitive->Null
 					|>
@@ -2350,15 +2421,15 @@ measurepHResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresolvedOptio
 				}
 			],
 			Replace[Checkpoints]->{
-				{"Picking Resources",10 Minute,"Samples required to execute this protocol are gathered from storage.",Resource[Operator->Model[User,Emerald,Operator,"Trainee"],Time->10 Minute]},
-				{"Preparing Samples",0 Minute,"Preprocessing, such as thermal incubation/mixing, centrifugation, filteration, and aliquoting, is performed.", Resource[Operator->Model[User,Emerald,Operator,"Trainee"],Time->0 Minute]},
-				{"Measuring pH",30Minute*(Length[probeBatchLengths]),"The pH of the requested samples is measured.",Resource[Operator->Model[User,Emerald,Operator,"Trainee"],Time->30Minute*(Length[probeBatchLengths])]},
-				{"Sample Postprocessing",0 Minute,"The samples are imaged and volumes are measured.",Resource[Operator->Model[User,Emerald,Operator,"Trainee"],Time->0 Minute]}
+				{"Picking Resources",10 Minute,"Samples required to execute this protocol are gathered from storage.",Resource[Operator->$BaselineOperator,Time->10 Minute]},
+				{"Preparing Samples",0 Minute,"Preprocessing, such as incubation/mixing, centrifugation, filtration, and aliquoting, is performed.", Resource[Operator->$BaselineOperator,Time->0 Minute]},
+				{"Measuring pH",30Minute*(Length[probeBatchLengths]),"The pH of the requested samples is measured.",Resource[Operator->$BaselineOperator,Time->30Minute*(Length[probeBatchLengths])]},
+				{"Sample Postprocessing",0 Minute,"The samples are imaged and volumes are measured.",Resource[Operator->$BaselineOperator,Time->0 Minute]}
 			},
 			ResolvedOptions->myCollapsedResolvedOptions,
 			UnresolvedOptions->myUnresolvedOptions
 		|>,
-		populateSamplePrepFields[mySamples,myResolvedOptions,Cache->cache]
+		populateSamplePrepFields[mySamples, myResolvedOptions, Cache -> cache, Simulation -> simulation]
 	];
 
 	(* get all the resource "symbolic representations" *)
@@ -2370,9 +2441,9 @@ measurepHResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresolvedOptio
 		MatchQ[$ECLApplication,Engine],
 			{True,{}},
 		gatherTests,
-			Resources`Private`fulfillableResourceQ[allResourceBlobs,Output->{Result,Tests},FastTrack->Lookup[myResolvedOptions,FastTrack],Site->Lookup[myResolvedOptions,Site],Cache->cache],
+			Resources`Private`fulfillableResourceQ[allResourceBlobs,Output->{Result,Tests},FastTrack->Lookup[myResolvedOptions,FastTrack],Site->Lookup[myResolvedOptions,Site],Cache->cache, Simulation -> simulation],
 		True,
-			{Resources`Private`fulfillableResourceQ[allResourceBlobs,Output->Result,FastTrack->Lookup[myResolvedOptions,FastTrack],Site->Lookup[myResolvedOptions,Site],Messages->Not[gatherTests],Cache->cache],Null}
+			{Resources`Private`fulfillableResourceQ[allResourceBlobs,Output->Result,FastTrack->Lookup[myResolvedOptions,FastTrack],Site->Lookup[myResolvedOptions,Site],Messages->Not[gatherTests],Cache->cache, Simulation -> simulation],Null}
 	];
 
 	(* generate the tests rule *)
@@ -2401,6 +2472,7 @@ measurepHResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresolvedOptio
 DefineOptions[compatiblepHMeterQ,
 	Options:>{
 		CacheOption,
+		SimulationOption,
 		{OutputFormat->SingleBoolean,SingleBoolean|Boolean,"Determines the format of the return value. Boolean returns a pass/fail for each entry. SingleBoolean returns a single pass/fail boolean for all the inputs. TestSummary returns the EmeraldTestSummary object for each input."}
 	}
 ];
@@ -2409,7 +2481,7 @@ compatiblepHMeterQ[deviceModelPacket:PacketP[{Model[Instrument,pHMeter],Model[Pa
 
 (*internal function for pHmeter compatibility. Checks for material and pH compatibility.*)
 compatiblepHMeterQ[deviceModelPacket:PacketP[{Model[Instrument,pHMeter],Model[Part,pHProbe]}],samplePackets:{ObjectP[Object[Sample]]..},myOptions:OptionsPattern[]]:=Module[
-	{listedOptions,cache,isCompatible,pHCompatibilities,minpHValue,maxpHValue,samplepHs,materialCompatibilities,outputFormat},
+	{listedOptions,cache,simulation,isCompatible,pHCompatibilities,minpHValue,maxpHValue,samplepHs,materialCompatibilities,outputFormat},
 
 	(* Make sure we're working with a list of options *)
 	(* SPEED: this is a lot faster than SafeOptions *)
@@ -2417,12 +2489,13 @@ compatiblepHMeterQ[deviceModelPacket:PacketP[{Model[Instrument,pHMeter],Model[Pa
 
 	(* assign the option values to local variables *)
 	cache=Lookup[listedOptions,Cache,{}];
+	simulation=Lookup[listedOptions,Simulation,Simulation[]];
 
 	(* assigned the OutputFormat to local variable *)
 	outputFormat=Lookup[listedOptions,OutputFormat,SingleBoolean];
 
 	(*check the material compatibility*)
-	materialCompatibilities=Quiet[CompatibleMaterialsQ[deviceModelPacket,samplePackets,Cache->cache,OutputFormat->outputFormat]];
+	materialCompatibilities=Quiet[CompatibleMaterialsQ[deviceModelPacket,samplePackets,Cache->cache,Simulation -> simulation,OutputFormat->outputFormat]];
 	(*get the relevant pH values*)
 	(* if given a probe then there's one clear Min *)
 	(* if given an instrument it should have only one probe, but take the min to see if there's any probe that will work *)
@@ -2480,26 +2553,28 @@ preferredpHContainer[input:Alternatives[GreaterP[0 Milliliter],All]]:=Module[{},
 (*pHDevices*)
 DefineOptions[pHDevices,
 	Options:>{
-		CacheOption
+		CacheOption,
+		SimulationOption
 	}
 ];
 
 Authors[pHDevices] := {"ben", "dima"};
 
-(*user facing overload where they can specify sample(s) to figure out copacetic pH instruments*)
+(*user facing overload where they can specify sample(s) to figure out compatible pH instruments*)
 (*not online*)
 pHDevices[sample:ListableP[ObjectP[Object[Sample]]],myOptions:OptionsPattern[]]:=Module[
-	{listedOptions,cache,instrumentList,sampleList,sampleContainerPackets,instrumentPackets,samplePackets,containerModelPackets,volumeCalibrationPackets,
+	{listedOptions,cache,simulation,instrumentList,sampleList,sampleContainerPackets,instrumentPackets,samplePackets,containerModelPackets,volumeCalibrationPackets,
 		combinedContainerPackets,latestVolumeCalibrationPacket,instrumentModelPackets, objectSamplePacketFields},
 
 	(* Make sure we're working with a list of options *)
 	listedOptions=ToList[myOptions];
 
 	(* assign the option values to local variables *)
-	cache=Lookup[listedOptions,Cache];
+	cache = Lookup[listedOptions, Cache, {}];
+	simulation = Lookup[listedOptions, Simulation, Simulation[]];
 
 	(*get a list of instruments*)
-	instrumentList=Search[Model[Instrument,pHMeter],Deprecated!=True];
+	instrumentList=Search[Model[Instrument,pHMeter],Deprecated!=True&&TitrationInstrument == Null];
 
 	(*convert to a list*)
 	sampleList=ToList[sample];
@@ -2517,7 +2592,9 @@ pHDevices[sample:ListableP[ObjectP[Object[Sample]]],myOptions:OptionsPattern[]]:
 			{
 				Packet[Name,Object,Objects,WettedMaterials,Dimensions,ProbeLength,ProbeDiameter,MinpH,MaxpH,MinDepth,MinSampleVolume,ProbeTypes]
 			}
-		},Cache->cache
+		},
+		Cache -> cache,
+		Simulation -> simulation
 	];
 
 	(*pull out all the sample/container/container model packets*)
@@ -2540,23 +2617,25 @@ pHDevices[sample:ListableP[ObjectP[Object[Sample]]],myOptions:OptionsPattern[]]:
 	instrumentModelPackets=instrumentPackets[[All,1]];
 
 	(*map across the sample list and use the devices function*)
-	MapThread[pHDevices[#1,Lookup[#1,Volume],#2,instrumentModelPackets,Cache->cache]&,{samplePackets,combinedContainerPackets}]
+	MapThread[pHDevices[#1,Lookup[#1,Volume],#2,instrumentModelPackets,Cache->cache,Simulation->simulation]&,{samplePackets,combinedContainerPackets}]
 
 ];
 
 
-(*Devices function will return a list of copacetic instruments for a given sample, container, and instrument list.*)
+(*Devices function will return a list of compatible instruments for a given sample, container, and instrument list.*)
 pHDevices[sample:ObjectP[Object[Sample]],workingVolume:GreaterEqualP[0 Milli Liter]|Null,containerModelPacket:PacketP[Model[Container]],instrumentModelInput:Automatic|ListableP[ObjectP[Model[Instrument,pHMeter]]],probe:Automatic|Null|pHProbeTypeP|ObjectP[{Object[Part,pHProbe],Model[Part,pHProbe]}],myOptions:OptionsPattern[]]:=Module[
 	{
-		listedOptions,cache,instrumentModels,mappingResult,problemList,suitableInstruments,validInstrumentBool,instrumentModelPackets,
+		listedOptions,cache,simulation,instrumentModels,mappingResult,problemList,suitableInstruments,validInstrumentBool,instrumentModelPackets,
 		probesForEachModel,probePacketsForEachModel,filteredProbePacketsForEachModel,filteredProbesForEachModel,samplePacket,
-		specifiedProbePacket,validProbeNestedList,suitableProbes},
+		specifiedProbePacket,validProbeNestedList,suitableProbes,combinedSimulationAndCache},
 
 	(* Make sure we're working with a list of options *)
 	listedOptions=ToList[myOptions];
 
 	(* assign the option values to local variables *)
-	cache=Lookup[listedOptions,Cache];
+	cache = Lookup[listedOptions, Cache, {}];
+	simulation = Lookup[listedOptions, Simulation, Simulation[]];
+	combinedSimulationAndCache = FlattenCachePackets[{cache, Lookup[FirstOrDefault[simulation, <||>], Packets, {}]}];
 
 	(*if both the probe or instrument list are automatic/Null, then return right now*)
 	If[MatchQ[probe,Null|Automatic]&&MatchQ[instrumentModelInput,Automatic],
@@ -2566,8 +2645,8 @@ pHDevices[sample:ObjectP[Object[Sample]],workingVolume:GreaterEqualP[0 Milli Lit
 	(*if we have a specified probe, then get that*)
 	(*get the model for it*)
 	specifiedProbePacket=Switch[probe,
-		ObjectP[Object[Part,pHProbe]],fetchPacketFromCache[Download[Lookup[fetchPacketFromCache[Download[probe,Object],cache],Model],Object],cache],
-		ObjectP[Model[Part,pHProbe]],fetchPacketFromCache[Download[probe,Object],cache],
+		ObjectP[Object[Part,pHProbe]],fetchPacketFromCache[Download[Lookup[fetchPacketFromCache[Download[probe,Object],combinedSimulationAndCache],Model],Object],combinedSimulationAndCache],
+		ObjectP[Model[Part,pHProbe]],fetchPacketFromCache[Download[probe,Object],combinedSimulationAndCache],
 		_,Null
 	];
 
@@ -2590,7 +2669,7 @@ pHDevices[sample:ObjectP[Object[Sample]],workingVolume:GreaterEqualP[0 Milli Lit
 
 	(*get all of our instrument models*)
 	instrumentModelPackets=Map[
-		fetchPacketFromCache[#,cache]&,
+		fetchPacketFromCache[#,combinedSimulationAndCache]&,
 		instrumentModels
 	];
 
@@ -2610,7 +2689,7 @@ pHDevices[sample:ObjectP[Object[Sample]],workingVolume:GreaterEqualP[0 Milli Lit
 	probePacketsForEachModel=Map[
 		Function[probes,
 			Map[
-				fetchPacketFromCache[#,cache]&,
+				fetchPacketFromCache[#,combinedSimulationAndCache]&,
 				probes
 			]
 		],
@@ -2632,7 +2711,7 @@ pHDevices[sample:ObjectP[Object[Sample]],workingVolume:GreaterEqualP[0 Milli Lit
 	filteredProbesForEachModel=Download[filteredProbePacketsForEachModel,Object];
 
 	(*get our sample packet*)
-	samplePacket=fetchPacketFromCache[Download[sample,Object],cache];
+	samplePacket=fetchPacketFromCache[Download[sample,Object],combinedSimulationAndCache];
 
 	(*map over the instrument model list, if there is one. might not be the case if the probe is not in the specified instrument*)
 	mappingResult= If[Length[instrumentModels]>0,
@@ -2652,7 +2731,7 @@ pHDevices[sample:ObjectP[Object[Sample]],workingVolume:GreaterEqualP[0 Milli Lit
 					problems={};
 
 					(*1. Check that the sample is compatible with the instrument*)
-					sampleCompatible=compatiblepHMeterQ[instrumentModelPacket,samplePacket,Cache->cache];
+					sampleCompatible = compatiblepHMeterQ[instrumentModelPacket, samplePacket, Cache->cache, Simulation -> simulation];
 
 					(*if not compatible, describe the problem*)
 					compatibilityProblem=If[!sampleCompatible,
@@ -2665,7 +2744,7 @@ pHDevices[sample:ObjectP[Object[Sample]],workingVolume:GreaterEqualP[0 Milli Lit
 
 					(*get all of the packets for any available probes*)
 					availableProbePackets=Map[
-						fetchPacketFromCache[#,cache]&,
+						fetchPacketFromCache[#,combinedSimulationAndCache]&,
 						availableProbes
 					];
 
@@ -2739,7 +2818,7 @@ pHDevices[sample:ObjectP[Object[Sample]],workingVolume:GreaterEqualP[0 Milli Lit
 						Transpose@Map[
 							Function[{currentProbe},
 								(*get the packet*)
-								currentProbePacket=fetchPacketFromCache[currentProbe,cache];
+								currentProbePacket=fetchPacketFromCache[currentProbe, combinedSimulationAndCache];
 								If[MatchQ[Lookup[currentProbePacket,ProbeType],Immersion],
 									Module[{probeApertureBigEnoughQ,minDepth,displacedVolume,calibrationFunction,enoughSampleVolumeQ,
 										containerHeight,probeLength,isProbeShorter,canReachCheckQ},
@@ -2889,13 +2968,13 @@ DefineOptions[ExperimentMeasurepHOptions,
 ];
 
 
-ExperimentMeasurepHOptions[myInputs:ListableP[ObjectP[{Object[Container],Object[Sample]}]|_String],myOptions:OptionsPattern[]]:=Module[
+ExperimentMeasurepHOptions[myInputs:ListableP[ObjectP[{Object[Container],Object[Sample], Model[Sample]}]|_String],myOptions:OptionsPattern[]]:=Module[
 	{listedOptions,noOutputOptions,options},
 
 	(* get the options as a list *)
 	listedOptions = ToList[myOptions];
 
-	(* remove the Output and OutputFormat option before passing to the core function because it doens't make sense here *)
+	(* remove the Output and OutputFormat option before passing to the core function because it doesn't make sense here *)
 	noOutputOptions = DeleteCases[listedOptions, Alternatives[Output -> _, OutputFormat->_]];
 
 	(* get only the options *)
@@ -2916,7 +2995,7 @@ ExperimentMeasurepHOptions[myInputs:ListableP[ObjectP[{Object[Container],Object[
 
 
 (* currently we only accept either a list of containers, or a list of samples *)
-ExperimentMeasurepHPreview[myInput:ListableP[ObjectP[{Object[Container]}]] | ListableP[ObjectP[Object[Sample]]|_String],myOptions:OptionsPattern[ExperimentMeasurepH]]:=
+ExperimentMeasurepHPreview[myInput:ListableP[ObjectP[{Object[Container], Model[Sample]}]] | ListableP[ObjectP[Object[Sample]]|_String],myOptions:OptionsPattern[ExperimentMeasurepH]]:=
 		ExperimentMeasurepH[myInput,Append[ToList[myOptions],Output->Preview]];
 
 
@@ -2931,14 +3010,14 @@ DefineOptions[ValidExperimentMeasurepHQ,
 ];
 
 (* currently we only accept either a list of containers, or a list of samples *)
-ValidExperimentMeasurepHQ[myInput:ListableP[ObjectP[{Object[Container]}]] | ListableP[ObjectP[Object[Sample]]|_String],myOptions:OptionsPattern[ValidExperimentMeasurepHQ]]:=Module[
+ValidExperimentMeasurepHQ[myInput:ListableP[ObjectP[{Object[Container], Model[Sample]}]] | ListableP[ObjectP[Object[Sample]]|_String],myOptions:OptionsPattern[ValidExperimentMeasurepHQ]]:=Module[
 	{listedOptions, listedInput, preparedOptions, filterTests, initialTestDescription, allTests, verbose, outputFormat},
 
 	(* get the options as a list *)
 	listedOptions = ToList[myOptions];
 	listedInput = ToList[myInput];
 
-	(* remove the Output option before passing to the core function because it doens't make sense here *)
+	(* remove the Output option before passing to the core function because it doesn't make sense here *)
 	preparedOptions = DeleteCases[listedOptions, (Output | Verbose | OutputFormat) -> _];
 
 	(* return only the tests for ExperimentMeasurepH *)

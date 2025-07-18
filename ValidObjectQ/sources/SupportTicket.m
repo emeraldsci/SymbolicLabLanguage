@@ -35,13 +35,13 @@ validSupportTicketQTests[packet:PacketP[Object[SupportTicket]]]:={
 	],
 
 	Test[
-		"If ErrorSource is Operator, ReportedOperatorError has to be populated:",
+		"If ErrorCategory is \"Individual Mistake (Internal)\", ReportedOperatorError has to be populated:",
 		Or[
 			And[
-				MatchQ[Lookup[packet, ErrorSource],"Operator"],
+				MatchQ[Lookup[packet, ErrorCategory],"Individual Mistake (Internal)"],
 				MatchQ[Lookup[packet, ReportedOperatorError], True|False]],
 			And[
-				MatchQ[Lookup[packet, ErrorSource],Except["Operator"]],
+				MatchQ[Lookup[packet, ErrorCategory],Except["Individual Mistake (Internal)"]],
 				MatchQ[Lookup[packet, ReportedOperatorError], Null]]
 		],
 		True

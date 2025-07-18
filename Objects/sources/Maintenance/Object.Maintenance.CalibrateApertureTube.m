@@ -83,7 +83,7 @@ DefineObjectType[Object[Maintenance, CalibrateApertureTube], {
 			Format -> Single,
 			Class -> Real,
 			Pattern :> GreaterEqualP[0],
-			Description -> "The default calibration constant that the target aperture tube model uses to convert the voltage signals measured during the sample run of ExperimentCoulterCount into the particle size signal. Please see Figure 1.4 in ExperimentCoulterCount documentation for more details.",
+			Description -> "The default calibration constant that the target aperture tube model uses to convert the voltage signals measured during the sample run of ExperimentCoulterCount into the particle size signal. Please see Figure 1.3 in ExperimentCoulterCount documentation for more details.",
 			Category -> "General",
 			Developer -> True
 		},

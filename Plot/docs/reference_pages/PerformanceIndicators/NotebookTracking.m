@@ -23,6 +23,6 @@ DefineUsage[
 		},
 		SeeAlso->{
 		},
-		Author->{"adam.abushaer"}
+		Author->{"dirk.schild", "adam.abushaer"}
 	}
 ];

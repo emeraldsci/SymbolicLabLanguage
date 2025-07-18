@@ -43,7 +43,12 @@ DefineUsage[ExperimentDialysis,
 										Type -> Object,
 										Pattern :> ObjectP[{Object[Container]}]
 									]
-								}
+								},
+								"Model Sample"->Widget[
+									Type -> Object,
+									Pattern :> ObjectP[Model[Sample]],
+									ObjectTypes -> {Model[Sample]}
+								]
 							],
 							Expandable->False,
 							NestedIndexMatching->True
@@ -116,7 +121,12 @@ DefineUsage[ExperimentDialysisOptions,
 										Type -> Object,
 										Pattern :> ObjectP[{Object[Container]}]
 									]
-								}
+								},
+								"Model Sample"->Widget[
+									Type -> Object,
+									Pattern :> ObjectP[Model[Sample]],
+									ObjectTypes -> {Model[Sample]}
+								]
 							],
 							Expandable->False,
 							NestedIndexMatching->True
@@ -191,7 +201,12 @@ DefineUsage[ExperimentDialysisPreview,
 										Type -> Object,
 										Pattern :> ObjectP[{Object[Container]}]
 									]
-								}
+								},
+								"Model Sample"->Widget[
+									Type -> Object,
+									Pattern :> ObjectP[Model[Sample]],
+									ObjectTypes -> {Model[Sample]}
+								]
 							],
 							Expandable->False,
 							NestedIndexMatching->True
@@ -263,7 +278,12 @@ DefineUsage[ValidExperimentDialysisQ,
 										Type -> Object,
 										Pattern :> ObjectP[{Object[Container]}]
 									]
-								}
+								},
+								"Model Sample"->Widget[
+									Type -> Object,
+									Pattern :> ObjectP[Model[Sample]],
+									ObjectTypes -> {Model[Sample]}
+								]
 							],
 							Expandable->False,
 							NestedIndexMatching->True

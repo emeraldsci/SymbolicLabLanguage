@@ -21,10 +21,10 @@ DefineTests[UploadTransportCondition,
 
 		Example[{Basic, "Upload a single transport condition to multiple objects:"},
 			(
-				UploadTransportCondition[{Object[Sample, "Test Sample 4 for UploadTransportCondition"<> $SessionUUID], Model[Sample, "Test Sample 2 for UploadTransportCondition"<> $SessionUUID]}, LightBox];
+				UploadTransportCondition[{Object[Sample, "Test Sample 4 for UploadTransportCondition"<> $SessionUUID], Model[Sample, "Test Sample 2 for UploadTransportCondition"<> $SessionUUID]}, Minus40];
 				Flatten[Download[{Object[Sample, "Test Sample 4 for UploadTransportCondition"<> $SessionUUID], Model[Sample, "Test Sample 2 for UploadTransportCondition"<> $SessionUUID]}, {TransportCondition}]][Name]
 			),
-			{"LightBox","LightBox"}
+			{"Minus 40","Minus 40"}
 		],
 
 		Example[{Options, Upload, "Set Upload->False to show the packets which would be uploaded:"},
@@ -42,15 +42,6 @@ DefineTests[UploadTransportCondition,
 			),
 			Discarded,
 			Messages :> {Warning::DiscardedSamples}
-		],
-
-		Example[{Messages, "DuplicateSamples", "Will throw a warning when uploading a transport condition to the same object multiple times in the same function call:"},
-			(
-				UploadTransportCondition[{Object[Sample, "Test Sample 1 for UploadTransportCondition"<> $SessionUUID], Object[Sample, "Test Sample 1 for UploadTransportCondition"<> $SessionUUID]}, {Ambient, Chilled}];
-				Download[Object[Sample, "Test Sample 1 for UploadTransportCondition"<> $SessionUUID], {TransportWarmed, TransportChilled}]
-			),
-			{Null, Null},
-			Messages :> {Warning::DuplicateSamples}
 		]
 	},
 	SymbolSetUp :> {
@@ -156,12 +147,12 @@ DefineTests[UploadTransportConditionOptions,
 
 		Example[{Basic, "Does not actually change the transport condition of the input:"},
 			(
-				beforeCondition=Download[Object[Sample, "Test Sample 1 for UploadTransportConditionOptions"<> $SessionUUID], {TransportWarmed, TransportChilled}];
+				beforeCondition=Download[Object[Sample, "Test Sample 1 for UploadTransportConditionOptions"<> $SessionUUID], {TransportTemperature}];
 				UploadTransportConditionOptions[Object[Sample, "Test Sample 1 for UploadTransportConditionOptions"<> $SessionUUID], Ambient];
-				afterCondition=Download[Object[Sample, "Test Sample 1 for UploadTransportConditionOptions"<> $SessionUUID], {TransportWarmed, TransportChilled}];
+				afterCondition=Download[Object[Sample, "Test Sample 1 for UploadTransportConditionOptions"<> $SessionUUID], {TransportTemperature}];
 				{beforeCondition, afterCondition}
 			),
-			{{Null, True}, {Null, True}}
+			{{EqualP[4 Celsius]}, {EqualP[4 Celsius]}}
 		],
 
 		Example[{Additional, "Returns the resolved options when uploading a single transport condition to multiple objects:"},
@@ -190,7 +181,7 @@ DefineTests[UploadTransportConditionOptions,
 
 
 			Upload[{
-				<|Type -> Object[Sample], Name -> "Test Sample 1 for UploadTransportConditionOptions"<> $SessionUUID, TransportWarmed -> Null, TransportChilled -> True, DeveloperObject -> True|>,
+				<|Type -> Object[Sample], Name -> "Test Sample 1 for UploadTransportConditionOptions"<> $SessionUUID, TransportTemperature->4 Celsius, DeveloperObject -> True|>,
 				<|Type -> Model[Sample], Name -> "Test Sample 2 for UploadTransportConditionOptions"<> $SessionUUID, DeveloperObject -> True|>
 			}];
 		]
@@ -228,12 +219,12 @@ DefineTests[UploadTransportConditionPreview,
 
 		Example[{Basic, "Does not actually change the transport condition of the input:"},
 			(
-				beforeCondition=Download[Object[Sample, "Test Sample 1 for UploadTransportConditionPreview"<> $SessionUUID], {TransportWarmed, TransportChilled}];
+				beforeCondition=Download[Object[Sample, "Test Sample 1 for UploadTransportConditionPreview"<> $SessionUUID], {TransportTemperature}];
 				UploadTransportConditionPreview[Object[Sample, "Test Sample 1 for UploadTransportConditionPreview"<> $SessionUUID], Ambient];
-				afterCondition=Download[Object[Sample, "Test Sample 1 for UploadTransportConditionPreview"<> $SessionUUID], {TransportWarmed, TransportChilled}];
+				afterCondition=Download[Object[Sample, "Test Sample 1 for UploadTransportConditionPreview"<> $SessionUUID], {TransportTemperature}];
 				{beforeCondition, afterCondition}
 			),
-			{{Null, True}, {Null, True}}
+			{{EqualP[4 Celsius]}, {EqualP[4 Celsius]}}
 		],
 
 		Example[{Additional, "Returns Null when passed a list of samples and a single transport condition:"},
@@ -255,7 +246,7 @@ DefineTests[UploadTransportConditionPreview,
 
 
 			Upload[{
-				<|Type -> Object[Sample], Name -> "Test Sample 1 for UploadTransportConditionPreview"<> $SessionUUID, TransportWarmed -> Null, TransportChilled -> True, DeveloperObject -> True|>,
+				<|Type -> Object[Sample], Name -> "Test Sample 1 for UploadTransportConditionPreview"<> $SessionUUID, TransportTemperature->4 Celsius, DeveloperObject -> True|>,
 				<|Type -> Model[Sample], Name -> "Test Sample 2 for UploadTransportConditionPreview"<> $SessionUUID, DeveloperObject -> True|>
 			}];
 		]
@@ -294,12 +285,12 @@ DefineTests[ValidUploadTransportConditionQ,
 
 		Example[{Basic, "Does not actually change the transport condition of the input:"},
 			(
-				beforeCondition=Download[Object[Sample, "Test Sample 1 for ValidUploadTransportConditionQ"<> $SessionUUID], {TransportWarmed, TransportChilled}];
+				beforeCondition=Download[Object[Sample, "Test Sample 1 for ValidUploadTransportConditionQ"<> $SessionUUID], {TransportTemperature}];
 				ValidUploadTransportConditionQ[Object[Sample, "Test Sample 1 for ValidUploadTransportConditionQ"<> $SessionUUID], Ambient];
-				afterCondition=Download[Object[Sample, "Test Sample 1 for ValidUploadTransportConditionQ"<> $SessionUUID], {TransportWarmed, TransportChilled}];
+				afterCondition=Download[Object[Sample, "Test Sample 1 for ValidUploadTransportConditionQ"<> $SessionUUID], {TransportTemperature}];
 				{beforeCondition, afterCondition}
 			),
-			{{Null, True}, {Null, True}}
+			{{EqualP[4 Celsius]}, {EqualP[4 Celsius]}}
 		],
 
 		Example[{Basic, "Invalid object input will not cause validation to fail:"},
@@ -341,7 +332,7 @@ DefineTests[ValidUploadTransportConditionQ,
 
 
 			Upload[{
-			<|Type -> Object[Sample], Name -> "Test Sample 1 for ValidUploadTransportConditionQ"<> $SessionUUID, TransportWarmed -> Null, TransportChilled -> True, DeveloperObject -> True|>,
+			<|Type -> Object[Sample], Name -> "Test Sample 1 for ValidUploadTransportConditionQ"<> $SessionUUID,  TransportTemperature->4 Celsius, DeveloperObject -> True|>,
 			<|Type -> Model[Sample], Name -> "Test Sample 2 for ValidUploadTransportConditionQ"<> $SessionUUID, DeveloperObject -> True|>
 			}];
 		]

@@ -6,7 +6,7 @@ DefineOptions[ExperimentFluorescencePolarizationKineticsPreview,
 	SharedOptions :> {ExperimentFluorescencePolarizationKinetics}
 ];
 
-ExperimentFluorescencePolarizationKineticsPreview[myInput:(ListableP[ObjectP[Object[Sample]]]|ListableP[ObjectP[Object[Container,Plate]]]),myOptions:OptionsPattern[ExperimentFluorescencePolarizationKineticsPreview]]:=Module[
+ExperimentFluorescencePolarizationKineticsPreview[myInput:(ListableP[ObjectP[{Object[Sample],Model[Sample]}]]|ListableP[ObjectP[Object[Container,Plate]]]),myOptions:OptionsPattern[ExperimentFluorescencePolarizationKineticsPreview]]:=Module[
 	{listedOptions},
 
 	listedOptions=ToList[myOptions];
@@ -31,7 +31,7 @@ DefineOptions[ExperimentFluorescencePolarizationKineticsOptions,
 	SharedOptions :> {ExperimentFluorescencePolarizationKinetics}
 ];
 
-ExperimentFluorescencePolarizationKineticsOptions[myInput:(ListableP[ObjectP[Object[Sample]]]|ListableP[ObjectP[Object[Container,Plate]]]),myOptions:OptionsPattern[ExperimentFluorescencePolarizationKineticsOptions]]:=Module[
+ExperimentFluorescencePolarizationKineticsOptions[myInput:(ListableP[ObjectP[{Object[Sample],Model[Sample]}]]|ListableP[ObjectP[Object[Container,Plate]]]),myOptions:OptionsPattern[ExperimentFluorescencePolarizationKineticsOptions]]:=Module[
 	{listedOptions,preparedOptions,resolvedOptions},
 
 	listedOptions=ToList[myOptions];
@@ -61,7 +61,7 @@ DefineOptions[ValidExperimentFluorescencePolarizationKineticsQ,
 	SharedOptions :> {ExperimentFluorescencePolarizationKinetics}
 ];
 
-ValidExperimentFluorescencePolarizationKineticsQ[myInput:(ListableP[ObjectP[Object[Sample]]]|ListableP[ObjectP[Object[Container,Plate]]]),myOptions:OptionsPattern[ValidExperimentFluorescencePolarizationKineticsQ]]:=Module[
+ValidExperimentFluorescencePolarizationKineticsQ[myInput:(ListableP[ObjectP[{Object[Sample],Model[Sample]}]]|ListableP[ObjectP[Object[Container,Plate]]]),myOptions:OptionsPattern[ValidExperimentFluorescencePolarizationKineticsQ]]:=Module[
 	{listedInput,listedOptions,preparedOptions,functionTests,initialTestDescription,allTests,safeOps,verbose,outputFormat,result},
 
 	listedInput=ToList[myInput];

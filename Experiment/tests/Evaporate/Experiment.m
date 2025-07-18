@@ -108,21 +108,24 @@ DefineTests[ExperimentEvaporate,
 			Lookup[ExperimentEvaporate[Object[Sample,"Evaporate Test Water Sample 50mL Tube" <> $SessionUUID], BumpTrapSampleContainer -> Model[Container,Vessel,"40mL Glass Scintillation Vial"], Output -> Options], BumpTrapSampleContainer],
 			ObjectReferenceP[Model[Container,Vessel,"40mL Glass Scintillation Vial"]]
 		],
+		Example[{Options,BumpTrapSampleContainer,"BumpTrapSampleContainer controls which model of container the rinsed material will be put into:"},
+			Download[ExperimentEvaporate[Object[Sample,"Evaporate Test Water Sample 50mL Tube" <> $SessionUUID], BumpTrapSampleContainer -> Object[Container,Vessel,"Evaporate Test 50mL 6" <> $SessionUUID]], BumpTrapSampleContainers],
+			{LinkP[Object[Container,Vessel,"Evaporate Test 50mL 6" <> $SessionUUID]]}
+		],
 
 		(* BumpTrapRinseSolution *)
 		Example[{Options,BumpTrapRinseSolution,"BumpTrapRinseSolution controls which chemical or stock solution will be used to rinse out any dried sediment from the bump trap:"},
 			Lookup[ExperimentEvaporate[Object[Sample,"Evaporate Test Water Sample2" <> $SessionUUID], BumpTrapRinseSolution -> Model[Sample,"Acetone, Reagent Grade"], Output -> Options], BumpTrapRinseSolution],
 			ObjectReferenceP[Model[Sample,"Acetone, Reagent Grade"]]
 		],
-		(* BumpTrapRinseSolution *)
-		Example[{Options,BumpTrapRinseSolution,"BumpTrapRinseSolution will default to RinseSolution if it is left as Automatic but other BumpTrapRinse options are provided:"},
-			Lookup[ExperimentEvaporate[Object[Sample,"Evaporate Test Water Sample2" <> $SessionUUID], BumpTrapRinseSolution -> Automatic, RinseSolution -> Model[Sample,"Acetone, Reagent Grade"], RecoupBumpTrap -> True, Output -> Options], BumpTrapRinseSolution],
-			ObjectReferenceP[Model[Sample,"Acetone, Reagent Grade"]]
-		],
 		(* BumpTrapRinseVolume *)
 		Example[{Options,BumpTrapRinseVolume,"BumpTrapRinseVolume controls how much of the BumpTrapRinseSolution will be used to rinse the bump trap and collect dried materials:"},
 			Lookup[ExperimentEvaporate[Object[Sample,"Evaporate Test Water Sample2" <> $SessionUUID], BumpTrapRinseVolume -> 40 Milliliter, Output -> Options], BumpTrapRinseVolume],
 			40 Milliliter
+		],
+		Test["Both BumpTrapRinseVolume and BumpTrapSampleContainer can be specified:",
+			Lookup[ExperimentEvaporate[Object[Sample,"Evaporate Test Water Sample2" <> $SessionUUID], BumpTrapRinseVolume -> 40 Milliliter, BumpTrapSampleContainer -> Model[Container,Vessel,"40mL Glass Scintillation Vial"], Output -> Options], {BumpTrapRinseVolume, BumpTrapSampleContainer}],
+			{40 Milliliter, ObjectReferenceP[Model[Container,Vessel,"40mL Glass Scintillation Vial"]]}
 		],
 		(* RecoupCondensate*)
 		Example[{Options, RecoupCondensate, "RecoupCondensate controls whether the liquid that has been collected in the condensate container should be kept or disposed of:"},
@@ -166,11 +169,13 @@ DefineTests[ExperimentEvaporate,
 		(* EvaporationPressure *)
 		Example[{Options,EvaporationPressure,"EvaporationPressure controls the vacuum pressure the instrument will hold during the evaporation:"},
 			Lookup[ExperimentEvaporate[Object[Container,Plate,"Evaporate Test Plate" <> $SessionUUID], EvaporationPressure -> 50 Milli Bar, Output -> Options], EvaporationPressure],
-			50 Milli Bar
+			50 Milli Bar,
+			EquivalenceFunction->Equal
 		],
 		Example[{Options,EvaporationPressure,"EvaporationPressure -> MaxVacuum indicates the instrument will attempt to get the pressure as low as possible. The actual vacuum pressure achieved may very depending on the instrument:"},
 			Lookup[ExperimentEvaporate[Object[Container,Plate,"Evaporate Test Plate" <> $SessionUUID], EvaporationPressure -> MaxVacuum, Output -> Options], EvaporationPressure],
-			{(0.` Milli Bar)..}
+			0.` Milli Bar,
+			EquivalenceFunction->Equal
 		],
 		Example[{Options,EvaporationPressure,"EvaporationPressure is automatically set based on the predicted vapor pressure given EvaporationTemperature:"},
 			Lookup[
@@ -222,18 +227,6 @@ DefineTests[ExperimentEvaporate,
 			Lookup[ExperimentEvaporate[Object[Container,Plate,"Evaporate Test Plate" <> $SessionUUID], PressureRampTime -> 1 Hour, Output -> Options], PressureRampTime],
 			1 Hour
 		],
-		(* skipping RinseSolution and RinseVolume test since we have set those options to Hidden for now
-		(* RinseSolution *)
-		Example[{Options,RinseSolution,"RinseSolution controls what chemical or stock solution will be used to resuspend concentrated material in the evaporation flask at the end of the evaporation:"},
-			Lookup[ExperimentEvaporate[Object[Container,Plate,"Evaporate Test Plate" <> $SessionUUID], RinseSolution -> Model[Sample,"Acetone, Reagent Grade"], Output -> Options], RinseSolution],
-			ObjectReferenceP[Model[Sample,"Acetone, Reagent Grade"]]
-		],
-		(* RinseSolution *)
-		Example[{Options,RinseVolume,"RinseVolume controls the amount of RinseSolution that will be used to resuspend concentrated material in the evaporation flask at the end of the evaporation:"},
-			Lookup[ExperimentEvaporate[Object[Container,Plate,"Evaporate Test Plate" <> $SessionUUID], RinseVolume -> 20 Milliliter, Output -> Options], RinseVolume],
-			20*Milliliter
-		],
-		*)
 		(* RotationRate *)
 		Example[{Options,RotationRate,"RotationRate determines the evaporation flask's revolution speed during a rotovap evaporation protocol:"}    ,
 			Lookup[ExperimentEvaporate[
@@ -249,12 +242,6 @@ DefineTests[ExperimentEvaporate,
 			Lookup[ExperimentEvaporate[Object[Container,Plate,"Evaporate Test Plate" <> $SessionUUID], RotationRate -> 10 RPM, Output -> Options], RotationRate],
 			10 RPM
 		],
-		(* skipping SaveSolventWaste test since we have set those options to Hidden for now
-		(* SaveSolventWaste *)
-		Example[{Options,SaveSolventWaste,"SaveSolventWaste determines whether any evaporated solvent that is collected by the rotovap is saved in a new container:"},
-			Lookup[ExperimentEvaporate[Object[Sample,"Evaporate Test Water Sample2" <> $SessionUUID], SaveSolventWaste -> True, Output -> Options], SaveSolventWaste],
-			True
-		],*)
 		(* SolventBoilingPoints *)
 		Example[{Options,SolventBoilingPoints,"SolventBoilingPoints aids the resolution of Method by indicating at what temperatures the samples are likely to evaporate at:"},
 			Lookup[ExperimentEvaporate[Object[Container,Plate,"Evaporate Test Plate" <> $SessionUUID], SolventBoilingPoints -> 40.` Celsius, Output -> Options], SolventBoilingPoints],
@@ -273,12 +260,6 @@ DefineTests[ExperimentEvaporate,
 			Lookup[ExperimentEvaporate[Object[Container,Plate,"Evaporate Test Plate" <> $SessionUUID], EquilibrationTime -> 10 Minute, Output -> Options], EquilibrationTime],
 			10 Minute
 		],
-		(* skipping WasteContainer test since we have set those options to Hidden for now
-		(* WasteContainer *)
-		Example[{Options,WasteContainer,"WasteContainer determines which container model should be used to store any evaporated solvent that is collected by the rotovap:"},
-			Lookup[ExperimentEvaporate[Object[Sample,"Evaporate Test Water Sample2" <> $SessionUUID], WasteContainer -> Model[Container,Vessel,"40mL Glass Scintillation Vial"], Output -> Options], WasteContainer],
-			ObjectReferenceP[Model[Container,Vessel,"40mL Glass Scintillation Vial"]]
-		],*)
 		(* PressureRampTime *)
 		Test["Function initializes FullyEvaporated to a list of Nulls equal in length to the length of PooledSamplesIn:",
 			Download[ExperimentEvaporate[Object[Container,Plate,"Evaporate Test Plate" <> $SessionUUID]], FullyEvaporated],
@@ -316,6 +297,26 @@ DefineTests[ExperimentEvaporate,
 		],
 
 		(* Messages: errors and warnings *)
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a sample that does not exist (name form):"},
+			ExperimentEvaporate[Object[Sample, "Nonexistent sample"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a container that does not exist (name form):"},
+			ExperimentEvaporate[Object[Container, Vessel, "Nonexistent container"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a sample that does not exist (ID form):"},
+			ExperimentEvaporate[Object[Sample, "id:12345678"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a container that does not exist (ID form):"},
+			ExperimentEvaporate[Object[Container, Vessel, "id:12345678"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
 		Example[{Messages, "TurboVapFlowRate","The specified Flow Rates must be less than 5.5 Liter/Minute for the TubeDryer:"},
 			Quiet[ExperimentEvaporate[Object[Container, Vessel, "Evaporate Test 50mL 1" <> $SessionUUID],
 				Instrument->Object[Instrument,Evaporator,"id:kEJ9mqRxKARz"],
@@ -325,14 +326,14 @@ DefineTests[ExperimentEvaporate,
 			Messages:>{Error::InvalidOption, Error::TurboVapFlowRate, Warning::HighFlowRate}
 		],
 
-		Example[{Messages, "FlowRateProfileLength","If FlowRateProfile is specified, it's length is less than 3:"},
+		Example[{Messages, "FlowRateProfileLength", "If FlowRateProfile is specified, it's length is less than 3:"},
 			Quiet[ExperimentEvaporate[Object[Sample, "Evaporate Test Water Sample 50mL Tube" <> $SessionUUID],
-				Instrument->Object[Instrument,Evaporator,"id:kEJ9mqRxKARz"],
-				FlowRateProfile -> {{1 Liter/Minute,60 Minute},{2 Liter/Minute, 45 Minute},{3 Liter/Minute, 30 Minute},{3.5 Liter/Minute, 30 Minute}}
-			],Warning::InstrumentUndergoingMaintenance],
-		  $Failed,
-			Messages:>{Error::InvalidOption,Error::FlowRateProfileLength},
-			TimeConstraint->600
+				Instrument -> Object[Instrument, Evaporator, "id:kEJ9mqRxKARz"],
+				FlowRateProfile -> {{1 Liter / Minute, 60 Minute}, {2 Liter / Minute, 45 Minute}, {3 Liter / Minute, 30 Minute}, {3.5 Liter / Minute, 30 Minute}}
+			], Warning::InstrumentUndergoingMaintenance],
+			$Failed,
+			Messages :> {Error::InvalidOption, Error::FlowRateProfileLength},
+			TimeConstraint -> 600
 		],
 
 		Example[{Messages, "HighFlowRate","If the FlowRateProfile is specified, and the sample volume is > 60% of the sample container's maximum volume, then the flow rate is not too high:"},
@@ -381,13 +382,22 @@ DefineTests[ExperimentEvaporate,
 			$Failed,
 			Messages:>{Error::CannotComputeEvaporationPressure, Error::InvalidOption}
 		],
+		Example[{Messages, "IncompatibleBumpTrapVolume", "If rotovapping and BumpTrapRinseVolume is higher than the model of BumpTrapSampleContainer's MaxVolume, indicate that there is a conflict with an error:"},
+			ExperimentEvaporate[
+				Object[Sample, "Evaporate Test Mixed Water/DCM Sample 2" <> $SessionUUID],
+				EvaporationType -> RotaryEvaporation,
+				BumpTrapRinseVolume -> 10 Milliliter,
+				BumpTrapSampleContainer -> Model[Container, Vessel, "id:eGakld01zzpq"] (* "1.5mL Tube with 2mL Tube Skirt" *)
+			],
+			$Failed,
+			Messages:>{Error::IncompatibleBumpTrapVolume, Error::InvalidOption}
+		],
 
 
 
 		(* TODO: Add a test to make sure BumpTrap resources are shared between BumpTraps and BatchedEvapParams *)
 		(* TODO: Add a test to make sure EvaporationFlasks resources are shared between BumpTraps and BatchedEvapParams *)
 		(* TODO: Add a test to make sure CondensationFlasks resources are shared between BumpTraps and BatchedEvapParams *)
-		(* TODO: Add a test to make sure RinseSolution resources are shared between BumpTraps and BatchedEvapParams *)
 		(* TODO: Add a test to make sure BumpTrapRinseSolution resources are shared between BumpTraps and BatchedEvapParams *)
 
 		(* TODO: Add a test to make sure EvapFlasks used during SamplePrep can be used as EvaporationFlask *)
@@ -398,77 +408,6 @@ DefineTests[ExperimentEvaporate,
 		(* ------------ FUNTOPIA SHARED OPTION TESTING ------------ *)
 		(* -------------------------------------------------------- *)
 		(* -------------------------------------------------------- *)
-		Example[{Options,PreparatoryPrimitives,"Transfer water to a tube and make sure the amount transfer matches what was requested:"},
-			ExperimentEvaporate[
-				"My 2mL Tube",
-				PreparatoryPrimitives -> {
-					Define[
-						Name -> "My 2mL Tube",
-						Container -> Model[Container, Vessel, "2mL Tube"]
-					],
-					Transfer[
-						Source -> Model[Sample, "Milli-Q water"],
-						Destination -> "My 2mL Tube",
-						Volume -> 1.75 Milliliter
-					]
-				}
-			],
-			ObjectP[Object[Protocol,Evaporate]],
-			TimeConstraint->600
-		],
-		Example[
-			{Options,PreparatoryPrimitives,"Add ethanol to a 50 milliliter tube, fill to 45 milliliters with dH2O, and then measure the volume:"},
-			ExperimentEvaporate[
-				{"My 50mL Tube"},
-				PreparatoryPrimitives -> {
-					Define[
-						Name -> "My 50mL Tube",
-						Container -> Model[Container, Vessel, "50mL Tube"]
-					],
-					Transfer[
-						Source -> {Model[Sample, "id:Y0lXejGKdEDW"]},
-						Destination -> "My 50mL Tube",
-						Volume -> 7.5 Milliliter
-					],
-					FillToVolume[
-						Source -> Model[Sample, "id:8qZ1VWNmdLBD"],
-						FinalVolume -> 45 Milliliter,
-						Destination -> "My 50mL Tube"
-					],
-					Mix[
-						Sample -> "My 50mL Tube",
-						MixType -> Vortex
-					]
-				}
-			],
-			ObjectP[Object[Protocol,Evaporate]]
-		],
-		Example[
-			{Options,PreparatoryPrimitives,"Add a stocksolution to a bottle for preparation, then aliquot from it and measure the volume on those aliquots:"},
-			ExperimentEvaporate[
-				{"My 4L Bottle","My 4L Bottle","My 4L Bottle"},
-				EvaporationType->RotaryEvaporation,
-				PreparatoryPrimitives -> {
-					Define[
-						Name -> "My 4L Bottle",
-						Container -> Model[Container, Vessel, "Amber Glass Bottle 4 L"]
-					],
-					Transfer[
-						Source -> {Model[Sample, StockSolution, "id:R8e1PjpR1k0n"]},
-						Destination -> "My 4L Bottle",
-						Volume -> 3.5 Liter
-					]
-				},
-				Aliquot -> True,
-				AssayVolume -> {45 Milliliter, 45 Milliliter, 30 Milliliter},
-				AliquotContainer -> {
-					Model[Container, Vessel, "50mL Tube"],
-					Model[Container, Vessel, "50mL Tube"],
-					Model[Container, Vessel, "50mL Tube"]
-				}
-			],
-			ObjectP[Object[Protocol,Evaporate]]
-		],
 		Example[{Options,PreparatoryUnitOperations,"Transfer water to a tube and make sure the amount transfer matches what was requested:"},
 			ExperimentEvaporate[
 				"My 2mL Tube",
@@ -512,6 +451,7 @@ DefineTests[ExperimentEvaporate,
 					]
 				}
 			],
+			TimeConstraint->1000,
 			ObjectP[Object[Protocol,Evaporate]]
 		],
 		Example[
@@ -612,7 +552,39 @@ DefineTests[ExperimentEvaporate,
 			True,
 			Variables :> {options}
 		],
-
+		Example[{Options, {PreparedModelContainer, PreparedModelAmount}, "Specify the container in which an input Model[Sample] should be prepared:"},
+			options = ExperimentEvaporate[
+				{Model[Sample, "Milli-Q water"], Model[Sample, "Milli-Q water"]},
+				PreparedModelContainer -> Model[Container, Plate, "id:L8kPEjkmLbvW"],
+				PreparedModelAmount -> 1 Milliliter,
+				Output -> Options
+			];
+			prepUOs = Lookup[options, PreparatoryUnitOperations];
+			{
+				prepUOs[[-1, 1]][Sample],
+				prepUOs[[-1, 1]][Container],
+				prepUOs[[-1, 1]][Amount],
+				prepUOs[[-1, 1]][Well],
+				prepUOs[[-1, 1]][ContainerLabel]
+			},
+			{
+				{ObjectP[Model[Sample, "id:8qZ1VWNmdLBD"]]..},
+				{ObjectP[Model[Container, Plate, "id:L8kPEjkmLbvW"]]..},
+				{EqualP[1 Milliliter]..},
+				{"A1", "B1"},
+				{_String, _String}
+			},
+			Variables :> {options, prepUOs}
+		],
+		Example[{Options, PreparedModelAmount, "If using model input, the sample preparation options can also be specified:"},
+			ExperimentEvaporate[
+				Model[Sample, "Ammonium hydroxide"],
+				PreparedModelAmount -> 0.5 Milliliter,
+				Aliquot -> True,
+				Mix -> True
+			],
+			ObjectP[Object[Protocol, Evaporate]]
+		],
 		(* ExperimentCentrifuge *)
 		(*Example[{Options, Centrifuge, "Indicates if the SamplesIn should be centrifuged prior to starting the experiment or any aliquoting: Sample Preparation occurs in the order of Incubation, Centrifugation, Filtration, and then Aliquoting (if specified):"},
 			options = ExperimentEvaporate[Object[Sample,"Evaporate Test Water Sample" <> $SessionUUID], Centrifuge -> True, Output -> Options];
@@ -843,7 +815,7 @@ DefineTests[ExperimentEvaporate,
 		Example[{Options, AliquotContainer, "The desired type of container that should be used to prepare and house the aliquot samples, with indices indicating grouping of samples in the same plates, if desired:"},
 			options = ExperimentEvaporate[Object[Sample,"Evaporate Test Water Sample 50mL Tube" <> $SessionUUID], AliquotContainer -> Model[Container,Vessel,"50mL Tube"], Output -> Options];
 			Lookup[options, AliquotContainer],
-			{_Integer, ObjectP[Model[Container,Vessel,"50mL Tube"]]},
+			{{_Integer, ObjectP[Model[Container, Vessel, "50mL Tube"]]}},
 			Variables :> {options}
 		],
 		Example[{Options, ImageSample, "Indicates if any samples that are modified in the course of the experiment should be freshly imaged after running the experiment:"},
@@ -879,7 +851,7 @@ DefineTests[ExperimentEvaporate,
 		Example[{Options,DestinationWell, "Indicates how the desired position in the corresponding AliquotContainer in which the aliquot samples will be placed:"},
 			options = ExperimentEvaporate[Object[Sample,"Evaporate Test Water Sample5" <> $SessionUUID], DestinationWell -> "A1", Output -> Options];
 			Lookup[options,DestinationWell],
-		"A1",
+			{"A1"},
 			Variables:>{options}
 		],
 		Example[{Options, MeasureVolume, "Indicate whether samples should be volume measured afterwards:"},

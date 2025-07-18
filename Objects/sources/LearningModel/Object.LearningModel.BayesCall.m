@@ -60,7 +60,7 @@ DefineObjectType[Object[LearningModel,BayesCall], {
 			Headers -> {"Symbol", "Value"},
 			Description -> "A 4x4 matrix where the {i,j}th element denotes
 				the signal in channel i due to the concentration of a base in channel j.
-				Off-diagonal elements indicate interference, or \"cross-talk\" betweeen bases.
+				Off-diagonal elements indicate interference, or \"cross-talk\" between bases.
 			",
 			Category -> "Parameters"
 		},

@@ -974,3 +974,7 @@ extractionMethodValidityTest[mySamples : {ObjectP[Object[Sample]]...}, myResolve
   }
 
 ];
+
+(* Authors definition for Experiment`Private`extractionMethodValidityTest *)
+Authors[Experiment`Private`extractionMethodValidityTest]:={"taylor.hochuli"};
+

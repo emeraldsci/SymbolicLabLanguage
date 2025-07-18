@@ -47,7 +47,6 @@ Error::NephelometryNonCellAnalyte = "The following sample(s), `1`, have Analyte(
 Error::NephelometrySampleMustContainAnalyte = "The Analyte option is specified for substance(s) that are not components of the following input sample(s): `1`.  Please specify analytes that are component(s) of the sample(s), or leave this option as Automatic.";
 Error::NephelometryMethodQuantificationMismatch = "When Method is `2`, QuantifyCellCount cannot be True. Please change the value of QuantifyCellCount for samples `1` or leave as Automatic, or change the Method to CellCount.";
 Error::NephelometryAnalyteMissing = "The Analyte option could not be automatically determined from the Analytes field or from the Composition of the sample. Please specify an analyte for samples `1`.";
-Error::NephelometryIncompatibleGasLevels = "The specified TargetCarbonDioxideLevel and TargetOxygenLevel are incompatible with the instrument due to gas displacement properties, where ambient oxygen levels are 19% and ambient carbon dioxide levels are 0%. If the TargetOxygenLevel is below 1%, please set the TargetCarbonDioxideLevel to below 5%. If the TargetCarbonDioxideLevel is above 5%, please set the TargetOxygenLevel to below 18%, or leave TargetOxygenLevel as Null and TargetCarbonDioxideLevel as Automatic.";
 Error::NephelometryConflictingDilutionCurveTypes = "A DilutionCurve `1` and SerialDilutionCurve `2` are specified for samples `3`. Only one type of dilution can be specified for each sample; please specify either DilutionCurve or SerialDilutionCurve for each sample.";
 Error::NephelometryMissingDiluent = "A DilutionCurve or SerialDilutionCurve is specified `1` but no Diluent is given `2` for samples `3`. Please specify a Diluent for these samples, or leave Diluent to be set automatically.";
 Error::NephelometryMissingDilutionCurve = "A Diluent `1` is specified, but DilutionCurve or SerialDilutionCurve is Null `2` for the samples `3`. Please set Diluent to Null, or leave DilutionCurve to be set automatically.";
@@ -129,14 +128,14 @@ ExperimentNephelometry[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:Op
 	{listedSamples,listedOptions,outputSpecification,output,gatherTests,validSamplePreparationResult,
 		mySamplesWithPreparedSamplesNamed, safeOpsNamed, myOptionsWithPreparedSamplesNamed,
 		mySamplesWithPreparedSamples,myOptionsWithPreparedSamples,estimatedRunTime,
-		updatedSimulation,safeOps,safeOpsTests,validLengths,validLengthTests,returnEarlyQ,performSimulationQ,
+		updatedSimulation,safeOps,safeOpsTests,validLengths,validLengthTests,returnEarlyQBecauseFailure,performSimulationQ,
 		templatedOptions,templateTests,inheritedOptions,expandedSafeOps,nephelometryOptionsAssociation,
 		samplePrepOptions,nephelometryOptions,uniqueInjectionSamples,uniqueBlankSamples,possibleAliquotContainers,
-		analyte,downloadAnalytes,analyteFields,analyteFieldPacket,standardCurveFields,containerModelPreparationPackets,sampleAnalyteAllFields,
-		listedInjectionSamplePackets, listedBlankPackets, listedAliquotContainerPackets, analytePacket,
+		analyte,downloadAnalytes,specifiedInstruments,analyteFields,analyteFieldPacket,standardCurveFields,containerModelPreparationPackets,sampleAnalyteAllFields,
+		listedInjectionSamplePackets, listedBlankPackets, listedAliquotContainerPackets, analytePacket,specifiedInstrumentPackets,
 		samplePreparationPackets, sampleModelPreparationPackets, containerPreparationPackets,
 		sampleCompositionPackets, allSamplePackets,samplePackets,sampleModelPackets,sampleContainerPackets, sampleAnalytePackets,
-		compositionPackets, sampleContainerModelPackets,
+		compositionPackets, sampleContainerModelPackets, optionsResolverOnly, returnEarlyQBecauseOptionsResolverOnly,
 		cacheBall, resolvedOptionsResult,simulatedProtocol, simulation,
 		resolvedOptions,resolvedOptionsTests,collapsedResolvedOptions,protocolObject,resourcePackets,resourcePacketTests},
 
@@ -159,7 +158,7 @@ ExperimentNephelometry[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:Op
 			listedOptions
 		],
 		$Failed,
-		{Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
+		{Download::ObjectDoesNotExist,Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
 	];
 
 	(* If we are given an invalid define name, return early. *)
@@ -176,14 +175,8 @@ ExperimentNephelometry[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:Op
 	];
 
 	(* change Named version of objects into ID version *)
-	{mySamplesWithPreparedSamples, safeOps, myOptionsWithPreparedSamples} = sanitizeInputs[mySamplesWithPreparedSamplesNamed, safeOpsNamed, myOptionsWithPreparedSamplesNamed];
-
-	(* Call ValidInputLengthsQ to make sure all options are the right length *)
-	{validLengths,validLengthTests}=If[gatherTests,
-		ValidInputLengthsQ[ExperimentNephelometry,{mySamplesWithPreparedSamples},myOptionsWithPreparedSamples,Output->{Result,Tests}],
-		{ValidInputLengthsQ[ExperimentNephelometry,{mySamplesWithPreparedSamples},myOptionsWithPreparedSamples],Null}
-	];
-
+	{mySamplesWithPreparedSamples, safeOps, myOptionsWithPreparedSamples} = sanitizeInputs[mySamplesWithPreparedSamplesNamed, safeOpsNamed, myOptionsWithPreparedSamplesNamed,Simulation->updatedSimulation];
+	
 	(* If the specified options don't match their patterns or if option lengths are invalid return $Failed *)
 	If[MatchQ[safeOps,$Failed],
 		Return[outputSpecification/.{
@@ -193,7 +186,13 @@ ExperimentNephelometry[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:Op
 			Preview -> Null
 		}]
 	];
-
+	
+	(* Call ValidInputLengthsQ to make sure all options are the right length *)
+	{validLengths,validLengthTests}=If[gatherTests,
+		ValidInputLengthsQ[ExperimentNephelometry,{mySamplesWithPreparedSamples},myOptionsWithPreparedSamples,Output->{Result,Tests}],
+		{ValidInputLengthsQ[ExperimentNephelometry,{mySamplesWithPreparedSamples},myOptionsWithPreparedSamples],Null}
+	];
+	
 	(* If option lengths are invalid return $Failed (or the tests up to this point) *)
 	If[!validLengths,
 		Return[outputSpecification/.{
@@ -231,7 +230,7 @@ ExperimentNephelometry[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:Op
 	(*Convert list of rules to Association so we can Lookup, Append, Join as usual*)
 	nephelometryOptionsAssociation=Association[expandedSafeOps];
 
-	(* Seperate out our Nephelometry options from our Sample Prep options. *)
+	(* Separate out our Nephelometry options from our Sample Prep options. *)
 	{samplePrepOptions,nephelometryOptions}=splitPrepOptions[expandedSafeOps];
 
 	(* It is important that the sample preparation cache is added first to the cache ball, before the main download. *)
@@ -263,6 +262,9 @@ ExperimentNephelometry[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:Op
 	(* replace Automatic with an empty list so the download works *)
 	downloadAnalytes = Flatten[analyte/. Automatic->{}];
 
+	(* get all specified instruments *)
+	specifiedInstruments = DeleteDuplicates[Cases[Flatten[Lookup[nephelometryOptionsAssociation, {Instrument}]], ObjectP[{Object[Instrument], Model[Instrument]}]]];
+
 	(* pick out the fields to download from the analytes *)
 	analyteFields={StandardCurves,IncubationTemperature,Molecule,MolecularWeight,Density};
 	analyteFieldPacket=Packet@@analyteFields;
@@ -286,7 +288,8 @@ ExperimentNephelometry[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:Op
 		listedInjectionSamplePackets,
 		listedBlankPackets,
 		listedAliquotContainerPackets,
-		analytePacket
+		analytePacket,
+		specifiedInstrumentPackets
 	}=Quiet[
 		Download[
 			{
@@ -295,7 +298,8 @@ ExperimentNephelometry[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:Op
 				uniqueInjectionSamples,
 				uniqueBlankSamples,
 				possibleAliquotContainers,
-				downloadAnalytes
+				downloadAnalytes,
+				specifiedInstruments
 			},
 			Evaluate[{
 				{
@@ -309,13 +313,14 @@ ExperimentNephelometry[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:Op
 				{Packet[IncompatibleMaterials, Well, RequestedResources, SamplePreparationCacheFields[Object[Sample], Format -> Sequence]]},
 				{Packet[Container, State],Packet[Container[{Model}]],Packet[Container[Model][{MaxVolume}]]},
 				{Packet[SamplePreparationCacheFields[Model[Container], Format -> Sequence], RecommendedFillVolume]},
-				{analyteFieldPacket}
+				{analyteFieldPacket},
+				{Packet[Model, IntegratedLiquidHandler, IntegratedLiquidHandlers], Packet[IntegratedLiquidHandler[Model]], Packet[IntegratedLiquidHandler[Model][Object]], Packet[IntegratedLiquidHandlers[Object]]}
 			}],
 			Cache->Lookup[expandedSafeOps, Cache, {}],
 			Simulation->updatedSimulation,
 			Date->Now
 		],
-		Download::FieldDoesntExist
+		{Download::FieldDoesntExist, Download::NotLinkField}
 	];
 
 	(*Extract the sample-related packets*)
@@ -332,7 +337,8 @@ ExperimentNephelometry[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:Op
 		listedInjectionSamplePackets,
 		listedBlankPackets,
 		listedAliquotContainerPackets,
-		analytePacket
+		analytePacket,
+		specifiedInstrumentPackets
 	}];
 
 	(* Build the resolved options *)
@@ -369,15 +375,21 @@ ExperimentNephelometry[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:Op
 			Result -> $Failed,
 			Tests->Join[safeOpsTests,validLengthTests,templateTests,resolvedOptionsTests],
 			Options->RemoveHiddenOptions[ExperimentNephelometry,collapsedResolvedOptions],
-			Preview->Null
+			Preview->Null,
+			Simulation->Simulation[],
+			RunTime->0 Minute
 		}]
 	];
 
+	(* lookup our OptionsResolverOnly option.  This will determine if we skip the resource packets and simulation functions *)
+	(* if Output contains Result or Simulation, then we can't do this *)
+	optionsResolverOnly = Lookup[resolvedOptions, OptionsResolverOnly];
+	returnEarlyQBecauseOptionsResolverOnly = TrueQ[optionsResolverOnly] && Not[MemberQ[output, Result | Simulation]];
 
 	(* run all the tests from the resolution; if any of them were False, then we should return early here *)
 	(* need to do this becasue if we are collecting tests then the Check wouldn't have caught it *)
 	(* basically, if _not_ all the tests are passing, then we do need to return early *)
-	returnEarlyQ = Which[
+	returnEarlyQBecauseFailure = Which[
 		MatchQ[resolvedOptionsResult, $Failed], True,
 		gatherTests, Not[RunUnitTest[<|"Tests" -> resolvedOptionsTests|>, Verbose -> False, OutputFormat -> SingleBoolean]],
 		True, False
@@ -385,10 +397,10 @@ ExperimentNephelometry[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:Op
 
 	(* Figure out if we need to perform our simulation. If so, we can't return early even though we want to because we *)
 	(* need to return some type of simulation to our parent function that called us. *)
-	performSimulationQ=MemberQ[output, Simulation] || MatchQ[$CurrentSimulation, SimulationP] || MatchQ[Lookup[resolvedOptions, Preparation], Robotic];
+	performSimulationQ = MemberQ[output, Result|Simulation];
 
 	(* If option resolution failed and we aren't asked for the simulation or output, return early. *)
-	If[returnEarlyQ && !performSimulationQ,
+	If[(returnEarlyQBecauseFailure || returnEarlyQBecauseOptionsResolverOnly) && !performSimulationQ,
 		Return[outputSpecification/.{
 			Result -> $Failed,
 			Tests->Join[safeOpsTests,validLengthTests,templateTests,resolvedOptionsTests],
@@ -459,11 +471,25 @@ ExperimentNephelometry[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:Op
 
 		(* If we're doing Preparation->Robotic and Upload->True, call RCP or RSP with our primitive. *)
 		MatchQ[Lookup[resolvedOptions,Preparation],Robotic],
-		Module[{primitive,nonHiddenOptions,allCellTypes,experimentFunction},
+		Module[{primitive, nonHiddenOptions, samplesMaybeWithModels, allCellTypes, experimentFunction},
+
+			(* convert the samples to models if we had model inputs originally *)
+			(* if we don't have a simulation or a single prep unit op, then we know we didn't have a model input *)
+			(* NOTE: this is important. Need to use updatedSimulation here and not simulation.  This is because mySamples needs to get converted to model via the simulation _before_ SimulateResources is called in simulateExperimentFilter *)
+			(* otherwise, the same label will point at two different IDs, and that's going to cause problems *)
+			samplesMaybeWithModels = If[NullQ[updatedSimulation] || Not[MatchQ[Lookup[resolvedOptions, PreparatoryUnitOperations], {_[_LabelSample]}]],
+				mySamples,
+				simulatedSamplesToModels[
+					Lookup[resolvedOptions, PreparatoryUnitOperations][[1, 1]],
+					updatedSimulation,
+					mySamples
+				]
+			];
+
 			(* Create our primitive to feed into RoboticSamplePreparation. *)
 			primitive=Nephelometry@@Join[
 				{
-					Sample->mySamples
+					Sample -> samplesMaybeWithModels
 				},
 				RemoveHiddenPrimitiveOptions[Nephelometry,ToList[myOptions]]
 			];
@@ -502,6 +528,7 @@ ExperimentNephelometry[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:Op
 					Name->Lookup[safeOps,Name],
 					Upload->Lookup[safeOps,Upload],
 					Confirm->Lookup[safeOps,Confirm],
+					CanaryBranch->Lookup[safeOps,CanaryBranch],
 					ParentProtocol->Lookup[safeOps,ParentProtocol],
 					Priority->Lookup[safeOps,Priority],
 					StartDate->Lookup[safeOps,StartDate],
@@ -518,6 +545,7 @@ ExperimentNephelometry[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:Op
 			resourcePackets[[1]], (* protocolPacket *)
 			Upload->Lookup[safeOps,Upload],
 			Confirm->Lookup[safeOps,Confirm],
+			CanaryBranch->Lookup[safeOps,CanaryBranch],
 			ParentProtocol->Lookup[safeOps,ParentProtocol],
 			Priority->Lookup[safeOps,Priority],
 			StartDate->Lookup[safeOps,StartDate],
@@ -545,7 +573,7 @@ ExperimentNephelometry[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:Op
 (*----Container overload----*)
 (*--------------------------*)
 
-ExperimentNephelometry[myContainers:ListableP[ObjectP[{Object[Container],Object[Sample]}]|_String|{LocationPositionP,_String|ObjectP[Object[Container]]}],myOptions:OptionsPattern[]]:=Module[
+ExperimentNephelometry[myContainers:ListableP[ObjectP[{Object[Container],Object[Sample],Model[Sample]}]|_String|{LocationPositionP,_String|ObjectP[Object[Container]]}],myOptions:OptionsPattern[]]:=Module[
 	{listedContainers,listedOptions,outputSpecification,output,gatherTests,validSamplePreparationResult,mySamplesWithPreparedSamples,myOptionsWithPreparedSamples,containerToSampleSimulation,
 		updatedSimulation,containerToSampleResult,containerToSampleOutput,samples,sampleOptions,containerToSampleTests},
 
@@ -557,7 +585,7 @@ ExperimentNephelometry[myContainers:ListableP[ObjectP[{Object[Container],Object[
 	gatherTests=MemberQ[output,Tests];
 
 	(* Remove temporal links. *)
-	{listedContainers, listedOptions}=removeLinks[ToList[myContainers], ToList[myOptions]];
+	{listedContainers, listedOptions}={ToList[myContainers], ToList[myOptions]};
 
 	(* First, simulate our sample preparation. *)
 	validSamplePreparationResult=Check[
@@ -565,10 +593,13 @@ ExperimentNephelometry[myContainers:ListableP[ObjectP[{Object[Container],Object[
 		{mySamplesWithPreparedSamples,myOptionsWithPreparedSamples,updatedSimulation}=simulateSamplePreparationPacketsNew[
 			ExperimentNephelometry,
 			listedContainers,
-			listedOptions
+			listedOptions,
+			(* Note:the default input options are also in NephelometrySharedOptions, if these values are updated, please update resolution description in the shared options as well *)
+			DefaultPreparedModelAmount -> 100 Microliter,
+			DefaultPreparedModelContainer -> Model[Container, Plate, "id:n0k9mGzRaaBn"]
 		],
 		$Failed,
-		{Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
+		{Download::ObjectDoesNotExist,Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
 	];
 
 	(* If we are given an invalid define name, return early. *)
@@ -670,6 +701,7 @@ resolveExperimentNephelometryOptions[
 		(* invalid input checks *)
 		samplingDistance,resolvedSamplingPattern,samplingRequested,validSamplingCombo, validSamplingComboTest,
 		discardedSamplePackets, discardedInvalidInputs, discardedTest,
+		nonLiquidSamplePackets, nonLiquidSampleInvalidInputs, nonLiquidSampleTest,
 		sampleModelPacketsToCheck, deprecatedSampleModelPackets,deprecatedInvalidInputs,deprecatedTest,
 		sampleContainerModel,sampleContainerObject,validPreparedPlateContainerQ,preparedPlateInvalidContainerInputs,
 		incompatiblePlateModels,validPreparedPlateContainerTest,compatiblePlateQ,
@@ -694,8 +726,8 @@ resolveExperimentNephelometryOptions[
 		specifiedRetainCover,validRetainCover,retainCoverTest,retainCoverInvalidOptions,
 		plateReaderMixOptionInvalidities,plateReaderMixTests,
 		specifiedMoatSize,specifiedMoatBuffer,specifiedMoatVolume,invalidDiluents,invalidDilutionCurves,invalidSerialDilutionCurves,
-		validPreparedPlateOptionsQ,invalidBlankVolumes,invalidDilutions,invalidMoats,preparedPlateInvalidOptions,validPreparedPlateTest,
-		containersInContents,blanks,blanksInPlateQ,preparedPlateBlanksContainerOptions,validPreparedPlateBlanksContainerTest,
+		validPreparedPlateOptionsQ,invalidBlankVolumes,invalidMoats,preparedPlateInvalidOptions,validPreparedPlateTest,
+		containersInContents,blanksInPlateQ,preparedPlateBlanksContainerOptions,validPreparedPlateBlanksContainerTest,
 		suppliedDilutionCurve,suppliedSerialDilutionCurve,conflictingDilutionCurve,conflictingDilutionCurveOptions,conflictingDilutionCurveInputs,
 		conflictingDilutionCurveInvalidOptions,conflictingDilutionCurveTest,suppliedDiluent,missingDiluent,
 		missingDiluentOptions,missingDiluentInputs,missingDiluentInvalidOptions,missingDiluentTest,
@@ -705,12 +737,10 @@ resolveExperimentNephelometryOptions[
 		tooManyCyclesError,tooManyCyclesTest,tooManyCyclesOptions,dilutionErrorsQ,
 		validCycleTimingQ,cycleTimingError,cycleTimingTest,cycleTimingOptions,
 		runTimeKineticWindowError,runTimeKineticWindowTest,runTimeKineticWindowOptions,
-		highOxygenLevelQ,roundedTargetCarbonDioxideLevel,roundedTargetOxygenLevel,validCO2O2LevelsQ,
-		carbonDioxideOxygenLevelsCompatibleTest,carbonDioxideOxygenLevelsCompatibleOptions,
+		resolvedACUTests,resolvedACUInvalidOptions,
 
 		(* independent options resolution *)
-		cellTypes, sortedCellTypes, majorCellType, specifiedTargetCarbonDioxideLevel, resolvedTargetCarbonDioxideLevel,
-		roundedMixRate,roundedMixTime,mixOptions,resolvedPlateReaderMix,anyInjectionsQ,
+		resolvedACUOptions, roundedMixRate,roundedMixTime,mixOptions,resolvedPlateReaderMix,anyInjectionsQ,
 		resolvedRunTime,resolvedKineticWindowDurations,listedCycleTime,listedNumberOfCycles,resolvedCycleTimes,calculatedNumberOfCycles,resolvedNumberOfCycles,
 		defaultMixingRate,defaultMixingTime,defaultMixingMode,defaultMixingSchedule, kineticWindowTimingsErrors,
 		resolvedPlateReaderMixRate,resolvedPlateReaderMixTime,resolvedPlateReaderMixMode,resolvedPlateReaderMixSchedule,
@@ -726,6 +756,7 @@ resolveExperimentNephelometryOptions[
 		roundedBeamIntensity,resolvedBeamIntensity,nonCellAnalyteInvalidOptions,nonCellAnalyteTest,nonCellAnalyteQ,
 		roundedTemperature,incubationTemperaturesMean,incubationTemperature,resolvedTemperature,incubationTemperaturesFromPackets,
 		roundedEquilibrationTime,resolvedTemperatureEquilibriumTime,
+		plateReaderTemperatureNoEquilibrationWarning, plateReaderTemperatureNoEquilibrationTest,
 		resolvedAnalytes, resolvedAnalyteTests,analytePackets,
 		updatedMapThreadFriendlyOptions,
 
@@ -750,6 +781,8 @@ resolveExperimentNephelometryOptions[
 		blankObjects,numBlanks,numOfBlankAdditions,totalNumSamples,invalidMoatOptions,moatTests,
 		resolvedMoatBuffer,resolvedMoatVolume,resolvedMoatSize,preresolvedAliquot,
 		validPlateModelsList,resolutionAliquotContainer,requiredAliquotContainers,suppliedDestinationWells,plateWells,moatWells,impliedMoat,
+		suppliedDestinationWellsNoAutomatic,duplicateDestinationWells,duplicateDestinationWellOption,duplicateDestinationWellTest,
+		invalidDestinationWellLengthQ,invalidDestinationWellLengthOption,invalidDestinationWellLengthTest,
 		resolvedDestinationWells, requiredAliquotAmounts,aliquotWarningMessage,resolvedConsolidateAliquots,preresolvedAliquotOptions,resolveAliquotOptionsTests,
 		resolvedIntegrationTime, integrationTimeError,invalidIntegrationTimeOption,invalidIntegrationTimeTest,
 		sampleVolumes,sampleObjs,notEqualBlankVolumes,notEqualSamples,notEqualBlankVolumesWarning,notEqualBlankVolumesWarningTest,
@@ -774,7 +807,7 @@ resolveExperimentNephelometryOptions[
 	cache = Lookup[ToList[myResolutionOptions], Cache, {}];
 	simulation=Lookup[ToList[myResolutionOptions],Simulation];
 
-	(* Seperate out our Nephelometry options from our Sample Prep options. *)
+	(* Separate out our Nephelometry options from our Sample Prep options. *)
 	{samplePrepOptions,nephelometryOptions}=splitPrepOptions[myOptions];
 
 	(* get the experiment function that we care about *)
@@ -948,7 +981,7 @@ resolveExperimentNephelometryOptions[
 			Simulation->updatedSimulation,
 			Date->Now
 		],
-		Download::FieldDoesntExist
+		{Download::FieldDoesntExist, Download::NotLinkField}
 	];
 
 
@@ -1013,7 +1046,6 @@ resolveExperimentNephelometryOptions[
 		Null
 	];
 
-
 	(* ------- Validate Sampling options-------- *)
 	(* - Check if SamplingDistance, SamplingDimension and SamplingPattern are compatible - *)
 
@@ -1039,6 +1071,7 @@ resolveExperimentNephelometryOptions[
 	validSamplingCombo = MatchQ[
 		{samplingPattern,samplingDistance,samplingDimension},
 		Alternatives[
+			{Center,Null|Automatic,Null|Automatic},
 			{Matrix,DistanceP|Automatic,Automatic|_Integer},
 			{Except[Matrix,PlateReaderSamplingP],DistanceP,Automatic|Null},
 			{Automatic,DistanceP,_Integer},
@@ -1090,6 +1123,40 @@ resolveExperimentNephelometryOptions[
 		Nothing
 	];
 
+	(* SOLID SAMPLES ARE NOT OK *)
+
+	(* Get the samples that are not liquids,cannot filter those *)
+	nonLiquidSamplePackets=If[Not[MatchQ[Lookup[#, State], Alternatives[Liquid, Null]]],
+		#,
+		Nothing
+	] & /@ samplePackets;
+
+	(* Keep track of samples that are not liquid *)
+	nonLiquidSampleInvalidInputs=If[MatchQ[nonLiquidSamplePackets,{}],{},Lookup[nonLiquidSamplePackets,Object]];
+
+	(* If there are invalid inputs and we are throwing messages,do so *)
+	If[Length[nonLiquidSampleInvalidInputs]>0&&messages,
+		Message[Error::NonLiquidSample,ObjectToString[nonLiquidSampleInvalidInputs,Cache->cacheBall]];
+	];
+
+	(* If we are gathering tests,create a passing and/or failing test with the appropriate result. *)
+	nonLiquidSampleTest=If[gatherTests,
+		Module[{failingTest,passingTest},
+			failingTest=If[Length[nonLiquidSampleInvalidInputs]==0,
+				Nothing,
+				Test["Our input samples "<>ObjectToString[nonLiquidSampleInvalidInputs,Cache->cacheBall]<>" have a Liquid State:",True,False]
+			];
+
+			passingTest=If[Length[nonLiquidSampleInvalidInputs]==Length[samplePackets],
+				Nothing,
+				Test["Our input samples "<>ObjectToString[Complement[Lookup[samplePackets,Object],nonLiquidSampleInvalidInputs],Cache->cacheBall]<>" have a Liquid State:",True,True]
+			];
+
+			{failingTest,passingTest}
+		],
+		Nothing
+	];
+
 
 	(* --- Check if the input samples have Deprecated inputs --- *)
 
@@ -1136,8 +1203,8 @@ resolveExperimentNephelometryOptions[
 	(*--PreparedPlate Container check--*)
 
 	(* look up sample container model and object *)
-	sampleContainerModel = If[NullQ[sampleContainerPackets],Null,Lookup[sampleContainerPackets,Model][Object]];
-	sampleContainerObject = If[NullQ[sampleContainerPackets],Null,Lookup[sampleContainerPackets,Object]];
+	sampleContainerModel = If[NullQ[#], Null, Lookup[#, Model][Object]]& /@ sampleContainerPackets;
+	sampleContainerObject = If[NullQ[#], Null, Lookup[#, Object]]& /@ sampleContainerPackets;
 
 	(* check if sample container models are compatible with nephelometer *)
 	compatiblePlateQ = AllTrue[MemberQ[BMGCompatiblePlates[Nephelometry],#]&/@sampleContainerModel,TrueQ];
@@ -1248,7 +1315,7 @@ resolveExperimentNephelometryOptions[
 
 	(* list rounded nephelometry options *)
 	roundedNephelometryOptionsList = {
-		BeamAperture, BeamIntensity, Temperature, EquilibrationTime, TargetCarbonDioxideLevel, TargetOxygenLevel,
+		BeamAperture, BeamIntensity, Temperature, EquilibrationTime, TargetCarbonDioxideLevel, TargetOxygenLevel, AtmosphereEquilibrationTime,
 		PlateReaderMixTime, PlateReaderMixRate, MoatVolume,
 		SettlingTime, ReadStartTime, IntegrationTime,
 		PrimaryInjectionVolume, SecondaryInjectionVolume, BlankVolume, SamplingDistance
@@ -1262,7 +1329,7 @@ resolveExperimentNephelometryOptions[
 
 	(* list nephelometry precisions *)
 	roundedNephelometryOptionsPrecisions = {
-		10^-1 Millimeter,1 Percent, 1 Celsius, 10^-1 Second, 10^-1 Percent, 10^-1 Percent,
+		10^-1 Millimeter,1 Percent, 1 Celsius, 1 Second, 10^-1 Percent, 10^-1 Percent, 1 Second,
 		1 Second, 1 RPM, 1 Microliter,
 		10^-1 Second, 10^-1 Second, 10^-2 Second,
 		0.5 Microliter, 0.5 Microliter, 1 Microliter, 1 Millimeter
@@ -1835,71 +1902,35 @@ resolveExperimentNephelometryOptions[
 		Nothing
 	];
 
-
-	(* ---Check for incompatible CO2 and O2 levels--- *)
-	(* O2 below 1%, CO2 can only go from 0.1-5% *)
-	(* high CO2 displaces oxygen, can't get high CO2 and high O2 *)
-	(* CO2 at 5% limits O2 to 18% *)
-
-	(* get the rounded CO2 and O2 levels, replace Null or Automatic with ambient condition *)
-	roundedTargetCarbonDioxideLevel = Lookup[roundedNephelometryOptions,TargetCarbonDioxideLevel]/.Automatic->0Percent;
-	roundedTargetOxygenLevel = Lookup[roundedNephelometryOptions,TargetOxygenLevel]/.Null->19Percent;
-
-	(* Check compatibility if both CO2 and O2 levels are set *)
-	validCO2O2LevelsQ = If[
-		MatchQ[roundedTargetCarbonDioxideLevel,PercentP]&&MatchQ[roundedTargetOxygenLevel,PercentP],
-		And[
-			If[roundedTargetOxygenLevel<1Percent,roundedTargetCarbonDioxideLevel<=5Percent,True],
-			If[roundedTargetCarbonDioxideLevel>=5Percent,roundedTargetOxygenLevel<=18Percent,True]
-		],
-		True
-	];
-
-	(* generate tests for cases where there are more than 4 KineticWindowDurations *)
-	carbonDioxideOxygenLevelsCompatibleTest = If[gatherTests,
-		{Test["The specified oxygen and carbon dioxide levels are compatible with each other:",
-			validCO2O2LevelsQ,
-			True
-		]},
-		Null
-	];
-
-	(* throw an error if CycleTime is higher than KineticWindowDurations *)
-	carbonDioxideOxygenLevelsCompatibleOptions = If[!validCO2O2LevelsQ && messages,
-		(
-			Message[Error::NephelometryIncompatibleGasLevels];
-			{TargetCarbonDioxideLevel,TargetOxygenLevel}
-		),
-		{}
-	];
-
-
 	(* --- Independent option resolution --- *)
 
-
 	(* Resolve TargetCarbonDioxideLevel *)
-	(* get CellType from sample packets and remove Nulls *)
-	cellTypes = DeleteCases[Lookup[samplePackets,CellType],Null];
-
-	(* sort and gather cell types *)
-	sortedCellTypes = SortBy[Gather[cellTypes], Length];
-
-	(* take the last list of cell types, as it will be the longest, then the first item on the list to get the major cell type. if there are no non-Null cell types, return an empty list *)
-	majorCellType = If[MatchQ[sortedCellTypes,{}],{},First[Last[sortedCellTypes]]];
-
-	(* look up the CO2 level *)
-	specifiedTargetCarbonDioxideLevel = Lookup[roundedNephelometryOptions,TargetCarbonDioxideLevel];
-
-	(* determine if the oxygen level is too high to allow CO2 to be set at 5 percent or higher *)
-	highOxygenLevelQ = If[MatchQ[roundedTargetOxygenLevel,PercentP],18Percent<=roundedTargetOxygenLevel,False];
-
-	(* resolve the CO2 level based on the majority cell type *)
-	resolvedTargetCarbonDioxideLevel = Which[
-		MatchQ[specifiedTargetCarbonDioxideLevel,Except[Automatic]],specifiedTargetCarbonDioxideLevel,
-		MatchQ[specifiedTargetCarbonDioxideLevel,Automatic]&&MatchQ[majorCellType,NonMicrobialCellTypeP]&&!highOxygenLevelQ, 5 Percent,
-		MatchQ[specifiedTargetCarbonDioxideLevel,Automatic]&&MatchQ[majorCellType,NonMicrobialCellTypeP]&&highOxygenLevelQ, 4 Percent,
-		MatchQ[specifiedTargetCarbonDioxideLevel,Automatic]&&MatchQ[majorCellType,MicrobialCellTypeP|{}], Null,
-		True,Null
+	{{resolvedACUOptions, resolvedACUInvalidOptions}, resolvedACUTests} = If[gatherTests,
+		resolveACUOptions[
+			myType,
+			simulatedSamples,
+			Association[roundedNephelometryOptions,
+				{
+					Cache -> cacheBall,
+					Simulation -> updatedSimulation,
+					Output -> {Result, Tests}
+				}
+			]
+		],
+		{
+			resolveACUOptions[
+				myType,
+				simulatedSamples,
+				Association[roundedNephelometryOptions,
+					{
+						Cache -> cacheBall,
+						Simulation -> updatedSimulation,
+						Output -> Result
+					}
+				]
+			],
+			{}
+		}
 	];
 
 	(* KINETICS ONLY *)
@@ -1913,7 +1944,7 @@ resolveExperimentNephelometryOptions[
 			(* If RunTime is Automatic and CycleTime and NumberOfCycles is set, total the CycleTime times the NumberOfCycles *)
 			MatchQ[runTime,Automatic]&&MatchQ[cycleTime,Except[ListableP[Automatic]]]&&MatchQ[numberOfCycles,Except[ListableP[Automatic]]],Total[MapThread[#1*#2&,{cycleTime,numberOfCycles}]],
 			(* If RunTime is Automatic and CycleTime is set but NumberOfCycles is Automatic, total the CycleTime times 20 which is the default NumberOfCycles *)
-			MatchQ[runTime,Automatic]&&MatchQ[cycleTime,Except[ListableP[Automatic]]],Normal@@cycleTime*20,
+			MatchQ[runTime,Automatic]&&MatchQ[cycleTime,Except[ListableP[Automatic]]],Total[ToList[cycleTime]*20],
 			(* If no timings are set, default to 1 hour *)
 			True,1 Hour
 		],
@@ -2099,7 +2130,7 @@ resolveExperimentNephelometryOptions[
 		MemberQ[suppliedAliquotBooleans,True]&&MemberQ[suppliedAliquotBooleans,False],
 
 		(* If we have more than one container in play then some things are set to be aliquoted or there are multiple sources *)
-		(* In either case these then means everything must be aliquotted *)
+		(* In either case these then means everything must be aliquoted *)
 		MemberQ[suppliedAliquotBooleans,False]&&Length[uniqueContainers]>1
 	];
 
@@ -2130,7 +2161,7 @@ resolveExperimentNephelometryOptions[
 			MemberQ[suppliedDilutionCurve,Except[Null|Automatic]],
 			MemberQ[suppliedDilutionCurve,Except[Null|Automatic]],
 			(* dilutions are required for CellCountParameterizaton method *)
-			MatchQ[resolvedMethod,CellCountParameterizaton]
+			MatchQ[resolvedMethod,CellCount]
 		],
 		False,
 		Or[
@@ -2164,7 +2195,7 @@ resolveExperimentNephelometryOptions[
 				Which[
 					MatchQ[blankMeasurement,False],Nothing,
 					MatchQ[blankVolume,VolumeP],{blank,blankVolume},
-					(MatchQ[blankVolume,Automatic]&&(!MatchQ[First[sampleContainerPackets],ObjectP[blankContainer]]||bmgAliquotRequired)),{blank,Min[{Lookup[samplePacket,Volume],300*Microliter}]},
+					(MatchQ[blankVolume,Automatic]&&(!MatchQ[First[sampleContainerPackets],ObjectP[blankContainer]]||bmgAliquotRequired)),{blank,Min[Cases[{Lookup[samplePacket,Volume],300*Microliter}, VolumeP]]},
 					True,Nothing
 				]
 			]
@@ -2312,7 +2343,7 @@ resolveExperimentNephelometryOptions[
 
 	(* get the resolved temperature based on the IncubationTemperature of the sample analyte *)
 	resolvedTemperature=Which[
-		MatchQ[roundedTemperature,Except[Automatic]],roundedTemperature/.(Null|Ambient->$AmbientTemperature),
+		MatchQ[roundedTemperature,Except[Automatic]],roundedTemperature/.(Null|Ambient->Null),
 		MatchQ[roundedTemperature,Automatic]&&MatchQ[resolvedMethod,Solubility],$AmbientTemperature,
 		MatchQ[roundedTemperature,Automatic]&&MatchQ[resolvedMethod,Alternatives[CellCount]],incubationTemperature,
 		True,$AmbientTemperature
@@ -2329,6 +2360,28 @@ resolveExperimentNephelometryOptions[
 		True,roundedEquilibrationTime
 	];
 
+	(* Check if Temperature is specified but EquilibrationTime was specified zero. Need to warn the user that there might be fluctuations. *)
+	plateReaderTemperatureNoEquilibrationWarning = If[And[
+		MatchQ[resolvedTemperature,GreaterP[$AmbientTemperature]],
+		EqualQ[resolvedTemperatureEquilibriumTime, 0 Minute]],
+		True,
+		False
+	];
+
+	(* Throw message *)
+	If[TrueQ[plateReaderTemperatureNoEquilibrationWarning]&&messages&&notInEngine,
+		Message[Warning::TemperatureNoEquilibration, resolvedTemperature, resolvedTemperatureEquilibriumTime]
+	];
+
+	(*If we are gathering tests, create a test for Quantification and Method mismatch*)
+	plateReaderTemperatureNoEquilibrationTest=If[gatherTests,
+		Test["If Temperature is Solubility, EquilibriumTime is above 0 Minute:",
+			plateReaderTemperatureNoEquilibrationWarning,
+			False
+		],
+		Nothing
+	];
+
 
 	(* update map thread options *)
 	updatedMapThreadFriendlyOptions = MapThread[
@@ -2340,13 +2393,15 @@ resolveExperimentNephelometryOptions[
 	];
 
 
+	(* get the valid container models that can be used with this experiment *)
+	validPlateModelsList = BMGCompatiblePlates[Nephelometry];
 
 	(* MapThread *)
 	{
 		resolvedOptionsPackets,
 		resolvedMapThreadErrorTrackerPackets
 	}=Transpose[MapThread[
-		Function[{samplePacket,containerPacket,containerModelPacket,compositionPackets,resolvedAnalyte,options},
+		Function[{samplePacket,containerPacket,compositionPackets,resolvedAnalyte,options},
 			Module[
 				{
 					(* errors *)
@@ -2361,6 +2416,7 @@ resolveExperimentNephelometryOptions[
 					(* resolve options *)
 					resolvedQuantifyCellCount, resolvedBlank,analytePacket, solvent,
 					blankSamplePacket,blankContainerPacket,badBlankContainer,containerMaxVolume,containerRecommendedVolume, resolvedBlankVolume,
+					bestInitialGuessBlankContainerModel,bestGuessBlankContainerModel,
 					resolvedDiluent, resolvedSerialDilutionCurve, resolvedDilutionCurve,
 
 					(* output packets *)
@@ -2470,31 +2526,26 @@ resolveExperimentNephelometryOptions[
 				blankContainerPacket=SelectFirst[blankContainerPackets,MatchQ[Lookup[#,Object],ObjectP[Lookup[blankSamplePacket,Container]]]&,<||>];
 
 				badBlankContainer=If[MatchQ[specifiedBlank,ObjectP[Object]],
-					!MemberQ[BMGCompatiblePlates[Nephelometry],ObjectP[Lookup[blankContainerPacket,Model]]],
+					!MemberQ[validPlateModelsList,ObjectP[Lookup[blankContainerPacket,Model]]],
 					(* All models need a volume *)
 					True
 				];
 
-				(* Get the model container's max volume to do comparisons later *)
-				containerMaxVolume = If[badBlankContainer,
-					(* If we need to move the blank, then use the sample's container model and set a default *)
-					Lookup[containerModelPacket,MaxVolume,300Microliter]/.{Null|$Failed->300Microliter},
-					Lookup[
-						fetchPacketFromCache[Download[Lookup[blankContainerPacket,Model],Object],cache],
-						MaxVolume,
-						Null
-					]/.{Null->300*Microliter}(*largets volume of the microtiter plates*)
+				(* this is a bit janky, but we are trying to guess which container we will be using for the experiment here. We don't have _all_ the information we need to know for sure since it needs info for all samples *)
+				bestInitialGuessBlankContainerModel = Which[
+					MemberQ[validPlateModelsList, ObjectP[FirstCase[Flatten[suppliedAliquotContainers], ObjectP[]]]], FirstCase[Flatten[suppliedAliquotContainers], ObjectP[]],
+					True, First[validPlateModelsList]
 				];
 
-				containerRecommendedVolume = If[badBlankContainer,
-					(* If we need to move the blank, then use the sample's container model and set a default *)
-					Lookup[containerModelPacket,RecommendedFillVolume,150Microliter]/.{Null|$Failed->150Microliter},
-					Lookup[
-						fetchPacketFromCache[Download[Lookup[blankContainerPacket,Model],Object],cache],
-						RecommendedFillVolume,
-						Null
-					]/.{Null|$Failed->0.2*containerMaxVolume}(*largets volume of the microtiter plates*)
+				bestGuessBlankContainerModel = If[MemberQ[validPlateModelsList, ObjectP[Download[Lookup[blankContainerPacket, Model], Object]]],
+					Download[Lookup[blankContainerPacket, Model], Object],
+					bestInitialGuessBlankContainerModel
 				];
+
+				(* Get the model container's max volume to do comparisons later *)
+				containerMaxVolume = Lookup[fetchPacketFromCache[bestGuessBlankContainerModel, cache], MaxVolume, Null] /. {Null | $Failed -> 300 * Microliter};
+
+				containerRecommendedVolume = Lookup[fetchPacketFromCache[bestGuessBlankContainerModel, cache], RecommendedFillVolume, Null] /. {Null | $Failed -> 0.2 * containerMaxVolume};
 
 
 				(*--Resolve Dilution options--*)
@@ -2538,9 +2589,9 @@ resolveExperimentNephelometryOptions[
 					{
 						Null,
 						{
-							{SafeRound[0.75*(Min[{Lookup[samplePacket,Volume],containerMaxVolume}]),1Microliter], SafeRound[0.25*(Min[{Lookup[samplePacket,Volume],containerMaxVolume}]),1Microliter]},
-							{SafeRound[0.5*(Min[{Lookup[samplePacket,Volume],containerMaxVolume}]),1Microliter], SafeRound[0.5*(Min[{Lookup[samplePacket,Volume],containerMaxVolume}]),1Microliter]},
-							{SafeRound[0.25*(Min[{Lookup[samplePacket,Volume],containerMaxVolume}]),1Microliter], SafeRound[0.75*(Min[{Lookup[samplePacket,Volume],containerMaxVolume}]),1Microliter]}
+							{SafeRound[0.75*(Min[Cases[{Lookup[samplePacket,Volume],containerMaxVolume},VolumeP]]),1Microliter], SafeRound[0.25*(Min[Cases[{Lookup[samplePacket,Volume],containerMaxVolume},VolumeP]]),1Microliter]},
+							{SafeRound[0.5*(Min[Cases[{Lookup[samplePacket,Volume],containerMaxVolume},VolumeP]]),1Microliter], SafeRound[0.5*(Min[Cases[{Lookup[samplePacket,Volume],containerMaxVolume},VolumeP]]),1Microliter]},
+							{SafeRound[0.25*(Min[Cases[{Lookup[samplePacket,Volume],containerMaxVolume},VolumeP]]),1Microliter], SafeRound[0.75*(Min[Cases[{Lookup[samplePacket,Volume],containerMaxVolume},VolumeP]]),1Microliter]}
 						}
 					},
 
@@ -2548,7 +2599,7 @@ resolveExperimentNephelometryOptions[
 					TransferVolume as one tenth of smallest of sample volume or container max volume,
 					DiluentVolume as smallest of sample volume or container max volume, and Number of Dilutions as 3 *)
 					{Automatic,Automatic|Null,Except[Null],False},
-					{{SafeRound[0.1*(Min[{Lookup[samplePacket,Volume],containerMaxVolume}]),1Microliter], Min[{Lookup[samplePacket,Volume],containerMaxVolume}], 3}, Null}
+					{{SafeRound[0.1*(Min[Cases[{Lookup[samplePacket,Volume],containerMaxVolume},VolumeP]]),1Microliter], Min[Cases[{Lookup[samplePacket,Volume],containerMaxVolume},VolumeP]], 3}, Null}
 				];
 
 				(* set blankAliquotRequired to True if dilutions are occurring since blanks will have to be aliquoted *)
@@ -2563,7 +2614,7 @@ resolveExperimentNephelometryOptions[
 					TrueQ[blankMeasurement]&&MatchQ[specifiedBlankVolume,Automatic],
 					{
 						If[badBlankContainer||blankAliquotRequired,
-							Max[{Min[{Lookup[samplePacket,Volume],containerMaxVolume}],containerRecommendedVolume}],
+							Max[{Min[Cases[{Lookup[samplePacket,Volume],containerMaxVolume},VolumeP]],containerRecommendedVolume}],
 							Null
 						],
 						incompatibleBlankOptionsError,
@@ -2617,7 +2668,7 @@ resolveExperimentNephelometryOptions[
 				{resolvedOptionsPacket, mapThreadErrorTrackerPacket}
 			]
 		],
-		{samplePackets,sampleContainerPackets,sampleContainerModelPackets,sampleCompositionPackets,resolvedAnalytes,updatedMapThreadFriendlyOptions}
+		{samplePackets,sampleContainerPackets,sampleCompositionPackets,resolvedAnalytes,updatedMapThreadFriendlyOptions}
 	]];
 
 	(* merge the resolved options and error trackers *)
@@ -2757,7 +2808,7 @@ resolveExperimentNephelometryOptions[
 
 	(*--PreparedPlate Blanks in Container check--*)
 	(* get sample objects in the contents of the containers in *)
-	containersInContents = Flatten[Download[Map[#[[All, 2]]&, Lookup[sampleContainerPackets, Contents]], Object]];
+	containersInContents = Flatten[Download[Map[#[[All, 2]]&, Lookup[(sampleContainerPackets/.Null -> <||>), Contents, {}]], Object]];
 
 	(* check if blanks are in containers when PreparedPlate->True *)
 	blanksInPlateQ = If[preparedPlate&&blankMeasurement,
@@ -2946,7 +2997,7 @@ resolveExperimentNephelometryOptions[
 	sampleCompositions = Lookup[#, Composition] & /@ samplePackets;
 
 	(* get the cases from the sample compositions that correspond to the analytes *)
-	analyteCompositions = MapThread[FirstCase[#1, {_, LinkP[#2]},{Null,Null}] &, {sampleCompositions, mapThreadAnalyte}];
+	analyteCompositions = MapThread[FirstCase[#1, {_, LinkP[#2], _}, {Null,Null,Null}] &, {sampleCompositions, mapThreadAnalyte}];
 
 	(* get the concentration of the analyte from the composition *)
 	analyteConcentrations = analyteCompositions[[All,1]];
@@ -2957,7 +3008,7 @@ resolveExperimentNephelometryOptions[
 	inputConcentrations = Lookup[nephelometryOptionsAssociation,InputConcentration];
 
 	flatAnalytePackets = FlattenCachePackets[sampleAnalytePackets];
-	
+
 	(* convert analyte concentrations to molarity, as that's what parser expects *)
 	{analyteConcentrationsConverted,unresolvableAnalyteConcentrationTuples}=Reap[
 		MapThread[
@@ -2972,37 +3023,37 @@ resolveExperimentNephelometryOptions[
 
 					(* Resolve the concentration *)
 					Which[
-						
+
 						(* If there is no analyte, no concentration *)
 						MatchQ[sampleAnalyte,Null],Null,
-						
+
 						(* If the concentration is specified, use it *)
 						MatchQ[inputConcentration,Except[Null|Automatic]],inputConcentration,
-						
+
 						(* If the units are in terms of concentration already, accept it *)
 						ConcentrationQ[analyteConcentration],analyteConcentration,
-						
+
 						(* If the units are in terms of density, convert to molarity using molecular weight *)
 						DensityQ[analyteConcentration]&&MolecularWeightQ[molecularWeight],Convert[Convert[analyteConcentration,Gram/Liter]/molecularWeight,Mole/Liter],
-						
+
 						(* If the units are in MassPercent and sample density is known, convert to molarity by converting to Percent and multiplying by sample density, then dividing by molecular weight *)
 						MassPercentQ[analyteConcentration]&&DensityQ[sampleDensity]&&MolecularWeightQ[molecularWeight],Convert[(Unitless[analyteConcentration]*sampleDensity)/molecularWeight,Mole/Liter],
-						
+
 						(* If the units are in VolumePercent and analyte density is known, convert to molarity by multiplying by component density, then dividing by molecular weight *)
 						VolumePercentQ[analyteConcentration]&&DensityQ[analyteDensity]&&MolecularWeightQ[molecularWeight],Convert[(Unitless[analyteConcentration]*analyteDensity)/molecularWeight,Mole/Liter],
-						
+
 						(* If the units are in VolumePercent or MassPercent and analyte density is not known, save the input sample for error checking and return Null *)
 						Or[VolumePercentQ[analyteConcentration],MassPercentQ[analyteConcentration]]&&!DensityQ[analyteDensity],Module[{},
 							Sow[{ObjectToString[inputSample,Cache->samplePackets],ObjectToString[sampleAnalyte,Cache->samplePackets],Density},resolveExperimentNephelometryOptions];
 							Null
 						],
-						
+
 						(* If the units are in density or in VolumePercent/MassPercent with known density, but the MW is not known, save the input sample for error checking and return Null *)
 						Or[DensityQ[analyteConcentration],MassPercentQ[analyteConcentration],VolumePercentQ[analyteConcentration]]&&!MolecularWeightQ[molecularWeight],Module[{},
 							Sow[{ObjectToString[inputSample,Cache->samplePackets],ObjectToString[sampleAnalyte,Cache->samplePackets],MolecularWeight},resolveExperimentNephelometryOptions];
 							Null
 						],
-						
+
 						(* Otherwise, just go with Null *)
 						True,Null
 					]
@@ -3012,12 +3063,12 @@ resolveExperimentNephelometryOptions[
 		],
 		resolveExperimentNephelometryOptions
 	];
-	
+
 	If[
 		MatchQ[unresolvableAnalyteConcentrationTuples,Except[{}]]&&messages&&notInEngine,
 		Message[Warning::NephelometryIncomputableConcentration,Sequence@@Transpose[Flatten[unresolvableAnalyteConcentrationTuples,1]]]
 	];
-	
+
 	(* ---Dilution volume error checking--- *)
 	(* Total dilution volume plus injection volume cannot be more than MaxVolume of plate *)
 	(* lookup the dilution curves *)
@@ -3025,10 +3076,14 @@ resolveExperimentNephelometryOptions[
 	mapThreadSerialDilutionCurves = Lookup[allResolvedMapThreadOptionsAssociation,SerialDilutionCurve];
 
 	(* Get the model container's max volume *)
-	containerMaxVolume = fetchPacketFromCache[
-		Download[Lookup[sampleContainerPackets,Model],Object],
-		MaxVolume
-	]/.<||>->300*Microliter;(*largest volume of the microtiter plates*)
+	containerMaxVolume = Lookup[
+		fetchPacketFromCache[
+			Download[Lookup[(sampleContainerPackets/.Null -> <||>),Model, Null],Object],
+			cacheBall
+		],
+		MaxVolume,
+		300*Microliter(*largest volume of the microtiter plates*)
+	];
 
 	{serialDilutionVolumeTooLarge,dilutionVolumeTooLarge} = If[NullQ[Lookup[allResolvedMapThreadOptionsAssociation,Diluent]],
 		{{False},{False}},
@@ -3188,9 +3243,6 @@ resolveExperimentNephelometryOptions[
 
 	(* - Preresolve aliquot container - *)
 
-	(* get the valid container models that can be used with this experiment *)
-	validPlateModelsList = BMGCompatiblePlates[Nephelometry];
-
 	(* If the user gave us a valid container to aliquot into use that same container for any other aliquoting *)
 	(* This will make sure it ends up all in one plate when possible *)
 	(* User could have specified as {{1,container}..}, sneakily flatten so we can pull out object *)
@@ -3226,9 +3278,9 @@ resolveExperimentNephelometryOptions[
 
 	(* - Validate DestinationWell Option - *)
 	(* Check whether the supplied DestinationWell have duplicated members. PlateReader experiment only allows one plate so we should not aliquot two samples into the same well. *)
-	duplicateDestinationWells=DeleteDuplicates[
-		Select[DeleteCases[ToList[suppliedDestinationWells],Automatic],Count[DeleteCases[ToList[suppliedDestinationWells],Automatic],#]>1&]
-	];
+	suppliedDestinationWellsNoAutomatic = DeleteCases[ToList[suppliedDestinationWells], Automatic | NullP];
+	duplicateDestinationWells = Cases[Tally[suppliedDestinationWellsNoAutomatic], {well_, GreaterP[1]} :> well];
+
 	duplicateDestinationWellOption=If[!MatchQ[duplicateDestinationWells,{}]&&!gatherTests,
 		Message[Error::PlateReaderDuplicateDestinationWell,ToString[DeleteDuplicates[duplicateDestinationWells]]];{DestinationWell},
 		{}
@@ -3290,28 +3342,33 @@ resolveExperimentNephelometryOptions[
 
 	(* get the RequiredAliquotAmount *)
 	(* round to 0.1 Microliter precision to avoid rounding error when resolving aliquot options *)
-	requiredAliquotAmounts = SafeRound[
+	requiredAliquotAmounts = If[Length[nonLiquidSampleInvalidInputs]>0,
+		(* If there's non-liquid samples, don't bother about the volume as it will error out. We also don't want to throw error about amount-state conflict because amount is resolved by us.*)
+		Automatic,
+		SafeRound[
 			MapThread[
-				Min[
+				Min[Cases[
 					{
-						Lookup[#1,Volume],
+						Lookup[#1, Volume, Null],
 						Lookup[
 							FirstCase[
 								Flatten[listedAliquotContainerPackets],
-								ObjectP[Download[#2,Object]],
+								ObjectP[Download[#2, Object]],
 								<||>
 							],
 							MaxVolume,
-							If[MatchQ[#2,ObjectP[{Object[Container],Model[Container]}]],
-								Download[#2,MaxVolume],
+							If[MatchQ[#2, ObjectP[{Object[Container], Model[Container]}]],
+								Download[#2, MaxVolume],
 								300 Microliter
 							]
 						]
-					}
+					},
+					VolumeP]
 				]&,
-				{samplePackets,requiredAliquotContainers}
+				{samplePackets, requiredAliquotContainers}
 			],
-		0.1Microliter
+			0.1Microliter
+		]
 	];
 
 	(* make the AliquotWarningMessage value.  This sends the message indicating why we need to use specific kinds of containers *)
@@ -3336,13 +3393,14 @@ resolveExperimentNephelometryOptions[
 	];
 
 	(* resolve the aliquot options *)
-	{resolvedAliquotOptions,resolveAliquotOptionsTests}=If[gatherTests,
+	{resolvedAliquotOptions,resolveAliquotOptionsTests}=Quiet[If[gatherTests,
 		resolveAliquotOptions[
 			experimentFunction,
 			Download[mySamples,Object],
 			simulatedSamples,
 			preresolvedAliquotOptions,
 			Cache->cacheBall,
+			Simulation->updatedSimulation,
 			RequiredAliquotContainers->requiredAliquotContainers,
 			RequiredAliquotAmounts->requiredAliquotAmounts,
 			AliquotWarningMessage->aliquotWarningMessage,
@@ -3354,12 +3412,13 @@ resolveExperimentNephelometryOptions[
 			simulatedSamples,
 			preresolvedAliquotOptions,
 			Cache->cacheBall,
+			Simulation->updatedSimulation,
 			RequiredAliquotContainers->requiredAliquotContainers,
 			RequiredAliquotAmounts->requiredAliquotAmounts,
 			AliquotWarningMessage->aliquotWarningMessage,
 			Output->Result
 		],{}}
-	];
+	],{Error::MissingRequiredAliquotAmounts,Error::SolidSamplesUnsupported,Error::InvalidInput}];
 
 
 	(* - Verify the sample volume and blank volume - *)
@@ -3369,10 +3428,10 @@ resolveExperimentNephelometryOptions[
 		Lookup[samplePackets,Volume],
 		Lookup[resolvedAliquotOptions,AssayVolume]
 	];
-	
+
 	(* Find sample objects *)
 	sampleObjs=Lookup[samplePackets,Object];
-	
+
 	(* Track the invalid blank volumes *)
 	mapThreadDiluents = Lookup[allResolvedMapThreadOptionsAssociation,Diluent];
 
@@ -3399,7 +3458,7 @@ resolveExperimentNephelometryOptions[
 
 	(* Throw message *)
 	If[notEqualBlankVolumesWarning&&messages&&notInEngine,
-		Message[Warning::NotEqualBlankVolumesWarning,notEqualBlankVolumes,notEqualSamples]
+		Message[Warning::NotEqualBlankVolumes,notEqualBlankVolumes,notEqualSamples]
 	];
 
 	(* Create test *)
@@ -3414,7 +3473,7 @@ resolveExperimentNephelometryOptions[
 	(* If we aren't aliquoting, samples are all required to be in one container *)
 	assayContainerModelPacket=If[MatchQ[Lookup[resolvedAliquotOptions,Aliquot],{True..}],
 		aliquotContainerModelPacket,
-		First[sampleContainerModelPackets]
+		FirstCase[sampleContainerModelPackets,PacketP[],<||>]
 	];
 
 	{invalidInjectionOptions,validInjectionTests}=If[gatherTests,
@@ -3619,7 +3678,9 @@ resolveExperimentNephelometryOptions[
 			cycleTimingOptions,
 			runTimeKineticWindowOptions,
 			retainCoverInvalidOptions,
-			carbonDioxideOxygenLevelsCompatibleOptions
+			resolvedACUInvalidOptions,
+			duplicateDestinationWellOption,
+			invalidDestinationWellLengthOption
 		}]],
 		Null
 	];
@@ -3630,7 +3691,7 @@ resolveExperimentNephelometryOptions[
 	];
 
 	(* combine all the invalid inputs together *)
-	invalidInputs=DeleteDuplicates[Flatten[{discardedInvalidInputs,deprecatedInvalidInputs,preparedPlateInvalidContainerInputs}]];
+	invalidInputs=DeleteDuplicates[Flatten[{discardedInvalidInputs,nonLiquidSampleInvalidInputs, deprecatedInvalidInputs,preparedPlateInvalidContainerInputs}]];
 
 	(* if there are any invalid inputs, throw Error::InvalidInput *)
 	If[Not[MatchQ[invalidInputs,{}]]&&messages,
@@ -3654,7 +3715,6 @@ resolveExperimentNephelometryOptions[
 				Diluent->Lookup[allResolvedMapThreadOptionsAssociation,Diluent],
 				DilutionCurve->Lookup[allResolvedMapThreadOptionsAssociation,DilutionCurve],
 				SerialDilutionCurve->Lookup[allResolvedMapThreadOptionsAssociation,SerialDilutionCurve],
-				TargetCarbonDioxideLevel->resolvedTargetCarbonDioxideLevel,
 				ReadDirection->readDirection,
 				PrimaryInjectionFlowRate->resolvedPrimaryFlowRate,
 				SecondaryInjectionFlowRate->resolvedSecondaryFlowRate,
@@ -3700,6 +3760,7 @@ resolveExperimentNephelometryOptions[
 				TertiaryInjectionSample->tertiaryInjectionSample,
 				QuaternaryInjectionSample->quaternaryInjectionSample
 			},
+			resolvedACUOptions,
 			resolvedSamplePrepOptions,
 			resolvedAliquotOptions,
 			resolvedPostProcessingOptions
@@ -3714,6 +3775,7 @@ resolveExperimentNephelometryOptions[
 		Flatten[{
 			validSamplingComboTest,
 			discardedTest,
+			nonLiquidSampleTest,
 			deprecatedTest,
 			validPreparedPlateContainerTest,
 			compatibleMaterialsTests,
@@ -3748,12 +3810,15 @@ resolveExperimentNephelometryOptions[
 			missingDiluentTest,
 			missingDilutionCurveTest,
 			validInjectionTests,
-			carbonDioxideOxygenLevelsCompatibleTest,
+			resolvedACUTests,
 			tooManyKineticWindowsTest,
 			tooManyCyclesTest,
 			cycleTimingTest,
 			runTimeKineticWindowTest,
-			invalidIntegrationTimeTest
+			invalidIntegrationTimeTest,
+			duplicateDestinationWellTest,
+			invalidDestinationWellLengthTest,
+			plateReaderTemperatureNoEquilibrationTest
 		}],
 		_EmeraldTest
 	];
@@ -3825,7 +3890,7 @@ nephelometryResourcePackets[
 		quaternaryInjectionsWithResources,anyInjectionsQ,numberOfInjectionContainers,washVolume,sampleLabelsWithReplicates,blankLabelsWithReplicates,
 		moatBuffer,moatVolume,moatSize,numberOfMoatWells,numberOfPlates,totalMoatVolume,moatBufferResource, analytes,
 		totalDilutionWells,totalSerialDilutionWells,numberOfDilutionWells,requiredWells,maxNumDilutionPlates,dilutionContainersResources,
-		primaryCleaningSolvent,secondaryCleaningSolvent,injectorCleaningFields,experimentFunction,primitiveHead,
+		line1PrimaryPurgingSolvent,line2PrimaryPurgingSolvent, line1SecondaryPurgingSolvent, line2SecondaryPurgingSolvent, injectorCleaningFields,experimentFunction,primitiveHead,
 		resolvedPreparation,nonHiddenOptions,unitOperationPackets,rawResourceBlobs,resourcesWithoutName,resourceToNameReplaceRules,resourcesOk,resourceTests
 	},
 
@@ -3913,7 +3978,7 @@ nephelometryResourcePackets[
 			Simulation->updatedSimulation,
 			Date -> Now
 		],
-		{Download::FieldDoesntExist}
+		{Download::FieldDoesntExist, Download::NotLinkField}
 	];
 
 
@@ -4311,7 +4376,7 @@ nephelometryResourcePackets[
 	method = Lookup[expandedResolvedOptions,Method];
 
 	(* Create solvent resources to clean the lines *)
-	primaryCleaningSolvent=Resource@@{
+	line1PrimaryPurgingSolvent=Resource@@{
 		Sample->If[
 			MatchQ[method,CellCount], (* If we have cell samples, use bleach to clean the lines just in case *)
 			Model[Sample, StockSolution, "id:qdkmxzq7lWRp"], (* 10% Bleach *)
@@ -4319,32 +4384,47 @@ nephelometryResourcePackets[
 		],
 		Amount->washVolume,
 		Container->Model[Container,Vessel,"id:bq9LA0dBGGR6"],
-		(* If we have only one injection container then we are only priming one line and we can use the same resource for set-up and tear-down *)
-		If[numberOfInjectionContainers==1,
-			Name->"Primary Cleaning Solvent",
-			Nothing
-		]
+		Name->"Line1 Primary Purging Solvent"
 	};
+	line2PrimaryPurgingSolvent = If[numberOfInjectionContainers==2,
+		Resource@@{
+			Sample->If[
+				MatchQ[method,CellCount], (* If we have cell samples, use bleach to clean the lines just in case *)
+				Model[Sample, StockSolution, "id:qdkmxzq7lWRp"], (* 10% Bleach *)
+				Model[Sample, StockSolution, "id:BYDOjv1VA7Zr"] (* 70% Ethanol *)
+			],
+			Amount->washVolume,
+			Container->Model[Container,Vessel,"id:bq9LA0dBGGR6"],
+			Name->"Line2 Primary Purging Solvent"
+		},
+		Null
+	];
 
-	secondaryCleaningSolvent=Resource@@{
+	line1SecondaryPurgingSolvent=Resource@@{
 		Sample->Model[Sample,"id:8qZ1VWNmdLBD"] (*Milli-Q water *),
 		Amount->washVolume,
 		Container->Model[Container,Vessel,"id:bq9LA0dBGGR6"],
-		(* If we have only one injection container then we are only priming one line and we can use the same resource for set-up and tear-down *)
-		If[numberOfInjectionContainers==1,
-			Name->"Secondary Cleaning Solvent",
-			Nothing
-		]
+		Name->"Line1 Secondary Purging Solvent"
 	};
+	line2SecondaryPurgingSolvent = If[numberOfInjectionContainers==2,
+		Resource@@{
+			Sample->Model[Sample,"id:8qZ1VWNmdLBD"] (*Milli-Q water *),
+			Amount->washVolume,
+			Container->Model[Container,Vessel,"id:bq9LA0dBGGR6"],
+			Name->"Line2 Secondary Purging Solvent"
+		},
+		Null
+	];
+
 
 	(* Populate fields needed to clean the lines before/after the run *)
 	(* If we're only cleaning 1 line we can use a single 50mL to hold prepping and flushing solvent *)
 	injectorCleaningFields=If[anyInjectionsQ,
 		<|
-			PrimaryPreppingSolvent->primaryCleaningSolvent,
-			PrimaryFlushingSolvent->primaryCleaningSolvent,
-			SecondaryPreppingSolvent->secondaryCleaningSolvent,
-			SecondaryFlushingSolvent ->secondaryCleaningSolvent
+			Line1PrimaryPurgingSolvent->line1PrimaryPurgingSolvent,
+			Line2PrimaryPurgingSolvent->line2PrimaryPurgingSolvent,
+			Line1SecondaryPurgingSolvent->line1SecondaryPurgingSolvent,
+			Line2SecondaryPurgingSolvent ->line2SecondaryPurgingSolvent
 		|>,
 		<||>
 	];
@@ -4580,12 +4660,12 @@ nephelometryResourcePackets[
 				Replace[SamplesIn] -> (Link[#, Protocols]& /@ If[NullQ[diluents],samplesInResources,dilutionSamplesInResources]),
 				Operator->Link[Lookup[myResolvedOptions,Operator]],
 				Replace[Checkpoints] -> {
-					{"Preparing Samples", 30 Minute, "Preprocessing, such as incubation, mixing, centrifuging, and aliquoting, is performed.", Link[Resource[Operator -> Model[User, Emerald, Operator, "Trainee"], Time -> 30 Minute]]},
-					{"Picking Resources", 20 Minute, "Samples required to execute this protocol are gathered from storage.", Link[Resource[Operator -> Model[User, Emerald, Operator, "Trainee"], Time -> 20 Minute]]},
-					{"Preparing Assay Plate", If[NullQ[diluentResources]||NullQ[Lookup[expandedResolvedOptions, MoatBuffer]],0 Minute, 30 Minute], "The plate is prepared with moats and dilutions as specified.", Link[Resource[Operator -> Model[User, Emerald, Operator, "Trainee"], Time -> 30 Minute]]},
-					{"Acquiring Data", estimatedReadingTime, "Nephelometry measurements are taken for samples.", Link[Resource[Operator -> Model[User, Emerald, Operator, "Trainee"], Time -> estimatedReadingTime]]},
-					{"Sample Post-Processing", 30 Minute, "Any measuring of volume, weight, or sample imaging post experiment is performed.", Link[Resource[Operator -> Model[User, Emerald, Operator, "Trainee"], Time -> 5 * Minute]]},
-					{"Returning Materials", 20 Minute, "Samples are returned to storage.", Link[Resource[Operator -> Model[User, Emerald, Operator, "Trainee"], Time -> 10 * Minute]]}
+					{"Preparing Samples", 30 Minute, "Preprocessing, such as incubation, mixing, centrifuging, and aliquoting, is performed.", Link[Resource[Operator -> $BaselineOperator, Time -> 30 Minute]]},
+					{"Picking Resources", 20 Minute, "Samples required to execute this protocol are gathered from storage.", Link[Resource[Operator -> $BaselineOperator, Time -> 20 Minute]]},
+					{"Preparing Assay Plate", If[NullQ[diluentResources]||NullQ[Lookup[expandedResolvedOptions, MoatBuffer]],0 Minute, 30 Minute], "The plate is prepared with moats and dilutions as specified.", Link[Resource[Operator -> $BaselineOperator, Time -> 30 Minute]]},
+					{"Acquiring Data", estimatedReadingTime, "Nephelometry measurements are taken for samples.", Link[Resource[Operator -> $BaselineOperator, Time -> estimatedReadingTime]]},
+					{"Sample Post-Processing", 30 Minute, "Any measuring of volume, weight, or sample imaging post experiment is performed.", Link[Resource[Operator -> $BaselineOperator, Time -> 5 * Minute]]},
+					{"Returning Materials", 20 Minute, "Samples are returned to storage.", Link[Resource[Operator -> $BaselineOperator, Time -> 10 * Minute]]}
 				},
 				Replace[ContainersIn] -> (Link[Resource[Sample -> #], Protocols]&) /@ containersIn,
 				ImageSample -> Lookup[expandedResolvedOptions, ImageSample],
@@ -4621,6 +4701,7 @@ nephelometryResourcePackets[
 				EquilibrationTime -> Lookup[expandedResolvedOptions, EquilibrationTime],
 				TargetCarbonDioxideLevel -> Lookup[myResolvedOptions, TargetCarbonDioxideLevel],
 				TargetOxygenLevel -> Lookup[myResolvedOptions, TargetOxygenLevel],
+				AtmosphereEquilibrationTime -> Lookup[myResolvedOptions, AtmosphereEquilibrationTime],
 				PlateReaderMix -> Lookup[expandedResolvedOptions, PlateReaderMix],
 				PlateReaderMixRate -> Lookup[expandedResolvedOptions, PlateReaderMixRate],
 				PlateReaderMixTime -> Lookup[expandedResolvedOptions, PlateReaderMixTime],
@@ -4700,11 +4781,24 @@ nephelometryResourcePackets[
 				{}
 			}
 		],
-		Module[{unitOpPacket,unitOperationPacketWithLabeledObjects},
-			unitOpPacket = UploadUnitOperation[
+		(* Robotic branch *)
+		Module[{newLabelSampleUO, oldResourceToNewResourceRules, labelSampleAndUnitOpPacket, labelSamplePacket, unitOpPacket,unitOperationPacketWithLabeledObjects},
+
+			(* get the new label sample unit operation if it exists; need to replace the models in it with the sample resources we've already created/simulated *)
+			{newLabelSampleUO, oldResourceToNewResourceRules} = If[MatchQ[Lookup[myResolvedOptions, PreparatoryUnitOperations], {_[_LabelSample]}],
+				generateLabelSampleUO[
+					Lookup[myResolvedOptions, PreparatoryUnitOperations][[1, 1]],
+					updatedSimulation,
+					samplesInResources
+				],
+				{Null, {}}
+			];
+
+			labelSampleAndUnitOpPacket = UploadUnitOperation[{
+				If[NullQ[newLabelSampleUO], Nothing, newLabelSampleUO],
 				primitiveHead@@Join[
 					{
-						Sample->samplesInResources
+						Sample -> samplesInResources /. oldResourceToNewResourceRules
 					},
 					ReplaceRule[
 						Cases[myResolvedOptions, Verbatim[Rule][Alternatives@@nonHiddenOptions, _]],
@@ -4745,11 +4839,17 @@ nephelometryResourcePackets[
 						SampleLabel->sampleLabelsWithReplicates,
 						BlankLabel->blankLabelsWithReplicates
 					}
-				],
+				]},
 				Preparation->Robotic,
 				UnitOperationType->Output,
 				FastTrack->True,
 				Upload->False
+			];
+
+			(* split out the LabelSample and Nephelometry UOs *)
+			{labelSamplePacket, unitOpPacket} = If[Length[labelSampleAndUnitOpPacket] == 2,
+				labelSampleAndUnitOpPacket,
+				{Null, First[labelSampleAndUnitOpPacket]}
 			];
 
 			(* Add the LabeledObjects field to the Robotic unit operation packet. *)
@@ -4758,7 +4858,7 @@ nephelometryResourcePackets[
 				unitOpPacket,
 				Replace[LabeledObjects]->DeleteDuplicates@Join[
 					Cases[
-						Transpose[{sampleLabelsWithReplicates, If[NullQ[diluents],samplesInResources,dilutionSamplesInResources]}],
+						Transpose[{sampleLabelsWithReplicates, If[NullQ[diluents],samplesInResources /. oldResourceToNewResourceRules,dilutionSamplesInResources]}],
 						{_String, Resource[KeyValuePattern[Sample->ObjectP[{Object[Sample], Model[Sample]}]]]}
 					],
 					Cases[
@@ -4776,10 +4876,10 @@ nephelometryResourcePackets[
 				]
 			];
 
-			(* Return our unit operation packet with labeled objects. *)
+			(* Return our unit operation packets with labeled objects. *)
 			{
 				Null,
-				{unitOperationPacketWithLabeledObjects}
+				{If[NullQ[labelSamplePacket], Nothing, labelSamplePacket], unitOperationPacketWithLabeledObjects}
 			}
 		]
 	];
@@ -5012,3 +5112,208 @@ calculateDilutionVolumes[myCurve : {{VolumeP, RangeP[0,1]}...}] :=
 	];
 
 calculateDilutionVolumes[Null] :={{Null}, {Null}};
+
+
+(* ::Subsubsection:: *)
+(*resolveACUOptions*)
+(* this helper resolves TargetCarbonDioxideLevel/TargetOxygenLevel options for plate reader atmospheric control unit, and does error checking *)
+
+Error::IncompatibleGasLevels = "The specified TargetCarbonDioxideLevel and TargetOxygenLevel are incompatible with the instrument due to gas displacement properties, where ambient oxygen levels are 19% and ambient carbon dioxide levels are 0%. If the TargetOxygenLevel is below 1%, please set the TargetCarbonDioxideLevel to below 5%. If the TargetCarbonDioxideLevel is above 5%, please set the TargetOxygenLevel to below 18%, or leave TargetOxygenLevel as Null and TargetCarbonDioxideLevel as Automatic.";
+Error::NoACUOnInstrument = "The specified instrument, `1`, does not have a atmospheric control unit (ACU) that is capable of achieving TargetOxygenLevel of `2` and TargetCarbonDioxideLevel of `3`. Please consider using Model[Instrument, PlateReader, \"id:zGj91a7Ll0Rv\"] instead to control gas levels, or setting gas level options to Null."
+
+resolveACUOptions[myType_, mySample:ObjectP[Object[Sample]], myOptions:{__Rule} | _Association] := resolveACUOptions[myType, {mySample}, myOptions];
+resolveACUOptions[myType_, mySamples:{ObjectP[Object[Sample]]..}, myOptions:{__Rule} | _Association] := Module[
+	{
+		output, gatherTests, messages, cache, simulation, acuDownloads, cacheBall, fastCacheBall, cellTypes, sortedCellTypes, majorCellType, resolvedTargetO2Level, highOxygenLevelQ,
+		specifiedInstrument, specifiedInstrumentModel, resolvedTargetCO2Level, resolvedAtmosphereEquilibrationTime, validCO2O2LevelsQ, carbonDioxideOxygenLevelsCompatibleTest,
+		carbonDioxideOxygenLevelsCompatibleOptions, validInstrumentSelectionQ, instrumentNoACUTest, instrumentNoACUOptions, invalidOptions, allTests, resultRule, testRule
+	},
+
+	(* determine the requested return value for the function *)
+	output = Lookup[myOptions, Output];
+
+	(* Determine if we should keep a running list of tests *)
+	gatherTests = MemberQ[output, Tests];
+	messages = !gatherTests;
+
+	(* get the cache and simulation *)
+	cache = Lookup[myOptions, Cache, {}];
+	simulation = Lookup[myOptions, Simulation, Null];
+
+	(* --- Download --- *)
+
+	(* get the specified instrument *)
+	specifiedInstrument = Lookup[myOptions, Instrument];
+
+	acuDownloads = Quiet[
+		Download[
+			{
+				mySamples,
+				Cases[ToList[specifiedInstrument], ObjectP[Object[Instrument]]]
+			},
+			{
+				{Packet[Analytes, Composition, CellType], Packet[Composition[[All, 2]][CellType]]},
+				{Packet[Model]}
+			},
+			Cache -> cache,
+			Simulation -> simulation
+		],
+		{Download::FieldDoesntExist, Download::MissingField, Download::MissingCacheField}
+	];
+
+	(* make fastCacheBall *)
+	cacheBall = FlattenCachePackets[{acuDownloads, cache}];
+	fastCacheBall = makeFastAssocFromCache[cacheBall];
+
+	(* get cellTypes, from sample packets *)
+	cellTypes = Map[
+		(* if CellType is directly specified for the sample, then we consider that as the major cell type *)
+		If[MatchQ[fastAssocLookup[fastCacheBall, #, CellType], CellTypeP],
+			fastAssocLookup[fastCacheBall, #, CellType],
+			(* otherwise try to lookup the major cell type from composition *)
+			Module[{mainCellModel},
+				mainCellModel = selectMainCellFromSample[#, Cache -> cacheBall, Simulation -> simulation];
+				(* get the cell type *)
+				fastAssocLookup[fastCacheBall, First[mainCellModel], CellType]
+			]
+		]&,
+		(* this transforms any packets that were fed as an input into object reference *)
+		Download[mySamples, Object]
+	];
+
+	(* sort and gather cell types *)
+	sortedCellTypes = SortBy[Gather[Cases[cellTypes, CellTypeP]], Length];
+
+	(* take the last list of cell types, as it will be the longest, then the first item on the list to get the major cell type. if there are no non-Null cell types, return an empty list *)
+	majorCellType = If[MatchQ[sortedCellTypes, {}], {}, First[Last[sortedCellTypes]]];
+
+	(* --- get the resolved target oxygen level - the option is default to Null, so we only need to look it up from options --- *)
+	resolvedTargetO2Level = Lookup[myOptions, TargetOxygenLevel, Null];
+
+	(* determine if the oxygen level is too high to allow CO2 to be set at 5 percent or higher *)
+	highOxygenLevelQ = MatchQ[resolvedTargetO2Level, GreaterEqualP[18 * Percent]];
+
+	(* get the model of the specified instrument model *)
+	specifiedInstrumentModel = If[MatchQ[specifiedInstrument, ObjectP[Model[Instrument]] | Automatic],
+		specifiedInstrument,
+		fastAssocLookup[fastCacheBall, specifiedInstrument, Model]
+	];
+
+	(* --- Resolve the CO2 level based on the majority cell type --- *)
+	resolvedTargetCO2Level = Which[
+		(* respect user input *)
+		MatchQ[Lookup[myOptions, TargetCarbonDioxideLevel, Null], Except[Automatic]],
+		Lookup[myOptions, TargetCarbonDioxideLevel, Null],
+		(* if the specified instrument does not have an ACU, then this makes no sense *)
+		!MatchQ[myType, Object[Protocol, Nephelometry] | Object[Protocol, NephelometryKinetics]] && !MatchQ[specifiedInstrumentModel, Automatic | ObjectP[Model[Instrument, PlateReader, "id:zGj91a7Ll0Rv"]]], (* Model[Instrument, PlateReader, "CLARIOstar Plus with ACU"] *)
+		Null,
+		(* set to something if we are dealing with mam cell *)
+		MatchQ[majorCellType, NonMicrobialCellTypeP] && !highOxygenLevelQ,
+		5 Percent,
+		(* set to something if we are dealing with mam cell *)
+		MatchQ[majorCellType, NonMicrobialCellTypeP] && highOxygenLevelQ,
+		4 Percent,
+		(* otherwise Null *)
+		True,
+		Null
+	];
+
+	(* --- resolve the AtmosphereEquilibrationTime --- *)
+	resolvedAtmosphereEquilibrationTime = Which[
+		(* respect user input always *)
+		MatchQ[Lookup[myOptions, AtmosphereEquilibrationTime, Automatic], Except[Automatic]],
+		Lookup[myOptions, AtmosphereEquilibrationTime],
+		(* if we are not setting O2/CO2 set to Null *)
+		NullQ[resolvedTargetO2Level] && NullQ[resolvedTargetCO2Level],
+		Null,
+		(* otherwise default to 5 minute *)
+		True,
+		5 * Minute
+	];
+
+	(* === ERROR CHECKING === *)
+
+	(* ---Check for incompatible CO2 and O2 levels--- *)
+	(* O2 below 1%, CO2 can only go from 0.1-5% *)
+	(* high CO2 displaces oxygen, can't get high CO2 and high O2 *)
+	(* CO2 at 5% limits O2 to 18% *)
+
+	(* Check compatibility if both CO2 and O2 levels are set *)
+	validCO2O2LevelsQ = If[
+		MatchQ[resolvedTargetCO2Level, PercentP] && MatchQ[resolvedTargetO2Level, PercentP],
+		And[
+			If[resolvedTargetO2Level < 1Percent, resolvedTargetCO2Level <= 5Percent, True],
+			If[resolvedTargetCO2Level >= 5Percent, resolvedTargetO2Level <= 18Percent, True]
+		],
+		True
+	];
+
+	(* generate tests for cases where there are more than 4 KineticWindowDurations *)
+	carbonDioxideOxygenLevelsCompatibleTest = If[gatherTests,
+		Test["The specified oxygen and carbon dioxide levels are compatible with each other:",
+			validCO2O2LevelsQ,
+			True
+		],
+		Nothing
+	];
+
+	(* throw an error if CycleTime is higher than KineticWindowDurations *)
+	carbonDioxideOxygenLevelsCompatibleOptions = If[!validCO2O2LevelsQ && messages,
+		(
+			Message[Error::IncompatibleGasLevels];
+			{TargetCarbonDioxideLevel, TargetOxygenLevel}
+		),
+		{}
+	];
+
+	(* --- If this is a plate reader instrument, check if it has an ACU at all --- *)
+	(* this check is not necessary for nephelometry since all nephelometers have ACU *)
+	validInstrumentSelectionQ = Or[
+		(* we must use an instrument with ACU if Target O2/CO2 level is specified *)
+		And[
+			MatchQ[resolvedTargetO2Level, PercentP] || MatchQ[resolvedTargetCO2Level, PercentP],
+			(* need to check instrument model for all other plate reader experiments  *)
+			MatchQ[specifiedInstrumentModel, Automatic | ObjectP[Model[Instrument, PlateReader, "id:zGj91a7Ll0Rv"]]] (* Model[Instrument, PlateReader, "CLARIOstar Plus with ACU"] *)
+		],
+		(* or we are not using ACU then dont care about this check *)
+		NullQ[resolvedTargetO2Level] && NullQ[resolvedTargetCO2Level],
+		(* or if we are doing neph instrument is always valid since all nephelometers have ACU *)
+		MatchQ[myType, Object[Protocol, Nephelometry] | Object[Protocol, NephelometryKinetics]]
+	];
+
+	(* make tests *)
+	instrumentNoACUTest = If[gatherTests,
+		Test["Specified instrument is capable of controlling atmospheric parameters with an Atmospheric Control Unit if TargetCarbonDioxideLevel/TargetOxygenLevel is specified:",
+			validInstrumentSelectionQ,
+			True
+		],
+		Nothing
+	];
+
+	(* throw messages *)
+	instrumentNoACUOptions = If[!validInstrumentSelectionQ && messages,
+		(
+			Message[Error::NoACUOnInstrument, specifiedInstrument, resolvedTargetO2Level, resolvedTargetCO2Level];
+			{Instrument, TargetCarbonDioxideLevel, TargetOxygenLevel}
+		),
+		{}
+	];
+
+	(* gather invalid options and tests *)
+	invalidOptions = DeleteDuplicates[Flatten[{carbonDioxideOxygenLevelsCompatibleOptions, instrumentNoACUOptions}]];
+	allTests = Flatten[{carbonDioxideOxygenLevelsCompatibleTest, instrumentNoACUTest}];
+
+	(* we return the resolved ACU option rules, and any invalid option found during error checking *)
+	resultRule = Result -> {
+		{
+			TargetCarbonDioxideLevel -> resolvedTargetCO2Level,
+			TargetOxygenLevel -> resolvedTargetO2Level,
+			AtmosphereEquilibrationTime -> resolvedAtmosphereEquilibrationTime
+		},
+		invalidOptions
+	};
+	testRule = Tests -> allTests;
+
+	(* return *)
+	output /. {resultRule, testRule}
+];

@@ -1,7 +1,7 @@
 (* ::Package:: *)
 
 (* ::Text:: *)
-(*\[Copyright] 2011-2022 Emerald Cloud Lab, Inc.*)
+(*\[Copyright] 2011-2024 Emerald Cloud Lab, Inc.*)
 
 (* ::Section:: *)
 (*Source Code*)
@@ -59,15 +59,24 @@ DefineObjectType[Object[UnitOperation,PickColonies],
         Format -> Multiple,
         Class -> Expression,
         Pattern :> ListableP[QPixFluorescenceWavelengthsP | QPixAbsorbanceWavelengthsP | BrightField],
-        Description -> "For each member of SampleLink, how to expose the colonies to light/and measure light from the colonies when capturing images of the colonies.",
+        Description -> "For each member of SampleLink, and for each ImagingStrategy, the preset which describes the light source, blue-white filter, and filter pairs for selecting fluorescence excitation and emission wavelengths when capturing images.",
+        IndexMatching -> SampleLink,
+        Developer -> True,
+        Category -> "Imaging"
+      },
+      ImagingStrategies -> {
+        Format -> Multiple,
+        Class -> Expression,
+        Pattern :> ListableP[QPixImagingStrategiesP],
+        Description -> "For each member of SampleLink, the end goals for capturing images of the colonies. The available options include BrightField imaging, BlueWhite Screening, and Fluorescence imaging.",
         IndexMatching -> SampleLink,
         Category -> "Imaging"
       },
       ExposureTimes -> {
         Format -> Multiple,
         Class -> Expression,
-        Pattern :> ListableP[GreaterP[0 Millisecond]|AutoExpose],
-        Description -> "For each member of SampleLink, and for each ImagingChannel, length of time to allow the camera to capture an image. An increased ExposureTime leads to brighter images based on a linear scale.",
+        Pattern :> ListableP[GreaterP[0 Millisecond]|Null|AutoExpose],
+        Description -> "For each member of SampleLink, and for each ImagingStrategy, the length of time to allow the camera to capture an image. When auto exposure is desired, exposure time is marked as Null before the optimal exposure time is determined during experiment and multiple images are taken to calculate the optimal exposure time.",
         IndexMatching -> SampleLink,
         Category -> "Imaging"
       },
@@ -76,43 +85,16 @@ DefineObjectType[Object[UnitOperation,PickColonies],
       Populations -> {
         Format -> Multiple,
         Class -> Expression,
-        Pattern :> Alternatives[
-          CustomCoordinates,
-          FluorescencePrimitiveP,
-          AbsorbancePrimitiveP,
-          DiameterPrimitiveP,
-          CircularityPrimitiveP,
-          RegularityPrimitiveP,
-          IsolationPrimitiveP,
-          AllColoniesPrimitiveP,
-          MultiFeaturedPrimitiveP,
-          Fluorescence,
-          Absorbance,
-          Diameter,
-          Circularity,
-          Regularity,
-          Isolation,
-          All,
-          ListableP[Alternatives[
+        Pattern :> ListableP[
+          Alternatives[
             CustomCoordinates,
-            FluorescencePrimitiveP,
-            AbsorbancePrimitiveP,
-            DiameterPrimitiveP,
-            CircularityPrimitiveP,
-            RegularityPrimitiveP,
-            IsolationPrimitiveP,
-            AllColoniesPrimitiveP,
-            MultiFeaturedPrimitiveP,
-            Fluorescence,
-            Absorbance,
-            Diameter,
-            Circularity,
-            Regularity,
-            Isolation,
-            All
-          ]]
+            ColonySelectionPrimitiveP,
+            ColonySelectionFeatureP,
+            All,
+            Null
+          ]
         ],
-        Description -> "For each member of SampleLink, the criteria used to group colonies together into a population. Criteria are based on the ordering of colonies by the desired feature(s): diameter, regularity, circularity, isolation, fluorescence, and absorbance.",
+        Description -> "For each member of SampleLink, the criteria used to group colonies together into a population. Criteria are based on the ordering of colonies by the desired feature(s): Diameter, Regularity, Circularity, Isolation, Fluorescence, and BlueWhiteScreen, or all colonies and colonies at custom coordinates are grouped.",
         IndexMatching -> SampleLink,
         Category -> "Selection"
       },
@@ -329,7 +311,7 @@ DefineObjectType[Object[UnitOperation,PickColonies],
         Class -> Real,
         Pattern :> GreaterP[0 Microliter],
         Units -> Microliter,
-        Description -> "For each member of SampleLink, the starting amount of liquid media in which the picked colonies are deposited prior to the colonies being added.", (* If doing Nulls and volumes doesnt work just do 0 Microliter for solid and explain in description *)
+        Description -> "For each member of SampleLink, the starting amount of liquid media in which the picked colonies are deposited prior to the colonies being added.", (* If doing Nulls and volumes doesn't work just do 0 Microliter for solid and explain in description *)
         IndexMatching -> SampleLink,
         Category -> "Placing",
         Migration -> SplitField
@@ -338,7 +320,7 @@ DefineObjectType[Object[UnitOperation,PickColonies],
         Format -> Multiple,
         Class -> Expression,
         Pattern :> {Alternatives[GreaterP[0 Microliter],Null] ..},
-        Description -> "For each member of SampleLink, the starting amount of liquid media in which the picked colonies are deposited prior to the colonies being added.", (* If doing Nulls and volumes doesnt work just do 0 Microliter for solid and explain in description *)
+        Description -> "For each member of SampleLink, the starting amount of liquid media in which the picked colonies are deposited prior to the colonies being added.", (* If doing Nulls and volumes doesn't work just do 0 Microliter for solid and explain in description *)
         IndexMatching -> SampleLink,
         Category -> "Placing",
         Migration -> SplitField
@@ -665,7 +647,7 @@ DefineObjectType[Object[UnitOperation,PickColonies],
         Format -> Single,
         Class -> Expression,
         Pattern :> _List,
-        Description -> "A Nested list of associations storing how the sample packets are physically batched.",
+        Description -> "A Nested list of associations storing how the sample packets are physically batched. For example, in {{{a,b},{c}},{{d,e}}}, abc are from the same physical batch, de are from the same physical batch, ab and c are from different source group.",
         Category -> "General",
         Developer -> True
       },
@@ -675,6 +657,15 @@ DefineObjectType[Object[UnitOperation,PickColonies],
         Pattern :> _Link,
         Relation -> Alternatives[Object[Protocol]],
         Description -> "The Subprotocol which populates the destination media containers with media prior to the picking routine.",
+        Category -> "General",
+        Developer -> True
+      },
+      CassetteHolderResources -> {
+        Format -> Multiple,
+        Class -> Link,
+        Pattern :> _Link,
+        Relation -> Alternatives[Model[Container, ColonyHandlerHeadCassetteHolder],Object[Container, ColonyHandlerHeadCassetteHolder]],
+        Description -> "The list of ColonyHandlerHeadCassetteHolder used as the container for the ColonyHandlerHeadCassette.",
         Category -> "General",
         Developer -> True
       },
@@ -705,14 +696,15 @@ DefineObjectType[Object[UnitOperation,PickColonies],
         Category -> "General",
         Developer -> True
       },
-      FinalColonyHandlerHeadCassetteReturns -> {
-        Format -> Multiple,
-        Class -> Link,
-        Pattern :> _Link,
-        Relation -> Alternatives[Object[Part,ColonyHandlerHeadCassette]],
-        Description -> "The ColonyHandlerHeadCassettes that need to be returned at the end of the unit operation loop.",
+      FinalColonyHandlerHeadCassetteReturn -> {
+        Format -> Single,
+        Class -> {Link, Link, String},
+        Pattern :> {_Link, _Link, LocationPositionP},
+        Relation -> {Alternatives[Object[Part,ColonyHandlerHeadCassette],Model[Part,ColonyHandlerHeadCassette]], Alternatives[Object[Container],Model[Container]], Null},
+        Description -> "The placement for removing the final colony handler head cassette at the end of the output unit operation loop.",
         Category -> "General",
-        Developer -> True
+        Developer -> True,
+        Headers->{"Object to Place", "Destination Object","Destination Position"}
       },
       AbsorbanceFilter -> {
         Format -> Single,
@@ -823,14 +815,7 @@ DefineObjectType[Object[UnitOperation,PickColonies],
         Class -> Expression,
         Pattern :> ListableP[Alternatives[
           CustomCoordinates,
-          FluorescencePrimitiveP,
-          AbsorbancePrimitiveP,
-          DiameterPrimitiveP,
-          CircularityPrimitiveP,
-          RegularityPrimitiveP,
-          IsolationPrimitiveP,
-          AllColoniesPrimitiveP,
-          MultiFeaturedPrimitiveP
+          ColonySelectionPrimitiveP
         ]],
         Description -> "The lists of populations corresponding to flat batched source samples.",
         Category -> "General",
@@ -945,7 +930,7 @@ DefineObjectType[Object[UnitOperation,PickColonies],
         Format -> Multiple,
         Class -> Link,
         Pattern :> _Link,
-        Relation -> Alternatives[Object[Container]],
+        Relation -> Alternatives[Object[Container],Model[Container]],
         Description -> "A list of qpix risers to remove from the deck at the beginning of the batch.",
         Category -> "General",
         Developer -> True
@@ -954,12 +939,11 @@ DefineObjectType[Object[UnitOperation,PickColonies],
         Format -> Multiple,
         Class -> Link,
         Pattern :> _Link,
-        Relation -> Alternatives[Object[Container]],
+        Relation -> Alternatives[Object[Container],Model[Container]],
         Description -> "A list of qpix carriers to remove from the deck at the beginning of the batch.",
         Category -> "General",
         Developer -> True
       },
-      (* If I run into problems in testing here make this a multiple  *)
       ColonyHandlerHeadCassette -> {
         Format -> Single,
         Class -> Link,
@@ -969,6 +953,25 @@ DefineObjectType[Object[UnitOperation,PickColonies],
         Category -> "General",
         Developer -> True
       },
+      ColonyHandlerHeadCassetteHolder -> {
+        Format -> Single,
+        Class -> Link,
+        Pattern :> _Link,
+        Relation -> Alternatives[Object[Container, ColonyHandlerHeadCassetteHolder]],
+        Description -> "The colony handler head cassette holder that is used to store the ColonyHandlerHeadCassette for the physical batch.",
+        Category -> "General",
+        Developer -> True
+      },
+      ColonyHandlerHeadCassettePlacement -> {
+        Format -> Single,
+        Class -> {Link, Link, String},
+        Pattern :> {_Link, _Link, LocationPositionP},
+        Relation -> {Alternatives[Object[Part,ColonyHandlerHeadCassette],Model[Part,ColonyHandlerHeadCassette]], Alternatives[Object[Instrument],Model[Instrument]], Null},
+        Description -> "The placement used to place the colony picking tool for the current batch.",
+        Category -> "General",
+        Developer -> True,
+        Headers->{"Object to Place", "Destination Object","Destination Position"}
+      },
       ColonyHandlerHeadCassetteReturn -> {
         Format -> Single,
         Class -> Link,
@@ -977,6 +980,25 @@ DefineObjectType[Object[UnitOperation,PickColonies],
         Description -> "The colony handler head cassette to return to the cart before the new one is placed in the instrument.",
         Category -> "General",
         Developer -> True
+      },
+      ColonyHandlerHeadCassetteReturnHolder -> {
+        Format -> Single,
+        Class -> Link,
+        Pattern :> _Link,
+        Relation -> Alternatives[Object[Container, ColonyHandlerHeadCassetteHolder]],
+        Description -> "The colony handler head cassette holder that is used to store the ColonyHandlerHeadCassetteReturn for the physical batch.",
+        Category -> "General",
+        Developer -> True
+      },
+      ColonyHandlerHeadCassetteReturnPlacement -> {
+        Format -> Single,
+        Class -> {Link, Link, String},
+        Pattern :> {_Link, _Link, LocationPositionP},
+        Relation -> {Alternatives[Object[Part,ColonyHandlerHeadCassette],Model[Part,ColonyHandlerHeadCassette]], Alternatives[Object[Container],Model[Container]], Null},
+        Description -> "The placement used to remove the colony picking tool from the colony handler and move it back to its holder once this batch is complete.",
+        Category -> "General",
+        Developer -> True,
+        Headers->{"Object to Place", "Destination Object","Destination Position"}
       },
       DestinationContainerDeckPlacements -> {
         Format -> Multiple,

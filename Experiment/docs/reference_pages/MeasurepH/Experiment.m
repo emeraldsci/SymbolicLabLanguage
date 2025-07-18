@@ -19,13 +19,20 @@ DefineUsage[ExperimentMeasurepH,
             {
               InputName -> "Samples",
               Description-> "The samples or containers to be measured.",
-              Widget->Widget[
-                Type->Object,
-                Pattern:>ObjectP[{Object[Sample],Object[Container]}],
-                ObjectTypes->{Object[Sample],Object[Container]},
-                Dereference->{
-                  Object[Container]->Field[Contents[[All,2]]]
-                }
+              Widget->Alternatives[
+                "Sample or Container" -> Widget[
+                  Type->Object,
+                  Pattern:>ObjectP[{Object[Sample],Object[Container]}],
+                  ObjectTypes->{Object[Sample],Object[Container]},
+                  Dereference->{
+                    Object[Container]->Field[Contents[[All,2]]]
+                  }
+                ],
+                "Model Sample"->Widget[
+                  Type -> Object,
+                  Pattern :> ObjectP[Model[Sample]],
+                  ObjectTypes -> {Model[Sample]}
+                ]
               ],
               Expandable->False
             },
@@ -76,13 +83,20 @@ DefineUsage[ExperimentMeasurepHOptions,
             {
               InputName -> "Samples",
               Description-> "The samples or containers whose pH will be measured.",
-              Widget->Widget[
-                Type->Object,
-                Pattern:>ObjectP[{Object[Sample],Object[Container]}],
-                ObjectTypes->{Object[Sample],Object[Container]},
-                Dereference->{
-                  Object[Container]->Field[Contents[[All,2]]]
-                }
+              Widget->Alternatives[
+                "Sample or Container" -> Widget[
+                  Type->Object,
+                  Pattern:>ObjectP[{Object[Sample],Object[Container]}],
+                  ObjectTypes->{Object[Sample],Object[Container]},
+                  Dereference->{
+                    Object[Container]->Field[Contents[[All,2]]]
+                  }
+                ],
+                "Model Sample"->Widget[
+                  Type -> Object,
+                  Pattern :> ObjectP[Model[Sample]],
+                  ObjectTypes -> {Model[Sample]}
+                ]
               ],
               Expandable->False
             },
@@ -130,13 +144,20 @@ DefineUsage[ExperimentMeasurepHPreview,
             {
               InputName -> "Samples",
               Description-> "The samples or containers whose pH will be measured.",
-              Widget->Widget[
-                Type->Object,
-                Pattern:>ObjectP[{Object[Sample],Object[Container]}],
-                ObjectTypes->{Object[Sample],Object[Container]},
-                Dereference->{
-                  Object[Container]->Field[Contents[[All,2]]]
-                }
+              Widget->Alternatives[
+                "Sample or Container" -> Widget[
+                  Type->Object,
+                  Pattern:>ObjectP[{Object[Sample],Object[Container]}],
+                  ObjectTypes->{Object[Sample],Object[Container]},
+                  Dereference->{
+                    Object[Container]->Field[Contents[[All,2]]]
+                  }
+                ],
+                "Model Sample"->Widget[
+                  Type -> Object,
+                  Pattern :> ObjectP[Model[Sample]],
+                  ObjectTypes -> {Model[Sample]}
+                ]
               ],
               Expandable->False
             },
@@ -180,14 +201,21 @@ DefineUsage[ValidExperimentMeasurepHQ,
 						{
 							InputName -> "Samples",
 							Description-> "The samples or containers whose pH will be measured.",
-							Widget->Widget[
-								Type->Object,
-								Pattern:>ObjectP[{Object[Sample],Object[Container]}],
-								ObjectTypes->{Object[Sample],Object[Container]},
-								Dereference->{
-									Object[Container]->Field[Contents[[All,2]]]
-								}
-							],
+							Widget->Alternatives[
+                "Sample or Container" -> Widget[
+                  Type->Object,
+                  Pattern:>ObjectP[{Object[Sample],Object[Container]}],
+                  ObjectTypes->{Object[Sample],Object[Container]},
+                  Dereference->{
+                    Object[Container]->Field[Contents[[All,2]]]
+                  }
+                ],
+                "Model Sample"->Widget[
+                  Type -> Object,
+                  Pattern :> ObjectP[Model[Sample]],
+                  ObjectTypes -> {Model[Sample]}
+                ]
+              ],
 							Expandable->False
 						},
 						IndexName->"experiment samples"

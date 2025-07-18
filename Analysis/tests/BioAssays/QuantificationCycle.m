@@ -402,9 +402,9 @@ DefineTests[AnalyzeQuantificationCycle,
 					Type->Object[Sample],
 					Name->"Test Sample 1 for AnalyzeQuantificationCycle protocol with ArrayCard",
 					Replace[Composition]->{
-						{0.1 Molar, Link[Model[Molecule,Oligomer,"Test Primer Oligo Molecule 1 Forward for AnalyzeQuantificationCycle"]]},
-						{0.1 Molar, Link[Model[Molecule,Oligomer,"Test Primer Oligo Molecule 1 Reverse for AnalyzeQuantificationCycle"]]},
-						{0.1 Molar, Link[Model[Molecule,Oligomer,"Test Probe Oligo Molecule 1 for AnalyzeQuantificationCycle"]]}
+						{0.1 Molar, Link[Model[Molecule,Oligomer,"Test Primer Oligo Molecule 1 Forward for AnalyzeQuantificationCycle"]], Now},
+						{0.1 Molar, Link[Model[Molecule,Oligomer,"Test Primer Oligo Molecule 1 Reverse for AnalyzeQuantificationCycle"]], Now},
+						{0.1 Molar, Link[Model[Molecule,Oligomer,"Test Probe Oligo Molecule 1 for AnalyzeQuantificationCycle"]], Now}
 					},
 					DeveloperObject->True
 			|>,
@@ -412,8 +412,8 @@ DefineTests[AnalyzeQuantificationCycle,
 					Type->Object[Sample],
 					Name->"Test Sample 2 for AnalyzeQuantificationCycle protocol with ArrayCard",
 					Replace[Composition]->{
-						{0.1 Molar, Link[Model[Molecule,Oligomer,"Test Primer Oligo Molecule 1 Forward for AnalyzeQuantificationCycle"]]},
-						{0.1 Molar, Link[Model[Molecule,Oligomer,"Test Probe Oligo Molecule 1 for AnalyzeQuantificationCycle"]]}
+						{0.1 Molar, Link[Model[Molecule,Oligomer,"Test Primer Oligo Molecule 1 Forward for AnalyzeQuantificationCycle"]], Now},
+						{0.1 Molar, Link[Model[Molecule,Oligomer,"Test Probe Oligo Molecule 1 for AnalyzeQuantificationCycle"]], Now}
 					},
 					DeveloperObject->True
 			|>,
@@ -421,9 +421,9 @@ DefineTests[AnalyzeQuantificationCycle,
 					Type->Object[Sample],
 					Name->"Test Sample 3 for AnalyzeQuantificationCycle protocol with ArrayCard",
 					Replace[Composition]->{
-						{0.1 Molar, Link[Model[Molecule,Oligomer,"Test Primer Oligo Molecule 1 Forward for AnalyzeQuantificationCycle"]]},
-						{0.1 Molar, Link[Model[Molecule,Oligomer,"Test Primer Oligo Molecule 1 Reverse for AnalyzeQuantificationCycle"]]},
-						{0.1 Molar, Link[Model[Molecule,Oligomer,"Test Probe Oligo Molecule 1 for AnalyzeQuantificationCycle"]]}
+						{0.1 Molar, Link[Model[Molecule,Oligomer,"Test Primer Oligo Molecule 1 Forward for AnalyzeQuantificationCycle"]], Now},
+						{0.1 Molar, Link[Model[Molecule,Oligomer,"Test Primer Oligo Molecule 1 Reverse for AnalyzeQuantificationCycle"]], Now},
+						{0.1 Molar, Link[Model[Molecule,Oligomer,"Test Probe Oligo Molecule 1 for AnalyzeQuantificationCycle"]], Now}
 					},
 					DeveloperObject->True
 			|>

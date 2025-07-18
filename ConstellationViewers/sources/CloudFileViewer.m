@@ -50,7 +50,7 @@ OnLoad[
 							{
 								{
 									(* Image indicating the file type *)
-									ImagePad[emeraldCloudFileIcon[ToLowerCase[type]], 1],
+									emeraldCloudFileIcon[ToLowerCase[type]],
 									(* Inner grid with the other info *)
 									Grid[{
 										(* File Name*)
@@ -139,7 +139,7 @@ OnLoad[
 									],
 									SpanFromLeft},
 								(* Image indicating the file type *)
-								{ImagePad[emeraldCloudFileIcon[ToLowerCase[FileExtension[key]]], 1],
+								{emeraldCloudFileIcon[ToLowerCase[FileExtension[key]]],
 									(* Inner grid with the file name and buttons *)
 									Grid[
 										{
@@ -171,38 +171,38 @@ OnLoad[
 (* File type icons *)
 emeraldCloudFileIcon[format:"pdf"]:=Set[
 	emeraldCloudFileIcon[format],
-	Import[FileNameJoin[{PackageDirectory["Plot`"], "resources", "File_pdf.png"}], "PNG"]
+	Image[Import[FileNameJoin[{PackageDirectory["Plot`"], "resources", "File_pdf.png"}], "PNG"], ImageSize->{50,50}]
 ];
 emeraldCloudFileIcon[format:"nb" | "m" | "cdf" | "mx"]:=Set[
 	emeraldCloudFileIcon[format],
-	Import[FileNameJoin[{PackageDirectory["Plot`"], "resources", "File_mathematica.png"}], "PNG"]
+	Image[Import[FileNameJoin[{PackageDirectory["Plot`"], "resources", "File_mathematica.png"}], "PNG"], ImageSize->{50,50}]
 ];
 emeraldCloudFileIcon[format:"txt" | "trc" | "rtf" | "tsl" | "au3" | "prm"]:=Set[
 	emeraldCloudFileIcon[format],
-	Import[FileNameJoin[{PackageDirectory["Plot`"], "resources", "File_text.png"}], "PNG"]
+	Image[Import[FileNameJoin[{PackageDirectory["Plot`"], "resources", "File_text.png"}], "PNG"], ImageSize->{50,50}]
 ];
 emeraldCloudFileIcon[format:"png" | "jpg" | "jpeg" | "gif" | "tiff" | "bmp" | "mgf"]:=Set[
 	emeraldCloudFileIcon[format],
-	Import[FileNameJoin[{PackageDirectory["Plot`"], "resources", "File_image.png"}], "PNG"]
+	Image[Import[FileNameJoin[{PackageDirectory["Plot`"], "resources", "File_image.png"}], "PNG"], ImageSize->{50,50}]
 ];
 emeraldCloudFileIcon[format:"xls" | "xlsx" | "csv" | "tsv"]:=Set[
 	emeraldCloudFileIcon[format],
-	Import[FileNameJoin[{PackageDirectory["Plot`"], "resources", "File_excel.png"}], "PNG"]
+	Image[Import[FileNameJoin[{PackageDirectory["Plot`"], "resources", "File_excel.png"}], "PNG"], ImageSize->{50,50}]
 ];
 emeraldCloudFileIcon[format:"doc" | "docx"]:=Set[
 	emeraldCloudFileIcon[format],
-	Import[FileNameJoin[{PackageDirectory["Plot`"], "resources", "File_word.png"}], "PNG"]
+	Image[Import[FileNameJoin[{PackageDirectory["Plot`"], "resources", "File_word.png"}], "PNG"], ImageSize->{50,50}]
 ];
 
 emeraldCloudFileIcon[format:"mp4"]:=Set[
 	emeraldCloudFileIcon[format],
-	Import[FileNameJoin[{PackageDirectory["Plot`"], "resources", "File_video.png"}], "PNG"]
+	Image[Import[FileNameJoin[{PackageDirectory["Plot`"], "resources", "File_video.png"}], "PNG"], ImageSize->{50,50}]
 ];
 
 (* All other file types are generic *)
 emeraldCloudFileIcon[_]:=Set[
 	emeraldCloudFileIcon[_],
-	Import[FileNameJoin[{PackageDirectory["Plot`"], "resources", "File_Generic.png"}], "PNG"]
+	Image[Import[FileNameJoin[{PackageDirectory["Plot`"], "resources", "File_Generic.png"}], "PNG"], ImageSize->{50,50}]
 ];
 
 (* info icon *)
@@ -218,44 +218,44 @@ emeraldCloudFileActionIcon[Help, Hover]:=Set[
 (* The action button icons *)
 emeraldCloudFileActionIcon[Open]:=Set[
 	emeraldCloudFileActionIcon[Open],
-	Import[FileNameJoin[{PackageDirectory["Plot`"], "resources", "Open-Normal.png"}], "PNG"]
+	Image[Import[FileNameJoin[{PackageDirectory["Plot`"], "resources", "Open-Normal.png"}], "PNG"], ImageSize->65]
 ];
 emeraldCloudFileActionIcon[Open, Hover]:=Set[
 	emeraldCloudFileActionIcon[Open, Hover],
-	Import[FileNameJoin[{PackageDirectory["Plot`"], "resources", "Open-Hover.png"}], "PNG"]
+	Image[Import[FileNameJoin[{PackageDirectory["Plot`"], "resources", "Open-Hover.png"}], "PNG"], ImageSize->65]
 ];
 emeraldCloudFileActionIcon[Save]:=Set[
 	emeraldCloudFileActionIcon[Save],
-	Import[FileNameJoin[{PackageDirectory["Plot`"], "resources", "Save-Normal.png"}], "PNG"]
+	Image[Import[FileNameJoin[{PackageDirectory["Plot`"], "resources", "Save-Normal.png"}], "PNG"], ImageSize->60]
 ];
 emeraldCloudFileActionIcon[Save, Hover]:=Set[
 	emeraldCloudFileActionIcon[Save, Hover],
-	Import[FileNameJoin[{PackageDirectory["Plot`"], "resources", "Save-Hover.png"}], "PNG"]
+	Image[Import[FileNameJoin[{PackageDirectory["Plot`"], "resources", "Save-Hover.png"}], "PNG"], ImageSize->60]
 ];
 emeraldCloudFileActionIcon[Download]:=Set[
 	emeraldCloudFileActionIcon[Download],
-	Import[FileNameJoin[{PackageDirectory["Plot`"], "resources", "Download-Normal.png"}], "PNG"]
+	Image[Import[FileNameJoin[{PackageDirectory["Plot`"], "resources", "Download-Normal.png"}], "PNG"], ImageSize->85]
 ];
 emeraldCloudFileActionIcon[Download, Hover]:=Set[
 	emeraldCloudFileActionIcon[Download, Hover],
-	Import[FileNameJoin[{PackageDirectory["Plot`"], "resources", "Download-Hover.png"}], "PNG"]
+	Image[Import[FileNameJoin[{PackageDirectory["Plot`"], "resources", "Download-Hover.png"}], "PNG"], ImageSize->85]
 ];
 emeraldCloudFileActionIcon[Import]:=Set[
 	emeraldCloudFileActionIcon[Import],
-	Import[FileNameJoin[{PackageDirectory["Plot`"], "resources", "Import-Normal.png"}], "PNG"]
+	Image[Import[FileNameJoin[{PackageDirectory["Plot`"], "resources", "Import-Normal.png"}], "PNG"], ImageSize->65]
 ];
 emeraldCloudFileActionIcon[Import, Hover]:=Set[
 	emeraldCloudFileActionIcon[Import, Hover],
-	Import[FileNameJoin[{PackageDirectory["Plot`"], "resources", "Import-Hover.png"}], "PNG"]
+	Image[Import[FileNameJoin[{PackageDirectory["Plot`"], "resources", "Import-Hover.png"}], "PNG"], ImageSize->65]
 ];
 
 emeraldCloudFileActionIcon[Watch]:=Set[
 	emeraldCloudFileActionIcon[Watch],
-	Import[FileNameJoin[{PackageDirectory["Plot`"], "resources", "WatchVideo-Normal.png"}], "PNG"]
+	Image[Import[FileNameJoin[{PackageDirectory["Plot`"], "resources", "WatchVideo-Normal.png"}], "PNG"], ImageSize->96]
 ];
 emeraldCloudFileActionIcon[Watch, Hover]:=Set[
 	emeraldCloudFileActionIcon[Watch, Hover],
-	Import[FileNameJoin[{PackageDirectory["Plot`"], "resources", "WatchVideo-Hover.png"}], "PNG"]
+	Image[Import[FileNameJoin[{PackageDirectory["Plot`"], "resources", "WatchVideo-Hover.png"}], "PNG"], ImageSize->96]
 ];
 
 
@@ -283,8 +283,8 @@ cloudFileButton[action:Open | Import | Save | Help | Watch, cloudFile:EmeraldFil
 	]},
 
 	Mouseover @@ {
-		Button[Item[ImagePad[emeraldCloudFileActionIcon[action], 1], ItemSize -> Scaled[0.015]], Activate[onClick], Appearance -> "Frameless", Method -> "Queued"],
-		Button[Item[ImagePad[emeraldCloudFileActionIcon[action, Hover], 1], ItemSize -> Scaled[0.015]], Activate[onClick], Appearance -> "Frameless", Method -> "Queued"]
+		Button[Item[emeraldCloudFileActionIcon[action], ItemSize -> Scaled[0.015]], Activate[onClick], Appearance -> "Frameless", Method -> "Queued"],
+		Button[Item[emeraldCloudFileActionIcon[action, Hover], ItemSize -> Scaled[0.015]], Activate[onClick], Appearance -> "Frameless", Method -> "Queued"]
 	}
 ];
 
@@ -295,8 +295,15 @@ launchCloudFileVideoHTML[cloudFile:EmeraldFileP] := Module[{html,bucket,url, fil
 	SafeOpen[filename];
 ];
 
+launchCloudFileVideoHTML[cloudFile: EmeraldFileP, startTimeInSeconds_Integer] := Module[{html,bucket,url, filename},
+    filename = generateCloudFileVideoHTML[cloudFile, startTimeInSeconds];
+    SafeOpen[filename];
+];
 
 getCloudFrontURL::Error = "`1`";
+
+(* Authors definition for ConstellationViewers`Private`getCloudFrontURL *)
+Authors[ConstellationViewers`Private`getCloudFrontURL]:={"xu.yi"};
 
 getCloudFrontURL[cloudFile:EmeraldFileP] := Module[{resp, url},
 	resp = ConstellationRequest[<|"Path" -> "blobsign/sign_cloudfront", "Method" -> "POST",
@@ -313,19 +320,19 @@ getCloudFrontURL[cloudFile:EmeraldFileP] := Module[{resp, url},
 	url
 ];
 
-generateCloudFileVideoHTML[cloudFile:EmeraldFileP] := Module[{html,bucket,url, filename},
-	url=getCloudFrontURL[cloudFile];
+generateCloudFileVideoHTML[cloudFile:EmeraldFileP, startTimeInSeconds_Integer: 0] := Module[{html,bucket,url, filename},
+	url=getCloudFrontURL[cloudFile]<>"#t="<>ToString[startTimeInSeconds];
 	If[MatchQ[url, $Failed],
 		Return[$Failed]
 	];
 	html="<!DOCTYPE html>
 			<html>
 				<body>
-				<video width=\"640\" height=\"480\" autoplay=\"autoplay\" controls=\"controls\">
-  				<source src=\""<>url<>"\" type=\"video/mp4\">
-  			Your browser does not support the video tag.
-			</video>
-			</body>
+				    <video id=\"myVideo\" width=\"640\" height=\"480\" autoplay=\"autoplay\" controls=\"controls\">
+  				    <source src=\""<>ToString@url<>"\" type=\"video/mp4\">
+  			        Your browser does not support the video tag.
+			        </video>
+			    </body>
 			</html>";
 	filename=FileNameJoin[{$TemporaryDirectory,CreateUUID[]}]<>".html";
 	Export[filename,html,"String"];

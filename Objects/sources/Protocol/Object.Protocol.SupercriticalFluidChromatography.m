@@ -998,16 +998,15 @@ DefineObjectType[Object[Protocol, SupercriticalFluidChromatography], {
 			Abstract -> True
 		},
 		PlateSeal -> {
-			Format -> Single,
+			Format -> Multiple,
 			Class -> Link,
 			Pattern :> _Link,
 			Relation -> Alternatives[
 				Object[Item],
 				Model[Item]
 			],
-			Description -> "The package of piercable, adhesive film used to cover plates of injection samples in this experiment in order to mitigate sample evaporation.",
-			Category -> "Sample Preparation",
-			Abstract -> False
+			Description -> "For each member of WorkingContainers, the piercable, adhesive film to cover plate(s) of injection sample(s) in this experiment in order to mitigate sample evaporation. For non-plate containers, the plate seal is Null.",
+			Category -> "Sample Preparation"
 		},
 
 		(*--Autosampler information--*)

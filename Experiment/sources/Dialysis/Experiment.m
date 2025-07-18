@@ -182,7 +182,7 @@ DefineOptions[ExperimentDialysis,
 		{
 			OptionName->ImageSystem,
 			Default->Automatic,
-			AllowNull->False,
+			AllowNull->True,
 			Widget -> Widget[Type->Enumeration,Pattern:>BooleanP],
 			Description->"Indicates if the a dialysis set up should imaged before and after equilibration.",
 			ResolutionDescription->"Automatically set to False if the DialysisMethod is DynamicDialysis and Null otherwise.",
@@ -1007,9 +1007,24 @@ DefineOptions[ExperimentDialysis,
 			}
 		],
 		AnalyticalNumberOfReplicatesOption,
-		FuntopiaSharedOptionsPooled,
+		NonBiologyFuntopiaSharedOptionsPooled,
 		SubprotocolDescriptionOption,
-		SamplesInStorageOptions
+		SamplesInStorageOptions,
+		SimulationOption,
+		ModifyOptions[
+			ModelInputOptions,
+			{
+				{
+					OptionName -> PreparedModelAmount,
+					NestedIndexMatching -> True
+				},
+				{
+					OptionName -> PreparedModelContainer,
+					NestedIndexMatching -> True,
+					ResolutionDescription -> "If PreparedModelAmount is set to All and the input model has a product associated with both Amount and DefaultContainerModel populated, automatically set to the DefaultContainerModel value in the product. Otherwise, automatically set to Model[Container, Plate, \"96-well 2mL Deep Well Plate\"]."
+				}
+			}
+		]
 	}
 ];
 
@@ -1066,12 +1081,12 @@ Error::UnresolvableDialysateContainer="There are no beakers that can support the
 (*ExperimentDialysis Experiment function*)
 (* Overload for mixed input like {s1,{s2,s3}} -> We assume the first sample is going to be inside a pool and turn this into {{s1},{s2,s3}} *)
 (*This overload also converts container inputs into sample inputs and expands options such that index matching is preserved.*)
-ExperimentDialysis[mySemiPooledInputs:ListableP[ListableP[Alternatives[ObjectP[Object[Sample]],ObjectP[Object[Container]],_String,{LocationPositionP,_String|ObjectP[Object[Container]]}]]],myOptions:OptionsPattern[]]:=Module[
+ExperimentDialysis[mySemiPooledInputs:ListableP[ListableP[Alternatives[ObjectP[Object[Sample]],ObjectP[Model[Sample]],ObjectP[Object[Container]],_String,{LocationPositionP,_String|ObjectP[Object[Container]]}]]],myOptions:OptionsPattern[]]:=Module[
 	{listedOptions,listedInputs,outputSpecification,output,gatherTests,containerToSampleResult,containerToSampleOutput,sampleCache,
 		containerToSampleTests,samples,sampleOptions,validSamplePreparationResult,mySamplesWithPreparedSamples,myOptionsWithPreparedSamples,
-		samplePreparationCache,updatedCache,listedSamples,containers,preListedInputs},
+		updatedCache,listedSamples,containers,preListedInputs,updatedSimulation,containerToSampleSimulation},
 
-	{preListedInputs, listedOptions}=removeLinks[ToList[mySemiPooledInputs], ToList[myOptions]];
+	{preListedInputs, listedOptions}={ToList[mySemiPooledInputs], ToList[myOptions]};
 
 	(* Wrap a list around any single sample inputs except single plate objects to convert flat input into a nested list *)
 	(* Leave any non-list plate objects as single inputs because wrapping list around a single plate object signals pooling of all samples in plate.
@@ -1095,32 +1110,33 @@ ExperimentDialysis[mySemiPooledInputs:ListableP[ListableP[Alternatives[ObjectP[O
 	If none of these messages are thrown, returns mySamplesWithPreparedSamples, myOptionsWithPreparedSamples, samplePreparationCache*)
 	validSamplePreparationResult=Check[
 		(* Simulate sample preparation. *)
-		{mySamplesWithPreparedSamples,myOptionsWithPreparedSamples,samplePreparationCache}=simulateSamplePreparationPackets[
+		{mySamplesWithPreparedSamples,myOptionsWithPreparedSamples,updatedSimulation}=simulateSamplePreparationPacketsNew[
 			ExperimentDialysis,
 			listedInputs,
-			listedOptions
+			listedOptions,
+			DefaultPreparedModelContainer -> Model[Container, Plate, "96-well 2mL Deep Well Plate"]
 		],
 		$Failed,
-		{Error::MissingDefineNames,Error::InvalidInput,Error::InvalidOption}
+		{Download::ObjectDoesNotExist, Error::MissingDefineNames,Error::InvalidInput,Error::InvalidOption}
 	];
 
 	(* If we are given MissingDefineNames, InvalidInput, InvalidOption error messages, return early. *)
 	If[MatchQ[validSamplePreparationResult,$Failed],
 		(* Return early. *)
 		(* Note: We've already thrown a message above in simulateSamplePreparationPackets. *)
-		ClearMemoization[Experiment`Private`simulateSamplePreparationPackets];Return[$Failed]
+		ClearMemoization[Experiment`Private`simulateSamplePreparationPacketsNew];Return[$Failed]
 	];
 
 	(* For each group, map containerToSampleOptions over each sample or simulated sample group to get the object samples from the contents of the container *)
 	(* ignoring the options, since we will use the ones from from ExpandIndexMatchedInputs *)
 	containerToSampleResult=If[gatherTests,
 		(* We are gathering tests. This silences any messages being thrown. *)
-		{containerToSampleOutput,containerToSampleTests}=pooledContainerToSampleOptions[
+		{containerToSampleOutput,containerToSampleTests, containerToSampleSimulation}=pooledContainerToSampleOptions[
 			ExperimentDialysis,
 			mySamplesWithPreparedSamples,
 			myOptionsWithPreparedSamples,
-			Output->{Result,Tests},
-			Cache->samplePreparationCache
+			Output->{Result,Tests, Simulation},
+			Simulation -> updatedSimulation
 		];
 
 		(* Therefore,we have to run the tests to see if we encountered a failure. *)
@@ -1132,12 +1148,12 @@ ExperimentDialysis[mySemiPooledInputs:ListableP[ListableP[Alternatives[ObjectP[O
 		(* We are not gathering tests. Simply check for Error::EmptyContainers. *)
 		{
 			Check[
-				containerToSampleOutput=pooledContainerToSampleOptions[
+				{containerToSampleOutput,containerToSampleSimulation}=pooledContainerToSampleOptions[
 					ExperimentDialysis,
 					mySamplesWithPreparedSamples,
 					myOptionsWithPreparedSamples,
-					Output->Result,
-					Cache->samplePreparationCache
+					Output->{Result, Simulation},
+					Simulation -> updatedSimulation
 				],
 				$Failed,
 				{Error::EmptyContainers, Error::ContainerEmptyWells, Error::WellDoesNotExist}
@@ -1145,12 +1161,6 @@ ExperimentDialysis[mySemiPooledInputs:ListableP[ListableP[Alternatives[ObjectP[O
 			{}
 		}
 	];
-
-	(*If all above checks pass, update our cache with our new simulated values. *)
-	updatedCache=Flatten[{
-		samplePreparationCache,
-		Lookup[listedOptions,Cache,{}]
-	}];
 
 	(* If we were given an empty container,return early. *)
 	If[ContainsAny[containerToSampleResult,{$Failed}],
@@ -1168,7 +1178,7 @@ ExperimentDialysis[mySemiPooledInputs:ListableP[ListableP[Alternatives[ObjectP[O
 
 		(* take the samples from the mapped containerToSampleOptions, and the options from expandedOptions *)
 		(* this way we'll end up index matching each grouping to an option *)
-		ExperimentDialysisCore[samples,ReplaceRule[sampleOptions,Cache->Flatten[{updatedCache}]]]
+		ExperimentDialysisCore[samples,ReplaceRule[sampleOptions,Simulation->containerToSampleSimulation]]
 	]
 ];
 
@@ -1176,16 +1186,16 @@ ExperimentDialysis[mySemiPooledInputs:ListableP[ListableP[Alternatives[ObjectP[O
 ExperimentDialysisCore[mySamples : ListableP[{ObjectP[Object[Sample]]..}], myOptions : OptionsPattern[ExperimentDialysis]] := Module[
 	{listedOptions, outputSpecification, output, gatherTests, safeOps, safeOpsTests, validLengths,
 		safeOptionsNamed, mySamplesWithPreparedSamplesNamed, myOptionsWithPreparedSamplesNamed,
-		validLengthTests, templatedOptions, templateTests, inheritedOptions, upload, confirm, fastTrack, parentProtocol,
+		validLengthTests, templatedOptions, templateTests, inheritedOptions, upload, confirm, canaryBranch, fastTrack, parentProtocol,
 		cache, expandedSafeOps, resolvedOptionsResult, resolvedOptions, resolvedOptionsTests, objectContainerFields,
 		collapsedResolvedOptions, resourcePackets, resourcePacketTests, floatingRacksObjects,
-		samplePreparationCache, allPackets, specifiedAliquotContainerObjects, optionsWithObjects,
+		allPackets, specifiedAliquotContainerObjects, optionsWithObjects,
 		allObjects, messages, validSamplePreparationResult, mySamplesWithPreparedSamples,myOptionsWithPreparedSamples,
 		objectSamplePacketFields, modelSamplePacketFields, modelContainerFields,
 		modelContainerObjects, instrumentObjects, modelInstrumentObjects, modelSampleObjects, sampleObjects, cacheBall,
 		modelMembraneItemObjects, membraneItemObjects, containerObjects, possibleMembranes, possibleInstruments,
 		possibleDialysisContainers,cacheOption, possibleStirBars,stirBarObjects, protocolObject, possibleFloatingRacks,
-		possibleDialysisClips,listedSamples, samplePreparationCacheNamed
+		possibleDialysisClips,listedSamples,updatedSimulation
 	},
 
 	{listedSamples, listedOptions}=removeLinks[ToList[mySamples], ToList[myOptions]];
@@ -1204,20 +1214,20 @@ ExperimentDialysisCore[mySamples : ListableP[{ObjectP[Object[Sample]]..}], myOpt
 	(* Simulate our sample preparation. *)
 	validSamplePreparationResult = Check[
 		(* Simulate sample preparation. *)
-		{mySamplesWithPreparedSamplesNamed, myOptionsWithPreparedSamplesNamed, samplePreparationCacheNamed}=simulateSamplePreparationPackets[
+		{mySamplesWithPreparedSamplesNamed, myOptionsWithPreparedSamplesNamed, updatedSimulation}=simulateSamplePreparationPacketsNew[
 			ExperimentDialysis,
 			listedSamples,
 			ToList[listedOptions]
 		],
 		$Failed,
-		{Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
+		{Download::ObjectDoesNotExist, Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
 	];
 
 	(* If we are given an invalid define name, return early. *)
 	If[MatchQ[validSamplePreparationResult,$Failed],
 		(* Return early. *)
 		(* Note: We've already thrown a message above in simulateSamplePreparationPackets. *)
-		ClearMemoization[Experiment`Private`simulateSamplePreparationPackets];Return[$Failed]
+		ClearMemoization[Experiment`Private`simulateSamplePreparationPacketsNew];Return[$Failed]
 	];
 
 	(* Call SafeOptions to make sure all options match pattern *)
@@ -1227,7 +1237,7 @@ ExperimentDialysisCore[mySamples : ListableP[{ObjectP[Object[Sample]]..}], myOpt
 	];
 
 	(* replace all objects referenced by Name to ID *)
-	{mySamplesWithPreparedSamples, {safeOps, myOptionsWithPreparedSamples, samplePreparationCache}} = sanitizeInputs[mySamplesWithPreparedSamplesNamed, {safeOptionsNamed, myOptionsWithPreparedSamplesNamed, samplePreparationCacheNamed}];
+	{mySamplesWithPreparedSamples, safeOps, myOptionsWithPreparedSamples} = sanitizeInputs[mySamplesWithPreparedSamplesNamed, safeOptionsNamed, myOptionsWithPreparedSamplesNamed, Simulation->updatedSimulation];
 
 	(* If the specified options don't match their patterns or if option lengths are invalid return $Failed *)
 	If[MatchQ[safeOps,$Failed],
@@ -1275,7 +1285,7 @@ ExperimentDialysisCore[mySamples : ListableP[{ObjectP[Object[Sample]]..}], myOpt
 	inheritedOptions = ReplaceRule[safeOps, templatedOptions];
 
 	(* get assorted hidden options *)
-	{upload, confirm, fastTrack, parentProtocol, cache} = Lookup[inheritedOptions, {Upload, Confirm, FastTrack, ParentProtocol, Cache}];
+	{upload, confirm, canaryBranch, fastTrack, parentProtocol, cache} = Lookup[inheritedOptions, {Upload, Confirm, CanaryBranch, FastTrack, ParentProtocol, Cache}];
 
 	(* Expand index-matching options *)
 	expandedSafeOps = Last@ExpandIndexMatchedInputs[ExperimentDialysis,{mySamplesWithPreparedSamples},inheritedOptions];
@@ -1349,7 +1359,7 @@ ExperimentDialysisCore[mySamples : ListableP[{ObjectP[Object[Sample]]..}], myOpt
 			Hermetic != True &&
 			CrossSectionalShape == Circle &&
 			ProductsContained == {} &&
-			Reusability == True,
+			Reusable == True,
 			SubTypes -> False
 	];*)
 
@@ -1389,7 +1399,7 @@ ExperimentDialysisCore[mySamples : ListableP[{ObjectP[Object[Sample]]..}], myOpt
 	objectContainerFields=Join[SamplePreparationCacheFields[Object[Container]], {VacuumCentrifugeCompatibility}];
 	modelContainerFields=Join[SamplePreparationCacheFields[Model[Container]], {VacuumCentrifugeCompatibility}];
 
-	(*seperate the objects to download specific fields*)
+	(*separate the objects to download specific fields*)
 	containerObjects= Cases[allObjects,ObjectP[Object[Container]]];
 	modelContainerObjects= Cases[allObjects,ObjectP[Model[Container]]];
 	instrumentObjects = Cases[allObjects,ObjectP[Object[Instrument]]];
@@ -1428,11 +1438,11 @@ ExperimentDialysisCore[mySamples : ListableP[{ObjectP[Object[Sample]]..}], myOpt
 			},
 			(*Instruments*)
 			{
-				Packet[Object,Name,Status,Model],
-				Packet[Model[{Object,Name,WettedMaterials,MinTemperature, MaxTemperature,MinRotationRate,MaxRotationRate,MinStirBarRotationRate,MaxStirBarRotationRate,Positions,CompatibleImpellers,InternalDimensions}]]
+				Packet[Object,Name,Status,Model,DeveloperObject],
+				Packet[Model[{Object,Name,Objects,WettedMaterials,MinTemperature, MaxTemperature,MinRotationRate,MaxRotationRate,MinStirBarRotationRate,MaxStirBarRotationRate,Positions,CompatibleImpellers,InternalDimensions, StirBarControl}]]
 			},
 			{
-				Packet[Object,Name,WettedMaterials,MinTemperature, MaxTemperature,MinRotationRate,MaxRotationRate,MinStirBarRotationRate,MaxStirBarRotationRate,Positions,CompatibleImpellers,InternalDimensions, Deprecated,Sterile,AspectRatio,NumberOfWells,Footprint,
+				Packet[Object,Name,Objects,WettedMaterials,MinTemperature, MaxTemperature,MinRotationRate,MaxRotationRate,MinStirBarRotationRate,MaxStirBarRotationRate,Positions,CompatibleImpellers,InternalDimensions, StirBarControl, Deprecated,Sterile,AspectRatio,NumberOfWells,Footprint,
 					OpenContainer,Positions]
 			},
 			(*Containers*)
@@ -1470,27 +1480,22 @@ ExperimentDialysisCore[mySamples : ListableP[{ObjectP[Object[Sample]]..}], myOpt
 				Packet[Object,MaxWidth,LengthOffset,MembraneTypes,Weighted,Hanging]
 			},
 			{
-				Packet[Object,Type,InternalBottomShape, Deprecated, Aperture, SelfStanding, CrossSectionalShape, Reusability,Dimensions]
+				Packet[Object,Type,InternalBottomShape, Deprecated, Aperture, SelfStanding, CrossSectionalShape, Reusable,Dimensions]
 			}
 		},
-		Cache -> FlattenCachePackets[{samplePreparationCache, cache}],
+		Cache -> cache,
+		Simulation -> updatedSimulation,
 		Date -> Now
 	], Download::FieldDoesntExist];
 
-
-	(* Return early if objects do not exist *)
-	If[MatchQ[allPackets, $Failed],
-		Return[$Failed]
-	];
-
 	(* combine all the Download information together  *)
-	cacheBall = FlattenCachePackets[{samplePreparationCache, cache, allPackets}];
+	cacheBall = FlattenCachePackets[{cache, allPackets}];
 
 	(* resolve all options; if we throw InvalidOption or InvalidInput, we're also getting $Failed and we will return early *)
 	resolvedOptionsResult = Check[
 		{resolvedOptions, resolvedOptionsTests} = If[gatherTests,
-			resolveExperimentDialysisOptions[mySamplesWithPreparedSamples, expandedSafeOps, Output -> {Result, Tests}, Cache -> cacheBall],
-			{resolveExperimentDialysisOptions[mySamplesWithPreparedSamples, expandedSafeOps, Output -> Result, Cache -> cacheBall], {}}
+			resolveExperimentDialysisOptions[mySamplesWithPreparedSamples, expandedSafeOps, Output -> {Result, Tests}, Cache -> cacheBall, Simulation -> updatedSimulation],
+			{resolveExperimentDialysisOptions[mySamplesWithPreparedSamples, expandedSafeOps, Output -> Result, Cache -> cacheBall, Simulation -> updatedSimulation], {}}
 		],
 		$Failed,
 		{Error::InvalidInput, Error::InvalidOption}
@@ -1516,8 +1521,8 @@ ExperimentDialysisCore[mySamples : ListableP[{ObjectP[Object[Sample]]..}], myOpt
 
 	(* Build packets with resources *)
 	{resourcePackets,resourcePacketTests} = If[gatherTests,
-		dialysisResourcePackets[ToList[mySamplesWithPreparedSamples],expandedSafeOps,resolvedOptions,Cache->cacheBall,Output->{Result,Tests}],
-		{dialysisResourcePackets[ToList[mySamplesWithPreparedSamples],expandedSafeOps,resolvedOptions,Cache->cacheBall],{}}
+		dialysisResourcePackets[ToList[mySamplesWithPreparedSamples],expandedSafeOps,resolvedOptions,Cache->cacheBall,Simulation->updatedSimulation,Output->{Result,Tests}],
+		{dialysisResourcePackets[ToList[mySamplesWithPreparedSamples],expandedSafeOps,resolvedOptions,Cache->cacheBall,Simulation->updatedSimulation],{}}
 	];
 
 	(* If we don't have to return the Result, don't bother calling UploadProtocol[...]. *)
@@ -1535,6 +1540,7 @@ ExperimentDialysisCore[mySamples : ListableP[{ObjectP[Object[Sample]]..}], myOpt
 		UploadProtocol[
 			resourcePackets,
 			Confirm -> confirm,
+			CanaryBranch -> canaryBranch,
 			Upload -> upload,
 			ParentProtocol -> parentProtocol,
 			Priority->Lookup[safeOps,Priority],
@@ -1542,7 +1548,8 @@ ExperimentDialysisCore[mySamples : ListableP[{ObjectP[Object[Sample]]..}], myOpt
 			HoldOrder->Lookup[safeOps,HoldOrder],
 			QueuePosition->Lookup[safeOps,QueuePosition],
 			ConstellationMessage -> Object[Protocol, Dialysis],
-			Cache -> samplePreparationCache
+			Cache->cacheBall,
+			Simulation -> updatedSimulation
 		],
 		$Failed
 	];
@@ -1578,7 +1585,7 @@ resolveExperimentDialysisOptions[mySamples : ListableP[{ObjectP[Object[Sample]].
 		fastTrack, modelPacketsToCheckIfDeprecated, deprecatedModelPackets, deprecatedInvalidInputs, deprecatedTest,
 		numberOfReplicates, name, parentProtocol,
 		 roundedDialysisOptions, precisionTests, validNameQ, nameInvalidOptions, validNameTest,
-		mapThreadFriendlyOptions, resolvedAliquotOptions, aliquotTests, invalidOptions, invalidInputs, allTests, confirm,
+		mapThreadFriendlyOptions, resolvedAliquotOptions, aliquotTests, invalidOptions, invalidInputs, allTests, confirm, canaryBranch,
 		template, cache, operator, upload, outputOption, samplePreparation,
 		email, resolvedPostProcessingOptions, resolvedOptions, testsRule, resultRule, specifiedAliquotContainerObjects,
 		sampleDownloadValues, aliquotContainerPackets, numReplicatesNoNull, simulatedSamplesWithNumReplicates,
@@ -1651,7 +1658,8 @@ resolveExperimentDialysisOptions[mySamples : ListableP[{ObjectP[Object[Sample]].
 		invalidConfictingEquilibriumDialysateVolumeOptions,invalidConfictingEquilibriumDialysateVolumeTests,insufficientStaticDialysateVolumeOptions,invalidStaticDialysateVolumeOptions,
 		insufficientStaticDialysateVolumeTests,dialysateVolumes,conflictingRetentateSamplingContainerOutPlateOptions,conflictingRetentateContainerOutPlateOptions,invalidConflictingRetentateContainerOutPlateOptions,
 		invalidConflictingRetentateContainerOutPlateTests, invalidConflictingRetentateSamplingContainerOutPlateOptions, invalidConflictingRetentateSamplingContainerOutPlateTests,
-		numSamples,tooManySamples,tooManySamplesTest,tooManySamplesInputs
+		numSamples,tooManySamples,tooManySamplesTest,tooManySamplesInputs,
+		simulation, updatedSimulation
 	},
 
 	(* --- Setup our user specified options and cache --- *)
@@ -1668,14 +1676,15 @@ resolveExperimentDialysisOptions[mySamples : ListableP[{ObjectP[Object[Sample]].
 
 	(* pull out the Cache options *)
 	inheritedCache = Lookup[ToList[myResolutionOptions], Cache, {}];
+	simulation = Lookup[ToList[myResolutionOptions], Simulation, Simulation[]];
 
 	(* separate out our abs spece options from our sample prep options *)
 	{samplePrepOptions, dialysisOptions} = splitPrepOptions[myOptions];
 
 	(* Resolve our sample prep options *)
-	{{simulatedSamples, resolvedSamplePrepOptions, simulatedCache}, samplePrepTests} = If[gatherTests,
-		resolveSamplePrepOptions[ExperimentDialysis, mySamples, samplePrepOptions, Cache -> inheritedCache, Output -> {Result, Tests}],
-		{resolveSamplePrepOptions[ExperimentDialysis, mySamples, samplePrepOptions, Cache -> inheritedCache, Output -> Result], {}}
+	{{simulatedSamples, resolvedSamplePrepOptions, updatedSimulation}, samplePrepTests} = If[gatherTests,
+		resolveSamplePrepOptionsNew[ExperimentDialysis, mySamples, samplePrepOptions, Cache -> inheritedCache, Simulation -> simulation, Output -> {Result, Tests}],
+		{resolveSamplePrepOptionsNew[ExperimentDialysis, mySamples, samplePrepOptions, Cache -> inheritedCache, Simulation -> simulation, Output -> Result], {}}
 	];
 
 	(* get the pooled samples flatter and also get the lengths of the pooled simulated samples*)
@@ -1698,7 +1707,7 @@ resolveExperimentDialysisOptions[mySamples : ListableP[{ObjectP[Object[Sample]].
 	retentateContainerOutObjects=ToList[Flatten[Lookup[myOptions, {RetentateSamplingContainerOut,SecondaryRetentateSamplingContainerOut,TertiaryRetentateSamplingContainerOut,QuaternaryRetentateSamplingContainerOut}]]]/.{Automatic->Null};
 
 	(* find the smallest stir bar to see what is the smallest dialysatecontainer we can use *)
-	minStirBarLength=Min[Lookup[DeleteDuplicates[Cases[simulatedCache,
+	minStirBarLength=Min[Lookup[DeleteDuplicates[Cases[inheritedCache,
 		KeyValuePattern[
 			{
 				Type->Model[Part,StirBar]
@@ -1717,13 +1726,13 @@ resolveExperimentDialysisOptions[mySamples : ListableP[{ObjectP[Object[Sample]].
 				Deprecated -> Except[True],
 				Aperture -> GreaterP[minStirBarLength],
 				SelfStanding -> True,
-				Reusability -> True
+				Reusable -> True
 			}
 		]
 	],Object];
 
 	(*make sure the aperature is not too small, avoiding tapered containers*)
-	possibleSupportedDialysateContainersInfo=Lookup[DeleteDuplicates[Cases[simulatedCache,
+	possibleSupportedDialysateContainersInfo=Lookup[DeleteDuplicates[Cases[inheritedCache,
 		KeyValuePattern[
 			{
 				Object->ObjectP[possibleSupportedDialysateContainers]
@@ -1749,7 +1758,7 @@ resolveExperimentDialysisOptions[mySamples : ListableP[{ObjectP[Object[Sample]].
 			Hermetic != True &&
 			CrossSectionalShape == Circle &&
 			ProductsContained == {} &&
-			Reusability == True,
+			Reusable == True,
 		SubTypes -> False
 	];*)
 
@@ -1802,7 +1811,7 @@ resolveExperimentDialysisOptions[mySamples : ListableP[{ObjectP[Object[Sample]].
 				{Packet[Object, MinVolume, MaxVolume]},
 				{Packet[Object, MinVolume, MaxVolume]}
 			},
-			Cache -> simulatedCache,
+			Simulation -> updatedSimulation,
 			Date->Now
 		],
 		{Download::FieldDoesntExist}
@@ -1811,7 +1820,7 @@ resolveExperimentDialysisOptions[mySamples : ListableP[{ObjectP[Object[Sample]].
 	(* split out the information about the aliquot containers and the samples themselves *)
 	{sampleDownloadValues, instrumentModelPackets, instrumentPackets,membraneModelPackets, membranePackets,dialysateModelContainerPackets, dialysateContainerPackets, dialysateContainerOutPackets, retentateContainerOutPackets} = allDownloadValues;
 
-	(*join the seperate model/object packets*)
+	(*join the separate model/object packets*)
 	allInstrumentModelPackets=Flatten[Join[{instrumentModelPackets, instrumentPackets}]];
 	allMembraneModelPackets=MapThread[If[MatchQ[#1,Null],#2,#1]&,{membraneModelPackets, membranePackets}];
 	allDialysateContainerModelPackets=MapThread[If[MatchQ[#1,Null],#2,#1]&,{dialysateModelContainerPackets, dialysateContainerPackets}];
@@ -1890,7 +1899,7 @@ resolveExperimentDialysisOptions[mySamples : ListableP[{ObjectP[Object[Sample]].
 
 	(* If there are invalid inputs and we are throwing messages,throw an error message and keep track of the invalid inputs.*)
 	If[Length[discardedInvalidInputs] > 0 && messages,
-		Message[Error::DiscardedSamples, ObjectToString[discardedInvalidInputs, Cache -> simulatedCache]]
+		Message[Error::DiscardedSamples, ObjectToString[discardedInvalidInputs, Simulation -> updatedSimulation]]
 	];
 
 	(* If we are gathering tests, create a passing and/or failing test with the appropriate result. *)
@@ -1898,11 +1907,11 @@ resolveExperimentDialysisOptions[mySamples : ListableP[{ObjectP[Object[Sample]].
 		Module[{failingTest, passingTest},
 			failingTest = If[Length[discardedInvalidInputs] == 0,
 				Nothing,
-				Test["Our input samples " <> ObjectToString[discardedInvalidInputs, Cache -> simulatedCache] <> " are not discarded:", True, False]
+				Test["Our input samples " <> ObjectToString[discardedInvalidInputs, Simulation -> updatedSimulation] <> " are not discarded:", True, False]
 			];
 			passingTest = If[Length[discardedInvalidInputs] == Length[flatSampleList],
 				Nothing,
-				Test["Our input samples " <> ObjectToString[Complement[flatSampleList, discardedInvalidInputs], Cache -> simulatedCache] <> " are not discarded:", True, True]
+				Test["Our input samples " <> ObjectToString[Complement[flatSampleList, discardedInvalidInputs], Simulation -> updatedSimulation] <> " are not discarded:", True, True]
 			];
 			{failingTest, passingTest}
 		],
@@ -1935,12 +1944,12 @@ resolveExperimentDialysisOptions[mySamples : ListableP[{ObjectP[Object[Sample]].
 		Module[{failingTest, passingTest},
 			failingTest = If[Length[deprecatedInvalidInputs] == 0,
 				Nothing,
-				Test["Provided samples have models " <> ObjectToString[deprecatedInvalidInputs, Cache -> simulatedCache] <> " that are not deprecated:", True, False]
+				Test["Provided samples have models " <> ObjectToString[deprecatedInvalidInputs, Simulation -> updatedSimulation] <> " that are not deprecated:", True, False]
 			];
 
 			passingTest = If[Length[deprecatedInvalidInputs] == Length[modelPacketsToCheckIfDeprecated],
 				Nothing,
-				Test["Provided samples have models " <> ObjectToString[Download[Complement[modelPacketsToCheckIfDeprecated, deprecatedInvalidInputs], Object,Date->Now], Cache -> simulatedCache] <> " that are not deprecated:", True, True]
+				Test["Provided samples have models " <> ObjectToString[Download[Complement[modelPacketsToCheckIfDeprecated, deprecatedInvalidInputs], Object,Date->Now], Simulation -> updatedSimulation] <> " that are not deprecated:", True, True]
 			];
 
 			{failingTest, passingTest}
@@ -4415,7 +4424,7 @@ Error::ConflictingDialysisMethodMixType="The DialysisMixType `1` is not supporte
 						(*Was the MWCO specified?*)
 						MatchQ[specifiedMWCO,Except[Automatic]],
 						(*Is there a Model[Item,DialysisMembrane] with the specified MolecularWeightCutoff?*)
-						potentialMembranes=DeleteDuplicates[Cases[simulatedCache,
+						potentialMembranes=DeleteDuplicates[Cases[inheritedCache,
 							KeyValuePattern[{
 								Type->Model[Item,DialysisMembrane],
 								MolecularWeightCutoff->RangeP[specifiedMWCO*0.99,specifiedMWCO*1.01],
@@ -4429,7 +4438,7 @@ Error::ConflictingDialysisMethodMixType="The DialysisMixType `1` is not supporte
 							Null
 						],
 						(*Is there any Model[Item,DialysisMembrane]?*)
-						potentialMembranes=DeleteDuplicates[Cases[simulatedCache,
+						potentialMembranes=DeleteDuplicates[Cases[inheritedCache,
 							KeyValuePattern[{
 								Type->Model[Item,DialysisMembrane],
 								VolumePerLength->GreaterP[Min[sampleVolumes/.{Automatic->30Milliliter},130Milliliter]/(0.4Meter)]
@@ -4455,7 +4464,7 @@ Error::ConflictingDialysisMethodMixType="The DialysisMixType `1` is not supporte
 						(*Was the MWCO specified?*)
 						MatchQ[specifiedMWCO,Except[Automatic]],
 						(*Is there a Model[Container,Plate,Dialysis] with the specified MolecularWeightCutoff?*)
-						potentialMembranes=DeleteDuplicates[Cases[simulatedCache,
+						potentialMembranes=DeleteDuplicates[Cases[inheritedCache,
 							KeyValuePattern[{
 								Type->Model[Container,Plate,Dialysis],MolecularWeightCutoff->RangeP[specifiedMWCO*0.99,specifiedMWCO*1.01],MinVolume->LessP[sampleVolumes],MaxVolume->GreaterEqualP[(sampleVolumes-250*Microliter)]
 							}]
@@ -4467,7 +4476,7 @@ Error::ConflictingDialysisMethodMixType="The DialysisMixType `1` is not supporte
 							Null
 						],
 						(*Is there any Model[Container,Dialysis]?*)
-						potentialMembranes=DeleteDuplicates[Cases[simulatedCache,
+						potentialMembranes=DeleteDuplicates[Cases[inheritedCache,
 							KeyValuePattern[{
 								Type->Model[Container,Plate,Dialysis],MinVolume->Min[sampleVolumes],MaxVolume->GreaterEqualP[(sampleVolumes+250*Microliter)]
 							}]
@@ -4491,7 +4500,7 @@ Error::ConflictingDialysisMethodMixType="The DialysisMixType `1` is not supporte
 						(*Was the MWCO specified?*)
 						MatchQ[specifiedMWCO,Except[Automatic]],
 						(*Is there a Model[Container,Plate,Dialysis] with the specified MolecularWeightCutoff?*)
-						potentialMembranes=DeleteDuplicates[Cases[simulatedCache,
+						potentialMembranes=DeleteDuplicates[Cases[inheritedCache,
 							KeyValuePattern[{
 								Type->Model[Container,Plate,Dialysis],MolecularWeightCutoff->RangeP[specifiedMWCO*0.99,specifiedMWCO*1.01]
 							}]
@@ -4503,7 +4512,7 @@ Error::ConflictingDialysisMethodMixType="The DialysisMixType `1` is not supporte
 							Null
 						],
 						(*Is there a Model[Container,Dialysis]?*)
-						potentialMembranes=DeleteDuplicates[Cases[simulatedCache,
+						potentialMembranes=DeleteDuplicates[Cases[inheritedCache,
 							KeyValuePattern[{
 								Type->Model[Container,Plate,Dialysis]
 							}]
@@ -4525,7 +4534,7 @@ Error::ConflictingDialysisMethodMixType="The DialysisMixType `1` is not supporte
 					(*Was the MWCO and sample volume specified?*)
 					MatchQ[resolveddialysisMethod,StaticDialysis]&&MatchQ[specifiedMWCO,Except[Automatic]]&&MatchQ[sampleVolumes,Except[Automatic]],
 					(*Is there a Model[Container,Vessel, Dialysis] with the specified MolecularWeightCutoff and can fit the sample?*)
-					potentialMembranes=DeleteDuplicates[Cases[simulatedCache,
+					potentialMembranes=DeleteDuplicates[Cases[inheritedCache,
 						KeyValuePattern[{
 							Type->Model[Container,Vessel,Dialysis],MolecularWeightCutoff->RangeP[specifiedMWCO*0.99,specifiedMWCO*1.01],MinVolume->LessP[sampleVolumes],MaxVolume->GreaterP[sampleVolumes]
 						}]
@@ -4540,7 +4549,7 @@ Error::ConflictingDialysisMethodMixType="The DialysisMixType `1` is not supporte
 							]
 						],Object],
 						(*look for a tube to fill it*)
-						potentialMembranes=DeleteDuplicates[Cases[simulatedCache,
+						potentialMembranes=DeleteDuplicates[Cases[inheritedCache,
 							KeyValuePattern[{
 								Type->Model[Item,DialysisMembrane],MolecularWeightCutoff->RangeP[specifiedMWCO*0.99,specifiedMWCO*1.01]
 							}]
@@ -4555,7 +4564,7 @@ Error::ConflictingDialysisMethodMixType="The DialysisMixType `1` is not supporte
 					(*Was the MWCO specified but not the sample volume?*)
 					MatchQ[resolveddialysisMethod,StaticDialysis]&&MatchQ[specifiedMWCO,Except[Automatic]],
 					(*Is there a Model[Container,Vessel, Dialysis] with the specified MolecularWeightCutoff and can fit the sample?*)
-					potentialMembranes=DeleteDuplicates[Cases[simulatedCache,
+					potentialMembranes=DeleteDuplicates[Cases[inheritedCache,
 						KeyValuePattern[{
 							Type->Model[Container,Vessel,Dialysis],MolecularWeightCutoff->RangeP[specifiedMWCO*0.99,specifiedMWCO*1.01],MinVolume->LessP[entiresampleVolumes],MaxVolume->GreaterP[entiresampleVolumes]
 						}]
@@ -4570,7 +4579,7 @@ Error::ConflictingDialysisMethodMixType="The DialysisMixType `1` is not supporte
 							]
 						],Object],
 						(*look for a tube to fill it*)
-						potentialMembranes=DeleteDuplicates[Cases[simulatedCache,
+						potentialMembranes=DeleteDuplicates[Cases[inheritedCache,
 							KeyValuePattern[{
 								Type->Model[Item,DialysisMembrane],MolecularWeightCutoff->RangeP[specifiedMWCO*0.99,specifiedMWCO*1.01]
 							}]
@@ -4585,7 +4594,7 @@ Error::ConflictingDialysisMethodMixType="The DialysisMixType `1` is not supporte
 					(*Was the samplevolume specified but not the mwco?*)
 					MatchQ[resolveddialysisMethod,StaticDialysis]&&MatchQ[sampleVolumes,Except[Automatic]],
 					(*Can any vessel hold it*)
-					potentialMembranes=DeleteDuplicates[Cases[simulatedCache,
+					potentialMembranes=DeleteDuplicates[Cases[inheritedCache,
 						KeyValuePattern[{
 							Type->Model[Container,Vessel,Dialysis],MinVolume->LessP[sampleVolumes],MaxVolume->GreaterP[sampleVolumes]
 						}]
@@ -4601,7 +4610,7 @@ Error::ConflictingDialysisMethodMixType="The DialysisMixType `1` is not supporte
 						],Object],
 						(*look for a membrane tube*)
 						(*look for a tube to fill it*)
-						potentialMembranes=DeleteDuplicates[Cases[simulatedCache,
+						potentialMembranes=DeleteDuplicates[Cases[inheritedCache,
 							KeyValuePattern[{
 								Type->Model[Item,DialysisMembrane]
 							}]
@@ -4622,7 +4631,7 @@ Error::ConflictingDialysisMethodMixType="The DialysisMixType `1` is not supporte
 						(*Every other case*)
 					True,
 						(*just go by the samples full volume*)
-					potentialMembranes=DeleteDuplicates[Cases[simulatedCache,
+					potentialMembranes=DeleteDuplicates[Cases[inheritedCache,
 						KeyValuePattern[{
 							Type->Model[Container,Vessel,Dialysis],MinVolume->LessP[entiresampleVolumes],MaxVolume->GreaterP[entiresampleVolumes]
 						}]
@@ -4638,7 +4647,7 @@ Error::ConflictingDialysisMethodMixType="The DialysisMixType `1` is not supporte
 						],Object],
 						(*look for a membrane tube*)
 						(*look for a tube to fill it*)
-						potentialMembranes=DeleteDuplicates[Cases[simulatedCache,
+						potentialMembranes=DeleteDuplicates[Cases[inheritedCache,
 							KeyValuePattern[{
 								Type->Model[Item,DialysisMembrane]
 							}]
@@ -4675,7 +4684,7 @@ Error::ConflictingDialysisMethodMixType="The DialysisMixType `1` is not supporte
 							First[
 								DeleteDuplicates[
 									Cases[
-										simulatedCache,
+										inheritedCache,
 										KeyValuePattern[{Object->ObjectP[dialysisMembrane]}]
 									]
 								]
@@ -4696,21 +4705,21 @@ Error::ConflictingDialysisMethodMixType="The DialysisMixType `1` is not supporte
 					30Milliliter,
 					(*if it is a tube and dynamic*)
 					MatchQ[dialysisMembrane, ObjectP[Model[Item,DialysisMembrane]]]&&MatchQ[resolveddialysisMethod,DynamicDialysis],
-					Min[Lookup[First[DeleteDuplicates[Cases[simulatedCache,
+					Min[Lookup[First[DeleteDuplicates[Cases[inheritedCache,
 						KeyValuePattern[{
 							Object->ObjectP[dialysisMembrane]
 						}]
 					]]],VolumePerLength]*.4 Meter,130Milliliter],
 					(*if it is a Equilibrium dialysis plate?*)
 					MatchQ[dialysisMembrane, ObjectP[Model[Container,Plate,Dialysis]]],
-					Lookup[First[DeleteDuplicates[Cases[simulatedCache,
+					Lookup[First[DeleteDuplicates[Cases[inheritedCache,
 						KeyValuePattern[{
 							Object->ObjectP[dialysisMembrane]
 						}]
 					]]],MaxVolume]-(250*Microliter),
 					(*if it is a vessel*)
 					True,
-					Lookup[First[DeleteDuplicates[Cases[simulatedCache,
+					Lookup[First[DeleteDuplicates[Cases[inheritedCache,
 						KeyValuePattern[{
 							Object->ObjectP[dialysisMembrane]
 						}]
@@ -4721,7 +4730,7 @@ Error::ConflictingDialysisMethodMixType="The DialysisMixType `1` is not supporte
 				{preSoak, recommendedSoakTime, recommendedSoakSolution, recommendedSoakVolume}=If[
 					MatchQ[dialysisMembrane,Null],
 					{Null,Null,Null,Null},
-					Lookup[First[DeleteDuplicates[Cases[simulatedCache,
+					Lookup[First[DeleteDuplicates[Cases[inheritedCache,
 						KeyValuePattern[{
 							Object->ObjectP[dialysisMembrane]
 						}]
@@ -4900,7 +4909,7 @@ Error::ConflictingDialysisMethodMixType="The DialysisMixType `1` is not supporte
 		Null,
 		(*Is it Equilibrium Dialysis or static Dialysis with no mixing at nonambient*)
 		MatchQ[resolveddialysisMethod,Except[DynamicDialysis]]&&MatchQ[resolveddialysisMixType,Null],
-		potentialInstruments=DeleteDuplicates[Cases[simulatedCache, KeyValuePattern[
+		potentialInstruments=DeleteDuplicates[Cases[inheritedCache, KeyValuePattern[
 			{
 				Type->Model[Instrument,HeatBlock],
 				MaxTemperature->GreaterEqualP[Max[dialysisTempsNoAmbient]]|If[MatchQ[Max[dialysisTempsNoAmbient],LessEqualP[$AmbientTemperature]],Null|RangeP[-1000Celsius,5000Celsius]],MinTemperature->LessEqualP[Min[dialysisTempsNoAmbient]]|If[MatchQ[Max[dialysisTempsNoAmbient],GreaterEqualP[$AmbientTemperature]],Null|RangeP[-1000Celsius,5000Celsius]]
@@ -4909,11 +4918,11 @@ Error::ConflictingDialysisMethodMixType="The DialysisMixType `1` is not supporte
 		If[
 			(*If any instruments meet spec*)
 			Length[potentialInstruments]>0,
-			(*Take the one with the lowest max temp*)
-			Lookup[First[
-				Sort[
+			(*Take the one with the most real (non-testing, non-retired) instruments*)
+			Lookup[Last[
+				SortBy[
 					potentialInstruments,
-					Lookup[#1, MaxTemperature] < Lookup[#2, MaxTemperature] &
+					Count[Transpose[Download[Lookup[#, Object], {Objects[DeveloperObject], Objects[Status]}, Simulation -> updatedSimulation]], {(Null|False), Except[Retired]}]&
 				]
 			],Object],
 			(*Return an error*)
@@ -4922,7 +4931,7 @@ Error::ConflictingDialysisMethodMixType="The DialysisMixType `1` is not supporte
 		],
 		(*Is it shaking?*)
 		MatchQ[resolveddialysisMixType,Vortex],
-		potentialInstruments=DeleteDuplicates[Cases[simulatedCache, KeyValuePattern[
+		potentialInstruments=DeleteDuplicates[Cases[inheritedCache, KeyValuePattern[
 			{
 				Type->Model[Instrument,Vortex],
 				MaxTemperature->GreaterEqualP[Max[dialysisTempsNoAmbient]]|If[MatchQ[Max[dialysisTempsNoAmbient],LessEqualP[$AmbientTemperature]],Null|RangeP[-1000Celsius,5000Celsius]],MinTemperature->LessEqualP[Min[dialysisTempsNoAmbient]]|If[MatchQ[Max[dialysisTempsNoAmbient],GreaterEqualP[$AmbientTemperature]],Null|RangeP[-1000Celsius,5000Celsius]],
@@ -4932,11 +4941,11 @@ Error::ConflictingDialysisMethodMixType="The DialysisMixType `1` is not supporte
 		If[
 			(*If any instruments meet spec*)
 			Length[potentialInstruments]>0,
-			(*Take the one with the lowest max temp*)
-			Lookup[First[
-				Sort[
+			(*Take the one with the most real (non-testing, non-retired) instruments*)
+			Lookup[Last[
+				SortBy[
 					potentialInstruments,
-					Lookup[#1, MaxTemperature] < Lookup[#2, MaxTemperature] &
+					Count[Transpose[Download[Lookup[#, Object], {Objects[DeveloperObject], Objects[Status]}, Simulation -> updatedSimulation]], {(Null|False), Except[Retired]}]&
 				]
 			],Object],
 			(*Return an error*)
@@ -4945,7 +4954,7 @@ Error::ConflictingDialysisMethodMixType="The DialysisMixType `1` is not supporte
 		],
 		(*Is with stirring*)
 		MatchQ[resolveddialysisMixType,Stir],
-		potentialInstruments=DeleteDuplicates[Cases[simulatedCache, KeyValuePattern[
+		potentialInstruments=DeleteDuplicates[Cases[inheritedCache, KeyValuePattern[
 			{
 				Type->Model[Instrument,OverheadStirrer],
 				MaxTemperature->GreaterEqualP[Max[dialysisTempsNoAmbient]]|If[MatchQ[Max[dialysisTempsNoAmbient],LessEqualP[$AmbientTemperature]],Null|RangeP[-1000Celsius,5000Celsius]],MinTemperature->LessEqualP[Min[dialysisTempsNoAmbient]]|If[MatchQ[Max[dialysisTempsNoAmbient],GreaterEqualP[$AmbientTemperature]],Null|RangeP[-1000Celsius,5000Celsius]],
@@ -4955,11 +4964,11 @@ Error::ConflictingDialysisMethodMixType="The DialysisMixType `1` is not supporte
 		If[
 			(*If any instruments meet spec*)
 			Length[potentialInstruments]>0,
-			(*Take the one with the lowest max temp*)
-			Lookup[First[
-				Sort[
+			(*Take the one with the most real (non-testing, non-retired) instruments*)
+			Lookup[Last[
+				SortBy[
 					potentialInstruments,
-					Lookup[#1, MaxTemperature] < Lookup[#2, MaxTemperature] &
+					Count[Transpose[Download[Lookup[#, Object], {Objects[DeveloperObject], Objects[Status]}, Simulation -> updatedSimulation]], {(Null|False), Except[Retired]}]&
 				]
 			],Object],
 			(*Return an error*)
@@ -5912,7 +5921,7 @@ Error::ConflictingDialysisMethodMixType="The DialysisMixType `1` is not supporte
 		Null,
 		(* Find a beaker big enough*)
 		True,
-		potentialContainers=DeleteDuplicates[Cases[simulatedCache,
+		potentialContainers=DeleteDuplicates[Cases[inheritedCache,
 			KeyValuePattern[
 				{
 					Object->ObjectP[supportedDialysateContainers],
@@ -5937,7 +5946,7 @@ Error::ConflictingDialysisMethodMixType="The DialysisMixType `1` is not supporte
 	dialysateContainerVolume=If[MatchQ[resolveddialysateContainer,Null],
 		Null,
 		Lookup[First[
-				DeleteDuplicates[Cases[simulatedCache,
+				DeleteDuplicates[Cases[inheritedCache,
 					KeyValuePattern[
 						{
 							Object->ObjectP[resolveddialysateContainer]
@@ -5963,7 +5972,7 @@ Error::ConflictingDialysisMethodMixType="The DialysisMixType `1` is not supporte
 		resolveddialysateContainer,
 		(*find a bigger one then*)
 		True,
-		potentialContainers=DeleteDuplicates[Cases[simulatedCache,
+		potentialContainers=DeleteDuplicates[Cases[inheritedCache,
 			KeyValuePattern[
 				{
 					Object->ObjectP[supportedDialysateContainers],
@@ -6000,7 +6009,7 @@ Error::ConflictingDialysisMethodMixType="The DialysisMixType `1` is not supporte
 		resolveddialysateContainer,
 		(*find a bigger one then*)
 		True,
-		potentialContainers=DeleteDuplicates[Cases[simulatedCache,
+		potentialContainers=DeleteDuplicates[Cases[inheritedCache,
 			KeyValuePattern[
 				{
 					Object->ObjectP[supportedDialysateContainers],
@@ -6033,7 +6042,7 @@ Error::ConflictingDialysisMethodMixType="The DialysisMixType `1` is not supporte
 		resolveddialysateContainer,
 		(*find a bigger one then*)
 		True,
-		potentialContainers=DeleteDuplicates[Cases[simulatedCache,
+		potentialContainers=DeleteDuplicates[Cases[inheritedCache,
 			KeyValuePattern[
 				{
 					Object->ObjectP[supportedDialysateContainers],
@@ -6066,7 +6075,7 @@ Error::ConflictingDialysisMethodMixType="The DialysisMixType `1` is not supporte
 		resolveddialysateContainer,
 		(*find a bigger one then*)
 		True,
-		potentialContainers=DeleteDuplicates[Cases[simulatedCache,
+		potentialContainers=DeleteDuplicates[Cases[inheritedCache,
 			KeyValuePattern[
 				{
 					Object->ObjectP[supportedDialysateContainers],
@@ -6099,7 +6108,7 @@ Error::ConflictingDialysisMethodMixType="The DialysisMixType `1` is not supporte
 			volumes=PickList[Lookup[mapThreadFriendlyOptions,SampleVolume],noAvailableDialysisMembraneErrors];
 
 			(* Throw the corresponding error. *)
-			Message[Error::NoAvailableDialysisMembrane,ToString[mWCOs],ToString[volumes],ObjectToString[invalidSamples,Cache->simulatedCache]];
+			Message[Error::NoAvailableDialysisMembrane,ToString[mWCOs],ToString[volumes],ObjectToString[invalidSamples,Simulation -> updatedSimulation]];
 
 			(* Return our invalid options. *)
 			{DialysisMembrane}
@@ -6135,7 +6144,7 @@ Error::ConflictingDialysisMethodMixType="The DialysisMixType `1` is not supporte
 	invalidConflictingMixTypeOptions=If[
 		conflictingMixTypeWarning&&!gatherTests,
 		(* Throw the corresponding warning. *)
-		Message[Warning::ConflictingDialysisMixType,ObjectToString[resolveddialysisMembrane,Cache->simulatedCache]];
+		Message[Warning::ConflictingDialysisMixType,ObjectToString[resolveddialysisMembrane,Simulation -> updatedSimulation]];
 		(* Return our invalid options. *)
 		{DialysisMembrane, DialysisMixType},
 		{}
@@ -6165,7 +6174,7 @@ Error::ConflictingDialysisMethodMixType="The DialysisMixType `1` is not supporte
 		{}
 	];*)
 
-	(* Check for intrument errors *)
+	(* Check for instrument errors *)
 	invalidUnresolvableDialysisInstrumentOptions=If[
 		unresolvableInstrumentError&&!gatherTests,
 		(* Throw the corresponding error. *)
@@ -6287,7 +6296,7 @@ Error::ConflictingDialysisMethodMixType="The DialysisMixType `1` is not supporte
 	hamiltonCompatibleContainerBools=If[
 		MatchQ[resolveddialysisMethod,Except[EquilibriumDialysis]],
 		Null,
-		Experiment`Private`tipsReachContainerBottomQ[Model[Item, Tips, "50 uL Hamilton tips, non-sterile"], Download[#], {Download[Model[Item, Tips, "50 uL Hamilton tips, non-sterile"]]}] & /@ hamiltonCompatibleContainers
+		Experiment`Private`tipsReachContainerBottomQ[Model[Item, Tips, "50 uL Hamilton tips, non-sterile"], Download[#,Simulation->updatedSimulation], {Download[Model[Item, Tips, "50 uL Hamilton tips, non-sterile"],Cache->inheritedCache,Simulation->updatedSimulation]}] & /@ hamiltonCompatibleContainers
 	];
 
 	compatibleContainers=If[
@@ -6322,7 +6331,8 @@ Error::ConflictingDialysisMethodMixType="The DialysisMixType `1` is not supporte
 			mySamples,
 			simulatedSamples,
 			ReplaceRule[myOptions, resolveSamplePrepOptionsWithoutAliquot],
-			Cache -> Flatten[{inheritedCache, simulatedCache}],
+			Cache -> inheritedCache,
+			Simulation -> updatedSimulation,
 			RequiredAliquotContainers -> targetContainers,
 			RequiredAliquotAmounts -> requiredSampleVolumes,
 			Output -> {Result, Tests}
@@ -6332,7 +6342,8 @@ Error::ConflictingDialysisMethodMixType="The DialysisMixType `1` is not supporte
 			mySamples,
 			simulatedSamples,
 			ReplaceRule[myOptions, resolveSamplePrepOptionsWithoutAliquot],
-			Cache -> Flatten[{inheritedCache, simulatedCache}],
+			Cache -> inheritedCache,
+			Simulation -> updatedSimulation,
 			RequiredAliquotContainers -> targetContainers,
 			RequiredAliquotAmounts -> requiredSampleVolumes,
 			Output -> Result],
@@ -6343,8 +6354,8 @@ Error::ConflictingDialysisMethodMixType="The DialysisMixType `1` is not supporte
 
 	(* call CompatibleMaterialsQ and figure out if materials are compatible *)
 	{compatibleMaterialsBool, compatibleMaterialsTests} = If[gatherTests,
-		CompatibleMaterialsQ[resolvedinstrument, DeleteCases[Join[flatSimulatedSamples,dialysate, resolvedsecondaryDialysate, resolvedtertiaryDialysate, resolvedquaternaryDialysate, resolvedquinaryDialysate],Null], Output -> {Result, Tests}, Cache -> simulatedCache],
-		{CompatibleMaterialsQ[resolvedinstrument, DeleteCases[Join[flatSimulatedSamples,dialysate, resolvedsecondaryDialysate, resolvedtertiaryDialysate, resolvedquaternaryDialysate, resolvedquinaryDialysate],Null], Messages -> messages, Cache -> simulatedCache], {}}
+		CompatibleMaterialsQ[resolvedinstrument, DeleteCases[Join[flatSimulatedSamples,dialysate, resolvedsecondaryDialysate, resolvedtertiaryDialysate, resolvedquaternaryDialysate, resolvedquinaryDialysate],Null], Output -> {Result, Tests}, Simulation -> updatedSimulation],
+		{CompatibleMaterialsQ[resolvedinstrument, DeleteCases[Join[flatSimulatedSamples,dialysate, resolvedsecondaryDialysate, resolvedtertiaryDialysate, resolvedquaternaryDialysate, resolvedquinaryDialysate],Null], Messages -> messages, Simulation -> updatedSimulation], {}}
 	];
 
 	(* if the materials are incompatible, then the Instrument is invalid *)
@@ -6363,8 +6374,8 @@ Error::ConflictingDialysisMethodMixType="The DialysisMixType `1` is not supporte
 
 	(* Check whether the samples are ok *)
 	{validContainerStorageConditionBool, validContainerStorageConditionTests} = If[gatherTests,
-		ValidContainerStorageConditionQ[flatSimulatedSamples, expandedSamplesInStorage, Output -> {Result, Tests}, Cache -> simulatedCache],
-		{ValidContainerStorageConditionQ[flatSimulatedSamples, expandedSamplesInStorage, Output -> Result, Cache ->simulatedCache], {}}
+		ValidContainerStorageConditionQ[flatSimulatedSamples, expandedSamplesInStorage, Output -> {Result, Tests}, Simulation -> updatedSimulation],
+		{ValidContainerStorageConditionQ[flatSimulatedSamples, expandedSamplesInStorage, Output -> Result, Simulation -> updatedSimulation], {}}
 	];
 
 	validContainerStoragConditionInvalidOptions = If[MemberQ[validContainerStorageConditionBool, False], SamplesInStorageCondition, Nothing];
@@ -6479,7 +6490,7 @@ Error::ConflictingDialysisMethodMixType="The DialysisMixType `1` is not supporte
 
 	(* get the rest directly *)
 	(*Pull out the shared options*)
-	{confirm,template,cache,operator,upload,outputOption,subprotocolDescription,samplePreparation}=Lookup[myOptions,{Confirm,Template,Cache,Operator,Upload,Output,SubprotocolDescription,PreparatoryUnitOperations}];
+	{confirm,canaryBranch,template,cache,operator,upload,outputOption,subprotocolDescription,samplePreparation}=Lookup[myOptions,{Confirm,CanaryBranch,Template,Cache,Operator,Upload,Output,SubprotocolDescription,PreparatoryUnitOperations}];
 
 	(* get the resolved Email option; for this experiment, the default is True if it's a parent protocol, and False if it's a sub *)
 	email = Which[
@@ -6583,6 +6594,7 @@ Error::ConflictingDialysisMethodMixType="The DialysisMixType `1` is not supporte
 		resolvedAliquotOptions,
 		resolvedPostProcessingOptions,
 		Confirm -> confirm,
+		CanaryBranch -> canaryBranch,
 		Name -> name,
 		Template -> template,
 		Cache -> inheritedCache,
@@ -6594,7 +6606,6 @@ Error::ConflictingDialysisMethodMixType="The DialysisMixType `1` is not supporte
 		SubprotocolDescription->subprotocolDescription,
 		Upload -> upload,
 		PreparatoryUnitOperations->samplePreparation,
-		PreparatoryPrimitives->Lookup[myOptions, PreparatoryPrimitives],
 		SamplesInStorageCondition -> samplesInStorage
 	}];
 
@@ -6690,7 +6701,8 @@ dialysisResourcePackets[myPooledSamples:ListableP[{ObjectP[Object[Sample]]..}],m
 		gatheredsecondaryRetentateSamplingContainerOut, secondaryRetentateSamplingContainersOutWells,groupedsecondaryRetentateSamplingContainersOut, groupedsecondaryRetentateSamplingContainersOutResources,
 		gatheredtertiaryRetentateSamplingContainerOut,tertiaryRetentateSamplingContainersOutWells,groupedtertiaryRetentateSamplingContainersOut,groupedtertiaryRetentateSamplingContainersOutResources,
 		gatheredquaternaryRetentateSamplingContainerOut, quaternaryRetentateSamplingContainersOutWells, groupedquaternaryRetentateSamplingContainersOut, groupedquaternaryRetentateSamplingContainersOutResources,
-		gatheredretentateContainerOut, retentateContainersOutWells, groupedretentateContainersOut,groupedretentateContainersOutResources
+		gatheredretentateContainerOut, retentateContainersOutWells, groupedretentateContainersOut,groupedretentateContainersOutResources,
+		simulation
 	},
 
 	(* expand the resolved options if they weren't expanded already *)
@@ -6713,7 +6725,8 @@ dialysisResourcePackets[myPooledSamples:ListableP[{ObjectP[Object[Sample]]..}],m
 	messages = Not[gatherTests];
 
 	(* get the inherited cache *)
-	inheritedCache = Lookup[expandedResolvedOptions, Cache];
+	inheritedCache = Lookup[ToList[myOptions], Cache];
+	simulation = Lookup[ToList[myOptions], Simulation, Simulation[]];
 
 	uniqueContainerOutObjects=DeleteDuplicates[Cases[Join[
 		Lookup[myResolvedOptions,RetentateSamplingContainerOut],Lookup[myResolvedOptions,SecondaryRetentateSamplingContainerOut],Lookup[myResolvedOptions,TertiaryRetentateSamplingContainerOut],Lookup[myResolvedOptions,QuaternaryRetentateSamplingContainerOut],Lookup[myResolvedOptions,RetentateContainerOut],
@@ -6736,7 +6749,7 @@ dialysisResourcePackets[myPooledSamples:ListableP[{ObjectP[Object[Sample]]..}],m
 			{Packet[MaxVolume]},
 			{Packet[NumberOfWells]}
 		},
-		Cache -> inheritedCache,
+		Simulation -> simulation,
 		Date->Now
 	]];
 
@@ -6745,7 +6758,7 @@ dialysisResourcePackets[myPooledSamples:ListableP[{ObjectP[Object[Sample]]..}],m
 		{uniqueContainerOutObjects, downloadedContainerOutFields/.{$Failed -> 1}}
 	];
 
-	(* determine the pool lenghts*)
+	(* determine the pool lengths*)
 	poolLengths = Length[#]& /@ myPooledSamples;
 
 	(* get the number of replicates so that we can expand the fields (samplesIn etc.) accordingly  *)
@@ -7408,7 +7421,7 @@ dialysisResourcePackets[myPooledSamples:ListableP[{ObjectP[Object[Sample]]..}],m
 	hamiltonCompatibleContainerBools=If[
 		MatchQ[dialysisMethod,Except[EquilibriumDialysis]],
 		Null,
-		Experiment`Private`tipsReachContainerBottomQ[Model[Item, Tips, "50 uL Hamilton tips, non-sterile"], Download[#], {Download[Model[Item, Tips, "50 uL Hamilton tips, non-sterile"]]}] & /@ hamiltonCompatibleContainers
+		Experiment`Private`tipsReachContainerBottomQ[Model[Item, Tips, "50 uL Hamilton tips, non-sterile"], Download[#,Cache->inheritedCache,Simulation->simulation], {Download[Model[Item, Tips, "50 uL Hamilton tips, non-sterile"],Cache->inheritedCache,Simulation->simulation]}] & /@ hamiltonCompatibleContainers
 	];
 
 	compatibleContainers=If[
@@ -7701,7 +7714,7 @@ dialysisResourcePackets[myPooledSamples:ListableP[{ObjectP[Object[Sample]]..}],m
 	groupSoakTimes=Flatten[groupSoakTimesUnflat,1];
 	groupedIDs=#[[All,48]]&/@subGroupedBatches;
 
-	(*Flatten the grouped variables these will go into the batching field and their own seperate field matched to pooledsamplesin*)
+	(*Flatten the grouped variables these will go into the batching field and their own separate field matched to pooledsamplesin*)
 	groupdialysateIDs=Flatten[groupdialysateIDsUnflat,1];
 	matcheddialysateIDs=Sort[MapThread[{#1,#2}&,{Flatten[groupedIDs],Flatten[groupdialysateIDs]}]][[All,2]];
 	groupdialysate2IDs=Flatten[groupdialysateIDsUnflat2,1];
@@ -8554,20 +8567,20 @@ dialysisResourcePackets[myPooledSamples:ListableP[{ObjectP[Object[Sample]]..}],m
 			{"Preparing Samples",0 Minute, "Preprocessing, such as thermal incubation/mixing, centrifugation,	filteration, and aliquoting, is performed.",
 				Null},
 			{"Picking Resources",5 Minute,"Samples required to execute this protocol are gathered from storage.",
-				Link[Resource[Operator -> Model[User,Emerald,Operator,"Trainee"],Time -> 5 Minute]]},
+				Link[Resource[Operator -> $BaselineOperator,Time -> 5 Minute]]},
 			{"Dialyzing Samples",(10*Minute*Length[runTimesGroup]+Total[runTimesGroup]),"The samples are dialyzed to remove particulates smaller than the membrane's molecular weight cutoff.",
-				Link[Resource[Operator -> Model[User,Emerald,Operator,"Trainee"],Time -> (10*Minute*Length[runTimesGroup]+Total[runTimesGroup])]]},
+				Link[Resource[Operator -> $BaselineOperator,Time -> (10*Minute*Length[runTimesGroup]+Total[runTimesGroup])]]},
 			{"Parsing Data",1 Minute,"The database is updated with new dialyzed samples.",
-				Link[Resource[Operator -> Model[User,Emerald,Operator,"Trainee"],Time -> 1 Minute]]},
+				Link[Resource[Operator -> $BaselineOperator,Time -> 1 Minute]]},
 			{"Sample Post-Processing",1 Minute ,"Any measuring of volume, weight, or sample imaging post experiment is performed.",
-				Link[Resource[Operator -> Model[User,Emerald,Operator,"Trainee"],Time -> 1 Minute]]},
+				Link[Resource[Operator -> $BaselineOperator,Time -> 1 Minute]]},
 			{"Returning Materials",3 Minute,"Samples are returned to storage.",
-				Link[Resource[Operator -> Model[User,Emerald,Operator,"Trainee"],Time -> 3 Minute]]}
+				Link[Resource[Operator -> $BaselineOperator,Time -> 3 Minute]]}
 		}
 	];
 
 	(* generate a packet with the shared sample prep and aliquotting fields *)
-	sharedFieldPacket = populateSamplePrepFields[myPooledSamples, myResolvedOptions, Cache->inheritedCache];
+	sharedFieldPacket = populateSamplePrepFields[myPooledSamples, myResolvedOptions, Simulation->simulation];
 
 	(* Merge the shared fields with the specific fields *)
 	finalizedPacket = Join[sharedFieldPacket, protocolPacket];
@@ -8579,8 +8592,8 @@ dialysisResourcePackets[myPooledSamples:ListableP[{ObjectP[Object[Sample]]..}],m
 	(* call fulfillableResourceQ on all resources we created *)
 	{fulfillable,frqTests}=Which[
 		MatchQ[$ECLApplication, Engine], {True, {}},
-		gatherTests, Resources`Private`fulfillableResourceQ[allResourceBlobs,Output->{Result,Tests},FastTrack->Lookup[myResolvedOptions,FastTrack],Site->Lookup[myResolvedOptions,Site],Cache->inheritedCache],
-		True, {Resources`Private`fulfillableResourceQ[allResourceBlobs,Output->Result,FastTrack->Lookup[myResolvedOptions,FastTrack],Site->Lookup[myResolvedOptions,Site],Messages->messages,Cache->inheritedCache],Null}
+		gatherTests, Resources`Private`fulfillableResourceQ[allResourceBlobs,Output->{Result,Tests},FastTrack->Lookup[myResolvedOptions,FastTrack],Site->Lookup[myResolvedOptions,Site],Simulation->simulation],
+		True, {Resources`Private`fulfillableResourceQ[allResourceBlobs,Output->Result,FastTrack->Lookup[myResolvedOptions,FastTrack],Site->Lookup[myResolvedOptions,Site],Messages->messages,Simulation->simulation],Null}
 	];
 
 	(* generate the Preview option; that is always Null *)
@@ -8627,7 +8640,7 @@ DefineOptions[ExperimentDialysisOptions,
 ];
 
 (* --- Overloads --- *)
-ExperimentDialysisOptions[mySample : ObjectP[Object[Sample]], myOptions : OptionsPattern[ExperimentDialysisOptions]] := ExperimentDialysisOptions[{mySample}, myOptions];
+ExperimentDialysisOptions[mySample : ObjectP[{Object[Sample], Model[Sample]}], myOptions : OptionsPattern[ExperimentDialysisOptions]] := ExperimentDialysisOptions[{mySample}, myOptions];
 ExperimentDialysisOptions[myContainer : ObjectP[Object[Container]], myOptions : OptionsPattern[ExperimentDialysisOptions]] := ExperimentDialysisOptions[{myContainer}, myOptions];
 ExperimentDialysisOptions[myContainers : {ObjectP[Object[Container]]..}, myOptions : OptionsPattern[ExperimentDialysisOptions]] := Module[
 	{listedOptions, noOutputOptions, options},
@@ -8635,7 +8648,7 @@ ExperimentDialysisOptions[myContainers : {ObjectP[Object[Container]]..}, myOptio
 	(* get the options as a list *)
 	listedOptions = ToList[myOptions];
 
-	(* remove the Output option before passing to the core function because it doens't make sense here *)
+	(* remove the Output option before passing to the core function because it doesn't make sense here *)
 	noOutputOptions = DeleteCases[listedOptions, Alternatives[Output -> _, OutputFormat -> _]];
 
 	(* return only the options for ExperimentDialysis *)
@@ -8650,13 +8663,13 @@ ExperimentDialysisOptions[myContainers : {ObjectP[Object[Container]]..}, myOptio
 ];
 
 (* --- Overload for SemiPooledInputs --- *)
-ExperimentDialysisOptions[myInputs : ListableP[ListableP[Alternatives[ObjectP[Object[Sample]], ObjectP[Object[Container]]]]], myOptions : OptionsPattern[ExperimentDialysisOptions]] := Module[
+ExperimentDialysisOptions[myInputs : ListableP[ListableP[Alternatives[ObjectP[Object[Sample]], ObjectP[Model[Sample]], ObjectP[Object[Container]]]]], myOptions : OptionsPattern[ExperimentDialysisOptions]] := Module[
 	{listedOptions, noOutputOptions},
 
 	(* get the options as a list *)
 	listedOptions = ToList[myOptions];
 
-	(* remove the Output option before passing to the core function because it doens't make sense here *)
+	(* remove the Output option before passing to the core function because it doesn't make sense here *)
 	noOutputOptions = DeleteCases[listedOptions, Alternatives[Output -> _, OutputFormat -> _]];
 
 	(* return only the options for ExperimentDialysis *)
@@ -8676,7 +8689,7 @@ ExperimentDialysisOptions[mySamples : ListableP[{ObjectP[Object[Sample]]..}], my
 	(* get the options as a list *)
 	listedOptions = ToList[myOptions];
 
-	(* remove the Output option before passing to the core function because it doens't make sense here *)
+	(* remove the Output option before passing to the core function because it doesn't make sense here *)
 	noOutputOptions = DeleteCases[listedOptions, Alternatives[Output -> _, OutputFormat -> _]];
 
 	(* return only the options for ExperimentDialysis *)
@@ -8703,7 +8716,7 @@ DefineOptions[ValidExperimentDialysisQ,
 
 
 (* --- Overloads --- *)
-ValidExperimentDialysisQ[mySample : ObjectP[Object[Sample]], myOptions : OptionsPattern[ValidExperimentDialysisQ]] := ValidExperimentDialysisQ[{mySample}, myOptions];
+ValidExperimentDialysisQ[mySample : ObjectP[{Object[Sample],Model[Sample]}], myOptions : OptionsPattern[ValidExperimentDialysisQ]] := ValidExperimentDialysisQ[{mySample}, myOptions];
 ValidExperimentDialysisQ[myContainer : ObjectP[Object[Container]], myOptions : OptionsPattern[ValidExperimentDialysisQ]] := ValidExperimentDialysisQ[{myContainer}, myOptions];
 
 ValidExperimentDialysisQ[myContainers : {ObjectP[Object[Container]]..}, myOptions : OptionsPattern[ValidExperimentDialysisQ]] := Module[
@@ -8712,7 +8725,7 @@ ValidExperimentDialysisQ[myContainers : {ObjectP[Object[Container]]..}, myOption
 	(* get the options as a list *)
 	listedOptions = ToList[myOptions];
 
-	(* remove the Output option before passing to the core function because it doens't make sense here *)
+	(* remove the Output option before passing to the core function because it doesn't make sense here *)
 	preparedOptions = DeleteCases[listedOptions, (Output | Verbose | OutputFormat) -> _];
 
 	(* return only the tests for ExperimentDialysis *)
@@ -8755,13 +8768,13 @@ ValidExperimentDialysisQ[myContainers : {ObjectP[Object[Container]]..}, myOption
 ];
 
 (* --- Overload for SemiPooledInputs --- *)
-ValidExperimentDialysisQ[mySemiPooledInputs : ListableP[ListableP[Alternatives[ObjectP[Object[Sample]], ObjectP[Object[Container]]]]], myOptions : OptionsPattern[ExperimentDialysisOptions]] := Module[
+ValidExperimentDialysisQ[mySemiPooledInputs : ListableP[ListableP[Alternatives[ObjectP[Object[Sample]], ObjectP[Model[Sample]], ObjectP[Object[Container]]]]], myOptions : OptionsPattern[ExperimentDialysisOptions]] := Module[
 	{listedOptions, preparedOptions, dialysisTests, allTests, verbose, outputFormat},
 
 	(* get the options as a list *)
 	listedOptions = ToList[myOptions];
 
-	(* remove the Output option before passing to the core function because it doens't make sense here *)
+	(* remove the Output option before passing to the core function because it doesn't make sense here *)
 	preparedOptions = DeleteCases[listedOptions, (Output | Verbose | OutputFormat) -> _];
 
 	(* return only the tests for ExperimentDialysis *)
@@ -8802,7 +8815,7 @@ ValidExperimentDialysisQ[myPooledSamples : ListableP[{ObjectP[Object[Sample]]..}
 	(* get the options as a list *)
 	listedOptions = ToList[myOptions];
 
-	(* remove the Output option before passing to the core function because it doens't make sense here *)
+	(* remove the Output option before passing to the core function because it doesn't make sense here *)
 	preparedOptions = DeleteCases[listedOptions, (Output | Verbose | OutputFormat) -> _];
 
 	(* return only the tests for ExperimentDialysis *)
@@ -8844,7 +8857,7 @@ DefineOptions[ExperimentDialysisPreview,
 ];
 
 (* --- Overloads --- *)
-ExperimentDialysisPreview[mySample : ObjectP[Object[Sample]], myOptions : OptionsPattern[ExperimentDialysisPreview]] := ExperimentDialysisPreview[{mySample}, myOptions];
+ExperimentDialysisPreview[mySample : ObjectP[{Object[Sample], Model[Sample]}], myOptions : OptionsPattern[ExperimentDialysisPreview]] := ExperimentDialysisPreview[{mySample}, myOptions];
 ExperimentDialysisPreview[myContainer : ObjectP[Object[Container]], myOptions : OptionsPattern[ExperimentDialysisPreview]] := ExperimentDialysisPreview[{myContainer}, myOptions];
 ExperimentDialysisPreview[myContainers : {ObjectP[Object[Container]]..}, myOptions : OptionsPattern[ExperimentDialysisPreview]] := Module[
 	{listedOptions, noOutputOptions},
@@ -8852,7 +8865,7 @@ ExperimentDialysisPreview[myContainers : {ObjectP[Object[Container]]..}, myOptio
 	(* get the options as a list *)
 	listedOptions = ToList[myOptions];
 
-	(* remove the Output option before passing to the core function because it doens't make sense here *)
+	(* remove the Output option before passing to the core function because it doesn't make sense here *)
 	noOutputOptions = DeleteCases[listedOptions, Alternatives[Output -> _]];
 
 	(* return only the preview for ExperimentDialysis *)
@@ -8861,13 +8874,13 @@ ExperimentDialysisPreview[myContainers : {ObjectP[Object[Container]]..}, myOptio
 ];
 
 (* SemiPooledInputs *)
-ExperimentDialysisPreview[mySemiPooledInputs : ListableP[ListableP[Alternatives[ObjectP[Object[Sample]], ObjectP[Object[Container]]]]], myOptions : OptionsPattern[ExperimentDialysisPreview]] := Module[
+ExperimentDialysisPreview[mySemiPooledInputs : ListableP[ListableP[Alternatives[ObjectP[Object[Sample]], ObjectP[Model[Sample]], ObjectP[Object[Container]]]]], myOptions : OptionsPattern[ExperimentDialysisPreview]] := Module[
 	{listedOptions, noOutputOptions},
 
 	(* get the options as a list *)
 	listedOptions = ToList[myOptions];
 
-	(* remove the Output option before passing to the core function because it doens't make sense here *)
+	(* remove the Output option before passing to the core function because it doesn't make sense here *)
 	noOutputOptions = DeleteCases[listedOptions, Alternatives[Output -> _]];
 
 	(* return only the preview for ExperimentDialysis *)
@@ -8881,7 +8894,7 @@ ExperimentDialysisPreview[myPooledSamples : ListableP[{ObjectP[Object[Sample]]..
 	(* get the options as a list *)
 	listedOptions = ToList[myOptions];
 
-	(* remove the Output option before passing to the core function because it doens't make sense here *)
+	(* remove the Output option before passing to the core function because it doesn't make sense here *)
 	noOutputOptions = DeleteCases[listedOptions, Alternatives[Output -> _]];
 
 	(* return only the preview for ExperimentDialysis *)

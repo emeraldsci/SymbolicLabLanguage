@@ -86,6 +86,79 @@ DefineOptions[PlotFlowCytometry,
 
 Error::PlotFlowCytometryIncompatiblePlot="When PlotType is specified as EmeraldListLinePlot, EmeraldHistogram3D or EmeraldListContourPlot, Channels must be specified as a pair. A single PlotChannel can only be specified to create a EmeraldHistogram or EmeraldSmoothHistogram. EmeraldHistogram3D takes 3 Channels. Please leave PlotType uninformed to be resolved automatically.";
 Error::PlotFlowCytometryDataPointLength="The length of DataPoints does not match the length of Channels.";
+Error::NoFlowCytometryDataToPlot = "The protocol object does not contain any associated flow cytometry data.";
+Error::FlowCytometryProtocolDataNotPlotted = "The data objects linked to the input protocol were not able to be plotted. The data objects may be missing field values that are required for plotting. Please inspect the data objects to ensure that they contain the data to be plotted, and call PlotFlowCytometry or PlotObject on an individual data object to identify the missing values.";
+
+(* Protocol Overload *)
+PlotFlowCytometry[
+	obj: ObjectP[Object[Protocol, FlowCytometry]],
+	ops: OptionsPattern[PlotFlowCytometry]
+] := Module[{safeOps, output, data, previewPlot, plots, resolvedOptions, finalResult, outputPlot, outputOptions},
+
+	(* Check the options pattern and return a list of all options, using defaults for unspecified or invalid options *)
+	safeOps=SafeOptions[PlotFlowCytometry, ToList[ops]];
+
+	(* Requested output, either a single value or list of Alternatives[Result,Options,Preview,Tests] *)
+	output = ToList[Lookup[safeOps, Output]];
+
+	(* Download the data from the input protocol *)
+	data = Download[obj, Data];
+
+	(* Return an error if there is no data or it is not the correct data type *)
+	If[!MatchQ[data, {ObjectP[Object[Data, FlowCytometry]]..}],
+		Message[Error::NoFlowCytometryDataToPlot];
+		Return[$Failed]
+	];
+
+	(* If Preview is requested, return a plot with all of the data objects in the protocol overlaid in one plot *)
+	previewPlot = If[MemberQ[output, Preview],
+		PlotFlowCytometry[data, Sequence @@ ReplaceRule[safeOps, Output -> Preview]],
+		Null
+	];
+
+	(* If either Result or Options are requested, map over the data objects. Remove anything that failed from the list of plots to be displayed*)
+	{plots, resolvedOptions} = If[MemberQ[output, (Result | Options)],
+		Transpose[
+			(PlotFlowCytometry[#, Sequence @@ ReplaceRule[safeOps, Output -> {Result, Options}]]& /@ data) /. $Failed -> Nothing
+		],
+		{{}, {}}
+	];
+
+	(* If all of the data objects failed to plot, return an error *)
+	If[MatchQ[plots, (ListableP[{}] | ListableP[Null])] && MatchQ[previewPlot, (Null | $Failed)],
+		Message[Error::FlowCytometryProtocolDataNotPlotted];
+		Return[$Failed],
+		Nothing
+	];
+
+	(* If Result was requested, output the plots in slide view, unless there is only one plot then we can just show it not in slide view. *)
+	outputPlot = If[MemberQ[output, Result],
+		If[Length[plots] > 1,
+			SlideView[plots],
+			First[plots]
+		]
+	];
+
+	(* If Options were requested, just take the first set of options since they are the same for all plots. Make it a List first just in case there is only one option set. *)
+	outputOptions = If[MemberQ[output, Options],
+		First[ToList[resolvedOptions]]
+	];
+
+	(* Prepare our final result *)
+	finalResult = output /. {
+		Result -> outputPlot,
+		Options -> outputOptions,
+		Preview -> previewPlot,
+		Tests -> {}
+	};
+
+	(* Return the result *)
+	If[
+		Length[finalResult] == 1,
+		First[finalResult],
+		finalResult
+	]
+];
 
 PlotFlowCytometry[
 	myData:ListableP[ObjectP[Object[Data,FlowCytometry]]],
@@ -340,44 +413,53 @@ PlotFlowCytometry[
 	];
 
 	(* Resolve all options which should go to the plot function (i.e. EmeraldListLinePlot in most cases)  *)
-	plotOptions=PassOptions[
-		PlotFlowCytometry,
-		Lookup[mostlyResolvedOps,PlotType],
-		mostlyResolvedOps
+	(* Convert the option names back to symbols (they come out of PassOptions as strings) *)
+	plotOptions = Map[
+		If[MatchQ[Keys[#], _String],
+			Symbol[Keys[#]] -> Values[#],
+			#
+		]&,
+		{
+			PassOptions[
+				PlotFlowCytometry,
+				Lookup[mostlyResolvedOps,PlotType],
+				mostlyResolvedOps
+			]
+		}
 	];
 
 	(*-- Call plot function --*)
 	plot=Which[
 		MatchQ[Lookup[mostlyResolvedOps,PlotType],EmeraldSmoothHistogram],
-		(*Since plotData is formatted for DistributionChart, remove a level of nestedness to get the data in a list of lists format*)
-		EmeraldSmoothHistogram[Flatten[plotData,1],plotOptions],
+			(*Since plotData is formatted for DistributionChart, remove a level of nestedness to get the data in a list of lists format*)
+			EmeraldSmoothHistogram[Flatten[plotData,1], Sequence @@ ReplaceRule[plotOptions, Output -> Result]],
 		MatchQ[Lookup[mostlyResolvedOps,PlotType],EmeraldListLinePlot],
-		EmeraldListLinePlot[plotData,plotOptions],
+			EmeraldListLinePlot[plotData, Sequence @@ ReplaceRule[plotOptions, Output -> Result]],
 		MatchQ[Lookup[mostlyResolvedOps,PlotType],EmeraldListPointPlot3D],
-		EmeraldListPointPlot3D[plotData,plotOptions],
+			EmeraldListPointPlot3D[plotData, Sequence @@ ReplaceRule[plotOptions, Output -> Result]],
 		MatchQ[Lookup[mostlyResolvedOps,PlotType],EmeraldHistogram],
-		EmeraldHistogram[plotData,plotOptions],
+			EmeraldHistogram[plotData, Sequence @@ ReplaceRule[plotOptions, Output -> Result]],
 		MatchQ[Lookup[mostlyResolvedOps,PlotType],EmeraldHistogram3D],
-		EmeraldHistogram3D[plotData,plotOptions],
+			EmeraldHistogram3D[plotData, Sequence @@ ReplaceRule[plotOptions, Output -> Result]],
 		MatchQ[Lookup[mostlyResolvedOps,PlotType],EmeraldListContourPlot],
-		EmeraldListContourPlot[plotData,plotOptions]
+			EmeraldListContourPlot[plotData, Sequence @@ ReplaceRule[plotOptions, Output -> Result]]
 	];
 
 	(* Combine options resolved by MM function *)
 	resolvedOps=Which[
 		MatchQ[Lookup[mostlyResolvedOps,PlotType],EmeraldSmoothHistogram],
 		(*Since plotData is formatted for DistributionChart, remove a level of nestedness to get the data in a list of lists format*)
-		EmeraldSmoothHistogram[Flatten[plotData,1],plotOptions,Output->Options],
+			EmeraldSmoothHistogram[Flatten[plotData,1], Sequence @@ ReplaceRule[plotOptions, Output -> Options]],
 		MatchQ[Lookup[mostlyResolvedOps,PlotType],EmeraldListLinePlot],
-		EmeraldListLinePlot[plotData,plotOptions,Output->Options],
+			EmeraldListLinePlot[plotData, Sequence @@ ReplaceRule[plotOptions, Output -> Options]],
 		MatchQ[Lookup[mostlyResolvedOps,PlotType],EmeraldListPointPlot3D],
-		EmeraldListPointPlot3D[plotData,plotOptions,Output->Options],
+			EmeraldListPointPlot3D[plotData, Sequence @@ ReplaceRule[plotOptions, Output -> Options]],
 		MatchQ[Lookup[mostlyResolvedOps,PlotType],EmeraldHistogram],
-		EmeraldHistogram[plotData,plotOptions,Output->Options],
+			EmeraldHistogram[plotData, Sequence @@ ReplaceRule[plotOptions, Output -> Options]],
 		MatchQ[Lookup[mostlyResolvedOps,PlotType],EmeraldHistogram3D],
-		EmeraldHistogram3D[plotData,plotOptions,Output->Options],
+			EmeraldHistogram3D[plotData, Sequence @@ ReplaceRule[plotOptions, Output -> Options]],
 		MatchQ[Lookup[mostlyResolvedOps,PlotType],EmeraldListContourPlot],
-		EmeraldListContourPlot[plotData,plotOptions,Output->Options]
+			EmeraldListContourPlot[plotData, Sequence @@ ReplaceRule[plotOptions, Output -> Options]]
 	];
 
 

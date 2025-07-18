@@ -8,7 +8,7 @@ DefineOptions[ExperimentLuminescenceKineticsPreview,
 
 Authors[ExperimentLuminescenceKineticsPreview] := {"hayley"};
 
-ExperimentLuminescenceKineticsPreview[myInput:(ListableP[ObjectP[Object[Sample]]]|ListableP[ObjectP[Object[Container,Plate]]]),myOptions:OptionsPattern[ExperimentLuminescenceKineticsPreview]]:=Module[
+ExperimentLuminescenceKineticsPreview[myInput:(ListableP[ObjectP[{Object[Sample], Model[Sample]}]]|ListableP[ObjectP[Object[Container,Plate]]]),myOptions:OptionsPattern[ExperimentLuminescenceKineticsPreview]]:=Module[
 	{listedOptions},
 
 	listedOptions=ToList[myOptions];
@@ -35,7 +35,7 @@ DefineOptions[ExperimentLuminescenceKineticsOptions,
 
 Authors[ExperimentLuminescenceKineticsOptions] := {"hayley"};
 
-ExperimentLuminescenceKineticsOptions[myInput:(ListableP[ObjectP[Object[Sample]]]|ListableP[ObjectP[Object[Container,Plate]]]),myOptions:OptionsPattern[ExperimentLuminescenceKineticsOptions]]:=Module[
+ExperimentLuminescenceKineticsOptions[myInput:(ListableP[ObjectP[{Object[Sample], Model[Sample]}]]|ListableP[ObjectP[Object[Container,Plate]]]),myOptions:OptionsPattern[ExperimentLuminescenceKineticsOptions]]:=Module[
 	{listedOptions,preparedOptions,resolvedOptions},
 
 	listedOptions=ToList[myOptions];
@@ -67,7 +67,7 @@ DefineOptions[ValidExperimentLuminescenceKineticsQ,
 
 Authors[ValidExperimentLuminescenceKineticsQ] := {"hayley"};
 
-ValidExperimentLuminescenceKineticsQ[myInput:(ListableP[ObjectP[Object[Sample]]]|ListableP[ObjectP[Object[Container,Plate]]]),myOptions:OptionsPattern[ValidExperimentLuminescenceKineticsQ]]:=Module[
+ValidExperimentLuminescenceKineticsQ[myInput:(ListableP[ObjectP[{Object[Sample], Model[Sample]}]]|ListableP[ObjectP[Object[Container,Plate]]]),myOptions:OptionsPattern[ValidExperimentLuminescenceKineticsQ]]:=Module[
 	{listedInput,listedOptions,preparedOptions,functionTests,initialTestDescription,allTests,safeOps,verbose,outputFormat,result},
 
 	listedInput=ToList[myInput];

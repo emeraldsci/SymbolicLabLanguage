@@ -69,12 +69,12 @@ DefineTests[ExperimentBioconjugation,
 			TimeConstraint->1000
 		],
 		Example[{Messages,"ObjectDoesNotExist","Do not allow non-existent samples as inputs:"},
-			Quiet[ExperimentBioconjugation[
+			ExperimentBioconjugation[
 				{
 					{Object[Sample, "Experiment Bioconjugation test sample 10"], Object[Sample, "Experiment Bioconjugation test sample 12"]}
 				},
 				{Model[Molecule,Protein, "Experiment Bioconjugation test identity model 1"<>$SessionUUID]}
-			], {Warning::InvalidSampleAnalyteConcentrations, Warning::UnknownReactantsStoichiometry, Warning::UnknownProductStoichiometry}],
+			],
 			$Failed,
 			Messages:>{
 				Download::ObjectDoesNotExist
@@ -82,17 +82,202 @@ DefineTests[ExperimentBioconjugation,
 			TimeConstraint->1000
 		],
 		Example[{Messages,"ObjectDoesNotExist","Do not allow non-existent identity models as inputs:"},
-			Quiet[ExperimentBioconjugation[
+			ExperimentBioconjugation[
 				{
 					{Object[Sample, "Experiment Bioconjugation test sample 1"<>$SessionUUID], Object[Sample, "Experiment Bioconjugation test sample 2"<>$SessionUUID]}
 				},
 				{Model[Molecule,Protein, "Experiment Bioconjugation test identity model 15"]}
-			], {Warning::InvalidSampleAnalyteConcentrations, Warning::UnknownReactantsStoichiometry, Warning::UnknownProductStoichiometry}],
+			],
 			$Failed,
 			Messages:>{
-				Error::ObjectDoesNotExist
+				Download::ObjectDoesNotExist
 			},
 			TimeConstraint->1000
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a container that does not exist (name form):"},
+			ExperimentBioconjugation[Object[Container, Vessel, "Nonexistent container"],
+				Model[Molecule,Protein, "Experiment Bioconjugation test identity model 1"<>$SessionUUID]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a sample that does not exist (ID form):"},
+			ExperimentBioconjugation[Object[Sample, "id:12345678"],Model[Molecule,Protein, "Experiment Bioconjugation test identity model 1"<>$SessionUUID]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a container that does not exist (ID form):"},
+			ExperimentBioconjugation[Object[Container, Vessel, "id:12345678"],Model[Molecule,Protein, "Experiment Bioconjugation test identity model 1"<>$SessionUUID]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Do NOT throw a message if we have a simulated sample but a simulation is specified that indicates that it is simulated:"},
+			Module[{containerPackets, containerID, sampleID, samplePackets, simulationToPassIn},
+				containerPackets = UploadSample[
+					Model[Container,Vessel,"50mL Tube"],
+					{"Work Surface", Object[Container, Bench, "The Bench of Testing"]},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True
+				];
+				simulationToPassIn = Simulation[containerPackets];
+				containerID = Lookup[First[containerPackets], Object];
+				samplePackets = UploadSample[
+					Model[Sample, "Milli-Q water"],
+					{"A1", containerID},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True,
+					Simulation -> simulationToPassIn,
+					InitialAmount -> 25 Milliliter
+				];
+				sampleID = Lookup[First[samplePackets], Object];
+				simulationToPassIn = UpdateSimulation[simulationToPassIn, Simulation[samplePackets]];
+
+				Quiet[ExperimentBioconjugation[sampleID, Model[Molecule,Protein, "Experiment Bioconjugation test identity model 1"<>$SessionUUID], Simulation -> simulationToPassIn, Output -> Options],{Warning::InvalidSampleAnalyteConcentrations, Warning::UnknownReactantsStoichiometry, Warning::UnknownProductStoichiometry}]
+			],
+			{__Rule}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Do NOT throw a message if we have a simulated container but a simulation is specified that indicates that it is simulated:"},
+			Module[{containerPackets, containerID, sampleID, samplePackets, simulationToPassIn},
+				containerPackets = UploadSample[
+					Model[Container,Vessel,"50mL Tube"],
+					{"Work Surface", Object[Container, Bench, "The Bench of Testing"]},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True
+				];
+				simulationToPassIn = Simulation[containerPackets];
+				containerID = Lookup[First[containerPackets], Object];
+				samplePackets = UploadSample[
+					Model[Sample, "Milli-Q water"],
+					{"A1", containerID},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True,
+					Simulation -> simulationToPassIn,
+					InitialAmount -> 25 Milliliter
+				];
+				sampleID = Lookup[First[samplePackets], Object];
+				simulationToPassIn = UpdateSimulation[simulationToPassIn, Simulation[samplePackets]];
+
+				Quiet[ExperimentBioconjugation[containerID, Model[Molecule,Protein, "Experiment Bioconjugation test identity model 1"<>$SessionUUID],Simulation -> simulationToPassIn, Output -> Options],{Warning::InvalidSampleAnalyteConcentrations, Warning::UnknownReactantsStoichiometry, Warning::UnknownProductStoichiometry}]
+			],
+			{__Rule}
+		],
+		(*Semi-pooled overload*)
+		Example[{Messages,"ObjectDoesNotExist","For semi-pooled input, do not allow non-existent samples as inputs:"},
+			ExperimentBioconjugation[
+				{
+					{Object[Sample, "Experiment Bioconjugation test sample 10"]},
+					Object[Sample, "Experiment Bioconjugation test sample 12"]
+				},
+				{Model[Molecule,Protein, "Experiment Bioconjugation test identity model 1"<>$SessionUUID]}
+			],
+			$Failed,
+			Messages:>{
+				Download::ObjectDoesNotExist
+			},
+			TimeConstraint->1000
+		],
+		Example[{Messages,"ObjectDoesNotExist","For semi-pooled input, do not allow non-existent identity models as inputs:"},
+			ExperimentBioconjugation[
+				{
+					{Object[Sample, "Experiment Bioconjugation test sample 1"<>$SessionUUID]},
+					Object[Sample, "Experiment Bioconjugation test sample 2"<>$SessionUUID]
+				},
+				{Model[Molecule,Protein, "Experiment Bioconjugation test identity model 15"]}
+			],
+			$Failed,
+			Messages:>{
+				Download::ObjectDoesNotExist
+			},
+			TimeConstraint->1000
+		],
+		Example[{Messages, "ObjectDoesNotExist", "For semi-pooled input, throw a message if we have a container that does not exist (name form):"},
+			ExperimentBioconjugation[
+				{
+					{Object[Container, Vessel, "Nonexistent container"]},
+					Object[Container, Vessel, "Nonexistent container 2"]
+				},
+				Model[Molecule,Protein, "Experiment Bioconjugation test identity model 1"<>$SessionUUID]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "For semi-pooled input, throw a message if we have a sample that does not exist (ID form):"},
+			ExperimentBioconjugation[{
+				{Object[Sample, "id:12345678"]},
+				Object[Sample, "id:87654321"]
+			},Model[Molecule,Protein, "Experiment Bioconjugation test identity model 1"<>$SessionUUID]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "For semi-pooled input, throw a message if we have a container that does not exist (ID form):"},
+			ExperimentBioconjugation[{
+				{Object[Container, Vessel, "id:12345678"]},
+				Object[Container, Vessel, "id:87654321"]
+			},Model[Molecule,Protein, "Experiment Bioconjugation test identity model 1"<>$SessionUUID]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "For semi-pooled input, do NOT throw a message if we have a simulated sample but a simulation is specified that indicates that it is simulated:"},
+			Module[{containerPackets, containerID, sampleID, samplePackets, simulationToPassIn},
+				containerPackets = UploadSample[
+					Model[Container,Vessel,"50mL Tube"],
+					{"Work Surface", Object[Container, Bench, "The Bench of Testing"]},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True
+				];
+				simulationToPassIn = Simulation[containerPackets];
+				containerID = Lookup[First[containerPackets], Object];
+				samplePackets = UploadSample[
+					Model[Sample, "Milli-Q water"],
+					{"A1", containerID},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True,
+					Simulation -> simulationToPassIn,
+					InitialAmount -> 25 Milliliter
+				];
+				sampleID = Lookup[First[samplePackets], Object];
+				simulationToPassIn = UpdateSimulation[simulationToPassIn, Simulation[samplePackets]];
+
+				Quiet[ExperimentBioconjugation[{
+					{sampleID},
+					Object[Sample, "Experiment Bioconjugation test sample 1"<>$SessionUUID]
+				}, {Model[Molecule, Protein, "Experiment Bioconjugation test identity model 1" <> $SessionUUID],Model[Molecule, Protein, "Experiment Bioconjugation test identity model 1" <> $SessionUUID]}, Simulation -> simulationToPassIn, Output -> Options],{Warning::InvalidSampleAnalyteConcentrations, Warning::UnknownReactantsStoichiometry, Warning::UnknownProductStoichiometry}]
+			],
+			{__Rule}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "For semi-pooled input, do NOT throw a message if we have a simulated container but a simulation is specified that indicates that it is simulated:"},
+			Module[{containerPackets, containerID, sampleID, samplePackets, simulationToPassIn},
+				containerPackets = UploadSample[
+					Model[Container,Vessel,"50mL Tube"],
+					{"Work Surface", Object[Container, Bench, "The Bench of Testing"]},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True
+				];
+				simulationToPassIn = Simulation[containerPackets];
+				containerID = Lookup[First[containerPackets], Object];
+				samplePackets = UploadSample[
+					Model[Sample, "Milli-Q water"],
+					{"A1", containerID},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True,
+					Simulation -> simulationToPassIn,
+					InitialAmount -> 25 Milliliter
+				];
+				sampleID = Lookup[First[samplePackets], Object];
+				simulationToPassIn = UpdateSimulation[simulationToPassIn, Simulation[samplePackets]];
+
+				Quiet[ExperimentBioconjugation[{
+					{Object[Container, Plate, "Experiment Bioconjugation test container 1" <> $SessionUUID]},
+					containerID
+				}, {Model[Molecule, Protein, "Experiment Bioconjugation test identity model 1" <> $SessionUUID],Model[Molecule, Protein, "Experiment Bioconjugation test identity model 1" <> $SessionUUID]},Simulation -> simulationToPassIn, Output -> Options],{Warning::InvalidSampleAnalyteConcentrations, Warning::UnknownReactantsStoichiometry, Warning::UnknownProductStoichiometry}]
+			],
+			{__Rule}
 		],
 		Example[{Messages,"EmptyBioconjugationSampleContainer","Do not allow empty containers as inputs:"},
 			Quiet[ExperimentBioconjugation[
@@ -2141,7 +2326,7 @@ DefineTests[ExperimentBioconjugation,
 			Variables:>{options},
 			TimeConstraint->1000
 		],
-		Example[{Options,PostActivationWashTemperature,"Specify the temperature that the samples should be hold during the post-activatoin wash:"},
+		Example[{Options,PostActivationWashTemperature,"Specify the temperature that the samples should be hold during the post-activation wash:"},
 			options=Quiet[ExperimentBioconjugation[
 				{
 					{Object[Sample, "Experiment Bioconjugation test sample 1"<>$SessionUUID], Object[Sample, "Experiment Bioconjugation test sample 2"<>$SessionUUID]}
@@ -4951,6 +5136,31 @@ DefineTests[ExperimentBioconjugation,
 			Variables :> {options},
 			TimeConstraint->1000
 		],
+		Example[{Options, {PreparedModelContainer, PreparedModelAmount}, "Specify the container in which an input Model[Sample] should be prepared:"},
+			options = Quiet[ExperimentBioconjugation[
+				{{Model[Sample, "Milli-Q water"], Model[Sample, "Milli-Q water"]}},
+				{Model[Molecule,Protein, "Experiment Bioconjugation test identity model 1"<>$SessionUUID]},
+				PreparedModelContainer -> Model[Container,Vessel,"50mL Tube"],
+				PreparedModelAmount -> 50 Milliliter,
+				Output -> Options
+			], {Warning::InvalidSampleAnalyteConcentrations, Warning::UnknownReactantsStoichiometry, Warning::UnknownProductStoichiometry}];
+			prepUOs = Lookup[options, PreparatoryUnitOperations];
+			{
+				prepUOs[[-1, 1]][Sample],
+				prepUOs[[-1, 1]][Container],
+				prepUOs[[-1, 1]][Amount],
+				prepUOs[[-1, 1]][Well],
+				prepUOs[[-1, 1]][ContainerLabel]
+			},
+			{
+				{ObjectP[Model[Sample, "id:8qZ1VWNmdLBD"]]..},
+				{ObjectP[Model[Container,Vessel,"50mL Tube"]]..},
+				{EqualP[50 Milliliter]..},
+				{"A1", "A1"},
+				{_String, _String}
+			},
+			Variables :> {options, prepUOs}
+		],
 		Example[{Options,PreparatoryUnitOperations,"Specify prepared samples to be run with a bioconjugation experiment:"},
 			protocol=Quiet[ExperimentBioconjugation[
 				{
@@ -4980,35 +5190,6 @@ DefineTests[ExperimentBioconjugation,
 			], {Warning::InvalidSampleAnalyteConcentrations, Warning::UnknownReactantsStoichiometry, Warning::UnknownProductStoichiometry}];
 			Download[protocol,PreparatoryUnitOperations],
 			{SamplePreparationP..},
-			Variables:>{protocol}
-		],
-		Example[{Options,PreparatoryPrimitives,"Specify prepared samples to be run with a bioconjugation experiment:"},
-			protocol=Quiet[ExperimentBioconjugation[
-				{
-					{"BioConj sample 1","BioConj sample 2"}
-				},
-				{Model[Molecule,Protein, "Experiment Bioconjugation test identity model 1"<>$SessionUUID]},
-				PreparatoryPrimitives->{
-					Define[
-						Name->"BioConj sample 1",
-						Container->Model[Container,Vessel,"50mL Tube"]
-					],
-					Transfer[
-						Source->Model[Sample,"Milli-Q water"],
-						Destination->"BioConj sample 1",Amount->50*Milliliter
-					],
-					Define[
-						Name->"BioConj sample 2",
-						Container->Model[Container,Vessel,"50mL Tube"]
-					],
-					Transfer[
-						Source->Model[Sample,"Milli-Q water"],
-						Destination->"BioConj sample 2",Amount->50*Milliliter
-					]
-				}
-			], {Warning::InvalidSampleAnalyteConcentrations, Warning::UnknownReactantsStoichiometry, Warning::UnknownProductStoichiometry}];
-			Download[protocol,PreparatoryPrimitives],
-			{SampleManipulationP..},
 			Variables:>{protocol}
 		],
 		(*incubate options*)
@@ -5098,17 +5279,17 @@ DefineTests[ExperimentBioconjugation,
 			options=Quiet[ExperimentBioconjugation[{
 					{Object[Sample, "Experiment Bioconjugation test sample 1"<>$SessionUUID], Object[Sample, "Experiment Bioconjugation test sample 2"<>$SessionUUID]}
 				},
-				{Model[Molecule,Protein, "Experiment Bioconjugation test identity model 1"<>$SessionUUID]},Mix->True,MixType->Stir,Output->Options],
+				{Model[Molecule,Protein, "Experiment Bioconjugation test identity model 1"<>$SessionUUID]},Mix->True,MixType->Pipette,Output->Options],
 			{Warning::InvalidSampleAnalyteConcentrations, Warning::UnknownReactantsStoichiometry, Warning::UnknownProductStoichiometry}];
 			Lookup[options,MixType],
-			Stir,
+			Pipette,
 			Variables:>{options}
 		],
 		Example[{Options,MixUntilDissolved,"Indicates if the mix should be continued up to the MaxIncubationTime or MaxNumberOfMixes (chosen according to the mix Type), in an attempt dissolve any solute: Any mixing/incubation will occur prior to starting the experiment:"},
 			options=Quiet[ExperimentBioconjugation[{
 					{Object[Sample, "Experiment Bioconjugation test sample 1"<>$SessionUUID], Object[Sample, "Experiment Bioconjugation test sample 2"<>$SessionUUID]}
 				},
-				{Model[Molecule,Protein, "Experiment Bioconjugation test identity model 1"<>$SessionUUID]},MixUntilDissolved->True,MixType->Stir,Output->Options],
+				{Model[Molecule,Protein, "Experiment Bioconjugation test identity model 1"<>$SessionUUID]},MixUntilDissolved->True,MixType->Pipette,Output->Options],
 			{Warning::InvalidSampleAnalyteConcentrations, Warning::UnknownReactantsStoichiometry, Warning::UnknownProductStoichiometry}];
 			Lookup[options,MixUntilDissolved],
 			True,
@@ -5797,7 +5978,7 @@ DefineTests[ExperimentBioconjugation,
 						"Experiment Bioconjugation model-less test sample"<>$SessionUUID,
 						"Experiment Bioconjugation test sample 3"<>$SessionUUID
 					},
-					InitialAmount-> {200 Microliter,200 Microliter,200 Microliter,200 Microliter,200 Microliter,200 Microliter,25 Milliliter}
+					InitialAmount-> {500 Microliter,500 Microliter,500 Microliter,500 Microliter,500 Microliter,500 Microliter,25 Milliliter}
 				];
 
 				(*Upload analytes to the test objects*)

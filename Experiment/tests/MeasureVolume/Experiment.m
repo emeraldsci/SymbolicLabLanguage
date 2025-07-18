@@ -79,8 +79,132 @@ DefineTests[
 			Refrigerator,
 			Variables:>{options}
 		],
+		Example[{Options, StorageMeasurements, "This option will be set to True for protocols generated via storage measurement. In this case, we apply a more robust but less accurate estimation on sample density:"},
+			protObj = ExperimentMeasureVolume[Object[Sample,"MeasureVolume Model-less Sample2" <> $SessionUUID], StorageMeasurements -> True];
+			Download[protObj, {Densities, DensityMeasurementSamples, GravimetricallyMeasured}],
+			{{EqualP[1 Gram / Milliliter]}, {}, {ObjectP[Object[Container,Vessel,"MeasureVolume Container for Model-less Sample2" <> $SessionUUID]]}},
+			Variables :> {protObj}
+		],
+		Example[{Options, PreparedModelAmount, "If using model input, the sample preparation options can also be specified:"},
+			ExperimentMeasureVolume[
+				Model[Sample, "Ammonium hydroxide"],
+				PreparedModelAmount -> 0.5 Milliliter,
+				Aliquot -> True,
+				Mix -> True
+			],
+			ObjectP[Object[Protocol, MeasureVolume]]
+		],
+		(* Label Options *)
+		Example[{Options,SampleLabel,"SampleLabel applies a label to the sample for use in SamplePreparation - label automatically applied:"},
+			Lookup[ExperimentMeasureVolume[Object[Sample,"Measure Volume Test Sample No Density" <> $SessionUUID], Output -> Options], SampleLabel],
+			"measure volume sample" ~~ ___,
+			EquivalenceFunction -> StringMatchQ
+		],
+		Example[{Options,SampleLabel,"SampleLabel applies a label to the sample for use in SamplePreparation:"},
+			Lookup[ExperimentMeasureVolume[Object[Sample,"Measure Volume Test Sample No Density" <> $SessionUUID], SampleLabel -> "my sample", Output -> Options], SampleLabel],
+			"my sample"
+		],
+		Example[{Options,SampleContainerLabel,"SampleContainerLabel applies a label to the container of the sample for use in SamplePreparation: - label automatically applied:"},
+			Lookup[ExperimentMeasureVolume[Object[Sample,"Measure Volume Test Sample No Density" <> $SessionUUID], Output -> Options], SampleContainerLabel],
+			"measure volume container" ~~ ___,
+			EquivalenceFunction -> StringMatchQ
+		],
+		Example[{Options,SampleContainerLabel,"SampleContainerLabel applies a label to the container of the sample for use in SamplePreparation:"},
+			Lookup[ExperimentMeasureVolume[Object[Sample,"Measure Volume Test Sample No Density" <> $SessionUUID], SampleContainerLabel -> "my container", Output -> Options], SampleContainerLabel],
+			"my container"
+		],
+		Example[{Options, OptionsResolverOnly, "If OptionsResolverOnly -> True and Output -> Options, skip the resource packets and simulation functions:"},
+			ExperimentMeasureVolume[
+				Object[Sample,"Measure Volume Test Sample" <> $SessionUUID],
+				Output -> Options,
+				OptionsResolverOnly -> True
+			],
+			{__Rule},
+			(* stubbing to be False so that we return $Failed if we get here; the point of the option though is that we don't get here *)
+			Stubs :> {Resources`Private`fulfillableResourceQ[___]:=(Message[Error::ShouldntGetHere];False)}
+		],
+		Test["ExperimentImageSample returns a simulation blob if Output -> Simulation:",
+			ExperimentMeasureVolume[Object[Sample,"Measure Volume Test Sample" <> $SessionUUID], Output -> Simulation],
+			SimulationP
+		],
 
 		(* --- Invalid Input Tests --- *)
+
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a sample that does not exist (name form):"},
+			ExperimentMeasureVolume[Object[Sample, "Nonexistent sample"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a container that does not exist (name form):"},
+			ExperimentMeasureVolume[Object[Container, Vessel, "Nonexistent container"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a sample that does not exist (ID form):"},
+			ExperimentMeasureVolume[Object[Sample, "id:12345678"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a container that does not exist (ID form):"},
+			ExperimentMeasureVolume[Object[Container, Vessel, "id:12345678"]],
+			$Failed,
+			Messages :> {Download::ObjectDoesNotExist}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Do NOT throw a message if we have a simulated sample but a simulation is specified that indicates that it is simulated:"},
+			Module[{containerPackets, containerID, sampleID, samplePackets, simulationToPassIn},
+				containerPackets = UploadSample[
+					Model[Container,Vessel,"50mL Tube"],
+					{"Work Surface", Object[Container, Bench, "The Bench of Testing"]},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True
+				];
+				simulationToPassIn = Simulation[containerPackets];
+				containerID = Lookup[First[containerPackets], Object];
+				samplePackets = UploadSample[
+					Model[Sample, "Milli-Q water"],
+					{"A1", containerID},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True,
+					Simulation -> simulationToPassIn,
+					InitialAmount -> 25 Milliliter
+				];
+				sampleID = Lookup[First[samplePackets], Object];
+				simulationToPassIn = UpdateSimulation[simulationToPassIn, Simulation[samplePackets]];
+
+				ExperimentMeasureVolume[sampleID, Simulation -> simulationToPassIn, Output -> Options]
+			],
+			{__Rule}
+		],
+		Example[{Messages, "ObjectDoesNotExist", "Do NOT throw a message if we have a simulated container but a simulation is specified that indicates that it is simulated:"},
+			Module[{containerPackets, containerID, sampleID, samplePackets, simulationToPassIn},
+				containerPackets = UploadSample[
+					Model[Container,Vessel,"50mL Tube"],
+					{"Work Surface", Object[Container, Bench, "The Bench of Testing"]},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True
+				];
+				simulationToPassIn = Simulation[containerPackets];
+				containerID = Lookup[First[containerPackets], Object];
+				samplePackets = UploadSample[
+					Model[Sample, "Milli-Q water"],
+					{"A1", containerID},
+					Upload -> False,
+					SimulationMode -> True,
+					FastTrack -> True,
+					Simulation -> simulationToPassIn,
+					InitialAmount -> 25 Milliliter
+				];
+				sampleID = Lookup[First[samplePackets], Object];
+				simulationToPassIn = UpdateSimulation[simulationToPassIn, Simulation[samplePackets]];
+
+				ExperimentMeasureVolume[containerID, Simulation -> simulationToPassIn, Output -> Options]
+			],
+			{__Rule}
+		],
+
 		Example[{Messages,"DiscardedSamples","Discarded samples will cause Errors:"},
 			ExperimentMeasureVolume[discardedChemical,Upload->False],
 			$Failed,
@@ -98,17 +222,78 @@ DefineTests[
 			$Failed,
 			Messages:>{Error::SolidSamplesUnsupported,Error::InvalidInput}
 		],
-
+		(*If there is Living sample in the input, and it does not have a parent protocol, throw a warning*)
+		Example[{Messages,"LivingOrSterileSamplesQueuedForMeasureVolume","Queueing living samples will cause a warning, but a protocol can still be generated:"},
+			Download[ExperimentMeasureVolume[waterSample],
+				{Object, SamplesIn}
+			],
+			{
+				ObjectP[Object[Protocol,MeasureVolume]],
+				{ObjectP[waterSample]}
+			},
+			Messages:>{Warning::LivingOrSterileSamplesQueuedForMeasureVolume},
+			SetUp:>(Upload[<|Object->waterSample,Living->True|>]),
+			TearDown:>(Upload[<|Object->waterSample,Living->Null|>])
+		],
+		(*If there is sterile sample in the input, and it does not have a parent protocol, throw a warning*)
+		Example[{Messages,"LivingOrSterileSamplesQueuedForMeasureVolume","Queueing sterile samples will cause a warning, but a protocol can still be generated:"},
+			Download[ExperimentMeasureVolume[waterSample],
+				{Object, SamplesIn}
+			],
+			{
+				ObjectP[Object[Protocol,MeasureVolume]],
+				{ObjectP[waterSample]}
+			},
+			Messages:>{Warning::LivingOrSterileSamplesQueuedForMeasureVolume},
+			SetUp:>(Upload[<|Object->waterSample,Sterile->True|>]),
+			TearDown:>(Upload[<|Object->waterSample,Sterile->Null|>])
+		],
+		(*If there is Living sample in the input, and it has a parent protocol, quietly filter the sample out, and if no sample is left, return failed to proceed*)
+		Test["Living samples will be filtered out without a warning if there is a parent protocol:",
+			ExperimentMeasureVolume[waterSample,ParentProtocol->Object[Protocol,ManualSamplePreparation,"A test Parent Protocol for ExperimentMeasureVolume testing" <> $SessionUUID]],
+			$Failed,
+			SetUp:>(Upload[<|Object->waterSample,Living->True|>]),
+			TearDown:>(Upload[<|Object->waterSample,Living->Null|>])
+		],
+		(*If there is Living sample in the input, and it has a parent protocol, quietly filter the sample out, and if no sample is left, return failed to proceed*)
+		Test["Living samples will be filtered out without a warning if there is a parent protocol:",
+			Download[
+				ExperimentMeasureVolume[{waterSample,Object[Sample,"Measure Volume Test Sample No Density" <> $SessionUUID]},ParentProtocol->Object[Protocol,ManualSamplePreparation,"A test Parent Protocol for ExperimentMeasureVolume testing" <> $SessionUUID]], {Object,SamplesIn}],
+			{
+				ObjectP[Object[Protocol,MeasureVolume]],
+				{ObjectP[Object[Sample,"Measure Volume Test Sample No Density" <> $SessionUUID]]}
+			},
+			SetUp:>(Upload[<|Object->waterSample,Sterile->True|>]),
+			TearDown:>(Upload[<|Object->waterSample,Sterile->Null|>])
+		],
 		(* Parent Protocol *)
 		Test["If ParentProtocol is provided, solid samples will not cause Errors, but will be ignored during protocol creation:",
 			Download[
-				ExperimentMeasureVolume[{solidSample,waterSample},ParentProtocol->Object[Protocol,SampleManipulation,"A test Parent Protocol for ExperimentMeasureVolume testing" <> $SessionUUID]],
+				ExperimentMeasureVolume[{solidSample,waterSample},ParentProtocol->Object[Protocol,ManualSamplePreparation,"A test Parent Protocol for ExperimentMeasureVolume testing" <> $SessionUUID]],
 				{Object,SamplesIn}
 			],
 			{
 				ObjectP[Object[Protocol,MeasureVolume]],
 				{ObjectP[waterSample]}
 			}
+		],
+		Test["If ParentProtocol is an Object[Maintenance, CalibrateVolume], then the Instruments and BatchedMeasurementDevices fields point to the Target of the ParentProtocol:",
+			protocol = ExperimentMeasureVolume[
+				Object[Container, Plate, "Measure Volume Test Plate" <> $SessionUUID],
+				ParentProtocol -> Object[Maintenance, CalibrateVolume, "Parent CalibrateVolume Maintenance for ExperimentMeasureVolume tests" <> $SessionUUID]
+			];
+			{instruments, batchedMeasurementDevices, target} = Download[protocol, {Instruments, BatchedMeasurementDevices, ParentProtocol[Target]}];
+			{
+				instruments,
+				Lookup[batchedMeasurementDevices, LiquidLevelDetector],
+				target
+			},
+			{
+				{ObjectP[Object[Instrument, LiquidLevelDetector, "MeasureVolume Test VolumeCheck" <> $SessionUUID]]},
+				{ObjectP[Object[Instrument, LiquidLevelDetector, "MeasureVolume Test VolumeCheck" <> $SessionUUID]]},
+				ObjectP[Object[Instrument, LiquidLevelDetector, "MeasureVolume Test VolumeCheck" <> $SessionUUID]]
+			},
+			Variables :> {protocol, instruments, batchedMeasurementDevices, target}
 		],
 		Test["If ParentProtocol is a Qualification, solid samples will not cause Errors, but will be ignored during protocol creation:",
 			Download[
@@ -122,7 +307,7 @@ DefineTests[
 		],
 		Test["If ParentProtocol is provided and the SamplesIn provided is a chemical and stocksolution that must have their density measured, they will not be skipped:",
 			Download[
-				ExperimentMeasureVolume[{waterSample,Object[Sample,"Measure Volume Test Sample No Density" <> $SessionUUID]},ParentProtocol->Object[Protocol,SampleManipulation,"A test Parent Protocol for ExperimentMeasureVolume testing" <> $SessionUUID]],
+				ExperimentMeasureVolume[{waterSample,Object[Sample,"Measure Volume Test Sample No Density" <> $SessionUUID]},ParentProtocol->Object[Protocol,ManualSamplePreparation,"A test Parent Protocol for ExperimentMeasureVolume testing" <> $SessionUUID]],
 				{Object,SamplesIn,DensityMeasurementSamples}
 			],
 			{
@@ -130,6 +315,15 @@ DefineTests[
 				{ObjectP[waterSample],ObjectP[Object[Sample,"Measure Volume Test Sample No Density" <> $SessionUUID]]},
 				{ObjectP[Object[Sample,"Measure Volume Test Sample No Density" <> $SessionUUID]]}
 			}
+		],
+		Test["If StorageMeasurement -> True and no density can be found from Object, Model or IntensiveProperty, Density will be estimated from Composition field:",
+			Download[
+				ExperimentMeasureVolume[Object[Sample,"MeasureVolume Model-less Sample2" <> $SessionUUID], StorageMeasurements -> True],
+				Densities
+			],
+			{EqualP[1.0208 Gram/Milliliter]},
+			SetUp :> Upload[<| Object -> Object[Sample,"MeasureVolume Model-less Sample2" <> $SessionUUID], Replace[Composition] -> {{Null, Null, Null}, {20 VolumePercent, Link[Model[Molecule, "Water"]], Null}, {20 VolumePercent, Link[Model[Molecule, "Deuterium oxide"]], Null}, {4 Gram/Liter, Link[Model[Molecule, "D-Glucose"]], Null}}|>],
+			TearDown :> Upload[<| Object -> Object[Sample,"MeasureVolume Model-less Sample2" <> $SessionUUID], Replace[Composition] -> {{Null, Null, Null}}|>]
 		],
 
 		(* --- Option Precision Tests --- *)
@@ -448,6 +642,31 @@ DefineTests[
 			}
 		],
 
+		(* --- Simulation Tests --- *)
+		Test["If MeasureDensity is True and RecoupSample is False, then the input sample loses volume appropriately:",
+			Module[{protocol,simulation},
+				{protocol,simulation} = ExperimentMeasureVolume[
+					{
+						Object[Sample,"Measure Volume Test Sample No Density" <> $SessionUUID],
+						Object[Sample,"Measure Volume Test Sample" <> $SessionUUID]
+					},
+					RecoupSample -> {False,Automatic},
+					MeasureDensity -> {True,False},
+					MeasurementVolume-> {50 Microliter,Automatic},
+					Output -> {Result,Simulation}
+				];
+				{
+					Download[protocol,SamplesIn[Volume]],
+					Download[protocol,SamplesIn[Volume],Simulation->simulation]
+				}
+			],
+			{
+				{EqualP[350 Microliter],EqualP[50 Milliliter]},
+				{EqualP[100 Microliter],EqualP[50 Milliliter]}
+			}
+		],
+
+
 		(* --- Other Tests --- *)
 		Test["Instruments is informed as a duplicate-free list:",
 			protObj = ExperimentMeasureVolume[Join[myMV2mLTubes,{waterContainer3,waterContainer2,Object[Container,Plate,"Measure Volume Test Plate" <> $SessionUUID]}], Method->Ultrasonic];
@@ -469,7 +688,7 @@ DefineTests[
 		],
 		Test["If ParentProtocol is provided, samples in Ampoules will not cause Errors, but will be ignored during protocol creation:",
 			Download[
-				ExperimentMeasureVolume[{ampouleSamp,waterSample},ParentProtocol->Object[Protocol,SampleManipulation,"A test Parent Protocol for ExperimentMeasureVolume testing" <> $SessionUUID]],
+				ExperimentMeasureVolume[{ampouleSamp,waterSample},ParentProtocol->Object[Protocol,ManualSamplePreparation,"A test Parent Protocol for ExperimentMeasureVolume testing" <> $SessionUUID]],
 				{Object,SamplesIn}
 			],
 			{
@@ -504,6 +723,10 @@ DefineTests[
 			Variables :> {myProt,batchInfo,rackPlacements}
 		],
 		Test["When provided with a non-volume checkable container whose model has no VolumeCalibrations field, it filters the out, does not throw an error, and returns $Failed:",
+			ExperimentMeasureVolume[Object[Sample,"MeasureVolume Sample in Plate Without Calibration" <> $SessionUUID], ParentProtocol->Object[Protocol,HPLC,"Parent Protocol for ExperimentMeasureVolume testing" <> $SessionUUID]],
+			$Failed
+		],
+		Test["When provided with a non-volume checkable container whose model has no VolumeCalibrations field, it filters the out, does not throw an error, and returns $Failed:",
 			ExperimentMeasureVolume[Object[Container,ProteinCapillaryElectrophoresisCartridge,"MeasureVolume Cartridge"<> $SessionUUID], ParentProtocol->Object[Protocol,HPLC,"Parent Protocol for ExperimentMeasureVolume testing" <> $SessionUUID]],
 			$Failed
 		],
@@ -513,75 +736,33 @@ DefineTests[
 		(* ------------ FUNTOPIA SHARED OPTION TESTING ------------ *)
 		(* -------------------------------------------------------- *)
 		(* -------------------------------------------------------- *)
-		Example[{Options,PreparatoryPrimitives,"Transfer water to a tube and make sure the amount transfer matches what was requested:"},
-			ExperimentMeasureVolume[
-				"My 2mL Tube",
-				PreparatoryPrimitives -> {
-					Define[
-						Name -> "My 2mL Tube",
-						Container -> Model[Container, Vessel, "2mL Tube"]
-					],
-					Transfer[
-						Source -> Model[Sample, "Milli-Q water"],
-						Destination -> "My 2mL Tube",
-						Amount -> 1.75 Milliliter
-					]
-				},
-				Method -> Gravimetric
-			],
-			ObjectP[Object[Protocol,MeasureVolume]]
-		],
-		Example[
-			{Options,PreparatoryPrimitives,"Add ethanol to a 50 milliliter tube, fill to 45 milliliters with dH2O, and then measure the volume:"},
-			ExperimentMeasureVolume[
-				{"My 50mL Tube"},
-				PreparatoryPrimitives -> {
-					Define[
-						Name -> "My 50mL Tube",
-						Container -> Model[Container, Vessel, "50mL Tube"]
-					],
-					Transfer[
-						Source -> {Model[Sample, "Ethanol, Reagent Grade"]},
-						Destination -> "My 50mL Tube",
-						Volume -> 7.5 Milliliter
-					],
-					FillToVolume[
-						Source -> Model[Sample, "Milli-Q water"],
-						FinalVolume -> 45 Milliliter,
-						Destination -> "My 50mL Tube"
-					],
-					Mix[
-						Sample -> "My 50mL Tube",
-						MixType -> Vortex
-					]
-				}
-			],
-			ObjectP[Object[Protocol,MeasureVolume]]
-		],
-		Example[
-			{Options,PreparatoryPrimitives,"Add a stocksolution to a bottle for preparation, then aliquot from it and measure the volume on those aliquots:"},
-			ExperimentMeasureVolume[
-				{"My 4L Bottle","My 4L Bottle","My 4L Bottle"},
-				PreparatoryPrimitives -> {
-					Define[
-						Name -> "My 4L Bottle",
-						Container -> Model[Container, Vessel, "Amber Glass Bottle 4 L"]
-					],
-					Transfer[
-						Source -> {Model[Sample, StockSolution, "id:R8e1PjpR1k0n"]},
-						Destination -> "My 4L Bottle",
-						Volume -> 3.5 Liter
-					]
-				},
-				Aliquot -> True,
-				AssayVolume -> {45 Milliliter, 45 Milliliter, 1 Liter},
-				AliquotContainer -> {
-					Model[Container, Vessel, "50mL Tube"],
-					Model[Container, Vessel, "50mL Tube"],
-					Model[Container, Vessel, "Amber Glass Bottle 4 L"]
-				}
-			],
-			ObjectP[Object[Protocol,MeasureVolume]]
+		Example[{Options, {PreparedModelContainer, PreparedModelAmount}, "Use the PreparatoryUnitOperations option to prepare samples from models before the experiment is run:"},
+			options = ExperimentMeasureVolume[
+				(* Milli-Q water *)
+				{Model[Sample, "id:8qZ1VWNmdLBD"], Model[Sample, "id:8qZ1VWNmdLBD"]},
+				PreparedModelAmount -> 500 Microliter,
+				(* 2mL Tube *)
+				PreparedModelContainer -> Model[Container, Vessel, "id:3em6Zv9NjjN8"],
+				Output -> Options
+			];
+			prepUOs = Lookup[options, PreparatoryUnitOperations];
+			{
+				prepUOs[[-1, 1]][Sample],
+				prepUOs[[-1, 1]][Container],
+				prepUOs[[-1, 1]][Amount],
+				prepUOs[[-1, 1]][Well],
+				prepUOs[[-1, 1]][ContainerLabel]
+			},
+			{
+				(* Milli-Q water *)
+				{ObjectP[Model[Sample, "id:8qZ1VWNmdLBD"]]..},
+				(* 2mL Tube *)
+				{ObjectP[Model[Container, Vessel, "id:3em6Zv9NjjN8"]]..},
+				{EqualP[500 Microliter]..},
+				{"A1", "A1"},
+				{_String, _String}
+			},
+			Variables :> {options, prepUOs}
 		],
 		Example[{Options,PreparatoryUnitOperations,"Transfer water to a tube and make sure the amount transfer matches what was requested:"},
 			ExperimentMeasureVolume[
@@ -882,7 +1063,7 @@ DefineTests[
 			Variables :> {options}
 		],
 		(* aliquot options *)
-		Example[{Options, Aliquot, "Indicates if aliquots should be taken from the SamplesIn and transferred into new AliquotSamples used in lieu of the SamplesIn for the experiment: Note that if NumberOfReplicates is specified this indicates that the input samples will also be aliquoted that number of times: Note that Aliquoting (if specified) occurs after any Sample Preparation (if specified):"},
+		Example[{Options, Aliquot, "Indicates if aliquots should be taken from the SamplesIn and transferred into new AliquotSamples used in lieu of the SamplesIn for the experiment: Note that Aliquoting (if specified) occurs after any Sample Preparation (if specified):"},
 			options = ExperimentMeasureVolume[Object[Sample,"Measure Volume Test Sample" <> $SessionUUID], Aliquot -> True, Output -> Options];
 			Lookup[options, Aliquot],
 			True,
@@ -956,7 +1137,7 @@ DefineTests[
 		Example[{Options, AliquotContainer, "The desired type of container that should be used to prepare and house the aliquot samples, with indices indicating grouping of samples in the same plates, if desired:"},
 			options = ExperimentMeasureVolume[Object[Sample,"Measure Volume Test Sample" <> $SessionUUID], AliquotContainer -> Model[Container,Vessel,"50mL Tube"], Output -> Options];
 			Lookup[options, AliquotContainer],
-			{_Integer, ObjectP[Model[Container,Vessel,"50mL Tube"]]},
+			{{_Integer, ObjectP[Model[Container, Vessel, "50mL Tube"]]}},
 			Variables :> {options}
 		],
 		Example[{Options, ImageSample, "Indicates if any samples that are modified in the course of the experiment should be freshly imaged after running the experiment:"},
@@ -978,26 +1159,6 @@ DefineTests[
 			Lookup[options, Name],
 			"My special MeasureVolume object name",
 			Variables :> {options}
-		],
-		Example[{Options,NumberOfReplicates,"Indicate that each measurement should be repeated 3 times and the results should be averaged:"},
-			Download[
-				ExperimentMeasureVolume[
-					{
-						Object[Sample,"Measure Volume Test Sample" <> $SessionUUID],
-						Object[Sample,"Measure Volume Test Sample2" <> $SessionUUID]
-					},
-					NumberOfReplicates->3
-				],
-				SamplesIn[Name]
-			],
-			{
-				"Measure Volume Test Sample" <> $SessionUUID,
-				"Measure Volume Test Sample" <> $SessionUUID,
-				"Measure Volume Test Sample" <> $SessionUUID,
-				"Measure Volume Test Sample2" <> $SessionUUID,
-				"Measure Volume Test Sample2" <> $SessionUUID,
-				"Measure Volume Test Sample2" <> $SessionUUID
-			}
 		],
 		Example[{Options,IncubateAliquotDestinationWell,"Indicates the desired position in the corresponding IncubateAliquotContainer in which the aliquot samples will be placed:"},
 			options=ExperimentMeasureVolume[Object[Sample,"Measure Volume Test Sample" <> $SessionUUID],IncubateAliquotDestinationWell->"A1",AliquotContainer->Model[Container,Vessel,"2mL Tube"],Output->Options];
@@ -1026,7 +1187,7 @@ DefineTests[
 		Example[{Options,DestinationWell,"Indicates the desired position in the corresponding AliquotContainer in which the aliquot samples will be placed:"},
 			options=ExperimentMeasureVolume[Object[Sample,"Measure Volume Test Sample" <> $SessionUUID],DestinationWell->"A1",Output->Options];
 			Lookup[options,DestinationWell],
-			"A1",
+			{"A1"},
 			Variables:>{options}
 		]
 	},
@@ -1062,7 +1223,7 @@ DefineTests[
 				Object[Sample,"Measure Volume Test Sample Null CalibrationContainer" <> $SessionUUID],
 				Object[Sample,"Measure Volume Test Sample In Tube Without Tare" <> $SessionUUID],
 				Object[Sample,"Measure Volume Ampoule Samp" <> $SessionUUID],
-				Object[Protocol,SampleManipulation,"A test Parent Protocol for ExperimentMeasureVolume testing" <> $SessionUUID],
+				Object[Protocol,ManualSamplePreparation,"A test Parent Protocol for ExperimentMeasureVolume testing" <> $SessionUUID],
 				Model[Sample,"MeasureVolume Test Model No Density" <> $SessionUUID],
 				Model[Container,Vessel,"Measure Volume Untared Vessel Model" <> $SessionUUID],
 				Object[Calibration,Volume,"Measure Volume Test Valid Volume Calibration" <> $SessionUUID],
@@ -1079,6 +1240,7 @@ DefineTests[
 				Object[Container,Vessel,"Measure Volume Non Immobile Container 2" <> $SessionUUID],
 				Object[Protocol,HPLC,"Parent Protocol for ExperimentMeasureVolume testing" <> $SessionUUID],
 				Object[Protocol, MeasureVolume, "Parent Protocol for Template ExperimentMeasureVolume tests" <> $SessionUUID],
+				Object[Maintenance, CalibrateVolume, "Parent CalibrateVolume Maintenance for ExperimentMeasureVolume tests" <> $SessionUUID],
 				Object[Container,Vessel,VolumetricFlask,"MeasureVolume Ethanol Tube" <> $SessionUUID],
 				Object[Sample,"Measure Volume Ethanol Samp" <> $SessionUUID],
 				Model[Sample,StockSolution,"Measure Volume Ethanol StockSolution" <> $SessionUUID],
@@ -1185,7 +1347,7 @@ DefineTests[
 				(*16*)<|Type->Object[Container,Plate],Model->Link[Model[Container,Plate,"96-well 2mL Deep Well Plate"],Objects],Name->"Measure Volume Test Plate"<>$SessionUUID,Site->Link[$Site],DeveloperObject->True|>,
 				(*17*)<|Type->Object[Container,Plate],Model->Link[Model[Container,Plate,"96-well 2mL Deep Well Plate"],Objects],Name->"Measure Volume Test Plate2"<>$SessionUUID,Site->Link[$Site],DeveloperObject->True|>,
 				(*18*)<|Type->Object[Container,Vessel],Model->Link[Model[Container,Vessel,"id:6V0npvmKLK9q"],Objects],Position->"D1",Site->Link[$Site],DeveloperObject->True|>,
-				(*19*)<|Type->Object[Protocol,SampleManipulation],Name->"A test Parent Protocol for ExperimentMeasureVolume testing"<>$SessionUUID,Status->Processing,Site->Link[$Site],DeveloperObject->True|>,
+				(*19*)<|Type->Object[Protocol,ManualSamplePreparation],Name->"A test Parent Protocol for ExperimentMeasureVolume testing"<>$SessionUUID,Status->Processing,Site->Link[$Site],DeveloperObject->True|>,
 				(*20*)<|Type->Object[Qualification,HPLC],Name->"A test Parent Qualification for ExperimentMeasureVolume testing"<>$SessionUUID,Status->Processing,Site->Link[$Site],DeveloperObject->True|>,
 				(*21*)<|Type->Model[Sample],DefaultStorageCondition->Link[Model[StorageCondition,"id:7X104vnR18vX"]],Name->"MeasureVolume Test Model No Density"<>$SessionUUID,Replace[Composition]->{{Null,Null}},UltrasonicIncompatible->True,DeveloperObject->True|>,
 				(*22*)<|Type->Model[Sample,StockSolution],DefaultStorageCondition->Link[Model[StorageCondition,"id:7X104vnR18vX"]],Name->"MeasureVolume Bad Test Model"<>$SessionUUID,Replace[Composition]->{{Null,Null}},UltrasonicIncompatible->True,Density->(1Kilogram / Meter^3),DeveloperObject->True|>,
@@ -1361,8 +1523,8 @@ DefineTests[
 					Object->sampWithConc,
 					Name->"MeasureVolume Samp With Concentration"<>$SessionUUID,
 					Replace[Composition]->{
-						{100 VolumePercent,Link[Model[Molecule,"Water"]]},
-						{5 Micromolar,Link[Model[Molecule,"Uracil"]]}
+						{100 VolumePercent,Link[Model[Molecule,"Water"]], Now},
+						{5 Micromolar,Link[Model[Molecule,"Uracil"]], Now}
 					},
 					DeveloperObject->True
 				|>,
@@ -1445,6 +1607,17 @@ DefineTests[
 				}];
 
 				UploadSample[{Model[Sample,"Milli-Q water"],Model[Sample,"Milli-Q water"]},{{"A1",vessel1},{"A1",vessel2}}];
+
+				(* Upload a test parent CalibrateVolume Maintenance *)
+				Upload[
+					<|
+						Type -> Object[Maintenance, CalibrateVolume],
+						Name -> "Parent CalibrateVolume Maintenance for ExperimentMeasureVolume tests" <> $SessionUUID,
+						Site -> Link[$Site],
+						DeveloperObject -> True,
+						Target -> Link[Object[Instrument, LiquidLevelDetector, "MeasureVolume Test VolumeCheck" <> $SessionUUID]]
+					|>
+				];
 			];
 		]
 	},
@@ -2034,6 +2207,7 @@ DefineTests[
 			True
 		]
 	},
+	HardwareConfiguration -> HighRAM,
 	SymbolSetUp:>{
 		$CreatedObjects = {};
 
@@ -2061,7 +2235,7 @@ DefineTests[
 				Object[Sample,"Measure Volume Test Sample Null CalibrationContainer" <> $SessionUUID],
 				Object[Sample,"Measure Volume Test Sample In Tube Without Tare" <> $SessionUUID],
 				Object[Sample,"Measure Volume Ampoule Samp" <> $SessionUUID],
-				Object[Protocol,SampleManipulation,"A test Parent Protocol for ExperimentMeasureVolume testing" <> $SessionUUID],
+				Object[Protocol,ManualSamplePreparation,"A test Parent Protocol for ExperimentMeasureVolume testing" <> $SessionUUID],
 				Model[Sample,"MeasureVolume Test Model No Density" <> $SessionUUID],
 				Model[Container,Vessel,"Measure Volume Untared Vessel Model" <> $SessionUUID],
 				Object[Calibration,Volume,"Measure Volume Test Valid Volume Calibration" <> $SessionUUID],
@@ -2153,7 +2327,7 @@ DefineTests[
 			(*16*)<|Type->Object[Container,Plate],Model->Link[Model[Container, Plate, "96-well 2mL Deep Well Plate"],Objects],Name->"Measure Volume Test Plate" <> $SessionUUID,Site->Link[$Site],DeveloperObject->True|>,
 			(*17*)<|Type->Object[Container,Plate],Model->Link[Model[Container, Plate, "96-well 2mL Deep Well Plate"],Objects],Name->"Measure Volume Test Plate2" <> $SessionUUID,Site->Link[$Site],DeveloperObject->True|>,
 			(*18*)<|Type->Object[Container,Vessel],Model->Link[Model[Container, Vessel, "id:6V0npvmKLK9q"],Objects],Position->"D1",Site->Link[$Site],DeveloperObject->True|>,
-			(*19*)<|Type->Object[Protocol,SampleManipulation],Name->"A test Parent Protocol for ExperimentMeasureVolume testing" <> $SessionUUID,Status->Processing,DeveloperObject->True|>,
+			(*19*)<|Type->Object[Protocol,ManualSamplePreparation],Name->"A test Parent Protocol for ExperimentMeasureVolume testing" <> $SessionUUID,Status->Processing,DeveloperObject->True|>,
 			(*20*)<|Type->Object[Qualification,HPLC],Name->"A test Parent Qualification for ExperimentMeasureVolume testing" <> $SessionUUID,Status->Processing,DeveloperObject->True|>,
 			(*21*)<|Type->Model[Sample],DefaultStorageCondition->Link[Model[StorageCondition,"id:7X104vnR18vX"]],Name->"MeasureVolume Test Model No Density" <> $SessionUUID,UltrasonicIncompatible->True,DeveloperObject->True|>,
 			(*22*)<|Type->Model[Sample,StockSolution],DefaultStorageCondition->Link[Model[StorageCondition,"id:7X104vnR18vX"]],Name->"MeasureVolume Bad Test Model" <> $SessionUUID,UltrasonicIncompatible->True,Density->(1Kilogram/Meter^3),DeveloperObject->True|>,
@@ -2393,3 +2567,144 @@ DefineTests[
 		Unset[$CreatedObjects];
 	}
 ]
+
+(* ::Subsection:: *)
+(* MeasureVolume *)
+DefineTests[MeasureVolume,
+	{
+		Example[{Basic,"Form a MeasureVolume unit operation:"},
+			MeasureVolume[
+				Sample -> Object[Sample,"MeasureVolume Test Sample" <> $SessionUUID],
+				Method -> Gravimetric,
+				MeasureDensity -> False
+			],
+			MeasureVolumeP
+		],
+		Example[{Basic,"Specifying a key incorrectly will not form a unit operation:"},
+			primitive = MeasureVolume[
+				Sample -> Object[Sample,"MeasureVolume Test Sample" <> $SessionUUID],
+				Method -> Blah,
+				MeasureDensity -> False
+			];
+			MatchQ[primitive, SamplePreparationP],
+			False,
+			Variables -> {primitive}
+		],
+		Example[{Basic,"A protocol is generated when the unit op is inside an MSP:"},
+			ExperimentManualSamplePreparation[
+				{
+					MeasureVolume[
+						Sample -> Object[Sample,"MeasureVolume Test Sample" <> $SessionUUID]
+					]
+				}
+			],
+			ObjectP[Object[Protocol,ManualSamplePreparation]]
+		],
+		Example[{Basic,"A protocol is generated when the unit op is given labels as input:"},
+			ExperimentManualSamplePreparation[
+				{
+					LabelSample[
+						Sample -> Model[Sample, "Milli-Q water"],
+						Container -> Model[Container, Vessel, "2mL Tube"],
+						Amount -> 1 Milliliter,
+						Label -> "my sample"
+					],
+					MeasureVolume[
+						Sample -> "my sample",
+						MeasureDensity -> False
+					]
+				}
+			],
+			ObjectP[Object[Protocol,ManualSamplePreparation]]
+		],
+		Example[{Basic,"A protocol is generated when the output of the measure volume experiment is passed to another unit op using a label:"},
+			ExperimentManualSamplePreparation[
+				{
+					MeasureVolume[
+						Sample -> Object[Sample,"MeasureVolume Test Sample" <> $SessionUUID],
+						SampleLabel -> "my measured sample"
+					],
+					Transfer[
+						Source -> "my measured sample",
+						Destination -> Model[Container, Vessel, "2mL Tube"],
+						Amount -> 0.5 Milliliter
+					]
+				}
+			],
+			ObjectP[Object[Protocol,ManualSamplePreparation]]
+		]
+	},
+	SymbolSetUp :> {
+		$CreatedObjects = {};
+		Off[Warning::SamplesOutOfStock];
+		Off[Warning::InstrumentUndergoingMaintenance];
+
+		(* IMPORTANT: Make sure that any objects you upload have DeveloperObject->True. *)
+		(* Erase any objects that we failed to erase in the last unit test. *)
+		Module[{namedObjects},
+			namedObjects={
+				Object[Container,Plate,"MeasureVolume Test Plate" <> $SessionUUID],
+				Object[Sample,"MeasureVolume Test Sample" <> $SessionUUID],
+				Object[Sample,"MeasureVolume Test Sample2" <> $SessionUUID]
+			};
+
+			EraseObject[
+				PickList[namedObjects,DatabaseMemberQ[namedObjects]],
+				Force->True,
+				Verbose->False
+			]
+		];
+
+		(* Create an ID for the Model[Container,Vessel] we're gonna make below*)
+		testNewModelID = CreateID[Model[Container,Vessel]];
+
+		(* Create some containers *)
+		{
+			waterContainer1
+		} = Upload[{
+			<|Type->Object[Container,Plate],Model->Link[Model[Container, Plate, "96-well 2mL Deep Well Plate"],Objects],Name->"MeasureVolume Test Plate" <> $SessionUUID,Site -> Link[$Site],DeveloperObject->True|>
+		}];
+
+		(* Create some samples *)
+		{
+			waterSample,
+			waterSample2
+		} = ECL`InternalUpload`UploadSample[
+			{
+				Model[Sample,"Milli-Q water"],
+				Model[Sample,"Milli-Q water"]
+			},
+			{
+				{"A1",waterContainer1},
+				{"A2",waterContainer1}
+			},
+			InitialAmount->{
+				1.5 Milliliter,
+				500 Microliter
+			},
+			StorageCondition -> Refrigerator
+		];
+
+		(* Secondary uploads *)
+		Upload[{
+			<|Object->waterSample,Name->"MeasureVolume Test Sample" <> $SessionUUID,Status->Available,DeveloperObject->True|>,
+			<|Object->waterSample2,Name->"MeasureVolume Test Sample2" <> $SessionUUID,Status->Available,DeveloperObject->True|>
+		}];
+	},
+	SymbolTearDown :> (
+		On[Warning::SamplesOutOfStock];
+		On[Warning::InstrumentUndergoingMaintenance];
+		Module[{objs, existingObjs},
+			objs = Quiet[Cases[
+				Flatten[{
+					Object[Container,Plate,"MeasureVolume Test Plate" <> $SessionUUID],
+					Object[Sample,"MeasureVolume Test Sample" <> $SessionUUID],
+					Object[Sample,"MeasureVolume Test Sample2" <> $SessionUUID]
+				}],
+				ObjectP[]
+			]];
+			existingObjs = PickList[objs, DatabaseMemberQ[objs]];
+			EraseObject[existingObjs, Force -> True, Verbose -> False]
+		]
+	)
+];

@@ -14,7 +14,7 @@ DefineObjectType[Object[Part, FlowCell], {
 			Class -> Link,
 			Pattern :> _Link,
 			Relation -> Alternatives[
-				Object[Instrument, FPLC][FlowCell]
+				Object[Instrument, FPLC][DefaultFlowCell]
 			],
 			Description -> "The FPLC instrument that is connected to this part.",
 			Category -> "Instrument Specifications"

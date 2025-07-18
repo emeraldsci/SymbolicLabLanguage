@@ -49,7 +49,7 @@ DefineOptions[ExperimentCover,
 			{
 				OptionName -> CoverType,
 				Default -> Automatic,
-				Description -> "The type of cover (Crimp, Seal, Screw, Snap, or Place) that should be used to cover the container.",
+				Description -> "The type of cover (Crimp, Seal, Screw, Snap, AluminumFoil, Pry, or Place) that should be used to cover the container.",
 				ResolutionDescription -> "Automatically set to the first cover type in the field CoverTypes from the Model of the Object[Container] that is to be covered.",
 				AllowNull -> True,
 				Category -> "General",
@@ -62,8 +62,8 @@ DefineOptions[ExperimentCover,
 				OptionName -> UsePreviousCover,
 				Default -> Automatic,
 				Description -> "Indicates if the previous cover should be used to re-cover this container. Note that the previous cover cannot be used if it is discarded or if CoverType->Crimp|Seal.",
-				ResolutionDescription -> "Automatically set to True if the PreviousCover field is set in Object[Container] and the PreviousCover is not Discarded or on another container.",
-				AllowNull -> False,
+				ResolutionDescription -> "Automatically set to True if the PreviousCover field is set in Object[Container] and the PreviousCover is not Discarded or on another container. Automatically set to Null if the container has a built in cover.",
+				AllowNull -> True,
 				Category -> "General",
 				Widget -> Widget[
 					Type -> Enumeration,
@@ -293,7 +293,7 @@ DefineOptions[ExperimentCover,
 			{
 				OptionName -> AluminumFoil,
 				Default -> Automatic,
-				Description -> "Indicates if Aluminum Foil should be wrapped around the entire container after the cover is attached in order to protect the container's contents from light.",
+				Description -> "Indicates if Aluminum Foil should be wrapped around the entire container after the cover is attached in order to protect the container's contents from light. Note that this option is NOT to use an aluminum foil cover; in order to specify that, CoverType must be set to AluminumFoil.",
 				ResolutionDescription -> "Automatically set based on the AluminumFoil field in Model[Container], Object[Container], Model[Sample] or Object[Sample]. If the field in these objects is not set, aluminum foil is not used unless explicitly specified by the user.",
 				AllowNull -> False,
 				Category -> "General",
@@ -340,7 +340,18 @@ DefineOptions[ExperimentCover,
 				Category->"General"
 			]
 		],
-
+		{
+			OptionName -> AluminumFoilRoll,
+			Default -> Automatic,
+			Description -> "Indicates the model or object of aluminum foil that is used to wrap around containers (if AluminumFoil is set to True), or to create AluminumFoil lids (if CoverType is set to AluminumFoil).",
+			ResolutionDescription -> "Automatically set to Model[Item, Consumable, \"Aluminum Foil\"] if AluminumFoil is set to True, or if CoverType is AluminumFoil for any sample. If this option is set but AluminumFoil is False and CoverType is not set to AluminumFoil for all samples, then an error is thrown.",
+			AllowNull -> True,
+			Category -> "Hidden",
+			Widget -> Widget[
+				Type -> Object,
+				Pattern :> ObjectP[{Model[Item, Consumable], Object[Item, Consumable]}]
+			]
+		},
 		(*===Shared Options===*)
 		FastTrackOption,
 		PreparationOption,
@@ -351,7 +362,7 @@ DefineOptions[ExperimentCover,
 						Pattern :> STAR | bioSTAR | microbioSTAR],
 			Category->"Hidden"}
 		],
-		PostProcessingOptions,
+		NonBiologyPostProcessingOptions,
 		SimulationOption,
 		SubprotocolDescriptionOption,
 		SamplesInStorageOptions,
@@ -400,7 +411,7 @@ ExperimentCover[myInputs:ListableP[ObjectP[{Object[Sample], Object[Container]}]]
 			listedOptions
 		],
 		$Failed,
-		{Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
+		{Download::ObjectDoesNotExist, Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
 	];
 
 	(* If we are given an invalid define name, return early. *)
@@ -417,13 +428,7 @@ ExperimentCover[myInputs:ListableP[ObjectP[{Object[Sample], Object[Container]}]]
 	];
 
 	(* Call sanitize-inputs to clean any named objects. *)
-	{myInputsWithPreparedSamples, safeOps, myOptionsWithPreparedSamples} = sanitizeInputs[myInputsWithPreparedSamplesNamed,safeOpsNamed,myOptionsWithPreparedSamplesNamed];
-
-	(* Call ValidInputLengthsQ to make sure all options are the right length. *)
-	{validLengths,validLengthTests}=If[gatherTests,
-		ValidInputLengthsQ[ExperimentCover,{myInputsWithPreparedSamples},myOptionsWithPreparedSamples,Output->{Result,Tests}],
-		{ValidInputLengthsQ[ExperimentCover,{myInputsWithPreparedSamples},myOptionsWithPreparedSamples],Null}
-	];
+	{myInputsWithPreparedSamples, safeOps, myOptionsWithPreparedSamples} = sanitizeInputs[myInputsWithPreparedSamplesNamed,safeOpsNamed,myOptionsWithPreparedSamplesNamed, Simulation -> samplePreparationSimulation];
 
 	(* If the specified options don't match their patterns or if option lengths are invalid return $Failed. *)
 	If[MatchQ[safeOps,$Failed],
@@ -434,6 +439,12 @@ ExperimentCover[myInputs:ListableP[ObjectP[{Object[Sample], Object[Container]}]]
 			Preview -> Null,
 			Simulation -> Null
 		}]
+	];
+
+	(* Call ValidInputLengthsQ to make sure all options are the right length. *)
+	{validLengths,validLengthTests}=If[gatherTests,
+		ValidInputLengthsQ[ExperimentCover,{myInputsWithPreparedSamples},myOptionsWithPreparedSamples,Output->{Result,Tests}],
+		{ValidInputLengthsQ[ExperimentCover,{myInputsWithPreparedSamples},myOptionsWithPreparedSamples],Null}
 	];
 
 	(* If option lengths are invalid return $Failed (or the tests up to this point). *)
@@ -531,14 +542,14 @@ ExperimentCover[myInputs:ListableP[ObjectP[{Object[Sample], Object[Container]}]]
 				List@Packet[Model[{CoverFootprint, Name}]],
 				List@Packet[Model[{CoverFootprint, TemperatureActivated, MinTemperature, MaxTemperature, MinDuration, MaxDuration, Name}]],
 				List@Packet[Model,Container,Name],
-				List@Packet[Model[{CoverType, CoverFootprint, CrimpType, SeptumRequired, TaperGroundJointSize, Opaque, Reusability, EngineDefault, Barcode, CrimpingPressure, Name}]],
-				List@Packet[Model[{CoverType, CoverFootprint, Opaque, Dimensions, NotchPositions, Reusability, EngineDefault, Name}]],
-				List@Packet[Model[{CoverType, CoverFootprint, Opaque, Pierceable, Dimensions, NotchPositions, Reusability, EngineDefault, Name}]],
+				List@Packet[Model[{CoverType, CoverFootprint, CrimpType, SeptumRequired, TaperGroundJointSize, Opaque, Reusable, EngineDefault, Barcode, CrimpingPressure, Name}]],
+				List@Packet[Model[{CoverType, CoverFootprint, Opaque, Dimensions, NotchPositions, Reusable, EngineDefault, Name}]],
+				List@Packet[Model[{CoverType, CoverFootprint, Opaque, Pierceable, Dimensions, NotchPositions, Reusable, EngineDefault, Name}]],
 				List@Packet[Model[{CoverFootprint, Pierceable, EngineDefault, Barcode, Name}]],
 				List@Packet[Model[{Name}]],
 				{
 					Packet[PreviousCover[{Model, Status, CoveredContainer, Container, Name}]],
-					Packet[PreviousCover[Model][{CoverType, CoverFootprint, Opaque, CrimpType, SeptumRequired, Reusability, EngineDefault, Barcode, CrimpingPressure, Name}]]
+					Packet[PreviousCover[Model][{CoverType, CoverFootprint, Opaque, CrimpType, SeptumRequired, Reusable, EngineDefault, Barcode, CrimpingPressure, Name}]]
 				},
 				{Packet[ActiveCart]}
 			},
@@ -754,6 +765,7 @@ ExperimentCover[myInputs:ListableP[ObjectP[{Object[Sample], Object[Container]}]]
 							Name->Lookup[safeOps,Name],
 							Upload->Lookup[safeOps,Upload],
 							Confirm->Lookup[safeOps,Confirm],
+							CanaryBranch->Lookup[safeOps,CanaryBranch],
 							ParentProtocol->Lookup[safeOps,ParentProtocol],
 							Priority->Lookup[safeOps,Priority],
 							StartDate->Lookup[safeOps,StartDate],
@@ -771,6 +783,7 @@ ExperimentCover[myInputs:ListableP[ObjectP[{Object[Sample], Object[Container]}]]
 				resourceResult[[2]],
 				Upload->Lookup[safeOps,Upload],
 				Confirm->Lookup[safeOps,Confirm],
+				CanaryBranch->Lookup[safeOps,CanaryBranch],
 				ParentProtocol->Lookup[safeOps,ParentProtocol],
 				Priority->Lookup[safeOps,Priority],
 				StartDate->Lookup[safeOps,StartDate],
@@ -849,7 +862,7 @@ resolveCoverMethod[
 			Cache->Lookup[ToList[myOptions], Cache, {}],
 			Simulation->Lookup[ToList[myOptions], Simulation, Null]
 		],
-		{Download::NotLinkField, Download::FieldDoesntExist}
+		{Download::NotLinkField, Download::FieldDoesntExist, Download::MissingCacheField}
 	];
 
 	allModelCoverPackets=Cases[Flatten[{modelCoverPackets, objectCoverPackets}], ObjectP[Model[]]];
@@ -1030,6 +1043,7 @@ coverModelsSearch[fakeString_]:=coverModelsSearch[fakeString]=Module[{},
 	Search[
 		{
 			{Model[Instrument, Crimper]},
+			{Model[Part, Decrimper]},
 			{Model[Part, CrimpingHead]},
 			{Model[Part, DecrimpingHead]},
 			{Model[Part, CapPrier]},
@@ -1038,19 +1052,22 @@ coverModelsSearch[fakeString_]:=coverModelsSearch[fakeString]=Module[{},
 			{Model[Item, Lid]},
 			{Model[Item, PlateSeal]},
 			{Model[Item, Septum]},
-			{Model[Item, Clamp]}
+			{Model[Item, Clamp]},
+			{Model[Part, AmpouleOpener]}
 		},
 		{
-			Deprecated != True && DeveloperObject!=True,
-			Deprecated != True && DeveloperObject!=True,
-			Deprecated != True && DeveloperObject!=True,
-			Deprecated != True && DeveloperObject!=True,
-			Deprecated != True && DeveloperObject!=True,
-			Deprecated != True && DeveloperObject!=True,
-			Deprecated != True && DeveloperObject!=True,
-			Deprecated != True && DeveloperObject!=True,
-			Deprecated != True && DeveloperObject!=True,
-			Deprecated != True && DeveloperObject!=True && TaperGroundJointSize != Null
+			Deprecated != True && DeveloperObject != True,
+			Deprecated != True && DeveloperObject != True,
+			Deprecated != True && DeveloperObject != True,
+			Deprecated != True && DeveloperObject != True,
+			Deprecated != True && DeveloperObject != True,
+			Deprecated != True && DeveloperObject != True,
+			Deprecated != True && DeveloperObject != True,
+			Deprecated != True && DeveloperObject != True,
+			Deprecated != True && DeveloperObject != True,
+			Deprecated != True && DeveloperObject != True,
+			Deprecated != True && DeveloperObject != True && TaperGroundJointSize != Null,
+			Deprecated != True && DeveloperObject != True && MinVolume != Null && MaxVolume != Null
 		}
 	]
 ];
@@ -1092,12 +1109,15 @@ coverModelPackets[myOptions_List]:=Module[
 	modelsNotInSearch=Complement[allModelsFromOptions, Flatten[searchResult]];
 
 	(* Download packets for these models. *)
-	(* NOTE: Keep this in the same order of packets from nonDeprecatedTransferModelPackets. *)
+	(* NOTE: Keep this in the same order of packets from nonDeprecatedCoverModelPackets. *)
 	suppliedDownloadResult=Quiet[
 		Download[
 			{
 				DeleteDuplicates[
 					Flatten[Cases[modelsNotInSearch, ObjectP[Model[Instrument, Crimper]]]]
+				],
+				DeleteDuplicates[
+					Flatten[Cases[modelsNotInSearch, ObjectP[Model[Part, Decrimper]]]]
 				],
 				DeleteDuplicates[
 					Flatten[Cases[modelsNotInSearch, ObjectP[Model[Part, CrimpingHead]]]]
@@ -1125,19 +1145,24 @@ coverModelPackets[myOptions_List]:=Module[
 				],
 				DeleteDuplicates[
 					Flatten[Cases[modelsNotInSearch, ObjectP[Model[Item, Clamp]]]]
+				],
+				DeleteDuplicates[
+					Flatten[Cases[modelsNotInSearch, ObjectP[Model[Part, AmpouleOpener]]]]
 				]
 			},
 			{
 				Packet[MinPressure, MaxPressure],
+				Packet[CoverFootprint, CapDiameter, Name],
 				Packet[CoverFootprint, CrimpType, Name],
 				Packet[CoverFootprint, Name],
 				Packet[CoverFootprint, Name],
 				Packet[CoverFootprint, TemperatureActivated, MinTemperature, MaxTemperature, MinDuration, MaxDuration, Name],
-				Packet[CoverType, CoverFootprint, CrimpType, SeptumRequired, TaperGroundJointSize, Opaque, Reusability, EngineDefault, Barcode, CrimpingPressure, Name],
-				Packet[CoverType, CoverFootprint, InternalDimensions2D, Opaque, Dimensions, NotchPositions, Reusability, EngineDefault, Name],
-				Packet[CoverType, CoverFootprint, SealType, Opaque, Pierceable, Dimensions, Reusability, EngineDefault, Name],
+				Packet[CoverType, CoverFootprint, CrimpType, SeptumRequired, TaperGroundJointSize, Opaque, Reusable, EngineDefault, Barcode, CrimpingPressure, Name],
+				Packet[CoverType, CoverFootprint, InternalDimensions2D, Opaque, Dimensions, NotchPositions, Reusable, EngineDefault, Name],
+				Packet[CoverType, CoverFootprint, SealType, Opaque, Pierceable, Dimensions, Reusable, EngineDefault, Name],
 				Packet[CoverFootprint, Pierceable, EngineDefault, Barcode, Name],
-				Packet[TaperGroundJointSize]
+				Packet[TaperGroundJointSize],
+				Packet[MinVolume, MaxVolume, Name]
 			}
 		],
 		{Download::NotLinkField, Download::FieldDoesntExist}
@@ -1153,9 +1178,9 @@ coverModelPackets[myOptions_List]:=Module[
 (* NOTE: These are the non-deprecated model packets that we ALWAYS download so we memoize it. *)
 nonDeprecatedCoverModelPackets[fakeString_]:=nonDeprecatedCoverModelPackets[fakeString]=Module[
 	{crimperInstrumentModels, crimpingHeadPartModels, decrimpingHeadPartModels, plateSealerInstrumentModels, capModels, lidModels,
-		plateSealModels, septumModels, capPrierInstrumentModels, keckClampModels},
+		plateSealModels, septumModels, capPrierInstrumentModels, keckClampModels, decrimperPartModels, ampouleOpenerModels},
 
-	(* Add nonDeprecatedTransferModelPackets to list of Memoized functions. *)
+	(* Add nonDeprecatedCoverModelPackets to list of Memoized functions. *)
 	If[!MemberQ[$Memoization, Experiment`Private`nonDeprecatedCoverModelPackets],
 		AppendTo[$Memoization, Experiment`Private`nonDeprecatedCoverModelPackets]
 	];
@@ -1163,6 +1188,7 @@ nonDeprecatedCoverModelPackets[fakeString_]:=nonDeprecatedCoverModelPackets[fake
 	(* Search for all transfer models in the lab to download from. *)
 	{
 		crimperInstrumentModels,
+		decrimperPartModels,
 		crimpingHeadPartModels,
 		decrimpingHeadPartModels,
 		capPrierInstrumentModels,
@@ -1171,14 +1197,18 @@ nonDeprecatedCoverModelPackets[fakeString_]:=nonDeprecatedCoverModelPackets[fake
 		lidModels,
 		plateSealModels,
 		septumModels,
-		keckClampModels
+		keckClampModels,
+		ampouleOpenerModels
 	}=coverModelsSearch["Memoization"];
 
 	(* Download the fields that we need. *)
-	Quiet[
+	(* need to Flatten /@ because the listedness has an extra layer at this point that we don't need (because every different set of models is only getting one packet *)
+	(* but if we don't have that list, we'll download ALL those packets for every different list of models (which is how it used to be and is not how we should do it) *)
+	Flatten /@ Quiet[
 		Download[
 			{
 				crimperInstrumentModels,
+				decrimperPartModels,
 				crimpingHeadPartModels,
 				decrimpingHeadPartModels,
 				capPrierInstrumentModels,
@@ -1187,19 +1217,22 @@ nonDeprecatedCoverModelPackets[fakeString_]:=nonDeprecatedCoverModelPackets[fake
 				lidModels,
 				plateSealModels,
 				septumModels,
-				keckClampModels
+				keckClampModels,
+				ampouleOpenerModels
 			},
 			{
-				Packet[CoverFootprint, CrimpType, Name],
-				Packet[CoverFootprint, CrimpType, Name],
-				Packet[CoverFootprint, Name],
-				Packet[CoverFootprint, Name],
-				Packet[CoverFootprint, MinTemperature, MaxTemperature, MinDuration, MaxDuration, Model, Name],
-				Packet[CoverType, CoverFootprint, CrimpType, SeptumRequired, TaperGroundJointSize, Opaque, Reusability, EngineDefault, Barcode, CrimpingPressure, Name],
-				Packet[CoverType, CoverFootprint, Opaque, Dimensions, InternalDimensions2D, NotchPositions, Reusability, EngineDefault, Name],
-				Packet[CoverType, CoverFootprint, SealType, Opaque, Dimensions, Reusability, EngineDefault, Name],
-				Packet[CoverFootprint, Pierceable, EngineDefault, Barcode, Name],
-				Packet[TaperGroundJointSize]
+				{Packet[CoverFootprint, CrimpType, Name]},
+				{Packet[CoverFootprint, CapDiameter, Name]},
+				{Packet[CoverFootprint, CrimpType, Name]},
+				{Packet[CoverFootprint, Name]},
+				{Packet[CoverFootprint, Name]},
+				{Packet[CoverFootprint, MinTemperature, MaxTemperature, MinDuration, MaxDuration, Model, Name]},
+				{Packet[CoverType, CoverFootprint, CrimpType, SeptumRequired, TaperGroundJointSize, Opaque, Reusable, EngineDefault, Barcode, CrimpingPressure, Name]},
+				{Packet[CoverType, CoverFootprint, Opaque, Dimensions, InternalDimensions2D, NotchPositions, Reusable, EngineDefault, Name]},
+				{Packet[CoverType, CoverFootprint, SealType, Opaque, Dimensions, Reusable, EngineDefault, Name, NotchPositions]},
+				{Packet[CoverFootprint, Pierceable, EngineDefault, Barcode, Name]},
+				{Packet[TaperGroundJointSize]},
+				{Packet[MinVolume, MaxVolume, Name]}
 			}
 		],
 		{Download::NotLinkField, Download::FieldDoesntExist}
@@ -1235,6 +1268,7 @@ Error::KeckClampConflict="The container(s) at indices, `1`, have the KeckClamp o
 Error::CoverContainerConflict="The container(s) at indices, `1`, have covers, `2`, that are not compatible with the container. The container(s) have CoverFootprints->`3`, but the Covers have CoverFootprint->`4`. The container(s) have CoverTypes->`5`, but the Covers have CoverType->`6`. If the Cover option was not specified, this indicates that there are no compatible Covers for the given container model.";
 Error::ContainerLidIncompatible="The container(s) `1` cannot be covered with Model[Item, Lid, \"Universal Black Lid\"] robotically because the top dimensions of the containers are larger than the internal dimensions of the lid (with 0.5 mm extra space). Please consider changing the CoverType to Seal using a work cell with plate sealer or perform the Cover request manually.";
 Error::CapPrierConflict="The container(s) at indices, `1`, have priers, `2`, that are not compatible with the caps `3`. If the Instrument option was not specified, a cap prier that matches the CoverFootprint of the cover is not available.";
+Error::AluminumFoilRollConflict="The specified AluminumFoilRoll `1` conflicts with the resolved CoverType (`2`) and/or the resolved AluminumFoil (`3`) options.  AluminumFoilRoll can only be specified if AluminumFoil is set to True, or if CoverType is set to AluminumFoil.  Additionally, if these options are specified, AluminumFoilRoll may not be Null (unless the relevant AluminumFoil cover is specified as an Object[Item, Lid], in which case Null is fine).  Please allow AluminumFoilRoll to be set automatically.";
 
 (* These are universal constants. *)
 (* The height constraint for plate was measured in lab. *)
@@ -1266,12 +1300,13 @@ resolveExperimentCoverOptions[
 		resolvedParafilms,resolvedAluminumFoils, resolvedKeckClamps, resolvedKeepCovereds, resolvedEnvironments,resolvedSterileTechniques,resolvedCoverModelPackets,
 		resolvedPlateSealAdapters,resolvedPlateSealPaddles,containerLidCompatibleErrors,resolvedPostProcessingOptions,resolvedOptions,mapThreadFriendlyResolvedOptions,
 		conflictingSeptumErrors,conflictingSeptumTest,sterileTechniqueErrors,sterileTechniqueTest,coverErrors,coverTest,keepCoveredErrors,
-		keepCoveredTest,plateSealerErrors,plateHeightErrors,plateSealAdapterErrors,plateSealPaddleErrors,
+		keepCoveredTest,plateSealerErrors,plateHeightErrors,plateSealAdapterErrors,plateSealPaddleErrors, specifiedAluminumFoilRoll,
+		resolvedAluminumFoilRoll, needAluminumFoilQ, aluminumFoilRollError, aluminumFoilRollTest, defaultDecrimperPartModelPackets,
 		plateSealerTest,crimperTest,crimperErrors,usePreviousCoverErrors,usePreviousCoverTest,objectContainerRepeatedContainerList,
 		alreadyCoveredTest,alreadyCoveredErrors,invalidInputs,invalidOptions,defaultPlateSealModelPackets,specifiedPlateSealObjectPackets,
 		plateSealModelPackets,defaultCapPrierInstrumentModelPackets,builtInCoverErrors,builtInCoverTest,conflictingStopperErrors,
 		conflictingStopperTest,conflictingKeckClampErrors, conflictingKeckClampTest,coverContainerTest,containerLidCompatibleTests,containerLidCompatibleInvalidOptions,coverContainerErrors,resolvedCrimpingHeads,resolvedDecrimpingHeads,resolvedCrimpingPressures,
-		activeCartPackets,activeCart,defaultDecrimpingHeadPartModelPackets,roboticPrimitiveQ,allowedWorkCells,resolvedWorkCell
+		activeCartPackets,activeCart,defaultDecrimpingHeadPartModelPackets, defaultAmpuoleOpenerPackets, roboticPrimitiveQ,allowedWorkCells,resolvedWorkCell
 	},
 
 	(*-- SETUP OUR USER SPECIFIED OPTIONS AND CACHE --*)
@@ -1306,6 +1341,7 @@ resolveExperimentCoverOptions[
 	(* Get our default instrument, cover, and septum packets. *)
 	{
 		defaultCrimperInstrumentModelPackets,
+		defaultDecrimperPartModelPackets,
 		defaultCrimpingHeadPartModelPackets,
 		defaultDecrimpingHeadPartModelPackets,
 		defaultCapPrierInstrumentModelPackets,
@@ -1314,7 +1350,8 @@ resolveExperimentCoverOptions[
 		defaultLidModelPackets,
 		defaultPlateSealModelPackets,
 		defaultSeptumModelPackets,
-		defaultKeckClampModelPackets
+		defaultKeckClampModelPackets,
+		defaultAmpuoleOpenerPackets (* NOTE: Used only in uncover. *)
 	}=coverModelPackets[myOptions];
 
 	(* - Big Download to make cacheBall and get the inputs in order by ID - *)
@@ -1367,15 +1404,15 @@ resolveExperimentCoverOptions[
 				{Packet[Model, Name], Packet[Model[{CoverFootprint, CrimpType, Name}]]},
 				{Packet[Model, Name], Packet[Model[{CoverFootprint, Name}]]},
 				{Packet[Model, Name], Packet[Model[{CoverFootprint, TemperatureActivated, MinTemperature, MaxTemperature, MinDuration, MaxDuration, Barcode, Name}]]},
-				{Packet[Model, Name], Packet[Model[{CoverType, CoverFootprint, CrimpType, SeptumRequired, TaperGroundJointSize, Opaque, Reusability, EngineDefault, Container, Barcode, CrimpingPressure, Name}]]},
-				{Packet[Model, Name], Packet[Model[{CoverType, CoverFootprint, Opaque, Dimensions, NotchPositions, Reusability, EngineDefault, Name}]]},
-				{Packet[Model, Name], Packet[Model[{CoverType, CoverFootprint, SealType, Opaque, Pierceable, Dimensions, Reusability, EngineDefault, Name}]]},
+				{Packet[Model, Name], Packet[Model[{CoverType, CoverFootprint, CrimpType, SeptumRequired, TaperGroundJointSize, Opaque, Reusable, EngineDefault, Container, Barcode, CrimpingPressure, Name}]]},
+				{Packet[Model, Name], Packet[Model[{CoverType, CoverFootprint, Opaque, Dimensions, NotchPositions, Reusable, EngineDefault, Name}]]},
+				{Packet[Model, Name], Packet[Model[{CoverType, CoverFootprint, SealType, Opaque, Pierceable, Dimensions, Reusable, EngineDefault, Name}]]},
 				{Packet[Model, Name], Packet[Model[{CoverFootprint, Pierceable, EngineDefault, Barcode, Name}]]},
 				{Packet[Model, Name], Packet[Model[{Name}]]},
 				{Packet[Model, Name], Packet[Model[{TaperGroundJointSize, Name}]]},
 				{
 					Packet[PreviousCover[{Model, Status, CoveredContainer, Container, Name}]],
-					Packet[PreviousCover[Model][{CoverType, CoverFootprint, Opaque, CrimpType, SeptumRequired, Reusability, EngineDefault, Barcode, Name}]]
+					Packet[PreviousCover[Model][{CoverType, CoverFootprint, Opaque, CrimpType, SeptumRequired, Reusable, EngineDefault, Barcode, Name, Connectors, NotchPositions}]]
 				},
 				{Packet[ActiveCart]}
 			},
@@ -1635,6 +1672,9 @@ resolveExperimentCoverOptions[
 						!MatchQ[Lookup[options, Cover], ObjectP[previousCover]]
 					],
 						False,
+					(* Set to Null if we have a built in cover. *)
+					MatchQ[Lookup[containerModelPacket, BuiltInCover], True],
+						Null,
 					(* If we're doing Robotic, do not use the previous cover if it is anything besides the universal black lid *)
 					And[
 						MatchQ[resolvedPreparation, Robotic],
@@ -1654,6 +1694,11 @@ resolveExperimentCoverOptions[
 							Lookup[fetchPacketFromCache[previousCover, previousCoverObjectPackets], CoveredContainer],
 							Null
 						],
+						(* Never re-use aspiration caps, unless it's specified. We don't have a specific field informing whether the cap is aspiration caps or not, so we look at the following two criteria: *)
+						(* Model Name should not container 'Aspiration' *)
+						!StringContainsQ[Lookup[fetchPacketFromCache[Download[previousCoverModel, Object], previousCoverObjectPackets], Name], "Aspiration", IgnoreCase -> True],
+						(* Does not have any Connectors defined *)
+						Length[Lookup[fetchPacketFromCache[Download[previousCoverModel, Object], previousCoverObjectPackets], Connectors]] == 0,
 						Or[
 							(* we allow black lid for a lunatic chip because this is the only cover we can use on it while we are working with it. *)
 							And[
@@ -1696,6 +1741,9 @@ resolveExperimentCoverOptions[
 				preResolvedCover=Which[
 					MatchQ[Lookup[options, Cover], ObjectP[]],
 						Lookup[options, Cover],
+					(* Cover will be Null if we have a built in cover. *)
+					MatchQ[Lookup[containerModelPacket, BuiltInCover], True],
+						Null,
 					MatchQ[usePreviousCover, True] && MatchQ[previousCover, ObjectP[]],
 						previousCover,
 					And[
@@ -1795,6 +1843,9 @@ resolveExperimentCoverOptions[
 								(* If we can only do Place, still resolve to Place even if the lid is too tight. We will have error message later *)
 								MatchQ[compatibleCoverTypes, _List] && MatchQ[resolvedPreparation, Robotic] && MemberQ[compatibleCoverTypes, Place],
 									Place,
+								(* if we can do aluminum foil, do that before just arbitrarily taking the first one *)
+								MatchQ[compatibleCoverTypes, _List] && MemberQ[compatibleCoverTypes, AluminumFoil],
+									AluminumFoil,
 								MatchQ[compatibleCoverTypes, _List] && MatchQ[Length[compatibleCoverTypes], GreaterP[0]],
 									First[compatibleCoverTypes],
 								True,
@@ -1887,6 +1938,8 @@ resolveExperimentCoverOptions[
 						Model[Item, PlateSeal, "id:dORYzZJMop8e"],(* "Plate Seal, Aluminum" we have a lot of them stocked *)
 						Model[Item, PlateSeal, "id:L8kPEjnvlDrN"](* qPCR Plate Seal, Clear *)
 					],
+					MatchQ[coverType, AluminumFoil],
+						Model[Item, Lid, "id:7X104v1N35pw"], (* "Aluminum Foil Cover" *)
 					(* Find a compatible cover based on CoverType/Opaque and the container's CoverFootprints. *)
 					True,
 						Module[{compatibleCoverFootprints,allCovers,engineDefaultCovers,nonHeatCovers,heatCovers},
@@ -1992,8 +2045,8 @@ resolveExperimentCoverOptions[
 							];
 
 							If[Length[engineDefaultSepta]==0,
-								FirstOrDefault[allSepta],
-								FirstOrDefault[engineDefaultSepta]
+								Lookup[FirstOrDefault[allSepta, <||>], Object, Null],
+								Lookup[FirstOrDefault[engineDefaultSepta, <||>], Object, Null]
 							]
 						],
 					True,
@@ -2349,6 +2402,34 @@ resolveExperimentCoverOptions[
 		{myInputs, objectContainerPackets, modelContainerPackets, objectSamplePacketList, modelSamplePacketList, objectContainerRepeatedContainerList, mapThreadFriendlyOptions}
 	];
 
+	(* Need to determine if we need to pick an aluminum foil roll.  We need to get some in the following circumstances: *)
+	(* 1.) AluminumFoil is True (remember this is for wrapping the flask) *)
+	(* 2.) CoverType is AluminumFoil and Cover for that corresponding container is a Model[Item, Lid] *)
+	(* Importantly, if CoverType is AluminumFoil but the corresponding container is an Object, then we don't need to get a roll because we don't need to make a new cover; we just use an existing one *)
+	needAluminumFoilQ = Or[
+		MemberQ[resolvedAluminumFoils, True],
+		MemberQ[
+			PickList[resolvedCovers, resolvedCoverTypes, AluminumFoil],
+			ObjectP[Model[Item, Lid]]
+		]
+	];
+
+	(* now resolve AluminumFoilRoll *)
+	specifiedAluminumFoilRoll = Lookup[myOptions, AluminumFoilRoll];
+	resolvedAluminumFoilRoll = Which[
+		(* if we specified it, go with that *)
+		Not[MatchQ[specifiedAluminumFoilRoll, Automatic]], specifiedAluminumFoilRoll,
+		(* if AluminumFoil has True or CoverType has AluminumFoil, then set to Model[Item, Consumable, "Aluminum Foil"] *)
+		needAluminumFoilQ, Model[Item, Consumable, "id:xRO9n3vk166w"],
+		True, Null
+	];
+
+	(* flip an error switch if we need aluminum foil and we're set to Null, or we don't need it and it is specified *)
+	aluminumFoilRollError = Or[
+		NullQ[resolvedAluminumFoilRoll] && needAluminumFoilQ,
+		MatchQ[resolvedAluminumFoilRoll, ObjectP[]] && Not[needAluminumFoilQ]
+	];
+
 	(* Resolve Post Processing Options. *)
 	resolvedPostProcessingOptions=resolvePostProcessingOptions[ReplaceRule[myOptions, Preparation->resolvedPreparation]];
 
@@ -2375,6 +2456,7 @@ resolveExperimentCoverOptions[
 			Time->resolvedTimes,
 			Parafilm->resolvedParafilms,
 			AluminumFoil->resolvedAluminumFoils,
+			AluminumFoilRoll -> resolvedAluminumFoilRoll,
 			KeckClamp -> resolvedKeckClamps,
 			PlateSealAdapter->resolvedPlateSealAdapters,
 			PlateSealPaddle->resolvedPlateSealPaddles,
@@ -2535,20 +2617,21 @@ resolveExperimentCoverOptions[
 
 	(* Cover has to match CoverFootprints and CoverTypes in Model[Container]. *)
 	coverContainerErrors=MapThread[
-		Function[{cover, coverModelPacket, containerModelPacket, index},
+		Function[{cover, coverModelPacket, containerModelPacket, index, coverType},
 			If[And[
 					(* Cover -> Null is okay if we have a BuiltInCover *)
 					!(MatchQ[Lookup[containerModelPacket, BuiltInCover], True] && MatchQ[cover, Null]),
 					Or[
 						!MatchQ[Lookup[coverModelPacket, CoverFootprint], Alternatives@@Lookup[containerModelPacket, CoverFootprints]],
 						!MemberQ[Lookup[containerModelPacket, CoverTypes], Lookup[coverModelPacket, CoverType]]
-					]
+					],
+					!MatchQ[coverType, AluminumFoil] (* Do not check error for Aluminum foil, it's meant to be a temporary cover which should fit everything *)
 				],
 				{index, cover, Lookup[containerModelPacket, CoverFootprints], Lookup[coverModelPacket, CoverFootprint, Null], Lookup[containerModelPacket, CoverTypes], Lookup[coverModelPacket, CoverType, Null]},
 				Nothing
 			]
 		],
-		{resolvedCovers, resolvedCoverModelPackets, modelContainerPackets, Range[Length[myContainers]]}
+		{resolvedCovers, resolvedCoverModelPackets, modelContainerPackets, Range[Length[myContainers]], resolvedCoverTypes}
 	];
 
 	coverContainerTest=If[Length[coverContainerErrors]==0,
@@ -2983,6 +3066,20 @@ resolveExperimentCoverOptions[
 		]
 	];
 
+	aluminumFoilRollTest = If[aluminumFoilRollError,
+		Test["AluminumFoilRoll is only specified if AluminumFoil is needed to wrap the container or create a lid:", True, False],
+		Test["AluminumFoilRoll is only specified if AluminumFoil is needed to wrap the container or create a lid:", True, True]
+	];
+
+	If[aluminumFoilRollError && messagesQ,
+		Message[
+			Error::AluminumFoilRollConflict,
+			resolvedAluminumFoilRoll,
+			resolvedCoverTypes,
+			resolvedAluminumFoils
+		]
+	];
+
 	(* Check our invalid input and invalid option variables and throw Error::InvalidInput or Error::InvalidOption if necessary. *)
 	invalidInputs=DeleteDuplicates[Flatten[{
 		If[Length[alreadyCoveredErrors]>0,
@@ -3052,6 +3149,10 @@ resolveExperimentCoverOptions[
 			{Preparation},
 			Nothing
 		],
+		If[aluminumFoilRollError,
+			{AluminumFoilRoll},
+			Nothing
+		],
 		containerLidCompatibleInvalidOptions
 	}]];
 
@@ -3086,7 +3187,8 @@ resolveExperimentCoverOptions[
 			crimperTest,
 			usePreviousCoverTest,
 			alreadyCoveredTest,
-			preparationTest
+			preparationTest,
+			aluminumFoilRollTest
 		}]
 	}
 ];
@@ -3163,10 +3265,11 @@ coverResourcePackets[
 		Module[
 			{
 				sampleResources, containerNotebooks, coverResources, septumResources, stopperResources, uniqueKeckClampResources,
-				keckClampResources, uniqueInstrumentResources, uniqueEnvironmentResources,
+				keckClampResources, uniqueInstrumentResources, uniqueEnvironmentResources, aluminumFoilResource,
 				uniquePlateSealAdapterResources, uniquePlateSealPaddleResources, coverManualUnitOperationPackets, manualProtocolPacket, sharedFieldPacket,
 				finalizedPacket, specifiedCoverPackets, capRacks, specifiedCoverModelPackets, mapThreadOptionsWithResources, groupedMapThreadOptionsWithResources,
-				nonHiddenCoverOptions, uniqueCrimpingHeadResources, uniqueDecrimpingHeadResources, crimpingJigs, uniqueCrimpingJigResources
+				nonHiddenCoverOptions, uniqueCrimpingHeadResources, uniqueDecrimpingHeadResources, crimpingJigs, uniqueCrimpingJigResources,
+				resolvedCoverType, resolvedCover, resolvedAluminum, pickAluminumFoilQ
 			},
 
 			(* Create resources for our samples and containers. *)
@@ -3187,13 +3290,17 @@ coverResourcePackets[
 			(* Create resources for our covers. Pass on Rent -> True if the cover is covering a public container *)
 			(* NOTE: If the object is already in our environment, we don't actually resource pick it to save time. This can lead to *)
 			(* incorrect outstanding resource errors downstream. *)
+			(* if we're doing CoverType -> AluminumFoil, we need to just put the model in here, not a resource since we have to do some shenanigans because we are creating aluminum foil lids fresh, not finding old ones. In simulateExperimentCover, it will be temporarily swapped to a Resource[] form in order to simulate resources and generate the UploadCover packets for simulation. *)
 			coverResources = Flatten@MapThread[
-				Which[
-					MatchQ[#1, ObjectP[]] && NullQ[#2], Resource[Sample -> #1, Name -> CreateUUID[], Rent -> True],
-					MatchQ[#1, ObjectP[]] && !NullQ[#2], Resource[Sample -> #1, Name -> CreateUUID[]],
-					True, Null
-				] &,
-				{Lookup[myResolvedOptions, Cover], containerNotebooks}
+				Function[{cover, notebook, coverType},
+					Which[
+						MatchQ[cover, ObjectP[]] && MatchQ[coverType, AluminumFoil], Link[cover],
+						MatchQ[cover, ObjectP[]] && NullQ[notebook], Resource[Sample -> cover, Name -> CreateUUID[], Rent -> True],
+						MatchQ[cover, ObjectP[]] && !NullQ[notebook], Resource[Sample -> cover, Name -> CreateUUID[]],
+						True, Null
+					]
+				],
+				{Lookup[myResolvedOptions, Cover], containerNotebooks, Lookup[myResolvedOptions, CoverType]}
 			];
 
 			(* Create resources for our septa. *)
@@ -3201,6 +3308,13 @@ coverResourcePackets[
 
 			(* Create resources for our stoppers. *)
 			stopperResources=(If[MatchQ[#, ObjectP[]], Resource[Sample->#, Name->CreateUUID[]], Null]&)/@Lookup[myResolvedOptions, Stopper];
+
+			(* make a single resource for aluminum foil if we need for the cover itself or if we are covering the outside of the flask *)
+			aluminumFoilResource = If[MatchQ[Lookup[myResolvedOptions, AluminumFoilRoll], ObjectP[]],
+				(* Model[Item, Consumable, "Aluminum Foil"] *)
+				Resource[Sample -> Lookup[myResolvedOptions, AluminumFoilRoll], Name -> CreateUUID[]],
+				Null
+			];
 
 			(* Create resources for our keck clamps. *)
 			(* Keck Clamps are counted items (like tips) where we sticker the bag but not the individual items inside (because they're too small to be stickered). *)
@@ -3294,7 +3408,11 @@ coverResourcePackets[
 								crimpingJigPackets,
 								KeyValuePattern[{
 									VialHeight->Lookup[containerModelPacket, Dimensions][[3]],
-									VialFootprint->Lookup[containerModelPacket, Footprint]
+									VialFootprint-> If[NullQ[Lookup[containerModelPacket, Footprint, Null]],
+										(* Find a jig that will fit the x dimension if the footprint is not imformative *)
+										Symbol["Vial" <> ToString[Ceiling[Unitless[Lookup[containerModelPacket, Dimensions][[1]], Millimeter], 2]] <> "mm"],
+										Lookup[containerModelPacket, Footprint]
+									]
 								}],
 								FirstOrDefault[crimpingJigPackets, <|Object->Null|>]
 							],
@@ -3358,6 +3476,7 @@ coverResourcePackets[
 			(* Group these map threaded options by the CoverType, Environment, and Instrument. *)
 			(* NOTE: Screw, Snap, Place, and Pry are all treated the same in Cover but they are not the same as Null, which is BuiltInCover and do not require pick or verify cap *)
 			(* There are basically four different types of covers to consider, as in the task "03a16e47-1432-490a-9fa7-3b1adf82088c" - Crimp, Seal, Screw/Snap/Place/Pry, Null *)
+			(* note that all the AluminumFoil covers MUST be in the same unit operation, or else uploadCoverExecute won't work.  If we change the logic here, we need to change it in uploadCoverExecute *)
 			groupedMapThreadOptionsWithResources=Values@GroupBy[
 				mapThreadOptionsWithResources,
 				({Lookup[#, CoverType]/.{(Screw|Snap|Place|Pry)->Screw}, Lookup[#, Instrument], Lookup[#, Environment], Lookup[#, CrimpingHead], Lookup[#, DecrimpingHead], Lookup[#, CrimpingPressure]}&)
@@ -3434,12 +3553,13 @@ coverResourcePackets[
 				Replace[Times]->Lookup[myResolvedOptions, Time],
 				Replace[Parafilm]->Lookup[myResolvedOptions, Parafilm],
 				Replace[AluminumFoil]->Lookup[myResolvedOptions, AluminumFoil],
+				Replace[AluminumFoilRoll] -> Link[aluminumFoilResource],
 				Replace[KeepCovered]->Lookup[myResolvedOptions, KeepCovered],
 				Replace[SterileTechnique]->Lookup[myResolvedOptions, SterileTechnique],
 				Replace[CrimpingJigs]->(Lookup[uniqueCrimpingJigResources, #]&)/@crimpingJigs,
 
 				Replace[Checkpoints]->{
-					{"Performing Covering",1*Minute*Length[coverManualUnitOperationPackets],"The containers are covered.",Link[Resource[Operator -> Model[User, Emerald, Operator, "id:9RdZXv1DrGja"], Time -> (1*Minute*Length[coverManualUnitOperationPackets])]]}
+					{"Performing Covering",1*Minute*Length[coverManualUnitOperationPackets],"The containers are covered.",Link[Resource[Operator -> $BaselineOperator, Time -> (1*Minute*Length[coverManualUnitOperationPackets])]]}
 				},
 
 				Author->If[MatchQ[Lookup[myResolvedOptions, ParentProtocol],Null],
@@ -3618,8 +3738,11 @@ simulateExperimentCover[
 	myResolvedOptions:{_Rule...},
 	myResolutionOptions:OptionsPattern[simulateExperimentCover]
 ]:=Module[
-	{protocolObject, mapThreadFriendlyOptions, resolvedPreparation, currentSimulation, unitOperationField,
-		simulatedUnitOperationPackets, uploadCoverPackets, keepCoveredUpdates, simulationWithLabels},
+	{protocolObject,aluminumFoilInCoversPositions, mapThreadFriendlyOptions, resolvedPreparation, currentSimulation, unitOperationField,
+		simulatedUnitOperationPackets, simulatedCovers, uploadCoverPackets, keepCoveredUpdates, simulationWithLabels},
+
+	(* Initiate a list to keep track of which positions in covers of protocol packet we simulated aluminum foil resources. This is for replace Model with simulated objects later in calculating uploadCoverPackets. Trying to avoid diving deep into batched unit operations and replacing there will affect actual lab operation. *)
+	aluminumFoilInCoversPositions = {};
 
 	(* Get our protocol ID. This should already be in our protocol packet, unless the resource packets failed. *)
 	protocolObject=Which[
@@ -3686,7 +3809,28 @@ simulateExperimentCover[
 
 		(* Otherwise, our resource packets went fine and we have an Object[Protocol, Cover]. *)
 		True,
-			SimulateResources[myProtocolPacket, myUnitOperationPackets, Simulation->Lookup[ToList[myResolutionOptions], Simulation, Null]]
+		(* In case of using aluminum foil, the Cover field still has a Model instead of Resource. For SimulateResources to work properly and generate the uploadcover packets downstream, we need to do a replace in the protocol packets to fake a cover resource just for this simulation. No need to worry about the unit operation packets because aluminum foil cover is not Robotic-compatible *)
+		Module[{coverResources, aluminumFoilUpdatedCoverResources,aluminumCoverResourceUpdatedProtocolPacket},
+			(* Get the calculated Cover field generated by the resource packet*)
+			coverResources = Lookup[myProtocolPacket, Replace[Covers]];
+			(*For those still a Model, generate a Resource of it instead*)
+			aluminumFoilUpdatedCoverResources = MapIndexed[
+				Function[{cover,index},
+					If[MatchQ[cover, LinkP[Model]],
+						AppendTo[aluminumFoilInCoversPositions,First[index]];
+						Resource[Sample ->LinkedObject[cover],Name -> CreateUUID[]],
+						cover
+					]
+				],
+				coverResources
+			];
+			(* Update the packet for input into SimulateResources*)
+			aluminumCoverResourceUpdatedProtocolPacket = Append[
+				myProtocolPacket,
+				<|Replace[Covers] -> aluminumFoilUpdatedCoverResources|>];
+			(* Call SimulateResources *)
+			SimulateResources[aluminumCoverResourceUpdatedProtocolPacket, myUnitOperationPackets, Simulation -> Lookup[ToList[myResolutionOptions], Simulation, Null]]
+		]
 	];
 
 	(* Figure out what field to download from. *)
@@ -3696,11 +3840,14 @@ simulateExperimentCover[
 	];
 
 	(* Download information from our simulated resources. *)
-	simulatedUnitOperationPackets=Quiet[
+	{simulatedUnitOperationPackets,simulatedCovers}=Quiet[
 		With[{insertMe=unitOperationField},
 			Download[
 				protocolObject,
-				Packet[insertMe[{CoverLink}]],
+				{
+					Packet[insertMe[{CoverLink}]],
+					Covers
+				},
 				Simulation->currentSimulation
 			]
 		],
@@ -3710,9 +3857,20 @@ simulateExperimentCover[
 	(* Call UploadSampleCover on our containers and covers. *)
 	uploadCoverPackets=If[MatchQ[myProtocolPacket, $Failed],
 		{},
-		Module[{containersAndCovers},
+		Module[{containersAndCovers, uoCovers, updatedCovers},
+			(*Grab the list of simulated covers from the unit operation packets*)
+			uoCovers = Flatten[Lookup[simulatedUnitOperationPackets, CoverLink, $Failed]];
+			(*In case there is any aluminum foil that stays as a model, replace it with the simulated object*)
+			updatedCovers = If[MatchQ[simulatedCovers, {ObjectP[]..}] && Length[aluminumFoilInCoversPositions] > 0,
+				RiffleAlternatives[
+					Cases[uoCovers,ObjectP[Object]],
+					simulatedCovers[[aluminumFoilInCoversPositions]],
+					MatchQ[#, ObjectP[Object]]& /@ uoCovers
+				],
+				uoCovers
+			];
 			containersAndCovers=Cases[
-				Transpose[{myContainers, Flatten[Lookup[simulatedUnitOperationPackets, CoverLink, $Failed]]}],
+				Transpose[{myContainers, updatedCovers}],
 				{_, ObjectP[{Object[Item, Cap], Object[Item,PlateSeal],Object[Item, Lid]}]}
 			];
 

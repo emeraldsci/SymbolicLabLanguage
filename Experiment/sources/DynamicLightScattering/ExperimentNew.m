@@ -60,6 +60,25 @@ DefineOptions[ExperimentDynamicLightScattering,
       Category -> "General"
     },
     {
+      OptionName -> AssayContainers,
+      Default -> Automatic,
+      Description -> "The capillary strips or plates that the samples in this experiment are assayed in. Options comprise a list of one of Model[Container, Plate, \"96 well Flat Bottom DLS Plate\"], Model[Container, Plate, \"96 well Clear Flat Bottom DLS Plate\"], Model[Container, Plate, \"384-well Aurora Flat Bottom DLS Plate\"], each of which use a plate form factor, and a list of one, two, or three of Model[Container, Plate, CapillaryStrip, \"Uncle 16-capillary strip\"], which uses a capillary form factor, or any objects of those models. If AssayFormFactor is Capillary, it is strongly recommended to allow AssayContainers to resolve automatically.",
+      ResolutionDescription -> "When AssayFormFactor is set to Plate, AssayContainers is set to {Model[Container, Plate, \"96 well Flat Bottom DLS Plate\"]} if SampleVolume is set to more than 30 Microliter and there are fewer than 96 wells required for the assay, and to {Model[Container, Plate, \"384-well Aurora Flat Bottom DLS Plate\"]} otherwise. When AssayFormFactor is set to Capillary, AssayContainers is set to one or more instances of Model[Container, Plate, CapillaryStrip, \"Uncle 16-capillary strip\"], depending on the number of wells required for the assay.",
+      AllowNull -> False,
+      Widget -> Adder[
+        Widget[
+          Type -> Object,
+          Pattern :> ObjectP[{Object[Container, Plate], Model[Container, Plate]}],
+          OpenPaths -> {
+            {
+              Object[Catalog, "Root"],
+              "Containers", "Plates"
+            }
+          }
+        ]
+      ]
+    },
+    {
       OptionName -> SampleLoadingPlate,
       Default -> Automatic,
       Description -> "When AssayFormFactor is Capillary, the container into which input samples are transferred (or in which input sample dilutions are performed when AssayType is ColloidalStability) before centrifugation and transfer into the AssayContainer(s) for DLS measurement.",
@@ -92,22 +111,10 @@ DefineOptions[ExperimentDynamicLightScattering,
 
     (* ColloidalStability Options (including the Dilution Curve options) *)
     {
-      OptionName -> ColloidalStabilityParametersPerSample,
-      Default -> Automatic,
-      Description -> "The number of dilution concentrations made for, and thus independent B22/A2 and kD or G22 parameters calculated from, each input sample.",
-      ResolutionDescription -> "When AssayType is ColloidalStability, ColloidalStabilityParametersPerSample is set to 2. Otherwise, it is set to Null.",
-      AllowNull -> True,
-      Widget -> Widget[
-        Type -> Number,
-        Pattern :> RangeP[1, 24, 1]
-      ],
-      Category -> "Colloidal Stability"
-    },
-    {
-      OptionName -> ReplicateDilutionCurve, (*TODO: We said we'd delete this, but keeping for now*)
+      OptionName -> ReplicateDilutionCurve,
       Default -> Automatic,
       Description -> "Indicates if a NumberOfReplicates number of StandardDilutionCurves or SerialDilutionCurves are made for each input sample. When ReplicateDilutionCurve is True, the replicate DLS measurements for ColloidalStability assay are made from the same concentration of each of the StandardDilutionCurves or SerialDilutionCurves created from a given input sample. When ReplicateDilutionCurve is False, the replicate DLS measurements for the ColloidalStability assay are made from aliquots of a given concentration of the DilutionCurve or SerialDilutionCurve.",
-      ResolutionDescription -> "The ReplicateDilutionCurve is set to False if the AssayType is ColloidalStability and to Null otherwise.",
+      ResolutionDescription -> "If the AssayType is ColloidalStability, ReplicateDilutionCurve is set to True if the AssayFormFactor is Plate, and to False if AssayFormFactor is Capillary. If the AssayType is not ColloidalStability, ReplicateDilutionCurve is set to Null.",
       AllowNull -> True,
       Category -> "Sample Dilution",
       Widget -> Widget[
@@ -118,12 +125,49 @@ DefineOptions[ExperimentDynamicLightScattering,
     IndexMatching[
       IndexMatchingInput -> "experiment samples",
       {
+        OptionName -> SolventName,
+        Default -> Automatic,
+        Description -> "For each input sample, the name of the solvent specified in the DynaPro software. This option is only necessary if the AssayFormFactor is Plate and either CollectStaticLightScattering is True or the AssayType is ColloidalStability.",
+        ResolutionDescription -> "If the AssayFormFactor is Plate and either CollectStaticLightScattering is True or the AssayType is ColloidalStability, SolventName is set based on SolventViscosity and SolventRefractiveIndex if those are specified, set to \"Water\" if the Buffer is \"Water\", or to \"New\" if otherwise unspecified.",
+        AllowNull -> True,
+        Category -> "Sample and Solvent Information",
+        Widget -> Widget[
+          Type -> Enumeration,
+          Pattern :> Alternatives["New", DLSSolventNameP]
+        ]
+      },
+      {
+        OptionName -> SolventViscosity,
+        Default -> Automatic,
+        Description -> "For each input sample, the viscosity of the solvent specified in the DynaPro software. This option is only necessary if the AssayFormFactor is Plate and either CollectStaticLightScattering is True or the AssayType is ColloidalStability.",
+        ResolutionDescription -> "If the AssayFormFactor is Plate and either CollectStaticLightScattering is True or the AssayType is ColloidalStability, SolventViscosity is set based on SolventName if it is specified or resolved, as described in $DLSSolventLookupTable, and set to Null otherwise.",
+        AllowNull -> True,
+        Category -> "Sample and Solvent Information",
+        Widget -> Widget[
+          Type -> Quantity,
+          Pattern :> RangeP[0*Centipoise, 50*Centipoise],
+          Units -> {1 Centipoise, {Centipoise}}
+        ]
+      },
+      {
+        OptionName -> SolventRefractiveIndex,
+        Default -> Automatic,
+        Description -> "For each input sample, the viscosity of the solvent specified in the DynaPro software. This option is only necessary if the AssayFormFactor is Plate and either CollectStaticLightScattering is True or the AssayType is ColloidalStability.",
+        ResolutionDescription -> "If the AssayFormFactor is Plate and either CollectStaticLightScattering is True or the AssayType is ColloidalStability, SolventRefractiveIndex is set based on SolventName if it is specified or resolved, as described in $DLSSolventLookupTable, and set to Null otherwise.",
+        AllowNull -> True,
+        Category -> "Sample and Solvent Information",
+        Widget -> Widget[
+          Type -> Number,
+          Pattern :> RangeP[1, 3]
+        ]
+      },
+      {
         OptionName -> Analyte,
         Default -> Automatic,
-        Description -> "For each input sample, the Model[Molecule] member of the Composition field whose concentration is used to calculate B22/A2 and kD or G22 when the AssayType is ColloidalStability.",
-        ResolutionDescription -> "Automatically set to Null when AssayType is SizingPolydispersity, IsothermalStability, or MeltingCurve, or when DilutionType is SerialDilution. When AssayType is ColloidalStability, automatically set to the first value in the Analytes field of the input sample, or, if not populated, to the first analyte in the Composition field of the input sample, or if none exist, the first identity model of any kind in the Composition field.",
+        Description -> "For each input sample, the Model[Molecule] member of the Composition field whose concentration is used to collect static light scattering data, or to calculate B22/A2 and kD or G22 when the AssayType is ColloidalStability.",
+        ResolutionDescription -> "Automatically set to Null when CollectStaticLightScattering is False or AssayFormFactor is Capillary and the AssayType is not ColloidalStability. When AssayType is ColloidalStability, or when CollectStaticLightScattering is True, automatically set to the first value in the Analytes field of the input sample, or, if not populated, to the first analyte in the Composition field of the input sample, or if none exist, the first identity model of any kind in the Composition field.",
         AllowNull -> True,
-        Category -> "Sample Dilution",
+        Category -> "Sample and Solvent Information",
         Widget -> Widget[
           Type -> Object,
           Pattern :> ObjectP[Model[Molecule]]
@@ -133,9 +177,9 @@ DefineOptions[ExperimentDynamicLightScattering,
         OptionName -> AnalyteMassConcentration,
         Default -> Automatic,
         Description -> "For each input sample, the initial mass concentration of the Analyte before any dilutions outlined by the StandardDilutionCurve or SerialDilutionCurve are performed when the AssayType is ColloidalStability.",
-        ResolutionDescription -> "Automatically set to Null when AssayType is SizingPolydispersity, IsothermalStability, or MeltingCurve, or when DilutionType is SerialDilution. When AssayType is ColloidalStability, automatically set to the mass concentration of the first value in the Analytes field of the input sample, or, if not populated, to that of the first analyte in the Composition field of the input sample, or if none exist, that of the first identity model of any kind in the Composition field.",
+        ResolutionDescription -> "Automatically set to Null when CollectStaticLightScattering is False or AssayFormFactor is Capillary and the AssayType is not ColloidalStability. When AssayType is ColloidalStability, or when CollectStaticLightScattering is True, automatically set to the mass concentration of the first value in the Analytes field of the input sample, or, if not populated, to that of the first analyte in the Composition field of the input sample, or if none exist, that of the first identity model of any kind in the Composition field.",
         AllowNull -> True,
-        Category -> "Sample Dilution",
+        Category -> "Sample and Solvent Information",
         Widget -> Widget[
           Type -> Quantity,
           Pattern :> GreaterEqualP[0 * Milligram / Milliliter] | GreaterP[0 * Molar],
@@ -149,10 +193,26 @@ DefineOptions[ExperimentDynamicLightScattering,
         ]
       },
       {
+        OptionName -> AnalyteRefractiveIndexIncrement,
+        Default -> Automatic,
+        Description -> "For each input sample, the known or estimated refractive index increment (also known as dn/dc) of the Analyte.",
+        ResolutionDescription -> "Automatically set to Null when CollectStaticLightScattering is False or AssayFormFactor is Capillary and the AssayType is not ColloidalStability. When AssayType is ColloidalStability, or when CollectStaticLightScattering is True and AssayFormFactor is Plate, automatically set to 0.185 Milliliter/Gram if the Analyte is a Model[Molecule, Protein] or Model[Molecule, cDNA], and to 0.15 Milliliter/Gram if the Analyte is a Model[Molecule, Polymer] or Model[Molecule, Oligomer].",
+        AllowNull -> True,
+        Category -> "Sample and Solvent Information",
+        Widget -> Widget[
+          Type -> Quantity,
+          Pattern :> GreaterEqualP[0 * Milliliter / Gram],
+          Units -> CompoundUnit[
+              {1, {Milliliter, {Liter, Microliter, Milliliter}}},
+              {-1, {Gram, {Gram, Microgram, Milligram}}}
+          ]
+        ]
+      },
+      {
         OptionName -> StandardDilutionCurve,
         Default -> Automatic,
         Description -> "The collection of dilutions that are performed on each input sample in the SampleLoadingPlate or AssayContainer. For Fixed Dilution Volume Dilution Curves, the Sample Amount is the volume of the sample that is mixed with the Buffer to the Total Volume to create a desired concentration.  For Fixed Target Concentration Dilution Curves, the Target Concentration is the desired final concentration of analyte after dilution of the input samples with the Buffer.",
-        ResolutionDescription -> "The Dilution is set to Null if the AssayType is SizingPolydispersity, IsothermalStability, or MeltingCurve, or if the SerialDilutionCurve option is specified. Otherwise, when AssayFormFactor is Capillary, the option is set to be {{14 uL, 10 mg/mL},{14 uL, 8 mg/mL},{14 uL, 6 mg/mL},{14 uL, 4 mg/mL},{14 uL, 2 mg/mL}} if ReplicateDilutionCurve is True, or to be {{14 uL times NumberOfReplicates), 10 mg/mL},{14 uL times NumberOfReplicates), 8 mg/mL},{14 uL times NumberOfReplicates), 6 mg/mL},{14 uL times NumberOfReplicates), 4 mg/mL},{14 uL times NumberOfReplicates), 2 mg/mL}} if ReplicateDilutionCurve is False. When AssayFormFactor is Plate, the Sample Amount is set to 30 uL or 30 uL times NumberOfReplicates.",
+        ResolutionDescription -> "The Dilution is set to Null if the AssayType is SizingPolydispersity, IsothermalStability, or MeltingCurve, or if the SerialDilutionCurve option is specified. Otherwise, when AssayFormFactor is Capillary, the option is set to be {{14 uL, 10 mg/mL},{14 uL, 8 mg/mL},{14 uL, 6 mg/mL},{14 uL, 4 mg/mL},{14 uL, 2 mg/mL}} if ReplicateDilutionCurve is True, or to be {{14 uL times NumberOfReplicates), 10 mg/mL},{14 uL times NumberOfReplicates), 8 mg/mL},{14 uL times NumberOfReplicates), 6 mg/mL},{14 uL times NumberOfReplicates), 4 mg/mL},{14 uL times NumberOfReplicates), 2 mg/mL}} if ReplicateDilutionCurve is False. When AssayFormFactor is Plate, the Sample Amount is set to a series of dilutions of 90 uL or 30 uL (depending on number of wells).",
         AllowNull -> True,
         Category -> "Sample Dilution",
         Widget -> Alternatives[
@@ -184,7 +244,7 @@ DefineOptions[ExperimentDynamicLightScattering,
         OptionName -> SerialDilutionCurve,
         Default -> Automatic,
         Description -> "The collection of dilutions that are performed on each input sample in the SampleLoadingPlate or AssayContainer. For Serial Dilution Factors, the sample will be diluted with the Buffer by the dilution factor at each transfer step. For example, a SerialDilutionCurve of {36*Microliter,{1,1.25,2,2},1} for a 100 mg/mL sample will result in 4 dilutions with concentrations of 100 mg/mL, 80 mg/mL, 40 mg/mL, and 20 mg/mL. For Serial Dilution Volumes, the Transfer Volume is taken out of the sample and added to a second well with the Buffer Volume of the Buffer. It is mixed, then the Transfer Volume is taken out of that well to be added to a third well. This is repeated to make Number Of Dilutions diluted samples. For example, if a 100 mg/mL sample with a Transfer Volume of 30 Microliters, a Buffer Volume of 10 Microliters and a Number of Dilutions of 2 is used, it will create a SerialDilutionCurve of 75 mg/mL, 56.3 mg/mL, and 42.2 mg/mL.",
-        ResolutionDescription -> "The SerialDilutionCurve is set to Null if the AssayType is SizingPolydispersity, IsothermalStability, or MeltingCurve, or if the StandardDilutionCurve option is specified. Otherwise, when AssayFormFactor is Capillary, the option is set to be {15 uL, {1, 1.25, 1.333, 1.5, 2}, 1} if ReplicateDilutionCurve is True, or to be {(15 uL times NumberOfReplicates), {1, 1.25, 1.333, 1.5, 2}, 1} if ReplicateDilutionCurve is False. When AssayFormFactor is Plate, the Sample Volume is set to 30 uL or 30 uL times NumberOfReplicates. In both cases, the dilution factors with respect to the input sample are {1, 1.25, 1.333, 1.5, 2}, so a 10 mg/mL sample would be diluted to {10 mg/mL, 8 mg/mL, 6 mg/mL, 4 mg/mL, 2 mg/mL}.",
+        ResolutionDescription -> "The SerialDilutionCurve is set to Null if the AssayType is SizingPolydispersity, IsothermalStability, or MeltingCurve, or if the StandardDilutionCurve option is specified. Otherwise, when AssayFormFactor is Capillary, the option is set to be {15 uL, {1, 1.25, 1.333, 1.5, 2}, 1} if ReplicateDilutionCurve is True, or to be {(15 uL times NumberOfReplicates), {1, 1.25, 1.333, 1.5, 2}, 1} if ReplicateDilutionCurve is False. When AssayFormFactor is Plate, the Sample Volume is set to 90 uL or 30 uL (depending on number of wells). In both cases, the dilution factors with respect to the input sample are {1, 1.25, 1.333, 1.5, 2}, so a 10 mg/mL sample would be diluted to {10 mg/mL, 8 mg/mL, 6 mg/mL, 4 mg/mL, 2 mg/mL}.",
         AllowNull -> True,
         Category -> "Sample Dilution",
         Widget -> Alternatives[
@@ -214,9 +274,9 @@ DefineOptions[ExperimentDynamicLightScattering,
         OptionName -> Buffer,
         Default -> Automatic,
         AllowNull -> True,
-        Description -> "The buffer or solvent that is used to dilute the sample to make a DilutionCurve.",
-        ResolutionDescription -> "The Buffer is set to Null if the AssayType is SizingPolydispersity, IsothermalStability, or MeltingCurve. If the AssayType is ColloidalStability, the Buffer is set to the BlankBuffer if it is specified, to the Solvent of the input sample if the BlankBuffer is not specified, and to Model[Sample, \"Milli-Q water\"] otherwise.",
-        Category -> "Sample Dilution",
+        Description -> "The buffer or solvent that is used to dilute the sample to make a DilutionCurve or in collecting static light scattering.",
+        ResolutionDescription -> "The Buffer is automatically set to Null when CollectStaticLightScattering is False or AssayFormFactor is Capillary and the AssayType is not ColloidalStability. When AssayType is ColloidalStability, or when CollectStaticLightScattering is True, the Buffer is set to the BlankBuffer if it is specified, to the Solvent of the input sample if the BlankBuffer is not specified, and to Model[Sample, \"Milli-Q water\"] otherwise.",
+        Category -> "Sample and Solvent Information",
         Widget -> Widget[
           Type -> Object,
           Pattern :> ObjectP[{Model[Sample], Object[Sample]}],
@@ -315,13 +375,12 @@ DefineOptions[ExperimentDynamicLightScattering,
         ]
       },
       {
-        (*Note: this option is recommended only for the Uncle, not the DynaPro*)
         OptionName -> BlankBuffer,
         Default -> Automatic,
-        Description -> "The sample that is used as a 0 mg/mL blank in ColloidalStability assays, to determine the diffusion coefficient at infinite dilution.",
-        ResolutionDescription -> "The BlankBuffer is set to the Buffer if the AssayType is ColloidalStability and to Null otherwise.",
+        Description -> "The sample that is used as a 0 mg/mL blank in ColloidalStability assays or when CollectStaticLightScattering is True, to determine the diffusion coefficient at infinite dilution.",
+        ResolutionDescription -> "The BlankBuffer is set to the Buffer if the AssayType is ColloidalStability or if CollectStaticLightScattering is True and to Null otherwise.",
         AllowNull -> True,
-        Category -> "Sample Dilution",
+        Category -> "Sample and Solvent Information",
         Widget -> Widget[
           Type -> Object,
           Pattern :> ObjectP[{Model[Sample], Object[Sample]}],
@@ -342,7 +401,7 @@ DefineOptions[ExperimentDynamicLightScattering,
       OptionName -> CalculateMolecularWeight,
       Default -> Automatic,
       Description -> "When AssayFormFactor is Plate, determines if Static Light Scattering (SLS) is used to calculate weight-average molecular weight.",
-      ResolutionDescription -> "When AssayFormFactor is Plate and AssayType is ColloidalStability, automatically set to True. When CollectStaticLightScattering is False or AssayFormFactor is Capillary, automatically set to Null.",
+      ResolutionDescription -> "When AssayFormFactor is Plate and AssayType is ColloidalStability, automatically set to True. when CollectStaticLightScattering is False or AssayFormFactor is Capillary or AssayFormFactor is Capillary, automatically set to Null.",
       AllowNull -> True,
       Category -> "Colloidal Stability",
       Widget -> Widget[
@@ -412,6 +471,18 @@ DefineOptions[ExperimentDynamicLightScattering,
       ]
     },
     {
+      OptionName -> CalibratePlate,
+      Default -> Automatic,
+      Description -> "When AssayFormFactor is Plate, indicates whether the AssayContainer should be calibrated by measuring the scattered light intensities of a series of dilutions of a standard sample before any other data collection.",
+      ResolutionDescription -> "When AssayFormFactor is Plate and CollectStaticLightScattering is True, automatically set to True.",
+      AllowNull -> False,
+      Category -> "Light Scattering",
+      Widget -> Widget[
+        Type -> Enumeration,
+        Pattern :> BooleanP
+      ]
+    },
+    {
       OptionName -> NumberOfAcquisitions,
       Default -> 4,
       Description -> "For each Dynamic Light Scattering (DLS) measurement, the number of series of speckle patterns that are each collected over the AcquisitionTime to create the measurement's autocorrelation curve.",
@@ -448,8 +519,8 @@ DefineOptions[ExperimentDynamicLightScattering,
     {
       OptionName -> LaserPower,
       Default -> Automatic,
-      Description -> "The percent of the max laser power that is used to make Dynamic Light Scattering (DLS) measurements. The laser level is optimized at run time by the instrument software when AutomaticLaserSettings is True and LaserLevel is Null.",
-      ResolutionDescription -> "The LaserPower option is set to 100% if AutomaticLaserSettings is False and to Null otherwise.",
+      Description -> "The Percent of the max laser power that is used to make Dynamic Light Scattering (DLS) measurements. The laser level is optimized at run time by the instrument software when AutomaticLaserSettings is True and LaserLevel is Null.",
+      ResolutionDescription -> "The LaserPower option is set to 100Percent if AutomaticLaserSettings is False and to Null otherwise.",
       AllowNull -> True,
       Category -> "Light Scattering",
       Widget -> Widget[
@@ -461,13 +532,13 @@ DefineOptions[ExperimentDynamicLightScattering,
     {
       OptionName -> DiodeAttenuation,
       Default -> Automatic,
-      Description -> "The percent of scattered signal that is allowed to reach the avalanche photodiode. The attenuator level is optimized at run time by the instrument software when AutomaticLaserSettings is True and DiodeAttenuation is Null.",
-      ResolutionDescription -> "The DiodeAttenuation option is set to 100% if AutomaticLaserSettings is False and to Null otherwise.",
+      Description -> "The Percent of scattered signal that is allowed to reach the avalanche photodiode (in Capillary-type assays) or prevented from reaching the avalanche photodiode (in Plate-type assays). The attenuator level is optimized at run time by the instrument software when AutomaticLaserSettings is True and DiodeAttenuation is Null.",
+      ResolutionDescription -> "If AutomaticLaserSettings is False and AssayFormFactor is Plate, the DiodeAttenuation option is set to 0Percent; if AutomaticLaserSettings is False and AssayFormFactor is Capillary, the DiodeAttenuation option is set to 100Percent, and to Null in all other cases.",
       AllowNull -> True,
       Category -> "Light Scattering",
       Widget -> Widget[
         Type -> Quantity,
-        Pattern :> RangeP[1 * Percent, 100 * Percent],
+        Pattern :> RangeP[0 * Percent, 100 * Percent],
         Units -> Percent
       ]
     },
@@ -789,13 +860,14 @@ DefineOptions[ExperimentDynamicLightScattering,
   },
   SharedOptions:>{
 
-    FuntopiaSharedOptions,
+    NonBiologyFuntopiaSharedOptions,
     SubprotocolDescriptionOption,
     SamplesInStorageOption,
     SamplesOutStorageOption,
     CacheOption,
     SimulationOption,
-    PreparatoryUnitOperationsOption
+    PreparatoryUnitOperationsOption,
+    ModelInputOptions
   }
 ];(*TODO: ADD ERRORS AND WARNINGS*)
 
@@ -828,22 +900,30 @@ Warning::LowDLSReplicateConcentrations="The NumberOfReplicates is set to 2. It i
 Error::ConflictingDLSAssayTypeSampleVolumeOptions="The AssayType, `1`, and SampleVolume, `2`, are in conflict. When the AssayType is ColloidalStability, the SampleVolume must not be specified. In these cases, the amount of input sample used is set using either the SerialDilutionCurve or StandardDilutionCurve options. When the AssayType is SizingPolydispersity, IsothermalStability, or MeltingCurve, the SampleVolume must be specified. Please ensure that the SampleVolume and AssayType options are not in conflict.";
 Error::DLSMeasurementDelayTimeTooLow="The following options, `1`, which have been set to `2`, are in conflict with the number of input samples (including replicate samples), `3`. When the number of samples is `3` and the IsothermalAttenuatorAdjustment option is `4`, the minimum required MeasurementDelayTime is `5`. Please raise the MeasurementDelayTime, or consider letting the option resolve automatically.";(*todo: Definitely different for DynaPro... when these adjustments are made, resolvedInstrument needs to be included in the error*)
 Error::ConflictingDLSIsothermalTimeOptions="The AssayType is IsothermalStability, and the MeasurementDelayTime, `1`, and the IsothermalRunTime, `2`, are in conflict. If the MeasurementDelayTime and IsothermalRunTime are both specified, the MeasurementDelayTime cannot be larger than the IsothermalRunTime. Please ensure that these options are not in conflict, or consider letting these options resolve automatically.";
-Error::DLSIsothermalAssayTooLong="Please ensure that the length of the assay, `3`, which is the product of the MeasurementDelayTime, `1`, and IsothermalMeasurements, `2`, is less than 6.5 days as this the maximum time for a dynamic light scattering experiment.";(*possibly different on DynaPro???*)
+Error::DLSIsothermalAssayTooLong="Please ensure that the length of the assay, `3`, which is the product of the MeasurementDelayTime, `1`, and IsothermalMeasurements, `2`, is less than the $MaxExperimentTime in the ECL.";(*possibly different on DynaPro???*)
 Error::DLSDilutionCurveLoadingPlateMismatch="The following samples, `1`, have options, `2`, with values of `3`, which are in conflict with the SampleLoadingPlate, `4`. The MaxVolume of `4` is `5`, but the dilution curve options require a maximum volume of `6` be placed in a well, which exceeds the MaxVolume of the plate. Please either choose a larger SampleLoadingPlate, or, ideally, change the dilution option to require less volume per well.";
 Error::DLSDilutionCurveMixVolumeMismatch="The following samples, `1`, have options, `2`, with values of `3`. These options are in conflict with the DilutionMixVolume, which has a value of `4`. The dilution curve options indicate that a well of the SampleLoadingPlate will have a total volume of `5`, which is smaller than the DilutionMixVolume. The DilutionMixVolume must be smaller than the lowest volume in the SampleLoadingPlate. Please ensure that these options are not in conflict, either by reducing the DilutionMixVolume or changing the dilution curve option.";
 Error::DLSNotEnoughDilutionCurveVolume="The following samples, `1`, have options, `2`, with values of `3`. Because the NumberOfReplicates is `4` and the ReplicateDilutionCurve is `5`, the minimum required volume for each concentration of the dilution curve is `6`. The given dilution curve options result in a minimum volume of `7` in at least one well of the SampleLoadingPlate after sample dilution. Please ensure that there is at least `6` in each dilution concentration, or consider letting these options resolve automatically. ";
 Error::DLSOnlyOneDilutionCurveConcentration="The following samples, `1`, have invalid option, `2`, with values of `3`. At least two unique dilutions of each input sample are required for ColloidalStability assays. Please ensure the dilution options are valid, or consider letting these options resolve automatically.";
 Error::TooManyDLSInputs="The input samples, `1`, are invalid. The number of wells required (the number of input samples times the NumberOfReplicates) is `2`, which exceeds the maximum allowed for the Instrument, `3`. Please reduce the number of input samples, or the NumberOfReplicates.";
 Error::DLSTooManyDilutionWellsRequired="The combination of the number of input samples, `1`, and the following options, `2`, are invalid. The combination of input samples and specified invalid options require `3` wells, which exceeds the number of wells available for the Instrument, `4`. The number of required wells is calculated by adding the number of samples (including replicates) to the product of the number of samples (including replicates) and the number of wells required for each dilution curve (number of dilutions times the NumberOfReplicates). Please ensure that the number of required wells is fewer than 48 (when AssayFormFactor is Capillary) or 384 (when AssayFormFactor is Plate). A typical ColloidalStability experiment has 3 input samples, with 5 dilutions per sample, and NumberOfReplicates set to 3.";
-Error::DLSInputSampleNoAnalyte="The AssayType is `1` and the Analyte options for the following samples, `2`, are Null. Please ensure that the Analyte option is specified when the AssayType is ColloidalStability. The Analyte option may have been automatically set to Null if there are no Model[Molecule,Protein]s present in the Composition field. The Compositions associated with `2` are `3`. Please either specify the Analyte option, or use DefineComposition to ensure that the input samples' Composition fields are accurate. If there are no Analytes present in the input sample, SizingPolydispersity may be a more suitable AssayType than `1`.";
-Error::DLSInputSampleNoAnalyteMolecularWeight="The AssayType is ColloidalStability and none of the Analytes, `1`, have associated MolecularWeights, which are required when AssayFormFactor is Capillary. Please ensure that the provided Analyte option has an associated MolecularWeight for ColloidalStability assays with an AssayFormFactor of Capillary.";(*Uncle only*)
-Error::DLSInputSampleNoAnalyteMassConcentration="The AssayType is `1` and the AnalyteMassConcentration options for the following samples, `2` are Null. Please ensure that the AnalyteMassConcentration option is specified when the AssayType is ColloidalStability. The AnalyteMassConcentration may have been automatically set to Null if the Analyte has no associated amount in the Composition field. The Compositions associated with `2` are `3`. The instrument needs to know the MassConcentration of the Analytes - if the MolecularWeight of the Analyte is not informed, or the volume or mass of the input sample is not known, this also prevents calculation of the concentration. Please either specify the AnalyteMassConcentration option, or use DefineComposition to ensure that the Composition of the input samples are accurate.";
+Error::DLSInputSampleNoAnalyte="The AssayType is `1`, CollectStaticLightScattering is `2`, the AssayFormFactor is `3`, and the Analyte options for the following samples, `4`, are Null. Please ensure that the Analyte option is specified when the AssayType is ColloidalStability or CollectStaticLightScattering is True and AssayFormFactor is Plate. The Analyte option may have been automatically set to Null if there are no Model[Molecule,Protein]s present in the Composition field. The Compositions associated with `4` are `5`. Please either specify the Analyte option, or use DefineComposition to ensure that the input samples' Composition fields are accurate. `6`";
+Error::DLSInputSampleNoAnalyteMolecularWeight="The AssayType is `1`, CollectStaticLightScattering is `2`, the AssayFormFactor is `3`, and none of the Analytes, `4`, have associated MolecularWeights, which are required when the AssayType is ColloidalStability or CollectStaticLightScattering is True and AssayFormFactor is Plate. Please ensure that the provided Analyte option has an associated MolecularWeight for ColloidalStability assays or when CollectStaticLightScattering is True with AssayFormFactor of Plate.";
+Error::DLSInputSampleNoAnalyteMassConcentration="The AssayType is `1`, CollectStaticLightScattering is `2`, the AssayFormFactor is `3`, and the AnalyteMassConcentration options for the following samples, `4` are Null. Please ensure that the AnalyteMassConcentration option is specified when the AssayType is ColloidalStability or CollectStaticLightScattering is True and AssayFormFactor is Plate. The AnalyteMassConcentration may have been automatically set to Null if the Analyte has no associated amount in the Composition field. The Compositions associated with `4` are `5`. The instrument needs to know the MassConcentration of the Analytes - if the MolecularWeight of the Analyte is not informed, or the volume or mass of the input sample is not known, this also prevents calculation of the concentration. Please either specify the AnalyteMassConcentration option, or use DefineComposition to ensure that the Composition of the input samples are accurate.";
 Warning::DLSMoreThanOneCompositionAnalyte="The AssayType is `1` and the following samples, `2`, have Compositions, `3`, with more than one Model[Molecule,Protein]. ColloidalStability assays should be run on samples which have one Analyte in the Composition. For this experiment, the the most concentrated Analytes of `2`, `4`, will be used for concentration calculations. Please ensure that the input samples' Compositions are populated correctly.";
 (*Warning::DLSAnalyteConcentrationHigh="The AssayType is ColloidalStability, but the following samples, `1`, have Composition fields with the following Analyte molecules, `2`, with mass concentrations of `3`. The highest recommended concentration of Analyte for ColloidalStability assays is 25 mg/mL. Please ensure that the Composition fields of the input samples are populated correctly, and that ColloidalStability is the desired AssayType.";*)
-Error::DLSConflictingLaserSettings="The following laser setting related options, `1`, which have values of `2` are in conflict with each other. When AutomaticLaserSettings is True, the LaserPower and DiodeAttenuation must both be Null. When AutomaticLaserSettings is False, the LaserPower and DiodeAttenuation should be specified as a percentage. Please ensure that these options are not in conflict, or consider letting them resolve automatically.";
+Error::DLSConflictingLaserSettings="The following laser setting related options, `1`, which have values of `2` are in conflict with each other. When AutomaticLaserSettings is True, the LaserPower and DiodeAttenuation must both be Null. When AutomaticLaserSettings is False, the LaserPower and DiodeAttenuation should be specified as a Percentage. Please ensure that these options are not in conflict, or consider letting them resolve automatically.";
 Error::InvalidDLSTemperature="The AssayType, `1`, and the Temperature, `2`, are in conflict. The Temperature must be 25 Celsius if the AssayType is ColloidalStability and the Instrument is of Model[Instrument,MultimodeSpectrophotometer]. Please ensure that the Temperature and AssayType options are specified as desired.";
 Error::DLSManualLoadingByRow="CapillaryLoading is set to Manual while AssayContainerFillDirection is set to Row. Manual loading can only be done by Column when the Instrument is of Model[Instrument,MultimodeSpectrophotometer]. Please consider setting AssayContainerFillDirection to Column or Automatic.";(*Uncle only*)
 Error::ConflictingFormFactorTemperatureRamp="The given AssayFormFactor, `1`, is incompatible with the MinTemperature and MaxTemperature, `2`. When AssayFormFactor is Plate, MaxTemperature cannot exceed 85 Celsius, and when AssayFormFactor is Capillary, MinTemperature cannot be less than 15 Celsius.";
+Error::ConflictingDLSFormFactorReplicateDilutionCurve="For ColloidalStability Assays, the AssayFormFactor (Plate) requires ReplicateDilutionCurve to be True.";
+Error::ConflictingFormFactorCalibratePlate="The given AssayFormFactor, Capillary, is incompatible with the the given value of CalibratePlate, True. Please ensure that CalibratePlate is only set to True if AssayFormFactor is set to Plate.";
+Error::ConflictingFormFactorAssayContainers="The given AssayFormFactor, `1`, is incompatible with the given AssayContainers, `2`. `3`";
+Error::InvalidAssayContainers="The given AssayContainers, `1`, are invalid. AssayContainers must either be a list of a single member of Model[Container, Plate, \"96 well Flat Bottom DLS Plate\"], Model[Container, Plate, \"96 well Clear Flat Bottom DLS Plate\"], or Model[Container, Plate, \"384-well Aurora Flat Bottom DLS Plate\"], or a list of one, two or three members of Model[Container, Plate, CapillaryStrip, \"Uncle 16-capillary strip\"]";
+Warning::SpecifiedCapillaryAssayContainers="The AssayContainers, `1`, are given as members of Model[Container, Plate, CapillaryStrip, \"Uncle 16-capillary strip\"]. When AssayFormFactor is Capillary, it is recommended to let AssayContainers resolve automatically. In the event that more or less capillary plates than specified are required to execute the protocol, this option will be overridden with the necessary number of capillary plates.";
+Warning::SolventNameMismatch="The input samples, `1`, have a specified SolventName, `2` that conflicts with the specified `3`, `4` respectively. The given values for `3` will be replaced with the known values, `5`, for the given SolventName, `2`. To use the specified `3` please set SolventName as \"New\".";
+Error::InvalidCapillaryAssayContainerContents="The specified AssayContainers, `1`, have existing contents. Please specify AssayContainers with no Contents or allow this option to be set automatically.";
+Error::NotEnoughAssayContainerSpace="The specified AssayContainers, `1`, do not have the required number of available wells, `2`, in order to run the experiment. Please specify AssayContainers with no Contents or allow this option to be set automatically.";
 
 (*Define available assay containers*)
 dlsAssayContainerP=Alternatives[
@@ -852,13 +932,273 @@ dlsAssayContainerP=Alternatives[
   ObjectP[Model[Container, Plate, "id:4pO6dMOlqJLw"]],(*"384-well Aurora Flat Bottom DLS Plate"*)
   ObjectP[Model[Container, Plate, CapillaryStrip, "id:R8e1Pjp9Kjjj"]](*"Uncle 16-capillary strip"*)
 ];
+plateDLSAssayContainerP=Alternatives[
+  ObjectP[Model[Container, Plate, "id:rea9jlaPWNGx"]],(*"96 well Flat Bottom DLS Plate"*)
+  ObjectP[Model[Container, Plate, "id:N80DNj09z91D"]],(*"96 well Clear Flat Bottom DLS Plate"*)
+  ObjectP[Model[Container, Plate, "id:4pO6dMOlqJLw"]](*"384-well Aurora Flat Bottom DLS Plate"*)
+];
+capillaryDLSAssayContainerP=Alternatives[
+  ObjectP[Model[Container, Plate, CapillaryStrip, "id:R8e1Pjp9Kjjj"]](*"Uncle 16-capillary strip"*)
+];
+
+(* Big lookup table for Wyatt's defined solvent names, refractive indices, and viscosities *)
+(* At some point, the goal is to match these to either Model[Sample]s or Model[Method]s *)
+$DLSSolventLookupTable = {
+  <|Name->"Acetic Acid 0.5%",RefractiveIndex->1.3334,Viscosity->Quantity[1.012, "Centipoise"]|>,
+  <|Name->"Acetic Acid 1%",RefractiveIndex->1.3337,Viscosity->Quantity[1.022, "Centipoise"]|>,
+  <|Name->"Acetic Acid 2%",RefractiveIndex->1.3345,Viscosity->Quantity[1.042, "Centipoise"]|>,
+  <|Name->"Acetic Acid 3%",RefractiveIndex->1.3352,Viscosity->Quantity[1.063, "Centipoise"]|>,
+  <|Name->"Acetic Acid 4%",RefractiveIndex->1.3359,Viscosity->Quantity[1.084, "Centipoise"]|>,
+  <|Name->"Acetic Acid 5%",RefractiveIndex->1.3366,Viscosity->Quantity[1.105, "Centipoise"]|>,
+  <|Name->"Acetic Acid 6%",RefractiveIndex->1.3373,Viscosity->Quantity[1.125, "Centipoise"]|>,
+  <|Name->"Acetic Acid 7%",RefractiveIndex->1.3381,Viscosity->Quantity[1.143, "Centipoise"]|>,
+  <|Name->"Acetic Acid 8%",RefractiveIndex->1.3388,Viscosity->Quantity[1.162, "Centipoise"]|>,
+  <|Name->"Acetic Acid 9%",RefractiveIndex->1.3395,Viscosity->Quantity[1.186, "Centipoise"]|>,
+  <|Name->"Acetic Acid 10%",RefractiveIndex->1.3402,Viscosity->Quantity[1.21, "Centipoise"]|>,
+  <|Name->"Acetone 0.5%",RefractiveIndex->1.3334,Viscosity->Quantity[1.013, "Centipoise"]|>,
+  <|Name->"Acetone 1%",RefractiveIndex->1.3337,Viscosity->Quantity[1.024, "Centipoise"]|>,
+  <|Name->"Acetone 1.5%",RefractiveIndex->1.3341,Viscosity->Quantity[1.035, "Centipoise"]|>,
+  <|Name->"Acetone 2%",RefractiveIndex->1.3344,Viscosity->Quantity[1.047, "Centipoise"]|>,
+  <|Name->"Acetone 2.5%",RefractiveIndex->1.3348,Viscosity->Quantity[1.059, "Centipoise"]|>,
+  <|Name->"Acetone 3%",RefractiveIndex->1.3352,Viscosity->Quantity[1.072, "Centipoise"]|>,
+  <|Name->"Acetone 3.5%",RefractiveIndex->1.3355,Viscosity->Quantity[1.085, "Centipoise"]|>,
+  <|Name->"Acetone 4%",RefractiveIndex->1.3359,Viscosity->Quantity[1.099, "Centipoise"]|>,
+  <|Name->"Acetone 4.5%",RefractiveIndex->1.3363,Viscosity->Quantity[1.112, "Centipoise"]|>,
+  <|Name->"Acetone 5%",RefractiveIndex->1.3366,Viscosity->Quantity[1.125, "Centipoise"]|>,
+  <|Name->"Acetone 6%",RefractiveIndex->1.3373,Viscosity->Quantity[1.15, "Centipoise"]|>,
+  <|Name->"Acetone 100%",RefractiveIndex->1.361,Viscosity->Quantity[0.321369, "Centipoise"]|>,
+  <|Name->"Ammonium Chloride 0.5%",RefractiveIndex->1.334,Viscosity->Quantity[0.999721, "Centipoise"]|>,
+  <|Name->"Ammonium Chloride 1%",RefractiveIndex->1.3349,Viscosity->Quantity[0.99751, "Centipoise"]|>,
+  <|Name->"Ammonium Chloride 2%",RefractiveIndex->1.3369,Viscosity->Quantity[0.9933, "Centipoise"]|>,
+  <|Name->"Ammonium Chloride 3%",RefractiveIndex->1.3388,Viscosity->Quantity[0.989377, "Centipoise"]|>,
+  <|Name->"Ammonium Chloride 4%",RefractiveIndex->1.3407,Viscosity->Quantity[0.985751, "Centipoise"]|>,
+  <|Name->"Ammonium Chloride 5%",RefractiveIndex->1.3426,Viscosity->Quantity[0.982431, "Centipoise"]|>,
+  <|Name->"Ammonium Chloride 6%",RefractiveIndex->1.3445,Viscosity->Quantity[0.979428, "Centipoise"]|>,
+  <|Name->"Ammonium Chloride 7%",RefractiveIndex->1.3464,Viscosity->Quantity[0.976751, "Centipoise"]|>,
+  <|Name->"Ammonium Chloride 8%",RefractiveIndex->1.3483,Viscosity->Quantity[0.974414, "Centipoise"]|>,
+  <|Name->"Ammonium Chloride 9%",RefractiveIndex->1.3502,Viscosity->Quantity[0.972428, "Centipoise"]|>,
+  <|Name->"Ammonium Chloride 10%",RefractiveIndex->1.3521,Viscosity->Quantity[0.970806, "Centipoise"]|>,
+  <|Name->"Calcium Chloride 0.5%",RefractiveIndex->1.3342,Viscosity->Quantity[1.01289, "Centipoise"]|>,
+  <|Name->"Calcium Chloride 1%",RefractiveIndex->1.3354,Viscosity->Quantity[1.02413, "Centipoise"]|>,
+  <|Name->"Calcium Chloride 2%",RefractiveIndex->1.3378,Viscosity->Quantity[1.04767, "Centipoise"]|>,
+  <|Name->"Calcium Chloride 3%",RefractiveIndex->1.3402,Viscosity->Quantity[1.07275, "Centipoise"]|>,
+  <|Name->"Calcium Chloride 4%",RefractiveIndex->1.3426,Viscosity->Quantity[1.09949, "Centipoise"]|>,
+  <|Name->"Calcium Chloride 5%",RefractiveIndex->1.3451,Viscosity->Quantity[1.12802, "Centipoise"]|>,
+  <|Name->"Calcium Chloride 6%",RefractiveIndex->1.3475,Viscosity->Quantity[1.1585, "Centipoise"]|>,
+  <|Name->"Calcium Chloride 7%",RefractiveIndex->1.35,Viscosity->Quantity[1.19111, "Centipoise"]|>,
+  <|Name->"Calcium Chloride 8%",RefractiveIndex->1.3525,Viscosity->Quantity[1.22602, "Centipoise"]|>,
+  <|Name->"Calcium Chloride 9%",RefractiveIndex->1.3549,Viscosity->Quantity[1.26345, "Centipoise"]|>,
+  <|Name->"Calcium Chloride 10%",RefractiveIndex->1.3575,Viscosity->Quantity[1.30363, "Centipoise"]|>,
+  <|Name->"Cyclohexane",RefractiveIndex->1.429,Viscosity->Quantity[0.970124, "Centipoise"]|>,
+  <|Name->"Ethanol 1%",RefractiveIndex->1.3336,Viscosity->Quantity[1.046, "Centipoise"]|>,
+  <|Name->"Ethanol 2%",RefractiveIndex->1.3342,Viscosity->Quantity[1.095, "Centipoise"]|>,
+  <|Name->"Ethanol 3%",RefractiveIndex->1.3348,Viscosity->Quantity[1.14, "Centipoise"]|>,
+  <|Name->"Ethanol 4%",RefractiveIndex->1.3354,Viscosity->Quantity[1.183, "Centipoise"]|>,
+  <|Name->"Ethanol 5%",RefractiveIndex->1.336,Viscosity->Quantity[1.228, "Centipoise"]|>,
+  <|Name->"Ethanol 6%",RefractiveIndex->1.3367,Viscosity->Quantity[1.279, "Centipoise"]|>,
+  <|Name->"Ethanol 7%",RefractiveIndex->1.3374,Viscosity->Quantity[1.331, "Centipoise"]|>,
+  <|Name->"Ethanol 8%",RefractiveIndex->1.3381,Viscosity->Quantity[1.385, "Centipoise"]|>,
+  <|Name->"Ethanol 9%",RefractiveIndex->1.3388,Viscosity->Quantity[1.442, "Centipoise"]|>,
+  <|Name->"Ethanol 10%",RefractiveIndex->1.3395,Viscosity->Quantity[1.501, "Centipoise"]|>,
+  <|Name->"Ethanol 15%",RefractiveIndex->1.3432,Viscosity->Quantity[1.826, "Centipoise"]|>,
+  <|Name->"Ethanol 20%",RefractiveIndex->1.3469,Viscosity->Quantity[2.142, "Centipoise"]|>,
+  <|Name->"Ethanol 100%",RefractiveIndex->1.364,Viscosity->Quantity[1.046, "Centipoise"]|>,
+  <|Name->"Ethylene Glycol 1%",RefractiveIndex->1.3339,Viscosity->Quantity[1.02, "Centipoise"]|>,
+  <|Name->"Ethylene Glycol 2%",RefractiveIndex->1.3348,Viscosity->Quantity[1.048, "Centipoise"]|>,
+  <|Name->"Ethylene Glycol 3%",RefractiveIndex->1.3358,Viscosity->Quantity[1.074, "Centipoise"]|>,
+  <|Name->"Ethylene Glycol 4%",RefractiveIndex->1.3367,Viscosity->Quantity[1.099, "Centipoise"]|>,
+  <|Name->"Ethylene Glycol 5%",RefractiveIndex->1.3377,Viscosity->Quantity[1.125, "Centipoise"]|>,
+  <|Name->"Ethylene Glycol 6%",RefractiveIndex->1.3386,Viscosity->Quantity[1.153, "Centipoise"]|>,
+  <|Name->"Ethylene Glycol 7%",RefractiveIndex->1.3396,Viscosity->Quantity[1.182, "Centipoise"]|>,
+  <|Name->"Ethylene Glycol 8%",RefractiveIndex->1.3405,Viscosity->Quantity[1.212, "Centipoise"]|>,
+  <|Name->"Ethylene Glycol 9%",RefractiveIndex->1.3415,Viscosity->Quantity[1.243, "Centipoise"]|>,
+  <|Name->"Ethylene Glycol 10%",RefractiveIndex->1.3425,Viscosity->Quantity[1.277, "Centipoise"]|>,
+  <|Name->"Ethylene Glycol 20%",RefractiveIndex->1.3523,Viscosity->Quantity[1.661, "Centipoise"]|>,
+  <|Name->"Glucose 1%",RefractiveIndex->1.3344,Viscosity->Quantity[1.021, "Centipoise"]|>,
+  <|Name->"Glucose 2%",RefractiveIndex->1.3358,Viscosity->Quantity[1.052, "Centipoise"]|>,
+  <|Name->"Glucose 3%",RefractiveIndex->1.3373,Viscosity->Quantity[1.083, "Centipoise"]|>,
+  <|Name->"Glucose 4%",RefractiveIndex->1.3387,Viscosity->Quantity[1.113, "Centipoise"]|>,
+  <|Name->"Glucose 5%",RefractiveIndex->1.3402,Viscosity->Quantity[1.145, "Centipoise"]|>,
+  <|Name->"Glucose 6%",RefractiveIndex->1.3417,Viscosity->Quantity[1.179, "Centipoise"]|>,
+  <|Name->"Glucose 7%",RefractiveIndex->1.3432,Viscosity->Quantity[1.214, "Centipoise"]|>,
+  <|Name->"Glucose 8%",RefractiveIndex->1.3447,Viscosity->Quantity[1.25, "Centipoise"]|>,
+  <|Name->"Glucose 9%",RefractiveIndex->1.3462,Viscosity->Quantity[1.289, "Centipoise"]|>,
+  <|Name->"Glucose 10%",RefractiveIndex->1.3477,Viscosity->Quantity[1.33, "Centipoise"]|>,
+  <|Name->"Glucose 20%",RefractiveIndex->1.3635,Viscosity->Quantity[1.904, "Centipoise"]|>,
+  <|Name->"Glycerol 1%",RefractiveIndex->1.3342,Viscosity->Quantity[1.022, "Centipoise"]|>,
+  <|Name->"Glycerol 2%",RefractiveIndex->1.3353,Viscosity->Quantity[1.048, "Centipoise"]|>,
+  <|Name->"Glycerol 3%",RefractiveIndex->1.3365,Viscosity->Quantity[1.074, "Centipoise"]|>,
+  <|Name->"Glycerol 4%",RefractiveIndex->1.3376,Viscosity->Quantity[1.1, "Centipoise"]|>,
+  <|Name->"Glycerol 5%",RefractiveIndex->1.3388,Viscosity->Quantity[1.127, "Centipoise"]|>,
+  <|Name->"Glycerol 6%",RefractiveIndex->1.34,Viscosity->Quantity[1.157, "Centipoise"]|>,
+  <|Name->"Glycerol 7%",RefractiveIndex->1.3412,Viscosity->Quantity[1.188, "Centipoise"]|>,
+  <|Name->"Glycerol 8%",RefractiveIndex->1.3424,Viscosity->Quantity[1.22, "Centipoise"]|>,
+  <|Name->"Glycerol 9%",RefractiveIndex->1.3436,Viscosity->Quantity[1.256, "Centipoise"]|>,
+  <|Name->"Glycerol 10%",RefractiveIndex->1.3448,Viscosity->Quantity[1.291, "Centipoise"]|>,
+  <|Name->"Glycerol 15%",RefractiveIndex->1.3508,Viscosity->Quantity[1.489, "Centipoise"]|>,
+  <|Name->"Glycerol 20%",RefractiveIndex->1.3572,Viscosity->Quantity[1.737, "Centipoise"]|>,
+  <|Name->"Glycerol 25%",RefractiveIndex->1.3637,Viscosity->Quantity[2.097, "Centipoise"]|>,
+  <|Name->"Glycerol 30%",RefractiveIndex->1.3703,Viscosity->Quantity[2.458, "Centipoise"]|>,
+  <|Name->"Glycerol 40%",RefractiveIndex->1.3841,Viscosity->Quantity[3.653, "Centipoise"]|>,
+  <|Name->"Glycerol 50%",RefractiveIndex->1.398,Viscosity->Quantity[6.0395, "Centipoise"]|>,
+  <|Name->"Glycerol 100%",RefractiveIndex->1.475,Viscosity->Quantity[1410, "Centipoise"]|>,
+  <|Name->"Hexane",RefractiveIndex->1.377,Viscosity->Quantity[0.3258, "Centipoise"]|>,
+  <|Name->"Lithium Chloride 0.5%",RefractiveIndex->1.3341,Viscosity->Quantity[1.019, "Centipoise"]|>,
+  <|Name->"Lithium Chloride 1%",RefractiveIndex->1.3351,Viscosity->Quantity[1.037, "Centipoise"]|>,
+  <|Name->"Lithium Chloride 2%",RefractiveIndex->1.3373,Viscosity->Quantity[1.072, "Centipoise"]|>,
+  <|Name->"Lithium Chloride 3%",RefractiveIndex->1.3394,Viscosity->Quantity[1.108, "Centipoise"]|>,
+  <|Name->"Lithium Chloride 4%",RefractiveIndex->1.3415,Viscosity->Quantity[1.146, "Centipoise"]|>,
+  <|Name->"Lithium Chloride 5%",RefractiveIndex->1.3436,Viscosity->Quantity[1.185, "Centipoise"]|>,
+  <|Name->"Lithium Chloride 6%",RefractiveIndex->1.3457,Viscosity->Quantity[1.226, "Centipoise"]|>,
+  <|Name->"Lithium Chloride 7%",RefractiveIndex->1.3478,Viscosity->Quantity[1.269, "Centipoise"]|>,
+  <|Name->"Lithium Chloride 8%",RefractiveIndex->1.3499,Viscosity->Quantity[1.313, "Centipoise"]|>,
+  <|Name->"Lithium Chloride 9%",RefractiveIndex->1.352,Viscosity->Quantity[1.36, "Centipoise"]|>,
+  <|Name->"Lithium Chloride 10%",RefractiveIndex->1.3541,Viscosity->Quantity[1.411, "Centipoise"]|>,
+  <|Name->"Magnesium Chloride 0.5%",RefractiveIndex->1.3343,Viscosity->Quantity[1.024, "Centipoise"]|>,
+  <|Name->"Magnesium Chloride 1%",RefractiveIndex->1.3356,Viscosity->Quantity[1.046, "Centipoise"]|>,
+  <|Name->"Magnesium Chloride 2%",RefractiveIndex->1.3381,Viscosity->Quantity[1.091, "Centipoise"]|>,
+  <|Name->"Magnesium Chloride 3%",RefractiveIndex->1.3406,Viscosity->Quantity[1.139, "Centipoise"]|>,
+  <|Name->"Magnesium Chloride 4%",RefractiveIndex->1.3432,Viscosity->Quantity[1.188, "Centipoise"]|>,
+  <|Name->"Magnesium Chloride 5%",RefractiveIndex->1.3457,Viscosity->Quantity[1.241, "Centipoise"]|>,
+  <|Name->"Magnesium Chloride 6%",RefractiveIndex->1.3483,Viscosity->Quantity[1.298, "Centipoise"]|>,
+  <|Name->"Magnesium Chloride 7%",RefractiveIndex->1.3508,Viscosity->Quantity[1.358, "Centipoise"]|>,
+  <|Name->"Magnesium Chloride 8%",RefractiveIndex->1.3534,Viscosity->Quantity[1.423, "Centipoise"]|>,
+  <|Name->"Magnesium Chloride 9%",RefractiveIndex->1.356,Viscosity->Quantity[1.493, "Centipoise"]|>,
+  <|Name->"Magnesium Chloride 10%",RefractiveIndex->1.3587,Viscosity->Quantity[1.57, "Centipoise"]|>,
+  <|Name->"Maltose 0.5%",RefractiveIndex->1.3337,Viscosity->Quantity[1.016, "Centipoise"]|>,
+  <|Name->"Maltose 1%",RefractiveIndex->1.3345,Viscosity->Quantity[1.03, "Centipoise"]|>,
+  <|Name->"Maltose 2%",RefractiveIndex->1.3359,Viscosity->Quantity[1.06, "Centipoise"]|>,
+  <|Name->"Maltose 3%",RefractiveIndex->1.3374,Viscosity->Quantity[1.092, "Centipoise"]|>,
+  <|Name->"Maltose 4%",RefractiveIndex->1.3389,Viscosity->Quantity[1.126, "Centipoise"]|>,
+  <|Name->"Maltose 5%",RefractiveIndex->1.3404,Viscosity->Quantity[1.162, "Centipoise"]|>,
+  <|Name->"Maltose 6%",RefractiveIndex->1.342,Viscosity->Quantity[1.2, "Centipoise"]|>,
+  <|Name->"Maltose 7%",RefractiveIndex->1.3435,Viscosity->Quantity[1.239, "Centipoise"]|>,
+  <|Name->"Maltose 8%",RefractiveIndex->1.345,Viscosity->Quantity[1.281, "Centipoise"]|>,
+  <|Name->"Maltose 9%",RefractiveIndex->1.3466,Viscosity->Quantity[1.325, "Centipoise"]|>,
+  <|Name->"Maltose 10%",RefractiveIndex->1.3482,Viscosity->Quantity[1.372, "Centipoise"]|>,
+  <|Name->"Methanol 1%",RefractiveIndex->1.3332,Viscosity->Quantity[1.04, "Centipoise"]|>,
+  <|Name->"Methanol 2%",RefractiveIndex->1.3334,Viscosity->Quantity[1.07, "Centipoise"]|>,
+  <|Name->"Methanol 3%",RefractiveIndex->1.3336,Viscosity->Quantity[1.1, "Centipoise"]|>,
+  <|Name->"Methanol 4%",RefractiveIndex->1.3339,Viscosity->Quantity[1.131, "Centipoise"]|>,
+  <|Name->"Methanol 5%",RefractiveIndex->1.3341,Viscosity->Quantity[1.163, "Centipoise"]|>,
+  <|Name->"Methanol 6%",RefractiveIndex->1.3343,Viscosity->Quantity[1.196, "Centipoise"]|>,
+  <|Name->"Methanol 7%",RefractiveIndex->1.3346,Viscosity->Quantity[1.229, "Centipoise"]|>,
+  <|Name->"Methanol 8%",RefractiveIndex->1.3348,Viscosity->Quantity[1.264, "Centipoise"]|>,
+  <|Name->"Methanol 9%",RefractiveIndex->1.3351,Viscosity->Quantity[1.297, "Centipoise"]|>,
+  <|Name->"Methanol 10%",RefractiveIndex->1.3354,Viscosity->Quantity[1.329, "Centipoise"]|>,
+  <|Name->"Methanol 15%",RefractiveIndex->1.3367,Viscosity->Quantity[1.474, "Centipoise"]|>,
+  <|Name->"Methanol 20%",RefractiveIndex->1.3381,Viscosity->Quantity[1.604, "Centipoise"]|>,
+  <|Name->"Methanol 100%",RefractiveIndex->1.339,Viscosity->Quantity[0.586, "Centipoise"]|>,
+  <|Name->"Oleic Acid",RefractiveIndex->1.468,Viscosity->Quantity[26.5808, "Centipoise"]|>,
+  <|Name->"PBS",RefractiveIndex->1.333,Viscosity->Quantity[1.019, "Centipoise"]|>,
+  <|Name->"Sodium Acetate 0.5%",RefractiveIndex->1.3337,Viscosity->Quantity[1.021, "Centipoise"]|>,
+  <|Name->"Sodium Acetate 1%",RefractiveIndex->1.3344,Viscosity->Quantity[1.04, "Centipoise"]|>,
+  <|Name->"Sodium Acetate 2%",RefractiveIndex->1.3358,Viscosity->Quantity[1.08, "Centipoise"]|>,
+  <|Name->"Sodium Acetate 3%",RefractiveIndex->1.3372,Viscosity->Quantity[1.124, "Centipoise"]|>,
+  <|Name->"Sodium Acetate 4%",RefractiveIndex->1.3386,Viscosity->Quantity[1.171, "Centipoise"]|>,
+  <|Name->"Sodium Acetate 5%",RefractiveIndex->1.34,Viscosity->Quantity[1.222, "Centipoise"]|>,
+  <|Name->"Sodium Acetate 6%",RefractiveIndex->1.3414,Viscosity->Quantity[1.278, "Centipoise"]|>,
+  <|Name->"Sodium Acetate 7%",RefractiveIndex->1.3428,Viscosity->Quantity[1.337, "Centipoise"]|>,
+  <|Name->"Sodium Acetate 8%",RefractiveIndex->1.3442,Viscosity->Quantity[1.401, "Centipoise"]|>,
+  <|Name->"Sodium Acetate 9%",RefractiveIndex->1.3456,Viscosity->Quantity[1.468, "Centipoise"]|>,
+  <|Name->"Sodium Acetate 10%",RefractiveIndex->1.347,Viscosity->Quantity[1.539, "Centipoise"]|>,
+  <|Name->"Sodium Bromide 0.5%",RefractiveIndex->1.3337,Viscosity->Quantity[1.004, "Centipoise"]|>,
+  <|Name->"Sodium Bromide 1%",RefractiveIndex->1.3344,Viscosity->Quantity[1.007, "Centipoise"]|>,
+  <|Name->"Sodium Bromide 2%",RefractiveIndex->1.3358,Viscosity->Quantity[1.012, "Centipoise"]|>,
+  <|Name->"Sodium Bromide 3%",RefractiveIndex->1.3372,Viscosity->Quantity[1.017, "Centipoise"]|>,
+  <|Name->"Sodium Bromide 4%",RefractiveIndex->1.3386,Viscosity->Quantity[1.022, "Centipoise"]|>,
+  <|Name->"Sodium Bromide 5%",RefractiveIndex->1.3401,Viscosity->Quantity[1.028, "Centipoise"]|>,
+  <|Name->"Sodium Bromide 6%",RefractiveIndex->1.3415,Viscosity->Quantity[1.034, "Centipoise"]|>,
+  <|Name->"Sodium Bromide 7%",RefractiveIndex->1.343,Viscosity->Quantity[1.04, "Centipoise"]|>,
+  <|Name->"Sodium Bromide 8%",RefractiveIndex->1.3445,Viscosity->Quantity[1.046, "Centipoise"]|>,
+  <|Name->"Sodium Bromide 9%",RefractiveIndex->1.346,Viscosity->Quantity[1.053, "Centipoise"]|>,
+  <|Name->"Sodium Bromide 10%",RefractiveIndex->1.3475,Viscosity->Quantity[1.06, "Centipoise"]|>,
+  <|Name->"Sodium Chloride 0.1%",RefractiveIndex->1.3332,Viscosity->Quantity[1.004, "Centipoise"]|>,
+  <|Name->"Sodium Chloride 0.2%",RefractiveIndex->1.3333,Viscosity->Quantity[1.006, "Centipoise"]|>,
+  <|Name->"Sodium Chloride 0.3%",RefractiveIndex->1.3335,Viscosity->Quantity[1.008, "Centipoise"]|>,
+  <|Name->"Sodium Chloride 0.4%",RefractiveIndex->1.3337,Viscosity->Quantity[1.009, "Centipoise"]|>,
+  <|Name->"Sodium Chloride 0.5%",RefractiveIndex->1.3339,Viscosity->Quantity[1.011, "Centipoise"]|>,
+  <|Name->"Sodium Chloride 1%",RefractiveIndex->1.3347,Viscosity->Quantity[1.02, "Centipoise"]|>,
+  <|Name->"Sodium Chloride 1.5%",RefractiveIndex->1.3356,Viscosity->Quantity[1.028, "Centipoise"]|>,
+  <|Name->"Sodium Chloride 2%",RefractiveIndex->1.3365,Viscosity->Quantity[1.036, "Centipoise"]|>,
+  <|Name->"Sodium Chloride 2.5%",RefractiveIndex->1.3374,Viscosity->Quantity[1.044, "Centipoise"]|>,
+  <|Name->"Sodium Chloride 3%",RefractiveIndex->1.3383,Viscosity->Quantity[1.052, "Centipoise"]|>,
+  <|Name->"Sodium Chloride 3.5%",RefractiveIndex->1.3391,Viscosity->Quantity[1.06, "Centipoise"]|>,
+  <|Name->"Sodium Chloride 4%",RefractiveIndex->1.34,Viscosity->Quantity[1.068, "Centipoise"]|>,
+  <|Name->"Sodium Chloride 4.5%",RefractiveIndex->1.3409,Viscosity->Quantity[1.076, "Centipoise"]|>,
+  <|Name->"Sodium Chloride 5.%",RefractiveIndex->1.3418,Viscosity->Quantity[1.085, "Centipoise"]|>,
+  <|Name->"Sodium Chloride 6%",RefractiveIndex->1.3435,Viscosity->Quantity[1.105, "Centipoise"]|>,
+  <|Name->"Sodium Chloride 7%",RefractiveIndex->1.3453,Viscosity->Quantity[1.124, "Centipoise"]|>,
+  <|Name->"Sodium Chloride 8%",RefractiveIndex->1.347,Viscosity->Quantity[1.145, "Centipoise"]|>,
+  <|Name->"Sodium Chloride 9%",RefractiveIndex->1.3488,Viscosity->Quantity[1.168, "Centipoise"]|>,
+  <|Name->"Sodium Chloride 10%",RefractiveIndex->1.3505,Viscosity->Quantity[1.193, "Centipoise"]|>,
+  <|Name->"Sodium Chloride 15%",RefractiveIndex->1.3594,Viscosity->Quantity[1.352, "Centipoise"]|>,
+  <|Name->"Sodium Chloride 20%",RefractiveIndex->1.3684,Viscosity->Quantity[1.557, "Centipoise"]|>,
+  <|Name->"Sodium Hydroxide 0.5%",RefractiveIndex->1.3344,Viscosity->Quantity[1.027, "Centipoise"]|>,
+  <|Name->"Sodium Hydroxide 1%",RefractiveIndex->1.3358,Viscosity->Quantity[1.054, "Centipoise"]|>,
+  <|Name->"Sodium Hydroxide 2%",RefractiveIndex->1.3386,Viscosity->Quantity[1.112, "Centipoise"]|>,
+  <|Name->"Sodium Hydroxide 3%",RefractiveIndex->1.3414,Viscosity->Quantity[1.176, "Centipoise"]|>,
+  <|Name->"Sodium Hydroxide 4%",RefractiveIndex->1.3441,Viscosity->Quantity[1.248, "Centipoise"]|>,
+  <|Name->"Sodium Hydroxide 5%",RefractiveIndex->1.3467,Viscosity->Quantity[1.329, "Centipoise"]|>,
+  <|Name->"Sodium Hydroxide 6%",RefractiveIndex->1.3494,Viscosity->Quantity[1.416, "Centipoise"]|>,
+  <|Name->"Sodium Hydroxide 7%",RefractiveIndex->1.352,Viscosity->Quantity[1.51, "Centipoise"]|>,
+  <|Name->"Sodium Hydroxide 8%",RefractiveIndex->1.3546,Viscosity->Quantity[1.616, "Centipoise"]|>,
+  <|Name->"Sodium Hydroxide 9%",RefractiveIndex->1.3572,Viscosity->Quantity[1.737, "Centipoise"]|>,
+  <|Name->"Sodium Hydroxide 10%",RefractiveIndex->1.3597,Viscosity->Quantity[1.882, "Centipoise"]|>,
+  <|Name->"Sodium Nitrate 0.5%",RefractiveIndex->1.3336,Viscosity->Quantity[1.004, "Centipoise"]|>,
+  <|Name->"Sodium Nitrate 1%",RefractiveIndex->1.3341,Viscosity->Quantity[1.007, "Centipoise"]|>,
+  <|Name->"Sodium Nitrate 2%",RefractiveIndex->1.3353,Viscosity->Quantity[1.012, "Centipoise"]|>,
+  <|Name->"Sodium Nitrate 3%",RefractiveIndex->1.3364,Viscosity->Quantity[1.018, "Centipoise"]|>,
+  <|Name->"Sodium Nitrate 4%",RefractiveIndex->1.3375,Viscosity->Quantity[1.025, "Centipoise"]|>,
+  <|Name->"Sodium Nitrate 5%",RefractiveIndex->1.3387,Viscosity->Quantity[1.032, "Centipoise"]|>,
+  <|Name->"Sodium Nitrate 6%",RefractiveIndex->1.3398,Viscosity->Quantity[1.04, "Centipoise"]|>,
+  <|Name->"Sodium Nitrate 7%",RefractiveIndex->1.3409,Viscosity->Quantity[1.049, "Centipoise"]|>,
+  <|Name->"Sodium Nitrate 8%",RefractiveIndex->1.3421,Viscosity->Quantity[1.059, "Centipoise"]|>,
+  <|Name->"Sodium Nitrate 9%",RefractiveIndex->1.3432,Viscosity->Quantity[1.069, "Centipoise"]|>,
+  <|Name->"Sodium Nitrate 10%",RefractiveIndex->1.3443,Viscosity->Quantity[1.081, "Centipoise"]|>,
+  <|Name->"Sodium Sulfate 0.5%",RefractiveIndex->1.3338,Viscosity->Quantity[1.013, "Centipoise"]|>,
+  <|Name->"Sodium Sulfate 1%",RefractiveIndex->1.3345,Viscosity->Quantity[1.026, "Centipoise"]|>,
+  <|Name->"Sodium Sulfate 2%",RefractiveIndex->1.336,Viscosity->Quantity[1.058, "Centipoise"]|>,
+  <|Name->"Sodium Sulfate 3%",RefractiveIndex->1.3376,Viscosity->Quantity[1.091, "Centipoise"]|>,
+  <|Name->"Sodium Sulfate 4%",RefractiveIndex->1.3391,Viscosity->Quantity[1.126, "Centipoise"]|>,
+  <|Name->"Sodium Sulfate 5%",RefractiveIndex->1.3406,Viscosity->Quantity[1.163, "Centipoise"]|>,
+  <|Name->"Sodium Sulfate 6%",RefractiveIndex->1.342,Viscosity->Quantity[1.202, "Centipoise"]|>,
+  <|Name->"Sodium Sulfate 7%",RefractiveIndex->1.3435,Viscosity->Quantity[1.244, "Centipoise"]|>,
+  <|Name->"Sodium Sulfate 8%",RefractiveIndex->1.3449,Viscosity->Quantity[1.289, "Centipoise"]|>,
+  <|Name->"Sodium Sulfate 9%",RefractiveIndex->1.3464,Viscosity->Quantity[1.337, "Centipoise"]|>,
+  <|Name->"Sodium Sulfate 10%",RefractiveIndex->1.3479,Viscosity->Quantity[1.39, "Centipoise"]|>,
+  <|Name->"Sucrose 1%",RefractiveIndex->1.3344,Viscosity->Quantity[1.028, "Centipoise"]|>,
+  <|Name->"Sucrose 2%",RefractiveIndex->1.3359,Viscosity->Quantity[1.055, "Centipoise"]|>,
+  <|Name->"Sucrose 3%",RefractiveIndex->1.3373,Viscosity->Quantity[1.084, "Centipoise"]|>,
+  <|Name->"Sucrose 4%",RefractiveIndex->1.3388,Viscosity->Quantity[1.114, "Centipoise"]|>,
+  <|Name->"Sucrose 5%",RefractiveIndex->1.3403,Viscosity->Quantity[1.146, "Centipoise"]|>,
+  <|Name->"Sucrose 6%",RefractiveIndex->1.3418,Viscosity->Quantity[1.179, "Centipoise"]|>,
+  <|Name->"Sucrose 7%",RefractiveIndex->1.3433,Viscosity->Quantity[1.215, "Centipoise"]|>,
+  <|Name->"Sucrose 8%",RefractiveIndex->1.3448,Viscosity->Quantity[1.254, "Centipoise"]|>,
+  <|Name->"Sucrose 9%",RefractiveIndex->1.3463,Viscosity->Quantity[1.294, "Centipoise"]|>,
+  <|Name->"Sucrose 10%",RefractiveIndex->1.3478,Viscosity->Quantity[1.336, "Centipoise"]|>,
+  <|Name->"Sucrose 15%",RefractiveIndex->1.3557,Viscosity->Quantity[1.592, "Centipoise"]|>,
+  <|Name->"Sucrose 20%",RefractiveIndex->1.3639,Viscosity->Quantity[1.945, "Centipoise"]|>,
+  <|Name->"Sucrose 30%",RefractiveIndex->1.3812,Viscosity->Quantity[3.187, "Centipoise"]|>,
+  <|Name->"Toluene",RefractiveIndex->1.499,Viscosity->Quantity[0.559089, "Centipoise"]|>,
+  <|Name->"Urea 1%",RefractiveIndex->1.3344,Viscosity->Quantity[1.0007, "Centipoise"]|>,
+  <|Name->"Urea 5%",RefractiveIndex->1.3401,Viscosity->Quantity[1.033, "Centipoise"]|>,
+  <|Name->"Urea 6%",RefractiveIndex->1.3416,Viscosity->Quantity[1.041, "Centipoise"]|>,
+  <|Name->"Urea 7%",RefractiveIndex->1.3431,Viscosity->Quantity[1.049, "Centipoise"]|>,
+  <|Name->"Urea 8%",RefractiveIndex->1.3446,Viscosity->Quantity[1.057, "Centipoise"]|>,
+  <|Name->"Urea 9%",RefractiveIndex->1.3461,Viscosity->Quantity[1.065, "Centipoise"]|>,
+  <|Name->"Urea 10%",RefractiveIndex->1.3476,Viscosity->Quantity[1.074, "Centipoise"]|>,
+  <|Name->"Urea 15%",RefractiveIndex->1.3552,Viscosity->Quantity[1.119, "Centipoise"]|>,
+  <|Name->"Urea 20%",RefractiveIndex->1.3629,Viscosity->Quantity[1.178, "Centipoise"]|>,
+  <|Name->"Water",RefractiveIndex->1.333,Viscosity->Quantity[1, "Centipoise"]|>
+};
 
 
 (* ::Subsubsection:: *)
 (* ExperimentDynamicLightScattering *)
 
-(* --- Container and PreparatoryPrimitives overload --- *)
-ExperimentDynamicLightScattering[myInputs:ListableP[ObjectP[{Object[Container],Object[Sample]}]|_String|{LocationPositionP,_String|ObjectP[Object[Container]]}],myOptions:OptionsPattern[]]:=Module[
+(* --- Container overload --- *)
+ExperimentDynamicLightScattering[myInputs:ListableP[ObjectP[{Object[Container],Object[Sample],Model[Sample]}]|_String|{LocationPositionP,_String|ObjectP[Object[Container]]}],myOptions:OptionsPattern[]]:=Module[
   {
     listedContainers, listedOptions, outputSpecification, output, gatherTests, containerToSampleResult,containerToSampleOutput,containerToSampleSimulation, containerToSampleTests, validSamplePreparationResult, samplesWithPreparedSamples, optionsWithPreparedSamples,
     samples,sampleOptions, updatedSimulation, sampleContainerPackets, preloadedQ, numberOfReplicatesSetQ
@@ -872,7 +1212,7 @@ ExperimentDynamicLightScattering[myInputs:ListableP[ObjectP[{Object[Container],O
   gatherTests = MemberQ[output, Tests];
 
   (* Remove temporal links and named objects. *)
-  {listedContainers, listedOptions} = sanitizeInputs[ToList[myInputs], ToList[myOptions]];
+  {listedContainers, listedOptions} = {ToList[myInputs], ToList[myOptions]};
 
   (* First, simulate our sample preparation. *)
   validSamplePreparationResult=Check[
@@ -883,7 +1223,7 @@ ExperimentDynamicLightScattering[myInputs:ListableP[ObjectP[{Object[Container],O
       listedOptions
     ],
     $Failed,
-    {Error::MissingDefineNames,Error::InvalidInput,Error::InvalidOption}
+    {Download::ObjectDoesNotExist, Error::MissingDefineNames,Error::InvalidInput,Error::InvalidOption}
   ];
 
   (* If we are given an invalid define name, return early. *)
@@ -970,18 +1310,21 @@ ExperimentDynamicLightScattering[myInputs:ListableP[ObjectP[{Object[Container],O
 ExperimentDynamicLightScattering[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:OptionsPattern[]]:=Module[
   {
     listedOptions,listedSamples,outputSpecification,output,gatherTests,messages,validSamplePreparationResult,samplesWithPreparedSamples,optionsWithPreparedSamples,
-    samplesWithPreparedSamplesNamed,optionsWithPreparedSamplesNamed,
-    samplePreparationCache,safeOps,safeOpsNamed,safeOpsTests,validLengths,validLengthTests,
+    samplesWithPreparedSamplesNamed,optionsWithPreparedSamplesNamed,safeOps,safeOpsNamed,safeOpsTests,validLengths,validLengthTests,
     templatedOptions,templateTests,inheritedOptions,expandedSafeOps,
-    optionsWithObjects,specifiedObjects,simulatedSampleQ,objectsExistQs,objectsExistTests,
-    suppliedInstrument,suppliedSampleLoadingPlate,suppliedAnalyte,
-    instrumentDownloadOption,uncleDynaProDownload,uncleDynaProDownloadFields,instrumentDownloadFields,sampleLoadingPlateDownloadOption,sampleLoadingPlateModelDownloadFields,uniqueAnalytes,
-    liquidHandlerContainers,
-    objectSamplePacketFields,modelSamplePacketFields,objectContainerPacketFields,modelContainerPacketFields,liquidHandlerContainerPackets,
-    listedSampleContainerPackets,instrumentPacket,uncleDynaProPackets,inputsInOrder,sampleLoadingPlateModelPacket,
-    sampleLoadingPlateObjectPacket,listedAnalytePackets,
-    cacheBall,inputObjects,resolvedOptionsResult,
-    resolvedOptions,resolvedOptionsTests,collapsedResolvedOptions,protocolObject,resourcePackets,resourcePacketTests,updatedSimulation,upload,confirm,fastTrack,parentProtocol,cache,resolvedPreparation,returnEarlyQ,performSimulationQ,protocolPacketWithResources,simulatedProtocol,simulation,postProcessingOptions,unitOperationPacket,samplesInPackets
+    suppliedInstrument,suppliedSampleLoadingPlate,suppliedAnalyte,suppliedAssayContainers,suppliedBuffer,
+    instrumentDownloadOption,uncleDynaProDownload,uncleDynaProDownloadFields,instrumentDownloadFields,sampleLoadingPlateDownloadOption,
+    sampleLoadingPlateModelDownloadFields,assayContainersDownloadOption,assayContainersDownloadFields,
+    bufferDownloadOption, bufferObjects, bufferModels, uniqueAnalytes, liquidHandlerContainers,
+    objectSamplePacketFields,modelSamplePacketFields,directModelSamplePacketFields, objectContainerPacketFields,modelContainerPacketFields,liquidHandlerContainerPackets,
+    listedSampleContainerPackets,instrumentPacket,uncleDynaProPackets,inputsInOrder,sampleLoadingPlateModelPacket,assayContainersPackets,
+    bufferObjectPackets,bufferModelPackets,sampleLoadingPlateObjectPacket,listedAnalytePackets,
+    cacheBall,resolvedOptionsResult,
+    resolvedOptions,resolvedOptionsTests,collapsedResolvedOptions,protocolObject,resourcePacketTests,updatedSimulation,upload,confirm,
+    canaryBranch,fastTrack,
+    parentProtocol,cache,resolvedPreparation,returnEarlyQ,performSimulationQ,protocolPacketWithResources,simulatedProtocol,
+    simulation,
+    postProcessingOptions,samplesInPackets,postResourcePacketsSimulation
   },
 
   (* Determine the requested return value from the function *)
@@ -1004,7 +1347,7 @@ ExperimentDynamicLightScattering[mySamples:ListableP[ObjectP[Object[Sample]]],my
       listedOptions
     ],
     $Failed,
-    {Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
+    {Download::ObjectDoesNotExist, Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
   ];
 
   (* If we are given an invalid define name, return early. *)
@@ -1020,7 +1363,7 @@ ExperimentDynamicLightScattering[mySamples:ListableP[ObjectP[Object[Sample]]],my
     {SafeOptions[ExperimentDynamicLightScattering,optionsWithPreparedSamplesNamed,AutoCorrect->False],{}}
   ];
 
-  {samplesWithPreparedSamples,safeOps, optionsWithPreparedSamples} = sanitizeInputs[samplesWithPreparedSamplesNamed,safeOpsNamed, optionsWithPreparedSamplesNamed];
+  {samplesWithPreparedSamples,safeOps, optionsWithPreparedSamples} = sanitizeInputs[samplesWithPreparedSamplesNamed, safeOpsNamed, optionsWithPreparedSamplesNamed, Simulation -> updatedSimulation];
 
   (* If the specified options don't match their patterns or if option lengths are invalid return $Failed *)
   If[MatchQ[safeOps,$Failed],
@@ -1071,64 +1414,20 @@ ExperimentDynamicLightScattering[mySamples:ListableP[ObjectP[Object[Sample]]],my
   inheritedOptions=ReplaceRule[safeOps,templatedOptions];
 
   (* get assorted hidden options *)
-  {upload, confirm, fastTrack, parentProtocol, cache} = Lookup[inheritedOptions, {Upload, Confirm, FastTrack, ParentProtocol, Cache}];
+  {upload, confirm, canaryBranch, fastTrack, parentProtocol, cache} = Lookup[inheritedOptions, {Upload, Confirm, CanaryBranch, FastTrack, ParentProtocol, Cache}];
 
 
   (* Expand index-matching options *)
   expandedSafeOps=Last[ExpandIndexMatchedInputs[ExperimentDynamicLightScattering,{ToList[samplesWithPreparedSamples]},inheritedOptions]];
 
-  (* - Throw an error and return failed if any of the specified Objects are not members of the database - *)
-  (* Any options whose values _could_ be an object *)
-  optionsWithObjects = {
-    Instrument,
-    SampleLoadingPlate,
-    Buffer,
-    BlankBuffer,
-    Analyte
-  };
-
-  (* Extract any objects that the user has explicitly specified *)
-  specifiedObjects = DeleteDuplicates@Cases[
-    {ToList[mySamples],ToList[KeyDrop[Association[myOptions], {Cache, Simulation}]]},
-    ObjectReferenceP[],
-    Infinity
-  ];
-
-  (* Check that the specified objects exist or are visible to the current user *)
-  objectsExistQs=Quiet[DatabaseMemberQ[specifiedObjects,Simulation->updatedSimulation],{Download::ObjectDoesNotExist}];
-
-  (* Build tests for object existence *)
-  objectsExistTests = If[gatherTests,
-    MapThread[
-      Test[StringTemplate["Specified object `1` exists in the database:"][#1],#2,True]&,
-      {specifiedObjects,objectsExistQs}
-    ],
-    {}
-  ];
-
-  (* If objects do not exist, return failure *)
-  If[!(And@@objectsExistQs),
-    If[!gatherTests,
-      Message[Error::ObjectDoesNotExist,PickList[specifiedObjects,objectsExistQs,False]];
-      Message[Error::InvalidInput,PickList[specifiedObjects,objectsExistQs,False]]
-    ];
-
-    Return[outputSpecification/.{
-      Result -> $Failed,
-      Tests -> Join[safeOpsTests,validLengthTests,templateTests,objectsExistTests],
-      Options -> $Failed,
-      Preview -> Null
-    }]
-  ];
-
   (*-- DOWNLOAD THE INFORMATION THAT WE NEED FOR OUR OPTION RESOLVER AND RESOURCE PACKET FUNCTION --*)
   (* -- Determine which fields from the various Options that can be Objects or Models or Automatic that we need to download -- *)
   (* Pull the info out of the options that we need to download from *)
   {
-    suppliedInstrument,suppliedSampleLoadingPlate,suppliedAnalyte
+    suppliedInstrument,suppliedSampleLoadingPlate,suppliedAnalyte,suppliedAssayContainers,suppliedBuffer
   }=Lookup[expandedSafeOps,
     {
-      Instrument,SampleLoadingPlate,Analyte
+      Instrument,SampleLoadingPlate,Analyte,AssayContainers,Buffer
     }
   ];
   (* - Instrument - *)
@@ -1177,13 +1476,50 @@ ExperimentDynamicLightScattering[mySamples:ListableP[ObjectP[Object[Sample]]],my
     (* IF the SamplePreprationPlate is a Model *)
     MatchQ[suppliedSampleLoadingPlate,ObjectP[Model[Container,Plate]]],
 
-    (* THEN we download fields from the specified Model *)
+    (* THEN we download fields from the specified Model (and also NumberOfWells) *)
     {Packet[Object, MaxVolume, Name]},
 
     (* ELSE, we download fields from the Model of the specified Object *)
     True,
     {Packet[Model[{Object, MaxVolume, Name}]]}
   ];
+
+  (* - AssayContainers - *)
+  assayContainersDownloadOption = If[
+    (* Only downloading from the AssayContainers option if it is not Automatic *)
+    MatchQ[suppliedAssayContainers,Automatic],
+    {},
+    ToList[suppliedAssayContainers]
+  ];
+
+  assayContainersDownloadFields=Which[
+
+    (* IF the AssayContainers have not been specified, this is Nothing*)
+    MatchQ[suppliedAssayContainers,Automatic],
+    {},
+
+    (* IF at least one of the AssayContainers is a Model *)
+    MemberQ[suppliedAssayContainers,ObjectP[Model[Container,Plate]]],
+
+    (* THEN we download fields from the specified Model *)
+    {Packet[Object, MaxVolume, NumberOfWells, Name]},
+
+    (* ELSE, we download fields from the Model of the specified Object and from the Object itself *)
+    True,
+    {Packet[Model[{Object, MaxVolume, NumberOfWells, Name}]], Packet[NumberOfWells, Contents, Model]}
+  ];
+
+  (* - Buffer - *)
+  bufferDownloadOption = If[
+    (* Only downloading from the Buffer option if it is not Automatic *)
+    MatchQ[suppliedBuffer,ListableP[Automatic]],
+    {},
+    Cases[ToList[suppliedBuffer],ObjectP[{Object[Sample],Model[Sample]}]]
+  ];
+
+  bufferObjects = Cases[bufferDownloadOption,ObjectP[Object[Sample]]];
+  (* Always include Model[Sample, "Milli-Q water"] because it is our default *)
+  bufferModels = Join[Cases[bufferDownloadOption,ObjectP[Model[Sample]]],{Model[Sample, "id:8qZ1VWNmdLBD"]}];
 
   (* - Analyte - *)
   (* Download from unique Model[Molecules] in the Analyte option *)
@@ -1194,8 +1530,9 @@ ExperimentDynamicLightScattering[mySamples:ListableP[ObjectP[Object[Sample]]],my
 
   (* - Determine which fields we need to download from the input Objects - *)
   (* Create the Packet Download syntax for our Object and Model samples. *)
-  objectSamplePacketFields=Packet@@Flatten[{Solvent,IncompatibleMaterials,SamplePreparationCacheFields[Object[Sample]]}];
-  modelSamplePacketFields=Packet[Model[Flatten[{IncompatibleMaterials,SamplePreparationCacheFields[Model[Sample]]}]]];
+  objectSamplePacketFields=Packet@@Flatten[{Solvent,IncompatibleMaterials,Viscosity,RefractiveIndex,SamplePreparationCacheFields[Object[Sample]]}];
+  modelSamplePacketFields=Packet[Model[Flatten[{IncompatibleMaterials,Viscosity,RefractiveIndex,SamplePreparationCacheFields[Model[Sample]]}]]];
+  directModelSamplePacketFields=Packet@@Flatten[{Solvent,IncompatibleMaterials,Viscosity,RefractiveIndex,SamplePreparationCacheFields[Model[Sample]]}];
   objectContainerPacketFields=SamplePreparationCacheFields[Object[Container]];
   modelContainerPacketFields=Packet@@Flatten[{Object,SamplePreparationCacheFields[Model[Container]]}];
 
@@ -1203,7 +1540,7 @@ ExperimentDynamicLightScattering[mySamples:ListableP[ObjectP[Object[Sample]]],my
 
   {
     listedSampleContainerPackets,instrumentPacket,uncleDynaProPackets,inputsInOrder,sampleLoadingPlateModelPacket,sampleLoadingPlateObjectPacket,
-    listedAnalytePackets,liquidHandlerContainerPackets,samplesInPackets
+    listedAnalytePackets,liquidHandlerContainerPackets,samplesInPackets,assayContainersPackets,bufferObjectPackets,bufferModelPackets
   }  =Quiet[
     Download[
       {
@@ -1217,7 +1554,10 @@ ExperimentDynamicLightScattering[mySamples:ListableP[ObjectP[Object[Sample]]],my
         sampleLoadingPlateDownloadOption,
         uniqueAnalytes,
         liquidHandlerContainers,
-        ToList[mySamples]
+        ToList[mySamples],
+        assayContainersDownloadOption,
+        bufferObjects,
+        bufferModels
       },
       {
         {
@@ -1234,8 +1574,10 @@ ExperimentDynamicLightScattering[mySamples:ListableP[ObjectP[Object[Sample]]],my
         {Packet[Object,Model,Contents]},
         {Packet[Object,Name,MolecularWeight]},
         {modelContainerPacketFields},
-        {Packet[Object,StorageCondition]}
-
+        {Packet[Object,StorageCondition]},
+        assayContainersDownloadFields,
+        {objectSamplePacketFields},
+        {directModelSamplePacketFields}
       },
       Cache->cache,
       Simulation->updatedSimulation,
@@ -1248,7 +1590,7 @@ ExperimentDynamicLightScattering[mySamples:ListableP[ObjectP[Object[Sample]]],my
   (* It is important that the sample preparation cache is added first to the cache ball, before the main download. *)
   cacheBall = FlattenCachePackets[{cache, {
     listedSampleContainerPackets,instrumentPacket,uncleDynaProPackets,inputsInOrder,sampleLoadingPlateModelPacket,sampleLoadingPlateObjectPacket,
-    listedAnalytePackets,liquidHandlerContainerPackets,samplesInPackets
+    listedAnalytePackets,liquidHandlerContainerPackets,samplesInPackets,assayContainersPackets,bufferObjectPackets,bufferModelPackets
   }}];
 
   (*TODO: delete if function still works*)(*inputsInOrder=Download[ToList[samplesWithPreparedSamples],Packet[Object]];
@@ -1305,7 +1647,7 @@ ExperimentDynamicLightScattering[mySamples:ListableP[ObjectP[Object[Sample]]],my
   (* Figure out if we need to perform our simulation. If so, we can't return early even though we want to because we *)
   (* need to return some type of simulation to our parent function that called us. *)
   (*performSimulationQ = MemberQ[output, Simulation] || MatchQ[$CurrentSimulation, SimulationP];*)
-  performSimulationQ = MemberQ[output, Result|Simulation] && MatchQ[Lookup[resolvedOptions, PreparatoryPrimitives], Null|{}];
+  performSimulationQ = MemberQ[output, Result|Simulation];
 
   (* If option resolution failed and we aren't asked for the simulation or output, return early. *)
   If[returnEarlyQ && !performSimulationQ,
@@ -1325,7 +1667,7 @@ ExperimentDynamicLightScattering[mySamples:ListableP[ObjectP[Object[Sample]]],my
   resolvedPreparation = Lookup[resolvedOptions, Preparation];
 
     (* Build packets with resources *)
-  {{protocolPacketWithResources,unitOperationPacket}, resourcePacketTests} = Which[
+  {protocolPacketWithResources, postResourcePacketsSimulation, resourcePacketTests} = Which[
     returnEarlyQ,
     {$Failed, {}},
     gatherTests,
@@ -1336,10 +1678,10 @@ ExperimentDynamicLightScattering[mySamples:ListableP[ObjectP[Object[Sample]]],my
       collapsedResolvedOptions,
       Cache -> cacheBall,
       Simulation -> updatedSimulation,
-      Output -> {Result, Tests}
+      Output -> {Result, Simulation, Tests}
     ],
     True,
-    {
+    Append[
       dynamicLightScatteringResourcePackets[
         samplesWithPreparedSamples,
         templatedOptions,
@@ -1347,10 +1689,10 @@ ExperimentDynamicLightScattering[mySamples:ListableP[ObjectP[Object[Sample]]],my
         collapsedResolvedOptions,
         Cache -> cacheBall,
         Simulation -> updatedSimulation,
-        Output -> Result
+        Output -> {Result, Simulation}
       ],
       {}
-    }
+    ]
   ];
 
   (* If we were asked for a simulation, also return a simulation. *)
@@ -1360,14 +1702,10 @@ ExperimentDynamicLightScattering[mySamples:ListableP[ObjectP[Object[Sample]]],my
         $Failed,
         protocolPacketWithResources (* protocolPacket *)
       ],
-      If[MatchQ[unitOperationPacket, $Failed],
-        $Failed,
-        Flatten[ToList[unitOperationPacket]] (* unitOperationPackets *)
-      ],
       ToList[samplesWithPreparedSamples],
       resolvedOptions,
       Cache -> cacheBall,
-      Simulation -> updatedSimulation
+      Simulation -> postResourcePacketsSimulation
     ],
     {Null, Null}
   ];
@@ -1382,7 +1720,7 @@ ExperimentDynamicLightScattering[mySamples:ListableP[ObjectP[Object[Sample]]],my
         RemoveHiddenOptions[ExperimentDynamicLightScattering, collapsedResolvedOptions]
       ],
       Preview -> Null,
-      Simulation -> simulation
+      Simulation -> postResourcePacketsSimulation
     }]
   ];
 
@@ -1401,7 +1739,8 @@ ExperimentDynamicLightScattering[mySamples:ListableP[ObjectP[Object[Sample]]],my
       Result -> Null,
       Tests -> Flatten[{safeOpsTests,validLengthTests,templateTests,resolvedOptionsTests,resourcePacketTests}],
       Options -> RemoveHiddenOptions[ExperimentDynamicLightScattering,collapsedResolvedOptions],
-      Preview -> Null
+      Preview -> Null,
+      Simulation -> postResourcePacketsSimulation
     }]
   ];
 
@@ -1411,9 +1750,11 @@ ExperimentDynamicLightScattering[mySamples:ListableP[ObjectP[Object[Sample]]],my
       protocolPacketWithResources,
       Upload->Lookup[resolvedOptions,Upload],
       Confirm->Lookup[resolvedOptions,Confirm],
+      CanaryBranch->Lookup[resolvedOptions,CanaryBranch],
       ParentProtocol->Lookup[resolvedOptions,ParentProtocol],
       ConstellationMessage->Object[Protocol,DynamicLightScattering],
-      Cache->cacheBall
+      Cache->cacheBall,
+      Simulation -> postResourcePacketsSimulation
     ],
     $Failed
   ];
@@ -1423,7 +1764,8 @@ ExperimentDynamicLightScattering[mySamples:ListableP[ObjectP[Object[Sample]]],my
     Result -> protocolObject,
     Tests -> Flatten[{safeOpsTests,validLengthTests,templateTests,resolvedOptionsTests(*,resourcePacketTests*)}],
     Options -> RemoveHiddenOptions[ExperimentDynamicLightScattering,collapsedResolvedOptions],
-    Preview -> Null
+    Preview -> Null,
+    Simulation -> postResourcePacketsSimulation
   }
 ];
 
@@ -1438,92 +1780,116 @@ DefineOptions[resolveDynamicLightScatteringOptions,
 
 resolveDynamicLightScatteringOptions[mySamples:{ObjectP[Object[Sample]]..}, myOptions:{_Rule...}, myResolutionOptions:OptionsPattern[resolveDynamicLightScatteringOptions]]:=Module[
   {
-    outputSpecification,output,gatherTests,messages,notInEngine,cache,cacheBall,fastAssoc,simulation,samplePrepOptions,experimentOptions,simulatedSamples,resolvedSamplePrepOptions,updatedSimulation,samplePrepTests,
-    suppliedAssayType,suppliedAssayFormFactor,suppliedInstrument,numberOfReplicates,suppliedSampleLoadingPlate,suppliedColloidalStabilityParametersPerSample,suppliedIsothermalAttenuatorAdjustment,
-    suppliedReplicateDilutionCurve,suppliedBuffer,suppliedDilutionMixType,suppliedDilutionMixInstrument,suppliedBlankBuffer,suppliedCalculateMolecularWeight,suppliedSampleLoadingPlateStorageCondition,
-    suppliedAssayContainerFillDirection,suppliedName,suppliedAnalyte,suppliedCollectStaticLightScattering,suppliedNumberOfAcquisitions,SuppliedAutomaticLaserSettings,suppliedCapillaryLoading,suppliedTemperatureRampOrder,suppliedTemperatureRamping,suppliedWellCover,suppliedWellCoverHeating,suppliedSamplesInStorageCondition,suppliedSamplesOutStorageCondition,
-
-    instrumentDownloadOption,instrumentDownloadFields,sampleLoadingPlateDownloadOption,sampleLoadingPlateModelDownloadFields,liquidHandlerContainers,
-
-    objectSamplePacketFields,modelSamplePacketFields,objectContainerPacketFields,modelContainerPacketFields,
-    listedSampleContainerPackets,instrumentPacket,sampleLoadingPlateModelPacket,
-    sampleLoadingPlateObjectPacket,liquidHandlerContainerPackets,
-    samplePackets,sampleContainerPackets,sampleCompositionPackets,sampleAnalytesPackets,numberOfSamples,intNumberOfReplicates,numberOfSamplesWithReplicates,
-    loadingPlateMaxVolume,loadingPlateModelID,loadingPlateContents,sampleCompositions,
-    discardedSamplePackets,discardedInvalidInputs,discardedTests,unroundedStandardDilutionCurve,separatedUnroundedStandardDilutionCurve,
-    roundedStandardDilutionCurveOption, standardDilutionCurvePrecisionTests,roundedStandardDilutionCurveOptions,unroundedSerialDilutionCurve,roundedSerialDilutionCurveOptions,
-    doublyRoundedSerialDilutionCurveOptions,serialDilutionPrecisionTests,
-
-
-
-    optionPrecisions,roundedOtherExperimentOptions,optionPrecisionTests,roundedExperimentOptions,
-
-    suppliedSampleVolume,suppliedAcquisitionTime,suppliedTemperature,invalidTemperatureOptions,invalidTemperatureTests,
-    suppliedEquilibrationTime,suppliedAutomaticLaserSettings,suppliedLaserPower,suppliedDiodeAttenuation,
-    suppliedMeasurementDelayTime,suppliedIsothermalRunTime,
-    suppliedDilutionMixVolume,suppliedDilutionMixRate,suppliedNumberOfCycles,
-    suppliedIsothermalMeasurements,suppliedStandardDilutionCurve,suppliedSerialDilutionCurve,suppliedDilutionNumberOfMixes,suppliedNumberOfReplicates,
-    suppliedAnalyteMassConcentration,suppliedMinTemperature,suppliedMaxTemperature,suppliedTemperatureRampRate,suppliedTemperatureResolution,suppliedNumberOfTemperatureRampSteps,suppliedStepHoldTime,
-    roundedExperimentOptionsList,allOptionsRounded,compatibleMaterialsBool,compatibleMaterialsTests,compatibleMaterialsInvalidOption,validNameQ,nameInvalidOption,
-    validNameTest,suppliedInstrumentModel,validInstrumentP,invalidUnsupportedInstrumentOption,validInstrumentTests,dilutionAssayTypeP,
-    nonDilutionAssayTypeP,isothermalStabilityOptionNames,
-    isothermalStabilitySuppliedOptions,colloidalStabilityOptionNames,colloidalStabilitySuppliedOptions,isothermalStabilityOptionsSpecifiedQ,colloidalStabilityOptionsSpecifiedQ,
-    specifiedIsothermalStabilityOptions,specifiedColloidalStabilityOptions,specifiedIsothermalStabilityOptionNames,specifiedColloidalStabilityOptionNames,meltingCurveOptionNames,meltingCurveSuppliedOptions,meltingCurveOptionsSpecifiedQ,specifiedMeltingCurveOptions,specifiedMeltingCurveOptionNames,
-    assayTypeInvalidOptions,assayTypeInvalidOptionsExceptType,suppliedAssayTypeInvalidOptionsExceptType,suggestedAssayTypes,invalidAssayTypeTests,
-    essentialIsothermalStabilityOptionNames,essentialIsothermalStabilitySuppliedOptions,essentialColloidalStabilityOptionNames,essentialColloidalStabilitySuppliedOptions,
-    essentialIsothermalStabilityOptionsNullQ,essentialColloidalStabilityOptionsNullQ,nullEssentialIsothermalStabilityOptions,nullEssentialColloidalStabilityOptions,
-    nullEssentialIsothermalStabilityOptionNames,nullEssentialColloidalStabilityOptionNames,essentialMeltingCurveOptionNames,essentialMeltingCurveSuppliedOptions,essentialMeltingCurveOptionsNullQ,nullEssentialMeltingCurveOptions,nullEssentialMeltingCurveOptionNames,assayTypeInvalidNullOptions,assayTypeInvalidNullOptionsExceptType,
-    suppliedAssayTypeInvalidNullOptionsExceptType,invalidAssayTypeNullOptionsTests,
-    sampleLoadingPlateOccupiedQ,
-    invalidOccupiedPlateOptions,occupiedSampleLoadingPlateTests,nonDefaultLoadingPlateWarningQ,nonDefaultLoadingPlateTests,
-    resolvedAssayFormFactor,resolvedInstrument,resolvedInstrumentPacket,resolvedAssayType,resolvedLaserPower,resolvedDiodeAttenuation,resolvedAssayContainerFillDirection,
-    resolvedSampleVolume,resolvedIsothermalAttenuatorAdjustment,requiredMinimumDelayTime,resolvedMeasurementDelayTime,
-    resolvedIsothermalMeasurements,resolvedIsothermalRunTime,resolvedNumberOfReplicates,resolvedReplicateDilutionCurve,
-    mapThreadFriendlyOptions,inputSolventFields,resolvedAnalyte,resolvedAnalyteMassConcentration,expectedNumberOfWells,
-    resolvedStandardDilutionCurve,resolvedSerialDilutionCurve,resolvedBuffer,resolvedDilutionMixVolume,resolvedDilutionNumberOfMixes,
-    resolvedDilutionMixRate,resolvedBlankBuffer,bufferNotSpecifiedWarnings,conflictingDilutionMixOptionsErrors,conflictingDilutionCurveErrors,
-    analyteMolecularWeights,nonNullAnalyteMolecularWeights,invalidAnalyteOptions,noAnalyteMWTests,
-    conflictingDilutionMixOptionsErrorQ,invalidFormFactorInstrumentOptions,conflictingDLSFormFactorInstrumentTest,invalidFormFactorCapillaryOptions,conflictingDLSFormFactorCapillaryLoadingTest,
-    failingDilutionMixSamples,passingDilutionMixSamples,resolvedDilutionOptionsPerSample,failingDilutionMixOptionValues,invalidConflictingDilutionMixOptions,
-    conflictingDilutionMixTests,bufferNotSpecifiedWarningQ,failingBufferSpecifiedSamples,passingBufferSpecifiedSamples,unspecifiedBuffers,
-    bufferNotSpecifiedTests,conflictingDilutionCurveErrorQ,failingConflictingDilutionCurveSamples,passingConflictingDilutionCurveSamples,
-    resolvedDilutionCurveOptionsPerSample,failingDilutionCurveOptionValues,conflictingDilutionCurveOptions,conflictingDilutionCurveTests,
-    bufferBlankBufferWarnings,bufferBlankBufferWarningQ,failingBufferBlankBufferSamples,
-    failingBufferBlankBufferOptionValues,bufferBlankBufferTests,standardDilutionCurveVolumes,serialDilutionCurveVolumes,maxDilutionVolumes,minDilutionVolumes,
+    outputSpecification, output, gatherTests, messages, notInEngine, cache, cacheBall, fastAssoc, simulation, samplePrepOptions,
+    experimentOptions, simulatedSamples, resolvedSamplePrepOptions, updatedSimulation, samplePrepTests, suppliedAssayType,
+    suppliedAssayFormFactor, suppliedInstrument, numberOfReplicates, suppliedSampleLoadingPlate,
+    suppliedIsothermalAttenuatorAdjustment, suppliedReplicateDilutionCurve, suppliedBuffer, suppliedDilutionMixType,
+    suppliedDilutionMixInstrument, suppliedBlankBuffer, suppliedCalculateMolecularWeight, suppliedSampleLoadingPlateStorageCondition,
+    suppliedAssayContainerFillDirection, suppliedName, suppliedAnalyte, suppliedCollectStaticLightScattering,
+    suppliedNumberOfAcquisitions, suppliedCapillaryLoading, suppliedTemperatureRampOrder, suppliedTemperatureRamping,
+    suppliedWellCover, suppliedWellCoverHeating, suppliedSamplesInStorageCondition, suppliedSamplesOutStorageCondition,
+    liquidHandlerContainers, objectSamplePacketFields, modelSamplePacketFields, objectContainerPacketFields, modelContainerPacketFields,
+    listedSampleContainerPackets, samplePackets, sampleContainerPackets, sampleCompositionPackets, sampleAnalytesPackets,
+    numberOfSamples, intNumberOfReplicates, numberOfSamplesWithReplicates, loadingPlateMaxVolume, loadingPlateModelID,
+    loadingPlateContents, sampleCompositions, discardedSamplePackets, discardedInvalidInputs, discardedTests, unroundedStandardDilutionCurve,
+    separatedUnroundedStandardDilutionCurve, roundedStandardDilutionCurveOption, standardDilutionCurvePrecisionTests,
+    roundedStandardDilutionCurveOptions, unroundedSerialDilutionCurve, roundedSerialDilutionCurveOptions,
+    doublyRoundedSerialDilutionCurveOptions, serialDilutionPrecisionTests, optionPrecisions, roundedOtherExperimentOptions,
+    optionPrecisionTests, roundedExperimentOptions, suppliedSampleVolume, suppliedAcquisitionTime, suppliedTemperature,
+    invalidTemperatureOptions, invalidTemperatureTests, suppliedEquilibrationTime, suppliedAutomaticLaserSettings,
+    suppliedLaserPower, suppliedDiodeAttenuation, suppliedMeasurementDelayTime, suppliedIsothermalRunTime,
+    suppliedDilutionMixVolume, suppliedDilutionMixRate, suppliedNumberOfCycles, suppliedIsothermalMeasurements,
+    suppliedStandardDilutionCurve, suppliedSerialDilutionCurve, suppliedDilutionNumberOfMixes, suppliedNumberOfReplicates,
+    suppliedAnalyteMassConcentration, suppliedMinTemperature, suppliedMaxTemperature, suppliedTemperatureRampRate,
+    suppliedTemperatureResolution, suppliedNumberOfTemperatureRampSteps, suppliedStepHoldTime, roundedExperimentOptionsList,
+    allOptionsRounded, compatibleMaterialsBool, compatibleMaterialsTests, compatibleMaterialsInvalidOption, validNameQ,
+    nameInvalidOption, validNameTest, suppliedInstrumentModel, validInstrumentP, invalidUnsupportedInstrumentOption,
+    validInstrumentTests, dilutionAssayTypeP, nonDilutionAssayTypeP, isothermalStabilityOptionNames,
+    isothermalStabilitySuppliedOptions, colloidalStabilityOptionNames, colloidalStabilitySuppliedOptions,
+    isothermalStabilityOptionsSpecifiedQ, colloidalStabilityOptionsSpecifiedQ, specifiedIsothermalStabilityOptions,
+    specifiedColloidalStabilityOptions, specifiedIsothermalStabilityOptionNames, specifiedColloidalStabilityOptionNames,
+    meltingCurveOptionNames, meltingCurveSuppliedOptions, meltingCurveOptionsSpecifiedQ, specifiedMeltingCurveOptions,
+    specifiedMeltingCurveOptionNames, assayTypeInvalidOptions, assayTypeInvalidOptionsExceptType,
+    suppliedAssayTypeInvalidOptionsExceptType, suggestedAssayTypes, invalidAssayTypeTests, essentialIsothermalStabilityOptionNames,
+    essentialIsothermalStabilitySuppliedOptions, essentialColloidalStabilityOptionNames, essentialColloidalStabilitySuppliedOptions,
+    essentialIsothermalStabilityOptionsNullQ, essentialColloidalStabilityOptionsNullQ, nullEssentialIsothermalStabilityOptions,
+    nullEssentialColloidalStabilityOptions, nullEssentialIsothermalStabilityOptionNames, nullEssentialColloidalStabilityOptionNames,
+    essentialMeltingCurveOptionNames, essentialMeltingCurveSuppliedOptions, essentialMeltingCurveOptionsNullQ,
+    nullEssentialMeltingCurveOptions, nullEssentialMeltingCurveOptionNames, assayTypeInvalidNullOptions, assayTypeInvalidNullOptionsExceptType,
+    suppliedAssayTypeInvalidNullOptionsExceptType, invalidAssayTypeNullOptionsTests, sampleLoadingPlateOccupiedQ,
+    invalidOccupiedPlateOptions, occupiedSampleLoadingPlateTests, nonDefaultLoadingPlateWarningQ, nonDefaultLoadingPlateTests,
+    resolvedAssayFormFactor, resolvedInstrument, resolvedInstrumentPacket, resolvedAssayType, resolvedLaserPower, resolvedDiodeAttenuation,
+    resolvedSampleVolume, resolvedIsothermalAttenuatorAdjustment, requiredMinimumDelayTime, resolvedMeasurementDelayTime,
+    resolvedIsothermalMeasurements, resolvedIsothermalRunTime, resolvedNumberOfReplicates, resolvedReplicateDilutionCurve,
+    mapThreadFriendlyOptions, inputSolventFields, resolvedAnalyte, resolvedAnalyteMassConcentration, expectedNumberOfWells,
+    resolvedStandardDilutionCurve, resolvedSerialDilutionCurve, resolvedBuffer, resolvedDilutionMixVolume, resolvedDilutionNumberOfMixes,
+    resolvedDilutionMixRate, resolvedBlankBuffer ,bufferNotSpecifiedWarnings, conflictingDilutionMixOptionsErrors,
+    conflictingDilutionCurveErrors, analyteMolecularWeights, nonNullAnalyteMolecularWeights, invalidAnalyteOptions, noAnalyteMWTests,
+    conflictingDilutionMixOptionsErrorQ, invalidFormFactorInstrumentOptions, conflictingDLSFormFactorInstrumentTest,
+    invalidFormFactorCapillaryOptions, conflictingDLSFormFactorCapillaryLoadingTest, failingDilutionMixSamples, passingDilutionMixSamples,
+    resolvedDilutionOptionsPerSample, failingDilutionMixOptionValues, invalidConflictingDilutionMixOptions,
+    conflictingDilutionMixTests, bufferNotSpecifiedWarningQ, failingBufferSpecifiedSamples, passingBufferSpecifiedSamples, unspecifiedBuffers,
+    bufferNotSpecifiedTests, conflictingDilutionCurveErrorQ, failingConflictingDilutionCurveSamples, passingConflictingDilutionCurveSamples,
+    resolvedDilutionCurveOptionsPerSample, failingDilutionCurveOptionValues, conflictingDilutionCurveOptions, conflictingDilutionCurveTests,
+    bufferBlankBufferWarnings, bufferBlankBufferWarningQ, failingBufferBlankBufferSamples, failingBufferBlankBufferOptionValues,
+    bufferBlankBufferTests, standardDilutionCurveVolumes, serialDilutionCurveVolumes, maxDilutionVolumes, minDilutionVolumes,
     dilutionCurveOptionNamePerSample,dilutionCurveOptionValuePerSample,dilutionVolumePlateMismatchErrors,dilutionVolumePlateMismatchErrorQ,
     failingVolumePlateMismatchSamples,passingVolumePlateMismatchSamples,failingPlateMaxVolumeOptionNames,failingPlateMaxVolumeOptionValues,
-    failingDilutionMaxVolumes,invalidPlateMaxVolumeOptions,dilutionVolumePlateMismatchTests,dilutionMixVolumeErrors,dilutionMixVolumeErrorQ,
-    failingDilutionMixVolumeSamples,passingDilutionMixVolumeSamples,failingDilutionMixVolumeOptionNames,failingDilutionMixVolumeOptionValues,
-    failingDilutionMixMinVolumes,failingDilutionMixVolumes,invalidDilutionMixMinVolumeOptions,dilutionCurveMixVolumeMismatchTests,dilutionAssayRequiredVolume,
-    notEnoughDilutionVolumeErrors,notEnoughDilutionVolumeErrorQ,failingNotEnoughDilutionVolumeSamples,passingNotEnoughDilutionVolumeSamples,
-    failingNotEnoughDilutionVolumeOptionNames,failingNotEnoughDilutionVolumeOptionValues,failingDilutionVolumeMinVolumes,notEnoughDilutionVolumeInvalidOptions,
-    notEnoughDilutionVolumeTests,onlyOneDilutionConcentrationErrors,onlyOneDilutionConcentrationErrorQ,failingOneConcentrationSamples,
-    passingOneConcentrationSamples,failingOneConcentrationDilutionOptionNames,failingOneConcentrationDilutionOptionValues,onlyOneDilutionCurveOptions,
-    onlyOneDilutionConcentrationTests,tooManyInvalidInputs,tooManySamplesTests,assayContainerWellsPerSample,requiredDilutionAssayContainerWells,
-    invalidTooManyDilutionSamplesOptions,tooManyDilutionSamplesTests,
-    invalidConflictingIsothermalRunOptions,conflictingIsothermalRunOptionsTests,numberOfReplicatesWarningQ,lowReplicateConcentrationTests,
-    invalidSampleVolumeOptions,invalidSampleVolumeTests,resolvedAssayTypeNullInvalidOptions,invalidResolvedAssayTypeNullOptionsTests,invalidDelayTimeOptionNames,invalidDelayTimeOptionValues,
-    invalidMeasurementDelayTimeTests,invalidIsothermalMeasurementTimeOptions,conflictingIsothermalIsothermalTimeTests,totalIsothermalTime,
-    invalidTooLongIsothermalOptions,tooLongIsothermalAssayTests,passingBufferBlankBufferSamples,resolvedBufferBlankBufferOptionsPerSample,
-    compositionAnalytesAndMassConcentrations,noAnalyteErrors,noAnalyteMassConcentrationErrors,
-    noAnalyteErrorQ,failingNoAnalyteSamples,passingNoAnalyteSamples,failingNoAnalyteCompositions,noAnalyteInvalidOptions,noAnalyteTests,noAnalyteMassConcentrationErrorQ,
-    failingNoAnalyteConcentrationSamples,passingNoAnalyteConcentrationSamples,failingNoAnalyteConcentrationCompositions,invalidNoAnalyteConcentrationOptions,
-    noAnalyteConcentrationTests,invalidLaserSettingsOptionNames,invalidLaserSettingOptionValues,conflictingLaserSettingsTests,
-    tooManyAnalytesWarnings,tooManyAnalytesWarningQ,failingTooManyAnalytesSamples,passingTooManyAnalytesSamples,
-    failingTooManyAnalytesCompositions,mostConcentratedAnalytes,failingMostConcentratedAnalytes,tooManyAnalytesTests,tooConcentratedAnalyteWarnings,
-    tooConcentratedAnalytes,highAnalyteConcentrations,tooConcentratedAnalyteTests,
-    invalidInputs,invalidOptions,
-    conflictingDLSManualLoadingDirectionOptionsTests, invalidDLSManualLoadingDirectionOptions,
-    simulatedSamplesContainerModels,minimumRequiredVolumePerSample,requiredAliquotVolumes,liquidHandlerContainerModels,
-    liquidHandlerContainerMaxVolumes,potentialAliquotContainers,requiredAliquotContainers,
-    resolvedAliquotOptions,aliquotTests,
-
-    resolvedPostProcessingOptions,resolvedOptions,
-
-    invalidMinMaxTemperatureOptions,minMaxTemperatureMismatchTests,resolvedSampleLoadingPlate,invalidFormFactorLoadingPlateOptions,conflictingDLSFormFactorLoadingPlateTest,resolvedCapillaryLoading,resolvedSampleLoadingPlateStorageCondition,invalidFormFactorPlateStorageOptions,conflictingDLSFormFactorPlateStorageTest,resolvedWellCover,invalidFormFactorWellCoverOptions,conflictingFormFactorWellCoverTest,resolvedWellCoverHeating,invalidFormFactorWellCoverHeatingOptions,conflictingFormFactorWellCoverHeatingTest,invalidTooLowSampleVolumeOptions,tooLowSampleVolumeTest,resolvedMinTemperature,resolvedMaxTemperature,resolvedTemperatureRampOrder,resolvedNumberOfCycles,resolvedTemperatureRamping,resolvedTemperatureRampRate,resolvedTemperatureResolution,resolvedNumberOfTemperatureRampSteps,resolvedStepHoldTime,resolvedColloidalStabilityParametersPerSample,resolvedCalculateMolecularWeight,resolvedDilutionMixType,resolvedDilutionMixInstrument,conflictingDilutionMixTypeOptionsErrors,conflictingDilutionMixTypeInstrumentErrors,bufferAndBlankBufferDifferWarnings,conflictingDilutionMixTypeOptionsErrorQ,failingDilutionMixTypeOptionsSamples,passingDilutionMixTypeOptionsSamples,resolvedDilutionTypeOptionsPerSample,failingDilutionMixTypeOptionsValues,invalidConflictingDilutionMixTypeOptions,conflictingDilutionMixTypeInstrumentErrorQ,failingDilutionMixTypeInstrumentSamples,passingDilutionMixTypeInstrumentSamples,resolvedDilutionTypeInstrumentPerSample,failingDilutionMixTypeInstrumentValues,invalidConflictingDilutionMixTypeInstrument,invalidConflictingRampOptions,conflictingRampOptionsTest,conflictingDilutionMixTypeInstrumentTests,conflictingDilutionMixTypeOptionsTests,totalReadTime,maxRes,preparationResult,allowedPreparation, preparationTest,resolvedPreparation,resolvedInstrumentModelPacket,sampleLoadingPlateModel,sampleContainerModelPackets,resolvedNumberOfAcquisitions,resolvedSamplesInStorageConditions,
-    preexistingSamplesStorageConditions,resolvedSamplesOutStorageCondition,experimentOptionsAssociation
-
-
+    failingDilutionMaxVolumes, invalidPlateMaxVolumeOptions, dilutionVolumePlateMismatchTests, dilutionMixVolumeErrors,dilutionMixVolumeErrorQ,
+    failingDilutionMixVolumeSamples, passingDilutionMixVolumeSamples, failingDilutionMixVolumeOptionNames, failingDilutionMixVolumeOptionValues,
+    failingDilutionMixMinVolumes, failingDilutionMixVolumes, invalidDilutionMixMinVolumeOptions, dilutionCurveMixVolumeMismatchTests,
+    dilutionAssayRequiredVolume, notEnoughDilutionVolumeErrors, notEnoughDilutionVolumeErrorQ, failingNotEnoughDilutionVolumeSamples,
+    passingNotEnoughDilutionVolumeSamples, failingNotEnoughDilutionVolumeOptionNames, failingNotEnoughDilutionVolumeOptionValues,
+    failingDilutionVolumeMinVolumes, notEnoughDilutionVolumeInvalidOptions, notEnoughDilutionVolumeTests, onlyOneDilutionConcentrationErrors,
+    onlyOneDilutionConcentrationErrorQ, failingOneConcentrationSamples, passingOneConcentrationSamples, failingOneConcentrationDilutionOptionNames,
+    failingOneConcentrationDilutionOptionValues, onlyOneDilutionCurveOptions, onlyOneDilutionConcentrationTests, tooManyInvalidInputs,
+    tooManySamplesTests, assayContainerWellsPerSample, requiredDilutionAssayContainerWells, invalidTooManyDilutionSamplesOptions,
+    tooManyDilutionSamplesTests, invalidConflictingIsothermalRunOptions, conflictingIsothermalRunOptionsTests,
+    numberOfReplicatesWarningQ, lowReplicateConcentrationTests, invalidSampleVolumeOptions, invalidSampleVolumeTests,
+    invalidResolvedAssayTypeNullOptionsTests, invalidDelayTimeOptionNames, invalidDelayTimeOptionValues,
+    invalidMeasurementDelayTimeTests, invalidIsothermalMeasurementTimeOptions, conflictingIsothermalIsothermalTimeTests,
+    totalIsothermalTime, invalidTooLongIsothermalOptions, tooLongIsothermalAssayTests, passingBufferBlankBufferSamples,
+    resolvedBufferBlankBufferOptionsPerSample, compositionAnalytesAndMassConcentrations, noAnalyteErrors, noAnalyteMassConcentrationErrors,
+    solventNameMismatchViscosityWarnings,solventNameMismatchRefractiveIndexWarnings,
+    noAnalyteErrorQ,failingNoAnalyteSamples, passingNoAnalyteSamples, failingNoAnalyteCompositions, noAnalyteInvalidOptions,
+    noAnalyteTests,noAnalyteMassConcentrationErrorQ, failingNoAnalyteConcentrationSamples, passingNoAnalyteConcentrationSamples,
+    failingNoAnalyteConcentrationCompositions, invalidNoAnalyteConcentrationOptions,
+    noAnalyteConcentrationTests, solventNameMismatchWarningsCombined,solventNameMismatchTests,
+    invalidLaserSettingsOptionNames, invalidLaserSettingOptionValues, conflictingLaserSettingsTests,
+    tooManyAnalytesWarnings, tooManyAnalytesWarningQ, failingTooManyAnalytesSamples, passingTooManyAnalytesSamples,
+    failingTooManyAnalytesCompositions, mostConcentratedAnalytes, failingMostConcentratedAnalytes, tooManyAnalytesTests,
+    tooConcentratedAnalyteWarnings, tooConcentratedAnalytes, highAnalyteConcentrations, tooConcentratedAnalyteTests,
+    invalidInputs, invalidOptions, conflictingDLSManualLoadingDirectionOptionsTests, invalidDLSManualLoadingDirectionOptions,
+    simulatedSamplesContainerModels, minimumRequiredVolumePerSample, requiredAliquotVolumes, liquidHandlerContainerModels,
+    liquidHandlerContainerMaxVolumes, potentialAliquotContainers, requiredAliquotContainers,
+    resolvedAliquotOptions, aliquotTests, resolvedPostProcessingOptions, resolvedOptions,
+    invalidMinMaxTemperatureOptions, minMaxTemperatureMismatchTests, resolvedSampleLoadingPlate, invalidFormFactorLoadingPlateOptions,
+    conflictingDLSFormFactorLoadingPlateTest, resolvedCapillaryLoading, resolvedSampleLoadingPlateStorageCondition,
+    invalidFormFactorPlateStorageOptions, conflictingDLSFormFactorPlateStorageTest, resolvedWellCover, invalidFormFactorWellCoverOptions,
+    conflictingFormFactorWellCoverTest, resolvedWellCoverHeating, invalidFormFactorWellCoverHeatingOptions, conflictingFormFactorWellCoverHeatingTest,
+    invalidTooLowSampleVolumeOptions, tooLowSampleVolumeTest, resolvedMinTemperature, resolvedMaxTemperature, resolvedTemperatureRampOrder,
+    resolvedNumberOfCycles, resolvedTemperatureRamping, resolvedTemperatureRampRate, resolvedTemperatureResolution,
+    resolvedNumberOfTemperatureRampSteps, resolvedStepHoldTime,
+    resolvedCalculateMolecularWeight, resolvedDilutionMixType, resolvedDilutionMixInstrument, conflictingDilutionMixTypeOptionsErrors,
+    conflictingDilutionMixTypeInstrumentErrors, bufferAndBlankBufferDifferWarnings, conflictingDilutionMixTypeOptionsErrorQ,
+    failingDilutionMixTypeOptionsSamples, passingDilutionMixTypeOptionsSamples, resolvedDilutionTypeOptionsPerSample,
+    failingDilutionMixTypeOptionsValues, invalidConflictingDilutionMixTypeOptions, conflictingDilutionMixTypeInstrumentErrorQ,
+    failingDilutionMixTypeInstrumentSamples, passingDilutionMixTypeInstrumentSamples, resolvedDilutionTypeInstrumentPerSample,
+    failingDilutionMixTypeInstrumentValues, invalidConflictingDilutionMixTypeInstrument, invalidConflictingRampOptions,
+    conflictingRampOptionsTest, conflictingDilutionMixTypeInstrumentTests, conflictingDilutionMixTypeOptionsTests,
+    totalReadTime, maxRes, preparationResult, allowedPreparation, preparationTest, resolvedPreparation, resolvedInstrumentModelPacket,
+    sampleLoadingPlateModel, sampleContainerModelPackets, resolvedNumberOfAcquisitions, resolvedSamplesInStorageConditions,
+    preexistingSamplesStorageConditions, resolvedSamplesOutStorageCondition, experimentOptionsAssociation, invalidFormFactorReplicateDilutionCurveOptions,
+    conflictingDLSFormFactorReplicateDilutionCurveTest, semiResolvedSampleLoadingPlate, suppliedCalibratePlate, resolvedCalibratePlate,
+    invalidFormFactorCalibratePlateOptions, conflictingFormFactorCalibratePlateTest, suppliedAssayContainers, semiResolvedAssayContainers,
+    suppliedAssayContainersModels,invalidAssayContainersOption,invalidAssayContainersTests,suppliedAssayContainersNumberOfWells,
+    preplatedQ,invalidConflictingFormFactorAssayContainersOptions,conflictingFormFactorAssayContainersTest,specifiedCapillaryAssayContainersWarningQ,
+    specifiedCapillaryAssayContainersTests,suppliedAssayContainersWithContents,invalidCapillaryAssayContainerContentsError,
+    invalidCapillaryAssayContainerContentsOptions,invalidCapillaryAssayContainerContentsTests,assayContainerTotalAvailableWells,
+    notEnoughAssayContainerSpaceError,notEnoughAssayContainerSpaceOptions,notEnoughAssayContainerSpaceTests,
+    staticLightScatteringOrColloidalStabilityOptionNames, staticLightScatteringOrColloidalStabilitySuppliedOptions,
+    suppliedSolventName,resolvedSolventName,suppliedSolventViscosity,resolvedSolventViscosity,suppliedSolventRefractiveIndex,
+    resolvedSolventRefractiveIndex,suppliedAnalyteRefractiveIndexIncrement,resolvedAnalyteRefractiveIndexIncrement
   },
 
   (*-- SETUP OUR USER SPECIFIED OPTIONS AND CACHE --*)
@@ -1557,14 +1923,23 @@ resolveDynamicLightScatteringOptions[mySamples:{ObjectP[Object[Sample]]..}, myOp
   (* --- DOWNLOAD THE INFORMATION THAT WE NEED FOR OUR OPTION RESOLVER AND RESOURCE PACKET FUNCTION --- *)
   (* Pull out information from the non-quantity or number options that we might need - later, after rounding, we will Lookup the rounded options *)
   {
-    suppliedAssayType,suppliedAssayFormFactor,suppliedInstrument,numberOfReplicates,suppliedSampleLoadingPlate,suppliedColloidalStabilityParametersPerSample,
-    suppliedReplicateDilutionCurve,suppliedIsothermalAttenuatorAdjustment,suppliedBuffer,suppliedDilutionMixType,suppliedDilutionNumberOfMixes,suppliedDilutionMixInstrument,suppliedBlankBuffer,suppliedCalculateMolecularWeight,suppliedSampleLoadingPlateStorageCondition,
-    suppliedAssayContainerFillDirection,suppliedName,suppliedAnalyte,suppliedCollectStaticLightScattering,suppliedNumberOfAcquisitions,suppliedAutomaticLaserSettings(*todo: check...*),suppliedCapillaryLoading(*todo: check...*),suppliedIsothermalMeasurements,suppliedIsothermalAttenuatorAdjustment,suppliedTemperatureRampOrder,suppliedTemperatureRamping,suppliedNumberOfTemperatureRampSteps,suppliedWellCover,suppliedWellCoverHeating,suppliedSamplesInStorageCondition,suppliedSamplesOutStorageCondition
+    suppliedAssayType,suppliedAssayFormFactor,suppliedInstrument,numberOfReplicates,suppliedSampleLoadingPlate,suppliedReplicateDilutionCurve,
+    suppliedIsothermalAttenuatorAdjustment,suppliedBuffer,suppliedDilutionMixType,suppliedDilutionNumberOfMixes,suppliedDilutionMixInstrument,
+    suppliedBlankBuffer,suppliedCalculateMolecularWeight,suppliedSampleLoadingPlateStorageCondition,suppliedAssayContainerFillDirection,
+    suppliedName,suppliedAnalyte,suppliedCollectStaticLightScattering,suppliedCalibratePlate,suppliedNumberOfAcquisitions,
+    suppliedAutomaticLaserSettings,suppliedCapillaryLoading,suppliedIsothermalMeasurements,suppliedIsothermalAttenuatorAdjustment,
+    suppliedTemperatureRampOrder,suppliedTemperatureRamping,suppliedNumberOfTemperatureRampSteps,suppliedWellCover,suppliedWellCoverHeating,
+    suppliedSamplesInStorageCondition,suppliedSamplesOutStorageCondition,suppliedAssayContainers,suppliedSolventName,suppliedSolventViscosity,
+    suppliedSolventRefractiveIndex
   }=
       Lookup[experimentOptionsAssociation,
         {
-          AssayType,AssayFormFactor,Instrument,NumberOfReplicates,SampleLoadingPlate,ColloidalStabilityParametersPerSample,ReplicateDilutionCurve,IsothermalAttenuatorAdjustment,Buffer,DilutionMixType,DilutionNumberOfMixes,DilutionMixInstrument,
-          BlankBuffer,CalculateMolecularWeight,SampleLoadingPlateStorageCondition,AssayContainerFillDirection,Name,Analyte,CollectStaticLightScattering,NumberOfAcquisitions,AutomaticLaserSettings,CapillaryLoading,IsothermalMeasurements,IsothermalAttenuatorAdjustment,TemperatureRampOrder,TemperatureRamping,NumberOfTemperatureRampSteps,WellCover,WellCoverHeating,SamplesInStorageCondition,SamplesOutStorageCondition
+          AssayType,AssayFormFactor,Instrument,NumberOfReplicates,SampleLoadingPlate,ReplicateDilutionCurve,IsothermalAttenuatorAdjustment,
+          Buffer,DilutionMixType,DilutionNumberOfMixes,DilutionMixInstrument,BlankBuffer,CalculateMolecularWeight,SampleLoadingPlateStorageCondition,
+          AssayContainerFillDirection,Name,Analyte,CollectStaticLightScattering,CalibratePlate,NumberOfAcquisitions,AutomaticLaserSettings,
+          CapillaryLoading,IsothermalMeasurements,IsothermalAttenuatorAdjustment,TemperatureRampOrder,TemperatureRamping,
+          NumberOfTemperatureRampSteps,WellCover,WellCoverHeating,SamplesInStorageCondition,SamplesOutStorageCondition,AssayContainers,
+          SolventName,SolventViscosity,SolventRefractiveIndex
         },
         Null
       ];
@@ -1580,7 +1955,7 @@ resolveDynamicLightScatteringOptions[mySamples:{ObjectP[Object[Sample]]..}, myOp
   objectSamplePacketFields=Packet@@Flatten[{Solvent,IncompatibleMaterials,SamplePreparationCacheFields[Object[Sample]]}];
   modelSamplePacketFields=Packet[Model[Flatten[{IncompatibleMaterials,SamplePreparationCacheFields[Model[Sample]]}]]];
   objectContainerPacketFields=SamplePreparationCacheFields[Object[Container]];
-  modelContainerPacketFields=SamplePreparationCacheFields[Object[Container[Model]]];
+  modelContainerPacketFields=SamplePreparationCacheFields[Model[Container]];
 
   (* --- Assemble Download --- *)
   listedSampleContainerPackets=Quiet[
@@ -1632,13 +2007,10 @@ resolveDynamicLightScatteringOptions[mySamples:{ObjectP[Object[Sample]]..}, myOp
   ];
 
   (* Get information from the sampleLoadingPlateModelPacket *)
-  {loadingPlateMaxVolume,loadingPlateModelID}=If[
+  loadingPlateModelID=If[
     Not[NullQ[sampleLoadingPlateModel]],
-      {
-        fastAssocLookup[fastAssoc,sampleLoadingPlateModel,MaxVolume],
-        fastAssocLookup[fastAssoc,sampleLoadingPlateModel,Object]
-      },
-      {Null,Null}
+      fastAssocLookup[fastAssoc,sampleLoadingPlateModel,Object],
+      Null
   ];
 
   (* Get information about the SampleLoadingPlate if user has specified it *)
@@ -1650,6 +2022,22 @@ resolveDynamicLightScatteringOptions[mySamples:{ObjectP[Object[Sample]]..}, myOp
 
   (* Get the Compositions out of the samplePackets *)
   sampleCompositions=Lookup[samplePackets,Composition,{}];
+
+  (* Get the Model(s) and NumberOfWells(s) of the AssayContainers if user has specified it *)
+  suppliedAssayContainersModels = Which[
+    MatchQ[#, ObjectP[Model]],
+      Download[#,Object],
+    MatchQ[#, ObjectP[Object]],
+      Download[fastAssocLookup[fastAssoc,#,Model],Object],
+    True,
+      Null
+  ]&/@ToList[suppliedAssayContainers];
+
+  suppliedAssayContainersNumberOfWells = If[
+    MatchQ[#,ObjectP[]],
+    fastAssocLookup[fastAssoc,#,NumberOfWells],
+    Null
+  ]&/@ToList[suppliedAssayContainersModels];
 
   (* === INPUT VALIDATION CHECKS === *)
   (* Get the samples from simulatedSamples that are discarded. *)
@@ -1810,6 +2198,7 @@ resolveDynamicLightScatteringOptions[mySamples:{ObjectP[Object[Sample]]..}, myOp
     {DilutionMixVolume,10^-1*Microliter},
     {DilutionMixRate,10^-1*(Microliter/Second)},
     {AnalyteMassConcentration,10^-2*(Milligram/Milliliter)},
+    {AnalyteRefractiveIndexIncrement,10^-3*(Milliliter/Gram)},
     {MinTemperature,10^0*Celsius},
     {MaxTemperature,10^0*Celsius},
     {TemperatureRampRate,10^-4*(Celsius/Second)},
@@ -1834,14 +2223,15 @@ resolveDynamicLightScatteringOptions[mySamples:{ObjectP[Object[Sample]]..}, myOp
     suppliedSampleVolume,suppliedAcquisitionTime,suppliedTemperature,suppliedEquilibrationTime,suppliedLaserPower,
     suppliedDiodeAttenuation,suppliedMeasurementDelayTime,suppliedIsothermalRunTime,suppliedDilutionMixVolume,suppliedDilutionMixRate,
     suppliedNumberOfAcquisitions,suppliedNumberOfCycles,suppliedIsothermalMeasurements,suppliedStandardDilutionCurve,
-    suppliedSerialDilutionCurve,suppliedDilutionNumberOfMixes,suppliedNumberOfReplicates,suppliedAnalyteMassConcentration,suppliedMinTemperature,suppliedMaxTemperature,suppliedTemperatureRampRate,suppliedTemperatureResolution,suppliedNumberOfTemperatureRampSteps,suppliedStepHoldTime
+    suppliedSerialDilutionCurve,suppliedDilutionNumberOfMixes,suppliedNumberOfReplicates,suppliedAnalyteMassConcentration,suppliedMinTemperature,suppliedMaxTemperature,suppliedTemperatureRampRate,suppliedTemperatureResolution,suppliedNumberOfTemperatureRampSteps,suppliedStepHoldTime,
+    suppliedAnalyteRefractiveIndexIncrement
   }=
       Lookup[
         roundedExperimentOptions,
         {
           SampleVolume,AcquisitionTime,Temperature,EquilibrationTime,LaserPower,DiodeAttenuation,MeasurementDelayTime,
           IsothermalRunTime,DilutionMixVolume,DilutionMixRate,NumberOfAcquisitions,NumberOfCycles,IsothermalMeasurements,
-          StandardDilutionCurve,SerialDilutionCurve,DilutionNumberOfMixes,NumberOfReplicates,AnalyteMassConcentration,MinTemperature,MaxTemperature,TemperatureRampRate,TemperatureResolution,NumberOfTemperatureRampSteps,StepHoldTime
+          StandardDilutionCurve,SerialDilutionCurve,DilutionNumberOfMixes,NumberOfReplicates,AnalyteMassConcentration,MinTemperature,MaxTemperature,TemperatureRampRate,TemperatureResolution,NumberOfTemperatureRampSteps,StepHoldTime,AnalyteRefractiveIndexIncrement
         }
       ];
 
@@ -1888,6 +2278,44 @@ resolveDynamicLightScatteringOptions[mySamples:{ObjectP[Object[Sample]]..}, myOp
     Nothing
   ];
 
+  (* Check that we don't have incorrect combinations of AssayContainers *)
+  invalidAssayContainersOption=If[
+    Or[
+
+      (* Issue #1: We have more than one plate-type assay container *)
+      MemberQ[suppliedAssayContainersModels,plateDLSAssayContainerP] && Length[suppliedAssayContainers] > 1,
+
+      (* Issue #2: We have more than three capillary-type assay containers *)
+      MemberQ[suppliedAssayContainersModels,capillaryDLSAssayContainerP] && Length[suppliedAssayContainers] > 3,
+
+      (* Issue #3: We have a mix of plate-type and capillary-type assay containers *)
+      MemberQ[suppliedAssayContainersModels,plateDLSAssayContainerP] && MemberQ[suppliedAssayContainersModels,capillaryDLSAssayContainerP],
+
+      (* Issue #4: We have an assay container that is not one of our accepted DLS assay containers or Null *)
+      MemberQ[suppliedAssayContainersModels, Except[dlsAssayContainerP|Null]]
+    ],
+    (
+      Message[Error::InvalidAssayContainers,ObjectToString[suppliedAssayContainers]];
+      {suppliedAssayContainers}
+    ),
+    {}
+  ];
+
+  (* Generate Tests for InvalidAssayContainers *)
+  invalidAssayContainersTests=If[gatherTests,
+    Module[{failingTest,passingTest},
+      failingTest=If[Length[invalidAssayContainersOption]==0,
+        Nothing,
+        Test["The supplied AssayContainers "<>ToString[suppliedAssayContainers]<>" is not a list of a single member of Model[Container, Plate, \"96 well Flat Bottom DLS Plate\"], Model[Container, Plate, \"96 well Clear Flat Bottom DLS Plate\"], or Model[Container, Plate, \"384-well Aurora Flat Bottom DLS Plate\"], or a list of one, two or three members of Model[Container, Plate, CapillaryStrip, \"Uncle 16-capillary strip\"].",True,False]
+      ];
+      passingTest=If[Length[invalidAssayContainersOption]==0,
+        Test["The supplied AssayContainers "<>ToString[suppliedAssayContainers]<>" is a list of a single member of Model[Container, Plate, \"96 well Flat Bottom DLS Plate\"], Model[Container, Plate, \"96 well Clear Flat Bottom DLS Plate\"], or Model[Container, Plate, \"384-well Aurora Flat Bottom DLS Plate\"], or a list of one, two or three members of Model[Container, Plate, CapillaryStrip, \"Uncle 16-capillary strip\"].",True,True],
+        Nothing
+      ];
+      {failingTest,passingTest}
+    ],
+    Nothing
+  ];
 
 
   (* -- Check that the protocol name is unique -- *)
@@ -2055,11 +2483,18 @@ resolveDynamicLightScatteringOptions[mySamples:{ObjectP[Object[Sample]]..}, myOp
     MatchQ[suppliedInstrumentModel,ObjectP[Model[Instrument,DLSPlateReader]]|ObjectP[Model[Instrument,DLSPlateReader]]],
       Plate,
 
+    (* If the user has specified AssayContainers, we'll use the corresponding AssayFormFactor *)
+    MemberQ[suppliedAssayContainersModels, plateDLSAssayContainerP],
+      Plate,
+    MemberQ[suppliedAssayContainersModels, capillaryDLSAssayContainerP],
+      Capillary,
+
     (*If the user has specified any Uncle-specific fields, we'll go with Capillary*)
     Or[
       MatchQ[suppliedSampleLoadingPlate,Except[Automatic|Null]],
       MatchQ[suppliedCapillaryLoading,Except[Automatic|Null]],
-      MatchQ[suppliedSampleLoadingPlateStorageCondition,Except[Automatic|Null]]
+      MatchQ[suppliedSampleLoadingPlateStorageCondition,Except[Automatic|Null]],
+      MatchQ[suppliedReplicateDilutionCurve,False]
     ],
       Capillary,
 
@@ -2145,13 +2580,12 @@ resolveDynamicLightScatteringOptions[mySamples:{ObjectP[Object[Sample]]..}, myOp
 
   (* ColloidalStability Options *)
   colloidalStabilityOptionNames={
-    ReplicateDilutionCurve,StandardDilutionCurve,SerialDilutionCurve,Buffer,DilutionMixType,DilutionMixVolume,DilutionNumberOfMixes,
-    DilutionMixRate,DilutionMixInstrument,BlankBuffer,Analyte,AnalyteMassConcentration
+    ReplicateDilutionCurve,StandardDilutionCurve,SerialDilutionCurve,DilutionMixType,DilutionMixVolume,DilutionNumberOfMixes,
+    DilutionMixRate,DilutionMixInstrument
   };
   colloidalStabilitySuppliedOptions={
-    suppliedReplicateDilutionCurve,suppliedStandardDilutionCurve,suppliedSerialDilutionCurve,suppliedBuffer,suppliedDilutionMixType,
-    suppliedDilutionMixVolume,suppliedDilutionNumberOfMixes,suppliedDilutionMixRate,suppliedDilutionMixInstrument,suppliedBlankBuffer,suppliedAnalyte,
-    suppliedAnalyteMassConcentration
+    suppliedReplicateDilutionCurve,suppliedStandardDilutionCurve,suppliedSerialDilutionCurve,suppliedDilutionMixType,
+    suppliedDilutionMixVolume,suppliedDilutionNumberOfMixes,suppliedDilutionMixRate,suppliedDilutionMixInstrument
   };
 
   (* Melting Curve Options*)
@@ -2176,6 +2610,11 @@ resolveDynamicLightScatteringOptions[mySamples:{ObjectP[Object[Sample]]..}, myOp
     suppliedTemperatureResolution,
     suppliedNumberOfTemperatureRampSteps,
     suppliedStepHoldTime
+  };
+
+  staticLightScatteringOrColloidalStabilityOptionNames = {BlankBuffer,Analyte,AnalyteMassConcentration,AnalyteRefractiveIndexIncrement,Buffer};
+  staticLightScatteringOrColloidalStabilitySuppliedOptions = {
+    suppliedBlankBuffer,suppliedAnalyte,suppliedAnalyteMassConcentration,suppliedAnalyteRefractiveIndexIncrement,suppliedBuffer
   };
 
   (* - Set Booleans if any of the options that indicate a specific AssayType will be set are specified as non Null/Automatic - *)
@@ -2209,31 +2648,35 @@ resolveDynamicLightScatteringOptions[mySamples:{ObjectP[Object[Sample]]..}, myOp
   (*Uncle-specific options*)
 
   (* Resolve sample loading plate - only for Capillary *)
-  resolvedSampleLoadingPlate=Which[
+  semiResolvedSampleLoadingPlate=Which[
     (*If the user has specified a SampleLoadingPlate, go with it*)
     MatchQ[suppliedSampleLoadingPlate,Except[Automatic]],
       suppliedSampleLoadingPlate,
 
-    (*If AssayFormFactor is Capillary, set to 96-well plate; if Plate, Null*)
-    MatchQ[resolvedAssayFormFactor,Capillary],
+    (*If AssayFormFactor is Capillary, set to 96-well plate, unless we're doing dilutions, in which case resolve more later; if Plate, Null*)
+    MatchQ[resolvedAssayFormFactor,Capillary] && !MatchQ[resolvedAssayType, ColloidalStability],
       Model[Container,Plate,"96-well PCR Plate"],
+
+    MatchQ[resolvedAssayFormFactor, Capillary],
+      Automatic,
+
     True,Null
   ];
 
   (* Throw ConflictingDLSFormFactorLoadingPlate Error *)
-  invalidFormFactorLoadingPlateOptions=Switch[{resolvedAssayFormFactor,resolvedSampleLoadingPlate},
+  invalidFormFactorLoadingPlateOptions=Switch[{resolvedAssayFormFactor,semiResolvedSampleLoadingPlate},
 
     (*If AssayFormFactor is Plate and SampleLoadingPlate is *not* null, throw the error*)
     {Plate,Except[Null]},
     (
-      Message[Error::ConflictingDLSFormFactorLoadingPlate,ObjectToString[resolvedAssayFormFactor],ObjectToString[resolvedSampleLoadingPlate]];
+      Message[Error::ConflictingDLSFormFactorLoadingPlate,ObjectToString[resolvedAssayFormFactor],ObjectToString[semiResolvedSampleLoadingPlate]];
       {AssayFormFactor,SampleLoadingPlate}
     ),
 
     (*If AssayFormFactor is Capillary and SampleLoadingPlate is Null, throw the error*)
     {Capillary,Null},
     (
-      Message[Error::ConflictingDLSFormFactorLoadingPlate,ObjectToString[resolvedAssayFormFactor],ObjectToString[resolvedSampleLoadingPlate]];
+      Message[Error::ConflictingDLSFormFactorLoadingPlate,ObjectToString[resolvedAssayFormFactor],ObjectToString[semiResolvedSampleLoadingPlate]];
       {AssayFormFactor,SampleLoadingPlate}
     ),
 
@@ -2247,7 +2690,7 @@ resolveDynamicLightScatteringOptions[mySamples:{ObjectP[Object[Sample]]..}, myOp
     Module[{failingTest,passingTest},
       failingTest=If[MatchQ[invalidFormFactorLoadingPlateOptions,{}],
         Nothing,
-        Test["The AssayFormFactor "<>resolvedAssayFormFactor<>" and SampleLoadingPlate "<>resolvedSampleLoadingPlate<>" are not in agreement. If AssayFormFactor is Plate, SampleLoadingPlate must be Null, and if AssayFormFactor is Capillary, SampleLoadingPlate must not be Null:",True,False]
+        Test["The AssayFormFactor "<>resolvedAssayFormFactor<>" and SampleLoadingPlate "<>semiResolvedSampleLoadingPlate<>" are not in agreement. If AssayFormFactor is Plate, SampleLoadingPlate must be Null, and if AssayFormFactor is Capillary, SampleLoadingPlate must not be Null:",True,False]
       ];
       passingTest=If[MatchQ[invalidFormFactorLoadingPlateOptions,{}],
         Test["SampleLoadingPlate is Null if AssayFormFactor is Plate and not Null otherwise:",True,True],
@@ -2472,6 +2915,65 @@ resolveDynamicLightScatteringOptions[mySamples:{ObjectP[Object[Sample]]..}, myOp
     Nothing
   ];
 
+  (*Resolve CalibratePlate*)
+  resolvedCalibratePlate=Which[
+
+    (*If the user has specified CalibratePlate, accept it*)
+    MatchQ[suppliedCalibratePlate,Except[Automatic]],
+      suppliedCalibratePlate,
+
+    (*If the user has not specified CalibratePlate, AssayFormFactor is Plate, and CollectStaticLightScattering is True, set to True*)
+    MatchQ[resolvedAssayFormFactor,Plate] && TrueQ[suppliedCollectStaticLightScattering],
+      True,
+
+    (*If either AssayFormFactor is Capillary or CollectStaticLightScattering is False, set to False*)
+    (*Note that CollectStaticLightScattering and CalibratePlate are not dependent on one another; we allow the user to do either, both, or neither*)
+    True,
+      False
+  ];
+
+  (* Throw ConflictingFormFactorCalibratePlate Error *)
+  (* Only throw an error if CalibratePlate is True while AssayFormFactor is Capillary *)
+  invalidFormFactorCalibratePlateOptions=If[MatchQ[resolvedAssayFormFactor,Capillary] && resolvedCalibratePlate,
+    (
+      Message[Error::ConflictingFormFactorCalibratePlate];
+      {AssayFormFactor,CalibratePlate}
+    ),
+    {}
+  ];
+
+  (* Create test for ConflictingFormFactorWellCover *)
+  conflictingFormFactorCalibratePlateTest=If[gatherTests,
+    Module[{failingTest,passingTest},
+      failingTest=If[MatchQ[invalidFormFactorCalibratePlateOptions,{}],
+        Nothing,
+        Test["The AssayFormFactor "<>resolvedAssayFormFactor<>" and CalibratePlate "<>resolvedCalibratePlate<>" are not in agreement. If AssayFormFactor is  Capillary, CalibratePlate must be False:",True,False]
+      ];
+      passingTest=If[MatchQ[invalidFormFactorCalibratePlateOptions,{}],
+        Test["CalibratePlate is False if AssayFormFactor is Capillary:",True,True],
+        Nothing
+      ];
+      {failingTest,passingTest}
+    ],
+    Nothing
+  ];
+
+  (* Create test for ConflictingFormFactorWellCover *)
+  conflictingFormFactorCalibratePlateTest=If[gatherTests,
+    Module[{failingTest,passingTest},
+      failingTest=If[MatchQ[invalidFormFactorCalibratePlateOptions,{}],
+        Nothing,
+        Test["The AssayFormFactor "<>resolvedAssayFormFactor<>" and CalibratePlate "<>resolvedCalibratePlate<>" are not in agreement. If AssayFormFactor is  Capillary, CalibratePlate must be False:",True,False]
+      ];
+      passingTest=If[MatchQ[invalidFormFactorCalibratePlateOptions,{}],
+        Test["CalibratePlate is False if AssayFormFactor is Capillary:",True,True],
+        Nothing
+      ];
+      {failingTest,passingTest}
+    ],
+    Nothing
+  ];
+
   (*Resolve Number of Replicates*)
   resolvedNumberOfReplicates=Which[
     (*If user has specified NumberOfReplicates, go with it*)
@@ -2500,7 +3002,7 @@ resolveDynamicLightScatteringOptions[mySamples:{ObjectP[Object[Sample]]..}, myOp
     MatchQ[suppliedLaserPower,Except[Automatic]],
       suppliedLaserPower,
 
-    (* Otherwise, resolve based on the AutomaticLaserSettings - set to Null if True and to 100% otherwise *)
+    (* Otherwise, resolve based on the AutomaticLaserSettings - set to Null if True and to 100Percent otherwise *)
     MatchQ[suppliedAutomaticLaserSettings,True],
       Null,
     True,
@@ -2514,9 +3016,13 @@ resolveDynamicLightScatteringOptions[mySamples:{ObjectP[Object[Sample]]..}, myOp
     MatchQ[suppliedDiodeAttenuation,Except[Automatic]],
       suppliedDiodeAttenuation,
 
-    (* Otherwise, resolve based on the AutomaticLaserSettings - set to Null if True and to 100% otherwise *)
+    (* Otherwise, resolve based on the AutomaticLaserSettings - set to Null if True and to 100Percent otherwise *)
     MatchQ[suppliedAutomaticLaserSettings,True],
       Null,
+
+    (* Set to 0 Percent if Plate and 100 Percent if Capillary *)
+    MatchQ[resolvedAssayFormFactor, Plate],
+      0*Percent,
     True,
       100*Percent
   ];
@@ -2537,21 +3043,8 @@ resolveDynamicLightScatteringOptions[mySamples:{ObjectP[Object[Sample]]..}, myOp
     5
   ];
 
-  (* Resolve ColloidalStabilityParametersPerSample - need to do this a little early for the next section *)
-  resolvedColloidalStabilityParametersPerSample=Which[
-
-    (*If user has set option, accept it*)
-    MatchQ[suppliedColloidalStabilityParametersPerSample,Except[Automatic]],
-    suppliedColloidalStabilityParametersPerSample,
-
-    (*If we're NOT in ColloidalStability and user has not set option, set to Null and don't trigger error Boolean*)
-    MatchQ[resolvedAssayType,Except[ColloidalStability]],
-    Null,
-
-    (*If user has not set option, set to 5*)
-    True,
-    2
-  ];
+  (* It is about to become necessary to know if we're already in the assay container we're going to use *)
+  preplatedQ = MatchQ[ToList[Lookup[sampleContainerModelPackets,Model]],{dlsAssayContainerP..} && Length[DeleteDuplicates[sampleContainerPackets]]==1];
 
   (* - SampleVolume - *)
 
@@ -2563,33 +3056,60 @@ resolveDynamicLightScatteringOptions[mySamples:{ObjectP[Object[Sample]]..}, myOp
     MatchQ[resolvedAssayFormFactor,Capillary],
       48,
 
+    (* If the user has given us an AssayContainer, we are going with it *)
+    MatchQ[First[suppliedAssayContainersNumberOfWells], 96],
+      96,
+    MatchQ[First[suppliedAssayContainersNumberOfWells], 384],
+      384,
+
+    (* If we are in a preplated DLS container, we go with the number of wells in it *)
+    preplatedQ,
+      Lookup[First[sampleContainerModelPackets], NumberOfWells],
+
     (* If the user's given us a sample volume below 30 uL, I don't think we can do 96-well plates at all, so we'll go with 384*)
     !MatchQ[suppliedSampleVolume,Automatic]&&LessEqualQ[suppliedSampleVolume,30*Microliter],
       384,
 
     (* If we're doing an assay type other than ColloidalStability, we have to check if we need more than 96 wells *)
-    !MatchQ[resolvedAssayType,ColloidalStability] && GreaterQ[Length[mySamples]*intNumberOfReplicates,96],
+    (* Note that we need an extra well per sample if CollectStaticLightScattering is True *)
+    !MatchQ[resolvedAssayType,ColloidalStability] && GreaterQ[Length[mySamples]*(intNumberOfReplicates + If[suppliedCollectStaticLightScattering && MatchQ[resolvedAssayFormFactor, Plate], 1, 0]),96],
       384,
 
     (* If the user wants to do ColloidalStability assays, we have to check if they need more than 96 wells *)
     (* First, we'll see if user has supplied an actual dilutioncurve *)
     (* With a standard dilution curve, this involves getting the number of dilutions and multiplying by the number of replicates *)
-    !MatchQ[suppliedStandardDilutionCurve,{Automatic..}] && !NullQ[suppliedStandardDilutionCurve] && GreaterQ[Length[Flatten[suppliedStandardDilutionCurve,1]]*intNumberOfReplicates*resolvedColloidalStabilityParametersPerSample,96],
+    !MatchQ[suppliedStandardDilutionCurve,{Automatic..}] && !NullQ[suppliedStandardDilutionCurve] && GreaterQ[Length[Flatten[suppliedStandardDilutionCurve,1]]*intNumberOfReplicates,96],
       384,
 
     (* For serial dilution curves, we need to do the same, but we get the number of dilutions directly from the curve itself *)
-    !MatchQ[suppliedSerialDilutionCurve,{Automatic..}] && !NullQ[suppliedSerialDilutionCurve] && GreaterQ[Plus[Last/@suppliedSerialDilutionCurve]*intNumberOfReplicates*resolvedColloidalStabilityParametersPerSample,96],
+    !MatchQ[suppliedSerialDilutionCurve,{Automatic..}] && !NullQ[suppliedSerialDilutionCurve] && GreaterQ[Plus[Last/@suppliedSerialDilutionCurve]*intNumberOfReplicates,96],
       384,
 
     (* If we're in ColloidalStability and no dilution curve has been specified, we'll be doing a standard dilution curve; *)
     (* The default standard dilution curve is 5 dilutions, so we'll multiply the number of samples by 5 and then again by *)
     (* the number of replicates *)
-    MatchQ[resolvedAssayType,ColloidalStability] && GreaterQ[Length[mySamples]*5*intNumberOfReplicates*resolvedColloidalStabilityParametersPerSample,96],
+    MatchQ[resolvedAssayType,ColloidalStability] && GreaterQ[Length[mySamples]*5*intNumberOfReplicates,96],
       384,
 
     (* If none of the above conditions are met, we're going with a 96-well plate *)
     True,
       96
+  ];
+
+  (* Semi-resolve the assay containers on the basis of the expected number of wells (we don't need to figure out how many capillaries we need at this stage *)
+  semiResolvedAssayContainers = Which[
+
+    (* If we're in capillary, go with a single capillary model for now and figure out more precisely a little later on *)
+    MatchQ[resolvedAssayFormFactor,Capillary],
+      {Model[Container, Plate, CapillaryStrip, "id:R8e1Pjp9Kjjj"]}, (*"Uncle 16-capillary strip"*)
+
+    (* If we're expecting 384 wells, go with the 384-well plate *)
+    MatchQ[expectedNumberOfWells, 384],
+      {Model[Container, Plate, "id:4pO6dMOlqJLw"]}, (*"384-well Aurora Flat Bottom DLS Plate"*)
+
+    (* Otherwise, go with the 96-well plate *)
+    True,
+      {Model[Container, Plate, "id:rea9jlaPWNGx"]} (*"96 well Flat Bottom DLS Plate"*)
   ];
 
   resolvedSampleVolume=Which[
@@ -2616,7 +3136,7 @@ resolveDynamicLightScatteringOptions[mySamples:{ObjectP[Object[Sample]]..}, myOp
       100*Microliter
   ];
 
-  (* Error boolean for incompatible sample volume and instrument *)
+  (* Error boolean for incompatible form factor and assay container *)
   invalidTooLowSampleVolumeOptions=Switch[{resolvedAssayFormFactor,resolvedSampleVolume},
 
     (*If AssayFormFactor is Plate, minimum sample volume is 25 uL*)
@@ -2646,6 +3166,42 @@ resolveDynamicLightScatteringOptions[mySamples:{ObjectP[Object[Sample]]..}, myOp
       ];
       passingTest=If[MatchQ[invalidTooLowSampleVolumeOptions,{}],
         Test["The SampleVolume is not too low for the given AssayFormFactor:",True,True],
+        Nothing
+      ];
+      {failingTest,passingTest}
+    ],
+    Nothing
+  ];
+
+  (* Error boolean for incompatible sample volume and instrument *)
+  invalidConflictingFormFactorAssayContainersOptions=If[
+
+    (* We can't have any capillary containers in a Plate protocol or vice versa *)
+    Or[
+      MatchQ[resolvedAssayFormFactor, Plate] && MemberQ[ToList[suppliedAssayContainersModels], capillaryDLSAssayContainerP],
+      MatchQ[resolvedAssayFormFactor, Capillary] && MemberQ[ToList[suppliedAssayContainersModels], plateDLSAssayContainerP]
+    ],
+    Module[{extraInfoString},
+      extraInfoString = If[MatchQ[resolvedAssayFormFactor,Plate],
+        "When AssayFormFactor is Plate, AssayContainers must be set to a list of a member of Model[Container, Plate, \"96 well Flat Bottom DLS Plate\"], Model[Container, Plate, \"96 well Clear Flat Bottom DLS Plate\"], or Model[Container, Plate, \"384-well Aurora Flat Bottom DLS Plate\"].",
+        "When AssayFormFactor is Capillary, AssayContainers must be set to a list of one or more members of Model[Container, Plate, CapillaryStrip, \"Uncle 16-capillary strip\"]."
+      ];
+      Message[Error::ConflictingFormFactorAssayContainers,ObjectToString[resolvedAssayFormFactor],ObjectToString[suppliedAssayContainersModels,Cache->cacheBall,Simulation->updatedSimulation],extraInfoString];
+      {AssayFormFactor,AssayContainers}
+    ],
+
+    {}
+  ];
+
+  (* If we are gathering tests, create a test for ConflictingFormFactorAssayContainers *)
+  conflictingFormFactorAssayContainersTest=If[gatherTests,
+    Module[{failingTest,passingTest},
+      failingTest=If[MatchQ[invalidConflictingFormFactorAssayContainersOptions,{}],
+        Nothing,
+        Test["The AssayFormFactor "<>resolvedAssayFormFactor<>" is incompatible with the AssayContainers "<>semiResolvedAssayContainers<>". If AssayFormFactor is Plate, AssayContainers must be a standard plate; if AssayFormFactor is Capillary, AssayContainers must be capillary plates:",True,False]
+      ];
+      passingTest=If[MatchQ[invalidConflictingFormFactorAssayContainersOptions,{}],
+        Test["The AssayContainers are compatible with the given AssayFormFactor:",True,True],
         Nothing
       ];
       {failingTest,passingTest}
@@ -2960,9 +3516,39 @@ resolveDynamicLightScatteringOptions[mySamples:{ObjectP[Object[Sample]]..}, myOp
     MatchQ[resolvedAssayType,Except[ColloidalStability]],
       Null,
 
+    (* If we are in ColloidalStability and we're working with the DynaPro, we want to avoid having to use a separate plate for prep, so this is true *)
+    MatchQ[resolvedAssayFormFactor,Plate],
+      True,
+
     (*If user has not set option, set to False*)
     True,
       False
+  ];
+
+  (* Throw ConflictingDLSFormFactorInstrument Error *)
+  invalidFormFactorReplicateDilutionCurveOptions=If[
+    MatchQ[resolvedAssayFormFactor,Plate] && MatchQ[resolvedAssayType, ColloidalStability] && MatchQ[resolvedReplicateDilutionCurve, False],
+    (
+      Message[Error::ConflictingDLSFormFactorReplicateDilutionCurve];
+      {AssayFormFactor,AssayType,ReplicateDilutionCurve}
+    ),
+    {}
+  ];
+
+  (* If we are gathering tests, create a test for ConflictingDLSFormFactorInstrument *)
+  conflictingDLSFormFactorReplicateDilutionCurveTest=If[gatherTests,
+    Module[{failingTest,passingTest},
+      failingTest=If[MatchQ[invalidFormFactorReplicateDilutionCurveOptions,{}],
+        Nothing,
+        Test["The AssayFormFactor (Plate), AssayType (ColloidalStability) and ReplicateDilutionCurve (False) are not in agreement:",True,False]
+      ];
+      passingTest=If[MatchQ[invalidFormFactorReplicateDilutionCurveOptions,{}],
+        Test["If AssayFormFactor is Plate and AssayType is ColloidalStability, then ReplicateDilutionCurve is True:",True,True],
+        Nothing
+      ];
+      {failingTest,passingTest}
+    ],
+    Nothing
   ];
 
   (* Resolve CalculateMolecularWeight and error Boolean *)
@@ -3000,7 +3586,7 @@ resolveDynamicLightScatteringOptions[mySamples:{ObjectP[Object[Sample]]..}, myOp
         sampleComposition=Lookup[packets,Composition,{}];
         {volume,mass,density}=Lookup[packets,{Volume,Mass,Density},Null];
 
-        (* Make assumptions about the Mass and Volume for calculations below (so that we dont need an enormous Switch Statement) *)
+        (* Make assumptions about the Mass and Volume for calculations below (so that we don't need an enormous Switch Statement) *)
         volumeToUse=Switch[{volume,mass,density},
 
           (* If Volume isn't Null, just use that, duh *)
@@ -3041,14 +3627,14 @@ resolveDynamicLightScatteringOptions[mySamples:{ObjectP[Object[Sample]]..}, myOp
         ];
 
         (* Get the members of the sampleComposition that are Model[Molecule,Protein]s or Model[Molecule,Polymer]s *)
-        compositionOnlyAnalytes=Cases[sampleComposition,{_,ObjectP[{Model[Molecule, Protein] , Model[Molecule, Polymer], Model[Molecule, Oligomer]}]},2];
+        compositionOnlyAnalytes=Cases[sampleComposition,{_,ObjectP[{Model[Molecule, Protein] , Model[Molecule, Polymer], Model[Molecule, Oligomer], Model[Molecule, cDNA]}],_},2];
 
         (* Get the Amount of each member of compositionOnlyAnalytes (Null,MassPercent,etc)*)
         analyteCompositionAmounts=compositionOnlyAnalytes[[All,1]];
         analyteCompositionModels=Download[compositionOnlyAnalytes[[All,2]],Object];
 
         (* Get the corresponding members of the sampleCompositionPackets *)
-        onlyAnalytesCompositionPackets=PickList[compositionPackets,sampleComposition,{_,ObjectP[{Model[Molecule, Protein] , Model[Molecule, Polymer], Model[Molecule, Oligomer]}]}];
+        onlyAnalytesCompositionPackets=PickList[compositionPackets,sampleComposition,{_,ObjectP[{Model[Molecule, Protein] , Model[Molecule, Polymer], Model[Molecule, Oligomer], Model[Molecule, cDNA]}],_}];
 
         (* Find the MolecularWeights of the Analytes present in the Composition *)
         analyteMolecularWeights=Lookup[onlyAnalytesCompositionPackets,MolecularWeight,{}];
@@ -3070,7 +3656,7 @@ resolveDynamicLightScatteringOptions[mySamples:{ObjectP[Object[Sample]]..}, myOp
               {MassPercentP,_,Except[Null]},
               ((Unitless[compositionAmounts,Milligram/Milliliter]*0.01*massToUse)/volumeToUse),
 
-              (* If the CompositionAmount is a MassPercent and we dont know the Mass (or Volume), set to Null *)
+              (* If the CompositionAmount is a MassPercent and we don't know the Mass (or Volume), set to Null *)
               {MassPercentP,_,_},
               Null,
 
@@ -3125,23 +3711,29 @@ resolveDynamicLightScatteringOptions[mySamples:{ObjectP[Object[Sample]]..}, myOp
   {
     (*1*)resolvedAnalyte,
     (*2*)resolvedAnalyteMassConcentration,
-    (*3*)resolvedStandardDilutionCurve,
-    (*4*)resolvedSerialDilutionCurve,
-    (*5*)resolvedBuffer,
-    (*6*)resolvedDilutionMixType,
-    (*7*)resolvedDilutionMixVolume,
-    (*8*)resolvedDilutionNumberOfMixes,
-    (*9*)resolvedDilutionMixRate,
-    (*10*)resolvedDilutionMixInstrument,
-    (*11*)resolvedBlankBuffer,
-    (*12*)bufferNotSpecifiedWarnings,
-    (*13*)conflictingDilutionMixOptionsErrors,
-    (*14*)conflictingDilutionMixTypeOptionsErrors,
-    (*15*)conflictingDilutionCurveErrors,
-    (*16*)conflictingDilutionMixTypeInstrumentErrors,
-    (*17*)bufferAndBlankBufferDifferWarnings,
-    (*18*)noAnalyteErrors,
-    (*19*)noAnalyteMassConcentrationErrors
+    (*3*)resolvedAnalyteRefractiveIndexIncrement,
+    (*4*)resolvedStandardDilutionCurve,
+    (*5*)resolvedSerialDilutionCurve,
+    (*6*)resolvedBuffer,
+    (*7*)resolvedSolventName,
+    (*8*)resolvedSolventViscosity,
+    (*9*)resolvedSolventRefractiveIndex,
+    (*10*)resolvedDilutionMixType,
+    (*11*)resolvedDilutionMixVolume,
+    (*12*)resolvedDilutionNumberOfMixes,
+    (*13*)resolvedDilutionMixRate,
+    (*14*)resolvedDilutionMixInstrument,
+    (*15*)resolvedBlankBuffer,
+    (*16*)bufferNotSpecifiedWarnings,
+    (*17*)conflictingDilutionMixOptionsErrors,
+    (*18*)conflictingDilutionMixTypeOptionsErrors,
+    (*19*)conflictingDilutionCurveErrors,
+    (*20*)conflictingDilutionMixTypeInstrumentErrors,
+    (*21*)bufferAndBlankBufferDifferWarnings,
+    (*22*)noAnalyteErrors,
+    (*23*)noAnalyteMassConcentrationErrors,
+    (*24*)solventNameMismatchViscosityWarnings,
+    (*25*)solventNameMismatchRefractiveIndexWarnings
   }=Transpose[MapThread[
     Function[{options,inputSolventField,compositionMoleculeAnalyteAndConcentrations},
       Module[
@@ -3151,24 +3743,29 @@ resolveDynamicLightScatteringOptions[mySamples:{ObjectP[Object[Sample]]..}, myOp
           bufferNotSpecifiedWarning,conflictingDilutionMixOptionsError, conflictingDilutionCurveError,noAnalyteError,
           noAnalyteMassConcentrationError,analyte,analyteMassConcentration,standardDilutionCurve,serialDilutionCurve,sampleSolvent,
           buffer,dilutionMixType,dilutionMixVolume,dilutionNumberOfMixes,dilutionMixRate,dilutionMixInstrument,blankBuffer,conflictingDilutionMixTypeInstrumentError,
-          conflictingDilutionMixTypeOptionsError,bufferAndBlankBufferDifferWarning,concentrationlessAnalytes,analytesWithConcentrations,
-          maxConcentration
+          conflictingDilutionMixTypeOptionsError,bufferAndBlankBufferDifferWarning,
+          solventNameMismatchViscosity,solventNameMismatchRefractiveIndex,invalidCapillaryAssayContainerContents,notEnoughAssayContainerSpace,
+          concentrationlessAnalytes,analytesWithConcentrations,
+          maxConcentration,solventName,initialSolventName,solventViscosity,initialSolventViscosity,solventRefractiveIndex,
+          initialSolventRefractiveIndex,initialAnalyteRefractiveIndexIncrement,analyteRefractiveIndexIncrement
         },
 
         (* Set up the error tracking variables *)
         {
           bufferNotSpecifiedWarning,conflictingDilutionMixOptionsError,conflictingDilutionCurveError,noAnalyteError,
-          noAnalyteMassConcentrationError,conflictingDilutionMixTypeInstrumentError,conflictingDilutionMixTypeOptionsError,bufferAndBlankBufferDifferWarning
-        }=ConstantArray[False,8];
+          noAnalyteMassConcentrationError,conflictingDilutionMixTypeInstrumentError,conflictingDilutionMixTypeOptionsError,bufferAndBlankBufferDifferWarning,
+          solventNameMismatchViscosity,solventNameMismatchRefractiveIndex,invalidCapillaryAssayContainerContents,notEnoughAssayContainerSpace
+        }=ConstantArray[False,12];
 
         (* Lookup the initial value of each option for this index *)
         {
           initialStandardDilutionCurve,initialSerialDilutionCurve,initialBuffer,initialDilutionMixType,initialDilutionMixVolume,initialDilutionNumberOfMixes,
-          initialDilutionMixRate,initialDilutionMixInstrument,initialBlankBuffer,initialAnalyte,initialAnalyteMassConcentration
+          initialDilutionMixRate,initialDilutionMixInstrument,initialBlankBuffer,initialAnalyte,initialAnalyteMassConcentration,initialSolventName,
+          initialSolventViscosity,initialSolventRefractiveIndex,initialAnalyteRefractiveIndexIncrement
         }=Lookup[options,
           {
             StandardDilutionCurve,SerialDilutionCurve,Buffer,DilutionMixType,DilutionMixVolume,DilutionNumberOfMixes,DilutionMixRate,DilutionMixInstrument,BlankBuffer,Analyte,
-            AnalyteMassConcentration
+            AnalyteMassConcentration,SolventName,SolventViscosity,SolventRefractiveIndex,AnalyteRefractiveIndexIncrement
           }
         ];
 
@@ -3186,8 +3783,8 @@ resolveDynamicLightScatteringOptions[mySamples:{ObjectP[Object[Sample]]..}, myOp
             initialAnalyte,
 
           (* Otherwise, we resolve based on the AssayType *)
-          (* If the AssayType is SizingPolydispersity or IsothermalStability, resolve to Null *)
-          Not[MatchQ[resolvedAssayType,ColloidalStability]],
+          (* If the AssayType is SizingPolydispersity or IsothermalStability, and if we're either in Capillary or we're not doing SLS, resolve to Null *)
+          Not[MatchQ[resolvedAssayType,ColloidalStability]] && (MatchQ[resolvedAssayFormFactor, Capillary] || !suppliedCollectStaticLightScattering),
             Null,
 
           (* If the AssayType is ColloidalStability, we try to find the Model[Molecule,Protein] or Model[Molecule,Polymer] or Model[Molecule,Oligomer] that makes the most sense *)
@@ -3205,26 +3802,28 @@ resolveDynamicLightScatteringOptions[mySamples:{ObjectP[Object[Sample]]..}, myOp
         ];
 
         (* Set the noAnalyteError boolean *)
-        noAnalyteError=MatchQ[resolvedAssayType,ColloidalStability]&&Not[NullQ[initialAnalyte]]&&NullQ[analyte];
+        noAnalyteError=(MatchQ[resolvedAssayType,ColloidalStability] || (suppliedCollectStaticLightScattering && MatchQ[resolvedAssayFormFactor, Plate]))&&Not[NullQ[initialAnalyte]]&&NullQ[analyte];
 
         (* - AnalyteMassConcentration - *)
-        analyteMassConcentration=Switch[{initialAnalyteMassConcentration,analyte,resolvedAssayType},
+        analyteMassConcentration=Switch[{initialAnalyteMassConcentration,analyte,resolvedAssayType,resolvedAssayFormFactor,suppliedCollectStaticLightScattering},
 
           (* If the user has specified the AnalyteMassConcentration, we accept it *)
-          {Except[Automatic],_,_},
+          {Except[Automatic],_,_,_,_},
             initialAnalyteMassConcentration,
 
           (* Otherwise, we resolve based on the AssayType *)
-          (* If the AssayType is SizingPolydispersity or IsothermalStability, resolve to Null *)
-          {_,_,Except[ColloidalStability]},
+          (* If the AssayType is SizingPolydispersity or IsothermalStability, and if we're either in Capillary or we're not doing SLS, resolve to Null *)
+          {_,_,Except[ColloidalStability],Capillary,_},
+            Null,
+          {_,_,Except[ColloidalStability],_,False},
             Null,
 
           (* If the Analyte is Null, we set the AnalyteMassConcentration to Null *)
-          {_,Null,_},
+          {_,Null,_,_,_},
             Null,
 
           (* In all other cases, we try to find the concentration that makes the most sense *)
-          {_,_,_},
+          {_,_,_,_,_},
             Module[
               {
                 concentrationlessAnalytes,analytesWithConcentrations,analyteTuples,
@@ -3262,13 +3861,46 @@ resolveDynamicLightScatteringOptions[mySamples:{ObjectP[Object[Sample]]..}, myOp
         ];
 
         (* Set the noAnalyteMassConcentrationError boolean *)
-        noAnalyteMassConcentrationError=MatchQ[resolvedAssayType,ColloidalStability]&&Not[NullQ[analyte]]&&Not[NullQ[initialAnalyteMassConcentration]]&&NullQ[analyteMassConcentration];
+        noAnalyteMassConcentrationError=Or[
+          MatchQ[resolvedAssayType,ColloidalStability], (suppliedCollectStaticLightScattering && MatchQ[resolvedAssayFormFactor, Plate])
+        ] && Not[NullQ[analyte]] && Not[NullQ[initialAnalyteMassConcentration]] && NullQ[analyteMassConcentration];
 
         (* For our dilution curves, we don't want to try to specify a higher concentration than is already present in the analyte. *)
         (* So we'll make our "max concentration" equal to the analyte concentration or 10 mg/mL, whichever is lower *)
         maxConcentration = If[GreaterEqualQ[analyteMassConcentration, 10 Milligram/Milliliter],
           10 Milligram/Milliliter,
           analyteMassConcentration
+        ];
+
+        (* - AnalyteRefractiveIndexIncrement - *)
+        analyteRefractiveIndexIncrement = Switch[{initialAnalyteRefractiveIndexIncrement,analyte,resolvedAssayType,resolvedAssayFormFactor,suppliedCollectStaticLightScattering},
+
+          (* If the user has specified the AnalyteRefractiveIndexIncrement, we accept it *)
+          {Except[Automatic],_,_,_,_},
+          initialAnalyteRefractiveIndexIncrement,
+
+          (* Otherwise, we resolve based on the AssayType *)
+          (* If the AssayType is SizingPolydispersity or IsothermalStability, and if we're either in Capillary or we're not doing SLS, resolve to Null *)
+          {_,_,Except[ColloidalStability],Capillary,_},
+          Null,
+          {_,_,Except[ColloidalStability],_,False},
+          Null,
+
+          (* If the Analyte is Null, we set the AnalyteRefractiveIndexIncrement to Null *)
+          {_,Null,_,_,_},
+          Null,
+
+          (* If the Analyte is a Model[Molecule, Protein] or Model[Molecule, cDNA], assume it's 0.185 *)
+          {_,ObjectP[{Model[Molecule, Protein], Model[Molecule, cDNA]}],_,_,_},
+            0.185*Milliliter/Gram,
+
+          (* If the Analyte is a Model[Molecule, Polymer] or Model[Molecule, Oligomer], assume it's 0.15 *)
+          {_,ObjectP[{Model[Molecule, Polymer], Model[Molecule, Oligomer]}],_,_,_},
+            0.15*Milliliter/Gram,
+
+          (* Otherwise, default to 0.185 *)
+          {_,_,_,_,_},
+            0.185*Milliliter/Gram
         ];
 
         (* - StandardDilutionCurve - *)
@@ -3313,24 +3945,24 @@ resolveDynamicLightScatteringOptions[mySamples:{ObjectP[Object[Sample]]..}, myOp
             {15 * Microliter, 0.2 * maxConcentration}
           },
 
-          (* When ReplicateDilutionCurve is False and AssayFormFactor is Plate, we aim for 90 uL a well *)
-          MatchQ[resolvedReplicateDilutionCurve,False]&&MatchQ[resolvedAssayFormFactor,Plate],
-          {
-            {30 * Microliter * resolvedNumberOfReplicates, 1.0 * maxConcentration},
-            {30 * Microliter * resolvedNumberOfReplicates, 0.8 * maxConcentration},
-            {30 * Microliter * resolvedNumberOfReplicates, 0.6 * maxConcentration},
-            {30 * Microliter * resolvedNumberOfReplicates, 0.4 * maxConcentration},
-            {30 * Microliter * resolvedNumberOfReplicates, 0.2 * maxConcentration}
-          },
-
-          (* When ReplicateDilutionCurve is True (or Null) and AssayFormFactor is Capillary, we aim for 30 uL a well *)
-          True,
+          (* When AssayFormFactor is Plate and our expected number of wells is 384, we aim for 30 uL a well *)
+          MatchQ[resolvedAssayFormFactor,Plate] && MatchQ[expectedNumberOfWells,384],
           {
             {30 * Microliter, 1.0 * maxConcentration},
-            {30 * Microliter, 0.8 * maxConcentration},
-            {30 * Microliter, 0.6 * maxConcentration},
-            {30 * Microliter, 0.4 * maxConcentration},
-            {30 * Microliter, 0.2 * maxConcentration}
+            {24 * Microliter, 0.8 * maxConcentration},
+            {18 * Microliter, 0.6 * maxConcentration},
+            {12 * Microliter, 0.4 * maxConcentration},
+            {6 * Microliter, 0.2 * maxConcentration}
+          },
+
+          (* When ReplicateDilutionCurve is Plate and our expected number of wells is 96, we aim for 90 uL a well *)
+          True,
+          {
+            {90 * Microliter, 1.0 * maxConcentration},
+            {72 * Microliter, 0.8 * maxConcentration},
+            {54 * Microliter, 0.6 * maxConcentration},
+            {36 * Microliter, 0.4 * maxConcentration},
+            {18 * Microliter, 0.2 * maxConcentration}
           }
         ];
 
@@ -3368,18 +4000,18 @@ resolveDynamicLightScatteringOptions[mySamples:{ObjectP[Object[Sample]]..}, myOp
                 1
             },
 
-          (* When ReplicateDilutionCurve is False and AssayFormFactor is Capillary, we aim for 90 uL per well *)
-          MatchQ[resolvedReplicateDilutionCurve,False]&&MatchQ[resolvedAssayFormFactor,Plate],
+          (* When AssayFormFactor is Plate and our expected number of wells is 384, we aim for 30 uL per well *)
+          MatchQ[resolvedAssayFormFactor,Plate]&&MatchQ[expectedNumberOfWells,384],
             {
-              (30*resolvedNumberOfReplicates)*Microliter,
+              30*Microliter,
                 {1, 1.25, 1.333, 1.5, 2},
                 1
             },
 
-          (* When ReplicateDilutionCurve is True (or Null), we aim for 30 uL per well *)
+          (* When When AssayFormFactor is Plate and our expected number of wells is 96, we aim for 90 uL per well *)
           True,
             {
-              30*Microliter,
+              90*Microliter,
                 {1, 1.25, 1.333, 1.5, 2},
                 1
             }
@@ -3405,23 +4037,161 @@ resolveDynamicLightScatteringOptions[mySamples:{ObjectP[Object[Sample]]..}, myOp
 
         (* - Buffer - *)
         (* Resolve the Buffer *)
-        {buffer,bufferNotSpecifiedWarning}=Switch[{initialBuffer,resolvedAssayType,inputSolventField},
+        {buffer,bufferNotSpecifiedWarning}=Switch[{initialBuffer,resolvedAssayType,suppliedCollectStaticLightScattering,resolvedAssayFormFactor,inputSolventField},
 
           (* If the user has specified the Buffer, we accept it (and rejoice) *)
-          {Except[Automatic],_,_},
+          {Except[Automatic],_,_,_,_},
             {initialBuffer,False},
 
-          (* If the user has not specified the Buffer, we resolve based on the AssayType and the sampleSolvent *)
-          {Automatic,Except[ColloidalStability],_},
+          (* If the user has not specified the Buffer, we're not in ColloidalStability, and CollectStaticLightScattering is False (or we're in Capillary), we resolve based on the AssayType and the sampleSolvent *)
+          {Automatic,Except[ColloidalStability],False,_,_},
+            {Null,False},
+          {Automatic,Except[ColloidalStability],_,Capillary,_},
             {Null,False},
 
-          (* If we are in ColloidalStability, and there are no Model[Sample]s in the Solvent field, default to water *)
-          {Automatic,_,Null},
+          (* If we are in ColloidalStability or CollectStaticLightScattering is True, and there are no Model[Sample]s in the Solvent field, default to water *)
+          {Automatic,_,_,_,Null},
             {Model[Sample, "id:8qZ1VWNmdLBD"](*"Milli-Q water"*),True},
 
           (* If there is an acceptable Model[Sample] in the Solvent field, we pick the sampleSolvent, and do not set the Warning *)
-          {Automatic,_,_},
+          {Automatic,_,_,_,_},
             {inputSolventField,False}
+        ];
+
+        (* - SolventName - *)
+        solventName = Which[
+
+          (* If user supplied, take it *)
+          MatchQ[initialSolventName, Except[Automatic]],
+            initialSolventName,
+
+          (* If AssayFormFactor is Capillary, or both AssayType is not ColloidalStability and CollectStaticLightScattering is False, this is Null *)
+          Or[
+            MatchQ[resolvedAssayFormFactor, Capillary],
+            MatchQ[resolvedAssayType, Except[ColloidalStability]] && !suppliedCollectStaticLightScattering
+          ],
+            Null,
+
+          (* If the user specified solvent viscosity and solvent refractive index, use our handy lookup table to see if these are present *)
+          !MatchQ[initialSolventViscosity,Null|Automatic] && !MatchQ[initialSolventRefractiveIndex,Null|Automatic],
+            FirstOrDefault[
+              Lookup[
+                Cases[
+                  $DLSSolventLookupTable,
+                  KeyValuePattern[{Viscosity->EqualP[initialSolventViscosity], RefractiveIndex->EqualP[initialSolventRefractiveIndex]}]
+                ],
+                Name,
+                {}
+              ],
+              "New"
+            ],
+
+          (* If the buffer is water, set this to "Water" *)
+          MatchQ[buffer, ObjectP[Model[Sample, "id:8qZ1VWNmdLBD"]]],
+            "Water",
+
+          (* Otherwise, set to "New" *)
+          True,
+            "New"
+        ];
+
+        (* - SolventViscosity - *)
+        {solventViscosity,solventNameMismatchViscosity} = Which[
+
+          (* If user supplied, check if it mismatches a given SolventName, if we have a mismatch, use our known value instead of user value *)
+          And[
+            MatchQ[initialSolventViscosity, Except[Automatic]],
+            MatchQ[solventName, Except[Alternatives[Null,"New"]]]
+          ],
+            Module[{solventNameViscosity},
+             solventNameViscosity = Lookup[FirstCase[$DLSSolventLookupTable,KeyValuePattern[Name->solventName],<||>],Viscosity,Null];
+             {solventNameViscosity,!MatchQ[initialSolventViscosity,EqualP[solventNameViscosity]]}
+            ],
+
+          (* If we do not have a SolventName (or it is New or Water), just keep our value and no error *)
+          MatchQ[initialSolventViscosity, Except[Automatic]],
+            {initialSolventViscosity, False},
+
+          (* If AssayFormFactor is Capillary, or both AssayType is not ColloidalStability and CollectStaticLightScattering is False, this is Null *)
+          Or[
+            MatchQ[resolvedAssayFormFactor, Capillary],
+            MatchQ[resolvedAssayType, Except[ColloidalStability]] && !suppliedCollectStaticLightScattering
+          ],
+          {Null,False},
+
+          (* If the user specified solvent viscosity and solvent refractive index, use our handy lookup table to see if these are present *)
+          !MatchQ[solventName, "New"],
+            {
+              FirstOrDefault[
+                Lookup[
+                  Cases[
+                    $DLSSolventLookupTable,
+                    KeyValuePattern[{Name->solventName}]
+                  ],
+                  Viscosity,
+                  {}
+                ],
+                Null
+              ],
+              False
+            },
+
+          (* As a last resort, try and extract from the resolved buffer *)
+          MatchQ[fastAssocLookup[fastAssoc, buffer, Viscosity],UnitsP[Milli*Pascal*Second]],
+            {Convert[fastAssocLookup[fastAssoc, buffer, Viscosity], Centipoise],False},
+
+          (* Otherwise, set to Null *)
+          True,
+            {Null,False}
+        ];
+
+        (* - SolventRefractiveIndex - *)
+        {solventRefractiveIndex,solventNameMismatchRefractiveIndex} = Which[
+
+          (* If user supplied, check if it mismatches a given SolventName, take it *)
+          And[
+            MatchQ[initialSolventRefractiveIndex, Except[Automatic]],
+            MatchQ[solventName, Except[Alternatives[Null,"New"]]]
+          ],
+          Module[{solventNameRefractiveIndex},
+            solventNameRefractiveIndex = Lookup[FirstCase[$DLSSolventLookupTable,KeyValuePattern[Name->solventName],<||>],RefractiveIndex,Null];
+            {solventNameRefractiveIndex,!MatchQ[initialSolventRefractiveIndex,EqualP[solventNameRefractiveIndex]]}
+          ],
+
+          (* If we do not have a SolventName (or it is New or Water), just keep our value and no error *)
+          MatchQ[initialSolventRefractiveIndex, Except[Automatic]],
+            {initialSolventRefractiveIndex, False},
+
+          (* If AssayFormFactor is Capillary, or both AssayType is not ColloidalStability and CollectStaticLightScattering is False, this is Null *)
+          Or[
+            MatchQ[resolvedAssayFormFactor, Capillary],
+            MatchQ[resolvedAssayType, Except[ColloidalStability]] && !suppliedCollectStaticLightScattering
+          ],
+            {Null,False},
+
+          (* If the user specified solvent viscosity and solvent refractive index, use our handy lookup table to see if these are present *)
+          !MatchQ[solventName, "New"],
+            {
+              FirstOrDefault[
+                Lookup[
+                  Cases[
+                    $DLSSolventLookupTable,
+                    KeyValuePattern[{Name->solventName}]
+                  ],
+                  RefractiveIndex
+                ],
+                Null
+              ],
+              False
+            },
+
+          (* As a last resort, try and extract from the resolved buffer *)
+          MatchQ[fastAssocLookup[fastAssoc, buffer, RefractiveIndex],UnitsP[]],
+            {fastAssocLookup[fastAssoc, buffer, RefractiveIndex],False},
+
+          (* Otherwise, set to Null *)
+          True,
+            {Null,False}
         ];
 
         (* - DilutionMixType - *)
@@ -3606,16 +4376,18 @@ resolveDynamicLightScatteringOptions[mySamples:{ObjectP[Object[Sample]]..}, myOp
         ];
 
         (* - BlankBuffer - *)
-        blankBuffer=Switch[{initialBlankBuffer,resolvedAssayType},
+        blankBuffer=Switch[{initialBlankBuffer,resolvedAssayType,suppliedCollectStaticLightScattering,resolvedAssayFormFactor},
 
           (* If the user has specified the BlankBuffer, we accept it *)
-          {Except[Automatic],_},
+          {Except[Automatic],_,_,_},
             initialBlankBuffer,
 
-          (* If the user has not specified the BlankBuffer, we resolve it based on the AssayType *)
-          {Automatic,dilutionAssayTypeP},
+          (* If the user has not specified the BlankBuffer, we resolve it based on the AssayType/CollectStaticLightScattering *)
+          {Automatic,dilutionAssayTypeP,_,_},
             buffer,
-          {Automatic,_},
+          {Automatic,_,True,Plate},
+            buffer,
+          {Automatic,_,_,_},
             Null
         ];
 
@@ -3628,23 +4400,29 @@ resolveDynamicLightScatteringOptions[mySamples:{ObjectP[Object[Sample]]..}, myOp
         {
           (*1*)analyte,
           (*2*)analyteMassConcentration,
-          (*3*)standardDilutionCurve,
-          (*4*)serialDilutionCurve,
-          (*5*)buffer,
-          (*6*)dilutionMixType,
-          (*7*)dilutionMixVolume,
-          (*8*)dilutionNumberOfMixes,
-          (*9*)dilutionMixRate,
-          (*10*)dilutionMixInstrument,
-          (*11*)blankBuffer,
-          (*12*)bufferNotSpecifiedWarning,
-          (*13*)conflictingDilutionMixOptionsError,
-          (*14*)conflictingDilutionMixTypeOptionsError,
-          (*15*)conflictingDilutionCurveError,
-          (*16*)conflictingDilutionMixTypeInstrumentError,
-          (*17*)bufferAndBlankBufferDifferWarning,
-          (*18*)noAnalyteError,
-          (*19*)noAnalyteMassConcentrationError
+          (*3*)analyteRefractiveIndexIncrement,
+          (*4*)standardDilutionCurve,
+          (*5*)serialDilutionCurve,
+          (*6*)buffer,
+          (*7*)solventName,
+          (*8*)solventViscosity,
+          (*9*)solventRefractiveIndex,
+          (*10*)dilutionMixType,
+          (*11*)dilutionMixVolume,
+          (*12*)dilutionNumberOfMixes,
+          (*13*)dilutionMixRate,
+          (*14*)dilutionMixInstrument,
+          (*15*)blankBuffer,
+          (*16*)bufferNotSpecifiedWarning,
+          (*17*)conflictingDilutionMixOptionsError,
+          (*18*)conflictingDilutionMixTypeOptionsError,
+          (*19*)conflictingDilutionCurveError,
+          (*20*)conflictingDilutionMixTypeInstrumentError,
+          (*21*)bufferAndBlankBufferDifferWarning,
+          (*22*)noAnalyteError,
+          (*23*)noAnalyteMassConcentrationError,
+          (*24*)solventNameMismatchViscosity,
+          (*25*)solventNameMismatchRefractiveIndex
         }
       ]
     ],
@@ -4153,7 +4931,7 @@ resolveDynamicLightScatteringOptions[mySamples:{ObjectP[Object[Sample]]..}, myOp
       {},
 
     (* If the totalIsothermalTime is longer than 6.5 days, then the MeasurementDelayTime and IsothermalMeasurements options are invalid *)
-    totalIsothermalTime>6.5*Day,
+    totalIsothermalTime>$MaxExperimentTime,
       {MeasurementDelayTime,IsothermalMeasurements},
 
     (* In all other cases (either totalIsothermalTime is shorter than 6.5 days, or is Null (and error already thrown), they're fine *)
@@ -4239,6 +5017,30 @@ resolveDynamicLightScatteringOptions[mySamples:{ObjectP[Object[Sample]]..}, myOp
     ]
   ];
 
+  (* Now we can finish resolving our sample loading plate *)
+  resolvedSampleLoadingPlate = Which[
+    MatchQ[semiResolvedSampleLoadingPlate, Except[Automatic]],
+      semiResolvedSampleLoadingPlate,
+
+    (* If our max dilution volume is in excess of 200 microliter, go with a deep-well plate*)
+    GreaterQ[Max[maxDilutionVolumes], 200*Microliter],
+      Model[Container, Plate, "id:L8kPEjkmLbvW"], (*"96-well 2mL Deep Well Plate"*)
+
+    (* Otherwise, go with the PCR plate *)
+    True,
+      Model[Container, Plate, "id:01G6nvkKrrYm"] (*"96-well PCR Plate"*)
+  ];
+
+  (* Determine the max volume of the sample loading plate *)
+  loadingPlateMaxVolume = Which[
+    MatchQ[resolvedSampleLoadingPlate, ObjectP[Object[Container]]],
+      fastAssocLookup[fastAssoc,sampleLoadingPlateModel,MaxVolume],
+    MatchQ[resolvedSampleLoadingPlate, ObjectP[Model[Container]]],
+      fastAssocLookup[fastAssoc,resolvedSampleLoadingPlate,MaxVolume],
+    True,
+      Null
+  ];
+
   (* - Define two variables, one that is which of the StandardDilutionCurve or SerialDilutionCurve has been specified for each sample,
   the other is the value of this option, with StandardDilutionCurve taking precedence over SerialDilutionCurve - *)
   {dilutionCurveOptionNamePerSample,dilutionCurveOptionValuePerSample}=Transpose[
@@ -4306,7 +5108,7 @@ resolveDynamicLightScatteringOptions[mySamples:{ObjectP[Object[Sample]]..}, myOp
 
   (* Throw an Error if we are throwing messages, and there are some input samples that caused dilutionVolumePlateMismatchErrorQ to be set to True *)
   If[dilutionVolumePlateMismatchErrorQ&&messages,
-    Message[Error::DLSDilutionCurveLoadingPlateMismatch,ObjectToString[failingVolumePlateMismatchSamples,Cache->cacheBall],ObjectToString[failingPlateMaxVolumeOptionNames],ObjectToString[failingPlateMaxVolumeOptionValues],ObjectToString[suppliedSampleLoadingPlate],ObjectToString[loadingPlateMaxVolume],ObjectToString[failingDilutionMaxVolumes]]
+    Message[Error::DLSDilutionCurveLoadingPlateMismatch,ObjectToString[failingVolumePlateMismatchSamples,Cache->cacheBall],ObjectToString[failingPlateMaxVolumeOptionNames],ObjectToString[failingPlateMaxVolumeOptionValues],ObjectToString[resolvedSampleLoadingPlate],ObjectToString[loadingPlateMaxVolume],ObjectToString[failingDilutionMaxVolumes]]
   ];
 
   (* Define the tests the user will see for the above message *)
@@ -4603,9 +5405,9 @@ resolveDynamicLightScatteringOptions[mySamples:{ObjectP[Object[Sample]]..}, myOp
   ];
 
   (* Figure out how many total AssayContainer wells the protocol needs. This is done by adding the numberOfSamplesWithReplicates
-  (which corresponds to the BlankBuffer wells, one for each sample), to the product of the NumberOfReplicates times the sum of the
+  (which corresponds to the BlankBuffer wells, one for each sample), to the sum of the
   assayContainerWellsPerSample (which already takes into account the NumberOfReplicates *)
-  requiredDilutionAssayContainerWells=(numberOfSamplesWithReplicates+(resolvedColloidalStabilityParametersPerSample*Total[assayContainerWellsPerSample]));
+  requiredDilutionAssayContainerWells=numberOfSamplesWithReplicates+Total[assayContainerWellsPerSample];
 
   (* Set the invalid options variable *)
   invalidTooManyDilutionSamplesOptions=If[
@@ -4650,7 +5452,7 @@ resolveDynamicLightScatteringOptions[mySamples:{ObjectP[Object[Sample]]..}, myOp
   ];
 
   (* -- Throw Errors and Warnings based on these Analyte MassConcentrations -- *)
-  (* - Throw Error if we are in a ColloidalStability Assay and there in an input sample with no Analyte in its Composition - *)
+  (* - Throw Error if we are in a ColloidalStability Assay or CollectStaticLightScattering is True and there in an input sample with no Analyte in its Composition - *)
   (* Figure out if we need to throw this Error *)
   noAnalyteErrorQ=MemberQ[noAnalyteErrors,True];
 
@@ -4659,7 +5461,8 @@ resolveDynamicLightScatteringOptions[mySamples:{ObjectP[Object[Sample]]..}, myOp
   passingNoAnalyteSamples=PickList[simulatedSamples,noAnalyteErrors,False];
 
   (* Create a list of the failing samples' Compositions *)
-  failingNoAnalyteCompositions=PickList[sampleCompositions,noAnalyteErrors,True];
+  (* Make sure to strip the date so that the compositions look nicer *)
+  failingNoAnalyteCompositions=PickList[sampleCompositions,noAnalyteErrors,True][[All,All,1;;2]];
 
   (* Define the invalid input variable *)
   noAnalyteInvalidOptions=If[noAnalyteErrorQ,
@@ -4669,11 +5472,20 @@ resolveDynamicLightScatteringOptions[mySamples:{ObjectP[Object[Sample]]..}, myOp
 
   (* If we are throwing messages, throw the Error *)
   If[Length[noAnalyteInvalidOptions]>0&&messages,
-    Message[Error::DLSInputSampleNoAnalyte,resolvedAssayType,ObjectToString[failingNoAnalyteSamples,Cache->cacheBall],ObjectToString[failingNoAnalyteCompositions,Cache->cacheBall]]
+    Module[{followupAction},
+      followupAction = Switch[{resolvedAssayType,suppliedCollectStaticLightScattering},
+        {Except[SizingPolydispersity],True},"If there are no Analytes present in the input sample, SizingPolydispersity may be a more suitable AssayType than " <> ToString[resolvedAssayType] <>", and CollectStaticLightScattering may not be recommended.",
+        {Except[SizingPolydispersity],False|Automatic},"If there are no Analytes present in the input sample, SizingPolydispersity may be a more suitable AssayType than " <> ToString[resolvedAssayType] <>".",
+        {SizingPolydispersity,True},"If there are no Analytes present in the input sample, CollectStaticLightScattering is not recommended.",
+        {_,_},"Please allow these options to be set automatically."
+      ];
+      Message[Error::DLSInputSampleNoAnalyte,resolvedAssayType,suppliedCollectStaticLightScattering,resolvedAssayFormFactor,ObjectToString[failingNoAnalyteSamples,Cache->cacheBall],ObjectToString[failingNoAnalyteCompositions,Cache->cacheBall],followupAction]
+    ]
+
   ];
 
   (* Define the tests the user will see for the above message *)
-  noAnalyteTests=If[gatherTests&&MatchQ[resolvedAssayType,dilutionAssayTypeP],
+  noAnalyteTests=If[gatherTests&&(MatchQ[resolvedAssayType,dilutionAssayTypeP] || (suppliedCollectStaticLightScattering && MatchQ[resolvedAssayFormFactor, Plate])),
     Module[{failingTest,passingTest},
       failingTest=If[Length[failingNoAnalyteSamples]==0,
         Nothing,
@@ -4708,8 +5520,9 @@ resolveDynamicLightScatteringOptions[mySamples:{ObjectP[Object[Sample]]..}, myOp
   (* Set the invalid Options variable *)
   invalidAnalyteOptions=If[
 
-    (* IF the AssayType is ColloidalStability AND none of the resolved Analytes have associated MolecularWeights AND AssayFormFactor is Capillary *)
-    MatchQ[resolvedAssayType,ColloidalStability]&&MatchQ[nonNullAnalyteMolecularWeights,{}]&&MatchQ[resolvedAssayFormFactor,Capillary],
+    (* IF the AssayType is ColloidalStability AND none of the resolved Analytes have associated MolecularWeights *)
+    (* Don't throw the error if we're already throwing one for Null Analytes *)
+    (MatchQ[resolvedAssayType,ColloidalStability] || (suppliedCollectStaticLightScattering && MatchQ[resolvedAssayFormFactor, Plate]))&&MatchQ[nonNullAnalyteMolecularWeights,{}] && !NullQ[resolvedAnalyte],
     (* THEN the Analyte is invalid *)
     {Analyte},
 
@@ -4719,18 +5532,18 @@ resolveDynamicLightScatteringOptions[mySamples:{ObjectP[Object[Sample]]..}, myOp
 
   (* If we are throwing messages, throw the Error *)
   If[Length[invalidAnalyteOptions]>0&&messages,
-    Message[Error::DLSInputSampleNoAnalyteMolecularWeight,ObjectToString[resolvedAnalyte,Cache->cacheBall]]
+    Message[Error::DLSInputSampleNoAnalyteMolecularWeight,resolvedAssayType,suppliedCollectStaticLightScattering,resolvedAssayFormFactor,ObjectToString[resolvedAnalyte,Cache->cacheBall]]
   ];
 
   (* Define the tests the user will see for the above message *)
-  noAnalyteMWTests=If[gatherTests&&MatchQ[resolvedAssayType,ColloidalStability],
+  noAnalyteMWTests=If[gatherTests&&(MatchQ[resolvedAssayType,ColloidalStability] || (suppliedCollectStaticLightScattering && MatchQ[resolvedAssayFormFactor, Plate])),
     Module[{failingTest,passingTest},
       failingTest=If[Length[invalidAnalyteOptions]==0,
         Nothing,
-        Test["The AssayType is ColloidalStability, the AssayFormFactor is Capillary, and none of the Analytes, "<>ObjectToString[resolvedAnalyte,Cache->cacheBall]<>", have associated MolecularWeights. A MolecularWeight is required for ColloidalStability assays:",True,False]
+        Test["The AssayType is ColloidalStability or CollectStaticLightScattering is True, and none of the Analytes, "<>ObjectToString[resolvedAnalyte,Cache->cacheBall]<>", have associated MolecularWeights. A MolecularWeight is required for ColloidalStability assays:",True,False]
       ];
       passingTest=If[Length[invalidAnalyteOptions]==0,
-        Test["The AssayType is ColloidalStability, the AssayFormFactor is Capillary, and at least one of the Analytes, "<>ObjectToString[resolvedAnalyte,Cache->cacheBall]<>", has an associated MolecularWeight. A MolecularWeight is required for ColloidalStability assays:",True,True],
+        Test["The AssayType is ColloidalStability or CollectStaticLightScattering is True, and at least one of the Analytes, "<>ObjectToString[resolvedAnalyte,Cache->cacheBall]<>", has an associated MolecularWeight. A MolecularWeight is required for ColloidalStability assays:",True,True],
         Nothing
       ];
       {failingTest,passingTest}
@@ -4738,16 +5551,16 @@ resolveDynamicLightScatteringOptions[mySamples:{ObjectP[Object[Sample]]..}, myOp
     Nothing
   ];
 
-  (* -- Throw Error if we are in a ColloidalStability assay and there in an input sample with a Analyte in its Composition but we dont know how much -- *)
+  (* -- Throw Error if we are in a ColloidalStability assay and there in an input sample with a Analyte in its Composition but we don't know how much -- *)
   (* Figure out if we need to throw this Error *)
-  noAnalyteMassConcentrationErrorQ=MemberQ[noAnalyteMassConcentrationErrors,True]&&MatchQ[resolvedAssayType,dilutionAssayTypeP];
+  noAnalyteMassConcentrationErrorQ=MemberQ[noAnalyteMassConcentrationErrors,True]&&(MatchQ[resolvedAssayType,dilutionAssayTypeP] || (suppliedCollectStaticLightScattering && MatchQ[resolvedAssayFormFactor, Plate]));
 
   (* Create lists of the input samples that have the noAnalyteErrors set to True and to False *)
   failingNoAnalyteConcentrationSamples=PickList[simulatedSamples,noAnalyteMassConcentrationErrors,True];
   passingNoAnalyteConcentrationSamples=PickList[simulatedSamples,noAnalyteMassConcentrationErrors,False];
 
   (* Create a list of the failing samples' Compositions *)
-  failingNoAnalyteConcentrationCompositions=PickList[sampleCompositions,noAnalyteMassConcentrationErrors,True];
+  failingNoAnalyteConcentrationCompositions=PickList[sampleCompositions,noAnalyteMassConcentrationErrors,True][[All,All,1;;2]];
 
   (* Define the invalid input variable *)
   invalidNoAnalyteConcentrationOptions=If[noAnalyteMassConcentrationErrorQ,
@@ -4757,19 +5570,198 @@ resolveDynamicLightScatteringOptions[mySamples:{ObjectP[Object[Sample]]..}, myOp
 
   (* If we are throwing messages, throw the Error *)
   If[Length[invalidNoAnalyteConcentrationOptions]>0&&messages,
-    Message[Error::DLSInputSampleNoAnalyteMassConcentration,ObjectToString[resolvedAssayType],ObjectToString[failingNoAnalyteConcentrationSamples,Cache->cacheBall],ObjectToString[failingNoAnalyteConcentrationCompositions,Cache->cacheBall]]
+    Message[Error::DLSInputSampleNoAnalyteMassConcentration,resolvedAssayType,suppliedCollectStaticLightScattering,resolvedAssayFormFactor,ObjectToString[failingNoAnalyteConcentrationSamples,Cache->cacheBall],ObjectToString[failingNoAnalyteConcentrationCompositions,Cache->cacheBall]]
   ];
 
   (* Define the tests the user will see for the above message *)
-  noAnalyteConcentrationTests=If[gatherTests&&MatchQ[resolvedAssayType,dilutionAssayTypeP],
+  noAnalyteConcentrationTests=If[gatherTests&&(MatchQ[resolvedAssayType,dilutionAssayTypeP] || (suppliedCollectStaticLightScattering && MatchQ[resolvedAssayFormFactor, Plate])),
     Module[{failingTest,passingTest},
       failingTest=If[Length[failingNoAnalyteConcentrationSamples]==0,
         Nothing,
-        Test["The following input samples, "<>ObjectToString[failingNoAnalyteConcentrationSamples,Cache->cacheBall]<>", have a Model[Molecule,Protein] or Model[Molecule,Polymer] or Model[Molecule,Oligomer] in the Composition Field but the MassConcentration of the Analyte is not able to be calculated:",True,False]
+        Test["The following input samples, "<>ObjectToString[failingNoAnalyteConcentrationSamples,Cache->cacheBall]<>", have a Model[Molecule,Protein], Model[Molecule,Polymer], Model[Molecule,Oligomer], or Model[Molecule, cDNA] in the Composition Field but the MassConcentration of the Analyte is not able to be calculated:",True,False]
       ];
       passingTest=If[Length[passingNoAnalyteConcentrationSamples]==0,
         Nothing,
-        Test["The following input samples, "<>ObjectToString[passingNoAnalyteConcentrationSamples,Cache->cacheBall]<>", either have no Model[Molecule,Protein] or Model[Molecule,Polymer] or Model[Molecule,Oligomer] in their Composition or have Amounts associated with the Model[Molecule,Protein]s:",True,True]
+        Test["The following input samples, "<>ObjectToString[passingNoAnalyteConcentrationSamples,Cache->cacheBall]<>", either have no Model[Molecule,Protein], Model[Molecule,Polymer], Model[Molecule,Oligomer], or Model[Molecule, cDNA] in their Composition or have Amounts associated with the Model[Molecule,Protein]s:",True,True]
+      ];
+      {failingTest,passingTest}
+    ],
+    Nothing
+  ];
+
+  (* - Throw a warning if we have a mismatched SolventName/SolventViscosity/SolventRefractiveIndex *)
+  (* Combine our two warning lists *)
+  solventNameMismatchWarningsCombined = MapThread[Or,{solventNameMismatchViscosityWarnings,solventNameMismatchRefractiveIndexWarnings}];
+
+  If[MemberQ[solventNameMismatchWarningsCombined,True]&&messages&&notInEngine,
+    Message[
+      Warning::SolventNameMismatch,
+      ObjectToString[PickList[simulatedSamples,solventNameMismatchWarningsCombined,True]],
+      PickList[resolvedSolventName,solventNameMismatchWarningsCombined,True],
+      MapThread[Function[{viscosityWarning,refractiveIndexWarning},
+        Switch[{viscosityWarning,refractiveIndexWarning},
+          {True,True},{SolventViscosity,SolventRefractiveIndex},
+          {False,True},{SolventRefractiveIndex},
+          {True,False},{SolventViscosity},
+          {False,False},{}
+        ]
+      ],
+        {
+          solventNameMismatchViscosityWarnings,
+          solventNameMismatchRefractiveIndexWarnings
+        }
+      ],
+      MapThread[Function[{solventViscosity,solventRefractiveIndex,viscosityWarning,refractiveIndexWarning},
+        Switch[{viscosityWarning,refractiveIndexWarning},
+          {True,True},{solventViscosity,solventRefractiveIndex},
+          {False,True},{solventRefractiveIndex},
+          {True,False},{solventViscosity},
+          {False,False},{}
+        ]
+      ],
+        {
+          Lookup[roundedExperimentOptions,SolventViscosity],
+          Lookup[roundedExperimentOptions,SolventRefractiveIndex],
+          solventNameMismatchViscosityWarnings,
+          solventNameMismatchRefractiveIndexWarnings
+        }
+      ],
+      MapThread[Function[{solventViscosity,solventRefractiveIndex,viscosityWarning,refractiveIndexWarning},
+        Switch[{viscosityWarning,refractiveIndexWarning},
+          {True,True},{solventViscosity,solventRefractiveIndex},
+          {False,True},{solventRefractiveIndex},
+          {True,False},{solventViscosity},
+          {False,False},{}
+        ]
+      ],
+        {
+          resolvedSolventViscosity,
+          resolvedSolventRefractiveIndex,
+          solventNameMismatchViscosityWarnings,
+          solventNameMismatchRefractiveIndexWarnings
+        }
+      ]
+    ]
+  ];
+
+  solventNameMismatchTests = If[gatherTests&&MemberQ[solventNameMismatchWarningsCombined,True],
+    Module[{solventNameMismatchFailingSamples,solventNameMismatchPassingSamples,failingTest,passingTest},
+      solventNameMismatchFailingSamples=PickList[simulatedSamples,solventNameMismatchWarningsCombined,True];
+      solventNameMismatchPassingSamples=Complement[simulatedSamples,solventNameMismatchFailingSamples];
+      failingTest = If[Length[solventNameMismatchFailingSamples]==0,
+        Nothing,
+        Test["The Samples, " <> ObjectToString[solventNameMismatchFailingSamples,Cache->cacheBall,Simulation->updatedSimulation] <> ", have matching SolventName, SolventViscosity, and/or SolventRefractiveIndex.",True,False]
+      ];
+      passingTest = If[Length[solventNameMismatchPassingSamples]==0,
+        Nothing,
+        Test["The Samples, " <> ObjectToString[solventNameMismatchPassingSamples,Cache->cacheBall,Simulation->updatedSimulation] <> ", have matching SolventName, SolventViscosity, and SolventRefractiveIndex.",True,True]
+      ];
+      {failingTest,passingTest}
+    ],
+    Nothing
+  ];
+
+
+  (* - Throw a Warning if the user has specified capillary plates, because the number might be wrong - *)
+  (* Determine if we need to throw the Warning *)
+  specifiedCapillaryAssayContainersWarningQ=MemberQ[suppliedAssayContainersModels,capillaryDLSAssayContainerP]&&MatchQ[resolvedAssayFormFactor,Capillary];
+
+  (* If the supplied SampleLoadingPlate has any Contents and we are throwing Messages, throw an Error *)
+  If[specifiedCapillaryAssayContainersWarningQ&&messages&&notInEngine,
+    Message[Warning::SpecifiedCapillaryAssayContainers,ObjectToString[suppliedAssayContainers,Cache->cacheBall]]
+  ];
+
+  (* Define the tests the user will see for the above message *)
+  specifiedCapillaryAssayContainersTests=If[gatherTests,
+    Module[{failingTest,passingTest},
+      failingTest=If[specifiedCapillaryAssayContainersWarningQ,
+        Warning["The AssayContainers, "<>ObjectToString[suppliedSampleLoadingPlate,Cache->cacheBall]<>", are specified as members of Model[Container, Plate, CapillaryStrip, \"Uncle 16-capillary strip\"]. If the incorrect number of AssayContainers have been specified, this option will be overridden:",True,False],
+        Nothing
+      ];
+      passingTest=If[specifiedCapillaryAssayContainersWarningQ,
+        Nothing,
+        Warning["The AssayContainers are not specified as members of Model[Container, Plate, CapillaryStrip, \"Uncle 16-capillary strip\"]:",True,True]
+      ];
+      {failingTest,passingTest}
+    ],
+    Nothing
+  ];
+
+  (* - Throw an Error if the user has specified capillary plates with contents *)
+  (* Determine if we need to throw the error, first find any supplied AssayContainers that have contents *)
+  suppliedAssayContainersWithContents = Select[Cases[ToList[suppliedAssayContainers],ObjectP[]],MatchQ[fastAssocLookup[fastAssoc,#,Contents],Except[{}|$Failed]]&];
+  invalidCapillaryAssayContainerContentsError = And[
+    MatchQ[resolvedAssayFormFactor,Capillary],
+    Length[suppliedAssayContainersWithContents] > 0
+  ];
+
+  (* If we need to, throw the error message *)
+  invalidCapillaryAssayContainerContentsOptions = If[invalidCapillaryAssayContainerContentsError&&messages&&notInEngine,
+    Message[Error::InvalidCapillaryAssayContainerContents, ObjectToString[suppliedAssayContainersWithContents,Cache->cacheBall,Simulation->updatedSimulation]];
+    {AssayContainers},
+    {}
+  ];
+
+  (* If we need to, gather tests *)
+  invalidCapillaryAssayContainerContentsTests = If[gatherTests,
+    Module[{failingTest,passingTest},
+      failingTest=If[invalidCapillaryAssayContainerContentsError,
+        Test["If AssayFormFactor is Capillary, the AssayContainers, "<>ObjectToString[suppliedAssayContainers,Cache->cacheBall,Simulation->updatedSimulation]<>", are specified as a Model[Container] or as an Object[Container] that has no Contents:",True,False],
+        Nothing
+      ];
+      passingTest=If[invalidCapillaryAssayContainerContentsError,
+        Nothing,
+        Test["If AssayFormFactor is Capillary, the AssayContainers, "<>ObjectToString[suppliedAssayContainers,Cache->cacheBall,Simulation->updatedSimulation]<>", are specified as a Model[Container] or as an Object[Container] that has no Contents:",True,True]
+      ];
+      {failingTest,passingTest}
+    ],
+    Nothing
+  ];
+
+  (* - Throw an error if the AssayFormFactor is Plate, the user specified Object[Container]'s as AssayContainers and those *)
+  (* containers do not have enough room *)
+  (* Determine if we need to throw the error - First, determine the number of available wells in each assay container *)
+  (* We only need to do this check if AssayFormFactor is Plate *)
+  assayContainerTotalAvailableWells = If[MatchQ[resolvedAssayFormFactor,Plate] && MatchQ[suppliedAssayContainers,ListableP[ObjectP[Object[Container]]]],
+    Total@Map[
+      Function[{container},
+        Module[{containerContents,containerMaxWells},
+          (* Get our container information *)
+          containerContents = fastAssocLookup[fastAssoc,container,Contents];
+          containerMaxWells = fastAssocLookup[fastAssoc,container,{Model,NumberOfWells}];
+
+          (* Determine the number of available wells *)
+          containerMaxWells - Length[containerContents]
+        ]
+      ],
+      suppliedAssayContainers
+    ],
+    Null
+  ];
+
+  (* We have an error if we have object container assay containers AND not enough wells *)
+  notEnoughAssayContainerSpaceError = And[
+    !NullQ[assayContainerTotalAvailableWells],
+    GreaterQ[requiredDilutionAssayContainerWells,assayContainerTotalAvailableWells]
+  ];
+
+  (* If we need to, throw the error message *)
+  notEnoughAssayContainerSpaceOptions = If[notEnoughAssayContainerSpaceError&&messages&&notInEngine,
+    Message[Error::NotEnoughAssayContainerSpace, ObjectToString[suppliedAssayContainers,Cache->cacheBall,Simulation->updatedSimulation], requiredDilutionAssayContainerWells];
+    {AssayContainers},
+    {}
+  ];
+
+  (* If we need to, gather tests *)
+  notEnoughAssayContainerSpaceTests = If[gatherTests,
+    Module[{failingTest,passingTest},
+      failingTest=If[notEnoughAssayContainerSpaceError,
+        Test["If AssayFormFactor is Plate, the AssayContainers, "<>ObjectToString[suppliedAssayContainers,Cache->cacheBall,Simulation->updatedSimulation]<>", are specified as a Model[Container] or as an Object[Container] with more than " <> ToString[requiredDilutionAssayContainerWells] <> " available wells:",True,False],
+        Nothing
+      ];
+      passingTest=If[notEnoughAssayContainerSpaceError,
+        Nothing,
+        Test["If AssayFormFactor is Plate, the AssayContainers, "<>ObjectToString[suppliedAssayContainers,Cache->cacheBall,Simulation->updatedSimulation]<>", are specified as a Model[Container] or as an Object[Container] with more than " <> ToString[requiredDilutionAssayContainerWells] <> " available wells:",True,True]
       ];
       {failingTest,passingTest}
     ],
@@ -4868,7 +5860,7 @@ resolveDynamicLightScatteringOptions[mySamples:{ObjectP[Object[Sample]]..}, myOp
     Module[{failingTest,passingTest},
       failingTest=If[Length[invalidLaserSettingsOptionNames]==0,
         Nothing,
-        Test["The following laser settings related options, "<>ToString[invalidLaserSettingsOptionNames]<>", with values of "<>ToString[invalidLaserSettingOptionValues]<>", are in conflict. When AutomaticLaserSettings is True, the LaserPower and DiodeAttenuation must both be Null. When AutomaticLaserSettings is False, the LaserPower and DiodeAttenuation should be specified as a percentage. Please ensure that these options are not in conflict, or consider letting them resolve automatically:",True,False]
+        Test["The following laser settings related options, "<>ToString[invalidLaserSettingsOptionNames]<>", with values of "<>ToString[invalidLaserSettingOptionValues]<>", are in conflict. When AutomaticLaserSettings is True, the LaserPower and DiodeAttenuation must both be Null. When AutomaticLaserSettings is False, the LaserPower and DiodeAttenuation should be specified as a Percentage. Please ensure that these options are not in conflict, or consider letting them resolve automatically:",True,False]
       ];
       passingTest=If[Length[passingNoAnalyteConcentrationSamples]==0,
         Nothing,
@@ -4999,8 +5991,8 @@ resolveDynamicLightScatteringOptions[mySamples:{ObjectP[Object[Sample]]..}, myOp
 
   (* ColloidalStability Options *)
   colloidalStabilityOptionNames={
-    ReplicateDilutionCurve,StandardDilutionCurve,SerialDilutionCurve,Buffer,DilutionMixType,DilutionMixVolume,DilutionNumberOfMixes,
-    DilutionMixRate,DilutionMixInstrument,BlankBuffer,Analyte,AnalyteMassConcentration
+    ReplicateDilutionCurve,StandardDilutionCurve,SerialDilutionCurve,DilutionMixType,DilutionMixVolume,DilutionNumberOfMixes,
+    DilutionMixRate,DilutionMixInstrument
   };
   colloidalStabilitySuppliedOptions=Lookup[roundedExperimentOptions,colloidalStabilityOptionNames];
 
@@ -5017,6 +6009,9 @@ resolveDynamicLightScatteringOptions[mySamples:{ObjectP[Object[Sample]]..}, myOp
     StepHoldTime
   };
   meltingCurveSuppliedOptions=Lookup[roundedExperimentOptions,meltingCurveOptionNames];
+
+  staticLightScatteringOrColloidalStabilityOptionNames={Buffer,BlankBuffer,Analyte,AnalyteMassConcentration,AnalyteRefractiveIndexIncrement};
+  staticLightScatteringOrColloidalStabilitySuppliedOptions=Lookup[roundedExperimentOptions,staticLightScatteringOrColloidalStabilityOptionNames];
 
   (* - Set Booleans if any of the options that indicate a specific AssayType will be set are specified as non Null/Automatic - *)
   isothermalStabilityOptionsSpecifiedQ=MemberQ[isothermalStabilitySuppliedOptions,Except[Alternatives[Null,Automatic]]];
@@ -5047,11 +6042,11 @@ resolveDynamicLightScatteringOptions[mySamples:{ObjectP[Object[Sample]]..}, myOp
 
   (* Colloidal Stability Options *)
   essentialColloidalStabilityOptionNames={
-    NumberOfReplicates,ReplicateDilutionCurve,Buffer,BlankBuffer,Analyte,AnalyteMassConcentration
+    NumberOfReplicates,ReplicateDilutionCurve,Buffer,BlankBuffer,Analyte,AnalyteMassConcentration,AnalyteRefractiveIndexIncrement
   };
   essentialColloidalStabilitySuppliedOptions={
     suppliedNumberOfReplicates,suppliedReplicateDilutionCurve,suppliedBuffer,suppliedBlankBuffer,suppliedAnalyte,
-    suppliedAnalyteMassConcentration
+    suppliedAnalyteMassConcentration,suppliedAnalyteRefractiveIndexIncrement
   };
 
   (* Melting Curve Options *)
@@ -5290,13 +6285,17 @@ resolveDynamicLightScatteringOptions[mySamples:{ObjectP[Object[Sample]]..}, myOp
   ]];
   invalidOptions=DeleteDuplicates[Flatten[
     {
-      compatibleMaterialsInvalidOption,nameInvalidOption,invalidUnsupportedInstrumentOption,assayTypeInvalidOptions,
-      assayTypeInvalidNullOptions,invalidConflictingIsothermalRunOptions,
-      invalidSampleVolumeOptions,invalidDelayTimeOptionNames,invalidIsothermalMeasurementTimeOptions,
+      compatibleMaterialsInvalidOption,nameInvalidOption,invalidUnsupportedInstrumentOption,assayTypeInvalidOptions,assayTypeInvalidNullOptions,
+      invalidConflictingIsothermalRunOptions,invalidSampleVolumeOptions,invalidDelayTimeOptionNames,invalidIsothermalMeasurementTimeOptions,
       invalidTooLongIsothermalOptions,invalidConflictingDilutionMixOptions,conflictingDilutionCurveOptions,invalidPlateMaxVolumeOptions,
       invalidDilutionMixMinVolumeOptions,notEnoughDilutionVolumeInvalidOptions,invalidOccupiedPlateOptions,onlyOneDilutionCurveOptions,
       invalidTooManyDilutionSamplesOptions,invalidLaserSettingsOptionNames,noAnalyteInvalidOptions,invalidAnalyteOptions,
-      invalidNoAnalyteConcentrationOptions,invalidTemperatureOptions,invalidDLSManualLoadingDirectionOptions,invalidMinMaxTemperatureOptions,invalidFormFactorInstrumentOptions,invalidFormFactorLoadingPlateOptions,invalidFormFactorCapillaryOptions,invalidFormFactorPlateStorageOptions,invalidFormFactorWellCoverOptions,invalidFormFactorWellCoverHeatingOptions,invalidTooLowSampleVolumeOptions,invalidConflictingRampOptions,invalidConflictingDilutionMixTypeInstrument,invalidConflictingDilutionMixTypeOptions
+      invalidNoAnalyteConcentrationOptions,invalidTemperatureOptions,invalidDLSManualLoadingDirectionOptions,invalidMinMaxTemperatureOptions,
+      invalidFormFactorInstrumentOptions,invalidFormFactorLoadingPlateOptions,invalidFormFactorCapillaryOptions,invalidFormFactorPlateStorageOptions,
+      invalidFormFactorWellCoverOptions,invalidFormFactorWellCoverHeatingOptions,invalidFormFactorCalibratePlateOptions,invalidTooLowSampleVolumeOptions,
+      invalidConflictingRampOptions,invalidConflictingDilutionMixTypeInstrument,invalidConflictingDilutionMixTypeOptions,
+      invalidFormFactorReplicateDilutionCurveOptions,invalidAssayContainersOption,invalidConflictingFormFactorAssayContainersOptions,
+      invalidCapillaryAssayContainerContentsOptions,notEnoughAssayContainerSpaceOptions
     }
   ]];
 
@@ -5382,14 +6381,14 @@ resolveDynamicLightScatteringOptions[mySamples:{ObjectP[Object[Sample]]..}, myOp
   simulatedSamplesContainerModels=Lookup[#,Object,{}]&/@Flatten[sampleContainerModelPackets];
 
   (* Define the RequiredAliquotContainers - we have to aliquot if the samples are not in a liquid handler compatible container *)
-  requiredAliquotContainers=MapThread[
+  requiredAliquotContainers=Flatten[MapThread[
     If[
       MatchQ[#1,Alternatives@@liquidHandlerContainerModels],
       Automatic,
       #2
     ]&,
     {simulatedSamplesContainerModels,potentialAliquotContainers}
-  ];
+  ]];
 
   (* -- Resolve Aliquot Options -= *)
   (* Call resolveAliquotOptions *)
@@ -5399,21 +6398,21 @@ resolveDynamicLightScatteringOptions[mySamples:{ObjectP[Object[Sample]]..}, myOp
     MatchQ[simulatedSamplesContainerModels,{dlsAssayContainerP..}],
     {
       {
-        Aliquot->{False},
-        AliquotSampleLabel->Null,
+        Aliquot->ConstantArray[False,Length[mySamples]],
+        AliquotSampleLabel->ConstantArray[Null,Length[mySamples]],
         AliquotAmount->ConstantArray[Null,Length[mySamples]],
-        TargetConcentration->Null,
-        TargetConcentrationAnalyte->Null,
-        AssayVolume->Null,
-        ConcentratedBuffer->Null,
-        BufferDilutionFactor->Null,
-        BufferDiluent->Null,
-        AssayBuffer->Null,
-        AliquotSampleStorageCondition->Null,
-        DestinationWell->Null,
-        AliquotContainer->Null,
-        AliquotPreparation->Null,
-        ConsolidateAliquots->Null
+        TargetConcentration->ConstantArray[Null,Length[mySamples]],
+        TargetConcentrationAnalyte->ConstantArray[Null,Length[mySamples]],
+        AssayVolume->ConstantArray[Null,Length[mySamples]],
+        ConcentratedBuffer->ConstantArray[Null,Length[mySamples]],
+        BufferDilutionFactor->ConstantArray[Null,Length[mySamples]],
+        BufferDiluent->ConstantArray[Null,Length[mySamples]],
+        AssayBuffer->ConstantArray[Null,Length[mySamples]],
+        AliquotSampleStorageCondition->ConstantArray[Null,Length[mySamples]],
+        DestinationWell->ConstantArray[Null,Length[mySamples]],
+        AliquotContainer->ConstantArray[Null,Length[mySamples]],
+        AliquotPreparation -> Null,
+        ConsolidateAliquots -> Null
       },
       {}
     },
@@ -5426,6 +6425,7 @@ resolveDynamicLightScatteringOptions[mySamples:{ObjectP[Object[Sample]]..}, myOp
       simulatedSamples,
       ReplaceRule[allOptionsRounded,Join[resolvedSamplePrepOptions, {NumberOfReplicates -> If[MatchQ[resolvedAssayType,ColloidalStability],1,resolvedNumberOfReplicates], ConsolidateAliquots->True}]],
       Cache->cacheBall,
+      Simulation->Simulation[cacheBall],
       RequiredAliquotContainers->requiredAliquotContainers,
       RequiredAliquotAmounts->requiredAliquotVolumes,
       AliquotWarningMessage->"because the input samples need to be in containers that are compatible with the robotic liquid handlers.",
@@ -5442,6 +6442,7 @@ resolveDynamicLightScatteringOptions[mySamples:{ObjectP[Object[Sample]]..}, myOp
         simulatedSamples,
         ReplaceRule[allOptionsRounded,Join[resolvedSamplePrepOptions, {NumberOfReplicates -> If[MatchQ[resolvedAssayType,ColloidalStability],1,resolvedNumberOfReplicates], ConsolidateAliquots->True}]],
         Cache->cacheBall,
+        Simulation->Simulation[cacheBall],
         RequiredAliquotContainers->requiredAliquotContainers,
         RequiredAliquotAmounts->requiredAliquotVolumes,
         AliquotWarningMessage->"because the input samples need to be in containers that are compatible with the robotic liquid handlers.",
@@ -5472,11 +6473,11 @@ resolveDynamicLightScatteringOptions[mySamples:{ObjectP[Object[Sample]]..}, myOp
         CapillaryLoading->resolvedCapillaryLoading,
         SampleLoadingPlateStorageCondition->resolvedSampleLoadingPlateStorageCondition,
         NumberOfReplicates->resolvedNumberOfReplicates,
-        ColloidalStabilityParametersPerSample->resolvedColloidalStabilityParametersPerSample,
         SampleVolume->resolvedSampleVolume,
         ReplicateDilutionCurve->resolvedReplicateDilutionCurve,
         Analyte->resolvedAnalyte,
         AnalyteMassConcentration->resolvedAnalyteMassConcentration,
+        AnalyteRefractiveIndexIncrement->resolvedAnalyteRefractiveIndexIncrement,
         StandardDilutionCurve->resolvedStandardDilutionCurve,
         SerialDilutionCurve->resolvedSerialDilutionCurve,
         Buffer->resolvedBuffer,
@@ -5502,8 +6503,13 @@ resolveDynamicLightScatteringOptions[mySamples:{ObjectP[Object[Sample]]..}, myOp
         StepHoldTime->resolvedStepHoldTime,
         WellCover->resolvedWellCover,
         WellCoverHeating->resolvedWellCoverHeating,
+        CalibratePlate->resolvedCalibratePlate,
         SamplesInStorageCondition->resolvedSamplesInStorageConditions,
-        SamplesOutStorageCondition->resolvedSamplesOutStorageCondition
+        SamplesOutStorageCondition->resolvedSamplesOutStorageCondition,
+        AssayContainers->semiResolvedAssayContainers,
+        SolventName->resolvedSolventName,
+        SolventViscosity->resolvedSolventViscosity,
+        SolventRefractiveIndex->resolvedSolventRefractiveIndex
       }
     ]
   ];
@@ -5521,9 +6527,14 @@ resolveDynamicLightScatteringOptions[mySamples:{ObjectP[Object[Sample]]..}, myOp
           conflictingIsothermalIsothermalTimeTests,tooLongIsothermalAssayTests,conflictingDilutionMixTests,bufferNotSpecifiedTests,
           conflictingDilutionCurveTests,bufferBlankBufferTests,dilutionVolumePlateMismatchTests,dilutionCurveMixVolumeMismatchTests,
           notEnoughDilutionVolumeTests,occupiedSampleLoadingPlateTests,nonDefaultLoadingPlateTests,onlyOneDilutionConcentrationTests,
-          tooManySamplesTests,tooManyDilutionSamplesTests,noAnalyteTests,noAnalyteConcentrationTests,tooManyAnalytesTests,
+          tooManySamplesTests,tooManyDilutionSamplesTests,noAnalyteTests,noAnalyteConcentrationTests,solventNameMismatchTests,tooManyAnalytesTests,
           noAnalyteMWTests,tooConcentratedAnalyteTests,conflictingLaserSettingsTests,invalidTemperatureTests,
-          conflictingDLSManualLoadingDirectionOptionsTests,aliquotTests,minMaxTemperatureMismatchTests,conflictingDLSFormFactorInstrumentTest,conflictingDLSFormFactorLoadingPlateTest,conflictingDLSFormFactorCapillaryLoadingTest,conflictingDLSFormFactorPlateStorageTest,conflictingFormFactorWellCoverTest,conflictingFormFactorWellCoverHeatingTest,tooLowSampleVolumeTest,conflictingRampOptionsTest,conflictingDilutionMixTypeOptionsTests,conflictingDilutionMixTypeInstrumentTests
+          conflictingDLSManualLoadingDirectionOptionsTests,aliquotTests,minMaxTemperatureMismatchTests,conflictingDLSFormFactorInstrumentTest,
+          conflictingDLSFormFactorLoadingPlateTest,conflictingDLSFormFactorCapillaryLoadingTest,conflictingDLSFormFactorPlateStorageTest,
+          conflictingFormFactorWellCoverTest,conflictingFormFactorWellCoverHeatingTest,conflictingFormFactorCalibratePlateTest,
+          tooLowSampleVolumeTest,conflictingRampOptionsTest,conflictingDilutionMixTypeOptionsTests,conflictingDilutionMixTypeInstrumentTests,
+          conflictingDLSFormFactorReplicateDilutionCurveTest,invalidAssayContainersTests,conflictingFormFactorAssayContainersTest,
+          specifiedCapillaryAssayContainersTests,invalidCapillaryAssayContainerContentsTests,notEnoughAssayContainerSpaceTests
         }
       ]
       ,_EmeraldTest
@@ -5620,40 +6631,44 @@ resolveDynamicLightScatteringMethod[myContainers : ListableP[ObjectP[{Object[Con
 
 DefineOptions[
   dynamicLightScatteringResourcePackets,
-  Options:>{HelperOutputOption,CacheOption,SimulationOption}
+  Options:>{ExperimentOutputOption,CacheOption,SimulationOption}
 ];
 
 (* Create the protocol with resources included *)
 dynamicLightScatteringResourcePackets[mySamples : {ObjectP[Object[Sample]]..}, myUnresolvedOptions : {___Rule}, myResolvedOptions : {___Rule}, myCollapsedResolvedOptions : {___Rule}, myOptions : OptionsPattern[]] := Module[
   {
     safeOps, expandedInputs, expandedResolvedOptions, resolvedOptionsNoHidden, outputSpecification, output, gatherTests, messages, cache, simulation, fastAssoc,
-    protocolID, liquidHandlerContainers, numberOfReplicates, instrument, name, assayType, sampleLoadingPlate,
+    simulatedSamples, updatedSimulation,
+    protocolID, liquidHandlerContainers, instrument, name, assayType, sampleLoadingPlate,
     sampleVolume, replicateDilutionCurve, assayContainerFillDirection, temperature, equilibrationTime, numberOfAcquisitions, acquisitionTime,
     laserPower, diodeAttenuation, capillaryLoading, measurementDelayTime, isothermalMeasurements, isothermalRunTime, isothermalAttenuatorAdjustment,
     sampleLoadingPlateStorageCondition, parentProtocol, automaticLaserSettings, objectSamplePacketFields,
     listedSamplePackets, liquidHandlerContainerDownload, samplePackets, sampleCompositionPackets,
     listedSampleContainers, sampleContainersIn, liquidHandlerContainerMaxVolumes,
     samplesWithReplicates,
-    optionsWithReplicates, expandedAliquotAmounts, expandedBuffer, expandedBlankBuffer, expandedStandardDilutionCurve,
-    expandedSerialDilutionCurve, expandedSamplesInStorageCondition, samplesOutStorageCondition, expandedDilutionMixVolume, expandedDilutionNumberOfMixes, expandedDilutionMixRate,
-    expandedAnalytes, expandedAnalyteMassConcentrations,
-    numberOfSamplesWithReplicates, intNumberOfReplicates, expandedStandardDilutionCurveVolumes, expandedSerialDilutionCurveVolumes,
-    expandedRequiredSampleVolumes, sampleVolumeRules, uniqueSampleVolumeRules, sampleResourceReplaceRules, samplesInResources,
-    expandedRequiredBufferVolumes, bufferVolumeRules, blankBufferVolumeRules, allVolumeRules, uniqueObjectsAndVolumesAssociation,
+    optionsWithReplicates, expandedAliquotAmounts, expandedBuffer, expandedBlankBuffer, expandedStandardDilutionCurve, expandedSerialDilutionCurve,
+    expandedSamplesInStorageCondition, expandedDilutionMixTypes, expandedDilutionMixVolume, expandedDilutionNumberOfMixes,
+    expandedDilutionMixRate, expandedDilutionMixInstruments, expandedAnalytes, expandedAnalyteMassConcentrations, expandedAnalyteRefractiveIndexIncrements,
+    expandedSolventNames, expandedSolventViscosities, expandedSolventRefractiveIndices, expandedSampleLabels, expandedSampleContainerLabels,
+    numberOfSamplesWithReplicates, intNumberOfReplicates, calculatedStandardDilutionCurveVolumes, calculatedSerialDilutionCurveVolumes,
+    requiredSampleVolumes, sampleVolumeRules, uniqueSampleVolumeRules, sampleResourceReplaceRules, samplesInResources,
+    requiredBufferVolumes, bufferVolumeRules, blankBufferVolumeRules, allVolumeRules, uniqueObjectsAndVolumesAssociation,
     uniqueResources, uniqueObjects, uniqueObjectResourceReplaceRules, bufferResources, blankBufferResources, instrumentTime,
     instrumentResource, capillaryLoadingVolume, runTime, sampleLoadingPlateResource, manualLoadingPlateResource, numberOfAssayContainerWellsPerSample,
     requiredDilutionAssayContainerWells, numberOfAssayContainers, assayContainerResources, capillaryStripLoadingRack, capillaryClipResource,
     capillaryClipGasketResource, sampleStageLid, manualLoadingPipetteResource, manualLoadingTipsResource,
-    standardDilutionCurveVolumes, serialDilutionCurveVolumes, transposedStandardDilutionCurves, transposedSerialDilutionCurves, dilutionSampleVolumes,
-    dilutionFactors, dilutionConcentrations, analyteMolecularWeights, nonNullAnalyteMolecularWeights,
-    analyteMolecularWeightString, protocolPacket, prepPacket, finalizedPacket, allResourceBlobs, resourcesOk, resourceTests, previewRule,
-    optionsRule, testsRule, resultRule, assayFormFactor, colloidalStabilityParametersPerSample, calculateMolecularWeight,
+    transposedStandardDilutionCurves, transposedSerialDilutionCurves, dilutionSampleVolumes,
+    dilutionFactors, dilutionConcentrations, analyteMolecularWeights,
+    protocolPacket, prepPacket, finalizedPacket, allResourceBlobs, resourcesOk, resourceTests, previewRule,
+    optionsRule, testsRule, resultRule, assayFormFactor, calculateMolecularWeight,
     collectStaticLightScattering, minTemperature, maxTemperature, temperatureRampOrder, numberOfCycles, temperatureRamping,
     temperatureRampRate, temperatureResolution, numberOfTemperatureRampSteps, stepHoldTime, wellCover, wellCoverHeating,
-    dilutionMixType, dilutionMixInstrument, storageConditionSymbolToModel, modelLoadingPlateStorage,unitOperationPacket,
-    sampleLoadingPlateStorageConditionModel, expandedSamplesInStorageConditionSymbols, sampleContainerModelPackets,
+    dilutionMixType, dilutionMixInstrument,
+    expandedSamplesInStorageConditionSymbols, sampleContainerModelPackets,
     buffer, blankBuffer, standardDilutionCurve, serialDilutionCurve, aliquotAmounts, siscToUse, aliquotAmountsOrNulls,
-    dilutionMixVolume, dilutionNumberOfMixes, dilutionMixRate, analyte, analyteMassConcentration, samplesInStorageCondition
+    dilutionMixVolume, dilutionNumberOfMixes, dilutionMixRate, analyte, analyteMassConcentration, samplesInStorageCondition, simulationRule,
+    calibratePlate, calibrationStandardResource, numberOfWellsPerAssayContainer, calibrationStandardDiluentResource, assayContainers,
+    solventName,solventViscosity,solventRefractiveIndex,analyteRefractiveIndexIncrement
   },
 
   (* get the safe options for this function *)
@@ -5684,6 +6699,9 @@ dynamicLightScatteringResourcePackets[mySamples : {ObjectP[Object[Sample]]..}, m
   (* make the fast association *)
   fastAssoc = makeFastAssocFromCache[cache];
 
+  (* Simulate the sample preparation stuff so we have the right containers if we are aliquoting *)
+  {simulatedSamples, updatedSimulation} = simulateSamplesResourcePacketsNew[ExperimentDynamicLightScattering, mySamples, myResolvedOptions, Cache -> cache, Simulation -> simulation];
+
   (* Generate an ID for the new protocol *)(*todo: come back to this for Unit Operations*)
   protocolID = CreateID[Object[Protocol, DynamicLightScattering]];
 
@@ -5693,21 +6711,28 @@ dynamicLightScatteringResourcePackets[mySamples : {ObjectP[Object[Sample]]..}, m
 
   (* Pull out relevant non-index matched options from the re-expanded options *)
   {
-    instrument, name, assayType, sampleLoadingPlate, sampleVolume, replicateDilutionCurve,
-    assayContainerFillDirection, temperature, equilibrationTime, numberOfAcquisitions, acquisitionTime, laserPower, diodeAttenuation, capillaryLoading,
+    instrument, name, assayType, sampleLoadingPlate, sampleVolume, replicateDilutionCurve,  assayContainerFillDirection,
+    temperature, equilibrationTime, numberOfAcquisitions, acquisitionTime, laserPower, diodeAttenuation, capillaryLoading,
     measurementDelayTime, isothermalMeasurements, isothermalRunTime, isothermalAttenuatorAdjustment, sampleLoadingPlateStorageCondition,
-    parentProtocol, automaticLaserSettings, assayFormFactor, colloidalStabilityParametersPerSample, calculateMolecularWeight, collectStaticLightScattering, minTemperature,
-    maxTemperature, temperatureRampOrder, numberOfCycles, temperatureRamping, temperatureRampRate, temperatureResolution, numberOfTemperatureRampSteps, stepHoldTime,
-    wellCover, wellCoverHeating, dilutionMixType, dilutionMixInstrument, samplesOutStorageCondition, buffer, blankBuffer, standardDilutionCurve, serialDilutionCurve,
-    dilutionMixVolume, dilutionNumberOfMixes, dilutionMixRate, analyte, analyteMassConcentration, aliquotAmounts, samplesInStorageCondition
+    parentProtocol, automaticLaserSettings, assayFormFactor, calculateMolecularWeight, collectStaticLightScattering, minTemperature,
+    maxTemperature, temperatureRampOrder, numberOfCycles, temperatureRamping, temperatureRampRate, temperatureResolution,
+    numberOfTemperatureRampSteps, stepHoldTime, wellCover, wellCoverHeating, dilutionMixType, dilutionMixInstrument, samplesOutStorageCondition,
+    buffer, blankBuffer, standardDilutionCurve, serialDilutionCurve, dilutionMixVolume, dilutionNumberOfMixes, dilutionMixRate,
+    analyte, analyteMassConcentration, aliquotAmounts, samplesInStorageCondition, calibratePlate, assayContainers, solventName,
+    solventViscosity, solventRefractiveIndex, analyteRefractiveIndexIncrement
   } =
       Lookup[expandedResolvedOptions,
         {
-          Instrument, Name, AssayType, SampleLoadingPlate, SampleVolume, ReplicateDilutionCurve,
-          AssayContainerFillDirection, Temperature, EquilibrationTime, NumberOfAcquisitions, AcquisitionTime, LaserPower, DiodeAttenuation, CapillaryLoading,
+          Instrument, Name, AssayType, SampleLoadingPlate, SampleVolume, ReplicateDilutionCurve, AssayContainerFillDirection,
+          Temperature, EquilibrationTime, NumberOfAcquisitions, AcquisitionTime, LaserPower, DiodeAttenuation, CapillaryLoading,
           MeasurementDelayTime, IsothermalMeasurements, IsothermalRunTime, IsothermalAttenuatorAdjustment, SampleLoadingPlateStorageCondition,
-          ParentProtocol, AutomaticLaserSettings, AssayFormFactor, ColloidalStabilityParametersPerSample, CalculateMolecularWeight, CollectStaticLightScattering, MinTemperature, MaxTemperature, TemperatureRampOrder, NumberOfCycles, TemperatureRamping, TemperatureRampRate, TemperatureResolution, NumberOfTemperatureRampSteps, StepHoldTime, WellCover, WellCoverHeating, DilutionMixType, DilutionMixInstrument, SamplesOutStorageCondition, Buffer, BlankBuffer, StandardDilutionCurve, SerialDilutionCurve,
-          DilutionMixVolume, DilutionNumberOfMixes, DilutionMixRate, Analyte, AnalyteMassConcentration, AliquotAmounts, SamplesInStorageCondition
+          ParentProtocol, AutomaticLaserSettings, AssayFormFactor, CalculateMolecularWeight, CollectStaticLightScattering,
+          MinTemperature, MaxTemperature, TemperatureRampOrder, NumberOfCycles, TemperatureRamping, TemperatureRampRate,
+          TemperatureResolution, NumberOfTemperatureRampSteps, StepHoldTime, WellCover, WellCoverHeating, DilutionMixType,
+          DilutionMixInstrument, SamplesOutStorageCondition, Buffer, BlankBuffer, StandardDilutionCurve, SerialDilutionCurve,
+          DilutionMixVolume, DilutionNumberOfMixes, DilutionMixRate, Analyte, AnalyteMassConcentration, AliquotAmounts,
+          SamplesInStorageCondition, CalibratePlate, AssayContainers, SolventName, SolventViscosity, SolventRefractiveIndex,
+          AnalyteRefractiveIndexIncrement
         },
         Null
       ];
@@ -5718,19 +6743,20 @@ dynamicLightScatteringResourcePackets[mySamples : {ObjectP[Object[Sample]]..}, m
   {listedSamplePackets, liquidHandlerContainerDownload} = Quiet[
     Download[
       {
-        mySamples,
+        simulatedSamples,
         liquidHandlerContainers
       },
       {
         {
           objectSamplePacketFields,
           Packet[Composition[[All, 2]][{Object, MolecularWeight, Name}]],
-          Packet[Container][Model]
+          Packet[Container][{Model, NumberOfWells}]
         },
         {MaxVolume}
       },
       Cache -> cache,
-      Date -> Now
+      Date -> Now,
+      Simulation -> updatedSimulation
     ],
     {Download::FieldDoesntExist}
   ];
@@ -5753,16 +6779,17 @@ dynamicLightScatteringResourcePackets[mySamples : {ObjectP[Object[Sample]]..}, m
 
   {
     expandedAliquotAmounts, expandedBuffer, expandedBlankBuffer, expandedStandardDilutionCurve, expandedSerialDilutionCurve,
-    expandedSamplesInStorageCondition, expandedDilutionMixVolume, expandedDilutionNumberOfMixes,
-    expandedDilutionMixRate, expandedAnalytes, expandedAnalyteMassConcentrations
-  } =
-      Lookup[optionsWithReplicates,
-        {
-          AliquotAmount, Buffer, BlankBuffer, StandardDilutionCurve, SerialDilutionCurve, SamplesInStorageCondition,
-          DilutionMixVolume, DilutionNumberOfMixes, DilutionMixRate, Analyte, AnalyteMassConcentration
-        },
-        Null
-      ];
+    expandedSamplesInStorageCondition, expandedDilutionMixTypes, expandedDilutionMixVolume, expandedDilutionNumberOfMixes,
+    expandedDilutionMixRate, expandedDilutionMixInstruments, expandedAnalytes, expandedAnalyteMassConcentrations, expandedAnalyteRefractiveIndexIncrements,
+    expandedSolventNames, expandedSolventViscosities, expandedSolventRefractiveIndices, expandedSampleLabels, expandedSampleContainerLabels
+  } = Lookup[optionsWithReplicates,
+      {
+        AliquotAmount, Buffer, BlankBuffer, StandardDilutionCurve, SerialDilutionCurve, SamplesInStorageCondition,
+        DilutionMixType, DilutionMixVolume, DilutionNumberOfMixes, DilutionMixRate, DilutionMixInstrument, Analyte, AnalyteMassConcentration, AnalyteRefractiveIndexIncrement,
+        SolventName, SolventViscosity, SolventRefractiveIndex, SampleLabel, SampleContainerLabel
+      },
+      Null
+  ];
 
   (* Silly download of storage condition symbols because I can't figure out another workaround *)
   siscToUse=If[MatchQ[assayType,ColloidalStability],samplesInStorageCondition,expandedSamplesInStorageCondition];
@@ -5794,14 +6821,17 @@ dynamicLightScatteringResourcePackets[mySamples : {ObjectP[Object[Sample]]..}, m
 
   (* - For resources below, we will need to know how much volume will be needed for samples / buffers - *)
   (* Run calculatedDilutionCurveVolumes on the standardDilutionCurve and serialDilutionCurve to get this information *)
-  expandedStandardDilutionCurveVolumes = calculatedDLSDilutionCurveVolumes[#]& /@ Transpose[{standardDilutionCurve, ToList[analyteMassConcentration]}];
-  expandedSerialDilutionCurveVolumes = calculatedDLSDilutionCurveVolumes[#]& /@ serialDilutionCurve;
+  (* NOTE: We DO NOT use our number of replicate expanded values for the following samplvolume/buffervolume calcualtions *)
+  (* This is because we have to take into account the ReplicateDilutionCurve option. If we used the expanded versions *)
+  (* we would not be able to tell which indices to ignore when ReplicateDilutionCurve is False *)
+  calculatedStandardDilutionCurveVolumes = calculatedDLSDilutionCurveVolumes[#]& /@ Transpose[{standardDilutionCurve, ToList[analyteMassConcentration]}];
+  calculatedSerialDilutionCurveVolumes = calculatedDLSDilutionCurveVolumes[#]& /@ serialDilutionCurve;
 
   (* Make quasi-expanded aliquot amounts *)
   aliquotAmountsOrNulls = If[
     !NullQ[aliquotAmounts],
       aliquotAmounts,
-      aliquotAmounts/.{Null->ConstantArray[{Null,Null},Length[expandedStandardDilutionCurveVolumes]]}
+      aliquotAmounts/.{Null->ConstantArray[{Null,Null},Length[calculatedStandardDilutionCurveVolumes]]}
   ];
 
   (* === To make resources, we need to find the input Objects and Models that are unique, and to request the total volume of them that is needed === *)
@@ -5810,7 +6840,7 @@ dynamicLightScatteringResourcePackets[mySamples : {ObjectP[Object[Sample]]..}, m
   (* - First, we need to make a list of volumes that are index matched to the expanded samples - *)
   (* For SizingPolydispersity, MeltingCurve, and IsothermalStability Assays, this will be either the AliquotAmount or the SampleVolume *)
   (* For ColloidalStability Assays, this will be either the AliquotAmount or the amount needed for the dilution curves *)
-  expandedRequiredSampleVolumes = If[
+  requiredSampleVolumes = If[
 
     (* - Cases where AssayType is SizingPolydispersity, MeltingCurve, or IsothermalStability - *)
     (* If the AliquotAmount is specified, use that; else, use the SampleVolume. *)
@@ -5829,33 +6859,33 @@ dynamicLightScatteringResourcePackets[mySamples : {ObjectP[Object[Sample]]..}, m
 
             (* If the StandardDilutionCurve is specified and ReplicateDilutionCurve is False, add up the SampleVolumes *)
             Not[MatchQ[standardVolumes,{Null,Null}]] && MatchQ[replicateDilutionCurve,False],
-            (Total[First[standardVolumes]]*colloidalStabilityParametersPerSample),
+            (Total[First[standardVolumes]]),
 
             (* If the StandardDilutionCurve is specified and ReplicateDilutionCurve is True, add up the SampleVolumes and multiply by NumberOfReplicates *)
             Not[MatchQ[standardVolumes,{Null,Null}]] && MatchQ[replicateDilutionCurve,True],
-            (Total[First[standardVolumes]] * intNumberOfReplicates * colloidalStabilityParametersPerSample),
+            (Total[First[standardVolumes]] * intNumberOfReplicates),
 
             (* If the SerialDilutionCurve is specified and ReplicateDilutionCurve is False, the amount needed is the first TransferVolume *)
             Not[MatchQ[serialVolumes,{Null,Null}]] && MatchQ[replicateDilutionCurve,False],
-            (First[First[serialVolumes]] * colloidalStabilityParametersPerSample ),
+            (First[First[serialVolumes]]),
 
             (* If the SerialDilutionCurve is specified and ReplicateDilutionCurve is True, the amount needed is the first TransferVolume times the NumberOfReplicates *)
             Not[MatchQ[serialVolumes,{Null,Null}]] && MatchQ[replicateDilutionCurve,True],
-            (First[First[serialVolumes]] * intNumberOfReplicates * colloidalStabilityParametersPerSample),
+            (First[First[serialVolumes]] * intNumberOfReplicates),
 
             (* Catch-all that should never exist (Errors would have been thrown in resolver) *)
             True,
             0 * Microliter
           ]
         ],
-        {aliquotAmountsOrNulls, expandedStandardDilutionCurveVolumes, expandedSerialDilutionCurveVolumes}
+        {aliquotAmountsOrNulls, calculatedStandardDilutionCurveVolumes, calculatedSerialDilutionCurveVolumes}
       ]
   ];
 
   (* Then, we use this list to create the volume rules for the input samples *)
   sampleVolumeRules = MapThread[
     (#1 -> #2)&,
-    {If[MatchQ[assayType,ColloidalStability],mySamples,samplesWithReplicates], (expandedRequiredSampleVolumes + 10 * Microliter)}
+    {If[MatchQ[assayType,ColloidalStability],mySamples,samplesWithReplicates], (requiredSampleVolumes + 10 * Microliter)}
   ];
 
   (* Merge the SamplesIn volumes together to get the total volume of each sample's resource *)
@@ -5877,49 +6907,67 @@ dynamicLightScatteringResourcePackets[mySamples : {ObjectP[Object[Sample]]..}, m
 
   (* -- Buffer -- *)
   (* - Determine the minimum amount of each Buffer needed - *)
-  expandedRequiredBufferVolumes = MapThread[
-    Switch[{assayType, #1, #2, replicateDilutionCurve},
+  requiredBufferVolumes = MapThread[
+    Function[{standardVolumes,serialVolumes},
+      Switch[{assayType, standardVolumes, serialVolumes, replicateDilutionCurve},
 
-      (* If the AssayType is SizingPolydispersity, MeltingCurve, or IsothermalStability, set to 0 uL (no buffer) *)
-      {Except[ColloidalStability], _, _, _},
-      0 * Microliter,
+        (* If the AssayType is SizingPolydispersity, MeltingCurve, or IsothermalStability, set to 0 uL (no buffer) *)
+        {Except[ColloidalStability], _, _, _},
+          0 * Microliter,
 
-      (* If the StandardDilutionCurve is specified and ReplicateDilutionCurve is False, sum of Buffer Volumes *)
-      {_, Except[{Null, Null}], _, False},
-      (Total[Last[#1]]*colloidalStabilityParametersPerSample),
+        (* If the StandardDilutionCurve is specified and ReplicateDilutionCurve is False, sum of Buffer Volumes *)
+        {_, Except[{Null, Null}], _, False},
+          (Total[Last[standardVolumes]]),
 
-      (* If the StandardDilutionCurve is specified and ReplicateDilutionCurve is True, sum of Buffer Volumes times NumberOfReplicates *)
-      {_, Except[{Null, Null}], _, True},
-      (Total[Last[#1]] * intNumberOfReplicates * colloidalStabilityParametersPerSample),
+        (* If the StandardDilutionCurve is specified and ReplicateDilutionCurve is True, sum of Buffer Volumes times NumberOfReplicates *)
+        {_, Except[{Null, Null}], _, True},
+          (Total[Last[standardVolumes]] * intNumberOfReplicates),
 
-      (* If the SerialDilutionCurve is specified and ReplicateDilutionCurve is False, sum of Buffer Volumes *)
-      {_, _, Except[{Null, Null}], False},
-      (Total[Last[#2]] * colloidalStabilityParametersPerSample),
+        (* If the SerialDilutionCurve is specified and ReplicateDilutionCurve is False, sum of Buffer Volumes *)
+        {_, _, Except[{Null, Null}], False},
+          (Total[Last[serialVolumes]]),
 
-      (* If the SerialDilutionCurve is specified and ReplicateDilutionCurve is True, sum of Buffer volumes times NumberOfReplicates *)
-      {_, _, Except[{Null, Null}], True},
-      (Total[Last[#2]] * intNumberOfReplicates * colloidalStabilityParametersPerSample),
+        (* If the SerialDilutionCurve is specified and ReplicateDilutionCurve is True, sum of Buffer volumes times NumberOfReplicates *)
+        {_, _, Except[{Null, Null}], True},
+          (Total[Last[serialVolumes]] * intNumberOfReplicates),
 
-      (* Catch-all that should never exist (Errors would have been thrown in resolver) *)
-      {_, _, _, _},
-      0 * Microliter
+        (* Catch-all that should never exist (Errors would have been thrown in resolver) *)
+        {_, _, _, _},
+          0 * Microliter
 
-    ]&,
-    {expandedStandardDilutionCurveVolumes, expandedSerialDilutionCurveVolumes}
+      ]
+    ],
+    {calculatedStandardDilutionCurveVolumes, calculatedSerialDilutionCurveVolumes}
   ];
 
   (* Define the volume rules for the Buffer *)
   bufferVolumeRules = MapThread[
     (#1 -> #2)&,
-    {buffer, expandedRequiredBufferVolumes}
+    {buffer, requiredBufferVolumes}
   ];
 
-  (* - BlankBuffer - only for ColloidalStability assays - *)
-  blankBufferVolumeRules = If[MatchQ[assayType, ColloidalStability],
+  (* - BlankBuffer - only for ColloidalStability assays or CollectStaticLightScattering - *)
+  blankBufferVolumeRules = Which[
+    MatchQ[assayType, ColloidalStability] && MatchQ[assayFormFactor, Capillary],
     Map[
       (# -> 30 * Microliter)&,
       blankBuffer
     ],
+
+    (* For a 96-well plate, 100 uL *)
+    (MatchQ[assayType, ColloidalStability] || (collectStaticLightScattering && MatchQ[assayFormFactor, Plate])) && MatchQ[fastAssocLookup[fastAssoc,First[assayContainers], NumberOfWells], 96],
+    Map[
+      (# -> 120 * Microliter)&,
+      blankBuffer
+    ],
+
+    (* For a 384-well plate, 30 uL *)
+    (MatchQ[assayType, ColloidalStability] || (collectStaticLightScattering && MatchQ[assayFormFactor, Plate])),
+    Map[
+      (# -> 50 * Microliter)&,
+      blankBuffer
+    ],
+    True,
     {}
   ];
 
@@ -5956,7 +7004,7 @@ dynamicLightScatteringResourcePackets[mySamples : {ObjectP[Object[Sample]]..}, m
   (* -- Use the unique object replace rules to make lists of the resources of the inputs and the options / fields that are objects -- *)
   {bufferResources, blankBufferResources} = Map[
     Replace[#, uniqueObjectResourceReplaceRules, {1}]&,
-    {buffer, blankBuffer}
+    If[MatchQ[assayType,ColloidalStability],{buffer, blankBuffer}, {expandedBuffer, blankBuffer}]
   ];
 
   (* -- Make Resources for Instrument / Containers / Consumables  -- *)
@@ -6035,29 +7083,38 @@ dynamicLightScatteringResourcePackets[mySamples : {ObjectP[Object[Sample]]..}, m
     Null
   ];
 
-  (* -- For the AssayContainer-related Resources, first, figure out how many assay containers we need -- *)
+  (* -- For the AssayContainer-related Resources, first, figure out how many assay container wells we need -- *)
   numberOfAssayContainerWellsPerSample = MapThread[
-    Switch[{assayType, #1, #2},
+    Switch[{assayType, collectStaticLightScattering, assayFormFactor, #1, #2},
 
-      (* If the resolvedAssayType is IsothermalStability or SizingPolydispersity, we set this to 1 *)
-      {Except[ColloidalStability], _, _},
-      1,
+      (* If the resolvedAssayType is not ColloidalStability, and CollectStaticLightScattering is not True (or we're in Capillary), we set this to the length of SamplesIn times NumberOfReplicates *)
+      {Except[ColloidalStability], False, _, _, _},
+      intNumberOfReplicates,
+      {Except[ColloidalStability], _, Capillary, _, _},
+      intNumberOfReplicates,
+
+      (* If the resolvedAssayType is not ColloidalStability, and CollectStaticLightScattering is True, we set this to the length of SamplesIn times NumberOfReplicates + 1 (for blank buffer) *)
+      {Except[ColloidalStability], True, Plate, _, _},
+      intNumberOfReplicates + 1,
 
       (* If the StandardDilutionCurve is specified, then take the Length of the SampleVolumes times the NumberOfReplicates *)
-      {_, Except[{Null, Null}], _},
-      ((Length[First[#1]] * intNumberOfReplicates * colloidalStabilityParametersPerSample) + 1),
+      {_, _, _, Except[{Null, Null}], _},
+      ((Length[First[#1]] * intNumberOfReplicates) + 1),
 
       (* If only the SerialDilutionCurve is specified, take the Length of the TransferVolumes times the NumberOfReplicates *)
-      {_, _, Except[{Null, Null}]},
-      ((Length[First[#2]] * intNumberOfReplicates * colloidalStabilityParametersPerSample) + 1)
+      {_, _, _, _, Except[{Null, Null}]},
+      ((Length[First[#2]] * intNumberOfReplicates) + 1)
     ]&,
-    {expandedStandardDilutionCurveVolumes, expandedSerialDilutionCurveVolumes}
+    {calculatedStandardDilutionCurveVolumes, calculatedSerialDilutionCurveVolumes}
   ];
 
   (* Figure out how many total AssayContainer wells the protocol needs. This is done by adding the numberOfSamplesWithReplicates
   (which corresponds to the BlankBuffer wells, one for each sample), to the product of the NumberOfReplicates times the sum of the
-  assayContainerWellsPerSample (which already takes into account the NumberOfReplicates *)
-  requiredDilutionAssayContainerWells = Total[numberOfAssayContainerWellsPerSample];
+  assayContainerWellsPerSample (which already takes into account the NumberOfReplicates, and adding 11 if CalibratePlate is True *)
+  requiredDilutionAssayContainerWells = If[calibratePlate,
+    Total[numberOfAssayContainerWellsPerSample] + 11,
+    Total[numberOfAssayContainerWellsPerSample]
+  ];
 
   (* We are going to make two branches here: one for Capillary and one for Plate, because there will only ever be one AssayContainer for Plate *)
   (* Using the number of required wells, determine how many AssayContainers we need *)
@@ -6082,8 +7139,25 @@ dynamicLightScatteringResourcePackets[mySamples : {ObjectP[Object[Sample]]..}, m
 
   (* - AssayContainer - *)
   (* First, the branch for AssayType -> Capillary *)
-  assayContainerResources = Which[
-    MatchQ[assayFormFactor,Capillary],
+  {assayContainerResources, numberOfWellsPerAssayContainer} = Which[
+
+    (* Things get a little tricky with capillaries because if the user has specified specific capillaries but we need a different number, we're going to override *)
+    (* If user gave us models, things aren't so hard *)
+    MatchQ[assayFormFactor,Capillary] && MatchQ[assayContainers, {ObjectP[Model]..}],
+      {
+        Table[
+          Resource[
+            Sample -> Download[First[assayContainers], Object],
+            Name -> ToString[Unique[]]
+          ],
+          numberOfAssayContainers
+        ],
+        16
+      },
+
+    (* If user gave us the wrong number of capillary objects, we just spit out the right number of generic capillary strips *)
+    MatchQ[assayFormFactor,Capillary] && MemberQ[assayContainers, ObjectP[Object]] && Length[assayContainers]!=numberOfAssayContainers,
+    {
       Table[
         Resource[
           Sample -> Model[Container, Plate, CapillaryStrip, "id:R8e1Pjp9Kjjj"],(*"Uncle 16-capillary strip"*)
@@ -6091,40 +7165,41 @@ dynamicLightScatteringResourcePackets[mySamples : {ObjectP[Object[Sample]]..}, m
         ],
         numberOfAssayContainers
       ],
+      16
+    },
+
+    (* For all other capillary cases, go with what the user gave us *)
+    MatchQ[assayFormFactor, Capillary],
+    {
+      Resource[
+        Sample -> #,(*"Uncle 16-capillary strip"*)
+        Name -> ToString[Unique[]]
+      ]&/@Download[assayContainers, Object],
+      16
+    },
 
     (* Brief interlude here - if we've got preloaded samples, we'll just take that plate *)
     MatchQ[ToList[Lookup[sampleContainerModelPackets,Model]],{dlsAssayContainerP..}&&Length[sampleContainersIn]==1],
-      Resource[
-        Sample->First[sampleContainersIn],
-        Name->ToString[Unique[]]
-      ],
-
-    (* Next, the branch for AssayType -> Plate. We have to use both (a) number of wells and (b) sample volume *)
-    (* If there are more than 96 wells required, or the max SampleVolume is less than 50 Microliter, go with a 384-well plate *)
-      GreaterQ[requiredDilutionAssayContainerWells,96] || LessQ[Max[sampleVolume],30*Microliter],
+      {
         {
           Resource[
-            Sample->Model[Container, Plate, "id:4pO6dMOlqJLw"],(*"384-well Aurora Flat Bottom DLS Plate"*)(*TODO: THIS IS NOT PARAMETERIZED YET!!!!!!!!!!*)
+            Sample->First[sampleContainersIn],
             Name->ToString[Unique[]]
           ]
         },
-
-    (* ELSE, go with a 96-well plate. First search for our preferred one and make sure we have at least one stocked onsite *)
-    Length[Search[Object[Container, Plate],Model == Link[Model[Container, Plate, "id:rea9jlaPWNGx"], Objects] && Status == Stocked && Site == Link[$Site]]]>=1,
-      {
-        Resource[
-          Sample->Model[Container, Plate, "id:rea9jlaPWNGx"],(*"96 well Flat Bottom DLS Plate"*)
-          Name->ToString[Unique[]]
-        ]
+        Lookup[sampleContainerModelPackets, NumberOfWells]
       },
 
-    (* If none of those, specify our non-preferred 96-well plate *)
+    (* For all other Plate cases, we go with the resolved assay container *)
     True,
       {
-        Resource[
-          Sample->Model[Container, Plate, "id:N80DNj09z91D"],(*"96 well Clear Flat Bottom DLS Plate"*)
-          Name->ToString[Unique[]]
-        ]
+        {
+          Resource[
+            Sample->Download[First[assayContainers], Object],
+            Name->ToString[Unique[]]
+          ]
+        },
+        Download[assayContainers, NumberOfWells, Cache->cache]
       }
   ];
 
@@ -6174,7 +7249,11 @@ dynamicLightScatteringResourcePackets[mySamples : {ObjectP[Object[Sample]]..}, m
   (* - ManualLoadingPlate - only if we are loading manual and AssayFormFactor is Capillary. I am not a huge fan of this solution, but its a simpler fix than to rearrange how the sample prep plate is set *)
   manualLoadingPlateResource = If[MatchQ[capillaryLoading, Manual],
     Resource[
-      Sample -> Model[Container, Plate, "96-well PCR Plate"]
+      Sample -> If[
+        MatchQ[sampleLoadingPlate, ObjectP[Model[Container]]],
+        sampleLoadingPlate,
+        Download[sampleLoadingPlate, Model, Cache -> cache]
+      ]
     ],
     Null
   ];
@@ -6196,23 +7275,39 @@ dynamicLightScatteringResourcePackets[mySamples : {ObjectP[Object[Sample]]..}, m
     Null
   ];
 
-  (* -- A bunch of logic to figure out the concentrations of the input samples, and the dilution factors, and dilution concentrations -- *)
-  (* - Dilutions and SerialDilutions - *)
-  standardDilutionCurveVolumes = calculatedDLSDilutionCurveVolumes[#]& /@ Transpose[{standardDilutionCurve,ToList[analyteMassConcentration]}];
-  serialDilutionCurveVolumes = calculatedDLSDilutionCurveVolumes[#]& /@ serialDilutionCurve;
-
-  (* Transpose the lists of dilution volumes to get them in the correct format for the protocol packet *)
-  transposedStandardDilutionCurves = If[
-
-    (* IF there is a SampleDilution *)
-    MatchQ[#, Except[{Null, Null}]],
-
-    (* THEN Transpose it to get it into {{SampleVolume,BufferVolume}..} format *)
-    Transpose[#],
-
-    (* ELSE, just return Null *)
+  (* Plate calibration resources. This will only ever be relevant if we're in Plate *)
+  calibrationStandardResource = If[calibratePlate,
+    Resource[
+      Sample -> Model[Sample, "id:R8e1PjBm77zp"], (*"Dextran 40 kDA, Lot Certified"*)
+      Amount -> 100 * Milligram, (* This is more than we need regardless of form factor, but better for accuracy *)
+      Container->Model[Container, Vessel, "id:xRO9n3vk11pw"] (*"15mL Tube"*)
+    ],
     Null
-  ]& /@ standardDilutionCurveVolumes;
+  ];
+  calibrationStandardDiluentResource = If[calibratePlate,
+    Resource[
+      Sample -> Model[Sample, "id:8qZ1VWNmdLBD"], (*"Milli-Q water"*)
+      Amount -> 10 Milliliter,
+      Container->Model[Container, Vessel, "id:xRO9n3vk11pw"] (*"15mL Tube"*)
+    ]
+  ];
+
+  (* -- A bunch of logic to figure out the concentrations of the input samples, and the dilution factors, and dilution concentrations -- *)
+  (* Transpose the lists of dilution volumes to get them in the correct format for the protocol packet *)
+  transposedStandardDilutionCurves = Map[
+    If[
+
+      (* IF there is a SampleDilution *)
+      MatchQ[#, Except[{Null, Null}]],
+
+      (* THEN Transpose it to get it into {{SampleVolume,BufferVolume}..} format *)
+      Transpose[#],
+
+      (* ELSE, just return Null *)
+      Null
+    ]&,
+    calculatedStandardDilutionCurveVolumes
+  ];
 
   (* Transpose the lists of serial dilution volumes to get them in the correct format for the protocol packet *)
   transposedSerialDilutionCurves = Map[
@@ -6227,7 +7322,7 @@ dynamicLightScatteringResourcePackets[mySamples : {ObjectP[Object[Sample]]..}, m
       (* ELSE, just return Null *)
       Null
     ]&,
-    serialDilutionCurveVolumes
+    calculatedSerialDilutionCurveVolumes
   ];
 
   (* - Determine how much of each input sample we use for the dilution curves - *)
@@ -6240,25 +7335,25 @@ dynamicLightScatteringResourcePackets[mySamples : {ObjectP[Object[Sample]]..}, m
 
       (* If the StandardDilutionCurve is specified and ReplicateDilutionCurve is False, add up the SampleVolumes *)
       {ColloidalStability, Except[{Null, Null}], _, False},
-      (Total[First[#1]] * colloidalStabilityParametersPerSample),
+      (Total[First[#1]]),
 
       (* If the StandardDilutionCurve is specified and ReplicateDilutionCurve is True, add up the SampleVolumes and multiply by NumberOfReplicates *)
       {ColloidalStability, Except[{Null, Null}], _, True},
-      (Total[First[#1]] * intNumberOfReplicates * colloidalStabilityParametersPerSample),
+      (Total[First[#1]] * intNumberOfReplicates),
 
       (* If the SerialDilutionCurve is specified and ReplicateDilutionCurve is False, the amount needed is the first TransferVolume *)
       {ColloidalStability, _, Except[{Null, Null}], False},
-      (First[First[#2]] * colloidalStabilityParametersPerSample),
+      (First[First[#2]]),
 
       (* If the SerialDilutionCurve is specified and ReplicateDilutionCurve is True, the amount needed is the first TransferVolume times the NumberOfReplicates *)
       {ColloidalStability, _, Except[{Null, Null}], True},
-      (First[First[#2]] * intNumberOfReplicates * colloidalStabilityParametersPerSample),
+      (First[First[#2]] * intNumberOfReplicates),
 
       (* Catch-all that should never exist (Errors would have been thrown in resolver) *)
       {_, _, _, _, _},
       Null
     ]&,
-    {standardDilutionCurveVolumes, serialDilutionCurveVolumes}
+    {calculatedStandardDilutionCurveVolumes, calculatedSerialDilutionCurveVolumes}
   ];
 
   (* - Figure out the dilution factors (compared to the input sample concentration) for each for each input sample - *)
@@ -6310,7 +7405,7 @@ dynamicLightScatteringResourcePackets[mySamples : {ObjectP[Object[Sample]]..}, m
       {_, _, _},
       Null
     ]&,
-    {standardDilutionCurveVolumes, serialDilutionCurveVolumes}
+    {calculatedStandardDilutionCurveVolumes, calculatedSerialDilutionCurveVolumes}
   ];
 
   (* - Using the dilution factors above, calculate the Analyte Concentration of each dilution - *)
@@ -6336,38 +7431,13 @@ dynamicLightScatteringResourcePackets[mySamples : {ObjectP[Object[Sample]]..}, m
   analyteMolecularWeights = If[
 
     (* IF the resolvedAnalyte is just a list of Null *)
-    MatchQ[analyte, {Null..}],
+    MatchQ[analyte, {Null..}] || MatchQ[assayType,Except[ColloidalStability]],
 
     (* THEN just set this to an empty list *)
     {},
 
-    (* ELSE, look up the MolecularWeight of each non-Null Analyte *)
-    fastAssocLookup[fastAssoc,#,MolecularWeight]&/@DeleteCases[analyte,Null]
-  ];
-
-  (* Get rid of any Nulls in the list *)
-  nonNullAnalyteMolecularWeights = Cases[analyteMolecularWeights, Except[Null]];
-
-  (* - If the list is not empty, get the First member of the list as a string, without units - *)
-  analyteMolecularWeightString = If[
-
-    (* IF the list is empty *)
-    Or[
-      MatchQ[nonNullAnalyteMolecularWeights, {}],
-      MatchQ[assayType, Except[ColloidalStability]]
-    ],
-
-    (* THEN set the variable to Null *)
-    Null,
-
-    (* ELSE, get the first MolecularWeight as an Integer String *)
-    ToString[
-      Round[
-        Unitless[
-          FirstOrDefault[nonNullAnalyteMolecularWeights]
-        ]
-      ]
-    ]
+    (* ELSE, look up the MolecularWeight of each of the analytes *)
+    If[NullQ[#],Null,fastAssocLookup[fastAssoc,#,MolecularWeight]]&/@If[MatchQ[assayType,ColloidalStability],analyte,expandedAnalytes]
   ];
 
   (* --- Create the protocol packet ---*)
@@ -6415,6 +7485,13 @@ dynamicLightScatteringResourcePackets[mySamples : {ObjectP[Object[Sample]]..}, m
     WellCover -> Link[wellCover],
     WellCoverHeating -> wellCoverHeating,
     CollectStaticLightScattering -> collectStaticLightScattering,
+    CalibratePlate -> calibratePlate,
+    CalibrationStandard -> Link[calibrationStandardResource],
+    CalibrationStandardDiluent -> Link[calibrationStandardDiluentResource],
+    Replace[SolventNames]->If[MatchQ[assayType,ColloidalStability],solventName,expandedSolventNames],
+    Replace[SolventViscosities]->If[MatchQ[assayType,ColloidalStability],solventViscosity,expandedSolventViscosities],
+    Replace[SolventRefractiveIndices]->If[MatchQ[assayType,ColloidalStability],solventRefractiveIndex,expandedSolventRefractiveIndices],
+
 
     (* Manual loading stuff *)
     ManualLoadingPlate -> Link[manualLoadingPlateResource],
@@ -6437,8 +7514,9 @@ dynamicLightScatteringResourcePackets[mySamples : {ObjectP[Object[Sample]]..}, m
     Replace[DilutionSampleVolumes] -> dilutionSampleVolumes,
     Replace[DilutionFactors] -> dilutionFactors,
     Replace[DilutionConcentrations] -> dilutionConcentrations,
-    Replace[Analytes] -> (Link[#]& /@ analyte),
-    Replace[AnalyteMassConcentrations] -> analyteMassConcentration,
+    Replace[Analytes] -> (Link[#]& /@ If[MatchQ[assayType,ColloidalStability],analyte,expandedAnalytes]),
+    Replace[AnalyteMassConcentrations] -> If[MatchQ[assayType,ColloidalStability],analyteMassConcentration,expandedAnalyteMassConcentrations],
+    Replace[AnalyteRefractiveIndexIncrements] -> If[MatchQ[assayType,ColloidalStability],analyteRefractiveIndexIncrement,expandedAnalyteRefractiveIndexIncrements],
     Replace[AnalyteStoredMolecularWeight] -> analyteMolecularWeights,
 
     (*MeltingCurveStuff*)
@@ -6464,71 +7542,22 @@ dynamicLightScatteringResourcePackets[mySamples : {ObjectP[Object[Sample]]..}, m
 
     (* Checkpoints *)
     Replace[Checkpoints] -> {
-      {"Preparing Samples", 5 * Minute, "Preprocessing, such as incubation, centrifugation, filtration, and aliquotting, is performed.", Link[Resource[Operator -> Model[User, Emerald, Operator, "Trainee"], Time -> 5 Minute]]},
-      {"Picking Resources", 20 * Minute, "Samples, plates, and items required to perform this protocol are gathered from storage.", Link[Resource[Operator -> Model[User, Emerald, Operator, "Trainee"], Time -> 20 Minute]]},
-      {"Preparing Assay Containers", 1 * Hour, "The SampleLoadingPlate is loaded and centrifuged, then the AssayContainers are loaded.", Link[Resource[Operator -> Model[User, Emerald, Operator, "Trainee"], Time -> 1Hour]]},
-      {"Preparing Instrumentation", 30 * Minute, "The instrument is configured for the protocol.", Link[Resource[Operator -> Model[User, Emerald, Operator, "Trainee"], Time -> 30 Minute]]},
-      {"Acquiring Data", instrumentTime, "Samples in the AssayContainers are interrogated in a dynamic light scattering assay.", Link[Resource[Operator -> Model[User, Emerald, Operator, "Trainee"], Time -> instrumentTime]]},
-      {"Returning Materials", 30 * Minute, "Samples are returned to storage.", Link[Resource[Operator -> Model[User, Emerald, Operator, "Trainee"], Time -> 30 Minute]]}
+      {"Preparing Samples", 5 * Minute, "Preprocessing, such as incubation, centrifugation, filtration, and aliquotting, is performed.", Link[Resource[Operator -> $BaselineOperator, Time -> 5 Minute]]},
+      {"Picking Resources", 20 * Minute, "Samples, plates, and items required to perform this protocol are gathered from storage.", Link[Resource[Operator -> $BaselineOperator, Time -> 20 Minute]]},
+      {"Preparing Assay Containers", 1 * Hour, "The SampleLoadingPlate is loaded and centrifuged, then the AssayContainers are loaded.", Link[Resource[Operator -> $BaselineOperator, Time -> 1Hour]]},
+      {"Preparing Instrumentation", 30 * Minute, "The instrument is configured for the protocol.", Link[Resource[Operator -> $BaselineOperator, Time -> 30 Minute]]},
+      {"Acquiring Data", instrumentTime, "Samples in the AssayContainers are interrogated in a dynamic light scattering assay.", Link[Resource[Operator -> $BaselineOperator, Time -> instrumentTime]]},
+      {"Returning Materials", 30 * Minute, "Samples are returned to storage.", Link[Resource[Operator -> $BaselineOperator, Time -> 30 Minute]]}
     }
   |>;
 
-  (* --- Create a unit operations packet --- *)
-  (* -- Generate the packet -- *)
-  unitOperationPacket=UploadUnitOperation[
-    DynamicLightScattering@@ {
-      Sample->mySamples,
-      AssayType -> assayType,
-      AssayFormFactor -> assayFormFactor,
-      Instrument -> Link[instrument],
-      SampleLoadingPlate -> Link[sampleLoadingPlateResource],
-      WellCover -> Link[wellCover],
-      WellCoverHeating -> wellCoverHeating,
-      Temperature -> temperature,
-      EquilibrationTime -> equilibrationTime,
-      CollectStaticLightScattering -> collectStaticLightScattering,
-      NumberOfAcquisitions -> numberOfAcquisitions,
-      AcquisitionTime -> acquisitionTime,
-      AutomaticLaserSettings -> automaticLaserSettings,
-      LaserPower -> laserPower,
-      DiodeAttenuation -> diodeAttenuation,
-      DLSRunTime -> runTime,
-      CapillaryLoading -> capillaryLoading,
-      AssayContainerFillDirection -> assayContainerFillDirection,
-      ColloidalStabilityParametersPerSample -> colloidalStabilityParametersPerSample,
-      Analyte -> (Link[#]& /@ analyte),
-      AnalyteMassConcentration -> analyteMassConcentration,
-      Buffer->(Link[#]& /@ bufferResources),
-      DilutionMixType->dilutionMixType,
-      DilutionMixVolumes->dilutionMixVolume,
-      DilutionNumberOfMixes->dilutionNumberOfMixes,
-      DilutionMixRates->dilutionMixRate,
-      DilutionMixInstrument->dilutionMixInstrument,
-      BlankBuffer->(Link[#]& /@ blankBufferResources),
-      CalculateMolecularWeight->calculateMolecularWeight,
-      MeasurementDelayTime->measurementDelayTime,
-      IsothermalMeasurements->isothermalMeasurements,
-      IsothermalRunTime->isothermalRunTime,
-      IsothermalAttenuatorAdjustment->isothermalAttenuatorAdjustment,
-      MinTemperature->minTemperature,
-      MaxTemperature->maxTemperature,
-      TemperatureRampOrder->temperatureRampOrder,
-      NumberOfCycles->numberOfCycles,
-      TemperatureRamping->temperatureRamping,
-      TemperatureRampRate->temperatureRampRate,
-      TemperatureResolution->temperatureResolution,
-      NumberOfTemperatureRampSteps->numberOfTemperatureRampSteps,
-      StepHoldTime->stepHoldTime,
-      SampleLoadingPlateStorageCondition->sampleLoadingPlateStorageCondition,
-      SamplesInStorageCondition->expandedSamplesInStorageConditionSymbols
-    },
-    UnitOperationType->Output,
-    FastTrack->True,
-    Upload->False
-  ];
-
   (* - Populate prep field - send in initial samples and options since this handles NumberOfReplicates on its own - *)
-  prepPacket = populateSamplePrepFields[mySamples, Normal[KeyDrop[myResolvedOptions,SamplesOutStorageCondition]]];
+  (* For ColloidalStability cases we set NumberOfReplicates to 1 here because aliquot interprets that differently *)
+  prepPacket = If[
+    MatchQ[assayType,ColloidalStability],
+      populateSamplePrepFields[simulatedSamples, ReplaceRule[Normal[KeyDrop[myResolvedOptions,SamplesOutStorageCondition]],NumberOfReplicates->1]],
+      populateSamplePrepFields[simulatedSamples, Normal[KeyDrop[myResolvedOptions,SamplesOutStorageCondition]]]
+  ];
 
   (* Merge the shared fields with the specific fields *)
   finalizedPacket = Join[protocolPacket, KeyDrop[prepPacket,Replace[SamplesInStorage]]];
@@ -6540,9 +7569,9 @@ dynamicLightScatteringResourcePackets[mySamples : {ObjectP[Object[Sample]]..}, m
     MatchQ[$ECLApplication, Engine],
     {True, {}},
     gatherTests,
-    Resources`Private`fulfillableResourceQ[allResourceBlobs, Output -> {Result, Tests}, FastTrack -> Lookup[myResolvedOptions, FastTrack], Cache -> cache, Simulation->simulation],
+    Resources`Private`fulfillableResourceQ[allResourceBlobs, Output -> {Result, Tests}, FastTrack -> Lookup[myResolvedOptions, FastTrack], Cache -> cache, Simulation->updatedSimulation],
     True,
-    {Resources`Private`fulfillableResourceQ[allResourceBlobs, FastTrack -> Lookup[myResolvedOptions, FastTrack], Messages -> messages, Cache -> cache, Simulation->simulation], Null}
+    {Resources`Private`fulfillableResourceQ[allResourceBlobs, FastTrack -> Lookup[myResolvedOptions, FastTrack], Messages -> messages, Cache -> cache, Simulation->updatedSimulation], Null}
   ];
 
 
@@ -6565,12 +7594,15 @@ dynamicLightScatteringResourcePackets[mySamples : {ObjectP[Object[Sample]]..}, m
   (* generate the Result output rule *)
   (* If not returning Result, or the resources are not fulfillable, Results rule is just $Failed *)
   resultRule = Result -> If[MemberQ[output, Result] && TrueQ[resourcesOk],
-    {finalizedPacket,unitOperationPacket},
+    finalizedPacket,
     $Failed
   ];
 
+  (* generate the simulation rule *)
+  simulationRule = Simulation -> updatedSimulation;
+
   (* Return the output as we desire it *)
-  outputSpecification /. {previewRule, optionsRule, resultRule, testsRule}
+  outputSpecification /. {previewRule, optionsRule, resultRule, testsRule, simulationRule}
 ];
 
 (* ::Subsection::Closed:: *)
@@ -6583,7 +7615,6 @@ DefineOptions[
 
 simulateExperimentDynamicLightScattering[
   myProtocolPacket:(PacketP[Object[Protocol, DynamicLightScattering], {Object, ResolvedOptions}]|$Failed|Null),
-  myUnitOperationPackets:({PacketP[]..}|$Failed),
   mySamples : {ObjectP[Object[Sample]]..},
   myResolvedOptions : {_Rule...},
   myResolutionOptions : OptionsPattern[simulateExperimentDynamicLightScattering]
@@ -6635,7 +7666,7 @@ simulateExperimentDynamicLightScattering[
       Module[{protocolPacket},
         protocolPacket = <|
           Object -> protocolObject,
-          Replace[SamplesIn]->(Resource[Sample->#]&)/@mySamples,
+          Replace[SamplesIn]->Lookup[myProtocolPacket, SamplesIn],
           (*Replace[OutputUnitOperations] -> (Link[#, Protocol]&) /@ Lookup[myUnitOperationPackets, Object],*)
           (* NOTE: If you have accessory primitive packets, you MUST put those resources into the main protocol object, otherwise *)
           (* simulate resources will NOT simulate them for you. *)
@@ -6792,5 +7823,3 @@ calculatedDLSDilutionCurveVolumes[Null]:={Null,Null};
 calculatedDLSDilutionCurveVolumes[{Null,GreaterEqualP[0*Milligram/Milliliter]}]:={Null,Null};
 calculatedDLSDilutionCurveVolumes[{Null,Null}]:={Null,Null};
 calculatedDLSDilutionCurveVolumes[{{Null},Null}]:={Null,Null};
-
-

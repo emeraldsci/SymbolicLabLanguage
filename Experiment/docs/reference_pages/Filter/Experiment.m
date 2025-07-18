@@ -39,7 +39,18 @@ DefineUsage[ExperimentFilter,
 										Type -> Object,
 										Pattern :> ObjectP[{Object[Container]}]
 									]
-								}
+								},
+								"Model Sample"->Widget[
+									Type -> Object,
+									Pattern :> ObjectP[Model[Sample]],
+									ObjectTypes -> {Model[Sample]},
+									OpenPaths -> {
+										{
+											Object[Catalog, "Root"],
+											"Materials"
+										}
+									}
+								]
 							],
 							Expandable->False
 						},
@@ -113,7 +124,12 @@ DefineUsage[ExperimentFilterOptions,
 										Type -> Object,
 										Pattern :> ObjectP[{Object[Container]}]
 									]
-								}
+								},
+								"Model Sample"->Widget[
+									Type -> Object,
+									Pattern :> ObjectP[Model[Sample]],
+									ObjectTypes -> {Model[Sample]}
+								]
 							],
 							Expandable->False
 						},
@@ -187,7 +203,12 @@ DefineUsage[ExperimentFilterPreview,
 										Type -> Object,
 										Pattern :> ObjectP[{Object[Container]}]
 									]
-								}
+								},
+								"Model Sample"->Widget[
+									Type -> Object,
+									Pattern :> ObjectP[Model[Sample]],
+									ObjectTypes -> {Model[Sample]}
+								]
 							],
 							Expandable->False
 						},
@@ -258,7 +279,12 @@ DefineUsage[ValidExperimentFilterQ,
 										Type -> Object,
 										Pattern :> ObjectP[{Object[Container]}]
 									]
-								}
+								},
+								"Model Sample"->Widget[
+									Type -> Object,
+									Pattern :> ObjectP[Model[Sample]],
+									ObjectTypes -> {Model[Sample]}
+								]
 							],
 							Expandable->False
 						},

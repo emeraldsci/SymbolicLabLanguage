@@ -1829,6 +1829,55 @@ DefineTests[Filtered,
 ];
 
 (* ::Subsubsection:: *)
+(* Ground *)
+
+DefineTests[Ground,
+	{
+		Example[{Basic, "Ground sample history card indicates when the sample object was Ground:"},
+			Ground[
+				Date -> Now,
+				Protocol -> Object[Protocol, Grind, "Test protocol for Ground tests"],
+				Instrument -> Model[Instrument, Instrument, Grinder, "id:O81aEB1lX1Mx"],
+				Fineness -> 1 Millimeter,
+				GrindingRate -> 2800 RPM,
+				Time -> 30 Second,
+				NumberOfGrindingSteps -> 1
+			],
+			_Ground
+		],
+		Example[{Basic, "Upload a Ground sample history card to the SampleHistory field of an object:"},
+			sample = Upload[
+				<|
+					Type -> Object[Sample],
+					DeveloperObject -> True,
+					Replace[SampleHistory] -> {
+						Ground[
+							Date -> Now,
+							Protocol -> Object[Protocol, Grind, "Test protocol for Ground tests"],
+							Instrument -> Model[Instrument, Instrument, Grinder, "id:O81aEB1lX1Mx"],
+							Fineness -> 1 Millimeter,
+							GrindingRate -> 2800 RPM,
+							Time -> 30 Second,
+							NumberOfGrindingSteps -> 1
+						]
+					}
+				|>
+			];
+			Download[sample, SampleHistory],
+			{_Ground},
+			Variables :> {sample}
+		]
+	},
+	SetUp :> (
+		$CreatedObjects = {}
+	),
+	TearDown :> (
+		EraseObject[$CreatedObjects, Force -> True, Verbose -> False];
+		Unset[$CreatedObjects]
+	)
+];
+
+(* ::Subsubsection:: *)
 (* Restricted *)
 
 DefineTests[Restricted,
@@ -2511,4 +2560,50 @@ DefineTests[
 			False
 		]
 	}
+];
+
+(* ::Subsubsection:: *)
+(* CellsFrozen *)
+
+DefineTests[CellsFrozen,
+	{
+		Example[{Basic, "CellsFrozen SampleHistory card indicates when and under which conditions the cells within a sample object were frozen for cryopreservation:"},
+			CellsFrozen[
+				Date -> Now,
+				FreezingStrategy -> ControlledRateFreezer,
+				TemperatureProfile -> {{-10 Celsius, 30 Minute}, {-60 Celsius, 120 Minute}},
+				CryoprotectantSolution -> Link[Model[Sample, StockSolution, "30% glycerol"]],
+				CryoprotectantSolutionTemperature -> Chilled
+			],
+			CellsFrozenP
+		],
+		Example[{Basic, "Upload a CellsFrozen SampleHistory card to the SampleHistory field of an object:"},
+			sample = Upload[
+				<|
+					Type -> Object[Sample],
+					DeveloperObject -> True,
+					Site -> Link[$Site],
+					Append[SampleHistory] -> {
+						CellsFrozen[
+							Date -> Now,
+							FreezingStrategy -> ControlledRateFreezer,
+							TemperatureProfile -> {{-10 Celsius, 30 Minute}, {-60 Celsius, 120 Minute}},
+							CryoprotectantSolution -> Link[Model[Sample, StockSolution, "30% glycerol"]],
+							CryoprotectantSolutionTemperature -> Chilled
+						]
+					}
+				|>
+			];
+			Download[sample, SampleHistory],
+			{CellsFrozenP},
+			Variables :> {sample}
+		]
+	},
+	SetUp :> (
+		$CreatedObjects = {}
+	),
+	TearDown :> (
+		EraseObject[$CreatedObjects, Force -> True, Verbose -> False];
+		Unset[$CreatedObjects]
+	)
 ];

@@ -1,3 +1,509 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:e5fb084e7556775d386812d18aed40e093ea3a51cd852d921bac96cb05e3747b
-size 16053
+(* Content-type: application/vnd.wolfram.mathematica *)
+
+(*** Wolfram Notebook File ***)
+(* http://www.wolfram.com/nb *)
+
+(* CreatedBy='Mathematica 13.3' *)
+
+(*CacheID: 234*)
+(* Internal cache information:
+NotebookFileLineBreakTest
+NotebookFileLineBreakTest
+NotebookDataPosition[       158,          7]
+NotebookDataLength[     19542,        499]
+NotebookOptionsPosition[     14527,        406]
+NotebookOutlinePosition[     16366,        448]
+CellTagsIndexPosition[     16323,        445]
+WindowTitle->ImageAnalysis
+WindowFrame->Normal*)
+
+(* Beginning of Notebook Content *)
+Notebook[{
+Cell[BoxData[GridBox[{
+   {GridBox[{
+      {
+       ItemBox[Cell[BoxData[
+         RowBox[{
+          InterpretationBox[
+           StyleBox[
+            GraphicsBox[{},
+             BaselinePosition->Baseline,
+             ImageSize->{8, 0}],
+            CacheGraphics->False],
+           Spacer[8],
+           Selectable->False], Cell["EMERALD GUIDE", "PacletNameCell",
+           TextAlignment->Center,ExpressionUUID->
+           "7908e89f-b893-47ac-459a-a815c351d89e"], 
+          InterpretationBox[
+           StyleBox[
+            GraphicsBox[{},
+             BaselinePosition->Baseline,
+             ImageSize->{8, 0}],
+            CacheGraphics->False],
+           Spacer[8],
+           Selectable->False]}]],
+         TextAlignment->Center,ExpressionUUID->
+         "867f6861-a9ab-4486-7f3f-3ad8f927adfb"],
+        Background->RGBColor[
+         0.24313725490196078`, 0.27058823529411763`, 0.2980392156862745],
+        ItemSize->Full], ""}
+     },
+     GridBoxAlignment->{"Rows" -> {{Center}}},
+     GridBoxItemSize->{"Columns" -> {Full, 
+         Scaled[0.02]}, "Rows" -> {{2.5}}}], Cell[TextData[{
+     Cell[BoxData[
+      ActionMenuBox[
+       FrameBox[Cell[TextData[{
+         "Functions",
+         " ",
+         Cell[BoxData[
+          GraphicsBox[
+           {RGBColor[183/256., 197/256., 211/256.], Thickness[0.13], 
+            LineBox[{{-1.8, 0.5}, {0, 0}, {1.8, 0.5}}]},
+           AspectRatio->1,
+           ImageSize->20,
+           PlotRange->{{-3, 4}, {-1, 1}}]],ExpressionUUID->
+          "cc3a4481-391a-4024-971a-b44cf14f1714"]
+        }],ExpressionUUID->"1e3cd01b-704e-4d4d-8271-ad265a2af78c"],
+        StripOnInput->False],{
+       "\"AnalyzeCellCount\"" :> 
+        Documentation`HelpLookup["paclet:Analysis/ref/AnalyzeCellCount"], 
+        "\"AnalyzeColonies\"" :> 
+        Documentation`HelpLookup["paclet:Analysis/ref/AnalyzeColonies"], 
+        "\"AnalyzeMicroscopeOverlay\"" :> 
+        Documentation`HelpLookup[
+         "paclet:Analysis/ref/AnalyzeMicroscopeOverlay"], 
+        "\"CombineFluorescentImages\"" :> 
+        Documentation`HelpLookup[
+         "paclet:Analysis/ref/CombineFluorescentImages"], 
+        "\"ImageIntensity\"" :> 
+        Documentation`HelpLookup["paclet:Objects/ref/ImageIntensity"], 
+        "\"ImageMask\"" :> 
+        Documentation`HelpLookup["paclet:Analysis/ref/ImageMask"], 
+        "\"ImageOverlay\"" :> 
+        Documentation`HelpLookup["paclet:Analysis/ref/ImageOverlay"], 
+        "\"PlotCellCount\"" :> 
+        Documentation`HelpLookup["paclet:Plot/ref/PlotCellCount"], 
+        "\"PlotCellCountSummary\"" :> 
+        Documentation`HelpLookup["paclet:Plot/ref/PlotCellCountSummary"], 
+        "\"PlotColonies\"" :> 
+        Documentation`HelpLookup["paclet:Plot/ref/PlotColonies"], 
+        "\"PlotImage\"" :> 
+        Documentation`HelpLookup["paclet:Plot/ref/PlotImage"], 
+        "\"PlotMicroscope\"" :> 
+        Documentation`HelpLookup["paclet:Plot/ref/PlotMicroscope"], 
+        "\"PlotMicroscopeOverlay\"" :> 
+        Documentation`HelpLookup["paclet:Plot/ref/PlotMicroscopeOverlay"]},
+       LineSpacing -> {1.4, 0},
+       Appearance->None,
+       MenuAppearance->Automatic,
+       MenuStyle->"GuideFunction"]],ExpressionUUID->
+      "ffb95954-e4ab-42bd-aa0d-7d3cbd073cb6"],
+     "\[ThickSpace]\[ThickSpace]\[ThickSpace]\[ThickSpace]\[ThickSpace]\
+\[ThickSpace]",
+     Cell[BoxData[
+      ActionMenuBox[
+       FrameBox[Cell[TextData[{
+         "Related Guides",
+         " ",
+         Cell[BoxData[
+          GraphicsBox[
+           {RGBColor[183/256., 197/256., 211/256.], Thickness[0.13], 
+            LineBox[{{-1.8, 0.5}, {0, 0}, {1.8, 0.5}}]},
+           AspectRatio->1,
+           ImageSize->20,
+           PlotRange->{{-3, 4}, {-1, 1}}]],ExpressionUUID->
+          "4d1c0563-db60-4a7e-b600-0662397edd8b"]
+        }],ExpressionUUID->"600f192c-d49c-42bd-89f8-0188916bf664"],
+        StripOnInput->False],{
+       "\"AnalysisBySubjectMatter\"" :> 
+        Documentation`HelpLookup["paclet:Docs/guide/AnalysisBySubjectMatter"],
+         "\"AnalyticalAndPhysicalChemistry\"" :> 
+        Documentation`HelpLookup[
+         "paclet:Docs/guide/AnalyticalAndPhysicalChemistry"], 
+        "\"NumericAnalysis\"" :> 
+        Documentation`HelpLookup["paclet:Docs/guide/NumericAnalysis"]},
+       LineSpacing -> {1.4, 0},
+       Appearance->None,
+       MenuAppearance->Automatic,
+       MenuStyle->"GuideFunction"]],ExpressionUUID->
+      "ac90f18d-8dc0-429b-bed1-9534c28b95c4"]
+    }], "AnchorBar",ExpressionUUID->"374fc291-b06e-4dd8-94f4-f70eaa04c873"]}
+  }]], "AnchorBarGrid",
+ CellID->1,ExpressionUUID->"9c477bba-b6aa-4888-a6c0-dd474dd4d03a"],
+
+Cell["Image Analysis", "GuideTitle",
+ CellID->448312649,ExpressionUUID->"5e210a42-9406-4efa-acaa-21a67324e003"],
+
+Cell["\<\
+Symbolic Lab Language (SLL) data analysis functions which seamlessly connect \
+into the linked data network, providing Constellation objects for that \
+analysis itself which houses and connect the results of the analysis to its \
+source data and methodology, and also serves as a template for future \
+analysis that seeks to replicate previous analytical methodology.\
+\>", "GuideAbstract",
+ CellID->1418058067,ExpressionUUID->"5fd8d73c-0680-4efd-b506-8072a7b21715"],
+
+Cell["\t", "GuideDelimiterSubsection",
+ CellID->528417663,ExpressionUUID->"0f11e462-8153-4fd4-b02a-a2954a5511d0"],
+
+Cell["Image Analysis", "GuideFunctionsSubsection",
+ CellID->1270781696,ExpressionUUID->"3a3786aa-edc1-4a58-8ce7-ca3b58cee1da"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["AnalyzeCellCount"]], "paclet:Analysis/ref/AnalyzeCellCount"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "7c73b15e-731f-4ab7-bb20-9be86992e186"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Counts the apparent number of cells in the provided microscope image \
+data."
+}], "GuideText",
+ CellID->1303095257,ExpressionUUID->"f2b0e0ee-6eb6-4bd9-937f-83f995a87ae1"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["AnalyzeColonies"]], "paclet:Analysis/ref/AnalyzeColonies"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "90661f4a-6e65-45ac-94ac-685967a87723"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Counts the cell colonies or plaques on solid media in the provided \
+microscope image data."
+}], "GuideText",
+ CellID->1083752293,ExpressionUUID->"79621f07-aada-4aa5-a2fa-dbc9e46d1598"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["AnalyzeMicroscopeOverlay"]], 
+    "paclet:Analysis/ref/AnalyzeMicroscopeOverlay"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "21b53a72-c3c4-4574-ac2b-8aa28eb7cdee"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Generates an analytical combination of different composite fluorescent \
+images for use in co-localization analysis."
+}], "GuideText",
+ CellID->1815978244,ExpressionUUID->"2592844a-6731-4e2e-b0ef-3c1270c75fcd"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["CombineFluorescentImages"]], 
+    "paclet:Analysis/ref/CombineFluorescentImages"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "74c6a479-741a-449c-bcce-534ec62e4659"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Generates a false color RGB image of the provided composite fluorescent \
+data."
+}], "GuideText",
+ CellID->1108755744,ExpressionUUID->"fb0a50f6-ee21-46f6-ac9e-f1dce71ec577"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["ImageMask"]], "paclet:Analysis/ref/ImageMask"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "80b9ee8d-f7d1-42d9-8002-51d3256b87e4"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Replaces all the pixels in the input image that are outside of a given \
+color range."
+}], "GuideText",
+ CellID->1142184389,ExpressionUUID->"4b5b93ec-f898-4bbb-b5b5-0017ad24f508"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["ImageOverlay"]], "paclet:Analysis/ref/ImageOverlay"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "4ed0075c-3f88-43a3-8dcd-9959b90a9c3d"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Overlays the pixel information from two images to combine them into one."
+}], "GuideText",
+ CellID->336705390,ExpressionUUID->"ff64bcd2-aa18-4f27-a310-b5115c258979"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["ImageIntensity"]], "paclet:Objects/ref/ImageIntensity"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "e0d0d75c-68e1-4c57-98c5-1227e6c97644"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Computes the average intensity of the pixels as a function of the vertical \
+pixel position in the image."
+}], "GuideText",
+ CellID->388079885,ExpressionUUID->"145cc459-fc10-4234-8f13-cce528586e41"],
+
+Cell["\t", "GuideDelimiterSubsection",
+ CellID->550791256,ExpressionUUID->"c43b347a-fd91-4f7f-8c16-61069292f9f0"],
+
+Cell["Image Visualization", "GuideFunctionsSubsection",
+ CellID->1494121022,ExpressionUUID->"39d0cf20-7fc5-4728-8191-481eeaadd718"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["PlotMicroscope"]], "paclet:Plot/ref/PlotMicroscope"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "ccb0ecf2-6547-4e96-b073-6a8e61bb1c43"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Plots microscope image data."
+}], "GuideText",
+ CellID->1165732383,ExpressionUUID->"96be5c55-5900-4255-98e9-c26c1febd538"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["PlotMicroscopeOverlay"]], 
+    "paclet:Plot/ref/PlotMicroscopeOverlay"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "747698ed-7e6c-4bf9-8647-b5a83d7f2c6a"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Generates a false color combination of the provided microscope overlay \
+analysis."
+}], "GuideText",
+ CellID->970849500,ExpressionUUID->"980b2ec8-d852-4b39-9ae2-69741e25167d"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["PlotImage"]], "paclet:Plot/ref/PlotImage"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "18f77399-b3ab-4644-8d09-51c2ab0fe0cd"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Given an image file or data objects containing images, provides a \
+visualization of these images that includes a measurement of absolute size \
+scales when possible."
+}], "GuideText",
+ CellID->486796594,ExpressionUUID->"311824f7-6d2d-4050-9708-e647b0f625a8"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["PlotCellCount"]], "paclet:Plot/ref/PlotCellCount"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "be1657d9-4760-451e-af88-6b9666109b9d"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Generates an image of the microscope data with the putative cell areas \
+indicated from the provided cell counting image analysis highlighted."
+}], "GuideText",
+ CellID->1825143935,ExpressionUUID->"8a050d1e-8764-4981-8dcf-c12096c460ca"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["PlotCellCountSummary"]], 
+    "paclet:Plot/ref/PlotCellCountSummary"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "e46fcf62-d695-4659-961a-56744d2ec948"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Generates an image of the microscope data with the putative cell areas \
+highlighted, along with a pie cart of relative areas of cell groupings from \
+the provided cell counting image analysis highlighted."
+}], "GuideText",
+ CellID->537701797,ExpressionUUID->"a4c86a8a-e4e2-4320-a31b-ce5703a13d19"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{
+    Cell[
+     TextData["PlotColonies"]], "paclet:Plot/ref/PlotColonies"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "2fda7ef3-e659-483e-bbb5-41012471e5d5"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Generates a graphical representation of the number of colonies or \
+plaques."
+}], "GuideText",
+ CellID->542915603,ExpressionUUID->"4803ab11-ffa7-4d97-be39-107ea9edcfee"],
+
+Cell["", "SectionFooterSpacer",
+ CellID->124523518,ExpressionUUID->"df905140-93d1-41df-a2e4-864c63ab15d4"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  InterpretationBox[
+   StyleBox[
+    GraphicsBox[{},
+     BaselinePosition->Baseline,
+     ImageSize->{6, 0}],
+    CacheGraphics->False],
+   Spacer[6]]],ExpressionUUID->"f2f5b806-c6fd-4270-9410-a6ebbf7c49d0"],
+ "Related Guides"
+}], "GuideMoreAboutSection",
+ WholeCellGroupOpener->True,
+ CellID->1217694848,ExpressionUUID->"124a8659-d3de-40b2-9a1b-838b32bdcdb8"],
+
+Cell["", "SectionHeaderSpacer",
+ CellID->278154426,ExpressionUUID->"58adc457-bdd4-407a-b745-efdca115041d"],
+
+Cell[BoxData[
+ TemplateBox[{
+   Cell[
+    TextData["NumericAnalysis"]], "paclet:Docs/guide/NumericAnalysis"},
+  "RefLink",
+  BaseStyle->"GuideMoreAboutSub"]], "GuideMoreAboutSub",
+ CellID->2017021910,ExpressionUUID->"de2bc235-828d-4282-ab35-908adb7b6903"],
+
+Cell[BoxData[
+ TemplateBox[{
+   Cell[
+    TextData["AnalyticalAndPhysicalChemistry"]], 
+   "paclet:Docs/guide/AnalyticalAndPhysicalChemistry"},
+  "RefLink",
+  BaseStyle->"GuideMoreAboutSub"]], "GuideMoreAboutSub",
+ CellID->2057873475,ExpressionUUID->"59386da9-2070-4ad9-8d54-437feb033221"],
+
+Cell[BoxData[
+ TemplateBox[{
+   Cell[
+    TextData["AnalysisBySubjectMatter"]], 
+   "paclet:Docs/guide/AnalysisBySubjectMatter"},
+  "RefLink",
+  BaseStyle->"GuideMoreAboutSub"]], "GuideMoreAboutSub",
+ CellID->1455359390,ExpressionUUID->"3620b183-e5e9-4142-8b07-566e6594fa27"],
+
+Cell["", "FooterCell",
+ CellID->386528400,ExpressionUUID->"8636f787-311f-45e3-bcff-f68a4d20481a"]
+},
+Saveable->False,
+ScreenStyleEnvironment->"Working",
+WindowSize->{808, 866},
+WindowMargins->{{460, Automatic}, {Automatic, 50}},
+WindowTitle->"ImageAnalysis",
+Visible->False,
+TaggingRules->{
+ "ModificationHighlight" -> False, "ColorType" -> "GuideColor", 
+  "ExampleCounter" -> 1, "NeedPlatMsgIn" -> None, "RootCaptions" -> "", 
+  "Metadata" -> {
+   "built" -> "Thu 26 Sep 2024 22:21:44", "context" -> "Docs`", 
+    "keywords" -> {
+     "AnalyzeCellCount", "AnalyzeColonies", "AnalyzeMicroscopeOverlay", 
+      "CombineFluorescentImages", "ImageMask", "ImageOverlay", 
+      "ImageIntensity", "PlotMicroscope", "PlotMicroscopeOverlay", 
+      "PlotImage", "PlotCellCount", "PlotCellCountSummary", "PlotColonies"}, 
+    "specialkeywords" -> {}, "tutorialcollectionlinks" -> {}, "index" -> True,
+     "label" -> "ECL Guide", "language" -> "en", "paclet" -> "Docs", "status" -> 
+    "None", "summary" -> 
+    "Symbolic Lab Language (SLL) data analysis functions which seamlessly \
+connect into the linked data network, providing Constellation objects for \
+that analysis itself which houses and connect the results of the analysis to \
+its source data and methodology, and also serves as a template for future \
+analysis that seeks to replicate previous analytical methodology.", 
+    "synonyms" -> {}, "titlemodifier" -> "", "Windowtitle" -> "ImageAnalysis",
+     "title" -> "ImageAnalysis", "type" -> "Guide", "uri" -> 
+    "Docs/guide/ImageAnalysis"}, "SearchTextTranslated" -> ""},
+FrontEndVersion->"13.3 for Mac OS X ARM (64-bit) (July 24, 2023)",
+StyleDefinitions->"EmeraldReference.nb",
+CharacterEncoding -> "UTF-8",
+ExpressionUUID->"6063b913-e224-4726-8531-78799dc53316"
+]
+(* End of Notebook Content *)
+
+(* Internal cache information *)
+(*CellTagsOutline
+CellTagsIndex->{}
+*)
+(*CellTagsIndex
+CellTagsIndex->{}
+*)
+(*NotebookFileOutline
+Notebook[{
+Cell[585, 21, 4624, 111, 58, "AnchorBarGrid",ExpressionUUID->"9c477bba-b6aa-4888-a6c0-dd474dd4d03a",
+ CellID->1],
+Cell[5212, 134, 111, 1, 45, "GuideTitle",ExpressionUUID->"5e210a42-9406-4efa-acaa-21a67324e003",
+ CellID->448312649],
+Cell[5326, 137, 476, 7, 90, "GuideAbstract",ExpressionUUID->"5fd8d73c-0680-4efd-b506-8072a7b21715",
+ CellID->1418058067],
+Cell[5805, 146, 113, 1, 24, "GuideDelimiterSubsection",ExpressionUUID->"0f11e462-8153-4fd4-b02a-a2954a5511d0",
+ CellID->528417663],
+Cell[5921, 149, 126, 1, 34, "GuideFunctionsSubsection",ExpressionUUID->"3a3786aa-edc1-4a58-8ce7-ca3b58cee1da",
+ CellID->1270781696],
+Cell[6050, 152, 487, 13, 31, "GuideText",ExpressionUUID->"f2b0e0ee-6eb6-4bd9-937f-83f995a87ae1",
+ CellID->1303095257],
+Cell[6540, 167, 500, 13, 57, "GuideText",ExpressionUUID->"79621f07-aada-4aa5-a2fa-dbc9e46d1598",
+ CellID->1083752293],
+Cell[7043, 182, 548, 14, 57, "GuideText",ExpressionUUID->"2592844a-6731-4e2e-b0ef-3c1270c75fcd",
+ CellID->1815978244],
+Cell[7594, 198, 511, 14, 57, "GuideText",ExpressionUUID->"fb0a50f6-ee21-46f6-ac9e-f1dce71ec577",
+ CellID->1108755744],
+Cell[8108, 214, 482, 13, 37, "GuideText",ExpressionUUID->"4b5b93ec-f898-4bbb-b5b5-0017ad24f508",
+ CellID->1142184389],
+Cell[8593, 229, 474, 12, 37, "GuideText",ExpressionUUID->"ff64bcd2-aa18-4f27-a310-b5115c258979",
+ CellID->336705390],
+Cell[9070, 243, 510, 13, 57, "GuideText",ExpressionUUID->"145cc459-fc10-4234-8f13-cce528586e41",
+ CellID->388079885],
+Cell[9583, 258, 113, 1, 24, "GuideDelimiterSubsection",ExpressionUUID->"c43b347a-fd91-4f7f-8c16-61069292f9f0",
+ CellID->550791256],
+Cell[9699, 261, 131, 1, 34, "GuideFunctionsSubsection",ExpressionUUID->"39d0cf20-7fc5-4728-8191-481eeaadd718",
+ CellID->1494121022],
+Cell[9833, 264, 431, 12, 31, "GuideText",ExpressionUUID->"96be5c55-5900-4255-98e9-c26c1febd538",
+ CellID->1165732383],
+Cell[10267, 278, 503, 14, 57, "GuideText",ExpressionUUID->"980b2ec8-d852-4b39-9ae2-69741e25167d",
+ CellID->970849500],
+Cell[10773, 294, 558, 14, 57, "GuideText",ExpressionUUID->"311824f7-6d2d-4050-9708-e647b0f625a8",
+ CellID->486796594],
+Cell[11334, 310, 543, 13, 57, "GuideText",ExpressionUUID->"8a050d1e-8764-4981-8dcf-c12096c460ca",
+ CellID->1825143935],
+Cell[11880, 325, 624, 15, 77, "GuideText",ExpressionUUID->"a4c86a8a-e4e2-4320-a31b-ce5703a13d19",
+ CellID->537701797],
+Cell[12507, 342, 474, 13, 37, "GuideText",ExpressionUUID->"4803ab11-ffa7-4d97-be39-107ea9edcfee",
+ CellID->542915603],
+Cell[12984, 357, 106, 1, 29, "SectionFooterSpacer",ExpressionUUID->"df905140-93d1-41df-a2e4-864c63ab15d4",
+ CellID->124523518],
+Cell[13093, 360, 393, 12, 73, "GuideMoreAboutSection",ExpressionUUID->"124a8659-d3de-40b2-9a1b-838b32bdcdb8",
+ CellID->1217694848],
+Cell[13489, 374, 106, 1, 14, "SectionHeaderSpacer",ExpressionUUID->"58adc457-bdd4-407a-b745-efdca115041d",
+ CellID->278154426],
+Cell[13598, 377, 255, 6, 24, "GuideMoreAboutSub",ExpressionUUID->"de2bc235-828d-4282-ab35-908adb7b6903",
+ CellID->2017021910],
+Cell[13856, 385, 289, 7, 24, "GuideMoreAboutSub",ExpressionUUID->"59386da9-2070-4ad9-8d54-437feb033221",
+ CellID->2057873475],
+Cell[14148, 394, 275, 7, 24, "GuideMoreAboutSub",ExpressionUUID->"3620b183-e5e9-4142-8b07-566e6594fa27",
+ CellID->1455359390],
+Cell[14426, 403, 97, 1, 40, "FooterCell",ExpressionUUID->"8636f787-311f-45e3-bcff-f68a4d20481a",
+ CellID->386528400]
+}
+]
+*)
+
+(* End of internal cache information *)
+

@@ -40,9 +40,9 @@ DefineUsage[ExperimentCover,
 		SeeAlso -> {
 			"ExperimentCoverOptions",
 			"ValidExperimentCoverOptions",
-			"ExperimentSampleManipulation"
+			"ExperimentSamplePreparation"
 		},
 		Tutorials -> {},
-		Author -> {"hanming.yang", "thomas"}
+		Author -> {"taylor.hochuli"}
 	}
 ]

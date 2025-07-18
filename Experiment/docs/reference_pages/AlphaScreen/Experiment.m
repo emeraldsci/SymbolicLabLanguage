@@ -45,7 +45,12 @@ DefineUsage[ExperimentAlphaScreen,
 										Type -> Object,
 										Pattern :> ObjectP[{Object[Container]}]
 									]
-								}
+								},
+								"Model Sample"->Widget[
+									Type -> Object,
+									Pattern :> ObjectP[Model[Sample]],
+									ObjectTypes -> {Model[Sample]}
+								]
 							],
 							Expandable -> False
 						},
@@ -75,6 +80,6 @@ DefineUsage[ExperimentAlphaScreen,
 		Tutorials->{
 			"Sample Preparation"
 		},
-		Author->{"eunbin.go", "jihan.kim", "fan.wu"}
+		Author->{"xu.yi", "eunbin.go", "jihan.kim", "fan.wu"}
 	}
 ];

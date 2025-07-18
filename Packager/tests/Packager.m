@@ -138,7 +138,7 @@ DefineTests[
 	ReloadFile,
 	{
 		Example[{Basic,"Reload all of the code within a specific file:"},
-			ReloadFile["InternalExperiment`", "Centrifuge\\Primitives.m"],
+			ReloadFile["InternalExperiment`", FileNameJoin@FileNameSplit["Centrifuge\\Primitives.m",OperatingSystem -> "Windows"]],
 			"InternalExperiment`"
 		]
 	},
@@ -765,6 +765,7 @@ Test["Have wrong version, replace it, and log the changes: ",
 	Check that the FastLoad file was or was not loaded, depending on $FastLoad.
 	This is the truest test that things did or didn't happen.
 *)
+Authors[fastLoadMatches]:={"brad"};
 DefineTests[fastLoadMatches,
 	{
 		Test["$FastLoad flag value matches fastLoadWasLoaded value:",

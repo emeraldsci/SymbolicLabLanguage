@@ -110,6 +110,11 @@ expandOption[symbol_Symbol, value_, length_Integer]:=With[
 
 (* -- Empty Clauses -- *)
 (* These overloads call the main non-empty clause overloads. *)
+
+
+(* Authors definition for Constellation`Private`toSearchQuery *)
+Authors[Constellation`Private`toSearchQuery]:={"xu.yi"};
+
 toSearchQuery[type:typeP, opts:OptionsPattern[Search]]:=toSearchQuery[
 	{type},
 	None,
@@ -328,7 +333,7 @@ searchQueryToRequest[assoc:searchQueryP]:=Association[
 			}
 		|>
 	],
-	"Timeout" -> 300 * 1000 (* milliseconds per HTTP request via Clojure's http-request-async *)
+	"Timeout" -> 600 * 1000 (* milliseconds per HTTP request via Clojure's http-request-async *)
 ];
 
 
@@ -336,6 +341,11 @@ searchQueryToRequest[assoc:searchQueryP]:=Association[
 	in parallel. The server doesn't currently parallelize if you send multiple
 	queries in one request.*)
 sendSearch[$Failed, opts:OptionsPattern[Search]]:=$Failed;
+
+
+(* Authors definition for Constellation`Private`sendSearch *)
+Authors[Constellation`Private`sendSearch]:={"xu.yi"};
+
 sendSearch[query:searchQueryP, opts:OptionsPattern[Search]]:=With[
 	{results=sendSearch[{query}, opts]},
 
@@ -369,7 +379,7 @@ sendSearch[queries:{searchQueryP...}, opts:OptionsPattern[Search]]:=Module[
 
 	If[MemberQ[responses, _HTTPError],
 		(
-			MapThread[checkSearchError[#1, ToString[#2, InputForm]]&, {responses, queries}];
+			checkSearchError /@ responses;
 			$Failed
 		),
 		(* Re-format the server response to the list of objects the caller wants *)
@@ -425,8 +435,8 @@ sendSearch[queries:{{searchQueryP...}...}, opts:OptionsPattern[Search]]:=Module[
 sendSearch[queries_List]:=$Failed;
 
 
-checkSearchError[HTTPError[__, message_String], searchQuery_String]:=(
-	Message[Search::Error, message, searchQuery];
+checkSearchError[HTTPError[__, message_String]]:=(
+	Message[Search::Error, message];
 	True
 );
 
@@ -479,7 +489,7 @@ Search::MissingField="The fields `1` in types `2` do not exist.";
 Search::Alternatives="When using Alternatives in an equality it must be wrapped in parentheses. For example, Field==(A|B).";
 Search::ComputableField="The fields `1` in types `2` cannot be searched on because they are live computed and not stored. Please try restructuring your search to use different fields.";
 Search::CloudFileField="The fields `1` in types `2` cannot be searched because searching on EmeraldCloudFiles is not currently supported. Please try restructuring your search to use different fields.";
-Search::Error="`1`. Search query: `2`";
+Search::Error="`1`";
 Warning::NotebooksIsNotSet="PublicObjects cannot be set to False if Notebooks is not set and so public objects will be included in the search results. Please update your options and try again if this is not acceptable.";
 
 (*Empty list short-circuits*)
@@ -522,3 +532,116 @@ Search[typeGroups:{{typeP...}...}, clauseGroups:{clausesP...}, opts:OptionsPatte
 ]];
 
 SetAttributes[Search, HoldRest];
+
+
+(* Server-side parallel-search only supports a maximum of 100 parallel searches *)
+$ParallelSearchLimit = 100;
+
+DefineOptions[
+	parallelSearch,
+	SharedOptions :> {
+		Search
+	}
+];
+
+(* parallelSearch is a derivative of Search that has a constellation endpoint which runs all 
+search queries in parallel. It was developed for the use in engine,
+specifically in storageDestinations searching *)
+
+Authors[Constellation`Private`parallelSearch]:={"robert"};
+parallelSearch[type:typeP, clauseGroups:{clausesP..}, opts:OptionsPattern[]]:=parallelSearch[Table[type,Length[clauseGroups]],clauseGroups,opts];
+parallelSearch[types:{typeP...}, clauseGroups:{clausesP...}, opts:OptionsPattern[]]:=TraceExpression["parallelSearch",Module[
+	{searchQueries},
+	
+	searchQueries = toSearchQuery[List/@types, clauseGroups, opts];
+
+	sendParallelSearch[searchQueries,opts]
+]];
+
+SetAttributes[parallelSearch, HoldRest];
+
+sendParallelSearch[queries:{{searchQueryP...}...}, opts:OptionsPattern[Search]]:=Module[
+	{safeOps, maxResults, responses, results, requests,uniqueQueries,uniqueResults,queryToResultRules},
+	
+	safeOps=ECL`OptionsHandling`SafeOptions[Search, ToList[opts], ECL`OptionsHandling`AutoCorrect->False];
+	maxResults=Lookup[safeOps, MaxResults];
+	printProgressMessage["Searching Constellation for matching objects"];
+	
+	(* remove calls that are exactly identical *)
+	uniqueQueries = DeleteDuplicates[Flatten[queries]];
+
+	(* Make sure to wait for upload replication to complete, if necessary *)
+	Constellation`Private`WaitUntilUploadReplicationComplete[];
+	
+	requests = Map[
+		Association[
+			"Method" -> "GET",
+			"Path" -> apiUrl["parallelSearch"],
+			"Body" -> <|
+					"requests" -> Map[
+						Function[assoc,
+							<|
+								"clauses" -> Lookup[assoc, "Clauses"],
+								"SoftLimit" -> Lookup[assoc, "SoftLimit"],
+								"SubTypes" -> Lookup[assoc, "SubTypes"],
+								"ignore_time" -> Lookup[assoc, "IgnoreTime"],
+								"date" -> Lookup[assoc, "Date", ""],
+								"notebooks" -> Lookup[assoc, "Notebooks"],
+								"include_public_objects" -> Lookup[assoc, "PublicObjects"],
+								getDebugTimeRule[]
+							|>
+						],
+						#
+					]
+				|>,
+			"Timeout" -> 600 * 1000
+		]&,
+		PartitionRemainder[uniqueQueries,$ParallelSearchLimit]
+	];
+
+	responses=ConstellationRequest[
+		requests,
+		Concurrency -> 10,
+		Retries -> 4,
+		RetryMode -> Read
+	];
+
+	clearProgressMessage[];
+
+	If[MemberQ[responses, _HTTPError],
+		(
+			checkSearchError /@ responses;
+			$Failed
+		),
+		(* Re-format the server response to the list of objects the caller wants *)
+		uniqueResults = Map[
+			DeleteDuplicates@DeleteCases[(objectReferenceToObject/@#),$Failed]&,
+			Join@@(responses[[All,Key["results"]]])
+		];
+		
+		queryToResultRules = MapThread[Rule,{uniqueQueries, uniqueResults}];
+		
+		results = Map[
+			DeleteDuplicates[Join@@#]&,
+			Replace[
+				queries,
+				queryToResultRules,
+				{2}
+			]
+		];
+		
+		results = MapThread[
+			consolidateMaxMinResults,
+			{results, queries}
+		];
+
+		Which[
+			MatchQ[maxResults, Infinity],
+				results,
+			MatchQ[Head[maxResults], List],
+				MapThread[Take[#1, Min[#2, Length[#1]]]&,{results,maxResults}],
+			True,
+				Map[Take[#, Min[maxResults, Length[#]]]&,results]
+		]
+	]
+];

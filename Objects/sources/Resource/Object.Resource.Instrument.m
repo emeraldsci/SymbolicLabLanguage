@@ -41,6 +41,14 @@ DefineObjectType[Object[Resource, Instrument], {
 			Description -> "The instrument that is reserved to fulfill this resource request.",
 			Category -> "Resources"
 		},
+		UnusedIntegratedInstrument -> {
+			Format -> Single,
+			Class -> Boolean,
+			Pattern :> BooleanP,
+			Description -> "Indicates that this resource is for reserving an integrated instrument for the protocol that will not be used. This is vital to allow up to skip UndergoingMaintenance instruments that have this key.",
+			Category -> "Resources",
+			Developer->True
+		},
 		DeckLayouts -> {
 			Format -> Multiple,
 			Class -> Link,

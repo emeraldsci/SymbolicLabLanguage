@@ -62,12 +62,6 @@ DefineUsage[PlotLadder,
 		"AnalyzeLadder",
 		"AnalyzePeaks"
 	},
-	Author -> {
-		"kevin.hou",
-		"brad",
-		"alice",
-		"qian",
-		"thomas"
-	},
+	Author -> {"dirk.schild", "kevin.hou", "brad", "alice", "qian", "thomas"},
 	Preview->True
 }];

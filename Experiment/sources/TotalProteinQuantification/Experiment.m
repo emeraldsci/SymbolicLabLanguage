@@ -350,9 +350,11 @@ DefineOptions[ExperimentTotalProteinQuantification,
 				Units:>Percent
 			]
 		},
-		FuntopiaSharedOptions,
+		ModelInputOptions,
+		NonBiologyFuntopiaSharedOptions,
 		SamplesInStorageOptions,
-		SubprotocolDescriptionOption
+		SubprotocolDescriptionOption,
+		SimulationOption
 	}
 ];
 
@@ -403,8 +405,9 @@ Error::ConflictingStandardsStorageCondition = "The `1` cannot be specified when 
 
 (* - Container to Sample Overload - *)
 
-ExperimentTotalProteinQuantification[myContainers:ListableP[ObjectP[{Object[Container],Object[Sample]}]|_String|{LocationPositionP,_String|ObjectP[Object[Container]]}],myOptions:OptionsPattern[]]:=Module[
-	{listedOptions,outputSpecification,output,gatherTests,validSamplePreparationResult,mySamplesWithPreparedSamples,sampleCache,myOptionsWithPreparedSamples,samplePreparationCache,
+ExperimentTotalProteinQuantification[myContainers:ListableP[ObjectP[{Object[Container],Object[Sample], Model[Sample]}]|_String|{LocationPositionP,_String|ObjectP[Object[Container]]}],myOptions:OptionsPattern[]]:=Module[
+	{listedOptions,outputSpecification,output,gatherTests,validSamplePreparationResult,mySamplesWithPreparedSamples,
+		myOptionsWithPreparedSamples,updatedSimulation, containerToSampleSimulation,
 		containerToSampleResult,containerToSampleOutput,updatedCache,samples,sampleOptions,containerToSampleTests},
 
 	(* Make sure we're working with a list of options *)
@@ -420,31 +423,31 @@ ExperimentTotalProteinQuantification[myContainers:ListableP[ObjectP[{Object[Cont
 	(* First, simulate our sample preparation. *)
 	validSamplePreparationResult=Check[
 	(* Simulate sample preparation. *)
-		{mySamplesWithPreparedSamples,myOptionsWithPreparedSamples,samplePreparationCache}=simulateSamplePreparationPackets[
+		{mySamplesWithPreparedSamples,myOptionsWithPreparedSamples,updatedSimulation}=simulateSamplePreparationPacketsNew[
 			ExperimentTotalProteinQuantification,
 			ToList[myContainers],
 			ToList[myOptions]
 		],
 		$Failed,
-		{Error::MissingDefineNames,Error::InvalidInput,Error::InvalidOption}
+		{Download::ObjectDoesNotExist, Error::MissingDefineNames,Error::InvalidInput,Error::InvalidOption}
 	];
 
 	(* If we are given an invalid define name, return early. *)
 	If[MatchQ[validSamplePreparationResult,$Failed],
-	(* Return early. *)
-	(* Note: We've already thrown a message above in simulateSamplePreparationPackets. *)
-		ClearMemoization[Experiment`Private`simulateSamplePreparationPackets];Return[$Failed]
+		(* Return early. *)
+		(* Note: We've already thrown a message above in simulateSamplePreparationPacketsNew. *)
+		Return[$Failed]
 	];
 
 	(* Convert our given containers into samples and sample index-matched options. *)
 	containerToSampleResult=If[gatherTests,
-	(* We are gathering tests. This silences any messages being thrown. *)
-		{containerToSampleOutput,containerToSampleTests}=containerToSampleOptions[
+		(* We are gathering tests. This silences any messages being thrown. *)
+		{containerToSampleOutput,containerToSampleTests, containerToSampleSimulation}=containerToSampleOptions[
 			ExperimentTotalProteinQuantification,
 			mySamplesWithPreparedSamples,
 			myOptionsWithPreparedSamples,
-			Output->{Result,Tests},
-			Cache->samplePreparationCache
+			Output->{Result,Tests,Simulation},
+			Simulation->updatedSimulation
 		];
 
 		(* Therefore, we have to run the tests to see if we encountered a failure. *)
@@ -453,61 +456,54 @@ ExperimentTotalProteinQuantification[myContainers:ListableP[ObjectP[{Object[Cont
 			$Failed
 		],
 
-	(* We are not gathering tests. Simply check for Error::InvalidInput and Error::InvalidOption. *)
+		(* We are not gathering tests. Simply check for Error::InvalidInput and Error::InvalidOption. *)
 		Check[
-			containerToSampleOutput=containerToSampleOptions[
+			{containerToSampleOutput, containerToSampleSimulation}=containerToSampleOptions[
 				ExperimentTotalProteinQuantification,
 				mySamplesWithPreparedSamples,
 				myOptionsWithPreparedSamples,
-				Output->Result,
-				Cache->samplePreparationCache
+				Output-> {Result, Simulation},
+				Simulation->updatedSimulation
 			],
 			$Failed,
 			{Error::EmptyContainers, Error::ContainerEmptyWells, Error::WellDoesNotExist}
 		]
 	];
 
-	(* Update our cache with our new simulated values. *)
-	updatedCache=Flatten[{
-		samplePreparationCache,
-		Lookup[listedOptions,Cache,{}]
-	}];
-
 	(* If we were given an empty container, return early. *)
 	If[MatchQ[containerToSampleResult,$Failed],
-	(* containerToSampleOptions failed - return $Failed *)
+		(* containerToSampleOptions failed - return $Failed *)
 		outputSpecification/.{
 			Result -> $Failed,
 			Tests -> containerToSampleTests,
 			Options -> $Failed,
 			Preview -> Null
 		},
-	(* Split up our containerToSample result into the samples and sampleOptions. *)
-		{samples,sampleOptions, sampleCache}=containerToSampleOutput;
+		(* Split up our containerToSample result into the samples and sampleOptions. *)
+		{samples,sampleOptions}=containerToSampleOutput;
 
 		(* Call our main function with our samples and converted options. *)
-		ExperimentTotalProteinQuantification[samples,ReplaceRule[sampleOptions,Cache->Flatten[{updatedCache,sampleCache}]]]
+		ExperimentTotalProteinQuantification[samples,ReplaceRule[sampleOptions,Simulation -> containerToSampleSimulation]]
 	]
 ];
 
 (* -- Main Overload --*)
 ExperimentTotalProteinQuantification[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:OptionsPattern[]]:=Module[
 	{
-		listedOptions,outputSpecification,output,gatherTests,messages,listedSamples,validSamplePreparationResult,mySamplesWithPreparedSamples,myOptionsWithPreparedSamples,samplePreparationCache,
-		mySamplesWithPreparedSamplesNamed,myOptionsWithPreparedSamplesNamed,samplePreparationCacheNamed,safeOpsNamed,
+		listedOptions,outputSpecification,output,gatherTests,messages,listedSamples,validSamplePreparationResult,mySamplesWithPreparedSamples,myOptionsWithPreparedSamples,
+		mySamplesWithPreparedSamplesNamed,myOptionsWithPreparedSamplesNamed,safeOpsNamed,
 		safeOps,safeOpsTests,validLengths,validLengthTests,templatedOptions,templateTests,inheritedOptions,expandedSafeOps,totalProteinQuantificationOptionsAssociation,
 
 		suppliedInstrument,suppliedProteinStandards,suppliedConcentratedProteinStandard,suppliedQuantificationReagent,instrumentDownloadOption,instrumentDownloadFields,
 		concentratedProteinStandardDownloadOption,concentratedProteinStandardDownloadFields,uniqueProteinStandardObjects,uniqueProteinStandardModels,
 		uniqueProteinStandardObjectDownloadFields,uniqueProteinStandardModelDownloadFields,quantificationReagentDownloadOption,quantificationReagentDownloadFields,
 		objectSamplePacketFields,modelSamplePacketFields,objectContainerFields,modelContainerFields,modelContainerPacketFields,liquidHandlerContainers,
-		optionsWithObjects,userSpecifiedObjects,simulatedSampleQ,objectsExistQs,objectsExistTests,
 
 		listedSampleContainerPackets,instrumentPacket,concentratedProteinStandardPacket,listedProteinStandardObjectPackets,listedProteinStandardModelPackets,quantificationReagentPacket,
 		inputsInOrder,liquidHandlerContainerPackets,
 
 		cacheBall,inputObjects,resolvedOptionsResult,resolvedOptions,resolvedOptionsTests,collapsedResolvedOptions,resourcePackets,resourcePacketTests,
-		protocolObject
+		protocolObject, updatedSimulation, cache
 	},
 
 	(* Determine the requested return value from the function *)
@@ -523,21 +519,21 @@ ExperimentTotalProteinQuantification[mySamples:ListableP[ObjectP[Object[Sample]]
 
 	(* Simulate our sample preparation. *)
 	validSamplePreparationResult=Check[
-	(* Simulate sample preparation. *)
-		{mySamplesWithPreparedSamplesNamed,myOptionsWithPreparedSamplesNamed,samplePreparationCacheNamed}=simulateSamplePreparationPackets[
+		(* Simulate sample preparation. *)
+		{mySamplesWithPreparedSamplesNamed,myOptionsWithPreparedSamplesNamed,updatedSimulation}=simulateSamplePreparationPacketsNew[
 			ExperimentTotalProteinQuantification,
 			listedSamples,
 			ToList[listedOptions]
 		],
 		$Failed,
-	 	{Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
+	 	{Download::ObjectDoesNotExist, Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
 	];
 
 	(* If we are given an invalid define name, return early. *)
 	If[MatchQ[validSamplePreparationResult,$Failed],
-	(* Return early. *)
-	(* Note: We've already thrown a message above in simulateSamplePreparationPackets. *)
-		ClearMemoization[Experiment`Private`simulateSamplePreparationPackets];Return[$Failed]
+		(* Return early. *)
+		(* Note: We've already thrown a message above in simulateSamplePreparationPacketsNew. *)
+		Return[$Failed]
 	];
 
 	(* Call SafeOptions to make sure all options match pattern *)
@@ -546,13 +542,7 @@ ExperimentTotalProteinQuantification[mySamples:ListableP[ObjectP[Object[Sample]]
 		{SafeOptions[ExperimentTotalProteinQuantification,myOptionsWithPreparedSamplesNamed,AutoCorrect->False],{}}
 	];
 
-	{mySamplesWithPreparedSamples,{safeOps,myOptionsWithPreparedSamples,samplePreparationCache}}=sanitizeInputs[mySamplesWithPreparedSamplesNamed,{safeOpsNamed,myOptionsWithPreparedSamplesNamed,samplePreparationCacheNamed}];
-
-	(* Call ValidInputLengthsQ to make sure all options are the right length *)
-	{validLengths,validLengthTests}=If[gatherTests,
-		ValidInputLengthsQ[ExperimentTotalProteinQuantification,{mySamplesWithPreparedSamples},myOptionsWithPreparedSamples,Output->{Result,Tests}],
-		{ValidInputLengthsQ[ExperimentTotalProteinQuantification,{mySamplesWithPreparedSamples},myOptionsWithPreparedSamples],Null}
-	];
+	{mySamplesWithPreparedSamples,safeOps,myOptionsWithPreparedSamples}=sanitizeInputs[mySamplesWithPreparedSamplesNamed,safeOpsNamed,myOptionsWithPreparedSamplesNamed,Simulation->updatedSimulation];
 
 	(* If the specified options don't match their patterns or if option lengths are invalid return $Failed *)
 	If[MatchQ[safeOps,$Failed],
@@ -562,6 +552,12 @@ ExperimentTotalProteinQuantification[mySamples:ListableP[ObjectP[Object[Sample]]
 			Options -> $Failed,
 			Preview -> Null
 		}]
+	];
+
+	(* Call ValidInputLengthsQ to make sure all options are the right length *)
+	{validLengths,validLengthTests}=If[gatherTests,
+		ValidInputLengthsQ[ExperimentTotalProteinQuantification,{mySamplesWithPreparedSamples},myOptionsWithPreparedSamples,Output->{Result,Tests}],
+		{ValidInputLengthsQ[ExperimentTotalProteinQuantification,{mySamplesWithPreparedSamples},myOptionsWithPreparedSamples],Null}
 	];
 
 	(* If option lengths are invalid return $Failed (or the tests up to this point) *)
@@ -703,54 +699,8 @@ ExperimentTotalProteinQuantification[mySamples:ListableP[ObjectP[Object[Sample]]
 	(* - All liquid handler compatible containers (for resources and Aliquot) - *)
 	liquidHandlerContainers=hamiltonAliquotContainers["Memoization"];
 
-	(* - Throw an error if any of the specified input objects or objects in Options are not members of the database - *)
-	(* Any options whose values _could_ be an object *)
-	optionsWithObjects = {
-		Instrument,
-		ProteinStandards,
-		ConcentratedProteinStandard,
-		ProteinStandardDiluent,
-		StandardCurveBlank,
-		QuantificationReagent
-	};
-
-	(* Extract any objects that the user has explicitly specified *)
-	userSpecifiedObjects = DeleteDuplicates@Cases[
-		Flatten@Join[ToList[mySamples],Lookup[ToList[myOptions],optionsWithObjects,Null]],
-		ObjectP[]
-	];
-
-	(* Check that the specified objects exist or are visible to the current user *)
-	simulatedSampleQ = Quiet[
-		Lookup[fetchPacketFromCache[#,samplePreparationCache],Simulated,False]&/@userSpecifiedObjects,
-		{Download::ObjectDoesNotExist,Most::normal,Last::normal}
-	];
-	objectsExistQs = DatabaseMemberQ[PickList[userSpecifiedObjects,simulatedSampleQ,False]];
-
-	(* Build tests for object existence *)
-	objectsExistTests = If[gatherTests,
-		MapThread[
-			Test[StringTemplate["Specified object `1` exists in the database:"][#1],#2,True]&,
-			{PickList[userSpecifiedObjects,simulatedSampleQ,False],objectsExistQs}
-		],
-		{}
-	];
-
-	(* If objects do not exist, return failure *)
-	If[!(And@@objectsExistQs),
-		If[!gatherTests,
-			Message[Error::ObjectDoesNotExist,PickList[PickList[userSpecifiedObjects,simulatedSampleQ,False],objectsExistQs,False]];
-			Message[Error::InvalidInput,PickList[PickList[userSpecifiedObjects,simulatedSampleQ,False],objectsExistQs,False]]
-		];
-		Return[outputSpecification/.{
-			Result -> $Failed,
-			Tests -> Join[safeOpsTests,validLengthTests,templateTests,objectsExistTests],
-			Options -> $Failed,
-			Preview -> Null
-		}]
-	];
-
 	(* - Big Download to make cacheBall and get the inputs in order by ID - *)
+	cache = Lookup[expandedSafeOps, Cache, {}];
 	{
 		listedSampleContainerPackets,instrumentPacket,concentratedProteinStandardPacket,listedProteinStandardObjectPackets,listedProteinStandardModelPackets,quantificationReagentPacket,
 		inputsInOrder,liquidHandlerContainerPackets
@@ -784,7 +734,8 @@ ExperimentTotalProteinQuantification[mySamples:ListableP[ObjectP[Object[Sample]]
 				{Packet[Object]},
 				{modelContainerPacketFields}
 			},
-			Cache->Flatten[{Lookup[expandedSafeOps,Cache,{}],samplePreparationCache}],
+			Cache->cache,
+			Simulation -> updatedSimulation,
 			Date->Now
 		],
 		{Download::FieldDoesntExist}
@@ -794,7 +745,7 @@ ExperimentTotalProteinQuantification[mySamples:ListableP[ObjectP[Object[Sample]]
 	(* It is important that the sample preparation cache is added first to the cache ball, before the main download. *)
 	cacheBall=FlattenCachePackets[
 			{
-				samplePreparationCache,listedSampleContainerPackets,instrumentPacket,concentratedProteinStandardPacket,listedProteinStandardObjectPackets,
+				cache,listedSampleContainerPackets,instrumentPacket,concentratedProteinStandardPacket,listedProteinStandardObjectPackets,
 				listedProteinStandardModelPackets,quantificationReagentPacket,liquidHandlerContainerPackets
 			}
 	];
@@ -805,7 +756,7 @@ ExperimentTotalProteinQuantification[mySamples:ListableP[ObjectP[Object[Sample]]
 	(* Build the resolved options *)
 	resolvedOptionsResult=If[gatherTests,
 	(* We are gathering tests. This silences any messages being thrown. *)
-		{resolvedOptions,resolvedOptionsTests}=resolveExperimentTotalProteinQuantificationOptions[inputObjects,expandedSafeOps,Cache->cacheBall,Output->{Result,Tests}];
+		{resolvedOptions,resolvedOptionsTests}=resolveExperimentTotalProteinQuantificationOptions[inputObjects,expandedSafeOps,Cache->cacheBall,Simulation->updatedSimulation,Output->{Result,Tests}];
 
 		(* Therefore, we have to run the tests to see if we encountered a failure. *)
 		If[RunUnitTest[<|"Tests"->resolvedOptionsTests|>,OutputFormat->SingleBoolean,Verbose->False],
@@ -815,7 +766,7 @@ ExperimentTotalProteinQuantification[mySamples:ListableP[ObjectP[Object[Sample]]
 
 	(* We are not gathering tests. Simply check for Error::InvalidInput and Error::InvalidOption. *)
 		Check[
-			{resolvedOptions,resolvedOptionsTests}={resolveExperimentTotalProteinQuantificationOptions[inputObjects,expandedSafeOps,Cache->cacheBall],{}},
+			{resolvedOptions,resolvedOptionsTests}={resolveExperimentTotalProteinQuantificationOptions[inputObjects,expandedSafeOps,Cache->cacheBall,Simulation->updatedSimulation],{}},
 			$Failed,
 			{Error::InvalidInput,Error::InvalidOption}
 		]
@@ -841,8 +792,8 @@ ExperimentTotalProteinQuantification[mySamples:ListableP[ObjectP[Object[Sample]]
 
 	(* Build packets with resources *)
 	{resourcePackets,resourcePacketTests} = If[gatherTests,
-		tpqResourcePackets[inputObjects,templatedOptions,resolvedOptions,Cache->cacheBall,Output->{Result,Tests}],
-		{tpqResourcePackets[inputObjects,templatedOptions,resolvedOptions,Cache->cacheBall],{}}
+		tpqResourcePackets[inputObjects,templatedOptions,resolvedOptions,Cache->cacheBall,Simulation->updatedSimulation,Output->{Result,Tests}],
+		{tpqResourcePackets[inputObjects,templatedOptions,resolvedOptions,Cache->cacheBall,Simulation->updatedSimulation],{}}
 	];
 
 
@@ -862,13 +813,15 @@ ExperimentTotalProteinQuantification[mySamples:ListableP[ObjectP[Object[Sample]]
 			resourcePackets,
 			Upload->Lookup[safeOps,Upload],
 			Confirm->Lookup[safeOps,Confirm],
+			CanaryBranch->Lookup[safeOps,CanaryBranch],
 			ParentProtocol->Lookup[safeOps,ParentProtocol],
 			Priority->Lookup[safeOps,Priority],
 			StartDate->Lookup[safeOps,StartDate],
 			HoldOrder->Lookup[safeOps,HoldOrder],
 			QueuePosition->Lookup[safeOps,QueuePosition],
 			ConstellationMessage->Object[Protocol,TotalProteinQuantification],
-			Cache->samplePreparationCache
+			Cache->cache,
+			Simulation->updatedSimulation
 		],
 		$Failed
 	];
@@ -891,12 +844,12 @@ ExperimentTotalProteinQuantification[mySamples:ListableP[ObjectP[Object[Sample]]
 
 DefineOptions[
 	resolveExperimentTotalProteinQuantificationOptions,
-	Options:>{HelperOutputOption,CacheOption}
+	Options:>{HelperOutputOption,CacheOption,SimulationOption}
 ];
 
 resolveExperimentTotalProteinQuantificationOptions[mySamples:{ObjectP[Object[Sample]]...},myOptions:{_Rule...},myResolutionOptions:OptionsPattern[resolveExperimentTotalProteinQuantificationOptions]]:=Module[
 	{
-		outputSpecification,output,gatherTests,messages,notInEngine,cache,samplePrepOptions,experimentOptions,simulatedSamples,resolvedSamplePrepOptions,simulatedCache,experimentOptionsAssociation,
+		outputSpecification,output,gatherTests,messages,notInEngine,cache,samplePrepOptions,experimentOptions,simulatedSamples,resolvedSamplePrepOptions,experimentOptionsAssociation,
 		suppliedAssayType,suppliedDetectionMode,suppliedInstrument,suppliedNumberOfReplicates,suppliedProteinStandards,suppliedConcentratedProteinStandard,suppliedProteinStandardDiluent,
 		suppliedStandardCurveBlank,suppliedStandardCurveReplicates,suppliedQuantificationReagent,suppliedNumberOfEmissionReadings,suppliedEmissionAdjustmentSample,suppliedEmissionReadLocation,suppliedName,
 		instrumentDownloadOption,instrumentDownloadFields,concentratedProteinStandardDownloadOption,concentratedProteinStandardObjects,concentratedProteinStandardDownloadFields,uniqueProteinStandardObjects,uniqueProteinStandardModels,
@@ -943,7 +896,7 @@ resolveExperimentTotalProteinQuantificationOptions[mySamples:{ObjectP[Object[Sam
 		invalidProteinStandardsStorageConditionResults, invalidProteinStandardsStorageConditionTests,invalidProteinStandardsStorageConditionOption,
 		invalidConcentratedProteinStandardStorageConditionResults, invalidConcentratedProteinStandardStorageConditionTests,invalidConcentratedProteinStandardStorageConditionOption,
 		conflictingProteinStandardStorage,conflictingProteinStandardStorageOptions,conflictingProteinStandardStorageTests,conflictingConcProteinStandardStorage,
-		conflictingConcProteinStandardStorageOptions,conflictingConcProteinStandardStorageTests
+		conflictingConcProteinStandardStorageOptions,conflictingConcProteinStandardStorageTests, simulation, updatedSimulation
 
 	},
 
@@ -961,12 +914,13 @@ resolveExperimentTotalProteinQuantificationOptions[mySamples:{ObjectP[Object[Sam
 
 	(* Fetch our cache from the parent function. *)
 	cache = Lookup[ToList[myResolutionOptions], Cache, {}];
+	simulation = Lookup[ToList[myResolutionOptions], Simulation, Simulation[]];
 
 	(* Separate out our <Type> options from our Sample Prep options. *)
 	{samplePrepOptions,experimentOptions}=splitPrepOptions[myOptions];
 
 	(* Resolve our sample prep options *)
-	{simulatedSamples,resolvedSamplePrepOptions,simulatedCache}=resolveSamplePrepOptions[ExperimentTotalProteinQuantification,mySamples,samplePrepOptions,Cache->cache];
+	{simulatedSamples,resolvedSamplePrepOptions,updatedSimulation}=resolveSamplePrepOptionsNew[ExperimentTotalProteinQuantification,mySamples,samplePrepOptions,Cache->cache,Simulation->simulation];
 
 	(* Convert list of rules to Association so we can Lookup, Append, Join as usual. *)
 	experimentOptionsAssociation = Association[experimentOptions];
@@ -1139,7 +1093,8 @@ resolveExperimentTotalProteinQuantificationOptions[mySamples:{ObjectP[Object[Sam
 					Packet[Container[Model][modelSampleContainerPacketFields]]
 				}
 			},
-			Cache->simulatedCache,
+			Cache->cache,
+			Simulation->updatedSimulation,
 			Date->Now
 		],
 		{Download::FieldDoesntExist}
@@ -1267,7 +1222,7 @@ resolveExperimentTotalProteinQuantificationOptions[mySamples:{ObjectP[Object[Sam
 
 	(* If there are discarded invalid inputs and we are throwing messages, throw an error message and keep track of the invalid inputs.*)
 	If[Length[discardedInvalidInputs]>0&&messages,
-		Message[Error::DiscardedSamples, ObjectToString[discardedInvalidInputs,Cache->simulatedCache]]
+		Message[Error::DiscardedSamples, ObjectToString[discardedInvalidInputs,Simulation -> updatedSimulation]]
 	];
 
 	(* If we are gathering tests, create a passing and/or failing test with the appropriate result. *)
@@ -1275,12 +1230,12 @@ resolveExperimentTotalProteinQuantificationOptions[mySamples:{ObjectP[Object[Sam
 		Module[{failingTest,passingTest},
 			failingTest=If[Length[discardedInvalidInputs]==0,
 				Nothing,
-				Test["The input samples "<>ObjectToString[discardedInvalidInputs,Cache->simulatedCache]<>" are not discarded:",True,False]
+				Test["The input samples "<>ObjectToString[discardedInvalidInputs,Simulation -> updatedSimulation]<>" are not discarded:",True,False]
 			];
 
 			passingTest=If[Length[discardedInvalidInputs]==Length[simulatedSamples],
 				Nothing,
-				Test["The input samples "<>ObjectToString[Complement[simulatedSamples,discardedInvalidInputs],Cache->simulatedCache]<>" are not discarded:",True,True]
+				Test["The input samples "<>ObjectToString[Complement[simulatedSamples,discardedInvalidInputs],Simulation -> updatedSimulation]<>" are not discarded:",True,True]
 			];
 
 			{failingTest,passingTest}
@@ -1304,7 +1259,7 @@ resolveExperimentTotalProteinQuantificationOptions[mySamples:{ObjectP[Object[Sam
 		Module[{failingTest,passingTest},
 			failingTest=If[Length[tooManyInvalidInputs]==0,
 				Nothing,
-				Test["There are 24 or fewer input samples in "<>ObjectToString[tooManyInvalidInputs,Cache->simulatedCache],True,False]
+				Test["There are 24 or fewer input samples in "<>ObjectToString[tooManyInvalidInputs,Simulation -> updatedSimulation],True,False]
 			];
 
 			passingTest=If[Length[tooManyInvalidInputs]==Length[simulatedSamples],
@@ -1392,7 +1347,7 @@ resolveExperimentTotalProteinQuantificationOptions[mySamples:{ObjectP[Object[Sam
 		Nothing
 	];
 
-	(* - Ensure that the ProteinStandards, ConcentratedProteinStandard, StandardCurveConcentrations, and ProteinStandardDiluent options are copacetic - *)
+	(* - Ensure that the ProteinStandards, ConcentratedProteinStandard, StandardCurveConcentrations, and ProteinStandardDiluent options are compatible - *)
 	(* I could make this more clear as I did below with different warnings for the various cases, defining variables I use later in option resolution that could be useful here as well *)
 	concentratedStandardOptions={suppliedConcentratedProteinStandard,suppliedStandardCurveConcentrations,suppliedProteinStandardDiluent};
 	concentratedStandardOptionsSetBool=MemberQ[concentratedStandardOptions,Except[Null|Automatic]];
@@ -1417,7 +1372,7 @@ resolveExperimentTotalProteinQuantificationOptions[mySamples:{ObjectP[Object[Sam
 		{_,Null,_,Except[Null|Automatic]},{ProteinStandards,ConcentratedProteinStandard,StandardCurveConcentrations,ProteinStandardDiluent},
 		{_,_,Null,Except[Null|Automatic]},{ProteinStandards,ConcentratedProteinStandard,StandardCurveConcentrations,ProteinStandardDiluent},
 
-		(* Otherwise, the options are copacetic *)
+		(* Otherwise, the options are compatible *)
 		{_,_,_,_},{}
 	];
 
@@ -1458,7 +1413,7 @@ resolveExperimentTotalProteinQuantificationOptions[mySamples:{ObjectP[Object[Sam
 		(* THEN the options that are Null or specified are in conflict and invalid *)
 		PickList[{ExcitationWavelength,NumberOfEmissionReadings,EmissionAdjustmentSample,EmissionReadLocation,EmissionGain},fluorescenceOptions,Except[Automatic]],
 
-		(* ELSE, the options are copacetic *)
+		(* ELSE, the options are compatible *)
 		{}
 	];
 
@@ -1651,7 +1606,7 @@ resolveExperimentTotalProteinQuantificationOptions[mySamples:{ObjectP[Object[Sam
 			(* THEN the options are in conflict *)
 			{ExcitationWavelength,QuantificationWavelength},
 
-			(* ELSE they're copacetic *)
+			(* ELSE they're compatible *)
 			{}
 		],
 
@@ -1775,6 +1730,7 @@ resolveExperimentTotalProteinQuantificationOptions[mySamples:{ObjectP[Object[Sam
 	(* Pattern containing the instruments that are currently supported in TPQ *)
 	validInstrumentP=Alternatives[
 		Model[Instrument, PlateReader, "id:E8zoYvNkmwKw"],
+		Model[Instrument, PlateReader, "id:zGj91a7Ll0Rv"],
 		Model[Instrument, PlateReader, "id:mnk9jO3qDzpY"]
 	];
 
@@ -1796,7 +1752,7 @@ resolveExperimentTotalProteinQuantificationOptions[mySamples:{ObjectP[Object[Sam
 
 	(* If the LoadingVolume and QuantificationReagentVolume sum to more than 300 uL and we are throwing messages, throw an error *)
 	If[Length[invalidUnsupportedInstrumentOption]!=0&&messages,
-		Message[Error::TotalProteinQuantificationUnsupportedInstrument,ObjectToString[suppliedInstrument, Cache -> simulatedCache],ObjectToString[suppliedInstrumentModel, Cache -> simulatedCache]]
+		Message[Error::TotalProteinQuantificationUnsupportedInstrument,ObjectToString[suppliedInstrument, Simulation -> updatedSimulation],ObjectToString[suppliedInstrumentModel, Simulation -> updatedSimulation]]
 	];
 
 	(* If we are gathering tests, create a passing and/or failing test with the appropriate result. *)
@@ -1816,42 +1772,42 @@ resolveExperimentTotalProteinQuantificationOptions[mySamples:{ObjectP[Object[Sam
 		Nothing
 	];
 
-	(* - Ensure that the AssayType and DetectionMode options are copacetic with the supplied Instrument option - *)
-	invalidInstrumentOptions=Which[
+	(* - Ensure that the AssayType and DetectionMode options are compatible with the supplied Instrument option - *)
+	invalidInstrumentOptions= Which[
 
 		(* IF the supplied Instrument model is the CLARIOstar and the AssayType or DetectionMode options suggest an absorbance assay, the options are in conflict *)
 		And[
-			MatchQ[suppliedInstrumentModel,Model[Instrument, PlateReader, "id:E8zoYvNkmwKw"]],
+			MatchQ[suppliedInstrumentModel, ObjectP[{Model[Instrument, PlateReader, "id:E8zoYvNkmwKw"], Model[Instrument, PlateReader, "id:zGj91a7Ll0Rv"]}]],
 			Or[
-				MatchQ[suppliedAssayType,Alternatives[BCA,Bradford]],
-				MatchQ[suppliedDetectionMode,Absorbance]
-			]
-		],
-		(* THEN the options are in conflict *)
-			Join[
-				{Instrument},
-				If[MatchQ[suppliedAssayType,Alternatives[BCA,Bradford]],{AssayType},{}],
-				If[MatchQ[suppliedDetectionMode,Absorbance],{DetectionMode},{}]
-			],
-
-		(* IF the supplied Instrument model is the FLUOstar Omega and the AssayType or DetectionMode options suggest a fluorescence assay, the options are in conflict *)
-		And[
-			MatchQ[suppliedInstrumentModel,Model[Instrument, PlateReader, "id:mnk9jO3qDzpY"]],
-			Or[
-				MatchQ[suppliedAssayType,FluorescenceQuantification],
-				MatchQ[suppliedDetectionMode,Fluorescence]
+				MatchQ[suppliedAssayType, Alternatives[BCA, Bradford]],
+				MatchQ[suppliedDetectionMode, Absorbance]
 			]
 		],
 		(* THEN the options are in conflict *)
 		Join[
 			{Instrument},
-			If[MatchQ[suppliedAssayType,FluorescenceQuantification],{AssayType},{}],
-			If[MatchQ[suppliedDetectionMode,Fluorescence],{DetectionMode},{}]
+			If[MatchQ[suppliedAssayType, Alternatives[BCA, Bradford]], {AssayType}, {}],
+			If[MatchQ[suppliedDetectionMode, Absorbance], {DetectionMode}, {}]
+		],
+
+		(* IF the supplied Instrument model is the FLUOstar Omega and the AssayType or DetectionMode options suggest a fluorescence assay, the options are in conflict *)
+		And[
+			MatchQ[suppliedInstrumentModel, Model[Instrument, PlateReader, "id:mnk9jO3qDzpY"]],
+			Or[
+				MatchQ[suppliedAssayType, FluorescenceQuantification],
+				MatchQ[suppliedDetectionMode, Fluorescence]
+			]
+		],
+		(* THEN the options are in conflict *)
+		Join[
+			{Instrument},
+			If[MatchQ[suppliedAssayType, FluorescenceQuantification], {AssayType}, {}],
+			If[MatchQ[suppliedDetectionMode, Fluorescence], {DetectionMode}, {}]
 		],
 
 		(* OTHERWISE, the options are fine *)
 		True,
-			{}
+		{}
 	];
 
 	(* If the Instrument option is in conflict with either the AssayType or the DetectionMode and we are throwing messages, throw an error *)
@@ -1877,35 +1833,35 @@ resolveExperimentTotalProteinQuantificationOptions[mySamples:{ObjectP[Object[Sam
 	];
 
 	(* - Ensure that if the instrument option is set, it is okay with the fluorescenceOptions - *)
-	invalidFluorescenceInstrumentOptions=Which[
+	invalidFluorescenceInstrumentOptions= Which[
 
 		(* IF the supplied Instrument model is the CLARIOstar, and any of the fluorescenceOptions are Null, then the options are conflicting *)
 		And[
-			MatchQ[suppliedInstrumentModel,Model[Instrument, PlateReader, "id:E8zoYvNkmwKw"]],
-			MemberQ[fluorescenceOptions,Null]
+			MatchQ[suppliedInstrumentModel, ObjectP[{Model[Instrument, PlateReader, "id:E8zoYvNkmwKw"], Model[Instrument, PlateReader, "id:zGj91a7Ll0Rv"]}]],
+			MemberQ[fluorescenceOptions, Null]
 		],
 
 		(* THEN the Instrument option and the Null options are invalid *)
-			Join[
-				{Instrument},
-				PickList[{ExcitationWavelength,NumberOfEmissionReadings,EmissionAdjustmentSample, EmissionReadLocation,EmissionGain},fluorescenceOptions,Null]
-			],
+		Join[
+			{Instrument},
+			PickList[{ExcitationWavelength, NumberOfEmissionReadings, EmissionAdjustmentSample, EmissionReadLocation, EmissionGain}, fluorescenceOptions, Null]
+		],
 
 		(* IF the supplied Instrument model is the FLUOstar Omega, and any of the fluorescenceOptions are specified, then the options are conflicting *)
 		And[
-			MatchQ[suppliedInstrumentModel,Model[Instrument, PlateReader, "id:mnk9jO3qDzpY"]],
-			MemberQ[fluorescenceOptions,Except[Null|Automatic]]
+			MatchQ[suppliedInstrumentModel, Model[Instrument, PlateReader, "id:mnk9jO3qDzpY"]],
+			MemberQ[fluorescenceOptions, Except[Null | Automatic]]
 		],
 
 		(* THEN the Instrument option and the specified fluorescence options are invalid*)
-			Join[
-				{Instrument},
-				PickList[{ExcitationWavelength,NumberOfEmissionReadings,EmissionAdjustmentSample, EmissionReadLocation,EmissionGain},fluorescenceOptions,Except[Null|Automatic]]
-			],
+		Join[
+			{Instrument},
+			PickList[{ExcitationWavelength, NumberOfEmissionReadings, EmissionAdjustmentSample, EmissionReadLocation, EmissionGain}, fluorescenceOptions, Except[Null | Automatic]]
+		],
 
 		(*OTHERWISE, the options are not conflicting *)
 		True,
-			{}
+		{}
 	];
 
 	(* If the Instrument option is in conflict with any of the Fluorescence-related options and we are throwing messages, throw an error *)
@@ -1930,7 +1886,7 @@ resolveExperimentTotalProteinQuantificationOptions[mySamples:{ObjectP[Object[Sam
 		Nothing
 	];
 
-	(* - Ensure that the QuantificationReaction-related options are copacetic - *)
+	(* - Ensure that the QuantificationReaction-related options are compatible - *)
 	invalidQuantificationReactionOptions=If[
 
 		(* IF the list of suppliedQuantificationReactionTime and suppliedQuantificationTemperature options contains both a Null and a specified option *)
@@ -1990,7 +1946,7 @@ resolveExperimentTotalProteinQuantificationOptions[mySamples:{ObjectP[Object[Sam
 
 	(* If the ConcentratedProteinStandard option is specified and it does not have an associated concentration and we are throwing messages, throw an error *)
 	If[Length[invalidConcentratedProteinStandardOption]!=0&&messages,
-		Message[Error::TotalProteinQuantificationConcentratedProteinStandardInvalid,ObjectToString[suppliedConcentratedProteinStandard, Cache -> simulatedCache]]
+		Message[Error::TotalProteinQuantificationConcentratedProteinStandardInvalid,ObjectToString[suppliedConcentratedProteinStandard, Simulation -> updatedSimulation]]
 	];
 
 	(* If we are gathering tests, create a passing and/or failing test with the appropriate result. *)
@@ -2040,7 +1996,7 @@ resolveExperimentTotalProteinQuantificationOptions[mySamples:{ObjectP[Object[Sam
 
 	(* If the ConcentratedProteinStandard option is specified and it does not have an associated concentration and we are throwing messages, throw an error *)
 	If[Length[invalidProteinStandards]!=0&&messages,
-		Message[Error::TotalProteinQuantificationNullProteinStandardConcentration,ObjectToString[invalidProteinStandards, Cache -> simulatedCache]]
+		Message[Error::TotalProteinQuantificationNullProteinStandardConcentration,ObjectToString[invalidProteinStandards, Simulation -> updatedSimulation]]
 	];
 
 	(* If we are gathering tests, create a passing and/or failing test with the appropriate result. *)
@@ -2125,7 +2081,7 @@ resolveExperimentTotalProteinQuantificationOptions[mySamples:{ObjectP[Object[Sam
 		Module[{failingTest,passingTest},
 			failingTest=If[!uniqueProteinIDModelsWarningQ,
 				Nothing,
-				Warning["Each member of the ProteinStandards, "<>ObjectToString[suppliedProteinStandards,Cache->simulatedCache]<>", does not have the same Model[Molecule,Protein]s in its Composition field. The lists of Model[Molecule,Protein]s in the ProteinStandards are "<>ObjectToString[standardProteinIDModels]<>". The StandardCurve generated from these ProteinStandards may not be able to accurately quantify the concentration of proteins in the input Samples.",True,False]
+				Warning["Each member of the ProteinStandards, "<>ObjectToString[suppliedProteinStandards,Simulation -> updatedSimulation]<>", does not have the same Model[Molecule,Protein]s in its Composition field. The lists of Model[Molecule,Protein]s in the ProteinStandards are "<>ObjectToString[standardProteinIDModels, Simulation->updatedSimulation]<>". The StandardCurve generated from these ProteinStandards may not be able to accurately quantify the concentration of proteins in the input Samples.",True,False]
 			];
 			passingTest=If[uniqueProteinIDModelsWarningQ,
 				Nothing,
@@ -2544,20 +2500,20 @@ resolveExperimentTotalProteinQuantificationOptions[mySamples:{ObjectP[Object[Sam
 	];
 
 	(* - Resolve EmissionAdjustmentSample - *)
-	resolvedEmissionAdjustmentSample=Switch[{suppliedEmissionAdjustmentSample,resolvedDetectionMode},
+	resolvedEmissionAdjustmentSample= Switch[{suppliedEmissionAdjustmentSample, resolvedDetectionMode},
 
 		(* If the user has specified the option, we accept it *)
-		{Except[Automatic],_},
+		{Except[Automatic], _},
 		suppliedEmissionAdjustmentSample,
 
 		(* Otherwise, we resolve it based on the resolvedDetectionMode *)
-		{Automatic,Fluorescence},
-		If[MatchQ[resolvedInstrument, ObjectP[Model[Instrument, PlateReader, "CLARIOstar"]]],
+		{Automatic, Fluorescence},
+		If[MatchQ[resolvedInstrument, ObjectP[{Model[Instrument, PlateReader, "CLARIOstar"], Model[Instrument, PlateReader, "CLARIOstar Plus with ACU"]}]],
 			FullPlate,
 			HighestConcentration
 		],
 
-		{_,_},
+		{_, _},
 		Null
 	];
 
@@ -2616,8 +2572,8 @@ resolveExperimentTotalProteinQuantificationOptions[mySamples:{ObjectP[Object[Sam
 	(* --- UNRESOLVABLE OPTION CHECKS ---*)
 	(* -- Call CompatibleMaterialsQ to determine if the samples are chemically compatible with the instrument -- *)
 	{compatibleMaterialsBool,compatibleMaterialsTests}=If[gatherTests,
-		CompatibleMaterialsQ[resolvedInstrument,simulatedSamples,Cache->simulatedCache,Output->{Result,Tests}],
-		{CompatibleMaterialsQ[resolvedInstrument,simulatedSamples,Cache->simulatedCache,Messages->messages],{}}
+		CompatibleMaterialsQ[resolvedInstrument,simulatedSamples,Cache->cache,Simulation->updatedSimulation,Output->{Result,Tests}],
+		{CompatibleMaterialsQ[resolvedInstrument,simulatedSamples,Cache->cache,Simulation->updatedSimulation,Messages->messages],{}}
 	];
 
 	(* If the materials are incompatible, then the Instrument is invalid *)
@@ -2626,7 +2582,7 @@ resolveExperimentTotalProteinQuantificationOptions[mySamples:{ObjectP[Object[Sam
 		{}
 	];
 
-	(* - Ensure that the AssayMode and DetectionMode are copacetic - *)
+	(* - Ensure that the AssayMode and DetectionMode are compatible - *)
 	invalidDetectionModeOptions=If[
 
 		(* IF the supplied AssayType and supplied Detection Mode are in conflict *)
@@ -2641,7 +2597,7 @@ resolveExperimentTotalProteinQuantificationOptions[mySamples:{ObjectP[Object[Sam
 		(* THEN the two options are in conflict *)
 		{AssayType,DetectionMode},
 
-		(*ELSE they are copacetic *)
+		(*ELSE they are compatible *)
 		{}
 	];
 
@@ -2686,7 +2642,7 @@ resolveExperimentTotalProteinQuantificationOptions[mySamples:{ObjectP[Object[Sam
 			PickList[{ExcitationWavelength,NumberOfEmissionReadings,EmissionAdjustmentSample, EmissionReadLocation,EmissionGain},fluorescenceOptions,Except[Null|Automatic]]
 		],
 
-		(* ELSE the options are copacetic *)
+		(* ELSE the options are compatible *)
 		{}
 	];
 
@@ -2731,7 +2687,7 @@ resolveExperimentTotalProteinQuantificationOptions[mySamples:{ObjectP[Object[Sam
 			PickList[{ExcitationWavelength,NumberOfEmissionReadings,EmissionAdjustmentSample,EmissionReadLocation,EmissionGain},fluorescenceOptions,Null]
 		],
 
-		(* ELSE the options are copacetic *)
+		(* ELSE the options are compatible *)
 		{}
 	];
 
@@ -2774,14 +2730,14 @@ resolveExperimentTotalProteinQuantificationOptions[mySamples:{ObjectP[Object[Sam
 
 	(* If the supplied QuantificationReagent is not the default for the AssayType and we are throwing messages, throw a Warning *)
 	If[nonOptimalQuantificationReagentBool&&messages&&notInEngine,
-		Message[Warning::TotalProteinQuantificationReagentNotOptimal,ObjectToString[suppliedQuantificationReagent,Cache->simulatedCache],resolvedAssayType]
+		Message[Warning::TotalProteinQuantificationReagentNotOptimal,ObjectToString[suppliedQuantificationReagent,Simulation -> updatedSimulation],resolvedAssayType]
 	];
 
 	(* If we are gathering tests, create a passing and/or failing test with the appropriate result. *)
 	nonOptimalQuantificationReagentTests=If[gatherTests,
 		Module[{failingTest,passingTest},
 			failingTest=If[nonOptimalQuantificationReagentBool,
-				Warning["The supplied QuantificationReagent, "<>ObjectToString[suppliedQuantificationReagent,Cache->simulatedCache]<>", is not of the default Model for the AssayType, "<>ToString[resolvedAssayType]<>".",True,False],
+				Warning["The supplied QuantificationReagent, "<>ObjectToString[suppliedQuantificationReagent,Simulation -> updatedSimulation]<>", is not of the default Model for the AssayType, "<>ToString[resolvedAssayType]<>".",True,False],
 				Nothing
 			];
 			passingTest=If[nonOptimalQuantificationReagentBool,
@@ -2941,7 +2897,7 @@ resolveExperimentTotalProteinQuantificationOptions[mySamples:{ObjectP[Object[Sam
 
 	(* If the StandardCurveConcentration options are in conflict, we throw an Error *)
 	If[Length[invalidStandardCurveConcentrationOptions]!=0&&messages,
-		Message[Error::InvalidTotalProteinConcentratedProteinStandardOptions,ObjectToString[resolvedConcentratedProteinStandard,Cache->simulatedCache],concentratedProteinStandardConcentrationNoAutomatic,invalidStandardCurveConcentrations]
+		Message[Error::InvalidTotalProteinConcentratedProteinStandardOptions,ObjectToString[resolvedConcentratedProteinStandard,Simulation -> updatedSimulation],concentratedProteinStandardConcentrationNoAutomatic,invalidStandardCurveConcentrations]
 	];
 
 	(* If we are gathering tests, create a passing and/or failing test with the appropriate result. *)
@@ -2949,7 +2905,7 @@ resolveExperimentTotalProteinQuantificationOptions[mySamples:{ObjectP[Object[Sam
 		Module[{failingTest,passingTest},
 			failingTest=If[Length[invalidStandardCurveConcentrations]==0,
 				Nothing,
-				Test["The ConcentratedProteinStandard, "<>ObjectToString[resolvedConcentratedProteinStandard,Cache->simulatedCache]<>", has a MassConcentration (in the Composition field) or TotalProteinConcentration of "<>ToString[concentratedProteinStandardConcentrationNoAutomatic]<>". The following members of StandardCurveConcentrations, "<>ToString[invalidStandardCurveConcentrations]<>", are larger than this value - and thus the ConcentratedProteinStandard cannot be diluted to these concentrations.",True,False]
+				Test["The ConcentratedProteinStandard, "<>ObjectToString[resolvedConcentratedProteinStandard,Simulation -> updatedSimulation]<>", has a MassConcentration (in the Composition field) or TotalProteinConcentration of "<>ToString[concentratedProteinStandardConcentrationNoAutomatic]<>". The following members of StandardCurveConcentrations, "<>ToString[invalidStandardCurveConcentrations]<>", are larger than this value - and thus the ConcentratedProteinStandard cannot be diluted to these concentrations.",True,False]
 			];
 			passingTest=If[Length[invalidStandardCurveConcentrations]!=0,
 				Nothing,
@@ -2981,7 +2937,7 @@ resolveExperimentTotalProteinQuantificationOptions[mySamples:{ObjectP[Object[Sam
 
 	(* If the StandardCurveConcentration options has values that are too low for the ConcentratedProteinStandard, we throw an Error *)
 	If[Length[invalidTooLowStandardCurveConcentrationOptions]!=0&&messages,
-		Message[Error::TotalProteinStandardCurveConcentrationsTooLow,ObjectToString[resolvedConcentratedProteinStandard,Cache->simulatedCache],concentratedProteinStandardConcentrationNoAutomatic,invalidTooLowStandardCurveConcentrations]
+		Message[Error::TotalProteinStandardCurveConcentrationsTooLow,ObjectToString[resolvedConcentratedProteinStandard,Simulation -> updatedSimulation],concentratedProteinStandardConcentrationNoAutomatic,invalidTooLowStandardCurveConcentrations]
 	];
 
 	(* If we are gathering tests, create a passing and/or failing test with the appropriate result. *)
@@ -2989,7 +2945,7 @@ resolveExperimentTotalProteinQuantificationOptions[mySamples:{ObjectP[Object[Sam
 		Module[{failingTest,passingTest},
 			failingTest=If[Length[invalidTooLowStandardCurveConcentrations]==0,
 				Nothing,
-				Test["The ConcentratedProteinStandard, "<>ObjectToString[resolvedConcentratedProteinStandard,Cache->simulatedCache]<>", has a MassConcentration (in the Composition field) or TotalProteinConcentration of "<>ToString[concentratedProteinStandardConcentrationNoAutomatic]<>". The following members of StandardCurveConcentrations, "<>ToString[invalidTooLowStandardCurveConcentrations]<>", are larger than this value divided by 400 - and thus the ConcentratedProteinStandard cannot be diluted to these concentrations.",True,False]
+				Test["The ConcentratedProteinStandard, "<>ObjectToString[resolvedConcentratedProteinStandard,Simulation -> updatedSimulation]<>", has a MassConcentration (in the Composition field) or TotalProteinConcentration of "<>ToString[concentratedProteinStandardConcentrationNoAutomatic]<>". The following members of StandardCurveConcentrations, "<>ToString[invalidTooLowStandardCurveConcentrations]<>", are larger than this value divided by 400 - and thus the ConcentratedProteinStandard cannot be diluted to these concentrations.",True,False]
 			];
 			passingTest=If[Length[invalidTooLowStandardCurveConcentrations]!=0,
 				Nothing,
@@ -3018,7 +2974,7 @@ resolveExperimentTotalProteinQuantificationOptions[mySamples:{ObjectP[Object[Sam
 		First[resolvedQuantificationWavelength]
 	];
 
-	(* Check to see if the QuantificationWavelength and ExcitationWavelength options are copacetic *)
+	(* Check to see if the QuantificationWavelength and ExcitationWavelength options are compatible *)
 	invalidResolvedExcitationWavelengthOptions=If[
 
 		(* IF resolvedDetectionMode is Absorbance OR the ExcitationWavelength has been set to Null *)
@@ -3044,7 +3000,7 @@ resolveExperimentTotalProteinQuantificationOptions[mySamples:{ObjectP[Object[Sam
 			(* THEN the options are in conflict *)
 			{ExcitationWavelength,QuantificationWavelength},
 
-			(* ELSE they're copacetic *)
+			(* ELSE they're compatible *)
 			{}
 		]
 	];
@@ -3134,7 +3090,7 @@ resolveExperimentTotalProteinQuantificationOptions[mySamples:{ObjectP[Object[Sam
 	];
 
 	(*Check that the SamplesInStorageCondition is compatible with any samples sharing the same container.*)
-	{invalidSamplesInStorageConditionResults, invalidSamplesInStorageConditionTests} = ValidContainerStorageConditionQ[simulatedSamples,Lookup[experimentOptions,SamplesInStorageCondition],Cache->simulatedCache,Output->{Result, Tests}];
+	{invalidSamplesInStorageConditionResults, invalidSamplesInStorageConditionTests} = ValidContainerStorageConditionQ[simulatedSamples,Lookup[experimentOptions,SamplesInStorageCondition],Cache->cache, Simulation -> updatedSimulation,Output->{Result, Tests}];
 	invalidSamplesInStorageConditionOption = If[MemberQ[invalidSamplesInStorageConditionResults,False]||MatchQ[invalidSamplesInStorageConditionResults,False],{SamplesInStorageCondition},{}];
 
 	(*Check that the resolvedProtienStandards storage conditions are compatible for samples sharing the same container*)
@@ -3145,14 +3101,14 @@ resolveExperimentTotalProteinQuantificationOptions[mySamples:{ObjectP[Object[Sam
 	];
 
 	{invalidProteinStandardsStorageConditionResults, invalidProteinStandardsStorageConditionTests} = If[!MatchQ[resolvedProteinStandards,Null],
-		ValidContainerStorageConditionQ[Cases[resolvedProteinStandards,ObjectP[Object[Sample]]],PickList[expandedProteinStandardsStorageConditions,resolvedProteinStandards,ObjectP[Object[Sample]]],Cache->simulatedCache,Output->{Result,Tests}],
+		ValidContainerStorageConditionQ[Cases[resolvedProteinStandards,ObjectP[Object[Sample]]],PickList[expandedProteinStandardsStorageConditions,resolvedProteinStandards,ObjectP[Object[Sample]]],Cache->cache, Simulation -> updatedSimulation,Output->{Result,Tests}],
 		ValidContainerStorageConditionQ[{},{},Output->{Result,Tests}]
 	];
 	invalidProteinStandardsStorageConditionOption = If[MemberQ[invalidProteinStandardsStorageConditionResults,False]||MatchQ[invalidProteinStandardsStorageConditionResults,False],{ProteinStandardsStorageCondition},{}];
 
 	(*Check that the resolvedConcentratedProtienStandard storage condition is compatible for samples sharing the same container*)
 	{invalidConcentratedProteinStandardStorageConditionResults, invalidConcentratedProteinStandardStorageConditionTests} = If[MatchQ[resolvedConcentratedProteinStandard, ObjectP[Object[Sample]]],
-		ValidContainerStorageConditionQ[resolvedConcentratedProteinStandard,Lookup[experimentOptions,ConcentratedProteinStandardStorageCondition],Cache->simulatedCache,Output->{Result,Tests}],
+		ValidContainerStorageConditionQ[resolvedConcentratedProteinStandard,Lookup[experimentOptions,ConcentratedProteinStandardStorageCondition],Cache->cache,Simulation->updatedSimulation,Output->{Result,Tests}],
 		ValidContainerStorageConditionQ[{},{},Output->{Result,Tests}]
 	];
 	invalidConcentratedProteinStandardStorageConditionOption = If[MemberQ[invalidConcentratedProteinStandardStorageConditionResults,False]||MatchQ[invalidConcentratedProteinStandardStorageConditionResults,False],{ConcentratedProteinStandStorageCondition},{}];
@@ -3216,7 +3172,7 @@ resolveExperimentTotalProteinQuantificationOptions[mySamples:{ObjectP[Object[Sam
 
 	(*  Throw Error::InvalidInput if there are invalid inputs. *)
 	If[Length[invalidInputs]>0&&!gatherTests,
-		Message[Error::InvalidInput,ObjectToString[invalidInputs,Cache->simulatedCache]]
+		Message[Error::InvalidInput,ObjectToString[invalidInputs,Simulation -> updatedSimulation]]
 	];
 
 	(* Throw Error::InvalidOption if there are invalid options. *)
@@ -3268,7 +3224,8 @@ resolveExperimentTotalProteinQuantificationOptions[mySamples:{ObjectP[Object[Sam
 			mySamples,
 			simulatedSamples,
 			ReplaceRule[allOptionsRounded,resolvedSamplePrepOptions],
-			Cache->simulatedCache,
+			Cache->cache,
+			Simulation->updatedSimulation,
 			RequiredAliquotContainers->requiredAliquotContainers,
 			RequiredAliquotAmounts->requiredAliquotAmounts,
 			AliquotWarningMessage->"because the input samples need to be in containers that are compatible with the robotic liquid handlers.",
@@ -3282,7 +3239,8 @@ resolveExperimentTotalProteinQuantificationOptions[mySamples:{ObjectP[Object[Sam
 				mySamples,
 				simulatedSamples,
 				ReplaceRule[allOptionsRounded,resolvedSamplePrepOptions],
-				Cache->simulatedCache,
+				Cache->cache,
+				Simulation->updatedSimulation,
 				RequiredAliquotContainers->requiredAliquotContainers,
 				RequiredAliquotAmounts->requiredAliquotAmounts,
 				AliquotWarningMessage->"because the input samples need to be in containers that are compatible with the robotic liquid handlers.",
@@ -3363,7 +3321,7 @@ resolveExperimentTotalProteinQuantificationOptions[mySamples:{ObjectP[Object[Sam
 
 DefineOptions[
 	tpqResourcePackets,
-	Options:>{HelperOutputOption,CacheOption}
+	Options:>{HelperOutputOption,CacheOption,SimulationOption}
 ];
 
 tpqResourcePackets[mySamples:ListableP[ObjectP[Object[Sample]]],myTemplatedOptions:{(_Rule|_RuleDelayed)...},myResolvedOptions:{(_Rule|_RuleDelayed)..},ops:OptionsPattern[]]:=Module[
@@ -3394,7 +3352,7 @@ tpqResourcePackets[mySamples:ListableP[ObjectP[Object[Sample]]],myTemplatedOptio
 
 		proteinStandardsStorageConditions,concProteinStandardStorageCondition,
 
-		protocolPacket,prepPacket,finalizedPacket,allResourceBlobs,resourcesOk,resourceTests,previewRule,optionsRule,testsRule,resultRule
+		protocolPacket,prepPacket,finalizedPacket,allResourceBlobs,resourcesOk,resourceTests,previewRule,optionsRule,testsRule,resultRule, simulation
 	},
 
 	(* expand the resolved options if they weren't expanded already *)
@@ -3417,7 +3375,8 @@ tpqResourcePackets[mySamples:ListableP[ObjectP[Object[Sample]]],myTemplatedOptio
 	messages=!gatherTests;
 
 	(* get the inherited cache *)
-	inheritedCache = Lookup[ToList[ops],Cache];
+	inheritedCache = Lookup[ToList[ops],Cache,{}];
+	simulation=Lookup[ToList[ops], Simulation, Simulation[]];
 
 	(* Generate an ID for the new protocol *)
 	protocolID=CreateID[Object[Protocol,TotalProteinQuantification]];
@@ -3500,6 +3459,7 @@ tpqResourcePackets[mySamples:ListableP[ObjectP[Object[Sample]]],myTemplatedOptio
 				{uniqueProteinStandardModelDownloadFields}
 			},
 			Cache->inheritedCache,
+			Simulation -> simulation,
 			Date->Now
 		],
 		{Download::FieldDoesntExist}
@@ -3900,16 +3860,16 @@ tpqResourcePackets[mySamples:ListableP[ObjectP[Object[Sample]]],myTemplatedOptio
 		AdjustmentEmissionWavelength->adjustmentEmissionWavelength,
 		Replace[SamplesInStorage]->samplesInStorageCondition,
 		Replace[Checkpoints]->{
-			{"Preparing Samples",15*Minute,"Preprocessing, such as incubation, centrifugation, filtration, and aliquotting, is performed.",Link[Resource[Operator -> Model[User, Emerald, Operator, "Trainee"], Time -> 15 Minute]]},
-			{"Picking Resources",1*Hour,"Samples and plates required to execute this protocol are gathered from storage and stock solutions are freshly prepared.",Link[Resource[Operator -> Model[User, Emerald, Operator, "Trainee"], Time -> 1 Hour]]},
-			{"Preparing Quantification Plate",2*Hour,"The StandardDilutionPlate and QuantificationPlate are loaded with the specified reagents.",Link[Resource[Operator -> Model[User, Emerald, Operator, "Trainee"], Time -> 2 Hour]]},
-			{"Acquiring Data",1*Hour,"Absorbance or Fluorescence spectra of the QuantificationPlate are acquired.",Link[Resource[Operator -> Model[User, Emerald, Operator, "Trainee"], Time -> 1 Hour]]},
-			{"Returning Materials",30*Minute,"Samples are returned to storage.",Link[Resource[Operator -> Model[User, Emerald, Operator, "Trainee"], Time -> 30 Minute]]}
+			{"Preparing Samples",15*Minute,"Preprocessing, such as incubation, centrifugation, filtration, and aliquotting, is performed.",Link[Resource[Operator -> $BaselineOperator, Time -> 15 Minute]]},
+			{"Picking Resources",1*Hour,"Samples and plates required to execute this protocol are gathered from storage and stock solutions are freshly prepared.",Link[Resource[Operator -> $BaselineOperator, Time -> 1 Hour]]},
+			{"Preparing Quantification Plate",2*Hour,"The StandardDilutionPlate and QuantificationPlate are loaded with the specified reagents.",Link[Resource[Operator -> $BaselineOperator, Time -> 2 Hour]]},
+			{"Acquiring Data",1*Hour,"Absorbance or Fluorescence spectra of the QuantificationPlate are acquired.",Link[Resource[Operator -> $BaselineOperator, Time -> 1 Hour]]},
+			{"Returning Materials",30*Minute,"Samples are returned to storage.",Link[Resource[Operator -> $BaselineOperator, Time -> 30 Minute]]}
 		}
 	|>;
 
 	(* - Populate prep field - send in initial samples and options since this handles NumberOfReplicates on its own - *)
-	prepPacket=populateSamplePrepFields[mySamples,myResolvedOptions,Cache->inheritedCache];
+	prepPacket=populateSamplePrepFields[mySamples,myResolvedOptions,Cache->inheritedCache,Simulation -> simulation];
 
 	(* Merge the shared fields with the specific fields *)
 	finalizedPacket=Join[protocolPacket,prepPacket];
@@ -3922,9 +3882,9 @@ tpqResourcePackets[mySamples:ListableP[ObjectP[Object[Sample]]],myTemplatedOptio
 		MatchQ[$ECLApplication,Engine],
 		{True,{}},
 		gatherTests,
-		Resources`Private`fulfillableResourceQ[allResourceBlobs,Output->{Result,Tests},FastTrack->Lookup[myResolvedOptions,FastTrack],Site->Lookup[myResolvedOptions,Site],Cache->inheritedCache],
+		Resources`Private`fulfillableResourceQ[allResourceBlobs,Output->{Result,Tests},FastTrack->Lookup[myResolvedOptions,FastTrack],Site->Lookup[myResolvedOptions,Site],Cache->inheritedCache,Simulation->simulation],
 		True,
-		{Resources`Private`fulfillableResourceQ[allResourceBlobs,FastTrack->Lookup[myResolvedOptions,FastTrack],Site->Lookup[myResolvedOptions,Site],Messages->messages,Cache->inheritedCache],Null}
+		{Resources`Private`fulfillableResourceQ[allResourceBlobs,FastTrack->Lookup[myResolvedOptions,FastTrack],Site->Lookup[myResolvedOptions,Site],Messages->messages,Cache->inheritedCache,Simulation->simulation],Null}
 	];
 
 	(* --- Output --- *)

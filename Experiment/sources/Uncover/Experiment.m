@@ -80,15 +80,19 @@ DefineOptions[ExperimentUncover,
 						Model[Instrument, Crimper],
 						Object[Instrument, Crimper],
 						Model[Part, CapPrier],
-						Object[Part, CapPrier]
+						Object[Part, CapPrier],
+						Model[Part, Decrimper],
+						Object[Part, Decrimper],
+						Model[Part, AmpouleOpener],
+						Object[Part, AmpouleOpener]
 					}]
 				]
 			},
 			{
 				OptionName -> DecrimpingHead,
 				Default -> Automatic,
-				Description -> "Used in conjunction with a Model[Instrument, Crimper] to remove the crimped cap from the covered container.",
-				ResolutionDescription -> "Automatically set to a Model[Part, DecrimpingHead] that has the same with the CoverFootprint as the Cover, if the Cover is a Model[Item,Cap] with CoverType->Crimp.",
+				Description -> "Used in conjunction with a Model[Instrument, Crimper] to remove the crimped cap from the covered container. Note that this is not used if using a handheld Model[Part, Decrimper].",
+				ResolutionDescription -> "Automatically set to a Model[Part, DecrimpingHead] that has the same CoverFootprint as the Cover, if the Cover is a Model[Item, Cap] with CoverType->Crimp, and if not using a manual decrimper.",
 				AllowNull -> True,
 				Category -> "General",
 				Widget->Widget[
@@ -102,7 +106,7 @@ DefineOptions[ExperimentUncover,
 			{
 				OptionName -> CrimpingPressure,
 				Default -> Automatic,
-				Description -> "The pressure of the gas that is connected to the pneumatic Model[Instrument, Crimper] that determines the strength used to crimp or decrimp the crimped cap.",
+				Description -> "The pressure of the gas that is connected to the pneumatic Model[Instrument, Crimper] that determines the strength used to crimp or decrimp the crimped cap. Note that this is not used if using a handheld Model[Part, Decrimper].",
 				ResolutionDescription -> "Automatically set to the CrimpingPressure field in the Model[Item, Cap] if CoverType->Crimp. If this field is empty, set to 35 PSI. Otherwise, if CoverType is not Crimp, set to Null.",
 				AllowNull -> True,
 				Category -> "General",
@@ -141,7 +145,7 @@ DefineOptions[ExperimentUncover,
 		(*===Shared Options===*)
 		PreparationOption,
 		ProtocolOptions,
-		PostProcessingOptions,
+		NonBiologyPostProcessingOptions,
 		SimulationOption,
 		SubprotocolDescriptionOption,
 		SamplesInStorageOptions,
@@ -203,7 +207,7 @@ ExperimentUncover[myInputs:ListableP[ObjectP[{Object[Sample], Object[Container]}
 			listedOptions
 		],
 		$Failed,
-		{Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
+		{Download::ObjectDoesNotExist, Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
 	];
 
 	(* If we are given an invalid define name, return early. *)
@@ -220,13 +224,7 @@ ExperimentUncover[myInputs:ListableP[ObjectP[{Object[Sample], Object[Container]}
 	];
 
 	(* Call sanitize-inputs to clean any named objects *)
-	{myInputsWithPreparedSamples, safeOps, myOptionsWithPreparedSamples} = sanitizeInputs[myInputsWithPreparedSamplesNamed,safeOpsNamed,myOptionsWithPreparedSamplesNamed];
-
-	(* Call ValidInputLengthsQ to make sure all options are the right length *)
-	{validLengths,validLengthTests}=If[gatherTests,
-		ValidInputLengthsQ[ExperimentUncover,{myInputsWithPreparedSamples},myOptionsWithPreparedSamples,Output->{Result,Tests}],
-		{ValidInputLengthsQ[ExperimentUncover,{myInputsWithPreparedSamples},myOptionsWithPreparedSamples],Null}
-	];
+	{myInputsWithPreparedSamples, safeOps, myOptionsWithPreparedSamples} = sanitizeInputs[myInputsWithPreparedSamplesNamed,safeOpsNamed,myOptionsWithPreparedSamplesNamed, Simulation -> samplePreparationSimulation];
 
 	(* If the specified options don't match their patterns or if option lengths are invalid return $Failed *)
 	If[MatchQ[safeOps,$Failed],
@@ -237,6 +235,12 @@ ExperimentUncover[myInputs:ListableP[ObjectP[{Object[Sample], Object[Container]}
 			Preview -> Null,
 			Simulation -> Null
 		}]
+	];
+
+	(* Call ValidInputLengthsQ to make sure all options are the right length *)
+	{validLengths,validLengthTests}=If[gatherTests,
+		ValidInputLengthsQ[ExperimentUncover,{myInputsWithPreparedSamples},myOptionsWithPreparedSamples,Output->{Result,Tests}],
+		{ValidInputLengthsQ[ExperimentUncover,{myInputsWithPreparedSamples},myOptionsWithPreparedSamples],Null}
 	];
 
 	(* If option lengths are invalid return $Failed (or the tests up to this point) *)
@@ -273,7 +277,7 @@ ExperimentUncover[myInputs:ListableP[ObjectP[{Object[Sample], Object[Container]}
 	(* Expand index-matching options *)
 	expandedSafeOps=Last[ExpandIndexMatchedInputs[ExperimentUncover,{ToList[myInputsWithPreparedSamples]},inheritedOptions]];
 
-	(* Fetch teh cache from expandedSafeOps *)
+	(* Fetch the cache from expandedSafeOps *)
 	cache=ToList[Lookup[expandedSafeOps, Cache, {}]];
 
 	(*-- DOWNLOAD THE INFORMATION THAT WE NEED FOR OUR OPTION RESOLVER AND RESOURCE PACKET FUNCTION --*)
@@ -317,7 +321,7 @@ ExperimentUncover[myInputs:ListableP[ObjectP[{Object[Sample], Object[Container]}
 				List@Packet[Model[modelContainerFields]],
 				List@Packet[Contents[[All,2]][objectSampleFields]],
 				List@Packet[Contents[[All,2]][Model][modelSampleFields]],
-				{Packet[Cover[{Model, Reusable, Name}]], Packet[Cover[Model][{Name, Reusability, CoverType, Barcode, CrimpingPressure, Products, CoverFootprint}]]},
+				{Packet[Cover[{Model, Reusable, Name}]], Packet[Cover[Model][{Name, Reusable, CleaningMethod, CoverType, Barcode, CrimpingPressure, Products, CoverFootprint}]]},
 				List@Packet[Model[{CoverFootprint, Name}]],
 				{Packet[ActiveCart]}
 			},
@@ -527,6 +531,7 @@ ExperimentUncover[myInputs:ListableP[ObjectP[{Object[Sample], Object[Container]}
 						Name->Lookup[safeOps,Name],
 						Upload->Lookup[safeOps,Upload],
 						Confirm->Lookup[safeOps,Confirm],
+						CanaryBranch->Lookup[safeOps,CanaryBranch],
 						ParentProtocol->Lookup[safeOps,ParentProtocol],
 						Priority->Lookup[safeOps,Priority],
 						StartDate->Lookup[safeOps,StartDate],
@@ -544,6 +549,7 @@ ExperimentUncover[myInputs:ListableP[ObjectP[{Object[Sample], Object[Container]}
 				resourceResult[[2]],
 				Upload->Lookup[safeOps,Upload],
 				Confirm->Lookup[safeOps,Confirm],
+				CanaryBranch->Lookup[safeOps,CanaryBranch],
 				ParentProtocol->Lookup[safeOps,ParentProtocol],
 				Priority->Lookup[safeOps,Priority],
 				StartDate->Lookup[safeOps,StartDate],
@@ -726,13 +732,15 @@ resolveExperimentUncoverOptions[
 		defaultCrimperInstrumentModelPackets, defaultCrimpingHeadPartModelPackets, defaultDecrimpingHeadPartModelPackets, defaultPlateSealerInstrumentModelPackets,
 		defaultCapModelPackets, defaultLidModelPackets, defaultSeptumModelPackets, defaultClampModelPackets, cacheBall, fastCacheBall, defaultPlateSealModelPackets,
 		preparationResult, allowedPreparation, preparationTest, resolvedPreparation, mapThreadFriendlyOptions,
-		coverTypes, compatibleFootprintsLists, searchConditions, suitableCoverModelLists,
+		coverTypes, compatibleFootprintsLists, searchConditions, suitableCoverModelLists, decrimperPartModelPackets,
 		uniqueTypeFootprintTuples,safeDiscardBooleansInitial,safeDiscardLookup, safeDiscardBooleans, invalidDiscardBooleans, resolvedSampleLabels,
 		resolvedSampleContainerLabels, resolvedInstruments, resolvedDiscardCovers, resolvedEnvironments, resolvedSterileTechniques,
 		resolvedPostProcessingOptions, resolvedOptions, mapThreadFriendlyResolvedOptions, defaultCapPrierInstrumentModelPackets,
 		unsafeDiscardTest, sterileTechniqueErrors, sterileTechniqueTest, decrimperTest, decrimperErrors, specifiedCapPrierInstrumentObjectPackets,
 		objectContainerRepeatedContainerList, alreadyUncoveredTest, alreadyUncoveredErrors, invalidInputs, invalidOptions,
-		capPrierInstrumentModelPackets, capPrierErrors, capPrierTest, activeCart, resolvedCrimpingPressures, resolvedDecrimpingHeads},
+		capPrierInstrumentModelPackets, capPrierErrors, capPrierTest, activeCart, resolvedCrimpingPressures, resolvedDecrimpingHeads,
+		defaultAmpouleOpenerModelPackets, ampouleBooleans
+	},
 
 	(*-- SETUP OUR USER SPECIFIED OPTIONS AND CACHE --*)
 	(* Determine the requested output format of this function. *)
@@ -751,13 +759,13 @@ resolveExperimentUncoverOptions[
 	(* Lookup our simulation. *)
 	currentSimulation=Lookup[ToList[myResolutionOptions],Simulation];
 
-	(* Seperate out our <Type> options from our Sample Prep options. *)
+	(* Separate out our <Type> options from our Sample Prep options. *)
 	{samplePrepOptions, coverOptions}=splitPrepOptions[myOptions];
 
 	(* ExperimentUncover does not have sample prep options so we are skipping those *)
 
 	(* Create the Packet Download syntax for our Object and Model samples. *)
-	objectContainerFields=DeleteDuplicates[Flatten[{Cover,Septum,SamplePreparationCacheFields[Object[Container]]}]];
+	objectContainerFields=DeleteDuplicates[Flatten[{Cover,Septum,ContainerMaterials,SamplePreparationCacheFields[Object[Container]]}]];
 	objectContainerPacketFields=Packet@@objectContainerFields;
 	modelContainerFields=Join[SamplePreparationCacheFields[Model[Container]],{CoverFootprints}];
 	objectSampleFields=Join[SamplePreparationCacheFields[Object[Sample]],{Pungent, Ventilated}];
@@ -766,6 +774,7 @@ resolveExperimentUncoverOptions[
 	(* Get our default instrument, cover, and septum packets. *)
 	{
 		defaultCrimperInstrumentModelPackets,
+		decrimperPartModelPackets,
 		defaultCrimpingHeadPartModelPackets,
 		defaultDecrimpingHeadPartModelPackets,
 		defaultCapPrierInstrumentModelPackets,
@@ -774,7 +783,8 @@ resolveExperimentUncoverOptions[
 		defaultLidModelPackets,
 		defaultPlateSealModelPackets,
 		defaultSeptumModelPackets,
-		defaultClampModelPackets
+		defaultClampModelPackets,
+		defaultAmpouleOpenerModelPackets
 	}=coverModelPackets[myOptions];
 
 	(* - Big Download to make cacheBall and get the inputs in order by ID - *)
@@ -812,7 +822,7 @@ resolveExperimentUncoverOptions[
 				List@Packet[Model[{CoverFootprint, Name}]],
 				List@Packet[Model[{CoverFootprint, Name}]],
 				List@Packet[Cover[{Reusable}]],
-				List@Packet[Cover[Model][{Name, Reusability, CoverType, Barcode, CrimpingPressure, Products, CoverFootprint}]],
+				List@Packet[Cover[Model][{Name, Reusable, CleaningMethod, CoverType, Barcode, CrimpingPressure, Products, CoverFootprint}]],
 				{Packet[ActiveCart]}
 			},
 			Cache->cache,
@@ -893,7 +903,8 @@ resolveExperimentUncoverOptions[
 		defaultCapModelPackets,
 		defaultLidModelPackets,
 		defaultPlateSealModelPackets,
-		defaultSeptumModelPackets
+		defaultSeptumModelPackets,
+		decrimperPartModelPackets
 	}];
 
 	(* make the fast association *)
@@ -927,6 +938,7 @@ resolveExperimentUncoverOptions[
 
 	(* For the containers we're working with check what types of covers can be used to cover *)
 	compatibleFootprintsLists=Lookup[modelContainerPackets,CoverFootprints];
+	ampouleBooleans = Lookup[modelContainerPackets, Ampoule];
 
 	(* Get only our unique conditions for Search since this should be faster *)
 	(* Case out instances where we don't have any CoverFootprints - we're already in trouble and just want to stop here *)
@@ -944,11 +956,16 @@ resolveExperimentUncoverOptions[
 	(* Make a lookup of caps we can safely dispose for later so we can restore index-matching to our input *)
 	safeDiscardLookup=AssociationThread[uniqueTypeFootprintTuples,safeDiscardBooleansInitial];
 
-	(* For each input container look-up to see if we're safe to discard the cover (restore index-matching) *)
-	(* Since we deleted cases with no CoverFootprints, default to False since we don't expect to find replacement caps *)
+
 	safeDiscardBooleans=MapThread[
-		Lookup[safeDiscardLookup,Key[{#1,#2}],False]&,
-		{coverTypes, compatibleFootprintsLists}
+		(* If we have an ampoule we can only discard the cover and should not expect to recover it. *)
+		If[TrueQ[#3],
+			True,
+			(* Else, for each input container look-up to see if we're safe to discard the cover (restore index-matching) *)
+			(* Since we deleted cases with no CoverFootprints, default to False since we don't expect to find replacement caps *)
+			Lookup[safeDiscardLookup,Key[{#1,#2}],False]
+		]&,
+		{coverTypes, compatibleFootprintsLists, ampouleBooleans}
 	];
 
 	(* Get our map thread friendly options. *)
@@ -967,16 +984,23 @@ resolveExperimentUncoverOptions[
 	}=Transpose@MapThread[
 		Function[{originalInputObject, objectSamplePackets, containerPacket, coverPacket, coverModelPacket, containerRepeatedContainers, discardSafe, options},
 			Module[
-				{sampleLabel, sampleContainerLabel, uncappedTime, discardCover, instrument, environment, sterileTechnique, containerContainer,
-					decrimpingHead, crimpingPressure},
+				{sampleLabel, sampleContainerLabel, uncappedTime, discardCover, instrument, environment, sterileTechnique, containerContainer, cleanableQ,
+					decrimpingHead, crimpingPressure, specifiedDecrimpingHead, specifiedCrimpingPressure, coverModelFootprint},
 
 				uncappedTime=Lookup[options, UncappedTime];
+
+				cleanableQ = !NullQ[Lookup[coverModelPacket, CleaningMethod, Null]];
 
 				(* Resolve the DiscardCover option. *)
 				discardCover=Which[
 					MatchQ[Lookup[options, DiscardCover], Except[Automatic]],
 						Lookup[options, DiscardCover],
 
+					(* Always discard ampoule caps. *)
+					MatchQ[Lookup[containerPacket, Ampoule], True],
+						True,
+
+					(* Lids do not need to be discarded. *)
 					MatchQ[coverModelPacket, ObjectP[Model[Item, Lid]]],
 						False,
 
@@ -984,8 +1008,8 @@ resolveExperimentUncoverOptions[
 					MatchQ[Lookup[coverModelPacket, CoverType], Crimp],
 						True,
 
-					(* If the cap is just sitting around for more than 15 minutes we want to toss it even if we can use it again *)
-					uncappedTime>15 Minute && discardSafe,
+					(* If the non-cleanable cap is just sitting around for more than 15 minutes we want to toss it even if we can use it again *)
+					uncappedTime>15 Minute && discardSafe && !cleanableQ,
 						True,
 
 					(* Discard if Reusable->False|Null *)
@@ -1001,6 +1025,21 @@ resolveExperimentUncoverOptions[
 						False
 				];
 
+				(* pull out the specified decrimping head and pressures ahead of time *)
+				{
+					specifiedDecrimpingHead,
+					specifiedCrimpingPressure
+				} = Lookup[
+					options,
+					{
+						DecrimpingHead,
+						CrimpingPressure
+					}
+				];
+
+				(* going to use the cover footprint a lot so just pull it out here *)
+				coverModelFootprint = Lookup[coverModelPacket, CoverFootprint];
+
 				(* Resolve the instrument option. *)
 				instrument=Which[
 					MatchQ[Lookup[options, Instrument], Except[Automatic]],
@@ -1009,7 +1048,24 @@ resolveExperimentUncoverOptions[
 					MatchQ[resolvedPreparation, Robotic],
 						Null,
 
-					(* If we're using a crimp cap, we need to get a decrimping instrument. *)
+					(* if we're doing the following, use a manual decrimper: *)
+					(* 1.) we are doing a crimp cap *)
+					(* 2.) a manual decrimper exists for the cover footprint of the cap *)
+					(* 3.) DecrimpingHead and CrimpingPressure were not specified*)
+					And[
+						MatchQ[coverModelPacket, ObjectP[Model[Item, Cap]]],
+						MatchQ[Lookup[coverModelPacket, CoverType], Crimp],
+						MemberQ[Lookup[decrimperPartModelPackets, CoverFootprint, {}], coverModelFootprint],
+						MatchQ[specifiedDecrimpingHead, Automatic | Null],
+						MatchQ[specifiedCrimpingPressure, Automatic | Null]
+					],
+						(* don't need a third argument to FirstCase because we already checked whether this cover footprint existed already *)
+						FirstCase[
+							decrimperPartModelPackets,
+							packet: KeyValuePattern[{CoverFootprint -> coverModelFootprint}] :> Lookup[packet, Object]
+						],
+
+					(* Otherwise, if we're using a crimp cap, we need to get a decrimping instrument. *)
 					MatchQ[coverModelPacket, ObjectP[Model[Item, Cap]]] && MatchQ[Lookup[coverModelPacket, CoverType], Crimp],
 						Lookup[
 							defaultCrimperInstrumentModelPackets[[1]],
@@ -1021,8 +1077,24 @@ resolveExperimentUncoverOptions[
 						Lookup[
 							FirstCase[
 								capPrierInstrumentModelPackets,
-								KeyValuePattern[{CoverFootprint->Lookup[coverModelPacket, CoverFootprint]}],
-								<|Object->Null|>
+								KeyValuePattern[{CoverFootprint -> coverModelFootprint}],
+								<|Object -> Null|>
+							],
+							Object
+						],
+
+					(* If we're working with a (glass) Ampoule, we'll want an AmpouleOpener. *)
+					MatchQ[
+						Lookup[containerPacket, {Ampoule, ContainerMaterials}],
+						{True, Alternatives[Null, {}, {___, Alternatives[Glass, BorosilicateGlass], ___}]}
+					],
+						Lookup[
+							FirstCase[
+								defaultAmpouleOpenerModelPackets,
+								KeyValuePattern[{
+									MinVolume -> LessEqualP[Lookup[containerPacket, MaxVolume]],
+									MaxVolume -> GreaterEqualP[Lookup[containerPacket, MaxVolume]]}],
+								<|Object -> Null|>
 							],
 							Object
 						],
@@ -1042,11 +1114,12 @@ resolveExperimentUncoverOptions[
 					Null,
 
 					(* If we're using a crimp cap, we need to get a decrimping head. *)
-					MatchQ[Lookup[coverModelPacket, CoverType], Crimp],
+					(* only if we're not using a manual decrimper though *)
+					MatchQ[Lookup[coverModelPacket, CoverType], Crimp] && Not[MatchQ[instrument, ObjectP[{Model[Part, Decrimper], Object[Part, Decrimper]}]]],
 					Lookup[
 						FirstCase[
 							decrimpingHeadPartModelPackets,
-							KeyValuePattern[{CoverFootprint->Lookup[coverModelPacket, CoverFootprint]}],
+							KeyValuePattern[{CoverFootprint->coverModelFootprint}],
 							Null
 						],
 						Object
@@ -1066,7 +1139,8 @@ resolveExperimentUncoverOptions[
 					Null,
 
 					(* If we're using a crimp cap, we need to get a decrimping head. *)
-					MatchQ[Lookup[coverModelPacket, CoverType], Crimp],
+					(* only if we're not using a manual decrimper though *)
+					MatchQ[Lookup[coverModelPacket, CoverType], Crimp] && Not[MatchQ[instrument, ObjectP[{Model[Part, Decrimper], Object[Part, Decrimper]}]]],
 					If[MatchQ[Lookup[coverModelPacket, CrimpingPressure], GreaterEqualP[0 PSI]],
 						Lookup[coverModelPacket, CrimpingPressure],
 						35 PSI
@@ -1226,19 +1300,26 @@ resolveExperimentUncoverOptions[
 			Function[{instrument, decrimpingHead, coverModelPacket, index},
 				If[
 					Or[
-						(* If we're supposed to be crimping and don't have the crimper, crimping head, or decrimping head, we can't proceed. *)
+						(* If we're supposed to be crimping and don't have the crimper, we can't proceed *)
+						(* it's a little more complicated with the crimping or decrimping head; this must be Null if we're using the manual decrimper, but can't be Null for the fancy one *)
 						And[
 							MatchQ[Lookup[coverModelPacket, CoverType], Crimp],
 							Or[
-								!MatchQ[instrument, ObjectP[{Model[Instrument, Crimper], Object[Instrument, Crimper]}]],
-								!MatchQ[decrimpingHead, ObjectP[{Model[Part, DecrimpingHead], Object[Part, DecrimpingHead]}]],
-								!MatchQ[Lookup[fetchPacketFromFastAssoc[decrimpingHead, fastCacheBall], {CoverFootprint}], Lookup[coverModelPacket, {CoverFootprint}]]
+								!MatchQ[instrument, ObjectP[{Model[Instrument, Crimper], Object[Instrument, Crimper], Model[Part, Decrimper], Object[Part, Decrimper]}]],
+								And[
+									MatchQ[instrument, ObjectP[{Model[Instrument, Crimper], Object[Instrument, Crimper]}]],
+									!MatchQ[decrimpingHead, ObjectP[{Model[Part, DecrimpingHead], Object[Part, DecrimpingHead]}]]
+								],
+								And[
+									MatchQ[instrument, ObjectP[{Model[Instrument, Crimper], Object[Instrument, Crimper]}]],
+									!MatchQ[Lookup[fetchPacketFromFastAssoc[decrimpingHead, fastCacheBall], {CoverFootprint}], Lookup[coverModelPacket, {CoverFootprint}]]
+								]
 							]
 						],
 						And[
 							!MatchQ[Lookup[coverModelPacket, CoverType], Crimp],
 							Or[
-								MatchQ[instrument, ObjectP[{Model[Instrument, Crimper], Object[Instrument, Crimper]}]],
+								MatchQ[instrument, ObjectP[{Model[Instrument, Crimper], Object[Instrument, Crimper], Model[Part, Decrimper], Object[Part, Decrimper]}]],
 								MatchQ[decrimpingHead, ObjectP[{Model[Part, DecrimpingHead], Object[Part, DecrimpingHead]}]]
 							]
 						]
@@ -1487,6 +1568,10 @@ uncoverResourcePackets[
 			uniqueInstrumentResources=(#->Which[
 				MatchQ[#, ObjectP[{Model[Instrument], Object[Instrument]}]],
 					Resource[Instrument->#, Name->CreateUUID[]],
+				MatchQ[#, ObjectP[{Model[Part, Decrimper], Object[Part, Decrimper]}]],
+					Resource[Sample -> #, Name -> "Decrimper"],
+				MatchQ[#, ObjectP[{Model[Part, AmpouleOpener], Object[Part, AmpouleOpener]}]],
+					Resource[Sample -> #, Name -> CreateUUID[], Rent -> True],
 				True,
 					Null
 			]&)/@DeleteDuplicates[Lookup[myResolvedOptions, Instrument]];
@@ -1634,7 +1719,7 @@ uncoverResourcePackets[
 				Replace[CapRacks]->capRackResources,
 
 				Replace[Checkpoints]->{
-					{"Performing Uncovering",1*Minute*Length[uncoverManualUnitOperationPackets],"The containers are uncovered.",Link[Resource[Operator -> Model[User, Emerald, Operator, "id:9RdZXv1DrGja"], Time -> (1*Minute*Length[uncoverManualUnitOperationPackets])]]}
+					{"Performing Uncovering",1*Minute*Length[uncoverManualUnitOperationPackets],"The containers are uncovered.",Link[Resource[Operator -> $BaselineOperator, Time -> (1*Minute*Length[uncoverManualUnitOperationPackets])]]}
 				},
 
 				Author->If[MatchQ[Lookup[myResolvedOptions, ParentProtocol],Null],

@@ -12,7 +12,7 @@
 (*Helper Parser Functions (UploadMolecule/UploadSampleModel)*)
 
 
-(* ::Subsubsubsection::Closed:: *)
+(* ::Subsubsection::Closed:: *)
 (*PubChem CID To Association (parsePubChemCID)*)
 
 
@@ -33,7 +33,7 @@ parsePubChemCID[cid_]:=Module[
 	filledURL=StringTemplate[pubChemCIDURL][ToString[cid]];
 
 	(* Get the body of the response from this URL. *)
-	httpResponse=URLRead[filledURL];
+	httpResponse=ManifoldEcho[URLRead[filledURL], "URLRead[\""<>ToString[filledURL]<>"\"]"];
 	bodyResponse=Quiet[httpResponse["Body"]];
 
 	(* Some of the entries on PubChem have bad UTF-8 encodings. Export as a correct UTF-8 encoding in order to generate a valid JSON response. *)
@@ -171,7 +171,7 @@ parsePubChemCID[cid_]:=Module[
 			synonymsAssociation=SelectFirst[synonymsJSON["Section"], (KeyExistsQ[#, "TOCHeading"] && #["TOCHeading"] == "MeSH Entry Terms"&)];
 
 			(* Pull out all of the synonyms. *)
-			Cases[Lookup[synonymsAssociation["Information"], Key["Value"]], PatternUnion[_String, Except["Italics" | "Superscript" | "Subscript"]], Infinity]
+			Cases[Lookup[synonymsAssociation["Information"], Key["Value"]], PatternUnion[_String, Except["Italics" | "Superscript" | "Subscript" | "Information" | "Value"]], Infinity]
 		],
 		{}
 	]];
@@ -465,7 +465,7 @@ parsePubChemCID[cid_]:=Module[
 		Null
 	]];
 
-	(* Figure out if this chemcial is hazardous. *)
+	(* Figure out if this chemical is hazardous. *)
 	hazardous=Quiet[Check[
 		Module[{hazardsAssociation, ghsClassificationAssociation, ghsInformation, ghsStrings},
 			hazardsAssociation=Lookup[SelectFirst[safetyJSON, (KeyExistsQ[#, "TOCHeading"] && #["TOCHeading"] == "Hazards Identification"&)], "Section"];
@@ -721,7 +721,7 @@ parsePubChemCID[cid_]:=Module[
 
 
 
-(* ::Subsubsubsection::Closed:: *)
+(* ::Subsubsection::Closed:: *)
 (*PubChem CID to Association (parsePubChem) *)
 
 
@@ -746,7 +746,7 @@ parsePubChem[PubChem[myPubChemID_]]:=Module[
 
 
 
-(* ::Subsubsubsection::Closed:: *)
+(* ::Subsubsection::Closed:: *)
 (*Chemical Identifier to Association (parseChemicalIdentifier)*)
 
 
@@ -762,7 +762,7 @@ parseChemicalIdentifier[identifier_String]:=Module[
 			filledURL=StringTemplate[pubChemNameURL][EncodeURIComponent[identifier]];
 
 			(* Make a POST request to this URL. *)
-			jsonResponse=Quiet[URLExecute[filledURL, "RawJSON"]];
+			jsonResponse=ManifoldEcho[Quiet[URLExecute[filledURL, "RawJSON"]], "URLExecute[\""<>ToString[filledURL]<>"\", \"RawJSON\"]"];
 
 			(* If an error was returned, return $Failed. Throw a message in the higher level function that called this one. *)
 			If[MemberQ[jsonResponse, _Failure],
@@ -790,7 +790,7 @@ parseChemicalIdentifier[identifier_String]:=Module[
 ];
 
 
-(* ::Subsubsubsection::Closed:: *)
+(* ::Subsubsection::Closed:: *)
 (*InChI to Association (parseInChI)*)
 
 (* Overload for MM 12.3.1 which uses the Head ExternalIdentified[], instead of a direct string *)
@@ -798,7 +798,7 @@ parseInChI[ExternalIdentifier["InChI", identifier_String]]:=parseInChI[identifie
 (* This helper function takes in an InChI and returns an association of PubChem information. *)
 parseInChI[identifier_String]:=Module[
 	{result, pubChemInChIURL, filledURL, jsonResponse, cid},
-    
+
 	result=Quiet[
 		Check[
 			(* The following is the template URL of the PubChem API for CIDs. The CID goes in `1`. *)
@@ -808,7 +808,10 @@ parseInChI[identifier_String]:=Module[
 			filledURL=StringTemplate[pubChemInChIURL][EncodeURIComponent[identifier]];
 
 			(* Make a POST request to this URL. *)
-			jsonResponse=Quiet[URLExecute[filledURL, "RawJSON"]];
+			jsonResponse=ManifoldEcho[
+				Quiet[URLExecute[filledURL, "RawJSON"]],
+				"Quiet[URLExecute[\""<>ToString[filledURL]<>"\", \"RawJSON\"]]"
+			];
 
 			(* If an error was returned, return $Failed. Throw a message in the higher level function that called this one. *)
 			If[MemberQ[jsonResponse, _Failure],
@@ -836,12 +839,12 @@ parseInChI[identifier_String]:=Module[
 ];
 
 
-(* ::Subsubsubsection::Closed:: *)
+(* ::Subsubsection::Closed:: *)
 (*ThermoFisher to Association (parseThermoURL)*)
 
 
 parseThermoURL[url_String]:=Module[
-	{result, thermoWebsite, casList, generalCASList, casInformation, productID, msdsURL, msdsPage, msdsString, cas,
+	{result, response, thermoWebsite, casList, generalCASList, casInformation, productID, msdsURL, msdsPage, msdsString, cas,
 		pubChemInformation, informationWithMSDS, thermoName},
 
 	(* Wrap our computation with Quiet[] and Check[] because sometimes contacting the web server can result in an error. *)
@@ -849,7 +852,16 @@ parseThermoURL[url_String]:=Module[
 		Check[
 
 			(* Download the HTML for the website. *)
-			thermoWebsite = {URLRead[HTTPRequest[url, <|Method -> "GET"|>]]["Body"]};
+			response = ManifoldEcho[
+				URLRead[HTTPRequest[url, <|Method -> "GET"|>]],
+				"URLRead[HTTPRequest[\""<>ToString[url]<>"\", <|Method -> \"GET\"|>]]"
+			];
+			thermoWebsite = {response["Body"]};
+
+			(* Return early if the URLRead failed *)
+			If[MatchQ[thermoWebsite, {Missing["NotAvailable", "Body"]}],
+				Return[$Failed]
+			];
 
 			(* Get the product number from the ThermoFisher URL. *)
 			(* If for some reason the URL doesnt match this pattern, look for it in the thermoWebsite. *)
@@ -888,9 +900,11 @@ parseThermoURL[url_String]:=Module[
 					First[thermoWebsite],
 					{
 						"CAS number: "~~x:DigitCharacter..~~"-"~~y:DigitCharacter..~~"-"~~z:DigitCharacter..~~"<" -> {x, y, z},
-						"CAS\",\"value\":\""~~x:DigitCharacter..~~"-"~~y:DigitCharacter..~~"-"~~z:DigitCharacter..~~"\"" -> {x, y, z}
+						"CAS\",\"value\":\""~~x:DigitCharacter..~~"-"~~y:DigitCharacter..~~"-"~~z:DigitCharacter..~~"\"" -> {x, y, z},
+						"CAS\",\n"~~Whitespace..~~"\"value\": \""~~x:DigitCharacter..~~"-"~~y:DigitCharacter..~~"-"~~z:DigitCharacter..~~"\"" -> {x, y, z}
 					}
-				]
+				],
+				{}
 			];
 
 			(* If we successfully extracted CAS Number: XXX-XXX-XXX, use that. Otherwise, look for CAS in a more general way.*)
@@ -946,7 +960,11 @@ parseThermoURL[url_String]:=Module[
 
 			(* Append MSDSFile\[Rule]msdsURL and MSDSRequired\[Rule]True *)
 			(* MSDSRequired\[Rule]True should always be set when using a product URL to parse a chemical. *)
-			informationWithMSDS = Merge[{<|MSDSFile -> msdsURL, MSDSRequired -> True|>, pubChemInformation}, (First[ToList[#]]&)];
+			informationWithMSDS = If[!MatchQ[pubChemInformation, $Failed],
+				Merge[{<|MSDSFile -> msdsURL, MSDSRequired -> True|>, pubChemInformation}, (First[ToList[#]]&)],
+				(* If something happened, return $Failed. Otherwise the whole association remains unevualated. *)
+				$Failed
+			];
 
 			(* If the name parsing succeeded, return our association with the new name. *)
 			If[!SameQ[thermoName, Null],
@@ -981,7 +999,7 @@ parseThermoURL[url_String]:=Module[
 ];
 
 
-(* ::Subsubsubsection::Closed:: *)
+(* ::Subsubsection::Closed:: *)
 (*Sigma to Association (parseSigmaURL)*)
 
 
@@ -994,7 +1012,29 @@ parseSigmaURL[url_String]:=Module[
 	result = Quiet[
 		Check[
 			(* Download the HTML for the website. *)
-			sigmaWebsite = {URLRead[HTTPRequest[url, <|Method -> "GET"|>]]["Body"]};
+			sigmaWebsite = {
+				ManifoldEcho[
+					URLRead[
+						HTTPRequest[
+							url,
+							<|
+								Method -> "GET",
+								(* this is a header that we found can work to get a response for now, but just so people keep an eye sigma may block us at any time b/c we run unit tests and ping their website too often *)
+								"Headers" -> {
+									"accept-language" -> "en-US,en;q=0.9",
+									"user-agent" -> "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Mobile Safari/537.36"
+								}
+							|>
+						]
+					]["Body"],
+					"URLRead[HTTPRequest[\""<>ToString[url]<>"\", <|Method -> \"GET\", \"Headers\" -> {\"accept-language\" -> \"en-US,en;q=0.9\", \"user-agent\" -> \"Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Mobile Safari/537.36\"}|>]][\"Body\"]"
+				]
+			};
+
+			(* Return early if the URLRead failed *)
+			If[MatchQ[sigmaWebsite, {Missing["NotAvailable", "Body"]}],
+				Return[$Failed]
+			];
 
 			(* Attempt to parse out the name of this chemical from the page. *)
 			sigmaName = Quiet[Check[
@@ -1121,7 +1161,19 @@ parseSigmaURL[url_String]:=Module[
 				];
 
 				(* Read from the MSDS page URL *)
-				msdsBody = URLRead[sigmaMSDSPage, "Body"];
+				msdsBody = URLRead[
+					HTTPRequest[
+						sigmaMSDSPage,
+						<|
+							Method -> "GET",
+							(* this is a header that we found can work to get a response for now, but just so people keep an eye sigma may block us at any time b/c we run unit tests and ping their website too often *)
+							"Headers" -> {
+								"accept-language" -> "en-US,en;q=0.9",
+								"user-agent" -> "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Mobile Safari/537.36"
+							}
+						|>
+					]
+				]["Body"];
 
 				(* 10/22/21 - The sigma website now directly returns the PDF from this request *)
 				If[Length[StringCases[msdsBody, "PDF"]] > 0,
@@ -1137,7 +1189,19 @@ parseSigmaURL[url_String]:=Module[
 						potentialMSDSURL = "https://www.sigmaaldrich.com/MSDS/MSDS/PrintMSDSAction.do?name=msdspdf_"<>msdsID;
 
 						(* Download the body of the potential MSDS url. *)
-						potentialMSDSBody = URLRead[potentialMSDSURL, "Body"];
+						potentialMSDSBody = URLRead[
+							HTTPRequest[
+								potentialMSDSURL,
+								<|
+									Method -> "GET",
+									(* this is a header that we found can work to get a response for now, but just so people keep an eye sigma may block us at any time b/c we run unit tests and ping their website too often *)
+									"Headers" -> {
+										"accept-language" -> "en-US,en;q=0.9",
+										"user-agent" -> "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Mobile Safari/537.36"
+									}
+								|>
+							]
+						]["Body"];
 
 						(* Check that the URL returned a PDF header. If so, it is good. If not, return Null. *)
 						If[Length[StringCases[potentialMSDSBody, "PDF"]] > 0,
@@ -1152,7 +1216,11 @@ parseSigmaURL[url_String]:=Module[
 
 			(* Append MSDSFile\[Rule]msdsURL and MSDSRequired\[Rule]True *)
 			(* MSDSRequired\[Rule]True should always be set when using a product URL to parse a chemical. *)
-			informationWithMSDS = Merge[{<|MSDSFile -> msdsURL, MSDSRequired -> True|>, pubChemInformation}, (First[ToList[#]]&)];
+			informationWithMSDS = If[!MatchQ[pubChemInformation, $Failed],
+				Merge[{<|MSDSFile -> msdsURL, MSDSRequired -> True|>, pubChemInformation}, (First[ToList[#]]&)],
+				(* If something happened, return $Failed. Otherwise the whole association remains unevualated. *)
+				$Failed
+			];
 
 			(* If the name parsing succeeded, return our association with the new name. *)
 			If[!SameQ[sigmaName, Null],
@@ -1186,6 +1254,472 @@ parseSigmaURL[url_String]:=Module[
 	(* Return our result. *)
 	result
 ];
+
+
+(* ::Subsubsection::Closed:: *)
+(* findSDS *)
+
+DefineOptions[findSDS,
+	Options :> {
+		{Vendor -> All, Alternatives[All, ListableP[_String]], "Ordered list of preferred vendors to return SDS from. Matches vendor URL. Function will attempt to return an SDS in all cases, even if one can't be sourced from a listed Vendor."},
+		{Manufacturer -> All, Alternatives[All, ListableP[_String]], "Ordered list of preferred manufacturer to return SDS from. Matches manufacturer name. Function will attempt to return an SDS in all cases, even if one can't be sourced from a listed manufacturer."},
+		{Product -> All, Alternatives[All, ListableP[_String]], "A list of preferred product numbers to return the SDS for. Matches any part of SDS database entry. Function will attempt to return an SDS in all cases, even if one can't be sourced with the specified product identifier."},
+		{Output -> Open, Alternatives[URL, ValidatedURL, TemporaryFile, Open, CloudFile], "The format to return the SDS in. URL returns the best URL. ValidatedURL returns the best URL that's confirmed to return a pdf. Temporary file downloads the pdf and returns the local file reference. Open opens the pdf. Cloud file uploads the pdf to constellation and returns the cloud file."}
+	}
+];
+
+(* Pretty much every part of this function is memoized to reduce pinging of servers and reduce the chance we hit any rate limits *)
+findSDS[myIdentifier: Alternatives[_String, CASNumberP], myOptions : OptionsPattern[findSDS]] := Module[
+	{safeOptions, vendorOption, outputOption, productOption, manufacturerOption, sdsData, filteredSDSData, sortedSDSData, validatedURL, downloadedPDF},
+
+	(* Parse the options *)
+	safeOptions = SafeOptions[findSDS, ToList[myOptions]];
+	{vendorOption, manufacturerOption, productOption, outputOption} = Lookup[safeOptions, {Vendor, Manufacturer, Product, Output}];
+
+	(* Get a list of associations from Chemical Safety website, each detailing a link to an SDS *)
+	sdsData = searchChemicalSafetySDS[myIdentifier];
+
+	(* There are likely many entries in the table so filter down and sort *)
+
+	(* Filter out data we don't want *)
+	filteredSDSData = If[MatchQ[sdsData, {}],
+		sdsData,
+		Module[{gatheredByCAS, sortedByCASFrequency, filteredByCAS},
+
+			(* Filter by CAS number. Redundant if the input was a CAS but helps figure out the most likely chemical if name was provided *)
+			(* Gather the information by CAS number *)
+			gatheredByCAS = GatherBy[sdsData, Lookup[#, "CAS"] &];
+
+			(* Sort the data by frequency the CAS appeared *)
+			sortedByCASFrequency = SortBy[gatheredByCAS, Length];
+
+			(* Take the most frequent cas number found, unless it's blank. In that case, use the second most frequent if possible *)
+			filteredByCAS = If[GreaterQ[Length[sortedByCASFrequency], 1] && MatchQ[Lookup[sortedByCASFrequency[[-1, 1]], "CAS"], ""],
+				sortedByCASFrequency[[-2]],
+				sortedByCASFrequency[[-1]]
+			];
+
+			(* Filter out anything with no URL *)
+			Select[filteredByCAS, MatchQ[Lookup[#, "URL"], URLP] &]
+		]
+	];
+
+	(* Now sort the data from best to worst *)
+	sortedSDSData = Module[{defaultVendorPriority, defaultManufacturerPriority, manufacturerOrdering, vendorOrdering},
+
+		(* Default scores we give to prioritize vendors *)
+		(* These strings match the URL *)
+		(* Sigma are good but their website is incredibly twitchy with rate limits - I hit one whilst opening links in my browser whilst developing this function *)
+		defaultVendorPriority = {
+			"sigmaaldrich" -> 1,
+			"thermofisher" -> 4,
+			"fishersci" -> 3
+		};
+
+		(* Default scores we give to prioritize manufacturers *)
+		(* These match the manufacturer field in words *)
+		(* Sigma are good but their website is incredibly twitchy with rate limits - I hit one whilst opening links in my browser whilst developing this function *)
+		defaultManufacturerPriority = {
+			"Sigma Aldrich" -> 3,
+			"Sigma" -> 3,
+			"Aldrich" -> 3,
+			"Thermo Fisher" -> 4,
+			"Fisher Scientific" -> 4,
+			"Alfa Aesar" -> 2,
+			"VWR" -> 2
+		};
+
+		(* Compute the manufacturer priority *)
+		manufacturerOrdering = Module[{completePriorityList, sanitizedManufacturers},
+			(* Add any user specified priorities to the top of the list *)
+			completePriorityList = If[MatchQ[manufacturerOption, All],
+				defaultManufacturerPriority,
+				Join[
+					(# -> 50) & /@ ToList[manufacturerOption], (* Weight strongly if we match manufacturer *)
+					defaultManufacturerPriority
+				]
+			];
+
+			(* Sanitize the values *)
+			sanitizedManufacturers = DeleteDuplicates[(StringReplace[ToLowerCase[First[#]], Whitespace -> ""] -> Last[#]) & /@ completePriorityList];
+
+			(* Return the ranking, higher is better *)
+			sanitizedManufacturers
+		];
+
+
+		(* Compute the manufacturer priority *)
+		vendorOrdering = Module[{completePriorityList, sanitizedVendors},
+			(* Add any user specified priorities to the top of the list *)
+			completePriorityList = If[MatchQ[vendorOption, All],
+				defaultVendorPriority,
+				Join[
+					(# -> 50) & /@ ToList[vendorOption],  (* Weight strongly if we match vendor *)
+					defaultVendorPriority
+				]
+			];
+
+			(* Sanitize the values *)
+			sanitizedVendors = DeleteDuplicates[(StringReplace[ToLowerCase[First[#]], Whitespace -> ""] -> Last[#]) & /@ completePriorityList];
+
+			(* Return the ranking, higher is better *)
+			sanitizedVendors
+		];
+
+		(* No default prioritization for product numbers *)
+
+		(* Sort the data *)
+		ReverseSortBy[
+			filteredSDSData,
+
+			(* Compute a simple integer that represents the ordering priority of the entry *)
+			Module[{url, manufacturer, productPriority, manufacturerPriority, vendorPriority},
+
+				{url, manufacturer} = Lookup[#, {"URL", "Manufacturer"}];
+
+				(* Compute the priority of the product matching. Just a binary True/False if the URL contains the product identifiers *)
+				productPriority = If[MatchQ[productOption, All],
+					(* No priority if no product specified *)
+					0,
+
+					(* Otherwise check if the url contains the product ID. Weight overwhelmingly if we find a match *)
+					StringContainsQ[
+						url,
+						(* Compare in lower case and remove spaces *)
+						Alternatives @@ StringReplace[ToLowerCase[ToList[productOption]], Whitespace -> ""],
+						IgnoreCase -> True
+					] /. {True -> 100, False -> 0}
+				];
+
+				(* Now deduce the manufacturer for this entry *)
+				(* For every match, StringCases will return the priority number associated with it. Max will then either return the max priority found, or 0 if none found *)
+				manufacturerPriority = Max[{
+					0,
+					StringCases[
+						StringReplace[ToLowerCase[manufacturer], Whitespace -> ""],
+						manufacturerOrdering,
+						IgnoreCase -> True,
+						Overlaps -> All
+					]
+				}];
+
+				(* Now deduce the vendor priority for this entry *)
+				(* For every match, StringCases will return the priority number associated with it. Max will then either return the max priority found, or 0 if none found *)
+				vendorPriority = Max[{
+					0,
+					StringCases[
+						StringReplace[ToLowerCase[url], Whitespace -> ""],
+						vendorOrdering,
+						IgnoreCase -> True,
+						Overlaps -> All
+					]
+				}];
+
+				(* Add up all the priority weightings *)
+				Total[
+					{
+						productPriority,
+						vendorPriority,
+						manufacturerPriority
+					}
+				]
+			]&
+		]
+	];
+
+	(* Return the requested output *)
+
+	(* Return early if we just want a URL without contacting the server and validating *)
+	If[MatchQ[outputOption, URL],
+		Return[First[Lookup[sortedSDSData, "URL", {}], Null]]
+	];
+
+	(* In all other cases, first download the contents of the URL to make sure it's a real pdf *)
+	{validatedURL, downloadedPDF} = Module[
+		{scanResult},
+
+		(* Scan over all of the potential SDS in order and exit as soon as one works *)
+		scanResult = Scan[
+			Module[{url, downloadResult},
+
+				url = Lookup[#, "URL"];
+
+				(* Try and import the PDF, and check if the result is valid *)
+				(* Returns either the valid File or $Failed. Function memoizes *)
+				downloadResult = downloadAndValidateSDSURL[url];
+
+				(* If the pdf is valid, return early and break the loop *)
+				If[MatchQ[downloadResult, _File],
+					Return[{url, downloadResult}]
+				]
+			] &,
+			sortedSDSData
+		];
+
+		If[MatchQ[scanResult, {URLP, _File}],
+			scanResult,
+			{Null, Null}
+		]
+	];
+
+	(* Return the output *)
+	Which[
+		(* Return the URL that we checked works *)
+		MatchQ[outputOption, ValidatedURL],
+		validatedURL,
+
+		(* Return the path to the downloaded pdf *)
+		MatchQ[outputOption, TemporaryFile],
+		downloadedPDF,
+
+		(* If user wants to open the SDS, use SystemOpen if we have one *)
+		MatchQ[outputOption, Open] && !MatchQ[downloadedPDF, Null],
+		SystemOpen[downloadedPDF],
+
+		(* Otherwise return Null if we didn't have an SDS *)
+		MatchQ[outputOption, Open],
+		Null,
+
+		(* If the user wants a cloud file, upload the pdf and return the cloud file *)
+		MatchQ[outputOption, CloudFile],
+		UploadCloudFile[downloadedPDF],
+
+		(* Fall back - we shouldn't get here. Return both *)
+		True,
+		{validatedURL, downloadedPDF}
+	]
+];
+
+
+
+(* Internal memoized function to perform an SDS search request with Chemical Safety website *)
+searchChemicalSafetySDS[myIdentifier: Alternatives[_String, CASNumberP]] := Module[
+	{casNumberQ, httpRequest, httpResponse, parsedData},
+
+	(* Determine if the input is a cas number or not *)
+	casNumberQ = MatchQ[myIdentifier, CASNumberP];
+
+	(* Assemble the http request for ChemicalSafety.com *)
+	httpRequest = Module[{searchCriteria},
+
+		(* List of parameters to search by - we'll search by name or by cas *)
+		searchCriteria = If[casNumberQ,
+			{"cas|" <> myIdentifier},
+			{"name|" <> myIdentifier}
+		];
+
+		<|
+			"URL" -> "https://chemicalsafety.com/sds1/sds_retriever.php?action=search",
+			"Headers" -> Association[
+				"ContentType" -> "application/json"
+			],
+			"Method" -> "POST",
+			"Body" -> <|
+				"IsContains" -> False,
+				"IncludeSynonyms" -> False,
+				"SearchSdsServer" -> False,
+				"HostName" -> "sfs website",
+				"Remote" -> "209.105.189.138",
+				"Bee" -> "stevia",
+				"Action" -> "search",
+				"Criteria" -> searchCriteria
+			|>
+		|>
+	];
+
+	(* Perform the request *)
+	httpResponse = HTTPRequestJSON[httpRequest];
+
+	(* Return $Failed if not successful *)
+	If[!MatchQ[httpResponse, _Association],
+		Return[$Failed]
+	];
+
+	(* Parse the response *)
+	parsedData = Module[
+		{columnNames, rowData, associationData},
+
+		(* Lookup and sanitize the column names *)
+		columnNames = Lookup[Lookup[httpResponse, "cols"], "prompt"] /. <|
+			"MANUFACTURER" -> "Manufacturer",
+			"HTTP REF" -> "URL"
+		|>;
+
+		rowData = Lookup[httpResponse, "rows"];
+
+		(* Convert each entry into an association *)
+		associationData = Map[
+			AssociationThread[columnNames -> #] &,
+			rowData
+		];
+
+		(* Drop keys we don't want *)
+		KeyDrop[associationData, {"HASMSDS", "HPHRASES_IDS", "SDSSERVER"}]
+	];
+
+	(* Memoize result if successful *)
+	If[MatchQ[parsedData, {_Association...}],
+		(
+			If[!MemberQ[$Memoization, ExternalUpload`Private`searchChemicalSafetySDS],
+				AppendTo[$Memoization, ExternalUpload`Private`searchChemicalSafetySDS]
+			];
+			Set[searchChemicalSafetySDS[myIdentifier], parsedData]
+		)
+	];
+
+	(* Return the data *)
+	parsedData
+];
+
+
+(* ::Subsubsection::Closed:: *)
+(* File/CloudFile Handling *)
+
+
+(* Internal memoized function to perform HTTPRequest when validating URLs *)
+downloadAndValidateURL[url_String, fileNameIdentifier : _String, fileValidationFunction : _Function] := Module[
+	{filePath, downloadedFile, validFileQ, returnValue},
+
+	(* Location to (attempt to) download file to *)
+	filePath = Module[
+		{splitFileName, fileNameIdentifierStem, fileNameIdentifierExtension},
+
+		(* Split off the extension from the file name *)
+		splitFileName = StringSplit[fileNameIdentifier, "."];
+
+		(* Parse out the extension from the rest of the name *)
+		{fileNameIdentifierStem, fileNameIdentifierExtension} = If[EqualQ[Length[splitFileName], 1],
+			{First[splitFileName], ""},
+			{StringRiffle[Most[splitFileName], "."], Last[splitFileName]}
+		];
+
+		(* Assemble the file name *)
+		FileNameJoin[{$TemporaryDirectory, ToString[Unique[fileNameIdentifierStem]] <> "." <> fileNameIdentifierExtension}]
+	];
+
+	(* Attempt to download the file *)
+	downloadedFile = URLDownload[
+		HTTPRequest[url,
+			<|
+				Method -> "GET",
+				"Headers" -> {
+					"accept-language" -> "en-US,en;q=0.9",
+					"user-agent" -> "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Mobile Safari/537.36"
+				}
+			|>
+		],
+		filePath,
+		TimeConstraint -> 3
+	];
+
+	(* Check if we got something *)
+	validFileQ = Quiet[Check[
+		TrueQ[fileValidationFunction[downloadedFile]],
+		False
+	]];
+
+	(* We'll return either the file or $Failed *)
+	returnValue = If[validFileQ,
+		downloadedFile,
+		$Failed
+	];
+
+	(* Memoize the result - even if failed *)
+	If[!MemberQ[$Memoization, ExternalUpload`Private`downloadAndValidateURL],
+		AppendTo[$Memoization, ExternalUpload`Private`downloadAndValidateURL]
+	];
+	Set[downloadAndValidateURL[url, fileNameIdentifier, fileValidationFunction], returnValue];
+
+	(* Return the result *)
+	returnValue
+];
+
+(* Handy wrappers to prevent divergence when called from multiple places and ensure we hit memoization *)
+(* SDS *)
+downloadAndValidateSDSURL[url : URLP] := downloadAndValidateURL[
+	url,
+	"sds.pdf",
+	And[
+		(* First check the file format - FileFormat isn't outfoxed by incorrect extensions- we may have downloaded HTML to a .pdf filename but this will show it's still HTML *)
+		MatchQ[FileFormat[#], "PDF"],
+
+		(* If the file truly appears to be PDF format, import it and check we can read some text *)
+		Quiet[Check[
+			StringContainsQ[Import[#, "Plaintext"], Alternatives["safety data sheet", CaseSensitive["CAS"], CaseSensitive["GHS"]], IgnoreCase -> True],
+			False
+		]]
+	]&
+];
+
+(* Structure Image File *)
+downloadAndValidateStructureImageFileURL[url : URLP] := downloadAndValidateURL[
+	url,
+	"structureimage.png",
+	(* Check that we get an image when we import the file *)
+	ImageQ[Import[#]]&
+];
+
+(* Structure File *)
+downloadAndValidateStructureFileURL[url : URLP] := downloadAndValidateURL[
+	url,
+	"structure.sdf",
+	(* Check that we get a valid molecule when we import the structure file *)
+	MatchQ[Import[#], {_Molecule..}]&
+];
+
+
+(* Internal memoized function for validating local files *)
+validateLocalFile[filePath : FilePathP, fileValidationFunction : _Function] := Module[
+	{validFileQ, returnValue},
+
+	(* Validate the file using the supplied function *)
+	validFileQ = Quiet[Check[
+		TrueQ[fileValidationFunction[filePath]],
+		False
+	]];
+
+	(* We'll return either the file or $Failed *)
+	returnValue = If[validFileQ,
+		File[filePath],
+		$Failed
+	];
+
+	(* Memoize the result - even if failed *)
+	If[!MemberQ[$Memoization, ExternalUpload`Private`validateLocalFile],
+		AppendTo[$Memoization, ExternalUpload`Private`validateLocalFile]
+	];
+	Set[validateLocalFile[filePath, fileValidationFunction], returnValue];
+
+	(* Return the result *)
+	returnValue
+];
+
+(* Handy wrappers to prevent divergence when called from multiple places and ensure we hit memoization *)
+(* Structure File *)
+validateStructureFilePath[filePath : FilePathP] := validateLocalFile[
+	filePath,
+	MatchQ[Import[#], {_Molecule..}] &
+];
+
+(* Structure Image File *)
+validateStructureImageFilePath[filePath : FilePathP] := validateLocalFile[
+	filePath,
+	ImageQ[Import[#]] &
+];
+
+
+(* Helper for uploading a file to AWS and returning constellation cloud file packet. Memoized to prevent re-uploading *)
+pathToCloudFilePacket[file : Alternatives[FilePathP, _File]] := (pathToCloudFilePacket[file] = Module[
+	{},
+
+	(* Register memoization *)
+	If[!MemberQ[$Memoization, ExternalUpload`Private`pathToCloudFilePacket],
+		AppendTo[$Memoization, ExternalUpload`Private`pathToCloudFilePacket]
+	];
+
+	(* Upload the file to AWS and return the un-uploaded constellation packet *)
+	UploadCloudFile[file, Upload -> False]
+]);
 
 
 (* ::Subsection::Closed:: *)
@@ -1321,7 +1855,7 @@ DefineOptionSet[
 						Widget[Type -> String, Pattern :> URLP, Size -> Line],
 						Widget[Type -> Object, Pattern :> ObjectP[Object[EmeraldCloudFile]], PatternTooltip -> "A cloud file stored on Constellation that ends in .PDF."]
 					],
-					Description -> "URL of the MSDS (Materials Saftey Data Sheet) PDF file.",
+					Description -> "URL of the MSDS (Materials Safety Data Sheet) PDF file.",
 					Category -> "Health & Safety"
 				},
 				{
@@ -1360,6 +1894,14 @@ DefineOptionSet[
 					AllowNull -> True,
 					Widget -> Widget[Type -> Enumeration, Pattern :> BiosafetyLevelP],
 					Description -> "The Biosafety classification of the substance.",
+					Category -> "Health & Safety"
+				},
+				{
+					OptionName -> DoubleGloveRequired,
+					Default -> Null,
+					AllowNull -> True,
+					Widget -> Widget[Type -> Enumeration, Pattern :> BooleanP],
+					Description -> "Indicates if working with this substance required wearing two pairs of gloves.",
 					Category -> "Health & Safety"
 				},
 				{
@@ -1454,8 +1996,19 @@ DefineOptionSet[
 					Default -> Null,
 					AllowNull -> True,
 					Widget -> Widget[Type -> Enumeration, Pattern :> BooleanP],
-					Description -> "Indicates that this model of sample arrives sterile from the manufacturer.",
+					Description -> "Indicates that this model of sample arrives free of both microbial contamination and any microbial cell samples from the manufacturer, or is prepared free of both microbial contamination and any microbial cell samples by employing autoclaving, sterile filtration, or mixing exclusively sterile components with aseptic techniques during the course of experiments, as well as during sample storage and handling.",
 					Category -> "Health & Safety"
+				},
+				{
+					OptionName -> AsepticHandling,
+					Default -> Null,
+					Description -> "Indicates if aseptic techniques are expected for handling this model of sample. Aseptic techniques include sanitization, autoclaving, sterile filtration, mixing exclusively sterile components, and transferring in a biosafety cabinet during experimentation and storage.",
+					AllowNull -> True,
+					Category -> "Health & Safety",
+					Widget -> Widget[
+						Type -> Enumeration,
+						Pattern :> BooleanP
+					]
 				},
 				{
 					OptionName -> DefaultStorageCondition,
@@ -1490,26 +2043,15 @@ DefineOptionSet[
 					Category -> "Storage Information"
 				},
 				{
-					OptionName -> TransportWarmed,
+					OptionName -> TransportTemperature,
 					Default -> Null,
 					Description -> "The temperature that samples of this model should be incubated at while transported between instruments during experimentation.",
 					AllowNull -> True,
 					Category -> "Storage Information",
 					Widget -> Widget[
 						Type -> Quantity,
-						Pattern :> RangeP[30 Celsius, 105 Celsius],
+						Pattern :> Alternatives[RangeP[-86*Celsius, 10*Celsius], RangeP[30*Celsius, 105*Celsius]],
 						Units -> Celsius
-					]
-				},
-				{
-					OptionName -> TransportChilled,
-					Default -> Null,
-					Description -> "Indicates if samples of this model should be refrigerated during transport when used in experiments.",
-					AllowNull -> True,
-					Category -> "Storage Information",
-					Widget -> Widget[
-						Type -> Enumeration,
-						Pattern :> BooleanP
 					]
 				},
 				{
@@ -1572,7 +2114,7 @@ DefineOptionSet[
 					Default -> Null,
 					AllowNull -> True,
 					Widget -> Widget[Type -> Enumeration, Pattern :> BooleanP],
-					Description -> "Indicates that this model of sample arrives sterile from the manufacturer.",
+					Description -> "Indicates that this sample arrives free of both microbial contamination and any microbial cell samples from the manufacturer, or is prepared free of both microbial contamination and any microbial cell samples by employing autoclaving, sterile filtration, or mixing exclusively sterile components with aseptic techniques during experimentation and storage.",
 					Category -> "Health & Safety"
 				},
 				{
@@ -1608,26 +2150,15 @@ DefineOptionSet[
 					Category -> "Storage Information"
 				},
 				{
-					OptionName -> TransportWarmed,
+					OptionName -> TransportTemperature,
 					Default -> Null,
-					Description -> "The temperature at which the sample should be incubated while transported between instruments during experimentation.",
+					Description -> "The temperature that this sample should be heated or refrigerated while transported between instruments during experimentation.",
 					AllowNull -> True,
 					Category -> "Storage Information",
 					Widget -> Widget[
-						Type -> Quantity,
-						Pattern :> RangeP[30 Celsius, 105 Celsius],
-						Units -> Celsius
-					]
-				},
-				{
-					OptionName -> TransportChilled,
-					Default -> Null,
-					Description -> "Indicates if this sample should be refrigerated while transported between instruments during experimentation.",
-					AllowNull -> True,
-					Category -> "Storage Information",
-					Widget -> Widget[
-						Type -> Enumeration,
-						Pattern :> BooleanP
+						Type->Quantity,
+						Pattern:>Alternatives[RangeP[-86*Celsius, 10*Celsius], RangeP[30*Celsius, 105*Celsius]],
+						Units -> {1, {Celsius, {Celsius, Fahrenheit, Kelvin}}}
 					]
 				},
 				{
@@ -1685,9 +2216,9 @@ DefineOptionSet[
 					]
 				},
 				{
-					OptionName -> BiosafetyHandling,
+					OptionName -> AsepticHandling,
 					Default -> Null,
-					Description -> "Indicates if this sample must be handled in a biosafety cabinet.",
+					Description -> "Indicates if aseptic techniques are followed for this sample. Aseptic techniques include sanitization, autoclaving, sterile filtration, mixing exclusively sterile components, and transferring in a biosafety cabinet during experimentation and storage.",
 					AllowNull -> True,
 					Category -> "Health & Safety",
 					Widget -> Widget[
@@ -1748,6 +2279,17 @@ DefineOptionSet[
 					Widget -> Widget[
 						Type -> Enumeration,
 						Pattern :> BooleanP
+					]
+				},
+				{
+					OptionName -> AsepticTransportContainerType,
+					Default -> Null,
+					Description -> "Indicates how this sample is contained in an aseptic barrier and if it needs to be unbagged before being used in a protocol, maintenance, or qualification.",
+					AllowNull -> True,
+					Category -> "Storage Information",
+					Widget -> Widget[
+						Type -> Enumeration,
+						Pattern :> AsepticTransportContainerTypeP
 					]
 				}
 			],
@@ -2065,7 +2607,7 @@ retryConnection[command_, numberOfRetries_Integer]:=Module[{i, commandResult},
 			Return[commandResult];
 		];
 
-		Pause[1.2^i];
+		Pause[2^i];
 	];
 
 	(* We tried multiple times but get $Failed every time. Return $Failed. *)
@@ -2416,11 +2958,12 @@ generateChangePacket[myType_, resolvedOptions_List, appendInput:BooleanP, myOpti
 				Nothing
 			],
 			(* If we're changing the Composition field, add a sample history card. *)
+			(* Note: since SampleHistory has timestamp, we are not appending date (3rd column) of composition *)
 			If[KeyExistsQ[diffedPacket, Replace[Composition] && !MatchQ[myType, TypeP[Model[Sample]]]],
 				Append[SampleHistory] -> {
 					DefinedComposition[<|
 						Date -> Now,
-						Composition -> (Lookup[diffedPacket, Replace[Composition]] /. {link_Link :> Download[link, Object]}),
+						Composition -> Map[{#[[1]], #[[2]]}&,(Lookup[diffedPacket, Replace[Composition]] /. {link_Link :> Download[link, Object]})],
 						ResponsibleParty -> Download[$PersonID, Object]
 					|>]
 				},
@@ -2537,7 +3080,7 @@ InstallValidQFunction[myFunction_, myType_]:=Module[{validQFunctionString, valid
 				"Inspect"
 			},
 			Author -> {
-				"thomas"
+				"lige.tonggu"
 			}
 		}
 	];
@@ -2638,7 +3181,7 @@ InstallOptionsFunction[myFunction_, myType_]:=Module[{optionsFunctionString, opt
 				"Inspect"
 			},
 			Author -> {
-				"thomas"
+				"lige.tonggu"
 			}
 		}
 	];
@@ -3160,6 +3703,12 @@ InstallDefaultUploadFunction[myFunction_, myType_, myOptionResolver_Symbol, opti
 					Nothing
 				]
 			},
+			If[MatchQ[myFunction,UploadSampleModel],
+				MoreInformation -> {
+					"If Updating the Composition of a Model[Sample], the Compositions of all linked Object[Sample]'s will also be updated. The date in the components of the composition will have the Date of when UploadSampleModel is executed."
+				},
+				Nothing
+			],
 			SeeAlso -> {
 				"UploadOligomer",
 				"UploadProtein",
@@ -3182,7 +3731,6 @@ InstallDefaultUploadFunction[myFunction_, myType_, myOptionResolver_Symbol, opti
 				"Inspect"
 			},
 			Author -> {
-				"thomas",
 				"lige.tonggu"
 			}
 		}
@@ -3205,10 +3753,10 @@ InstallDefaultUploadFunction[myFunction_, myType_, myOptionResolver_Symbol, opti
 
 	(* Install the listable overload. *)
 	myFunction[myInputs:listableFunctionPattern, myOptions:OptionsPattern[]]:=Module[
-		{listedOptions, outputSpecification, output, gatherTests, safeOptions, safeOptionTests, validLengths, validLengthTests,
-			knownInputPatterns, invalidInputs, expandedInputs, expandedOptions, optionName, optionValueList, expandedOptionsWithName, transposedInputsAndOptions,
+		{listedOptions, outputSpecification, cache, simulation, output, gatherTests, safeOptions, safeOptionTests, validLengths, validLengthTests,
+			invalidInputs, expandedInputs, expandedOptions, optionName, optionValueList, expandedOptionsWithName, transposedInputsAndOptions,
 			results, messages, messageRules, messageRulesGrouped,
-			messageRulesWithoutInvalidInput, transposedResults, outputRules, resultRule, packetUUIDs, packetsToUpload, uploadedPackets, resultRuleWithObjects,
+			messageRulesWithoutInvalidInput, transposedResults, outputRules, resultRule, packetsToUpload,
 			invalidOptionMap, invalidOptions, messageRulesWithoutRequiredOptions, inputObjectCache},
 
 		(* Make sure we're working with a list of options *)
@@ -3259,28 +3807,41 @@ InstallDefaultUploadFunction[myFunction_, myType_, myOptionResolver_Symbol, opti
 		(* SafeOptions passed. Use SafeOptions to get the output format. *)
 		outputSpecification=Lookup[safeOptions, Output];
 
+		(* Grab the cache and simulation from options *)
+		cache=Lookup[safeOptions,Cache,{}];
+		simulation=Lookup[safeOptions,Simulation,Null];
+
 		(*-- Otherwise, we're dealing with a listable version. Map over the inputs and options. --*)
 		(*-- Basic checks of input and option validity passed. We are ready to map over the inputs and options. --*)
 		(* Expand any index-matched options from OptionName\[Rule]A to OptionName\[Rule]{A,A,A,...} so that it's safe to MapThread over pairs of options, inputs when resolving/validating values *)
 		{expandedInputs, expandedOptions}=ExpandIndexMatchedInputs[myFunction, {ToList[myInputs]}, listedOptions];
 
 		(* Download all of the objects from our input list without computable fields. *)
-		inputObjectCache=Module[{objects, fields},
+		inputObjectCache=Module[{objects, types, typeFields, fullDownloadFields},
 
 			(*all unique objects we are working with*)
 			objects=DeleteDuplicates[Cases[ToList[myInputs], ObjectReferenceP[myType], Infinity]];
+			(* This is required as the objects may be subtype of myType and we need to download all the fields. This is specifically important for Model[Sample,StockSolution] *)
+			types=Download[objects,Type];
 
 			(* fields without computable fields *)
-			fields=Packet[Sequence @@
-				Cases[
-					Lookup[LookupTypeDefinition[myType], Fields],
-					Verbatim[Rule][_, KeyValuePattern[Format -> Except[Computable]]]
-				][[All, 1]]];
+			typeFields=Map[
+				(
+					# -> {Packet@@Experiment`Private`noComputableFieldsList[#]}
+				)&,
+				DeleteDuplicates[types]
+			];
+
+			fullDownloadFields=types/.typeFields;
 
 			(* need to Flatten here to get a flat list of packets *)
-			Flatten@Download[
-				objects,
-				fields
+			Experiment`Private`FlattenCachePackets[
+				Download[
+					objects,
+					fullDownloadFields,
+					Cache->cache,
+					Simulation->simulation
+				]
 			]
 		];
 
@@ -3366,7 +3927,7 @@ InstallDefaultUploadFunction[myFunction_, myType_, myOptionResolver_Symbol, opti
 			Message[Error::InvalidOption, ToString[invalidOptions]];
 		];
 
-		(* If Error::InvalidInput is thrown, message it seperately. These error names must be present for the Command Builder to pick up on them. *)
+		(* If Error::InvalidInput is thrown, message it separately. These error names must be present for the Command Builder to pick up on them. *)
 		messageRulesWithoutInvalidInput=If[KeyExistsQ[messageRulesGrouped, "Error::InvalidInput"],
 			Message[Error::InvalidInput, ToString[First[messageRulesGrouped["Error::InvalidInput"]]]];
 			KeyDrop[messageRulesGrouped, "Error::InvalidInput"],
@@ -3389,7 +3950,7 @@ InstallDefaultUploadFunction[myFunction_, myType_, myOptionResolver_Symbol, opti
 
 		(* Throw the listable versions of the Error and Warning messages. *)
 		(
-			Module[{messageName, messageContents, messageNameHead, messageNameTag, originalMessage, additionalInputInformation},
+			Module[{messageName, messageContents, messageNameHead, messageNameTag},
 				messageName=#[[1]];
 				messageContents=#[[2]];
 
@@ -3467,10 +4028,12 @@ InstallDefaultUploadFunction[myFunction_, myType_, myOptionResolver_Symbol, opti
 
 	(* Install the singleton overload. *)
 	singletonOverloadSymbol[myInput:singletonFunctionPattern, myOptions:OptionsPattern[]]:=Module[
-		{listedOptions, safeOptions, safeOptionTests, validLengths, validLengthTests, outputSpecification, output, gatherTests,
-			resolvedOptions, optionswithNFPA, optionsWithExtinctionCoefficient, optionsWithOpticalCompositions, optionsWithCompositions, changePacket, nonChangePacket,
-			packetTests, passedQ, evaluationData, optionsRule, previewRule, testsRule, resultRule, fullChangePacket, packetWithoutRuleDelayed,
-			additionalChangePackets, appendInput},
+		{
+			listedOptions, safeOptions, safeOptionTests, validLengths, validLengthTests, outputSpecification, output, gatherTests,
+			resolvedOptions, optionsWithNFPA, optionsWithExtinctionCoefficient, optionsWithOpticalCompositions, optionsWithCompositions, changePacket, nonChangePacket,
+			packetTests, passedQ, evaluationData, optionsRule, previewRule, testsRule, resultRule, fullChangePacket, updateCompositionQ, packetWithoutRuleDelayed,
+			additionalChangePackets, appendInput
+		},
 
 		(* Make sure we're working with a list of options *)
 		listedOptions=ToList[myOptions];
@@ -3517,7 +4080,7 @@ InstallDefaultUploadFunction[myFunction_, myType_, myOptionResolver_Symbol, opti
 
 		(* Convert our NFPA option into a valid NFPAP. *)
 		(* no idea where Special->Null comes from, somewhere in the option resolver, but did not find the root cause *)
-		optionswithNFPA=Which[
+		optionsWithNFPA=Which[
 			MatchQ[Lookup[resolvedOptions, NFPA, Null]/.(Rule[Special, Null] -> Rule[Special, {}]), NFPAP],
 			ReplaceRule[
 				resolvedOptions,
@@ -3553,7 +4116,7 @@ InstallDefaultUploadFunction[myFunction_, myType_, myOptionResolver_Symbol, opti
 				#[[1]] -> Function[{myExtinctionCoefficient}, <|Wavelength -> myExtinctionCoefficient[[1]], ExtinctionCoefficient -> myExtinctionCoefficient[[2]]|>] /@ #[[2]],
 				#
 			]
-				&) /@ optionswithNFPA;
+				&) /@ optionsWithNFPA;
 
 		(*Transfer the OpticalComposition to the Link[] that can be uploaded to Model[Sample] packet*)
 		optionsWithOpticalCompositions=(
@@ -3565,16 +4128,32 @@ InstallDefaultUploadFunction[myFunction_, myType_, myOptionResolver_Symbol, opti
 				]
 			]&) /@ optionsWithExtinctionCoefficient;
 
-		(* Convert our indexed multiple field - Solvent and Composition - into its correct format. *)
-		optionsWithCompositions=(
-			If[MatchQ[#[[1]], Composition] && !MatchQ[#[[2]], Null | {Null}],
-				#[[1]] -> Function[{myEntry}, If[MatchQ[myEntry[[2]], Null], myEntry, {myEntry[[1]], Link[myEntry[[2]]]}]] /@ #[[2]],
-				#[[1]] -> If[MatchQ[#[[2]], {Null}],
-					Null,
-					#[[2]]
+		(* Convert our indexed multiple field - Composition - into its correct format. *)
+		optionsWithCompositions = Map[
+			Function[{optionRule},
+				Module[{optionSymbol,optionValue},
+					(* Split the option into symbol and value *)
+					optionSymbol = First[optionRule];
+					optionValue = Last[optionRule];
+
+					If[MatchQ[optionSymbol, Composition] && !MatchQ[optionValue, Null | {Null}],
+						optionSymbol -> Function[{myEntry},
+							Which[
+								(* NOTE: If the length is 2 the Composition option must be coming from UploadSampleModel *)
+								MatchQ[Length[myEntry], 2] && MatchQ[myEntry[[2]], Null], myEntry,
+								MatchQ[Length[myEntry], 2] && !MatchQ[myEntry[[2]], Null], {myEntry[[1]], Link[myEntry[[2]]]},
+								MatchQ[Length[myEntry], 3] && MatchQ[myEntry[[2]], Null], myEntry,
+								MatchQ[Length[myEntry], 3] && !MatchQ[myEntry[[2]], Null], {myEntry[[1]], Link[myEntry[[2]]], myEntry[[3]]},
+								True, myEntry
+							]
+
+						] /@ optionValue,
+						optionSymbol -> If[MatchQ[optionValue, {Null}], Null, optionValue]
+					]
 				]
-			]
-				&) /@ optionsWithOpticalCompositions;
+			],
+			optionsWithOpticalCompositions
+		];
 
 		(*Extract the append option and use as an input (so it is not deleted for not being included in the fields list)*)
 		appendInput=If[
@@ -3599,18 +4178,47 @@ InstallDefaultUploadFunction[myFunction_, myType_, myOptionResolver_Symbol, opti
 		];
 
 		(* If we are inside of UploadSampleModel, also update any Object[Sample]s that are still linked to the Model[Sample]. *)
-		additionalChangePackets=If[MatchQ[myFunction, UploadSampleModel] && MatchQ[myInput, ObjectP[myType]],
-			Module[{allSamples, allSamplePackets},
+		(* NOTE: We only want to do this update if a new Composition was actually passed as an option *)
+		(* Composition will be Null if it is not a specified option *)
+		updateCompositionQ = !NullQ[Lookup[safeOptions,Composition,Null]];
+		additionalChangePackets=If[MatchQ[myFunction, UploadSampleModel] && MatchQ[myInput, ObjectP[myType]] && updateCompositionQ,
+			Module[{allSamples, allSamplePackets, datedOptionsWithCompositions},
 				(* Get all of the Object[Sample]s still linked to our Model[Sample] that we can modify. *)
 				allSamples=Search[Object[Sample], Status != Discarded && Model == myInput];
 
 				(* Download our sample packets. *)
 				allSamplePackets=Download[allSamples];
 
+				(* Note: when we update Composition of Model[Sample], all Object[Sample] instances of this model will be updated. *)
+				datedOptionsWithCompositions = Map[
+					Function[{optionRule},
+						Module[{optionSymbol,optionValue,currentTime},
+							(* Split the option into symbol and value *)
+							optionSymbol = First[optionRule];
+							optionValue = Last[optionRule];
+
+							(* Save the current time *)
+							currentTime = Now;
+
+							(* Append the time to the end of the composition *)
+							If[MatchQ[optionSymbol, Composition] && !MatchQ[optionValue, Null | {Null}],
+								optionSymbol -> Map[
+									Function[{myEntry},
+										{myEntry[[1]], Link[myEntry[[2]]], currentTime}
+									],
+									optionValue
+								],
+								optionSymbol -> If[MatchQ[optionValue, {Null}], Null, optionValue]
+							]
+						]
+					],
+					optionsWithCompositions
+				];
+
 				(* Append the object IDs to it. *)
 				(* NOTE: Also never include the Name option since we don't want to change the names of Object[Samples]. *)
 				(
-					Append[generateChangePacket[Object[Sample], Cases[optionsWithCompositions, Verbatim[Rule][Except[Name], _]], ExistingPacket -> #], Object -> Lookup[#, Object]]
+					Append[generateChangePacket[Object[Sample], Cases[datedOptionsWithCompositions, Verbatim[Rule][Except[Name], _]], ExistingPacket -> #], Object -> Lookup[#, Object]]
 						&) /@ allSamplePackets
 			],
 			{}
@@ -3621,7 +4229,7 @@ InstallDefaultUploadFunction[myFunction_, myType_, myOptionResolver_Symbol, opti
 		(* If we had a previously existing packet, we merge that packet with our packet. *)
 		nonChangePacket=With[{objectPacket=Experiment`Private`fetchPacketFromCache[myInput, Lookup[ToList[myOptions], Cache]]},
 			If[MatchQ[objectPacket, PacketP[]],
-				stripChangePacket[Append[fullChangePacket, Type -> myType], ExistingPacket -> objectPacket],
+				stripChangePacket[fullChangePacket, ExistingPacket -> objectPacket],
 				stripChangePacket[Append[fullChangePacket, Type -> myType]]
 			]
 		];
@@ -3659,7 +4267,7 @@ InstallDefaultUploadFunction[myFunction_, myType_, myOptionResolver_Symbol, opti
 
 		(* Prepare the Test result if we were asked to do so *)
 		testsRule=Tests -> If[MemberQ[output, Tests],
-			(* Join all exisiting tests generated by helper functions with any additional tests *)
+			(* Join all existing tests generated by helper functions with any additional tests *)
 			Flatten[Join[safeOptionTests, validLengthTests, packetTests]],
 			Null
 		];
@@ -3765,21 +4373,28 @@ resolveDefaultUploadFunctionOptions[myType_, myInput:ObjectP[], myOptions_, rawO
 
 (* This overload doesn't take in any historical amounts to determine whether it's gone over the required threshold. *)
 (* So, if you add one drop of acid into the solution, it will become Acid->True. This overload is only used for option *)
-(* resolving in UploadSampleModel to be extra safe since we want the user to tell us if things are okay. *)
+(* resolving in UploadSampleModel/UploadSample/UploadSampleTransfer/ExperimentTransfer to be extra safe since we want the user to tell us if things are okay. *)
 combineEHSFields[ehsField_, sourceEHSValue_, destinationEHSValue_]:=Module[{},
 	(* Note: If an EHS field gets added to the Object, it must be added to this merger function: *)
 	ehsField -> Switch[ehsField,
-		(* BiosafetyLevel has its own hiearchy: *)
+		(* State has its own hierarchy: Liquid overrule Solid, then Gas if present. *)
 		State,
 		FirstCase[{Liquid, Solid, Gas, Null}, sourceEHSValue | destinationEHSValue, Null],
+		(* CellType has its own hierarchy: Mammalian>Yeast>Bacteria, the same logic in UploadSampleModel *)
+		CellType,
+		FirstCase[{Mammalian, Yeast, Bacterial}, sourceEHSValue | destinationEHSValue, Null],
 
-		(* BiosafetyLevel has its own hiearchy: *)
+		(* BiosafetyLevel has its own hierarchy: *)
 		BiosafetyLevel,
 		FirstCase[{"BSL-4", "BSL-3", "BSL-2", "BSL-1"}, sourceEHSValue | destinationEHSValue, Null],
 
-		(* PipettingMethod has its own hiearchy: *)
+		(* double gloved doesn't care about % and just inherits any True if present *)
+		DoubleGloveRequired,
+		Or@@Map[MatchQ[#,True]&,{sourceEHSValue,destinationEHSValue}],
+
+		(* PipettingMethod has its own hierarchy: *)
 		PipettingMethod,
-		(* First try to pick out of the hierachy, from most to least conservative: *)
+		(* First try to pick out of the hierarchy, from most to least conservative: *)
 		FirstCase[
 			{
 				Model[Method, Pipetting, "id:AEqRl9KqjO4R"], (*Model[Method, Pipetting, "Organic High Viscosity"]*)
@@ -3792,7 +4407,7 @@ combineEHSFields[ehsField_, sourceEHSValue_, destinationEHSValue_]:=Module[{},
 				Model[Method, Pipetting, "id:wqW9BP7WbvjG"](*Model[Method, Pipetting, "Aqueous Low Volume"]*)
 			},
 			ObjectP[sourceEHSValue] | ObjectP[destinationEHSValue], (* Note: ObjectP may use Download[] to check an ID vs a Name *)
-			(* If we aren't in the ECL defined hiearchy of pipetting methods (we have a custom method), use our custom method. *)
+			(* If we aren't in the ECL defined hierarchy of pipetting methods (we have a custom method), use our custom method. *)
 			FirstCase[{sourceEHSValue, destinationEHSValue}, ObjectP[Model[Method, Pipetting]], Null]
 		],
 
@@ -3804,12 +4419,12 @@ combineEHSFields[ehsField_, sourceEHSValue_, destinationEHSValue_]:=Module[{},
 			(* If we have more than one, get rid of None: *)
 			If[Length[combinedMaterials] > 1,
 				Cases[combinedMaterials, Except[None]],
-				combinedMaterials /. {$Failed -> None}
+				combinedMaterials
 			]
 		],
 
 		(* Fields that False wins out over True: *)
-		Sterile | DrainDisposal,
+		Sterile | DrainDisposal | Anhydrous | AsepticHandling,
 		FirstCase[{False, Null, True}, sourceEHSValue | destinationEHSValue, Null],
 
 		(* Fields that True wins out over False|Null: *)
@@ -3824,7 +4439,7 @@ combineEHSFields[ehsField_, sourceEHSValue_, destinationEHSValue_]:=Module[{},
 			Min[{sourceEHSValue, destinationEHSValue}]
 		],
 
-		(* Fields that get Nulled if there are competiting values: *)
+		(* Fields that get Nulled if there are competing values: *)
 		MSDSFile | DOTHazardClass,
 		(* If we have a Null, go with the value: *)
 		If[MemberQ[{sourceEHSValue, destinationEHSValue}, Null | $Failed],
@@ -4017,20 +4632,24 @@ combineEHSFields[composition:{{CompositionP | Null, ObjectP[] | Null} ...}, ehsF
 					Null
 				],
 
-				(* If we have any bit of Microbial sample, it's Microbial. Otherwise, it's Mammalian if we have any bit of a Mammalian sample.*)
+				(* If we have any bit of Mammalian, it's Mammalian if we have any bit of a Mammalian sample. Otherwise, if we have microbial, it's Microbial. *)
 				CellType,
 				Which[
-					MemberQ[ehsFieldPercentage[[All, 1]], MicrobialCellTypeP],
-						FirstCase[ehsFieldPercentage[[All, 1]], MicrobialCellTypeP],
 					MemberQ[ehsFieldPercentage[[All, 1]], NonMicrobialCellTypeP],
 						FirstCase[ehsFieldPercentage[[All, 1]], NonMicrobialCellTypeP],
+					MemberQ[ehsFieldPercentage[[All, 1]], MicrobialCellTypeP],
+						FirstCase[ehsFieldPercentage[[All, 1]], MicrobialCellTypeP],
 					True,
 						Null
 				],
 
-				(* BiosafetyLevel is just a hiearchy and doesn't care about percentages at all:*)
+				(* BiosafetyLevel is just a hierarchy and doesn't care about percentages at all:*)
 				BiosafetyLevel,
 				FirstCase[{"BSL-4", "BSL-3", "BSL-2", "BSL-1"}, Alternatives @@ (ehsFieldPercentage[[All, 1]]), Null],
+
+				(* double gloved doesn't care about % and just inherits any True if present *)
+				DoubleGloveRequired,
+				FirstCase[ehsFieldPercentage[[All, 1]], True, Null],
 
 				(* PipettingMethod will take the pipetting method of the largest percentage:*)
 				PipettingMethod,
@@ -4038,17 +4657,25 @@ combineEHSFields[composition:{{CompositionP | Null, ObjectP[] | Null} ...}, ehsF
 
 				(* Materials are added to the larger list if they comprise more than 5%:*)
 				IncompatibleMaterials,
-				DeleteDuplicates[Cases[Flatten[Cases[ehsFieldPercentage, Verbatim[Rule][_, GreaterP[.05]]][[All, 1]]], Except[Null]]],
-				
-				(* A drop of False or Null will make it False/Null. If both components are sterile then keep it True *)
-				Sterile|DrainDisposal|Anhydrous,Which[
-					MemberQ[newDestinationEHSFieldPercentages,False->_],False,
-					MemberQ[newDestinationEHSFieldPercentages,Null->_],Null,
+				Module[{combinedMaterials},
+					combinedMaterials=DeleteDuplicates[Cases[Flatten[Cases[ehsFieldPercentage, Verbatim[Rule][_, GreaterP[.05]]][[All, 1]]], Except[Null]]];
+					(* If we have more than one, get rid of None: *)
+					If[Length[combinedMaterials] > 1,
+						Cases[combinedMaterials, Except[None]],
+						combinedMaterials
+					]
+				],
+
+				(* Fields that False wins out over True: *)
+				Sterile|DrainDisposal|Anhydrous|AsepticHandling,
+				Which[
+					MemberQ[ehsFieldPercentage,False->_],False,
+					MemberQ[ehsFieldPercentage,Null->_],Null,
 					True,True
 				],
 
 				(* A drop of True will make it True:*)
-				Radioactive | HazardousBan | ParticularlyHazardousSubstance | InertHandling | BiosafetyHandling,
+				Radioactive | HazardousBan | ParticularlyHazardousSubstance | InertHandling,
 				FirstCase[{True, False, Null}, Alternatives @@ (ehsFieldPercentage[[All, 1]]), Null],
 
 				(* Cautious 5% Threshold to make it True.*)
@@ -4072,14 +4699,14 @@ combineEHSFields[composition:{{CompositionP | Null, ObjectP[] | Null} ...}, ehsF
 					Min[Cases[ehsFieldPercentage[[All, 1]], _?DateObjectQ]]
 				],
 
-				(* Fields that get Nulled if there are competiting values:*)
-				MSDSFile | DOTHazardClass | TransportWarmed | TransportChilled,
+				(* Fields that get Nulled if there are competing values:*)
+				MSDSFile | DOTHazardClass | TransportTemperature,
 				If[Length[ehsFieldPercentage] > 1,
 					Null,
 					FirstOrDefault[FirstOrDefault[ehsFieldPercentage]]
 				],
 
-				(* Fields that get Nulled if there are competiting values:*)
+				(* Fields that get Nulled if there are competing values:*)
 				NFPA,
 				If[AnyTrue[Length[#] & /@ Values[ehsFieldPercentage], MatchQ[GreaterP[1]]],
 					Null,
@@ -4203,7 +4830,7 @@ combineEHSFields[ehsField_, sourceObject:ObjectP[], destinationObject:ObjectP[],
 
 	(* Based on these accumulated percentages, figure out the new value of the destination's EHS field. *)
 	newDestinationEHSValue=Switch[ehsField,
-		(* Solid and Liquid overrule Gas if present. Assume that the sample is liquid if there is more than 10% Liquid in the sample. *)
+		(*  State has its own hierarchy: Liquid overrule Solid, then Gas if present. Assume that the sample is liquid if there is more than 10% Liquid in the sample. *)
 		State,
 		Which[
 			And[
@@ -4252,20 +4879,24 @@ combineEHSFields[ehsField_, sourceObject:ObjectP[], destinationObject:ObjectP[],
 			Null
 		],
 
-		(* If we have any bit of Microbial sample, it's Microbial. Otherwise, it's Mammalian if we have any bit of a Mammalian sample. *)
+		(* If we have any bit of Mammalian sample, it's NonMicrobial. *)
 		CellType,
 		Which[
-			MemberQ[newDestinationEHSFieldPercentages[[All, 1]], MicrobialCellTypeP],
-				FirstCase[newDestinationEHSFieldPercentages[[All, 1]], MicrobialCellTypeP],
 			MemberQ[newDestinationEHSFieldPercentages[[All, 1]], NonMicrobialCellTypeP],
 				FirstCase[newDestinationEHSFieldPercentages[[All, 1]], NonMicrobialCellTypeP],
+			MemberQ[newDestinationEHSFieldPercentages[[All, 1]], MicrobialCellTypeP],
+				FirstCase[newDestinationEHSFieldPercentages[[All, 1]], MicrobialCellTypeP],
 			True,
 				Null
 		],
 
-		(* BiosafetyLevel is just a hiearchy and doesn't care about percentages at all: *)
+		(* BiosafetyLevel is just a hierarchy and doesn't care about percentages at all: *)
 		BiosafetyLevel,
 		FirstCase[{"BSL-4", "BSL-3", "BSL-2", "BSL-1"}, Alternatives @@ (newDestinationEHSFieldPercentages[[All, 1]]), Null],
+
+		(* double gloved doesn't care about % and just inherits any True if present *)
+		DoubleGloveRequired,
+		FirstCase[newDestinationEHSFieldPercentages[[All, 1]], True, Null],
 
 		(* PipettingMethod will take the pipetting method of the largest percentage: *)
 		PipettingMethod,
@@ -4273,17 +4904,25 @@ combineEHSFields[ehsField_, sourceObject:ObjectP[], destinationObject:ObjectP[],
 
 		(* Materials are added to the larger list if they comprise more than 5%: *)
 		IncompatibleMaterials,
-		DeleteDuplicates[Cases[Flatten[Cases[newDestinationEHSFieldPercentages, Verbatim[Rule][_, GreaterP[.05]]][[All, 1]]], Except[Null]]],
-		
-		(* A drop of False or Null will make it False/Null. If both components are sterile then keep it True *)
-		Sterile|DrainDisposal|Anhydrous,Which[
+		Module[{combinedMaterials},
+			combinedMaterials = DeleteDuplicates[Cases[Flatten[Cases[newDestinationEHSFieldPercentages, Verbatim[Rule][_, GreaterP[.05]]][[All, 1]]], Except[Null]]];
+			(* If we have more than one, get rid of None: *)
+			If[Length[combinedMaterials] > 1,
+				Cases[combinedMaterials, Except[None]],
+				combinedMaterials
+			]
+		],
+
+		(* Fields that False wins out over True: *)
+		Sterile|DrainDisposal|Anhydrous| AsepticHandling,
+		Which[
 			MemberQ[newDestinationEHSFieldPercentages,False->_],False,
 			MemberQ[newDestinationEHSFieldPercentages,Null->_],Null,
 			True,True
 		],
 
 		(* A drop of True will make it True: *)
-		Radioactive | HazardousBan | ParticularlyHazardousSubstance | InertHandling | BiosafetyHandling,
+		Radioactive | HazardousBan | ParticularlyHazardousSubstance | InertHandling,
 		FirstCase[{True, False, Null}, Alternatives @@ (newDestinationEHSFieldPercentages[[All, 1]]), Null],
 
 		(* Cautious 5% Threshold to make it True. *)
@@ -4307,8 +4946,8 @@ combineEHSFields[ehsField_, sourceObject:ObjectP[], destinationObject:ObjectP[],
 			Min[Cases[newDestinationEHSFieldPercentages[[All, 1]], _?DateObjectQ]]
 		],
 
-		(* Fields that get Nulled if there are competiting values: *)
-		MSDSFile | DOTHazardClass | NFPA | TransportWarmed | TransportChilled,
+		(* Fields that get Nulled if there are competing values: *)
+		MSDSFile | DOTHazardClass | NFPA | TransportTemperature,
 		If[Length[newDestinationEHSFieldPercentages] > 1,
 			Null,
 			FirstOrDefault[FirstOrDefault[newDestinationEHSFieldPercentages]]
@@ -4396,9 +5035,28 @@ combineEHSFields[ehsFields_List, sourceObject:ObjectP[], destinationObject:Objec
 		Map[
 			Function[{field},
 				Module[{sourceEHSValue, destinationEHSValue, currentDestinationEHSFieldPercentages, newDestinationEHSFieldPercentages, newDestinationEHSValue},
-					(* Get the existing value of the EHS Field from our source and destination packet.*)
-					sourceEHSValue=Lookup[sourcePacket, field];
-					destinationEHSValue=Lookup[destinationPacket, field];
+					(* Get the existing value of the EHS Field from our source and destination packet. *)
+					(* NOTE: If SampleHandling is Null, but the sample/model is a liquid, will use Liquid handling. Otherwise adding a liquid to a solid will result in solid handling. *)
+					sourceEHSValue = If[
+						And[
+							MatchQ[Lookup[sourcePacket, Object], ObjectP[{Object[Sample], Model[Sample]}]],
+							MatchQ[field, SampleHandling],
+							MatchQ[Lookup[sourcePacket, field], Null],
+							MatchQ[Lookup[sourcePacket, State], Liquid]
+						],
+						Liquid,
+						Lookup[sourcePacket, field]
+					];
+					destinationEHSValue = If[
+						And[
+							MatchQ[Lookup[destinationPacket, Object], ObjectP[{Object[Sample], Model[Sample]}]],
+							MatchQ[field, SampleHandling],
+							MatchQ[Lookup[destinationPacket, field], Null],
+							MatchQ[Lookup[destinationPacket, State], Liquid]
+						],
+						Liquid,
+						Lookup[destinationPacket, field]
+					];
 
 
 					(* If we don't have any destination percentages, assume that the percentage of the field value is 100%,*)
@@ -4495,20 +5153,24 @@ combineEHSFields[ehsFields_List, sourceObject:ObjectP[], destinationObject:Objec
 							Null
 						],
 
-						(* If we have any bit of Microbial sample, it's Microbial. Otherwise, it's Mammalian if we have any bit of a Mammalian sample.*)
+						(* If we have any bit of NonMicrobial sample, it's NonMicrobial. *)
 						CellType,
 						Which[
-							MemberQ[newDestinationEHSFieldPercentages[[All, 1]], MicrobialCellTypeP],
-								FirstCase[newDestinationEHSFieldPercentages[[All, 1]], MicrobialCellTypeP],
 							MemberQ[newDestinationEHSFieldPercentages[[All, 1]], NonMicrobialCellTypeP],
 								FirstCase[newDestinationEHSFieldPercentages[[All, 1]], NonMicrobialCellTypeP],
+							MemberQ[newDestinationEHSFieldPercentages[[All, 1]], MicrobialCellTypeP],
+								FirstCase[newDestinationEHSFieldPercentages[[All, 1]], MicrobialCellTypeP],
 							True,
 								Null
 						],
 
-						(* BiosafetyLevel is just a hiearchy and doesn't care about percentages at all:*)
+						(* BiosafetyLevel is just a hierarchyand doesn't care about percentages at all:*)
 						BiosafetyLevel,
 						FirstCase[{"BSL-4", "BSL-3", "BSL-2", "BSL-1"}, Alternatives @@ (newDestinationEHSFieldPercentages[[All, 1]]), Null],
+						
+						(* double gloved doesn't care about % and just inherits any True if present *)
+						DoubleGloveRequired,
+						FirstCase[newDestinationEHSFieldPercentages[[All, 1]], True, Null],
 
 						(* PipettingMethod will take the pipetting method of the largest percentage:*)
 						PipettingMethod,
@@ -4516,17 +5178,25 @@ combineEHSFields[ehsFields_List, sourceObject:ObjectP[], destinationObject:Objec
 
 						(* Materials are added to the larger list if they comprise more than 5%:*)
 						IncompatibleMaterials,
-						DeleteDuplicates[Cases[Flatten[Cases[newDestinationEHSFieldPercentages, Verbatim[Rule][_, GreaterP[.05]]][[All, 1]]], Except[Null]]],
-						
+						Module[{combinedMaterials},
+							combinedMaterials=DeleteDuplicates[Cases[Flatten[Cases[newDestinationEHSFieldPercentages, Verbatim[Rule][_, GreaterP[.05]]][[All, 1]]], Except[Null]]];
+							(* If we have more than one, get rid of None: *)
+							If[Length[combinedMaterials] > 1,
+								Cases[combinedMaterials, Except[None]],
+								combinedMaterials
+							]
+						],
+
 						(* A drop of False or Null will make it False/Null. If both components are sterile then keep it True *)
-						Sterile|DrainDisposal|Anhydrous,Which[
+						Sterile|DrainDisposal|Anhydrous|AsepticHandling,
+						Which[
 							MemberQ[newDestinationEHSFieldPercentages,False->_],False,
 							MemberQ[newDestinationEHSFieldPercentages,Null->_],Null,
 							True,True
 						],
-						
+
 						(* A drop of True will make it True:*)
-						Radioactive | HazardousBan | ParticularlyHazardousSubstance | InertHandling | BiosafetyHandling,
+						Radioactive | HazardousBan | ParticularlyHazardousSubstance | InertHandling,
 						FirstCase[{True, False, Null}, Alternatives @@ (newDestinationEHSFieldPercentages[[All, 1]]), Null],
 
 						(* Cautious 5% Threshold to make it True.*)
@@ -4550,8 +5220,8 @@ combineEHSFields[ehsFields_List, sourceObject:ObjectP[], destinationObject:Objec
 							Min[Cases[newDestinationEHSFieldPercentages[[All, 1]], _?DateObjectQ]]
 						],
 
-						(* Fields that get Nulled if there are competiting values:*)
-						MSDSFile | DOTHazardClass | NFPA | TransportWarmed | TransportChilled,
+						(* Fields that get Nulled if there are competing values:*)
+						MSDSFile | DOTHazardClass | NFPA | TransportTemperature,
 						If[Length[newDestinationEHSFieldPercentages] > 1,
 							Null,
 							FirstOrDefault[FirstOrDefault[newDestinationEHSFieldPercentages]]
@@ -4706,7 +5376,7 @@ ValidObjectQMessages[myInput_, newPacket:PacketP[], myOptions_, funcOptions:Opti
 	];
 
 	nonChangePacket=If[MatchQ[originalPacket, PacketP[]],
-		stripChangePacket[Append[fullChangePacket, Type -> myType], ExistingPacket -> originalPacket],
+		stripChangePacket[fullChangePacket, ExistingPacket -> originalPacket],
 		stripChangePacket[Append[fullChangePacket, Type -> myType]]
 	];
 

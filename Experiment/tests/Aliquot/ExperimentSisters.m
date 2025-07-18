@@ -538,32 +538,32 @@ DefineTests[ValidExperimentAliquotQ,
 						Object -> sample3,
 						Concentration -> 5*Millimolar,
 						Replace[Composition] -> {
-							{5 Millimolar, Link[Model[Molecule, "Methylamine"]]},
-							{100 VolumePercent, Link[Model[Molecule, "Water"]]}
+							{5 Millimolar, Link[Model[Molecule, "Methylamine"]], Now},
+							{100 VolumePercent, Link[Model[Molecule, "Water"]], Now}
 						}
 					|>,
 					<|
 						Object -> sample5,
 						Concentration -> 3*Millimolar,
 						Replace[Composition] -> {
-							{3 Millimolar, Link[Model[Molecule, "Methylamine"]]},
-							{100 VolumePercent, Link[Model[Molecule, "Water"]]}
+							{3 Millimolar, Link[Model[Molecule, "Methylamine"]], Now},
+							{100 VolumePercent, Link[Model[Molecule, "Water"]], Now}
 						}
 					|>,
 					<|
 						Object -> sample6,
 						MassConcentration -> 5*(Milligram/Milliliter),
 						Replace[Composition] -> {
-							{5 Milligram/Milliliter, Link[Model[Molecule, "Methylamine"]]},
-							{100 VolumePercent, Link[Model[Molecule, "Water"]]}
+							{5 Milligram/Milliliter, Link[Model[Molecule, "Methylamine"]], Now},
+							{100 VolumePercent, Link[Model[Molecule, "Water"]], Now}
 						}
 					|>,
 					<|
 						Object -> sample7,
 						MassConcentration -> 3*(Milligram/Milliliter),
 						Replace[Composition] -> {
-							{3 Milligram/Milliliter, Link[Model[Molecule, "Methylamine"]]},
-							{100 VolumePercent, Link[Model[Molecule, "Water"]]}
+							{3 Milligram/Milliliter, Link[Model[Molecule, "Methylamine"]], Now},
+							{100 VolumePercent, Link[Model[Molecule, "Water"]], Now}
 						}
 					|>,
 					<|Type -> Object[Protocol, HPLC], Name -> "ValidExperimentAliquotQ HPLC parent", DeveloperObject -> True|>
@@ -982,32 +982,32 @@ DefineTests[ExperimentAliquotOptions,
 						Object -> sample3,
 						Concentration -> 5*Millimolar,
 						Replace[Composition] -> {
-							{5 Millimolar, Link[Model[Molecule, "Methylamine"]]},
-							{100 VolumePercent, Link[Model[Molecule, "Water"]]}
+							{5 Millimolar, Link[Model[Molecule, "Methylamine"]], Now},
+							{100 VolumePercent, Link[Model[Molecule, "Water"]], Now}
 						}
 					|>,
 					<|
 						Object -> sample5,
 						Concentration -> 3*Millimolar,
 						Replace[Composition] -> {
-							{3 Millimolar, Link[Model[Molecule, "Methylamine"]]},
-							{100 VolumePercent, Link[Model[Molecule, "Water"]]}
+							{3 Millimolar, Link[Model[Molecule, "Methylamine"]], Now},
+							{100 VolumePercent, Link[Model[Molecule, "Water"]], Now}
 						}
 					|>,
 					<|
 						Object -> sample6,
 						MassConcentration -> 5*(Milligram/Milliliter),
 						Replace[Composition] -> {
-							{5 Milligram/Milliliter, Link[Model[Molecule, "Methylamine"]]},
-							{100 VolumePercent, Link[Model[Molecule, "Water"]]}
+							{5 Milligram/Milliliter, Link[Model[Molecule, "Methylamine"]], Now},
+							{100 VolumePercent, Link[Model[Molecule, "Water"]], Now}
 						}
 					|>,
 					<|
 						Object -> sample7,
 						MassConcentration -> 3*(Milligram/Milliliter),
 						Replace[Composition] -> {
-							{3 Milligram/Milliliter, Link[Model[Molecule, "Methylamine"]]},
-							{100 VolumePercent, Link[Model[Molecule, "Water"]]}
+							{3 Milligram/Milliliter, Link[Model[Molecule, "Methylamine"]], Now},
+							{100 VolumePercent, Link[Model[Molecule, "Water"]], Now}
 						}
 					|>
 				}]];
@@ -1174,8 +1174,8 @@ DefineTests[ExperimentAliquotPreview,
 						Object -> sample3,
 						Concentration -> 5*Millimolar,
 						Replace[Composition] -> {
-							{5 Millimolar, Link[Model[Molecule, "Methylamine"]]},
-							{100 VolumePercent, Link[Model[Molecule, "Water"]]}
+							{5 Millimolar, Link[Model[Molecule, "Methylamine"]], Now},
+							{100 VolumePercent, Link[Model[Molecule, "Water"]], Now}
 						}
 					|>
 				}]];

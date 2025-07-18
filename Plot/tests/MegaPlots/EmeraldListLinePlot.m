@@ -509,7 +509,30 @@ DefineTests[EmeraldListLinePlot,
 			EmeraldListLinePlot[Download[{Object[Data, PAGE, "id:pZx9jonGoxqE"],Object[Data, PAGE, "id:54n6evKxDXRB"]},OptimalLaneIntensity],InsetImages->Download[{Object[Data, PAGE, "id:pZx9jonGoxqE"],Object[Data, PAGE, "id:54n6evKxDXRB"]},OptimalLaneImage]],
 			ValidGraphicsP[]
 		],
-
+		Example[{Options,InsetImageSizeX,"Specify the width of the inset image:"},
+			EmeraldListLinePlot[Download[{Object[Data, PAGE, "id:pZx9jonGoxqE"],Object[Data, PAGE, "id:54n6evKxDXRB"]},OptimalLaneIntensity],InsetImages->Download[{Object[Data, PAGE, "id:pZx9jonGoxqE"],Object[Data, PAGE, "id:54n6evKxDXRB"]},OptimalLaneImage],
+				InsetImageSizeX->45.
+			],
+			ValidGraphicsP[]
+		],
+		Example[{Options,InsetImageSizeY,"Specify the height of the inset image:"},
+			EmeraldListLinePlot[Download[{Object[Data, PAGE, "id:pZx9jonGoxqE"],Object[Data, PAGE, "id:54n6evKxDXRB"]},OptimalLaneIntensity],InsetImages->Download[{Object[Data, PAGE, "id:pZx9jonGoxqE"],Object[Data, PAGE, "id:54n6evKxDXRB"]},OptimalLaneImage],
+				InsetImageSizeY->50.
+			],
+			ValidGraphicsP[]
+		],
+		Example[{Options,InsetImagePositionX,"Specify the x-coordinate (InsetImagePositionX) of the overall graphic that the InsetImage is placed on:"},
+			EmeraldListLinePlot[Download[{Object[Data, PAGE, "id:pZx9jonGoxqE"],Object[Data, PAGE, "id:54n6evKxDXRB"]},OptimalLaneIntensity],InsetImages->Download[{Object[Data, PAGE, "id:pZx9jonGoxqE"],Object[Data, PAGE, "id:54n6evKxDXRB"]},OptimalLaneImage],
+				InsetImagePositionX->5.
+			],
+			ValidGraphicsP[]
+		],
+		Example[{Options,InsetImagePositionY,"Specify the y-coordinate (InsetImagePositionY) of the overall graphic that the InsetImage is placed on:"},
+			EmeraldListLinePlot[Download[{Object[Data, PAGE, "id:pZx9jonGoxqE"],Object[Data, PAGE, "id:54n6evKxDXRB"]},OptimalLaneIntensity],InsetImages->Download[{Object[Data, PAGE, "id:pZx9jonGoxqE"],Object[Data, PAGE, "id:54n6evKxDXRB"]},OptimalLaneImage],
+				InsetImagePositionY->10.
+			],
+			ValidGraphicsP[]
+		],
 		Example[{Options,ErrorBars,"Show error bars over averaged replicated data:"},
 			EmeraldListLinePlot[Replicates@@Table[Table[{x,x^3+RandomVariate[NormalDistribution[0,.1]]},{x,-1,1,0.1}],{16}],ErrorBars->True],
 			ValidGraphicsP[]

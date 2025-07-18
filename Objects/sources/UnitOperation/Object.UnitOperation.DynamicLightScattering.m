@@ -138,6 +138,24 @@ DefineObjectType[Object[UnitOperation,DynamicLightScattering],
 				Category->"General",
 				Migration->SplitField
 			},
+			AssayContainersLink->{
+				Format->Multiple,
+				Class->Link,
+				Pattern:>_Link,
+				Relation->Alternatives[Object[Container,Plate],Model[Container,Plate]],
+				Description->"The capillary strips or plates that the samples are assayed in.",
+				Category->"General",
+				Migration->SplitField
+			},
+			AssayContainersString->{
+				Format->Multiple,
+				Class->String,
+				Pattern:>_String,
+				Relation->Null,
+				Description->"The capillary strips or plates that the samples are assayed in.",
+				Category->"General",
+				Migration->SplitField
+			},
 			SampleLoadingPlateLink->{
 				Format->Single,
 				Class->Link,
@@ -198,7 +216,7 @@ DefineObjectType[Object[UnitOperation,DynamicLightScattering],
 				Format->Single,
 				Class->Expression,
 				Pattern:>_Link,
-				Relation->ObjectP[
+				Relation->Alternatives[
 					Model[Item,PlateSeal],
 					Object[Item,PlateSeal],
 					Model[Sample],
@@ -214,6 +232,31 @@ DefineObjectType[Object[UnitOperation,DynamicLightScattering],
 				Pattern:>BooleanP,
 				Description->"When WellCover is a plate seal, indicates if the plate seal is heated.",
 				Category->"General"
+			},
+			SolventName->{
+				Format->Multiple,
+				Class->String,
+				Pattern:>_String,
+				Description->"For each member of SampleLink, the names of the solvents in which the SamplesIn are dissolved.",
+				Category->"Sample Loading",
+				IndexMatching->SampleLink
+			},
+			SolventViscosity->{
+				Format->Multiple,
+				Class->Real,
+				Pattern:>GreaterP[0*Centipoise],
+				Units->Centipoise,
+				Description->"For each member of SampleLink, the viscosities of the solvents in which the SamplesIn are dissolved.",
+				Category->"Sample Loading",
+				IndexMatching->SampleLink
+			},
+			SolventRefractiveIndex->{
+				Format->Multiple,
+				Class->Real,
+				Pattern:>RangeP[1,3],
+				Description->"For each member of SampleLink, the refractive indices of the solvents in which the SamplesIn are dissolved.",
+				Category->"Sample Loading",
+				IndexMatching->SampleLink
 			},
 			SampleVolume->{
 				Format->Multiple,
@@ -255,6 +298,13 @@ DefineObjectType[Object[UnitOperation,DynamicLightScattering],
 				Description->"Indicates if static light scattering (SLS) data are collected along with DLS data.",
 				Category->"Light Scattering"
 			},
+			CalibratePlate->{
+				Format->Single,
+				Class->Boolean,
+				Pattern:>BooleanP,
+				Description->"Indicates whether the AssayContainer should be calibrated by measuring the scattered light intensities of a series of dilutions of a standard sample before any other data collection.",
+				Category->"Light Scattering"
+			},
 			NumberOfAcquisitions->{
 				Format->Single,
 				Class->Integer,
@@ -289,9 +339,9 @@ DefineObjectType[Object[UnitOperation,DynamicLightScattering],
 			DiodeAttenuation->{
 				Format->Single,
 				Class->Real,
-				Pattern:>GreaterP[0*Percent],
+				Pattern:>GreaterEqualP[0*Percent],
 				Units->Percent,
-				Description->"The percent of scattered signal that is allowed to reach the avalanche photodiode mediated by diode attenuators.",
+				Description->"The percent of scattered signal that is allowed to reach the avalanche photodiode mediated by diode attenuators (in Capillary-type assays) or the percent of scattered signal that is prevented from reaching the avalanche photodiode mediated by diode attenuators (in Plate-type assays).",
 				Category->"Light Scattering"
 			},
 			DLSRunTime->{
@@ -323,14 +373,6 @@ DefineObjectType[Object[UnitOperation,DynamicLightScattering],
       	Pattern:>Alternatives[Row,Column,SerpentineRow,SerpentineColumn],
      		Description->"WhenAssayFormFactor is Capillary, indicates the order in which the capillary strip AssayContainers are filled. Column indicates that all 16 wells of an AssayContainer capillary strip are filled with input samples or sample dilutions before starting to fill a second capillary strip (up to 3 strips, 48 wells). Row indicates that one well of each capillary strip is filled with input samples or sample dilutions before filling the second well of each strip. When AssayFormFactor is Plate, indicates the direction the AssayContainer is filled: either Row, Column, SerpentineRow, or SerpentineColumn.",
       	Category->"Sample Loading"
-			},
-			ColloidalStabilityParametersPerSample->{
-				Format->Single,
-				Class->Integer,
-				Pattern:>GreaterP[0,1],
-				Units->None,
-				Description->"The number of dilution concentrations made for, and thus independent B22/A2 and kD or G22 parameters calculated from, each input sample.",
-				Category->"Colloidal Stability"
 			},
 			AnalyteLink->{
 				Format->Multiple,
@@ -365,6 +407,14 @@ DefineObjectType[Object[UnitOperation,DynamicLightScattering],
 				Pattern:>GreaterEqualP[0*Milligram/Milliliter],
 				Units->(Milligram/Milliliter),
 				Description->"For each member of SamplesIn, the initial mass concentration of the Analyte before any dilutions outlined by the DilutionCurve or SerialDilutionCurve are performed when the AssayType is ColloidalStability.",
+				Category->"Sample Dilution"
+			},
+			AnalyteRefractiveIndexIncrement->{
+				Format->Multiple,
+				Class->Real,
+				Pattern:>GreaterEqualP[0*Milliliter/Gram],
+				Units->(Milliliter/Gram),
+				Description->"For each member of SamplesIn, the known or estimated refractive index increment (also known as dn/dc) of the Analyte.",
 				Category->"Sample Dilution"
 			},
 			ReplicateDilutionCurve->{
@@ -497,15 +547,11 @@ DefineObjectType[Object[UnitOperation,DynamicLightScattering],
 			DilutionMixInstrumentLink->{
 				Format->Multiple,
 				Class->Link,
-				Pattern:>Alternatives[
-					Model[Instrument,Pipette],
-					Object[Instrument,Pipette],
-					Model[Instrument,Vortex],
-					Object[Instrument,Vortex],
-					Model[Instrument,Nutator],
-					Object[Instrument,Nutator]
+				Pattern:>_Link,
+				Relation->Alternatives[
+					Model[Instrument],
+					Object[Instrument]
 				],
-				Relation->MixInstrumentModelP,
 				Description->"The instrument used to mix the dilutions in the SampleLoadingPlate or AssayContainer used for dilution.",
 				Category->"Sample Dilution",
 				Migration->SplitField

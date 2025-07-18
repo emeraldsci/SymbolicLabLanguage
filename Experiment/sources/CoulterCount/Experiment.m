@@ -12,7 +12,7 @@ DefineOptions[ExperimentCoulterCount,
 		{
 			OptionName -> Instrument,
 			Default -> Model[Instrument, CoulterCounter, "id:kEJ9mqJbrVpe"],
-			Description -> "The instrument that is used to count and size particles in a sample by suspending them in a conductive electrolyte solution, pumping them through an aperture, and measuring the corresponding electrical resistance change caused by particles in place of the ions passing through the aperture. The electrical resistance change is measured by a voltage pulse recorded by the electronics such that the particle count is derived from the number of voltage pulses and the particle size is derived from the pulse shape and peak intensities (see Figure 1.4). Note that the resistivity of the particles can be either larger or less than that of the electrolyte solution.",
+			Description -> "The instrument that is used to count and size particles in a sample by suspending them in a conductive electrolyte solution, pumping them through an aperture, and measuring the corresponding electrical resistance change caused by particles in place of the ions passing through the aperture. The electrical resistance change is measured by a voltage pulse recorded by the electronics such that the particle count is derived from the number of voltage pulses and the particle size is derived from the pulse shape and peak intensities (see Figure 1.3). Note that the resistivity of the particles can be either larger or less than that of the electrolyte solution.",
 			AllowNull -> False,
 			Widget -> Widget[
 				Type -> Object,
@@ -206,7 +206,7 @@ DefineOptions[ExperimentCoulterCount,
 			{
 				OptionName -> SuitabilityTargetConcentration,
 				Default -> Automatic,
-				Description -> "The target particle concentration in the solution from mixing SuitabilitySampleAmount and SuitabilityElectrolyteSampleDilutionVolume in SuitabilityMeasurementContainer. The coincident particle passage effect (multiple particles passing through the aperture of the ApertureTube at approximately the same time to be registered as one larger particle, see Figure 1.3) becomes severe if SuitabilityTargetConcentration is set too high, leading to a decrease in the accuracy of the measured particle size distribution and measured mean particle diameter or volume.",
+				Description -> "The target particle concentration in the solution from mixing SuitabilitySampleAmount and SuitabilityElectrolyteSampleDilutionVolume in SuitabilityMeasurementContainer. The coincident particle passage effect (multiple particles passing through the aperture of the ApertureTube at approximately the same time to be registered as one larger particle, see ExperimentCoulterCount help file > Possible Issues) becomes severe if SuitabilityTargetConcentration is set too high, leading to a decrease in the accuracy of the measured particle size distribution and measured mean particle diameter or volume.",
 				ResolutionDescription -> "Automatically set to the value calculated from the sample concentration, SuitabilitySampleAmount, SuitabilityElectrolytePercentage, and SuitabilityElectrolyteSampleDilutionVolume. If the option information provided is not enough to calculate the target concentration, set to the calculated concentration to dilute the sample concentration by 1000x if SystemSuitabilityCheck is True. If sample concentration is not available, set to Null.",
 				AllowNull -> True,
 				Widget -> Widget[
@@ -444,7 +444,7 @@ DefineOptions[ExperimentCoulterCount,
 				OptionName -> MinSuitabilityParticleSize,
 				Default -> Automatic,
 				Description -> "Only particles with diameters or volumes greater than or equal to MinSuitabilityParticleSize are counted towards the SuitabilityTotalCount during the system suitability run. The conversion between volume and diameter assumes each particle is a perfect solid sphere.",
-				ResolutionDescription -> "Automatically set to 2% of the ApertureDiameter if SystemSuitabilityCheck is True.",
+				ResolutionDescription -> "Automatically set to 2.1% of the ApertureDiameter if SystemSuitabilityCheck is True.",
 				AllowNull -> True,
 				Widget -> Alternatives[
 					"Particle Diameter" -> Widget[
@@ -699,14 +699,13 @@ DefineOptions[ExperimentCoulterCount,
 		],
 		(*------------------------------Other Preparatory Unit Operations Primitives ------------------------------*)
 		PreparatoryUnitOperationsOption,
-		PreparatoryPrimitivesOption,
 		IndexMatching[
 			IndexMatchingInput -> "experiment samples",
 			(*------------------------------Loading-related options: mixing sample with electrolyte solution and transfer to measurement container------------------------------*)
 			{
 				OptionName -> TargetMeasurementConcentration,
 				Default -> Automatic,
-				Description -> "The target particle concentration in the solution from mixing SampleAmount of prepared sample(s) and ElectrolyteSampleDilutionVolume in MeasurementContainer. The coincident particle passage effect (multiple particles passing through the aperture of the ApertureTube at approximately the same time to be registered as one larger particle, see Figure 1.4) becomes severe if TargetMeasurementConcentration is set too high, leading to a decrease in the accuracy of the measured particle size distribution and measured mean particle diameter or volume. When using all dilution samples for the experiment by with DilutionStrategy set to All, TargetMeasurementConcentration refers to the target particle concentration from mixing the last dilution sample and ElectrolyteSampleDilutionVolume in MeasurementContainer.",
+				Description -> "The target particle concentration in the solution from mixing SampleAmount of prepared sample(s) and ElectrolyteSampleDilutionVolume in MeasurementContainer. The coincident particle passage effect (multiple particles passing through the aperture of the ApertureTube at approximately the same time to be registered as one larger particle, see see ExperimentCoulterCount help file > Possible Issues) becomes severe if TargetMeasurementConcentration is set too high, leading to a decrease in the accuracy of the measured particle size distribution and measured mean particle diameter or volume. When using all dilution samples for the experiment by with DilutionStrategy set to All, TargetMeasurementConcentration refers to the target particle concentration from mixing the last dilution sample and ElectrolyteSampleDilutionVolume in MeasurementContainer.",
 				ResolutionDescription -> "Automatically set to the value calculated from the sample concentration, SampleAmount, ElectrolytePercentage, and ElectrolyteSampleDilutionVolume. If the option information provided is not enough to calculate the target concentration, set to the calculated concentration to dilute the sample concentration by 1000x. If sample concentration is not available, set to Null.",
 				AllowNull -> True,
 				Widget -> Widget[
@@ -944,7 +943,7 @@ DefineOptions[ExperimentCoulterCount,
 				OptionName -> MinParticleSize,
 				Default -> Automatic,
 				Description -> "Only particles with diameters or volumes greater than or equal to MinParticleSize are counted towards the TotalCount during the sample run. The conversion between volume and diameter assumes each particle is a perfect solid sphere.",
-				ResolutionDescription -> "Automatically set to 2% of the ApertureDiameter.",
+				ResolutionDescription -> "Automatically set to 2.1% of the ApertureDiameter.",
 				AllowNull -> False,
 				Widget -> Alternatives[
 					"Particle Diameter" -> Widget[
@@ -1052,25 +1051,36 @@ DefineOptions[ExperimentCoulterCount,
 		],
 		(*------------------------------Post Measurement Options------------------------------*)
 		ModifyOptions[
-			PostProcessingOptions,
+			NonBiologyPostProcessingOptions,
 			MeasureWeight,
 			{
 				Default -> False
 			}
 		],
 		ModifyOptions[
-			PostProcessingOptions,
+			NonBiologyPostProcessingOptions,
 			MeasureVolume,
 			{
 				Default -> False
 			}
 		],
+		ModifyOptions[
+			ModelInputOptions,
+			PreparedModelAmount,
+			{
+				ResolutionDescription -> "Automatically set to 75 Milliliter."
+			}
+
+		],
+		ModifyOptions[
+			ModelInputOptions,
+			PreparedModelContainer,
+			{
+				ResolutionDescription -> "If PreparedModelAmount is set to All and the input model has a product associated with both Amount and DefaultContainerModel populated, automatically set to the DefaultContainerModel value in the product. Otherwise, automatically set to Model[Container, Vessel, \"Beckman Coulter Multisizer 4e Smart Technology (ST) Footed Beaker 100 mL\"]."
+			}
+		],
 		ImageSampleOption,
 		SamplesInStorageOptions,
-		ModifyOptions[
-			SamplesInStorageOption,
-			SamplesInStorageCondition
-		],
 		(*------------------------------Other Shared Options------------------------------*)
 		ProtocolOptions,
 		SimulationOption
@@ -1086,7 +1096,6 @@ DefineOptions[ExperimentCoulterCount,
 (*ExperimentCoulterCount Error Messages and Constants*)
 
 
-Error::NonLiquidSamples = "The following object(s) specified are not liquid state and so are not supported by ExperimentCoulterCount: `1`.  Please check the State field of the samples in question, or provide alternative, liquid samples to use.";
 Error::ApertureTubeDiameterMismatch = "The option ApertureDiameter->`1` is conflicting with the value `2` of the ApertureDiameter field in the option ApertureTube->`3`. Please provide alternative values for options: {ApertureDiameter, ApertureTube} and make sure they are consistent.";
 Error::ParticleSizeOutOfRange = "The following object(s): `2` contain particles with sizes that are out of the accessible range of 2-80% of the ApertureDiameter `1` and therefore are beyond the instrument measurement capability. Please provide alternative values for options: {ApertureDiameter,ApertureTube} to provide a more suitable size window that can accommodate the particles out of the range, or remove the oversized samples: `3` and undersized samples: `4` from `5`.";
 Warning::SolubleSamples = "The following object(s): `1` contain liquids that are in a different phase than ElectrolyteSolution `2` in use. The phase of the object(s) are predicted to be `3` while the phase of the ElectrolyteSolution is predicted to be `4`, leading to a risk of dissolving the particles of interest during measurement. Please be aware of the risk and interpret any experiment data with extra care, or consider removing the soluble object(s) from input or changing the choice of ElectrolyteSolution.";
@@ -1226,8 +1235,7 @@ ExperimentCoulterCount[mySamples:ListableP[ObjectP[Object[Sample]]], myOptions:O
 		listedSamplesNamed, listedOptionsNamed, validSamplePreparationResult,
 		mySamplesWithPreparedSamplesNamed, myOptionsWithPreparedSamplesNamed, samplePreparationSimulation,
 		mySamplesWithPreparedSamples, myOptionsWithPreparedSamples, safeOpsNamed, safeOpsTests, safeOps,
-		validLengths, validLengthTests, templatedOptions, templateTests, inheritedOptions, expandedSafeOps,
-		cache, userSpecifiedObjects, objectsExistQs, objectsExistTests,
+		validLengths, validLengthTests, templatedOptions, templateTests, inheritedOptions, expandedSafeOps, cache,
 		sampleFields, sampleModelFields, moleculeFields, containerFields, containerModelFields,
 		instrument, apertureTube, electrolyteSolution, suitabilitySizeStandards, suitabilityMeasurementContainers, measurementContainers,
 		diluents, concentratedBuffers, concentratedBufferDiluents, diluentObjects, diluentModels,
@@ -1256,7 +1264,7 @@ ExperimentCoulterCount[mySamples:ListableP[ObjectP[Object[Sample]]], myOptions:O
 			listedOptionsNamed
 		],
 		$Failed,
-		{Error::MissingDefineNames}
+		{Download::ObjectDoesNotExist, Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
 	];
 
 	(* If we are given an invalid define name, return early. *)
@@ -1273,13 +1281,7 @@ ExperimentCoulterCount[mySamples:ListableP[ObjectP[Object[Sample]]], myOptions:O
 	];
 
 	(* replace all objects referenced by Name to ID *)
-	{mySamplesWithPreparedSamples, safeOps, myOptionsWithPreparedSamples} = sanitizeInputs[mySamplesWithPreparedSamplesNamed, safeOpsNamed, myOptionsWithPreparedSamplesNamed];
-
-	(* Call ValidInputLengthsQ to make sure all options are the right length *)
-	{validLengths, validLengthTests} = If[gatherTests,
-		ValidInputLengthsQ[ExperimentCoulterCount, {mySamplesWithPreparedSamples}, myOptionsWithPreparedSamples, Output -> {Result, Tests}],
-		{ValidInputLengthsQ[ExperimentCoulterCount, {mySamplesWithPreparedSamples}, myOptionsWithPreparedSamples], Null}
-	];
+	{mySamplesWithPreparedSamples, safeOps, myOptionsWithPreparedSamples} = sanitizeInputs[mySamplesWithPreparedSamplesNamed, safeOpsNamed, myOptionsWithPreparedSamplesNamed, Simulation -> samplePreparationSimulation];
 
 	(* If the specified options don't match their patterns or if option lengths are invalid return $Failed *)
 	If[MatchQ[safeOps, $Failed],
@@ -1290,6 +1292,12 @@ ExperimentCoulterCount[mySamples:ListableP[ObjectP[Object[Sample]]], myOptions:O
 			Preview -> Null,
 			Simulation -> Null
 		}]
+	];
+
+	(* Call ValidInputLengthsQ to make sure all options are the right length *)
+	{validLengths, validLengthTests} = If[gatherTests,
+		ValidInputLengthsQ[ExperimentCoulterCount, {mySamplesWithPreparedSamples}, myOptionsWithPreparedSamples, Output -> {Result, Tests}],
+		{ValidInputLengthsQ[ExperimentCoulterCount, {mySamplesWithPreparedSamples}, myOptionsWithPreparedSamples], Null}
 	];
 
 	(* If option lengths are invalid return $Failed (or the tests up to this point) *)
@@ -1371,38 +1379,6 @@ ExperimentCoulterCount[mySamples:ListableP[ObjectP[Object[Sample]]], myOptions:O
 		}]
 	];
 
-	(* Make sure that all of our objects exist before downloading and going to resolver. *)
-	userSpecifiedObjects = DeleteDuplicates@Cases[
-		Flatten[{ToList[mySamples], ToList[myOptions]}],
-		ObjectP[],
-		Infinity
-	];
-
-	objectsExistQs = DatabaseMemberQ[userSpecifiedObjects, Simulation -> samplePreparationSimulation];
-
-	(* Build tests for object existence. *)
-	objectsExistTests = If[gatherTests,
-		MapThread[
-			Test[StringTemplate["Specified object `1` exists in the database:"][#1], #2, True]&,
-			{userSpecifiedObjects, objectsExistQs}
-		],
-		{}
-	];
-
-	(* If objects do not exist, return failure *)
-	If[!(And @@ objectsExistQs),
-		If[!gatherTests,
-			Message[Error::ObjectDoesNotExist, PickList[userSpecifiedObjects, objectsExistQs, False]];
-			Message[Error::InvalidInput, PickList[userSpecifiedObjects, objectsExistQs, False]]
-		];
-		Return[outputSpecification /. {
-			Result -> $Failed,
-			Tests -> Join[safeOpsTests, validLengthTests, templateTests, objectsExistTests],
-			Options -> $Failed,
-			Preview -> Null
-		}]
-	];
-
 	(*-- DOWNLOAD THE INFORMATION THAT WE NEED FOR OUR OPTION RESOLVER AND RESOURCE PACKET FUNCTION --*)
 	(* Fields we need for samples *)
 	sampleFields = DeleteDuplicates[Flatten[{SampleHistory, Media, Solvent, ConcentratedBufferDiluent, ConcentratedBufferDilutionFactor, BaselineStock, Model, Status, Analytes, State, Name, Density, Container, Composition, Position, Volume, CellType, ParticleSize, $PredictSamplePhaseSampleFields, SamplePreparationCacheFields[Object[Sample], Format -> Sequence]}]];
@@ -1473,7 +1449,7 @@ ExperimentCoulterCount[mySamples:ListableP[ObjectP[Object[Sample]]], myOptions:O
 			Cache -> cache,
 			Simulation -> samplePreparationSimulation
 		],
-		{Download::FieldDoesntExist, Download::NotLinkField}
+		{Download::ObjectDoesNotExist, Download::FieldDoesntExist, Download::NotLinkField}
 	];
 
 	(* Combine our downloaded and simulated cache. *)
@@ -1537,13 +1513,13 @@ ExperimentCoulterCount[mySamples:ListableP[ObjectP[Object[Sample]]], myOptions:O
 
 	(* Figure out if we need to perform our simulation. If so, we can't return early even though we want to because we *)
 	(* need to return some type of simulation to our parent function that called us. *)
-	performSimulationQ = MemberQ[output, Simulation | Result] && MatchQ[Lookup[resolvedOptions, PreparatoryPrimitives], Null | {}];
+	performSimulationQ = MemberQ[output, Simulation | Result];
 
 	(* If option resolution failed and we aren't asked for the simulation or output, return early. *)
 	If[(returnEarlyQBecauseFailure || returnEarlyQBecauseOptionsResolverOnly) && !performSimulationQ,
 		Return[outputSpecification /. {
 			Result -> $Failed,
-			Tests -> Join[safeOpsTests, validLengthTests, templateTests, objectsExistTests, resolvedOptionsTests],
+			Tests -> Join[safeOpsTests, validLengthTests, templateTests, resolvedOptionsTests],
 			Options -> RemoveHiddenOptions[ExperimentCoulterCount, collapsedResolvedOptions],
 			Preview -> Null,
 			Simulation -> Simulation[]
@@ -1595,6 +1571,7 @@ ExperimentCoulterCount[mySamples:ListableP[ObjectP[Object[Sample]]], myOptions:O
 			resourcePacket,
 			Upload -> Lookup[expandedSafeOps, Upload],
 			Confirm -> Lookup[expandedSafeOps, Confirm],
+			CanaryBranch -> Lookup[expandedSafeOps, CanaryBranch],
 			ParentProtocol -> Lookup[expandedSafeOps, ParentProtocol],
 			ConstellationMessage -> Object[Protocol, CoulterCount],
 			Cache -> cacheBall,
@@ -1609,7 +1586,7 @@ ExperimentCoulterCount[mySamples:ListableP[ObjectP[Object[Sample]]], myOptions:O
 	(* Return requested output *)
 	outputSpecification /. {
 		Result -> protocolObject,
-		Tests -> Flatten[{safeOpsTests, validLengthTests, templateTests, objectsExistTests, resolvedOptionsTests(*,resourcePacketTests*)}],
+		Tests -> Flatten[{safeOpsTests, validLengthTests, templateTests, resolvedOptionsTests(*,resourcePacketTests*)}],
 		Options -> RemoveHiddenOptions[ExperimentCoulterCount, collapsedResolvedOptions],
 		Preview -> Null,
 		Simulation -> coulterCounterSimulation
@@ -1618,7 +1595,7 @@ ExperimentCoulterCount[mySamples:ListableP[ObjectP[Object[Sample]]], myOptions:O
 
 
 (* --Container to Sample Overload-- *)
-ExperimentCoulterCount[myContainers:ListableP[ObjectP[{Object[Container], Object[Sample]}] | _String | {LocationPositionP, _String | ObjectP[Object[Container]]}], myOptions:OptionsPattern[]] := Module[
+ExperimentCoulterCount[myContainers:ListableP[ObjectP[{Object[Container], Object[Sample], Model[Sample]}] | _String | {LocationPositionP, _String | ObjectP[Object[Container]]}], myOptions:OptionsPattern[]] := Module[
 	{
 		listedContainers, listedOptions, outputSpecification, output, gatherTests, cache,
 		validSamplePreparationResult, mySamplesWithPreparedSamples, myOptionsWithPreparedSamples, samplePreparationSimulation,
@@ -1633,8 +1610,8 @@ ExperimentCoulterCount[myContainers:ListableP[ObjectP[{Object[Container], Object
 	(* Determine if we should keep a running list of tests *)
 	gatherTests = MemberQ[output, Tests];
 
-	(* Remove temporal links and named objects *)
-	{listedContainers, listedOptions} = removeLinks[ToList[myContainers], ToList[myOptions]];
+	(* convert input into list form *)
+	{listedContainers, listedOptions} = {ToList[myContainers], ToList[myOptions]};
 
 	(* Fetch the cache from listedOptions. *)
 	cache = Lookup[listedOptions, Cache, {}];
@@ -1645,10 +1622,12 @@ ExperimentCoulterCount[myContainers:ListableP[ObjectP[{Object[Container], Object
 		{mySamplesWithPreparedSamples, myOptionsWithPreparedSamples, samplePreparationSimulation} = simulateSamplePreparationPacketsNew[
 			ExperimentCoulterCount,
 			listedContainers,
-			listedOptions
+			listedOptions,
+			DefaultPreparedModelAmount -> 75 Milliliter,
+			DefaultPreparedModelContainer -> Model[Container, Vessel, "Beckman Coulter Multisizer 4e Smart Technology (ST) Footed Beaker 100 mL"]
 		],
 		$Failed,
-		{Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
+		{Download::ObjectDoesNotExist, Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
 	];
 
 	(* If we are given an invalid define name, return early. *)
@@ -3066,7 +3045,7 @@ resolveExperimentCoulterCountOptions[mySamples:{ObjectP[Object[Sample]]...}, myO
 
 	(* Determine how many potential analytes are there in each sample *)
 	(* decide the potential analytes to use; specifying the Analyte here will pre-empt warnings thrown by this function *)
-	potentialAnalytesToUse = selectAllAnalytesFromSample[samplePackets, Cache -> cacheBall];
+	potentialAnalytesToUse = selectAllAnalytesFromSample[samplePackets, Cache -> cacheBall, AnalyteTypePattern -> $CoulterCountableAnalyteP];
 
 	(* Resolve the rest of the sample loading and measurement options inside MapThread[...] *)
 	{
@@ -5645,13 +5624,13 @@ experimentCoulterCountResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myU
 				ConstantArray[True, Length[mySamples]]
 			];
 			{
-				{"Preparing Samples", 1 * Hour, "Preprocessing, such as incubation, mixing, centrifuging, and aliquoting, is performed.", Link[Resource[Operator -> Model[User, Emerald, Operator, "Trainee"], Time -> 1 * Hour]]},
-				{"Picking Resources", 10 * Minute, "Samples required to execute this protocol are gathered from storage.", Link[Resource[Operator -> Model[User, Emerald, Operator, "Trainee"], Time -> 10 * Minute]]},
-				{"Preparing Instrument", 25 * Minute, "Instrument warm up, fill ElectrolyteContainer, aperture tube installation.", Link[Resource[Operator -> Model[User, Emerald, Operator, "Trainee"], Time -> 25 * Minute]]},
-				{"Checking System Suitability", suitabilityCheckTime, "Run SuitabilitySizeStandard samples and system suitability analysis.", Link[Resource[Operator -> Model[User, Emerald, Operator, "Trainee"], Time -> suitabilityCheckTime]]},
+				{"Preparing Samples", 1 * Hour, "Preprocessing, such as incubation, mixing, centrifuging, and aliquoting, is performed.", Link[Resource[Operator -> $BaselineOperator, Time -> 1 * Hour]]},
+				{"Picking Resources", 10 * Minute, "Samples required to execute this protocol are gathered from storage.", Link[Resource[Operator -> $BaselineOperator, Time -> 10 * Minute]]},
+				{"Preparing Instrument", 25 * Minute, "Instrument warm up, fill ElectrolyteContainer, aperture tube installation.", Link[Resource[Operator -> $BaselineOperator, Time -> 25 * Minute]]},
+				{"Checking System Suitability", suitabilityCheckTime, "Run SuitabilitySizeStandard samples and system suitability analysis.", Link[Resource[Operator -> $BaselineOperator, Time -> suitabilityCheckTime]]},
 				{"Diluting Samples", sampleDilutionTime, "Samples and standards diluted and mixed, as required by Dilute, DynamicDilute, or SuitabilityDynamicDilute.", Link[Resource[Operator -> Model[User, Emerald, Operator, "Level 3"], Time -> sampleDilutionTime]]},
-				{"Measuring Particle Sizes", sampleLoadingTime + sampleMeasurementTime, "Measuring particle sizes of each sample/diluted sample one by one.", Link[Resource[Operator -> Model[User, Emerald, Operator, "Trainee"], Time -> (sampleLoadingTime + sampleMeasurementTime)]]},
-				{"Returning Materials", 20 * Minute, "Samples are retrieved from instrumentation and materials are cleaned and returned to storage.", Resource[Operator -> Model[User, Emerald, Operator, "Trainee"], Time -> 20 * Minute]}
+				{"Measuring Particle Sizes", sampleLoadingTime + sampleMeasurementTime, "Measuring particle sizes of each sample/diluted sample one by one.", Link[Resource[Operator -> $BaselineOperator, Time -> (sampleLoadingTime + sampleMeasurementTime)]]},
+				{"Returning Materials", 20 * Minute, "Samples are retrieved from instrumentation and materials are cleaned and returned to storage.", Resource[Operator -> $BaselineOperator, Time -> 20 * Minute]}
 			}
 		];
 		(* Now make the packet *)
@@ -6121,19 +6100,19 @@ extractParticleTypes[mySamplePacket:PacketP[], myFastAssoc_Association] := Modul
 calculateTotalConcentration[emptyPacket:Association[], targetUnit:UnitsP[]] := Null;
 calculateTotalConcentration[samplePacket:PacketP[{Object[Sample], Model[Sample]}], targetUnit:UnitsP[]] := Module[{compositionModelsWithConcentrations, compositionModelsWithCompatibleConcentrations, compatibleCellModelsWithCellConcentrations, convertedConcentrations},
 	(* Find all molecules in a composition that is either in CellConcentration unit, or ParticleConcentration unit with models that are most likely to be particles *)
-	compositionModelsWithConcentrations = Cases[Lookup[samplePacket, Composition, {}], {CellConcentrationP | CFUConcentrationP | OD600P | ConcentrationP, ObjectP[$ParticleIdentityModelTypes]}];
+	compositionModelsWithConcentrations = Cases[Lookup[samplePacket, Composition, {}], {CellConcentrationP | CFUConcentrationP | OD600P | ConcentrationP, ObjectP[$ParticleIdentityModelTypes], _}];
 
 	(* If we did not find any, return $Failed *)
 	If[MatchQ[compositionModelsWithConcentrations, {}], Return[$Failed]];
 
 	(* Get the concentrations that are compatible with the target unit *)
-	compositionModelsWithCompatibleConcentrations = Cases[compositionModelsWithConcentrations, {_?(CompatibleUnitQ[#, targetUnit]&), _}];
+	compositionModelsWithCompatibleConcentrations = Cases[compositionModelsWithConcentrations, {_?(CompatibleUnitQ[#, targetUnit]&), __}];
 
 	(* If the target unit is one of the cell concentrations such as OD600, CFU etc, get the concentrations in cell concentration units *)
 	(* The reason to extract CellConcentrationP|CFUConcentrationP|OD600P here is b/c these cell units are theoretically interconvertible with a standard curve even though they do not satisfy CompatibleUnitQ[...] *)
 	(* eg: OD600 can be converted to Cells/mL if we have a standard curve analysis object stored in the specific cell model - which is what ConvertCellConcentration[...] is doing *)
 	compatibleCellModelsWithCellConcentrations = If[MatchQ[targetUnit, CellConcentrationP | CFUConcentrationP | OD600P],
-		Cases[Complement[compositionModelsWithConcentrations, compositionModelsWithCompatibleConcentrations], {CellConcentrationP | CFUConcentrationP | OD600P, ObjectP[Model[Cell]]}],
+		Cases[Complement[compositionModelsWithConcentrations, compositionModelsWithCompatibleConcentrations], {CellConcentrationP | CFUConcentrationP | OD600P, ObjectP[Model[Cell]], _}],
 		{}
 	];
 
@@ -6437,9 +6416,9 @@ resolveCoulterCountMeasurementOptions[
 		(* If it is set it is set *)
 		MatchQ[Lookup[myOptions, MinParticleSize], Except[Automatic]],
 		Lookup[myOptions, MinParticleSize],
-		(* Otherwise, set to 2% of the aperture diameter *)
+		(* Otherwise, set to 2.1% of the aperture diameter *)
 		True,
-		0.02 * apertureDiameter
+		0.021 * apertureDiameter
 	];
 
 	(* Resolve EquilibrationTime *)
@@ -6712,50 +6691,48 @@ resolveCoulterCountMethod[
 
 DefineOptions[selectAllAnalytesFromSample,
 	Options :> {
+		{AnalyteTypePattern -> Any, Any|_Alternatives, "The pattern of the molecules (ObjectP[{Model[Molecule, subtype]}] or ObjectP[identity models with IDs]) to be selected as potential analytes for this sample. When Any is specified, all identity models other than water are selected."},
 		CacheOption
 	}
 ];
 
-
-(* if Analytes field is populated, pick the first value there *)
-(* if Analytes field is not populated, pick the first analyte-like identity model in the Composition field *)
+(* Note: AnalyteTypePattern should be ObjectP[{Model[Molecule, subtype]}] or ObjectP[a list of identity model objects] *)
+(* if Analytes field is populated, just pick the values there *)
+(* if Analytes field is not populated, pick all analyte-like identity models in the Composition field *)
 (* if there is no analyte-like identity model in the Composition field, pick the first identity model of any kind in the Composition field *)
 (* otherwise, pick Null *)
 
 selectAllAnalytesFromSample[mySample:ObjectP[{Object[Sample], Model[Sample]}], ops:OptionsPattern[]] := First[selectAllAnalytesFromSample[{mySample}, ops]];
 selectAllAnalytesFromSample[mySamples:{ObjectP[{Object[Sample], Model[Sample]}]..}, ops:OptionsPattern[]] := Module[
-	{safeOps, cache, allPackets, analyteObjs, compositionObjs, nonWaterP},
+	{safeOps, cache, specifiedAnalyteP, allPackets, analyteObjs, compositionObjs, analyteP},
 
 	(* get the passed Cache option *)
 	safeOps = SafeOptions[selectAllAnalytesFromSample, ToList[ops]];
-	cache = Lookup[safeOps, Cache];
+	{cache, specifiedAnalyteP} = Lookup[safeOps, {Cache, AnalyteTypePattern}];
+
 	(* get the composition and analytes fields from all the input samples or models *)
 	allPackets = Download[mySamples, Packet[Analytes, Composition], Cache -> cache, Date -> Now];
-
 	(* get the analyte objects and the composition objects *)
 	analyteObjs = Download[Lookup[#, Analytes], Object]& /@ allPackets;
 	compositionObjs = Download[Lookup[#, Composition][[All, 2]], Object]& /@ allPackets;
 
-	(* pattern for non-water identity model *)
-	(* note that this id is Model[Molecule, "Water"] *)
-	nonWaterP = Except[ObjectP[Model[Molecule, "id:vXl9j57PmP5D"]], IdentityModelP];
+	(* pattern for analyte of interest *)
+	(* if any analyte type is allowed, then we only exclude the water molecule, otherwise use the specified analyte type *)
+	analyteP = If[MatchQ[specifiedAnalyteP, Any],
+		(* note that this id is Model[Molecule, "Water"] *)
+		Except[ObjectP[Model[Molecule, "id:vXl9j57PmP5D"]], IdentityModelP],
+		specifiedAnalyteP
+	];
 
 	(* parse and return the Analytes and Composition fields to find the correct analytes to use *)
 	MapThread[
-		Function[{composition, analytes},
-			Which[
-				(* if Analytes field is populated, pick the first value there *)
-				MatchQ[analytes, {IdentityModelP..}],
-				analytes,
-				(* if Analytes field is not populated, pick the all the analyte-like identity model in the Composition field *)
-				MemberQ[composition, $CoulterCountableAnalyteP],
-				Cases[composition, $CoulterCountableAnalyteP],
-				(* basically saying pick any identity model except for water if you can *)
-				MemberQ[composition, nonWaterP],
-				Cases[composition, nonWaterP],
-				(* default to first of the compositions *)
-				True,
-				Cases[composition, IdentityModelP]
+		Function[{compositionMolecules, analytes},
+			Module[{allMolecules},
+				(* join the analyte and composition *)
+				allMolecules = DeleteDuplicates[Join[ToList[analytes], ToList[compositionMolecules]]];
+
+				(* select all analytes of the type of interest *)
+				Cases[allMolecules, analyteP]
 			]
 		],
 		{compositionObjs, analyteObjs}

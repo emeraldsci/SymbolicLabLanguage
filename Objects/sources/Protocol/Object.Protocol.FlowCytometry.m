@@ -486,7 +486,7 @@ DefineObjectType[Object[Protocol, FlowCytometry],{
 		InjectionContainerPrimitives -> {
 			Format -> Multiple,
 			Class -> Expression,
-			Pattern :> SampleManipulationP,
+			Pattern :> SampleManipulationP | SamplePreparationP,
 			Description -> "A set of instructions specifying the transfers of samples into the injection plate or vessels.",
 			Category -> "General",
 			Developer -> True
@@ -495,7 +495,7 @@ DefineObjectType[Object[Protocol, FlowCytometry],{
 			Format -> Single,
 			Class -> Link,
 			Pattern :> _Link,
-			Relation -> Object[Protocol, SampleManipulation],
+			Relation -> Object[Protocol, SampleManipulation] | Object[Protocol, RoboticSamplePreparation] | Object[Protocol, ManualSamplePreparation] | Object[Notebook, Script],
 			Description -> "A sample manipulation protocol used to transfer samples into the injection plate or vessels.",
 			Category -> "General"
 		},

@@ -13,7 +13,7 @@ DefineObjectType[Object[UnitOperation, Aliquot], {
 		Source -> {
 			Format -> Multiple,
 			Class -> Expression,
-			Pattern :> (_String | ObjectP[{Object[Sample], Object[Container]}]) | {(_String | ObjectP[{Object[Sample], Object[Container]}])..},
+			Pattern :> (_String | ObjectP[{Object[Sample], Object[Container], Model[Sample]}]) | {(_String | ObjectP[{Object[Sample], Object[Container], Model[Sample]}])..},
 			Description -> "Source sample to be aliquoted into the destination for this experiment.",
 			Category -> "General"
 		},
@@ -23,6 +23,7 @@ DefineObjectType[Object[UnitOperation, Aliquot], {
 			Class -> Link,
 			Pattern :> _Link,
 			Relation -> Alternatives[
+				Model[Sample],
 				Object[Sample],
 				Object[Container]
 			],

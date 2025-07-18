@@ -105,7 +105,7 @@ DefineTests[
 					|>
 			}];
 
-			(* Make the fake oligmer models *)
+			(* Make the fake oligomer models *)
 			{fakeOligo2,fakeOligo3,fakeOligo1}=Upload[{
 				<|Type->Model[Sample],
 					Replace[Composition]->{{100*VolumePercent,Link[Model[Molecule,Oligomer,"Fake Peptide Identity Model for MS Preview"]]}},
@@ -260,7 +260,7 @@ DefineTests[
 				|>
 			}];
 
-			(* Make fake oligmer models so that we can create samples below *)
+			(* Make fake oligomer models so that we can create samples below *)
 			{fakeOligo2,fakeOligo3,fakeOligo1}=Upload[{
 				<|Type->Model[Sample],
 					Replace[Composition]->{{100*VolumePercent,Link[Model[Molecule,Oligomer,"Fake Peptide Identity Model for MS Options"]]}},
@@ -428,7 +428,7 @@ DefineTests[
 			}];
 
 			{fakeOligo2,fakeOligo3,fakeOligo1}=Upload[{
-			(*Fake oligmer models*)
+			(*Fake oligomer models*)
 				<|Type->Model[Sample],
 					Replace[Composition]->{{100*VolumePercent,Link[Model[Molecule,Oligomer,"Fake Peptide Identity Model for MS ValidQ"]]}},
 					DefaultStorageCondition->Link[Model[StorageCondition,"id:N80DNj1r04jW"]],

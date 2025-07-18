@@ -155,7 +155,7 @@ DefineTests[
 			}
 		],
 
-		Example[{Messages,"UnknownMonomer","Monomers automatic resolution will fail when novel monomers are used and therefore monomer solutions must be explicitly specified:"},
+		Example[{Messages,"UnavailableMonomer","Monomers automatic resolution will fail when novel monomers are used and therefore monomer solutions must be explicitly specified:"},
 			Lookup[
 				ExperimentPNASynthesis[
 					{
@@ -175,7 +175,7 @@ DefineTests[
 				{PNA["C"],ObjectP[Model[Sample, StockSolution,"100 mM Link Fmoc-C Bhoc in NMP Coupling Solution"]]},
 				{PNA["T"],ObjectP[Model[Sample, StockSolution,"100 mM Link Fmoc-T in NMP Coupling Solution"]]}
 			},
-			Messages:>{Message[Error::UnknownMonomer],Message[Error::InvalidOption]}
+			Messages:>{Message[Error::UnavailableMonomer],Message[Error::InvalidOption]}
 		],
 
 		Example[{Options,Monomers,"Monomers allows specification of novel monomers to be used for the synthesis of the bulk monomers:"},
@@ -239,7 +239,7 @@ DefineTests[
 				DownloadMonomer
 			],
 			Null,
-			Messages:>{Message[Error::UnknownDownloadMonomer],Message[Error::InvalidOption]}
+			Messages:>{Message[Error::UnavailableDownloadMonomer],Message[Error::InvalidOption]}
 		],
 		Example[{Options,DownloadMonomer,"DownloadMonomer allows specification of model or sample object to use for each of the monomers in the download:"},
 			Lookup[
@@ -303,7 +303,7 @@ DefineTests[
 				DownloadMonomer
 			],
 			Null,
-			Messages:>{Message[Error::RequiredOption],Message[Error::UnknownDownloadMonomer],Message[Error::InvalidOption]}
+			Messages:>{Message[Error::RequiredOption],Message[Error::UnavailableDownloadMonomer],Message[Error::InvalidOption]}
 		],
 		Example[{Messages,DownloadMonomer,"DownloadMonomer should only be specified if DownloadResin has been set to True::"},
 			Lookup[
@@ -2534,6 +2534,7 @@ DefineTests[
 			Messages:>{
 				Message[Error::MixTypeNumberOfMixesMismatch],
 				Message[Error::MixTypeIncorrectOptions],
+				Message[Error::InvalidInput],
 				Message[Error::IncompatibleResuspensionMixPrimitives],
 				Message[Error::InvalidOption]
 			}
@@ -2687,6 +2688,8 @@ DefineTests[
 						Model[Sample,"PNA Test Oligomer Model"]
 					},
 					SwellResin->{True,False},
+					DownloadResin->False,
+					Resin->Model[Sample,"PNA Test Downloaded Resin"],
 					Output->Options
 				],
 				SwellResin
@@ -2722,7 +2725,7 @@ DefineTests[
 				SwellSolution
 			],
 			ObjectP[Model[Sample, "Milli-Q water"]],
-			Messages:>{Message[Error::UnneededSwellOptions],Message[Error::InvalidOption]}
+			Messages:>{Message[Error::UnneededSwellOptions],Error::SwellResinNeeded,Message[Error::InvalidOption]}
 		],
 
 		Example[{Options,SwellTime,"SwellTime allows specification of the amount of time that the resin is swelled for (per cycle):"},
@@ -2736,6 +2739,8 @@ DefineTests[
 					},
 					SwellResin->{True,False,False,True},
 					SwellTime->{12 Minute, Null,Automatic, Automatic},
+					DownloadResin->False,
+					Resin->Model[Sample,"PNA Test Downloaded Resin"],
 					Output->Options
 				],
 				SwellTime
@@ -2754,7 +2759,7 @@ DefineTests[
 				SwellTime
 			],
 			12 Minute,
-			Messages:>{Message[Error::UnneededSwellOptions],Message[Error::InvalidOption]}
+			Messages:>{Message[Error::UnneededSwellOptions],Error::SwellResinNeeded,Message[Error::InvalidOption]}
 		],
 
 		Example[{Options,SwellVolume,"SwellVolume allows specification the volume of SwellSolution that the samples are swelled with:"},
@@ -2767,6 +2772,8 @@ DefineTests[
 					},
 					SwellResin->{True,False,True},
 					SwellVolume->{2.5 Milliliter,Automatic,Automatic},
+					DownloadResin->False,
+					Resin->Model[Sample,"PNA Test Downloaded Resin"],
 					Output->Options
 				],
 				SwellVolume
@@ -2785,7 +2792,7 @@ DefineTests[
 				SwellVolume
 			],
 			2.5 Milliliter,
-			Messages:>{Message[Error::UnneededSwellOptions],Message[Error::InvalidOption]}
+			Messages:>{Message[Error::UnneededSwellOptions],Error::SwellResinNeeded,Message[Error::InvalidOption]}
 		],
 
 		Example[{Options,NumberOfSwellCycles,"NumberOfSwellCycles allows specification of the number of the cycles of swelling of the resin before the start of a synthesis:"},
@@ -2798,6 +2805,8 @@ DefineTests[
 					},
 					SwellResin->{True,False,True},
 					NumberOfSwellCycles->{7,Automatic, Automatic},
+					DownloadResin->False,
+					Resin->Model[Sample,"PNA Test Downloaded Resin"],
 					Output->Options
 				],
 				NumberOfSwellCycles
@@ -2816,7 +2825,7 @@ DefineTests[
 				NumberOfSwellCycles
 			],
 			7,
-			Messages:>{Message[Error::UnneededSwellOptions],Message[Error::InvalidOption]}
+			Messages:>{Message[Error::UnneededSwellOptions],Error::SwellResinNeeded,Message[Error::InvalidOption]}
 		],
 
 		(* Note: Primary/SecondaryResinShrink *)
@@ -3149,6 +3158,19 @@ DefineTests[
 			TimeConstraint->180
 		],
 
+		Example[{Options,MonomerPreactivation,"Specify that preactivation of the monomers should happen in situ (in the same reaction vessel):"},
+			Lookup[ExperimentPNASynthesis[
+				{
+					Model[Sample,"PNA Test Oligomer Model"],
+					Model[Sample,"PNA Test Oligomer Model"]
+				},
+				MonomerPreactivation->InSitu,
+				Output->Options
+			],MonomerPreactivation],
+			InSitu,
+			TimeConsuming->180
+		],
+
 	(*NOTE: shared options *)
 		Example[{Options,Name, "An object name which should be used to refer to the output object in lieu of an automatically generated ID number:"},
 			Lookup[
@@ -3174,6 +3196,20 @@ DefineTests[
 				Output->Options
 			],
 			_
+		],
+		Example[{Options,CanaryBranch,"Specify the CanaryBranch on which the protocol is run:"},
+			Download[
+				ExperimentPNASynthesis[
+					{
+						Model[Sample,"PNA Test Oligomer Model"],
+						Model[Sample,"PNA Test Oligomer Model"]
+					},
+					CanaryBranch->"d1cacc5a-948b-4843-aa46-97406bbfc368"
+				],
+				CanaryBranch
+			],
+			"d1cacc5a-948b-4843-aa46-97406bbfc368",
+			Stubs:>{GitBranchExistsQ[___] = True, $PersonID = Object[User, Emerald, Developer, "id:n0k9mGkqa6Gr"]}
 		],
 		Example[{Options,Upload,"Upload specifies if the database changes resulting from this function should be made immediately or if upload packets should be returned:"},
 			ExperimentPNASynthesis[
@@ -3298,8 +3334,8 @@ DefineTests[
 			$Failed,
 			Messages:>{
 				Message[Error::PolymerType],
-				Message[Error::UnknownDownloadMonomer],
-				Message[Error::UnknownMonomer],
+				Message[Error::UnavailableDownloadMonomer],
+				Message[Error::UnavailableMonomer],
 				Message[Error::InvalidOption],
 				Message[Error::InvalidInput]
 			}
@@ -3368,10 +3404,10 @@ DefineTests[
 				SwellSolution
 			],
 			ObjectP[Model[Sample, "Milli-Q water"]],
-			Messages:>{Message[Error::UnneededSwellOptions],Message[Error::InvalidOption]}
+			Messages:>{Message[Error::UnneededSwellOptions],Error::SwellResinNeeded,Message[Error::InvalidOption]}
 		],
 
-		Example[{Messages,"UnneededCleavageOptions","Cleavage related otpions should only be specified if Cleavage has been set to True:"},
+		Example[{Messages,"UnneededCleavageOptions","Cleavage related options should only be specified if Cleavage has been set to True:"},
 			Lookup[
 				ExperimentPNASynthesis[
 					Model[Sample,"PNA Test Oligomer Model"],
@@ -3428,7 +3464,7 @@ DefineTests[
 			{False,False,ObjectP[Model[Sample, "Milli-Q water"]]},
 			Messages:>{Message[Error::UnneededDeprotonationOptions],Message[Error::InvalidOption]}
 		],
-		Example[{Messages,"UnknownDownloadMonomer","DownloadMonomer automatic resolution will fail when a novel download monomer is used and therefore must explicity specified:"},
+		Example[{Messages,"UnavailableDownloadMonomer","DownloadMonomer automatic resolution will fail when a novel download monomer is used and therefore must explicity specified:"},
 			Lookup[
 				ExperimentPNASynthesis[
 					StrandJoin[
@@ -3441,7 +3477,7 @@ DefineTests[
 				DownloadMonomer
 			],
 			Null,
-			Messages:>{Message[Error::UnknownDownloadMonomer],Message[Error::InvalidOption]}
+			Messages:>{Message[Error::UnavailableDownloadMonomer],Message[Error::InvalidOption]}
 		],
 			Example[{Messages,"WrongResin","If DownloadResin is set to True, Resin cannot be specified to a downloaded resin (Object/Model[Sample]) since the first step in the synthesis will be the download of the resin:"},
 			ExperimentPNASynthesis[
@@ -3472,6 +3508,16 @@ DefineTests[
 			Messages:>{Message[Error::DownloadedResinNeeded],Message[Error::InvalidOption]}
 		],
 
+		Example[{Messages,"SwellResinNeeded","If DownloadResin is set to True and SwellResin is False, an error will be thrown:"},
+			ExperimentPNASynthesis[
+				Model[Sample,"PNA Test Oligomer Model"],
+				DownloadResin -> True,
+				SwellResin -> False
+			],
+			$Failed,
+			Messages :> {Error::SwellResinNeeded,Error::InvalidOption}
+		],
+
 		Example[{Messages,"MismatchedResinAndStrand","The specified downloaded Resin has to match the sequence of the 3' bases in the strand to be synthesized:"},
 			ExperimentPNASynthesis[
 				Model[Sample,"PNA Test Oligomer Model"],
@@ -3494,7 +3540,7 @@ DefineTests[
 				DownloadMonomer
 			],
 			Null,
-			Messages:>{Message[Error::RequiredOption],Message[Error::UnknownDownloadMonomer],Message[Error::InvalidOption]}
+			Messages:>{Message[Error::RequiredOption],Message[Error::UnavailableDownloadMonomer],Message[Error::InvalidOption]}
 		],
 		Example[{Messages,"UnneededDownloadResinOptions","Download related options should only be specified if DownloadResin has been set to True::"},
 			Lookup[
@@ -3774,11 +3820,11 @@ DefineTests[
 			};
 
 			(* Check whether the names we want to give below already exist in the database *)
-			existsFilter=DatabaseMemberQ[createdObjects];
+			existsFilter = PickList[createdObjects, DatabaseMemberQ[createdObjects]];
 
 			(* Erase any objects that we failed to erase in the last unit test. *)
 			Quiet[EraseObject[
-				PickList[createdObjects,existsFilter],
+				existsFilter,
 				Force->True,
 				Verbose->False
 			]]

@@ -96,6 +96,80 @@ Error::PlotDigitalPCROptionMismatch="Specified values for ExcitationWavelengths 
 Error::PlotDigitalPCRDualChannel="Specified EmissionWavelengths does not match wavelengths specified in PlotChannels. Please verify that EmissionWavelengths matches PlotChannels or leave EmissionWavelengths as Automatic.";
 Error::PlotDigitalPCRLengthMismatch="ExcitationWavelengths and EmissionWavelengths have different lengths. Please verify that the options have the same lengths and try again.";
 Error::PlotDigitalPCRIncompatiblePlot="When PlotType is specified as EmeraldListLinePlot, PlotChannels must be specified as a pair of wavelengths. PlotChannels can only be specified as \"Single Channel\" to create a EmeraldSmoothHistogram. Please leave PlotType uninformed to be resolved automatically.";
+Error::NoDigitalPCRDataToPlot = "The protocol object does not contain any associated digital PCR data.";
+Error::NoDropletAmplitudeDataFound = "No data was found in the DropletAmplitudes field of the input data object(s).";
+Error::NoDigitalPCRPlottingDataFound = "The data objects linked to the input protocol object are missing field values that are required for plotting. Please call PlotDigitalPCR on an individual data object to identify the missing values.";
+
+(* Protocol Overload *)
+PlotDigitalPCR[
+	obj: ObjectP[Object[Protocol, DigitalPCR]],
+	ops: OptionsPattern[PlotDigitalPCR]
+] := Module[{safeOps, output, data, previewPlot, plots, resolvedOptions, finalResult, outputPlot, outputOptions},
+
+	(* Check the options pattern and return a list of all options, using defaults for unspecified or invalid options *)
+	safeOps=SafeOptions[PlotDigitalPCR, ToList[ops]];
+
+	(* Requested output, either a single value or list of Alternatives[Result,Options,Preview,Tests] *)
+	output = ToList[Lookup[safeOps,Output]];
+
+	(* Download the data from the input protocol *)
+	data = Download[obj, Data];
+
+	(* Return an error if there is no data or it is not the correct data type *)
+	If[!MatchQ[data, {ObjectP[Object[Data, DigitalPCR]]..}],
+		Message[Error::NoDigitalPCRDataToPlot];
+		Return[$Failed]
+	];
+
+	(* If Preview is requested, return a plot with all of the data objects in the protocol overlaid in one plot *)
+	previewPlot = If[MemberQ[output, Preview],
+		PlotDigitalPCR[data, Sequence @@ ReplaceRule[safeOps, Output -> Preview]],
+		Null
+	];
+
+	(* If either Result or Options are requested, map over the data objects. Remove anything that failed from the list of plots to be displayed*)
+	{plots, resolvedOptions} = If[MemberQ[output, (Result | Options)],
+		Transpose[
+			(PlotDigitalPCR[#, Sequence @@ ReplaceRule[safeOps, Output -> {Result, Options}]]& /@ data) /. $Failed -> Nothing
+		],
+		{{}, {}}
+	];
+
+	(* If all of the data objects failed to plot, return an error *)
+	If[MatchQ[plots, (ListableP[{}] | ListableP[Null])] && MatchQ[previewPlot, (Null | $Failed)],
+		Message[Error::NoDigitalPCRPlottingDataFound];
+		Return[$Failed],
+		Nothing
+	];
+
+	(* If Result was requested, output the plots in slide view, unless there is only one plot then we can just show it not in slide view. *)
+	outputPlot = If[MemberQ[output, Result],
+		If[Length[plots] > 1,
+			SlideView[plots],
+			First[plots]
+		]
+	];
+
+	(* If Options were requested, just take the first set of options since they are the same for all plots. Make it a List first just in case there is only one option set. *)
+	outputOptions = If[MemberQ[output, Options],
+		First[ToList[resolvedOptions]]
+	];
+
+	(* Prepare our final result *)
+	finalResult = output /. {
+		Result -> outputPlot,
+		Options -> outputOptions,
+		Preview -> previewPlot,
+		Tests -> {}
+	};
+
+	(* Return the result *)
+	If[
+		Length[finalResult] == 1,
+		First[finalResult],
+		finalResult
+	]
+];
 
 (* Function overload: Quantity array dataset *)
 (* Core function *)
@@ -326,6 +400,12 @@ PlotDigitalPCR[
 	(* Get raw data from all channels *)
 	allDataFromInputs=Lookup[allPackets,DropletAmplitudes];
 
+	If[MatchQ[allDataFromInputs, ListableP[{Null..}]],
+		Message[Error::NoDropletAmplitudeDataFound];
+		Return[$Failed],
+		Nothing
+	];
+
 	(* From each data set, isolate the columns that pertain to resolved emission wavelengths *)
 	plotData=Map[
 		Function[{singleInputData},
@@ -385,10 +465,19 @@ PlotDigitalPCR[
 	];
 
 	(* Resolve all options which should go to the plot function (i.e. EmeraldListLinePlot in most cases)  *)
-	plotOptions=PassOptions[
-		PlotDigitalPCR,
-		Lookup[mostlyResolvedOps,PlotType],
-		mostlyResolvedOps
+	(* Convert the option names back to symbols (they come out of PassOptions as strings) *)
+	plotOptions = Map[
+		If[MatchQ[Keys[#], _String],
+			Symbol[Keys[#]] -> Values[#],
+			#
+		]&,
+		{
+			PassOptions[
+				PlotDigitalPCR,
+				Lookup[mostlyResolvedOps, PlotType],
+				mostlyResolvedOps
+			]
+		}
 	];
 
 	(*********************************)
@@ -403,8 +492,8 @@ PlotDigitalPCR[
 	(*-- Call plot function --*)
 	plot=If[MatchQ[Lookup[mostlyResolvedOps,PlotType],EmeraldSmoothHistogram],
 		(*Since plotData is formatted for DistributionChart, remove a level of nestedness to get the data in a list of lists format*)
-		EmeraldSmoothHistogram[Flatten[plotData,1],plotOptions],
-		EmeraldListLinePlot[plotData,plotOptions]
+		EmeraldSmoothHistogram[Flatten[plotData,1], Sequence @@ ReplaceRule[plotOptions, Output -> Result]],
+		EmeraldListLinePlot[plotData, Sequence @@ ReplaceRule[plotOptions, Output -> Result]]
 	];
 
 	(*previewPlot=If[MatchQ[Lookup[mostlyResolvedOps,PlotType],DistributionChart],
@@ -414,17 +503,17 @@ PlotDigitalPCR[
 	];*)
 
 	(* Combine options resolved by MM function *)
-	resolvedOps=If[MatchQ[Lookup[mostlyResolvedOps,PlotType],EmeraldSmoothHistogram],
+	resolvedOps=If[MatchQ[Lookup[mostlyResolvedOps,PlotType], EmeraldSmoothHistogram],
 		(*Since plotData is formatted for DistributionChart, remove a level of nestedness to get the data in a list of lists format*)
-		EmeraldSmoothHistogram[Flatten[plotData,1],Output->Options,plotOptions],
-		EmeraldListLinePlot[plotData,Output->Options,plotOptions]
+		EmeraldSmoothHistogram[Flatten[plotData, 1],Sequence @@ ReplaceRule[plotOptions, Output -> Options]],
+		EmeraldListLinePlot[plotData, Sequence @@ ReplaceRule[plotOptions, Output -> Options]]
 	];
 
 	(* Return the requested outputs *)
 	output/.{
 		Result->plot,
 		Options->ReplaceRule[resolvedOps,specificOptions],
-		Preview->SlideView[Flatten[{plot}],ImageSize->Full],
+		Preview->plot,
 		Tests->{}
 	}
 ]

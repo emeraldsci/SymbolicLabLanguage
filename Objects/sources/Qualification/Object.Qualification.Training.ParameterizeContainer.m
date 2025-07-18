@@ -8,13 +8,6 @@ DefineObjectType[Object[Qualification,Training,ParameterizeContainer], {
   CreatePrivileges -> None,
   Cache -> Session,
   Fields -> {
-    NameUserInput-> {
-      Format -> Single,
-      Class -> String,
-      Pattern :> _String,
-      Description -> "User proposed potential name for the parameterized part or container.",
-      Category -> "General"
-    },
     DimensionsUserInput -> {
       Format -> Single,
       Class -> {Real, Real, Real},
@@ -154,14 +147,6 @@ DefineObjectType[Object[Qualification,Training,ParameterizeContainer], {
       Description -> "The user inputted indication if this container has an airtight seal at its aperture.",
       Category -> "General"
     },
-    MaxVolumeUserInput -> {
-      Format -> Single,
-      Class -> Real,
-      Pattern :> GreaterP[0*Micro*Liter],
-      Units -> Liter Milli,
-      Description -> "The user inputted maximum volume of fluid the vessel can hold.",
-      Category -> "General"
-    },
     SelfStandingUserInput -> {
       Format -> Single,
       Class -> Expression,
@@ -174,13 +159,6 @@ DefineObjectType[Object[Qualification,Training,ParameterizeContainer], {
       Class -> Expression,
       Pattern :> BooleanP,
       Description -> "The user inputted indication if this container is capable of staying upright without assistance when being transported on an operator cart. Containers that are stable for transport can tolerate cart motion and accidental contact without falling, while those that are not must be resource picked into a rack.",
-      Category -> "General"
-    },
-    PreferredBalanceUserInput -> {
-      Format -> Single,
-      Class -> Expression,
-      Pattern :> BalanceModeP,
-      Description -> "The user inputted indication of the recommended balance type for weighing a sample in this type of container.",
       Category -> "General"
     },
     OpaqueUserInput -> {
@@ -217,6 +195,14 @@ DefineObjectType[Object[Qualification,Training,ParameterizeContainer], {
       Pattern :> _Link,
       Relation -> Model[Container]|Object[Container],
       Description -> "The part or container that an operator will parameterize for training.",
+      Category -> "General"
+    },
+    Caliper -> {
+      Format -> Single,
+      Class -> Link,
+      Pattern :> _Link,
+      Relation -> Alternatives[Object[Instrument, DistanceGauge], Model[Instrument, DistanceGauge]],
+      Description -> "The distance measurement device used to perform measurements in this protocol.",
       Category -> "General"
     }
   }

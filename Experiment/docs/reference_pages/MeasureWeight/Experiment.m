@@ -17,19 +17,41 @@ DefineUsage[ExperimentMeasureWeight,
 				Inputs:>{
 					IndexMatching[
 						{
-							InputName -> "Items",
-							Description-> "The samples or containers to be weighed.",
-							Widget->Widget[
-								Type->Object,
-								Pattern:>ObjectP[{Object[Sample],Object[Container]}],
-								ObjectTypes->{Object[Sample],Object[Container]},
-								Dereference->{
-									Object[Container]->Field[Contents[[All,2]]]
-								}
-							],
-							Expandable->False
+							InputName -> "Objects",
+							Description-> "The objects to be weighed.",
+							Widget -> Alternatives[
+								"Sample or Container" -> Widget[
+									Type -> Object,
+									Pattern :> ObjectP[{Object[Sample], Object[Container]}],
+									Dereference -> {Object[Container] -> Field[Contents[[All, 2]]]}
+								],
+								"Container with Well Position" -> {
+									"Well Position" -> Alternatives[
+										"A1 to P24" -> Widget[
+											Type -> Enumeration,
+											Pattern :> Alternatives @@ Flatten[AllWells[NumberOfWells -> 384]],
+											PatternTooltip -> "Enumeration must be any well from A1 to P24."
+										],
+										"Container Position" -> Widget[
+											Type -> String,
+											Pattern :> LocationPositionP,
+											PatternTooltip -> "Any valid container position.",
+											Size -> Line
+										]
+									],
+									"Container" -> Widget[
+										Type -> Object,
+										Pattern :> ObjectP[{Object[Container]}]
+									]
+								},
+								"Model Sample"->Widget[
+									Type -> Object,
+									Pattern :> ObjectP[Model[Sample]],
+									ObjectTypes -> {Model[Sample]}
+								]
+							]
 						},
-						IndexName->"experiment samples"
+						IndexName -> "experiment samples"
 					]
 				},
 				Outputs:>{
@@ -74,18 +96,40 @@ DefineUsage[ExperimentMeasureWeight,
 					IndexMatching[
 						{
 							InputName -> "Objects",
-							Description-> "The samples or containers whose weight will be measured.",
-							Widget->Widget[
-								Type->Object,
-								Pattern:>ObjectP[{Object[Sample],Object[Container]}],
-								ObjectTypes->{Object[Sample],Object[Container]},
-								Dereference->{
-									Object[Container]->Field[Contents[[All,2]]]
-								}
-							],
-							Expandable->False
+							Description-> "The objects to be weighed.",
+							Widget -> Alternatives[
+								"Sample or Container" -> Widget[
+									Type -> Object,
+									Pattern :> ObjectP[{Object[Sample], Object[Container]}],
+									Dereference -> {Object[Container] -> Field[Contents[[All, 2]]]}
+								],
+								"Container with Well Position" -> {
+									"Well Position" -> Alternatives[
+										"A1 to P24" -> Widget[
+											Type -> Enumeration,
+											Pattern :> Alternatives @@ Flatten[AllWells[NumberOfWells -> 384]],
+											PatternTooltip -> "Enumeration must be any well from A1 to P24."
+										],
+										"Container Position" -> Widget[
+											Type -> String,
+											Pattern :> LocationPositionP,
+											PatternTooltip -> "Any valid container position.",
+											Size -> Line
+										]
+									],
+									"Container" -> Widget[
+										Type -> Object,
+										Pattern :> ObjectP[{Object[Container]}]
+									]
+								},
+								"Model Sample"->Widget[
+									Type -> Object,
+									Pattern :> ObjectP[Model[Sample]],
+									ObjectTypes -> {Model[Sample]}
+								]
+							]
 						},
-						IndexName->"experiment samples"
+						IndexName -> "experiment samples"
 					]
 				},
 				Outputs:>{
@@ -126,18 +170,40 @@ DefineUsage[ExperimentMeasureWeight,
 					IndexMatching[
 						{
 							InputName -> "Objects",
-							Description-> "The samples or containers whose weight will be measured.",
-							Widget->Widget[
-								Type->Object,
-								Pattern:>ObjectP[{Object[Sample],Object[Container]}],
-								ObjectTypes->{Object[Sample],Object[Container]},
-								Dereference->{
-									Object[Container]->Field[Contents[[All,2]]]
-								}
-							],
-							Expandable->False
+							Description-> "The objects to be weighed.",
+							Widget -> Alternatives[
+								"Sample or Container" -> Widget[
+									Type -> Object,
+									Pattern :> ObjectP[{Object[Sample], Object[Container]}],
+									Dereference -> {Object[Container] -> Field[Contents[[All, 2]]]}
+								],
+								"Container with Well Position" -> {
+									"Well Position" -> Alternatives[
+										"A1 to P24" -> Widget[
+											Type -> Enumeration,
+											Pattern :> Alternatives @@ Flatten[AllWells[NumberOfWells -> 384]],
+											PatternTooltip -> "Enumeration must be any well from A1 to P24."
+										],
+										"Container Position" -> Widget[
+											Type -> String,
+											Pattern :> LocationPositionP,
+											PatternTooltip -> "Any valid container position.",
+											Size -> Line
+										]
+									],
+									"Container" -> Widget[
+										Type -> Object,
+										Pattern :> ObjectP[{Object[Container]}]
+									]
+								},
+								"Model Sample"->Widget[
+									Type -> Object,
+									Pattern :> ObjectP[Model[Sample]],
+									ObjectTypes -> {Model[Sample]}
+								]
+							]
 						},
-						IndexName->"experiment samples"
+						IndexName -> "experiment samples"
 					]
 				},
 				Outputs:>{
@@ -178,18 +244,40 @@ DefineUsage[ValidExperimentMeasureWeightQ,
 					IndexMatching[
 						{
 							InputName -> "Objects",
-							Description-> "The samples or containers whose weight will be measured.",
-							Widget->Widget[
-								Type->Object,
-								Pattern:>ObjectP[{Object[Sample],Object[Container]}],
-								ObjectTypes->{Object[Sample],Object[Container]},
-								Dereference->{
-									Object[Container]->Field[Contents[[All,2]]]
-								}
-							],
-							Expandable->False
+							Description-> "The objects to be weighed.",
+							Widget -> Alternatives[
+								"Sample or Container" -> Widget[
+									Type -> Object,
+									Pattern :> ObjectP[{Object[Sample], Object[Container]}],
+									Dereference -> {Object[Container] -> Field[Contents[[All, 2]]]}
+								],
+								"Container with Well Position" -> {
+									"Well Position" -> Alternatives[
+										"A1 to P24" -> Widget[
+											Type -> Enumeration,
+											Pattern :> Alternatives @@ Flatten[AllWells[NumberOfWells -> 384]],
+											PatternTooltip -> "Enumeration must be any well from A1 to P24."
+										],
+										"Container Position" -> Widget[
+											Type -> String,
+											Pattern :> LocationPositionP,
+											PatternTooltip -> "Any valid container position.",
+											Size -> Line
+										]
+									],
+									"Container" -> Widget[
+										Type -> Object,
+										Pattern :> ObjectP[{Object[Container]}]
+									]
+								},
+								"Model Sample"->Widget[
+									Type -> Object,
+									Pattern :> ObjectP[Model[Sample]],
+									ObjectTypes -> {Model[Sample]}
+								]
+							]
 						},
-						IndexName->"experiment samples"
+						IndexName -> "experiment samples"
 					]
 				},
 				Outputs:>{

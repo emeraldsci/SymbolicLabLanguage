@@ -89,7 +89,7 @@ DefineObjectType[Model[Qualification], {
 			Format -> Multiple,
 			Class -> {Date, Link, Link},
 			Pattern :> {_?DateObjectQ, _Link, _Link},
-			Relation -> {Null, Object[Qualification], Object[Troubleshooting]},
+			Relation -> {Null, Object[Qualification], Object[SupportTicket]},
 			Units -> {None, None, None},
 			Description -> "A historical record of the Qualifications that failed.",
 			Category -> "Experimental Results",

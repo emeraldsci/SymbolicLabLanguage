@@ -19,10 +19,20 @@ DefineUsage[ValidExperimentAliquotQ,
 						{
 							InputName -> "Sample",
 							Description-> "The sample to be transferred.",
-							Widget->Widget[
-								Type->Object,
-								Pattern:>ObjectP[Object[Sample]],
-								ObjectTypes->{Object[Sample]}
+							Widget->Alternatives[
+								"Sample or Container"->Widget[
+									Type -> Object,
+									Pattern :> ObjectP[{Object[Sample], Object[Container]}],
+									ObjectTypes -> {Object[Sample], Object[Container]},
+									Dereference -> {
+										Object[Container] -> Field[Contents[[All, 2]]]
+									}
+								],
+								"Model Sample"->Widget[
+									Type -> Object,
+									Pattern :> ObjectP[Model[Sample]],
+									ObjectTypes -> {Model[Sample]}
+								]
 							],
 							Expandable->False,
 							NestedIndexMatching -> True
@@ -77,10 +87,20 @@ DefineUsage[ValidExperimentAliquotQ,
 						{
 							InputName -> "Sample",
 							Description-> "The sample to be transferred.",
-							Widget->Widget[
-								Type->Object,
-								Pattern:>ObjectP[Object[Sample]],
-								ObjectTypes->{Object[Sample]}
+							Widget->Alternatives[
+								"Sample or Container"->Widget[
+									Type -> Object,
+									Pattern :> ObjectP[{Object[Sample], Object[Container]}],
+									ObjectTypes -> {Object[Sample], Object[Container]},
+									Dereference -> {
+										Object[Container] -> Field[Contents[[All, 2]]]
+									}
+								],
+								"Model Sample"->Widget[
+									Type -> Object,
+									Pattern :> ObjectP[Model[Sample]],
+									ObjectTypes -> {Model[Sample]}
+								]
 							],
 							Expandable->False,
 							NestedIndexMatching -> True
@@ -123,10 +143,20 @@ DefineUsage[ValidExperimentAliquotQ,
 						{
 							InputName -> "Sample",
 							Description-> "The sample to be transferred.",
-							Widget->Widget[
-								Type->Object,
-								Pattern:>ObjectP[Object[Sample]],
-								ObjectTypes->{Object[Sample]}
+							Widget->Alternatives[
+								"Sample or Container"->Widget[
+									Type -> Object,
+									Pattern :> ObjectP[{Object[Sample], Object[Container]}],
+									ObjectTypes -> {Object[Sample], Object[Container]},
+									Dereference -> {
+										Object[Container] -> Field[Contents[[All, 2]]]
+									}
+								],
+								"Model Sample"->Widget[
+									Type -> Object,
+									Pattern :> ObjectP[Model[Sample]],
+									ObjectTypes -> {Model[Sample]}
+								]
 							],
 							Expandable->False,
 							NestedIndexMatching -> True
@@ -176,10 +206,20 @@ DefineUsage[ExperimentAliquotOptions,
 						{
 							InputName -> "Sample",
 							Description-> "The sample to be transferred.",
-							Widget->Widget[
-								Type->Object,
-								Pattern:>ObjectP[Object[Sample]],
-								ObjectTypes->{Object[Sample]}
+							Widget->Alternatives[
+								"Sample or Container"->Widget[
+									Type -> Object,
+									Pattern :> ObjectP[{Object[Sample], Object[Container]}],
+									ObjectTypes -> {Object[Sample], Object[Container]},
+									Dereference -> {
+										Object[Container] -> Field[Contents[[All, 2]]]
+									}
+								],
+								"Model Sample"->Widget[
+									Type -> Object,
+									Pattern :> ObjectP[Model[Sample]],
+									ObjectTypes -> {Model[Sample]}
+								]
 							],
 							Expandable->False,
 							NestedIndexMatching -> True
@@ -234,10 +274,20 @@ DefineUsage[ExperimentAliquotOptions,
 						{
 							InputName -> "Sample",
 							Description-> "The sample to be transferred.",
-							Widget->Widget[
-								Type->Object,
-								Pattern:>ObjectP[Object[Sample]],
-								ObjectTypes->{Object[Sample]}
+							Widget->Alternatives[
+								"Sample or Container"->Widget[
+									Type -> Object,
+									Pattern :> ObjectP[{Object[Sample], Object[Container]}],
+									ObjectTypes -> {Object[Sample], Object[Container]},
+									Dereference -> {
+										Object[Container] -> Field[Contents[[All, 2]]]
+									}
+								],
+								"Model Sample"->Widget[
+									Type -> Object,
+									Pattern :> ObjectP[Model[Sample]],
+									ObjectTypes -> {Model[Sample]}
+								]
 							],
 							Expandable->False,
 							NestedIndexMatching -> True
@@ -280,10 +330,20 @@ DefineUsage[ExperimentAliquotOptions,
 						{
 							InputName -> "Sample",
 							Description-> "The sample to be transferred.",
-							Widget->Widget[
-								Type->Object,
-								Pattern:>ObjectP[Object[Sample]],
-								ObjectTypes->{Object[Sample]}
+							Widget->Alternatives[
+								"Sample or Container"->Widget[
+									Type -> Object,
+									Pattern :> ObjectP[{Object[Sample], Object[Container]}],
+									ObjectTypes -> {Object[Sample], Object[Container]},
+									Dereference -> {
+										Object[Container] -> Field[Contents[[All, 2]]]
+									}
+								],
+								"Model Sample"->Widget[
+									Type -> Object,
+									Pattern :> ObjectP[Model[Sample]],
+									ObjectTypes -> {Model[Sample]}
+								]
 							],
 							Expandable->False,
 							NestedIndexMatching -> True
@@ -335,10 +395,20 @@ DefineUsage[ExperimentAliquotPreview,
 						{
 							InputName -> "Sample",
 							Description-> "The sample to be transferred.",
-							Widget->Widget[
-								Type->Object,
-								Pattern:>ObjectP[Object[Sample]],
-								ObjectTypes->{Object[Sample]}
+							Widget->Alternatives[
+								"Sample or Container"->Widget[
+									Type -> Object,
+									Pattern :> ObjectP[{Object[Sample], Object[Container]}],
+									ObjectTypes -> {Object[Sample], Object[Container]},
+									Dereference -> {
+										Object[Container] -> Field[Contents[[All, 2]]]
+									}
+								],
+								"Model Sample"->Widget[
+									Type -> Object,
+									Pattern :> ObjectP[Model[Sample]],
+									ObjectTypes -> {Model[Sample]}
+								]
 							],
 							Expandable->False,
 							NestedIndexMatching -> True
@@ -393,10 +463,20 @@ DefineUsage[ExperimentAliquotPreview,
 						{
 							InputName -> "Sample",
 							Description-> "The sample to be transferred.",
-							Widget->Widget[
-								Type->Object,
-								Pattern:>ObjectP[Object[Sample]],
-								ObjectTypes->{Object[Sample]}
+							Widget->Alternatives[
+								"Sample or Container"->Widget[
+									Type -> Object,
+									Pattern :> ObjectP[{Object[Sample], Object[Container]}],
+									ObjectTypes -> {Object[Sample], Object[Container]},
+									Dereference -> {
+										Object[Container] -> Field[Contents[[All, 2]]]
+									}
+								],
+								"Model Sample"->Widget[
+									Type -> Object,
+									Pattern :> ObjectP[Model[Sample]],
+									ObjectTypes -> {Model[Sample]}
+								]
 							],
 							Expandable->False,
 							NestedIndexMatching -> True
@@ -439,10 +519,20 @@ DefineUsage[ExperimentAliquotPreview,
 						{
 							InputName -> "Sample",
 							Description-> "The sample to be transferred.",
-							Widget->Widget[
-								Type->Object,
-								Pattern:>ObjectP[Object[Sample]],
-								ObjectTypes->{Object[Sample]}
+							Widget->Alternatives[
+								"Sample or Container"->Widget[
+									Type -> Object,
+									Pattern :> ObjectP[{Object[Sample], Object[Container]}],
+									ObjectTypes -> {Object[Sample], Object[Container]},
+									Dereference -> {
+										Object[Container] -> Field[Contents[[All, 2]]]
+									}
+								],
+								"Model Sample"->Widget[
+									Type -> Object,
+									Pattern :> ObjectP[Model[Sample]],
+									ObjectTypes -> {Model[Sample]}
+								]
 							],
 							Expandable->False,
 							NestedIndexMatching -> True

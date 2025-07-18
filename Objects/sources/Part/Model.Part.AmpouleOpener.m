@@ -24,6 +24,22 @@ DefineObjectType[Model[Part, AmpouleOpener], {
       Description -> "Maximum bulb diameter the ampoule opener can open.",
       Category -> "Physical Properties"
     },
+    MinVolume -> {
+      Format -> Single,
+      Class -> Real,
+      Pattern :> GreaterP[0 Milliliter],
+      Units -> Milliliter,
+      Description -> "The smallest standard form-factor ampoule size the ampoule opener can open.",
+      Category -> "Physical Properties"
+    },
+    MaxVolume -> {
+      Format -> Single,
+      Class -> Real,
+      Pattern :> GreaterP[0 Milliliter],
+      Units -> Milliliter,
+      Description -> "The largest standard form-factor ampoule size the ampoule opener can open.",
+      Category -> "Physical Properties"
+    },
     Color->{
       Format->Single,
       Class->Expression,

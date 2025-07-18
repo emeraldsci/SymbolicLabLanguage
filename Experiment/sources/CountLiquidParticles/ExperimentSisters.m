@@ -30,7 +30,7 @@ ValidExperimentCountLiquidParticlesQ[mySamples : ListableP[_String | ObjectP[Obj
 	listedOptions = ToList[myOptions];
 	listedSamples = ToList[mySamples];
 
-	(* remove the Output option before passing to the core function because it doens't make sense here *)
+	(* remove the Output option before passing to the core function because it doesn't make sense here *)
 	preparedOptions = DeleteCases[listedOptions, (Output | Verbose | OutputFormat) -> _];
 
 	(* return only the tests for ExperimentCountLiquidParticles *)
@@ -75,14 +75,14 @@ ValidExperimentCountLiquidParticlesQ[mySamples : ListableP[_String | ObjectP[Obj
 
 
 (* plates overloads *)
-ValidExperimentCountLiquidParticlesQ[myContainers : ListableP[ObjectP[{Object[Container], Object[Sample]}] | _String], myOptions : OptionsPattern[ValidExperimentCountLiquidParticlesQ]] := Module[
+ValidExperimentCountLiquidParticlesQ[myContainers : ListableP[ObjectP[{Object[Container], Object[Sample], Model[Sample]}] | _String], myOptions : OptionsPattern[ValidExperimentCountLiquidParticlesQ]] := Module[
 	{listedOptions, preparedOptions, absSpecTests, initialTestDescription, allTests, verbose, outputFormat, listedContainers},
 
 	(* get the options as a list *)
 	listedOptions = ToList[myOptions];
 	listedContainers = ToList[myContainers];
 
-	(* remove the Output option before passing to the core function because it doens't make sense here *)
+	(* remove the Output option before passing to the core function because it doesn't make sense here *)
 	preparedOptions = DeleteCases[listedOptions, (Output | Verbose | OutputFormat) -> _];
 
 	(* return only the tests for ExperimentCountLiquidParticles *)
@@ -148,7 +148,7 @@ ExperimentCountLiquidParticlesOptions[mySamples : ListableP[_String | ObjectP[Ob
 	(* get the options as a list *)
 	listedOptions = ToList[myOptions];
 
-	(* remove the Output option before passing to the core function because it doens't make sense here *)
+	(* remove the Output option before passing to the core function because it doesn't make sense here *)
 	noOutputOptions = DeleteCases[listedOptions, Alternatives[Output -> _, OutputFormat -> _]];
 
 	(* get only the options for ExperimentCountLiquidParticles *)
@@ -163,13 +163,13 @@ ExperimentCountLiquidParticlesOptions[mySamples : ListableP[_String | ObjectP[Ob
 
 
 (* containers overloads *)
-ExperimentCountLiquidParticlesOptions[myContainers : ListableP[ObjectP[{Object[Container], Object[Sample]}] | _String], myOptions : OptionsPattern[ExperimentCountLiquidParticlesOptions]] := Module[
+ExperimentCountLiquidParticlesOptions[myContainers : ListableP[ObjectP[{Object[Container], Object[Sample], Model[Sample]}] | _String], myOptions : OptionsPattern[ExperimentCountLiquidParticlesOptions]] := Module[
 	{listedOptions, noOutputOptions, options},
 
 	(* get the options as a list *)
 	listedOptions = ToList[myOptions];
 
-	(* remove the Output option before passing to the core function because it doens't make sense here *)
+	(* remove the Output option before passing to the core function because it doesn't make sense here *)
 	noOutputOptions = DeleteCases[listedOptions, Alternatives[Output -> _, OutputFormat -> _]];
 
 	(* get only the options for ExperimentCountLiquidParticles *)
@@ -200,7 +200,7 @@ ExperimentCountLiquidParticlesPreview[mySamples : ListableP[_String | ObjectP[Ob
 	(* get the options as a list *)
 	listedOptions = ToList[myOptions];
 
-	(* remove the Output option before passing to the core function because it doens't make sense here *)
+	(* remove the Output option before passing to the core function because it doesn't make sense here *)
 	noOutputOptions = DeleteCases[listedOptions, Output -> _];
 
 	ExperimentCountLiquidParticles[mySamples, Append[noOutputOptions, Output -> Preview]]
@@ -208,13 +208,13 @@ ExperimentCountLiquidParticlesPreview[mySamples : ListableP[_String | ObjectP[Ob
 
 
 (* container overloads *)
-ExperimentCountLiquidParticlesPreview[myContainers : ListableP[ObjectP[{Object[Container], Object[Sample]}] | _String], myOptions : OptionsPattern[ExperimentCountLiquidParticlesPreview]] := Module[
+ExperimentCountLiquidParticlesPreview[myContainers : ListableP[ObjectP[{Object[Container], Object[Sample], Model[Sample]}] | _String], myOptions : OptionsPattern[ExperimentCountLiquidParticlesPreview]] := Module[
 	{listedOptions, noOutputOptions},
 
 	(* get the options as a list *)
 	listedOptions = ToList[myOptions];
 
-	(* remove the Output option before passing to the core function because it doens't make sense here *)
+	(* remove the Output option before passing to the core function because it doesn't make sense here *)
 	noOutputOptions = DeleteCases[listedOptions, Output -> _];
 
 	ExperimentCountLiquidParticles[myContainers, Append[noOutputOptions, Output -> Preview]]

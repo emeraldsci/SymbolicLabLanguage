@@ -60,6 +60,9 @@ $FastGit;
 $AllowPublicObjects=False;
 Protect[$AllowPublicObjects];
 
+(* Turn off Dynamic Annotations on Plots introduced in MM 13.3. This is to align with FE and hanging issue in CCD *)
+Charting`$InteractiveHighlighting = False;
+
 Begin["`Private`"];
 
 If[Not[ValueQ[$DebugLoading]],
@@ -696,8 +699,20 @@ ReloadManifest[package_String]:=Module[{metadata,context,directory,mxPath,loadFr
 (* Developer function - does not do any error checking, reloading of dependencies, or clearing of Up/Down/OwnValues in the package. $DebugLoading is not supported. MX Loading is also not supported. *)
 (* Assumes that you've ALREADY loaded the package that this file exists in. *)
 (* Simply overwrites values with the correct context path for a given file. *)
-(* assuming if you only give one input, we're in the Experiment package because that's where this is used most frequently *)
-ReloadFile[fileName_String]:=ReloadFile["Experiment`", fileName];
+ReloadFile[filePath_String]:=If[
+	StringStartsQ[filePath,ECL`$EmeraldPath],
+
+	(* general case - someone gave us the full path *)
+	Module[{cleanPath,package,fileName},
+		cleanPath=Drop[FileNameSplit[filePath],Length@FileNameSplit[ECL`$EmeraldPath]];
+		package=cleanPath[[1]];
+		fileName=FileNameJoin[cleanPath[[3;;]]];
+		ReloadFile[package<>"`",fileName]
+	],
+
+	(* for compatibility reasons, we assume that we use just file name in the Experiment` package *)
+	ReloadFile["Experiment`",filePath]
+];
 ReloadFile[package_String,fileName_String]:=Module[
 	{metadata, directory, context, mxPath, timing, previousValueQ,
 	loadFromMx, mxLoadSuccess},
@@ -1758,6 +1773,11 @@ getPacletVersion[pacName_]:=If[KernelVersionMatchQ["12.0"],
 	also: between 12.0 and 12.1, PacletInstall and friends moved from PacletManager` to System` contexts...
 *)
 (* this function is also called by a script on WEPC, so don't change it without checking that *)
+
+
+(* Authors definition for Packager`Private`loadPaclet *)
+Authors[Packager`Private`loadPaclet]:={"dirk.schild"};
+
 loadPaclet[paclet_Association,sllDir_String]:=Module[
 	{pacletName, pacletVersion, expectedKernelVersion, pacletFullname, previousVersion, uninstallablePaclets, localRepoPacletFolder},
 
@@ -2179,6 +2199,11 @@ hiddenFunctionDefinitions = <||>;
 
 
 
+
+
+(* Authors definition for Packager`Private`hideFunctionDefinitions *)
+Authors[Packager`Private`hideFunctionDefinitions]:={"dirk.schild"};
+
 hideFunctionDefinitions[funcs:{___Symbol}] := Module[{},
 	Map[
 		Module[{},
@@ -2240,6 +2265,11 @@ upValuesToDeleteP[caller_, callee_] :=  Alternatives[
 (*
 	If requested, load the provisional symbols by adding back their previously saved definitions 
 *)
+
+
+(* Authors definition for Packager`Private`loadHiddenFunctionDefinitions *)
+Authors[Packager`Private`loadHiddenFunctionDefinitions]:={"dirk.schild"};
+
 loadHiddenFunctionDefinitions[funcs:{___Symbol}]:=(	Map[Function[
   	(Language`ExtendedDefinition[#SymbolName] = #FullDefinitions);], 
 	KeyTake[hiddenFunctionDefinitions,funcs]

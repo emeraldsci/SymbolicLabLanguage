@@ -1406,7 +1406,7 @@ DefineOptions[ExperimentPrecipitate,
     RoboticPreparationOption,
     ProtocolOptions,
     SimulationOption,
-    PostProcessingOptions,
+    NonBiologyPostProcessingOptions,
     SubprotocolDescriptionOption,
     SamplesInStorageOptions,
     WorkCellOption
@@ -1488,11 +1488,11 @@ ExperimentPrecipitate[myContainers : ListableP[ObjectP[{Object[Container], Objec
   gatherTests = MemberQ[output, Tests];
 
   (* Remove temporal links and named objects. *)
-  {listedContainers, listedOptions} = removeLinks[ToList[myContainers], ToList[myOptions]];
+  {listedContainers, listedOptions} = {ToList[myContainers], ToList[myOptions]};
 
   (* Fetch the cache from listedOptions. *)
   cache = ToList[Lookup[listedOptions, Cache, {}]];
-  simulation = ToList[Lookup[listedOptions, Simulation, {}]];
+  simulation = Lookup[listedOptions, Simulation, Null];
 
   (* Convert our given containers into samples and sample index-matched options. *)
   containerToSampleResult = If[gatherTests,
@@ -1521,7 +1521,7 @@ ExperimentPrecipitate[myContainers : ListableP[ObjectP[{Object[Container], Objec
         Simulation -> simulation
       ],
       $Failed,
-      {Error::EmptyContainers, Error::ContainerEmptyWells, Error::WellDoesNotExist}
+      {Download::ObjectDoesNotExist, Error::EmptyContainers, Error::ContainerEmptyWells, Error::WellDoesNotExist}
     ]
   ];
 
@@ -1571,15 +1571,10 @@ ExperimentPrecipitate[mySamples : ListableP[ObjectP[Object[Sample]]], myOptions 
     SafeOptions[ExperimentPrecipitate, listedOptions, AutoCorrect -> False, Output -> {Result, Tests}],
     {SafeOptions[ExperimentPrecipitate, listedOptions, AutoCorrect -> False], {}}
   ];
+  inheritedSimulation = Lookup[safeOptions, Simulation, Null];
 
   (* Call sanitize-inputs to clean any named objects *)
-  {listedSanitizedSamples, safeOps, listedSanitizedOptions} = sanitizeInputs[listedSamples, safeOptions, listedOptions];
-
-  (* Call ValidInputLengthsQ to make sure all options are the right length *)
-  {validLengths, validLengthTests} = If[gatherTests,
-    ValidInputLengthsQ[ExperimentPrecipitate, {listedSanitizedSamples}, listedSanitizedOptions, Output -> {Result, Tests}],
-    {ValidInputLengthsQ[ExperimentPrecipitate, {listedSanitizedSamples}, listedSanitizedOptions], Null}
-  ];
+  {listedSanitizedSamples, safeOps, listedSanitizedOptions} = sanitizeInputs[listedSamples, safeOptions, listedOptions, Simulation -> inheritedSimulation];
 
   (* If the specified options don't match their patterns or if option lengths are invalid return $Failed *)
   If[MatchQ[safeOps, $Failed],
@@ -1590,6 +1585,12 @@ ExperimentPrecipitate[mySamples : ListableP[ObjectP[Object[Sample]]], myOptions 
       Preview -> Null,
       Simulation -> Null
     }]
+  ];
+
+  (* Call ValidInputLengthsQ to make sure all options are the right length *)
+  {validLengths, validLengthTests} = If[gatherTests,
+    ValidInputLengthsQ[ExperimentPrecipitate, {listedSanitizedSamples}, listedSanitizedOptions, Output -> {Result, Tests}],
+    {ValidInputLengthsQ[ExperimentPrecipitate, {listedSanitizedSamples}, listedSanitizedOptions], Null}
   ];
 
   (* If option lengths are invalid return $Failed (or the tests up to this point) *)
@@ -1628,7 +1629,6 @@ ExperimentPrecipitate[mySamples : ListableP[ObjectP[Object[Sample]]], myOptions 
 
   (* Fetch the cache from expandedSafeOps *)
   cache = Lookup[expandedSafeOps, Cache, {}];
-  inheritedSimulation = Lookup[expandedSafeOps, Simulation, Null];
 
   (*-- DOWNLOAD THE INFORMATION THAT WE NEED FOR OUR OPTION RESOLVER AND RESOURCE PACKET FUNCTION --*)
   (* NOTE: This download should download ALL of the fields that are needed by your option resolver and resource packets function. *)
@@ -1873,6 +1873,7 @@ ExperimentPrecipitate[mySamples : ListableP[ObjectP[Object[Sample]]], myOptions 
           Name -> Lookup[safeOps, Name],
           Upload -> Lookup[safeOps, Upload],
           Confirm -> Lookup[safeOps, Confirm],
+          CanaryBranch -> Lookup[safeOps, CanaryBranch],
           ParentProtocol -> Lookup[safeOps, ParentProtocol],
           Priority -> Lookup[safeOps, Priority],
           StartDate -> Lookup[safeOps, StartDate],
@@ -1932,11 +1933,14 @@ DefineOptions[
 
 resolveExperimentPrecipitateOptions[mySamples : {ObjectP[Object[Sample]]...}, myOptions : {_Rule...}, myResolutionOptions : OptionsPattern[resolveExperimentPrecipitateOptions]] := Module[
   {outputSpecification, output, gatherTests, messages, cache, listedOptions, currentSimulation, optionPrecisions, roundedExperimentOptions, optionPrecisionTests, invalidInputs, invalidOptions, mapThreadFriendlyOptions,
-    samplePacketFields, sampleFields, sampleModelFields, sampleModelPacketFields, moleculeFields, sampleModelPackets, containerObjectFields, containerObjectPacketFields, containerModelFields, containerModelPacketFields,
+    samplePacketFields, sampleFields, sampleModelFields, sampleModelPacketFields, sampleModelPackets, containerObjectFields, containerObjectPacketFields, containerModelFields, containerModelPacketFields,
     discardedSamplePackets, discardedInvalidInputs, deprecatedSamplePackets, deprecatedInvalidInputs, deprecatedTest, discardedTest, samplePackets, sampleContainerPackets, sampleContainerModelPackets, containerModelPackets,
     containerModelFromObjectPackets, reagentSampleModelPackets, reagentSamplePackets, cacheBall, fastCacheBall, allowedWorkCells, resolvedSterile, resolvedWorkCell, positionsOfFilteredSamples,
-    positionsOfPelletedAutomaticPrecipitatedSampleContainers, positionsOfPelletedAutomaticUnprecipitatedSampleContainers, positionsOfPelletedPrecipitatedSampleContainers, positionsOfPelletedUnprecipitatedSampleContainers,
-    groupsOfPrecipitatedSampleContainers, groupsOfUnprecipitatedSampleContainers, resolvedRoboticInstrument, resolvedPrecipitationReagents, resolvedPrecipitationReagentVolumes, resolvedPrecipitationMixTypes,
+    positionsOfPelletedSamples, positionsOfPelletedAutomaticPrecipitatedSampleContainers, positionsOfPelletedAutomaticUnprecipitatedSampleContainers, pelletResolvedPrecipitatedContainerOut, pelletResolvedUnprecipitatedContainerOut,
+    pelletResolvedPrecipitatedContainerOutNoWells, pelletResolvedUnprecipitatedContainerOutNoWells, pelletResolvedPrecipitatedContainerOutWells, pelletResolvedPrecipitatedContainerOutIndicies,
+    pelletResolvedUnprecipitatedContainerOutWells, pelletResolvedUnprecipitatedContainerOutIndicies, partiallyResolvedFilters, partiallyResolvedPrefilterPoreSizes, partiallyResolvedPrefilterMembraneMaterials,
+    partiallyResolvedPoreSizes, partiallyResolvedMembraneMaterials, partiallyResolvedFilterPositions, filterResolvedPrecipitatedContainerOutNoWells, filterResolvedUnprecipitatedContainerOutNoWells,
+    resolvedRoboticInstrument, resolvedPrecipitationReagents, resolvedPrecipitationReagentVolumes, resolvedPrecipitationMixTypes,
     resolvedPrecipitationMixInstruments, resolvedPrecipitationMixRates, resolvedPrecipitationMixTemperatures, resolvedPrecipitationMixTimes, resolvedNumberOfPrecipitationMixes, resolvedPrecipitationMixVolumes,
     resolvedPrecipitationInstruments, resolvedPrecipitationTemperatures, resolvedFiltrationInstruments, resolvedFiltrationTechniques, resolvedFilters, resolvedPrefilterPoreSizes, resolvedPrefilterMembraneMaterials,
     resolvedPoreSizes, resolvedMembraneMaterials, resolvedFilterPositions, resolvedFilterCentrifugeIntensities, resolvedFiltrationPressures, resolvedFiltrationTimes, resolvedFiltrateVolumes, resolvedFilterStorageConditions,
@@ -1946,7 +1950,9 @@ resolveExperimentPrecipitateOptions[mySamples : {ObjectP[Object[Sample]]...}, my
     resolvedWashSeparationTimes, resolvedDryingTemperatures, resolvedDryingTimes, resolvedResuspensionBuffers, resolvedResuspensionBufferVolumes, resolvedResuspensionBufferTemperatures,
     resolvedResuspensionBufferEquilibrationTimes, resolvedResuspensionMixTypes, resolvedResuspensionMixInstruments, resolvedResuspensionMixRates, resolvedResuspensionMixTemperatures, resolvedResuspensionMixTimes,
     resolvedNumberOfResuspensionMixes, resolvedResuspensionMixVolumes, resolvedPrecipitatedSampleLabels, resolvedPrecipitatedSampleContainerLabels, resolvedUnprecipitatedSampleLabels,
-    resolvedUnprecipitatedSampleContainerLabels, resolvedPrecipitatedSampleStorageConditions, resolvedUnprecipitatedSampleStorageConditions, resolvedPrecipitatedContainerOut, resolvedUnprecipitatedContainerOut,
+    resolvedUnprecipitatedSampleContainerLabels, partiallyResolvedPrecipitatedContainerOut, partiallyResolvedUnprecipitatedContainerOut, partiallyResolvedPrecipitatedContainerOutNoWells,
+    partiallyResolvedUnprecipitatedContainerOutNoWells, partiallyResolvedPrecipitatedContainerOutWells, partiallyResolvedPrecipitatedContainerOutIndicies, partiallyResolvedUnprecipitatedContainerOutWells,
+    partiallyResolvedUnprecipitatedContainerOutIndicies,resolvedPrecipitatedSampleStorageConditions, resolvedUnprecipitatedSampleStorageConditions, resolvedPrecipitatedContainerOut, resolvedUnprecipitatedContainerOut,
     resolvedFullPrecipitatedContainerOut, resolvedFullUnprecipitatedContainerOut, resolvedPrecipitatedContainerOutNoWells, resolvedUnprecipitatedContainerOutNoWells, resolvedPrecipitatedContainerOutWells,
     resolvedUnprecipitatedContainerOutWells, resolvedPrecipitatedContainerOutIndicies, resolvedUnprecipitatedContainerOutIndicies, separationTechniqueConflictingOptions, separationTechniqueConflictingOptionsTests,
     sterileInstrumentConflictingOptions, sterileInstrumentConflictingOptionsTests, precipitationWaitTimeConflictingOptions, precipitationWaitTimeConflictingOptionsTests, precipitationInstrumentConflictingOptions,
@@ -1954,7 +1960,7 @@ resolveExperimentPrecipitateOptions[mySamples : {ObjectP[Object[Sample]]...}, my
     dryingSolidConflictingOptionsTests, preIncubationTemperatureNotSpecified, preIncubationTemperatureNotSpecifiedTests, resuspensionBufferConflictingOptions, resuspensionBufferConflictingOptionsTests,
     preIncubationTimeNotSpecified, precipitationMixTypeConflictingOptions, precipitationMixTypeConflictingOptionsTests, washTypeConflictingOptions,
     washTypeConflictingOptionsTests, resuspensionTypeConflictingOptions, resuspensionTypeConflictingOptionsTests, email, resolvedOptions, resolvedPostProcessingOptions, userMaxIndex, maxIndex, userAndPelletMaxIndex,
-    positionsOfFilteredAutomaticSamples, filterBooleans, calculatedSampleVolumes, preIndexMatchedOptionsPerInput, filterTests, resolvedFilterOptions, newSimulation, resolvedPackPlateQPrecipitatedSamples,
+    filterBooleans, calculatedSampleVolumes, preIndexMatchedOptionsPerInput, filterTests, resolvedFilterOptions, newSimulation, resolvedPackPlateQPrecipitatedSamples,
     resolvedPackPlateQUnprecipitatedSamples, containerModels, containerModelFromObjects, reagentSampleModels, reagentSamples, resolvedTotalVolumes
   },
 
@@ -2316,12 +2322,12 @@ resolveExperimentPrecipitateOptions[mySamples : {ObjectP[Object[Sample]]...}, my
     resolvedResuspensionMixTimes,
     resolvedNumberOfResuspensionMixes,
     resolvedResuspensionMixVolumes,
-    resolvedFilters,
-    resolvedPrefilterPoreSizes,
-    resolvedPrefilterMembraneMaterials,
-    resolvedPoreSizes,
-    resolvedMembraneMaterials,
-    resolvedFilterPositions,
+    partiallyResolvedFilters,
+    partiallyResolvedPrefilterPoreSizes,
+    partiallyResolvedPrefilterMembraneMaterials,
+    partiallyResolvedPoreSizes,
+    partiallyResolvedMembraneMaterials,
+    partiallyResolvedFilterPositions,
     resolvedPrecipitatedSampleStorageConditions,
     resolvedUnprecipitatedSampleStorageConditions,
     resolvedFilterStorageConditions,
@@ -2329,14 +2335,14 @@ resolveExperimentPrecipitateOptions[mySamples : {ObjectP[Object[Sample]]...}, my
     resolvedPrecipitatedSampleContainerLabels,
     resolvedUnprecipitatedSampleLabels,
     resolvedUnprecipitatedSampleContainerLabels,
-    resolvedPrecipitatedContainerOut,
-    resolvedUnprecipitatedContainerOut,
-    resolvedPrecipitatedContainerOutNoWells,
-    resolvedUnprecipitatedContainerOutNoWells,
-    resolvedPrecipitatedContainerOutWells,
-    resolvedPrecipitatedContainerOutIndicies,
-    resolvedUnprecipitatedContainerOutWells,
-    resolvedUnprecipitatedContainerOutIndicies,
+    partiallyResolvedPrecipitatedContainerOut,
+    partiallyResolvedUnprecipitatedContainerOut,
+    partiallyResolvedPrecipitatedContainerOutNoWells,
+    partiallyResolvedUnprecipitatedContainerOutNoWells,
+    partiallyResolvedPrecipitatedContainerOutWells,
+    partiallyResolvedPrecipitatedContainerOutIndicies,
+    partiallyResolvedUnprecipitatedContainerOutWells,
+    partiallyResolvedUnprecipitatedContainerOutIndicies,
     filterBooleans,
     calculatedSampleVolumes,
     resolvedPackPlateQPrecipitatedSamples,
@@ -3548,120 +3554,211 @@ resolveExperimentPrecipitateOptions[mySamples : {ObjectP[Object[Sample]]...}, my
   ];
 
 
-  (*Get position of all samples that are to be pelleted and PrecipitatedSampleContainerOut, and a separate list of those NOT set by the user*)
-  positionsOfPelletedPrecipitatedSampleContainers = Flatten[Position[Lookup[myOptions, SeparationTechnique], Pellet]];
-  positionsOfPelletedAutomaticPrecipitatedSampleContainers = Flatten[Position[Transpose[{Lookup[myOptions, SeparationTechnique], Lookup[myOptions, PrecipitatedSampleContainerOut]}], {Pellet, Automatic}]];
-  (*Get position of all samples that are to be pelleted and UnprecipitatedSampleContainerOut, and a separate list of those NOT set by the user*)
-  positionsOfPelletedUnprecipitatedSampleContainers = Flatten[Position[Lookup[myOptions, SeparationTechnique], Pellet]];
-  positionsOfPelletedAutomaticUnprecipitatedSampleContainers = Flatten[Position[Transpose[{Lookup[myOptions, SeparationTechnique], Lookup[myOptions, UnprecipitatedSampleContainerOut]}], {Pellet, Automatic}]];
+  (*Get position of all samples that are to be pelleted, and a separate lists of the positions of automatic container specifications. *)
+  positionsOfPelletedSamples = Flatten[Position[Lookup[myOptions, SeparationTechnique], Pellet]];
+  {
+    positionsOfPelletedAutomaticPrecipitatedSampleContainers,
+    positionsOfPelletedAutomaticUnprecipitatedSampleContainers
+  } = Map[
+    Flatten[
+      Position[
+        Transpose[{
+          Lookup[myOptions, SeparationTechnique], Lookup[myOptions, #]
+        }],
+        {Pellet, Automatic}
+      ]
+    ]&,
+    {
+      PrecipitatedSampleContainerOut,
+      UnprecipitatedSampleContainerOut
+    }
+  ];
 
   (*----Resolve any Pelleting PrecipitatedSampleContainerOut that were not specified by the user ----*)
+  {
+    pelletResolvedPrecipitatedContainerOut,
+    pelletResolvedUnprecipitatedContainerOut,
+    pelletResolvedPrecipitatedContainerOutNoWells,
+    pelletResolvedUnprecipitatedContainerOutNoWells,
+    pelletResolvedPrecipitatedContainerOutWells,
+    pelletResolvedPrecipitatedContainerOutIndicies,
+    pelletResolvedUnprecipitatedContainerOutWells,
+    pelletResolvedUnprecipitatedContainerOutIndicies
+  } = If[
+    MemberQ[Lookup[myOptions, SeparationTechnique], Pellet],
+    Module[
+      {
+        groupsOfPrecipitatedSampleContainers, groupsOfUnprecipitatedSampleContainers, pelletedPackedContainersOut,
+        pelletedPackedContainerOutWells, packedPrecipitatedContainersOutNoWells, packedUnprecipitatedContainersOutNoWells,
+        packedPrecipitatedContainersOutWells, packedUnprecipitatedContainersOutWells
+      },
 
-  (* Skip if everything is just being Filtered *)
-  If[MemberQ[Lookup[myOptions, SeparationTechnique], Pellet],
-    (* Make sure that all of the samples that have to be centrifuged will be packed into DWPs efficiently, column wise. *)
-    groupsOfPrecipitatedSampleContainers =
-        If[Length[positionsOfPelletedAutomaticPrecipitatedSampleContainers] > 0,
-          (* Assign a unique ID to each group of samples that can be packed into the same container *)
-          Module[{allGroups, uniqueGroups, replaceRules},
+      (* Make sure that all of the samples that have to be centrifuged will be packed into DWPs efficiently, column wise. *)
+      groupsOfPrecipitatedSampleContainers = If[Length[positionsOfPelletedSamples] > 0,
+        (* Assign a unique ID to each group of samples that can be packed into the same container *)
+        Module[{allGroups, uniqueGroups, replaceRules},
 
-            (* Assign unique list based on Options that will affect whether something can be in the same plate or not *)
-            allGroups = Transpose[{
-              resolvedPrecipitationMixTypes[[positionsOfPelletedAutomaticPrecipitatedSampleContainers]],
-              resolvedWashMixTypes[[positionsOfPelletedAutomaticPrecipitatedSampleContainers]],
-              resolvedResuspensionMixTypes[[positionsOfPelletedAutomaticPrecipitatedSampleContainers]],
-              resolvedPrecipitationMixTemperatures[[positionsOfPelletedAutomaticPrecipitatedSampleContainers]],
-              resolvedWashMixTemperatures[[positionsOfPelletedAutomaticPrecipitatedSampleContainers]],
-              resolvedResuspensionMixTemperatures[[positionsOfPelletedAutomaticPrecipitatedSampleContainers]],
-              resolvedNumberOfWashes[[positionsOfPelletedAutomaticPrecipitatedSampleContainers]],
-              Lookup[myOptions, TargetPhase][[positionsOfPelletedAutomaticPrecipitatedSampleContainers]]
-            }];
+          (* Assign unique list based on Options that will affect whether something can be in the same plate or not *)
+          allGroups = Transpose[{
+            resolvedPrecipitationMixTypes[[positionsOfPelletedSamples]],
+            resolvedWashMixTypes[[positionsOfPelletedSamples]],
+            resolvedResuspensionMixTypes[[positionsOfPelletedSamples]],
+            resolvedPrecipitationMixTemperatures[[positionsOfPelletedSamples]],
+            resolvedWashMixTemperatures[[positionsOfPelletedSamples]],
+            resolvedResuspensionMixTemperatures[[positionsOfPelletedSamples]],
+            resolvedNumberOfWashes[[positionsOfPelletedSamples]],
+            Lookup[myOptions, TargetPhase][[positionsOfPelletedSamples]]
+          }];
 
-            (* Remove all the duplicate groups so we have only the unique ones *)
-            uniqueGroups = DeleteDuplicates[allGroups];
+          (* Remove all the duplicate groups so we have only the unique ones *)
+          uniqueGroups = DeleteDuplicates[allGroups];
 
-            (* Using the unique groups, create a list of rules to replace with newly generated group IDs *)
-            replaceRules = # -> CreateUniqueLabel["group"] & /@ uniqueGroups;
+          (* Using the unique groups, create a list of rules to replace with newly generated group IDs *)
+          replaceRules = # -> CreateUniqueLabel["group"] & /@ uniqueGroups;
 
-            (* Make a list that'll correspond to the samples with a unique group ID, that's what we return *)
-            Replace[replaceRules] /@ allGroups
+          (* Make a list that'll correspond to the samples with a unique group ID, that's what we return *)
+          Replace[replaceRules] /@ allGroups
+        ],
+        {}
+      ];
+
+      (*  ----Resolve any Pelleting UnprecipitatedSampleContainerOut that were not specified by the user ----
+       Make sure that all of the samples that have to be centrifuged will be packed into DWPs efficiently, column wise. *)
+      groupsOfUnprecipitatedSampleContainers = If[Length[positionsOfPelletedSamples] > 0,
+        (*Assign a unique ID to each group of samples that can be packed into the same container*)
+        Module[{allGroups, uniqueGroups, replaceRules},
+
+          (*Assign unique list based on Options that will affect if something can be in the same plate or not *)
+          allGroups = Transpose[{
+            resolvedPrecipitationMixTypes[[positionsOfPelletedSamples]],
+            resolvedWashMixTypes[[positionsOfPelletedSamples]],
+            resolvedResuspensionMixTypes[[positionsOfPelletedSamples]],
+            resolvedPrecipitationMixTemperatures[[positionsOfPelletedSamples]],
+            resolvedWashMixTemperatures[[positionsOfPelletedSamples]],
+            resolvedResuspensionMixTemperatures[[positionsOfPelletedSamples]],
+            resolvedNumberOfWashes[[positionsOfPelletedSamples]],
+            Lookup[myOptions, TargetPhase][[positionsOfPelletedSamples]]
+          }];
+
+          (*Remove all the duplicate groups so we have only the unique ones *)
+          uniqueGroups = DeleteDuplicates[allGroups];
+
+          (*Using the unique groups, create a list of reules to replace with newly generated group IDs *)
+          replaceRules = # -> CreateUniqueLabel["group"] & /@ uniqueGroups;
+
+          (*Make a list that'll correspond to the samples with a unique group ID, that's what we return *)
+          Replace[replaceRules] /@ allGroups
+        ],
+        {}
+      ];
+
+      (* Pack containers of pelleted samples. *)
+      {pelletedPackedContainersOut, pelletedPackedContainerOutWells} = PackContainers[
+        Join[
+          Lookup[myOptions, PrecipitatedSampleContainerOut][[positionsOfPelletedSamples]],
+          Lookup[myOptions, UnprecipitatedSampleContainerOut][[positionsOfPelletedSamples]]
+        ] /. Null -> Automatic,
+        Flatten[{
+          resolvedPackPlateQPrecipitatedSamples[[positionsOfPelletedSamples]],
+          resolvedPackPlateQUnprecipitatedSamples[[positionsOfPelletedSamples]]
+        }],
+        Flatten[{
+          resolvedTotalVolumes[[positionsOfPelletedSamples]],
+          resolvedTotalVolumes[[positionsOfPelletedSamples]]
+        }],
+        Flatten[{groupsOfPrecipitatedSampleContainers, groupsOfUnprecipitatedSampleContainers}],
+        Sterile -> resolvedSterile,
+        FirstNewContainerIndex -> userMaxIndex + 1,
+        LiquidHandlerCompatible -> True
+      ];
+
+      (* Separate results into precipitated and unprecipitated containers and wells. *)
+      {
+        {
+          packedPrecipitatedContainersOutNoWells,
+          packedUnprecipitatedContainersOutNoWells
+        },
+        {
+          packedPrecipitatedContainersOutWells,
+          packedUnprecipitatedContainersOutWells
+        }
+      } = {
+        Partition[
+          pelletedPackedContainersOut,
+          Length[positionsOfPelletedSamples]
+        ],
+        Partition[
+          pelletedPackedContainerOutWells,
+          Length[positionsOfPelletedSamples]
+        ]
+      };
+
+      (* Return packed pelleting container information. *)
+      Join[
+        (* Replace Automatic values with packed containers and wells. *)
+        MapThread[
+          Function[{paritallyResolvedContainers, packedContainersNoWells, packedContainerWells, packedContainerPositions},
+            ReplacePart[
+              paritallyResolvedContainers,
+              MapThread[
+                If[MatchQ[paritallyResolvedContainers[[#1]], Automatic],
+                  #1 -> {#2, #3},
+                  Nothing
+                ]&,
+                {packedContainerPositions, packedContainerWells, packedContainersNoWells}
+              ]
+            ]
           ],
-          {}
-        ];
-
-    (*  ----Resolve any Pelleting UnprecipitatedSampleContainerOut that were not specified by the user ----
-     Make sure that all of the samples that have to be centrifuged will be packed into DWPs efficiently, column wise. *)
-    groupsOfUnprecipitatedSampleContainers =
-        If[Length[positionsOfPelletedAutomaticUnprecipitatedSampleContainers] > 0,
-          (*Assign a unique ID to each group of samples that can be packed into the same container*)
-          Module[{allGroups, uniqueGroups, replaceRules},
-
-            (*Assign unique list based on Options that will affect if something can be in the same plate or not *)
-            allGroups = Transpose[{
-              resolvedPrecipitationMixTypes[[positionsOfPelletedAutomaticUnprecipitatedSampleContainers]],
-              resolvedWashMixTypes[[positionsOfPelletedAutomaticUnprecipitatedSampleContainers]],
-              resolvedResuspensionMixTypes[[positionsOfPelletedAutomaticUnprecipitatedSampleContainers]],
-              resolvedPrecipitationMixTemperatures[[positionsOfPelletedAutomaticUnprecipitatedSampleContainers]],
-              resolvedWashMixTemperatures[[positionsOfPelletedAutomaticUnprecipitatedSampleContainers]],
-              resolvedResuspensionMixTemperatures[[positionsOfPelletedAutomaticUnprecipitatedSampleContainers]],
-              resolvedNumberOfWashes[[positionsOfPelletedAutomaticUnprecipitatedSampleContainers]],
-              Lookup[myOptions, TargetPhase][[positionsOfPelletedAutomaticUnprecipitatedSampleContainers]]
-            }];
-
-            (*Remove all the duplicate groups so we have only the unique ones *)
-            uniqueGroups = DeleteDuplicates[allGroups];
-
-            (*Using the unique groups, create a list of reules to replace with newly generated group IDs *)
-            replaceRules = # -> CreateUniqueLabel["group"] & /@ uniqueGroups;
-
-            (*Make a list that'll correspond to the samples with a unique group ID, that's what we return *)
-            Replace[replaceRules] /@ allGroups
+          {
+            {partiallyResolvedPrecipitatedContainerOut, partiallyResolvedUnprecipitatedContainerOut},
+            {packedPrecipitatedContainersOutNoWells, packedUnprecipitatedContainersOutNoWells},
+            {packedPrecipitatedContainersOutWells, packedUnprecipitatedContainersOutWells},
+            {positionsOfPelletedSamples, positionsOfPelletedSamples}
+          }
+        ],
+        (* Return resolved, packed container values (wells, indexes, containers) for use when building the full ContainerOut options. *)
+        MapThread[
+          Function[{paritallyResolvedValue, packedContainerValues, packedContainerPositions},
+            ReplacePart[
+              paritallyResolvedValue,
+              MapThread[
+                #1 -> #2&,
+                {packedContainerPositions, packedContainerValues}
+              ]
+            ]
           ],
-          {}
-        ];
-
-    (* Set the wells and containers needed by calling PackContainers *)
-    If[(Length[positionsOfPelletedAutomaticPrecipitatedSampleContainers] + Length[positionsOfPelletedAutomaticUnprecipitatedSampleContainers] > 0),
-      {resolvedPrecipitatedContainerOutNoWells[[positionsOfPelletedAutomaticPrecipitatedSampleContainers]], resolvedUnprecipitatedContainerOutNoWells[[positionsOfPelletedAutomaticUnprecipitatedSampleContainers]],
-        resolvedPrecipitatedContainerOutWells[[positionsOfPelletedAutomaticPrecipitatedSampleContainers]], resolvedUnprecipitatedContainerOutWells[[positionsOfPelletedAutomaticUnprecipitatedSampleContainers]]} =
-          Module[{containersOut, containerOutWells, packedResults},
-            {containersOut, containerOutWells} =
-                PackContainers[
-                  Flatten[{Lookup[myOptions, PrecipitatedSampleContainerOut][[positionsOfPelletedAutomaticPrecipitatedSampleContainers]], Lookup[myOptions, UnprecipitatedSampleContainerOut][[positionsOfPelletedAutomaticUnprecipitatedSampleContainers]]}] /. Null -> Automatic,
-                  Flatten[{resolvedPackPlateQPrecipitatedSamples[[positionsOfPelletedAutomaticPrecipitatedSampleContainers]], resolvedPackPlateQUnprecipitatedSamples[[positionsOfPelletedAutomaticUnprecipitatedSampleContainers]]}],
-                  Flatten[{resolvedTotalVolumes[[positionsOfPelletedAutomaticPrecipitatedSampleContainers]], resolvedTotalVolumes[[positionsOfPelletedAutomaticUnprecipitatedSampleContainers]]}],
-                  Flatten[{groupsOfPrecipitatedSampleContainers, groupsOfUnprecipitatedSampleContainers}],
-                  Sterile -> resolvedSterile,
-                  FirstNewContainerIndex -> userMaxIndex + 1,
-                  LiquidHandlerCompatible -> True
-                ];
-            packedResults = {TakeList[containersOut, {Length[positionsOfPelletedAutomaticPrecipitatedSampleContainers], Length[positionsOfPelletedAutomaticUnprecipitatedSampleContainers]}],
-              TakeList[containerOutWells, {Length[positionsOfPelletedAutomaticPrecipitatedSampleContainers], Length[positionsOfPelletedAutomaticUnprecipitatedSampleContainers]}]};
-
-            {packedResults[[1]][[1]], packedResults[[1]][[2]], packedResults[[2]][[1]], packedResults[[2]][[2]]}
-
-          ];
-    ];
-
-  (* Use that PackContainers output to also Set Full container Out and Index only *)
-  If[Length[positionsOfPelletedAutomaticPrecipitatedSampleContainers] > 0,
-    resolvedPrecipitatedContainerOut[[positionsOfPelletedAutomaticPrecipitatedSampleContainers]] = Transpose[{
-      resolvedPrecipitatedContainerOutWells[[positionsOfPelletedAutomaticPrecipitatedSampleContainers]],
-      resolvedPrecipitatedContainerOutNoWells[[positionsOfPelletedAutomaticPrecipitatedSampleContainers]]
-    }];
-    resolvedPrecipitatedContainerOutIndicies[[positionsOfPelletedAutomaticPrecipitatedSampleContainers]] =
-        resolvedPrecipitatedContainerOutNoWells[[positionsOfPelletedAutomaticPrecipitatedSampleContainers]][[All, 1]];
+          {
+            {
+              partiallyResolvedPrecipitatedContainerOutNoWells, partiallyResolvedUnprecipitatedContainerOutNoWells,
+              partiallyResolvedPrecipitatedContainerOutWells, partiallyResolvedPrecipitatedContainerOutIndicies,
+              partiallyResolvedUnprecipitatedContainerOutWells, partiallyResolvedUnprecipitatedContainerOutIndicies
+            },
+            {
+              packedPrecipitatedContainersOutNoWells, packedUnprecipitatedContainersOutNoWells,
+              packedPrecipitatedContainersOutWells, packedPrecipitatedContainersOutNoWells[[All, 1]],
+              packedUnprecipitatedContainersOutWells, packedUnprecipitatedContainersOutNoWells[[All, 1]]
+            },
+            {
+              positionsOfPelletedSamples, positionsOfPelletedSamples,
+              positionsOfPelletedSamples, positionsOfPelletedSamples,
+              positionsOfPelletedSamples, positionsOfPelletedSamples
+            }
+          }
+        ]
+      ]
+    ],
+    (* If not pelleting, then just return partially resolved container info. *)
+    {
+      partiallyResolvedPrecipitatedContainerOut,
+      partiallyResolvedUnprecipitatedContainerOut,
+      partiallyResolvedPrecipitatedContainerOutNoWells,
+      partiallyResolvedUnprecipitatedContainerOutNoWells,
+      partiallyResolvedPrecipitatedContainerOutWells,
+      partiallyResolvedPrecipitatedContainerOutIndicies,
+      partiallyResolvedUnprecipitatedContainerOutWells,
+      partiallyResolvedUnprecipitatedContainerOutIndicies
+    }
   ];
-  If[Length[positionsOfPelletedAutomaticUnprecipitatedSampleContainers] > 0,
-    resolvedUnprecipitatedContainerOut[[positionsOfPelletedAutomaticUnprecipitatedSampleContainers]] = Transpose[{
-      resolvedUnprecipitatedContainerOutWells[[positionsOfPelletedAutomaticUnprecipitatedSampleContainers]],
-      resolvedUnprecipitatedContainerOutNoWells[[positionsOfPelletedAutomaticUnprecipitatedSampleContainers]]
-    }];
-    resolvedUnprecipitatedContainerOutIndicies[[positionsOfPelletedAutomaticUnprecipitatedSampleContainers]] =
-        resolvedUnprecipitatedContainerOutNoWells[[positionsOfPelletedAutomaticUnprecipitatedSampleContainers]][[All, 1]];
-  ];
-
-];
 
   (*----Resolve ExperimentFilter Options----*)
   (* Grab the positions of all samples to be filtered so we can run them through the FilterOptionResolver *)
@@ -3709,10 +3806,10 @@ resolveExperimentPrecipitateOptions[mySamples : {ObjectP[Object[Sample]]...}, my
         RetentateWashDrainTime -> resolvedWashSeparationTimes[[positionsOfFilteredSamples]],
         RetentateWashCentrifugeIntensity -> resolvedWashCentrifugeIntensities[[positionsOfFilteredSamples]],
         RetentateWashPressure -> resolvedWashPressures[[positionsOfFilteredSamples]],
-        RetentateContainerOut -> (resolvedPrecipitatedContainerOutNoWells /. Null -> Automatic)[[positionsOfFilteredSamples]], (* Null is okay for Precipitate ContainersOut but not for Filter *)
-        FiltrateContainerOut -> (resolvedUnprecipitatedContainerOutNoWells /. Null -> Automatic)[[positionsOfFilteredSamples]], (* Null is okay for Precipitate ContainersOut but not for Filter *)
-        RetentateDestinationWell -> (resolvedPrecipitatedContainerOutWells /. Null -> Automatic)[[positionsOfFilteredSamples]], (* Null is okay for Precipitate ContainersOut but not for Filter *)
-        FiltrateDestinationWell -> (resolvedUnprecipitatedContainerOutWells /. Null -> Automatic)[[positionsOfFilteredSamples]], (* Null is okay for Precipitate ContainersOut but not for Filter *)
+        RetentateContainerOut -> (pelletResolvedPrecipitatedContainerOutNoWells /. Null -> Automatic)[[positionsOfFilteredSamples]], (* Null is okay for Precipitate ContainersOut but not for Filter *)
+        FiltrateContainerOut -> (pelletResolvedUnprecipitatedContainerOutNoWells /. Null -> Automatic)[[positionsOfFilteredSamples]], (* Null is okay for Precipitate ContainersOut but not for Filter *)
+        RetentateDestinationWell -> (pelletResolvedPrecipitatedContainerOutWells /. Null -> Automatic)[[positionsOfFilteredSamples]], (* Null is okay for Precipitate ContainersOut but not for Filter *)
+        FiltrateDestinationWell -> (pelletResolvedUnprecipitatedContainerOutWells /. Null -> Automatic)[[positionsOfFilteredSamples]], (* Null is okay for Precipitate ContainersOut but not for Filter *)
         Target -> (Lookup[myOptions, TargetPhase] /. {Solid -> Retentate, Liquid -> Filtrate})[[positionsOfFilteredSamples]], (* Filter's Target needs to be changed from Solid/Liquid to Retentate/Filtrate respectively *)
         RetentateCollectionMethod -> (resolvedResuspensionBuffers /. {ObjectP[] -> Resuspend, None -> Null})[[positionsOfFilteredSamples]], (* Filter requires these inputs, not a number *)
         CollectRetentate -> (resolvedResuspensionBuffers /. {ObjectP[] -> True, None -> False, Null -> False})[[positionsOfFilteredSamples]],
@@ -3739,46 +3836,137 @@ resolveExperimentPrecipitateOptions[mySamples : {ObjectP[Object[Sample]]...}, my
   ];
 
   (* If any of the samples were filed, insert the resolved filter options into the correct resolved option indicies *)
-  If[Length[positionsOfFilteredSamples] > 0,
-    resolvedFilters[[positionsOfFilteredSamples]] = Flatten[Lookup[resolvedFilterOptions, Filter]];
-    resolvedPrefilterPoreSizes[[positionsOfFilteredSamples]] = Flatten[Lookup[resolvedFilterOptions, PrefilterPoreSize]];
-    resolvedPrefilterMembraneMaterials[[positionsOfFilteredSamples]] = Flatten[Lookup[resolvedFilterOptions, PrefilterMembraneMaterial]];
-    resolvedPoreSizes[[positionsOfFilteredSamples]] = Flatten[Lookup[resolvedFilterOptions, PoreSize]];
-    resolvedMembraneMaterials[[positionsOfFilteredSamples]] = Flatten[Lookup[resolvedFilterOptions, MembraneMaterial]];
-    resolvedFilterPositions[[positionsOfFilteredSamples]] = Flatten[Lookup[resolvedFilterOptions, FilterPosition]];
-    resolvedPrecipitatedContainerOutNoWells[[positionsOfFilteredSamples]] =
+  {
+    resolvedFilters,
+    resolvedPrefilterPoreSizes,
+    resolvedPrefilterMembraneMaterials,
+    resolvedPoreSizes,
+    resolvedMembraneMaterials,
+    resolvedFilterPositions,
+    resolvedPrecipitatedContainerOutWells,
+    resolvedUnprecipitatedContainerOutWells
+  } = If[Length[positionsOfFilteredSamples] > 0,
+    MapThread[
+      Function[{pelletResolvedList, filterOptionName},
         (* Need to flatten differently if there is only one sample *)
-        If[Length[positionsOfFilteredSamples] > 1,
-          Flatten[Lookup[resolvedFilterOptions, RetentateContainerOut], 1],
-          Flatten[Lookup[resolvedFilterOptions, RetentateContainerOut]]
-        ];
-    resolvedUnprecipitatedContainerOutNoWells[[positionsOfFilteredSamples]] =
-        (* Need to flatten differently if there is only one sample *)
-        If[Length[positionsOfFilteredSamples] > 1,
-          Flatten[Lookup[resolvedFilterOptions, FiltrateContainerOut], 1],
-          Flatten[Lookup[resolvedFilterOptions, FiltrateContainerOut]]
-        ];
-    resolvedPrecipitatedContainerOutWells[[positionsOfFilteredSamples]] = Flatten[Lookup[resolvedFilterOptions, RetentateDestinationWell]];
-    resolvedUnprecipitatedContainerOutWells[[positionsOfFilteredSamples]] = Flatten[Lookup[resolvedFilterOptions, FiltrateDestinationWell]];
+        ReplacePart[
+          pelletResolvedList,
+          MapThread[
+            #1 -> #2&,
+            {
+              positionsOfFilteredSamples,
+              If[Length[positionsOfFilteredSamples] > 1,
+                Flatten[Lookup[resolvedFilterOptions, filterOptionName], 1],
+                Flatten[Lookup[resolvedFilterOptions, filterOptionName]]
+              ]
+            }
+          ]
+        ]
+      ],
+      {
+        {
+          partiallyResolvedFilters, partiallyResolvedPrefilterPoreSizes,
+          partiallyResolvedPrefilterMembraneMaterials, partiallyResolvedPoreSizes,
+          partiallyResolvedMembraneMaterials, partiallyResolvedFilterPositions,
+          pelletResolvedPrecipitatedContainerOutWells, pelletResolvedUnprecipitatedContainerOutWells
+        },
+        {
+          Filter, PrefilterPoreSize,
+          PrefilterMembraneMaterial, PoreSize,
+          MembraneMaterial, FilterPosition,
+          RetentateDestinationWell, FiltrateDestinationWell
+        }
+      }
+    ],
+    (* If nothing is filtered, then just return partially resolved values (which should all be Null or equivalent). *)
+    {
+      partiallyResolvedFilters,
+      partiallyResolvedPrefilterPoreSizes,
+      partiallyResolvedPrefilterMembraneMaterials,
+      partiallyResolvedPoreSizes,
+      partiallyResolvedMembraneMaterials,
+      partiallyResolvedFilterPositions,
+      pelletResolvedPrecipitatedContainerOutWells,
+      pelletResolvedUnprecipitatedContainerOutWells
+    }
   ];
 
-    (* Calculate the maximum indicies used so far to ensure the assigned indicies do not conflict *)
-    userAndPelletMaxIndex = Max[Select[Flatten[{resolvedPrecipitatedContainerOutIndicies, resolvedUnprecipitatedContainerOutIndicies, 0}], IntegerQ]];
-    positionsOfFilteredAutomaticSamples = Flatten[Position[Transpose[{Lookup[myOptions, SeparationTechnique], Lookup[myOptions, PrecipitatedSampleContainerOut]}], {Filter, Automatic}]];
+  {
+    filterResolvedPrecipitatedContainerOutNoWells,
+    filterResolvedUnprecipitatedContainerOutNoWells
+  } = If[Length[positionsOfFilteredSamples] > 0,
+    MapThread[
+      Function[{pelletResolvedList, filterOptionName},
+        (* Need to flatten differently if there is only one sample *)
+        ReplacePart[
+          pelletResolvedList,
+          MapThread[
+            #1 -> #2&,
+            {
+              positionsOfFilteredSamples,
+              Flatten[Lookup[resolvedFilterOptions, filterOptionName], 1]
+            }
+          ]
+        ]
+      ],
+      {
+        {pelletResolvedPrecipitatedContainerOutNoWells, pelletResolvedUnprecipitatedContainerOutNoWells},
+        {RetentateContainerOut, FiltrateContainerOut}
+      }
+    ],
+    {pelletResolvedPrecipitatedContainerOutNoWells, pelletResolvedUnprecipitatedContainerOutNoWells}
+  ];
 
-    (* Increase the Index for all filtered samples based on the userAndPelletMaxIndex set based on resolvedPrecipitatedContainerOutIndicies which currently does not reflect samples from the Filter resolver*)
-    resolvedPrecipitatedContainerOutNoWells[[positionsOfFilteredAutomaticSamples]] = Map[
-      If[
-        MatchQ[#, Null | {Null, Null}], (*This is to handle the formatting issues of the container being Null *)
-        Null,
-        {#[[1]] + userAndPelletMaxIndex, #[[2]]}
-      ]&,
-      resolvedPrecipitatedContainerOutNoWells[[positionsOfFilteredAutomaticSamples]]];
+  (* Calculate the maximum indicies used so far to ensure the assigned indicies do not conflict *)
+  userAndPelletMaxIndex = Max[Select[Flatten[{resolvedPrecipitatedContainerOutIndicies, resolvedUnprecipitatedContainerOutIndicies, 0}], IntegerQ]];
 
-    (* PrecipitatedContainerOut from Filter: This chunk of code combines assigned wells and NoWell variables into a proper containerOut format *)
-    (* Don't bother assembling the ContainerOut if none were set to Automatic *)
-    If[Length[positionsOfFilteredAutomaticSamples] > 0,
-      resolvedPrecipitatedContainerOut[[positionsOfFilteredAutomaticSamples]] =
+  {
+    {
+      resolvedPrecipitatedContainerOutNoWells,
+      resolvedPrecipitatedContainerOut
+    },
+    {
+      resolvedUnprecipitatedContainerOutNoWells,
+      resolvedUnprecipitatedContainerOut
+    }
+  } = MapThread[
+    Function[
+      {
+        containerOutField, partiallyResolvedContainersOutNoWells, resolvedContainerOutWells,
+        partiallyResolvedContainersOut
+      },
+      Module[
+        {
+          positionsOfFilteredAutomaticSamples, resolvedAutomaticContainersOutNoWells, resolvedAutomaticContainersOut
+        },
+
+        positionsOfFilteredAutomaticSamples = Flatten[
+          Position[
+            Transpose[{
+              Lookup[myOptions, SeparationTechnique],
+              Lookup[myOptions, containerOutField]
+            }],
+            {Filter, Automatic}
+          ]
+        ];
+
+        (* Increase the Index for all filtered samples based on the userAndPelletMaxIndex set based on
+        resolvedPrecipitated/UnprecipitatedContainerOutIndicies which currently does not reflect samples from the Filter resolver *)
+        resolvedAutomaticContainersOutNoWells = If[Length[positionsOfFilteredAutomaticSamples] > 0,
+          Map[
+            If[
+              MatchQ[#, Null | {Null, Null}], (*This is to handle the formatting issues of the container being Null *)
+              Null,
+              {#[[1]] + userAndPelletMaxIndex, #[[2]]}
+            ]&,
+            partiallyResolvedContainersOutNoWells[[positionsOfFilteredAutomaticSamples]]
+          ],
+          Null
+        ];
+
+        (* This chunk of code combines assigned wells and NoWell variables into a proper ContainerOut format *)
+        (* Don't bother assembling the ContainerOut if none were set to Automatic *)
+        resolvedAutomaticContainersOut = If[Length[positionsOfFilteredAutomaticSamples] > 0,
           MapThread[
             Function[{containerWells, noWellContainers},
               If[
@@ -3788,74 +3976,78 @@ resolveExperimentPrecipitateOptions[mySamples : {ObjectP[Object[Sample]]...}, my
               ]
             ],
             {
-              resolvedPrecipitatedContainerOutWells[[positionsOfFilteredAutomaticSamples]],
-              resolvedPrecipitatedContainerOutNoWells[[positionsOfFilteredAutomaticSamples]]
+              resolvedContainerOutWells[[positionsOfFilteredAutomaticSamples]],
+              resolvedAutomaticContainersOutNoWells
             }
-          ]
-    ];
-
-  (* Calculate which samples need to be adjusted for Unprecipitated container outs *)
-  positionsOfFilteredAutomaticSamples = Flatten[Position[Transpose[{Lookup[myOptions, SeparationTechnique], Lookup[myOptions, UnprecipitatedSampleContainerOut]}], {Filter, Automatic}]];
-  resolvedUnprecipitatedContainerOutNoWells[[positionsOfFilteredAutomaticSamples]] = Map[
-    If[
-      MatchQ[#, Null | {Null, Null}],
-      Null,
-      {#[[1]] + userAndPelletMaxIndex, #[[2]]}
-    ]&,
-    resolvedUnprecipitatedContainerOutNoWells[[positionsOfFilteredAutomaticSamples]]];
-
-  (* UnprecipitatedContainerOut from Filter: This chunk of code combines assigned wells and NoWell variables into a proper containerOut format *)
-  (* Don't bother assembling the ContainerOut if none were set to Automatic *)
-  If[Length[positionsOfFilteredAutomaticSamples] > 0,
-    resolvedUnprecipitatedContainerOut[[positionsOfFilteredAutomaticSamples]] =
-        MapThread[
-          Function[{containerWells, noWellContainers},
-            If[
-              MatchQ[noWellContainers, Null], (*This is to handle the formatting issues of the container being Null *)
-              Null,
-              {containerWells, noWellContainers}
-            ]
           ],
-          {
-            resolvedUnprecipitatedContainerOutWells[[positionsOfFilteredAutomaticSamples]],
-            resolvedUnprecipitatedContainerOutNoWells[[positionsOfFilteredAutomaticSamples]]
-          }
+          Null
+        ];
+
+        If[Length[positionsOfFilteredAutomaticSamples] > 0,
+          MapThread[
+            Function[{partiallyResolvedValues, resolvedAutomaticValues},
+              ReplacePart[
+                partiallyResolvedValues,
+                MapThread[#1 -> #2&, {positionsOfFilteredAutomaticSamples, resolvedAutomaticValues}]
+              ]
+            ],
+            {
+              {partiallyResolvedContainersOutNoWells, partiallyResolvedContainersOut},
+              {resolvedAutomaticContainersOutNoWells, resolvedAutomaticContainersOut}
+            }
+          ],
+          {partiallyResolvedContainersOutNoWells, partiallyResolvedContainersOut}
         ]
+      ]
+    ],
+    {
+      {PrecipitatedSampleContainerOut, UnprecipitatedSampleContainerOut},
+      {
+        filterResolvedPrecipitatedContainerOutNoWells,
+        filterResolvedUnprecipitatedContainerOutNoWells
+      },
+      {
+        resolvedPrecipitatedContainerOutWells,
+        resolvedUnprecipitatedContainerOutWells
+      },
+      {
+        pelletResolvedPrecipitatedContainerOut,
+        pelletResolvedUnprecipitatedContainerOut
+      }
+    }
   ];
 
   maxIndex = Max[Select[Flatten[{resolvedPrecipitatedContainerOutIndicies, resolvedUnprecipitatedContainerOutIndicies, 0}], IntegerQ]];
 
   (* The containers are now fully resolved, but some may not have the proper format so we'll need to set them for the hidden container options that will be passed down from the resolver *)
   (* resolve FullPrecipitatedContainerOut *)
-  resolvedFullPrecipitatedContainerOut =
-      MapThread[
-        Function[{containerWells, noWellContainers},
-          (* If the user specified a Well and a Container, then it isn't actually going to resolve fully above, and we need to add the Index here *)
-          If[MatchQ[noWellContainers, ObjectP[Model[Container]]],
-            {containerWells, {(ToExpression[CreateUniqueLabel[""]] + maxIndex), noWellContainers}},
-            {containerWells, noWellContainers}
-          ]
-        ],
-        {
-          resolvedPrecipitatedContainerOutWells,
-          resolvedPrecipitatedContainerOutNoWells
-        }
-      ];
+  resolvedFullPrecipitatedContainerOut = MapThread[
+    Function[{containerWells, noWellContainers},
+      (* If the user specified a Well and a Container, then it isn't actually going to resolve fully above, and we need to add the Index here *)
+      If[MatchQ[noWellContainers, ObjectP[Model[Container]]],
+        {containerWells, {(ToExpression[CreateUniqueLabel[""]] + maxIndex), noWellContainers}},
+        {containerWells, noWellContainers}
+      ]
+    ],
+    {
+      resolvedPrecipitatedContainerOutWells,
+      resolvedPrecipitatedContainerOutNoWells
+    }
+  ];
 
-  resolvedFullUnprecipitatedContainerOut =
-      MapThread[
-        Function[{containerWells, noWellContainers},
-          (* If the user specified a Well and a Container, then it isn't actually going to resolve fully above, and we need to add the Index here *)
-          If[MatchQ[noWellContainers, ObjectP[Model[Container]]],
-            {containerWells, {(ToExpression[CreateUniqueLabel[""]] + maxIndex), noWellContainers}},
-            {containerWells, noWellContainers}
-          ]
-        ],
-        {
-          resolvedUnprecipitatedContainerOutWells,
-          resolvedUnprecipitatedContainerOutNoWells
-        }
-      ];
+  resolvedFullUnprecipitatedContainerOut = MapThread[
+    Function[{containerWells, noWellContainers},
+      (* If the user specified a Well and a Container, then it isn't actually going to resolve fully above, and we need to add the Index here *)
+      If[MatchQ[noWellContainers, ObjectP[Model[Container]]],
+        {containerWells, {(ToExpression[CreateUniqueLabel[""]] + maxIndex), noWellContainers}},
+        {containerWells, noWellContainers}
+      ]
+    ],
+    {
+      resolvedUnprecipitatedContainerOutWells,
+      resolvedUnprecipitatedContainerOutNoWells
+    }
+  ];
 
   (* Resolve Post Processing Options *)
   resolvedPostProcessingOptions = resolvePostProcessingOptions[myOptions];
@@ -3871,10 +4063,14 @@ resolveExperimentPrecipitateOptions[mySamples : {ObjectP[Object[Sample]]...}, my
   (****************START Check for conflicting Options*****************)
 
   (* SeparationTechnique / FiltrationInstrument / FiltrationTechnique / Filter / FilterPosition / FiltrationTime / PelletVolume / PelletCentrifuge /
-	PelletCentrifugeIntensity / PelletCentrifugeTime / SupernatantVolume / SupernatantContainer / SupernatantStorageCondition conflicting options. *)
+  PelletCentrifugeIntensity / PelletCentrifugeTime / SupernatantVolume / SupernatantContainer / SupernatantStorageCondition conflicting options. *)
   separationTechniqueConflictingOptions = MapThread[
-    Function[{sample, separationTechnique, filtrationInstrument, filtrationTechnique, filter, filterPosition, filtrationTime, pelletVolume, pelletCentrifuge,
-      pelletCentrifugeIntensity, pelletCentrifugeTime, supernatantVolume, index},
+    Function[
+      {
+        sample, separationTechnique, filtrationInstrument, filtrationTechnique, filter, filterPosition,
+        filtrationTime, pelletVolume, pelletCentrifuge, pelletCentrifugeIntensity, pelletCentrifugeTime,
+        supernatantVolume, index
+      },
       If[
         Or[
           And[
@@ -3908,13 +4104,19 @@ resolveExperimentPrecipitateOptions[mySamples : {ObjectP[Object[Sample]]...}, my
             ]
           ]
         ],
-        {sample, separationTechnique, filtrationInstrument, filtrationTechnique, filter, filterPosition, filtrationTime, pelletVolume, pelletCentrifuge,
-          pelletCentrifugeIntensity, pelletCentrifugeTime, supernatantVolume, index},
+        {
+          sample, separationTechnique, filtrationInstrument, filtrationTechnique, filter, filterPosition,
+          filtrationTime, pelletVolume, pelletCentrifuge, pelletCentrifugeIntensity, pelletCentrifugeTime,
+          supernatantVolume, index
+        },
         Nothing
       ]
     ],
-    {mySamples, Lookup[myOptions, SeparationTechnique], resolvedFiltrationInstruments, resolvedFiltrationTechniques, resolvedFilters, resolvedFilterPositions, resolvedFiltrationTimes, resolvedPelletVolumes, resolvedPelletCentrifuges,
-      resolvedPelletCentrifugeIntensities, resolvedPelletCentrifugeTimes, resolvedSupernatantVolumes, Range[Length[mySamples]]}
+    {
+      mySamples, Lookup[myOptions, SeparationTechnique], resolvedFiltrationInstruments, resolvedFiltrationTechniques, resolvedFilters, resolvedFilterPositions,
+      resolvedFiltrationTimes, resolvedPelletVolumes, resolvedPelletCentrifuges, resolvedPelletCentrifugeIntensities, resolvedPelletCentrifugeTimes,
+      resolvedSupernatantVolumes, Range[Length[mySamples]]
+    }
   ];
   (*Throws the error if tests are not being gathered*)
   If[Length[separationTechniqueConflictingOptions] > 0 && messages,
@@ -4005,7 +4207,7 @@ resolveExperimentPrecipitateOptions[mySamples : {ObjectP[Object[Sample]]...}, my
 
 
   (* WashSolution / WashSolutionVolume / WashSolutionTemperature / WashSolutionEquilibrationTime / WashMixType / WashMixInstrument / WashMixRate / WashMixTemperature / WashMixTime / NumberOfWashMixes / WashMixVolume /
-	WashPrecipitationTime / WashPrecipitationInstrument / WashPrecipitationTemperature / WashCentrifugeIntensity / WashPressure / WashSeparationTime / conflicting options. *)
+  WashPrecipitationTime / WashPrecipitationInstrument / WashPrecipitationTemperature / WashCentrifugeIntensity / WashPressure / WashSeparationTime / conflicting options. *)
   notWashingConflictingOptions = MapThread[
     Function[{sample, numberOfWashes, washSolution, washSolutionVolume, washSolutionTemperature, washSolutionEquilibrationTime, washMixType, washMixInstrument, washMixRate, washMixTemperature, washMixTime, numberOfWashMixes,
       washMixVolume, washPrecipitationTime, washPrecipitationInstrument, washPrecipitationTemperature, washCentrifugeIntensity, washPressure, washSeparationTime, index},
@@ -4478,7 +4680,7 @@ resolveExperimentPrecipitateOptions[mySamples : {ObjectP[Object[Sample]]...}, my
 
 
   (*********** Warnings ***********)
-  (* Sterile / RoboticInsturment conflicting options.*)
+  (* Sterile / RoboticInstrument conflicting options.*)
   sterileInstrumentConflictingOptions = MapThread[
     Function[{sample, index},
       If[
@@ -4719,9 +4921,10 @@ resolveExperimentPrecipitateOptions[mySamples : {ObjectP[Object[Sample]]...}, my
         UnprecipitatedSampleContainerOut -> resolvedUnprecipitatedContainerOut,
         UnprecipitatedSampleLabel -> resolvedUnprecipitatedSampleLabels,
         UnprecipitatedSampleContainerLabel -> resolvedUnprecipitatedSampleContainerLabels,
-        FullPrecipitatedSampleContainerOut -> resolvedFullPrecipitatedContainerOut /. {Null, Null} -> {Automatic, Automatic}, (* Null, Null can happen in some conditions if the user sets to Null
-      but messes up the downstream Unit Ops. {Automatic, Automatic} converts it to Automatic choice for {Wells, Container} and the Unit Opp just resolves whatever it needs *)
-        FullUnprecipitatedSampleContainerOut -> resolvedFullUnprecipitatedContainerOut /. {Null, Null} -> {Automatic, Automatic},
+        (* Null, Null can happen in some conditions if the user sets the container out to Null or a retentate is not saved,
+        but this does not match the pattern for the option, so switch to just Null here. *)
+        FullPrecipitatedSampleContainerOut -> resolvedFullPrecipitatedContainerOut /. {Null, Null} -> Null,
+        FullUnprecipitatedSampleContainerOut -> resolvedFullUnprecipitatedContainerOut /. {Null, Null} -> Null,
         Sterile -> resolvedSterile,
 
         resolvedPostProcessingOptions,
@@ -5038,8 +5241,15 @@ may need to Label container a plate
     ];
 
     moveToNewContainer = Module[{resolvedWells, resolvedContainers, currentWells, currentContainers, currentContainerModels},
-      resolvedWells = Lookup[myResolvedOptions, FullPrecipitatedSampleContainerOut][[All, 1]];
-      resolvedContainers = Lookup[myResolvedOptions, FullPrecipitatedSampleContainerOut][[All, 2]];
+      {resolvedWells, resolvedContainers} = Transpose[
+        Map[
+          If[MatchQ[#, Null],
+            {Null, Null},
+            #
+          ]&,
+          Lookup[myResolvedOptions, FullPrecipitatedSampleContainerOut]
+        ]
+      ];
 
       currentWells = Lookup[samplePackets, Position];
       currentContainers = Lookup[samplePackets, Container];
@@ -5271,98 +5481,99 @@ may need to Label container a plate
       PreferredContainer[maxWashVolume, Sterile -> Lookup[myResolvedOptions, Sterile], Type -> Plate, LiquidHandlerCompatible -> True]
     ];
 
-    filterSamplesUnitOperations =
-        If[MemberQ[Lookup[myResolvedOptions, SeparationTechnique], Filter],
-          {
-            Transfer[
-              Source -> Lookup[mapThreadFriendlyOptionsToFilter, PrecipitationReagent],
-              Destination -> PickList[mySamples, Lookup[myResolvedOptions, SeparationTechnique], Filter],
-              Amount -> Lookup[mapThreadFriendlyOptionsToFilter, PrecipitationReagentVolume],
-              Preparation -> Robotic,
-              WorkCell -> Lookup[myResolvedOptions, WorkCell]
-            ],
-            If[MemberQ[Lookup[mapThreadFriendlyOptionsToFilter, PrecipitationMixType], (Shake | Pipette)],
-              Mix[
-                Sample -> PickList[mySamples, Transpose[{Lookup[myResolvedOptions, SeparationTechnique], Lookup[myResolvedOptions, PrecipitationMixType]}], {Filter, (Shake | Pipette)}],
-                MixType -> Lookup[mapThreadFriendlyOptionsToMixFilterPrecipitation, PrecipitationMixType],
-                Instrument -> Lookup[mapThreadFriendlyOptionsToMixFilterPrecipitation, PrecipitationMixInstrument],
-                MixRate -> Lookup[mapThreadFriendlyOptionsToMixFilterPrecipitation, PrecipitationMixRate],
-                Temperature -> Lookup[mapThreadFriendlyOptionsToMixFilterPrecipitation, PrecipitationMixTemperature],
-                Time -> Lookup[mapThreadFriendlyOptionsToMixFilterPrecipitation, PrecipitationMixTime],
-                NumberOfMixes -> Lookup[mapThreadFriendlyOptionsToMixFilterPrecipitation, NumberOfPrecipitationMixes],
-                MixVolume -> Lookup[mapThreadFriendlyOptionsToMixFilterPrecipitation, PrecipitationMixVolume],
-                Preparation -> Robotic,
-                WorkCell -> Lookup[myResolvedOptions, WorkCell]
-              ],
-              Nothing
-            ],
-            If[MemberQ[Lookup[mapThreadFriendlyOptionsToFilter, PrecipitationTime], GreaterP[0 Minute]],
-              Incubate[
-                Sample -> PickList[mySamples, Transpose[{Lookup[myResolvedOptions, SeparationTechnique], Lookup[myResolvedOptions, PrecipitationTime]}], {Filter, GreaterP[0 Minute]}],
-                Instrument -> PickList[Lookup[mapThreadFriendlyOptionsToFilter, PrecipitationInstrument], Lookup[mapThreadFriendlyOptionsToFilter, PrecipitationTime], GreaterP[0 Minute]],
-                Temperature -> PickList[Lookup[mapThreadFriendlyOptionsToFilter, PrecipitationTemperature], Lookup[mapThreadFriendlyOptionsToFilter, PrecipitationTime], GreaterP[0 Minute]] /. Ambient -> 25 Celsius,
-                Time -> PickList[Lookup[mapThreadFriendlyOptionsToFilter, PrecipitationTime], Lookup[mapThreadFriendlyOptionsToFilter, PrecipitationTime], GreaterP[0 Minute]],
-                Preparation -> Robotic,
-                WorkCell -> Lookup[myResolvedOptions, WorkCell]
-              ],
-              Nothing
-            ],
-            Filter[
-              Sample -> PickList[mySamples, Lookup[myResolvedOptions, SeparationTechnique], Filter],
-              FiltrateLabel -> Lookup[mapThreadFriendlyOptionsToFilter, UnprecipitatedSampleLabel] /. Null -> Automatic, (* Filter doesn't accept Null in the input Pattern for this *)
-              FiltrateContainerLabel -> Lookup[mapThreadFriendlyOptionsToFilter, UnprecipitatedSampleContainerLabel] /. Null -> Automatic, (* Filter doesn't accept Null in the input Pattern for this *)
-              RetentateLabel -> Lookup[mapThreadFriendlyOptionsToFilter, PrecipitatedSampleLabel],
-              RetentateContainerLabel -> Lookup[mapThreadFriendlyOptionsToFilter, PrecipitatedSampleContainerLabel],
-              FiltrationType -> Lookup[mapThreadFriendlyOptionsToFilter, FiltrationTechnique],
-              Time -> Lookup[mapThreadFriendlyOptionsToFilter, FiltrationTime],
-              Instrument -> Lookup[mapThreadFriendlyOptionsToFilter, FiltrationInstrument],
-              Sterile -> Lookup[myResolvedOptions, Sterile],
-              Pressure -> Lookup[mapThreadFriendlyOptionsToFilter, FiltrationPressure],
-              Intensity -> Lookup[mapThreadFriendlyOptionsToFilter, FilterCentrifugeIntensity],
-              Target -> Lookup[mapThreadFriendlyOptionsToFilter, TargetPhase] /. {Solid -> Retentate, Liquid -> Filtrate}, (* Filter's Target needs to be changed from Solid/Liquid to Retentate/Filtrate respectively *)
-              FiltrateContainerOut ->
-                  (* If there is only one, it will need to be Flattened to avoid formatting issues *)
-                  If[Length[Lookup[mapThreadFriendlyOptionsToFilter, FullUnprecipitatedSampleContainerOut]] > 1,
-                    Lookup[mapThreadFriendlyOptionsToFilter, FullUnprecipitatedSampleContainerOut][[All, 2]],
-                    Flatten[Lookup[mapThreadFriendlyOptionsToFilter, FullUnprecipitatedSampleContainerOut][[All, 2]]]
-                  ],
-              FiltrateDestinationWell -> Lookup[mapThreadFriendlyOptionsToFilter, FullUnprecipitatedSampleContainerOut][[All, 1]],
-              Filter -> Lookup[mapThreadFriendlyOptionsToFilter, Filter],
-              FilterPosition -> Lookup[mapThreadFriendlyOptionsToFilter, FilterPosition],
-              MembraneMaterial -> Lookup[mapThreadFriendlyOptionsToFilter, MembraneMaterial],
-              PrefilterMembraneMaterial -> Lookup[mapThreadFriendlyOptionsToFilter, PrefilterMembraneMaterial],
-              PoreSize -> Lookup[mapThreadFriendlyOptionsToFilter, PoreSize],
-              PrefilterPoreSize -> Lookup[mapThreadFriendlyOptionsToFilter, PrefilterPoreSize],
-              FilterStorageCondition -> Lookup[mapThreadFriendlyOptionsToFilter, FilterStorageCondition],
-              RetentateContainerOut ->
-                  (* If there is only one, it will need to be Flattened to avoid formatting issues *)
-                  If[Length[Lookup[mapThreadFriendlyOptionsToFilter, FullPrecipitatedSampleContainerOut]] > 1,
-                    Lookup[mapThreadFriendlyOptionsToFilter, FullPrecipitatedSampleContainerOut][[All, 2]],
-                    Flatten[Lookup[mapThreadFriendlyOptionsToFilter, FullPrecipitatedSampleContainerOut][[All, 2]]]
-                  ],
-              RetentateDestinationWell -> Lookup[mapThreadFriendlyOptionsToFilter, FullPrecipitatedSampleContainerOut][[All, 1]],
-              ResuspensionVolume -> Lookup[mapThreadFriendlyOptionsToFilter, ResuspensionBufferVolume],
-              ResuspensionBuffer -> Lookup[mapThreadFriendlyOptionsToFilter, ResuspensionBuffer] /. None -> Null, (* Filter doesn't accept None in the input Pattern for this *)
-              NumberOfResuspensionMixes -> Lookup[mapThreadFriendlyOptionsToFilter, NumberOfResuspensionMixes],
-              (* I want this to be Automatic if we are not doing wash steps *)
-              WashRetentate -> Lookup[mapThreadFriendlyOptionsToFilter, NumberOfWashes] /. {GreaterP[0] -> True, (EqualP[0] | Null) -> False}, (* Filter requires these inputs, not a number *)
-              RetentateWashBuffer -> Lookup[mapThreadFriendlyOptionsToFilter, WashSolution] /. None -> Null, (* Filter doesn't accept None in the input Pattern for this *)
-              RetentateWashVolume -> Lookup[mapThreadFriendlyOptionsToFilter, WashSolutionVolume],
-              WashFlowThroughContainer -> filterWashContainer, (* TODO, this may be an issue if we ever have non-96 well filters... *)
-              NumberOfRetentateWashes -> Lookup[mapThreadFriendlyOptionsToFilter, NumberOfWashes] /. 0 -> Null, (* Filter throws an error if 0 is given as an input *)
-              RetentateWashDrainTime -> Lookup[mapThreadFriendlyOptionsToFilter, WashSeparationTime],
-              RetentateWashCentrifugeIntensity -> Lookup[mapThreadFriendlyOptionsToFilter, WashCentrifugeIntensity],
-              (* I want this to be Automatic if we are not resuspending retentate *)
-              RetentateCollectionMethod -> Lookup[mapThreadFriendlyOptionsToFilter, ResuspensionBuffer] /. {ObjectP[] -> Resuspend, None -> Null}, (* Filter requires these inputs, not a number *)
-              RetentateWashMix -> Lookup[mapThreadFriendlyOptionsToFilter, NumberOfWashes] /. {GreaterP[0] -> True, (EqualP[0] | Null) -> False}, (* Filter requires these inputs, not a number *)
-              RetentateWashPressure -> Lookup[mapThreadFriendlyOptionsToFilter, WashPressure],
-              CollectRetentate -> Lookup[mapThreadFriendlyOptionsToFilter, ResuspensionBuffer] /. {ObjectP[] -> True, None -> False, Null -> False},
-              Preparation -> Robotic,
-              WorkCell -> Lookup[myResolvedOptions, WorkCell]
-            ]
-          },
+    filterSamplesUnitOperations = If[MemberQ[Lookup[myResolvedOptions, SeparationTechnique], Filter],
+      {
+        Transfer[
+          Source -> Lookup[mapThreadFriendlyOptionsToFilter, PrecipitationReagent],
+          Destination -> PickList[mySamples, Lookup[myResolvedOptions, SeparationTechnique], Filter],
+          Amount -> Lookup[mapThreadFriendlyOptionsToFilter, PrecipitationReagentVolume],
+          Preparation -> Robotic,
+          WorkCell -> Lookup[myResolvedOptions, WorkCell]
+        ],
+        If[MemberQ[Lookup[mapThreadFriendlyOptionsToFilter, PrecipitationMixType], (Shake | Pipette)],
+          Mix[
+            Sample -> PickList[mySamples, Transpose[{Lookup[myResolvedOptions, SeparationTechnique], Lookup[myResolvedOptions, PrecipitationMixType]}], {Filter, (Shake | Pipette)}],
+            MixType -> Lookup[mapThreadFriendlyOptionsToMixFilterPrecipitation, PrecipitationMixType],
+            Instrument -> Lookup[mapThreadFriendlyOptionsToMixFilterPrecipitation, PrecipitationMixInstrument],
+            MixRate -> Lookup[mapThreadFriendlyOptionsToMixFilterPrecipitation, PrecipitationMixRate],
+            Temperature -> Lookup[mapThreadFriendlyOptionsToMixFilterPrecipitation, PrecipitationMixTemperature],
+            Time -> Lookup[mapThreadFriendlyOptionsToMixFilterPrecipitation, PrecipitationMixTime],
+            NumberOfMixes -> Lookup[mapThreadFriendlyOptionsToMixFilterPrecipitation, NumberOfPrecipitationMixes],
+            MixVolume -> Lookup[mapThreadFriendlyOptionsToMixFilterPrecipitation, PrecipitationMixVolume],
+            Preparation -> Robotic,
+            WorkCell -> Lookup[myResolvedOptions, WorkCell]
+          ],
           Nothing
-        ];
+        ],
+        If[MemberQ[Lookup[mapThreadFriendlyOptionsToFilter, PrecipitationTime], GreaterP[0 Minute]],
+          Incubate[
+            Sample -> PickList[mySamples, Transpose[{Lookup[myResolvedOptions, SeparationTechnique], Lookup[myResolvedOptions, PrecipitationTime]}], {Filter, GreaterP[0 Minute]}],
+            Instrument -> PickList[Lookup[mapThreadFriendlyOptionsToFilter, PrecipitationInstrument], Lookup[mapThreadFriendlyOptionsToFilter, PrecipitationTime], GreaterP[0 Minute]],
+            Temperature -> PickList[Lookup[mapThreadFriendlyOptionsToFilter, PrecipitationTemperature], Lookup[mapThreadFriendlyOptionsToFilter, PrecipitationTime], GreaterP[0 Minute]] /. Ambient -> 25 Celsius,
+            Time -> PickList[Lookup[mapThreadFriendlyOptionsToFilter, PrecipitationTime], Lookup[mapThreadFriendlyOptionsToFilter, PrecipitationTime], GreaterP[0 Minute]],
+            Preparation -> Robotic,
+            WorkCell -> Lookup[myResolvedOptions, WorkCell]
+          ],
+          Nothing
+        ],
+        Filter[
+          Sample -> PickList[mySamples, Lookup[myResolvedOptions, SeparationTechnique], Filter],
+          FiltrateLabel -> Lookup[mapThreadFriendlyOptionsToFilter, UnprecipitatedSampleLabel] /. Null -> Automatic, (* Filter doesn't accept Null in the input Pattern for this *)
+          FiltrateContainerLabel -> Lookup[mapThreadFriendlyOptionsToFilter, UnprecipitatedSampleContainerLabel] /. Null -> Automatic, (* Filter doesn't accept Null in the input Pattern for this *)
+          RetentateLabel -> Lookup[mapThreadFriendlyOptionsToFilter, PrecipitatedSampleLabel],
+          RetentateContainerLabel -> Lookup[mapThreadFriendlyOptionsToFilter, PrecipitatedSampleContainerLabel],
+          FiltrationType -> Lookup[mapThreadFriendlyOptionsToFilter, FiltrationTechnique],
+          Time -> Lookup[mapThreadFriendlyOptionsToFilter, FiltrationTime],
+          Instrument -> Lookup[mapThreadFriendlyOptionsToFilter, FiltrationInstrument],
+          Sterile -> Lookup[myResolvedOptions, Sterile],
+          Pressure -> Lookup[mapThreadFriendlyOptionsToFilter, FiltrationPressure],
+          Intensity -> Lookup[mapThreadFriendlyOptionsToFilter, FilterCentrifugeIntensity],
+          Target -> Lookup[mapThreadFriendlyOptionsToFilter, TargetPhase] /. {Solid -> Retentate, Liquid -> Filtrate}, (* Filter's Target needs to be changed from Solid/Liquid to Retentate/Filtrate respectively *)
+          FiltrateContainerOut -> Map[
+            If[MatchQ[#, Null], Null, #[[2]]]&,
+            Lookup[mapThreadFriendlyOptionsToFilter, FullUnprecipitatedSampleContainerOut]
+          ],
+          FiltrateDestinationWell -> Map[
+            If[MatchQ[#, Null], Null, #[[1]]]&,
+            Lookup[mapThreadFriendlyOptionsToFilter, FullUnprecipitatedSampleContainerOut]
+          ],
+          Filter -> Lookup[mapThreadFriendlyOptionsToFilter, Filter],
+          FilterPosition -> Lookup[mapThreadFriendlyOptionsToFilter, FilterPosition],
+          MembraneMaterial -> Lookup[mapThreadFriendlyOptionsToFilter, MembraneMaterial],
+          PrefilterMembraneMaterial -> Lookup[mapThreadFriendlyOptionsToFilter, PrefilterMembraneMaterial],
+          PoreSize -> Lookup[mapThreadFriendlyOptionsToFilter, PoreSize],
+          PrefilterPoreSize -> Lookup[mapThreadFriendlyOptionsToFilter, PrefilterPoreSize],
+          FilterStorageCondition -> Lookup[mapThreadFriendlyOptionsToFilter, FilterStorageCondition],
+          RetentateContainerOut -> Map[
+            If[MatchQ[#, ListableP[Null]], Null, #[[2]]]&,
+            Lookup[mapThreadFriendlyOptionsToFilter, FullPrecipitatedSampleContainerOut]
+          ],
+          RetentateDestinationWell -> Map[
+            If[MatchQ[#, ListableP[Null]], Null, #[[1]]]&,
+            Lookup[mapThreadFriendlyOptionsToFilter, FullPrecipitatedSampleContainerOut]
+          ],
+          ResuspensionVolume -> Lookup[mapThreadFriendlyOptionsToFilter, ResuspensionBufferVolume],
+          ResuspensionBuffer -> Lookup[mapThreadFriendlyOptionsToFilter, ResuspensionBuffer] /. None -> Null, (* Filter doesn't accept None in the input Pattern for this *)
+          NumberOfResuspensionMixes -> Lookup[mapThreadFriendlyOptionsToFilter, NumberOfResuspensionMixes],
+          (* I want this to be Automatic if we are not doing wash steps *)
+          WashRetentate -> Lookup[mapThreadFriendlyOptionsToFilter, NumberOfWashes] /. {GreaterP[0] -> True, (EqualP[0] | Null) -> False}, (* Filter requires these inputs, not a number *)
+          RetentateWashBuffer -> Lookup[mapThreadFriendlyOptionsToFilter, WashSolution] /. None -> Null, (* Filter doesn't accept None in the input Pattern for this *)
+          RetentateWashVolume -> Lookup[mapThreadFriendlyOptionsToFilter, WashSolutionVolume],
+          WashFlowThroughContainer -> filterWashContainer, (* TODO, this may be an issue if we ever have non-96 well filters... *)
+          NumberOfRetentateWashes -> Lookup[mapThreadFriendlyOptionsToFilter, NumberOfWashes] /. 0 -> Null, (* Filter throws an error if 0 is given as an input *)
+          RetentateWashDrainTime -> Lookup[mapThreadFriendlyOptionsToFilter, WashSeparationTime],
+          RetentateWashCentrifugeIntensity -> Lookup[mapThreadFriendlyOptionsToFilter, WashCentrifugeIntensity],
+          (* I want this to be Automatic if we are not resuspending retentate *)
+          RetentateCollectionMethod -> Lookup[mapThreadFriendlyOptionsToFilter, ResuspensionBuffer] /. {ObjectP[] -> Resuspend, None -> Null}, (* Filter requires these inputs, not a number *)
+          RetentateWashMix -> Lookup[mapThreadFriendlyOptionsToFilter, NumberOfWashes] /. {GreaterP[0] -> True, (EqualP[0] | Null) -> False}, (* Filter requires these inputs, not a number *)
+          RetentateWashPressure -> Lookup[mapThreadFriendlyOptionsToFilter, WashPressure],
+          CollectRetentate -> Lookup[mapThreadFriendlyOptionsToFilter, ResuspensionBuffer] /. {ObjectP[] -> True, None -> False, Null -> False},
+          Preparation -> Robotic,
+          WorkCell -> Lookup[myResolvedOptions, WorkCell]
+        ]
+      },
+      Nothing
+    ];
 
     (* Combine to together *)
     primitives = Flatten[{
@@ -5431,6 +5642,12 @@ may need to Label container a plate
       Simulation[<|Object -> Lookup[outputUnitOperationPacket, Object], Sample -> (Link /@ mySamples)|>]
     ];
 
+    (* since we are putting this UO inside RSP, we should re-do the LabelFields so they link via RoboticUnitOperations *)
+    roboticSimulation=If[Length[roboticUnitOperationPackets]==0,
+      roboticSimulation,
+      updateLabelFieldReferences[roboticSimulation,RoboticUnitOperations]
+    ];
+
     (* Return back our packets and simulation. *)
     {
       Null,
@@ -5450,11 +5667,11 @@ may need to Label container a plate
   {resourcesOk, resourceTests} = Which[
     (* NOTE: If we're robotic, the framework will call FRQ for us. *)
     MatchQ[$ECLApplication, Engine] || MatchQ[resolvedPreparation, Robotic],
-    {True, {}},
+      {True, {}},
     gatherTests,
-    Resources`Private`fulfillableResourceQ[allResourceBlobs, Output -> {Result, Tests}, FastTrack -> Lookup[myResolvedOptions, FastTrack], Cache -> inheritedCache, Simulation -> currentSimulation],
+      Resources`Private`fulfillableResourceQ[allResourceBlobs, Output -> {Result, Tests}, FastTrack -> Lookup[myResolvedOptions, FastTrack], Cache -> inheritedCache, Simulation -> currentSimulation],
     True,
-    {Resources`Private`fulfillableResourceQ[allResourceBlobs, FastTrack -> Lookup[myResolvedOptions, FastTrack], Messages -> messages, Cache -> inheritedCache, Simulation -> currentSimulation], Null}
+      {Resources`Private`fulfillableResourceQ[allResourceBlobs, FastTrack -> Lookup[myResolvedOptions, FastTrack], Messages -> messages, Cache -> inheritedCache, Simulation -> currentSimulation], Null}
   ];
 
   (* --- Output --- *)

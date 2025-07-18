@@ -25,6 +25,31 @@ DefineObjectType[Object[Protocol,CapillaryIsoelectricFocusing],
 				Description->"The capillary electrophoresis cartridge loaded on the instrument for Capillary IsoElectric Focusing (cIEF) experiments. The cartridge holds a single capillary and electrolyte buffers (sources of hydronium and hydroxyl ions).",
 				Category->"Instrument Setup"
 			},
+			InitialCartridgeAppearances -> {
+				Format -> Multiple,
+				Class -> Link,
+				Pattern :> _Link,
+				Relation -> Object[EmeraldCloudFile],
+				Description -> "The front-view and side-view images of the Cartridge captured before the experiment starts.",
+				Category->"Instrument Setup"
+			},
+			FinalCartridgeAppearances -> {
+				Format -> Multiple,
+				Class -> Link,
+				Pattern :> _Link,
+				Relation -> Object[EmeraldCloudFile],
+				Description -> "The front-view and side-view images of the Cartridge captured after the experiment finishes.",
+				Category->"Instrument Setup"
+			},
+			CartridgeContainer -> {
+				Format -> Single,
+				Class -> Link,
+				Pattern :> _Link,
+				Relation -> Object[Container],
+				Description -> "A container used for storing and transporting the Cartridge.",
+				Category -> "Instrument Setup",
+				Developer -> True
+			},
 			RunTime->{
 				Format->Single,
 				Class->Real,
@@ -427,8 +452,7 @@ DefineObjectType[Object[Protocol,CapillaryIsoelectricFocusing],
 			Ampholytes->{
 				Format->Multiple,
 				Class->Expression,
-				Pattern:>{_Link..},
-				Relation->Model[Sample]|Object[Sample],
+				Pattern:>ListableP[ObjectP[{Model[Sample], Object[Sample]}]|Null],
 				Description->"For each member of SamplesIn, indicates the makeup of amphoteric molecules in the master mix that form the pH gradient.",
 				IndexMatching->SamplesIn,
 				Category->"Sample Preparation"
@@ -465,8 +489,7 @@ DefineObjectType[Object[Protocol,CapillaryIsoelectricFocusing],
 			IsoelectricPointMarkers->{
 				Format->Multiple,
 				Class->Expression,
-				Pattern:>{_Link..},
-				Relation->Model[Sample]|Object[Sample],
+				Pattern:>ListableP[ObjectP[{Model[Sample], Object[Sample]}]|Null],
 				Description->"For each member of SamplesIn, indicates Reference analytes included in the mastermix. pI markers facilitate the interpolation of sample pI. The pH is then interpolated by the straight line between the pI markers.",
 				IndexMatching->SamplesIn,
 				Category->"Sample Preparation"
@@ -781,8 +804,7 @@ DefineObjectType[Object[Protocol,CapillaryIsoelectricFocusing],
 			StandardAmpholytes->{
 				Format->Multiple,
 				Class->Expression,
-				Pattern:>{_Link..},
-				Relation->Model[Sample]|Object[Sample],
+				Pattern:>ListableP[ObjectP[{Model[Sample], Object[Sample]}]|Null],
 				Description->"For each member of Standards, indicates the makeup of amphoteric molecules in the master mix that form the pH gradient.",
 				IndexMatching->Standards,
 				Category->"Standards"
@@ -819,8 +841,7 @@ DefineObjectType[Object[Protocol,CapillaryIsoelectricFocusing],
 			StandardIsoelectricPointMarkers->{
 				Format->Multiple,
 				Class->Expression,
-				Pattern:>{_Link..},
-				Relation->Model[Sample]|Object[Sample],
+				Pattern:>ListableP[ObjectP[{Model[Sample], Object[Sample]}]|Null],
 				Description->"For each member of Standards, indicates the Reference analytes included in the mastermix. pI markers facilitate the interpolation of sample pI. The pH is then interpolated by the straight line between the pI markers.",
 				IndexMatching->Standards,
 				Category->"Standards"
@@ -1134,8 +1155,7 @@ DefineObjectType[Object[Protocol,CapillaryIsoelectricFocusing],
 			BlankAmpholytes->{
 				Format->Multiple,
 				Class->Expression,
-				Pattern:>{_Link..},
-				Relation->Model[Sample]|Object[Sample],
+				Pattern:>ListableP[ObjectP[{Model[Sample], Object[Sample]}]|Null],
 				Description->"For each member of Blanks, indicates the makeup of amphoteric molecules in the master mix that form the pH gradient.",
 				IndexMatching->Blanks,
 				Category->"Blanks"
@@ -1172,8 +1192,7 @@ DefineObjectType[Object[Protocol,CapillaryIsoelectricFocusing],
 			BlankIsoelectricPointMarkers->{
 				Format->Multiple,
 				Class->Expression,
-				Pattern:>{_Link..},
-				Relation->Model[Sample]|Object[Sample],
+				Pattern:>ListableP[ObjectP[{Model[Sample], Object[Sample]}]|Null],
 				Description->"For each member of Blanks, indicates the Reference analytes included in the mastermix. pI markers facilitate the interpolation of sample pI. The pH is then interpolated by the straight line between the pI markers.",
 				IndexMatching->Blanks,
 				Category->"Blanks"
@@ -1389,22 +1408,22 @@ DefineObjectType[Object[Protocol,CapillaryIsoelectricFocusing],
 			SamplePreparationPrimitives->{
 				Format->Multiple,
 				Class->Expression,
-				Pattern:>SampleManipulationP,
+				Pattern:>SampleManipulationP|SamplePreparationP,
 				Description->"A set of instructions specifying the preparation of samples, standards, and blanks for capillary Isoelectric Focusing experiments, including addition of ampholytes, ElectroosmoticFlowBlocker, Denaturant, and pI marker.",
 				Category -> "General"
 			},
 			SamplePreparationProtocol->{
 				Format->Single,
 				Class->Link,
-				Pattern:>ObjectP[Object[Protocol,SampleManipulation]],
-				Relation->Object[Protocol,SampleManipulation],
-				Description->"The sample manipulation protocol used to prepare samples for capillary Isoelectric Focusing experiments.",
+				Pattern:>_Link,
+				Relation->Object[Protocol,SampleManipulation]|Object[Protocol,RoboticSamplePreparation],
+				Description->"The protocol used to prepare samples for capillary Isoelectric Focusing experiments.",
 				Category->"Sample Preparation"
 			},
 			OnBoardMixingContainersPrimitives->{
 				Format->Multiple,
 				Class->Expression,
-				Pattern:>SampleManipulationP,
+				Pattern:>SampleManipulationP|SamplePreparationP,
 				Description->"A set of instructions specifying the transfer of master mix from preparation tube to on board mixing vials.",
 				Category -> "General"
 			},
@@ -1469,6 +1488,15 @@ DefineObjectType[Object[Protocol,CapillaryIsoelectricFocusing],
 				Relation->{Model[Container]|Object[Container],Null},
 				Description->"A placement used to move the On?BoardMixingContainers into position in the instrument.",
 				Headers->{"Object to Place","Placement Tree"},
+				Category -> "General",
+				Developer->True
+			},
+			InstrumentPlacementAppearance->{
+				Format -> Single,
+				Class -> Link,
+				Pattern :> _Link,
+				Relation -> Object[EmeraldCloudFile],
+				Description -> "The image of the instrument deck after all reagents and the AssayPlate have been loaded.",
 				Category -> "General",
 				Developer->True
 			},

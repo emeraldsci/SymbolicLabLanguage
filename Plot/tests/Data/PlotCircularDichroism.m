@@ -11,7 +11,7 @@
 DefineTests[PlotCircularDichroism,
 	{
 		Example[
-			{Basic,"Plots circular dichroism spectroscopy data when given an AbsorbanceSpectroscopy data object:"},
+			{Basic,"Plots circular dichroism spectroscopy data when given a CircularDichroism data object:"},
 			PlotCircularDichroism[Object[Data, CircularDichroism, "id:eGakldJqOnaB"]],
 			ValidGraphicsP[],
 			TimeConstraint->120
@@ -23,9 +23,15 @@ DefineTests[PlotCircularDichroism,
 			TimeConstraint->120
 		],
 		Example[
-			{Basic,"Plots circular dichroism spectroscopy data when given an AbsorbanceSpectroscopy data link:"},
+			{Basic,"Plots circular dichroism spectroscopy data when given a CircularDichroism data link:"},
 			PlotCircularDichroism[Link[Object[Data, CircularDichroism, "id:eGakldJqOnaB"],Protocol]],
 			ValidGraphicsP[],
+			TimeConstraint->120
+		],
+		Example[
+			{Basic,"Plots circular dichroism spectroscopy data when given a CircularDichroism protocol object:"},
+			PlotCircularDichroism[Object[Data, CircularDichroism, "id:eGakldJqOnaB"][Protocol]],
+			SlideView[{ValidGraphicsP[] ..}],
 			TimeConstraint->120
 		],
 		Example[

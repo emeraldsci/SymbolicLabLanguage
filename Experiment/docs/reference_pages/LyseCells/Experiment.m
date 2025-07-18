@@ -225,3 +225,70 @@ DefineUsage[ExperimentLyseCellsOptions,
 		Author -> {"tyler.pabst", "daniel.shlian"}
 	}
 ];
+(* ::Subsection:: *)
+(* ExperimentLyseCellsPreview *)
+DefineUsage[ExperimentLyseCellsPreview,
+	{
+		BasicDefinitions -> {
+			{
+				Definition -> {"ExperimentLyseCellsPreview[Samples]", "Preview"},
+				Description -> "generates a graphical 'Preview' for lysing the cells in the input 'Samples'.",
+				Inputs :> {
+					IndexMatching[
+						IndexName->"experiment samples",
+						{
+							InputName -> "Samples",
+							Description-> "The cell samples whose membranes are to be ruptured.",
+							Widget->Alternatives[
+								"Sample or Container"->Widget[
+									Type->Object,
+									Pattern:>ObjectP[{Object[Sample],Object[Container]}],
+									Dereference->{
+										Object[Container]->Field[Contents[[All,2]]]
+									}
+								],
+								"Container with Well Position"->{
+									"Well Position" -> Alternatives[
+										"A1 to P24" -> Widget[
+											Type -> Enumeration,
+											Pattern :>  Alternatives @@ Flatten[AllWells[NumberOfWells -> 384]],
+											PatternTooltip -> "Enumeration must be any well from A1 to P24."
+										],
+										"Container Position" -> Widget[
+											Type -> String,
+											Pattern :> LocationPositionP,
+											PatternTooltip -> "Any valid container position.",
+											Size->Line
+										]
+									],
+									"Container" -> Widget[
+										Type -> Object,
+										Pattern :> ObjectP[{Object[Container]}]
+									]
+								}
+							],
+							Expandable->False
+						}
+					]
+				},
+				Outputs :> {
+					{
+						OutputName -> "Preview",
+						Description -> "A graphical representation of the provided LyseCells experiment. This value is always Null.",
+						Pattern :> Null
+					}
+				}
+			}
+		},
+		MoreInformation -> {},
+		SeeAlso -> {
+			"ExperimentLyseCells",
+			"ExperimentLyseCellsOptions",
+			"ValidExperimentLyseCellsQ"
+		},
+		Tutorials->{
+			"Sample Preparation"
+		},
+		Author -> {"harrison.gronlund"}
+	}
+];

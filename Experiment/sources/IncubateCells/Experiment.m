@@ -5,7 +5,7 @@
 
 
 (* ::Text:: *)
-(*\[Copyright] 2011-2023 Emerald Cloud Lab, Inc.*)
+(*\[Copyright] 2011-2024 Emerald Cloud Lab, Inc.*)
 
 
 (* ::Section:: *)
@@ -26,17 +26,161 @@ DefineOptions[
 				Pattern :> RangeP[0 Hour, $MaxCellIncubationTime],(*72 Hour*)
 				Units ->  {Hour, {Hour, Day}}
 			],
-			Description -> "The duration during which the input cells are incubated inside of cell incubators.",
-			ResolutionDescription -> "If Preparation is set to Manual, automatically set to the DoublingTime of the cells in the sample. If Preparation is set to Robotic, automatically set to the shorter time of 1 Hour and the DoublingTime of the cells in the sample.",
+			Description -> If[TrueQ[$IncubateCellsIncubateOnly],
+				(*v1*)
+				"The duration during which the input cells are incubated inside of cell incubators.",
+				(*v2*)
+				"The duration during which the input cells are incubated inside of cell incubators. If the IncubationStrategy is QuantificationTarget, this option represents the maximum duration for which the cells are incubated while attempting to reach the MinQuantificationTarget; if this target is not reached within the specified Time, the FailureResponse is executed."],
+			ResolutionDescription ->  If[TrueQ[$IncubateCellsIncubateOnly],
+				(*v1*)
+				"If Preparation is set to Robotic, automatically set to " <> ToString[$MaxRoboticIncubationTime] <> ". If Preparation is set to Manual, automatically set to the shorter time between " <> ToString[$MaxCellIncubationTime] <> " and 36 times the shortest DoublingTime of the cells in the sample.",
+				(*v2*)
+				"If Preparation is set to Robotic, automatically set to " <> ToString[$MaxRoboticIncubationTime] <> ". If Preparation is set to Manual and IncubationStrategy is set to Time, automatically set to the shorter time between " <> ToString[$MaxCellIncubationTime] <> " and 36 times the shortest DoublingTime of the cells in the sample. If Preparation is set to Manual and IncubationStrategy is set to QuantificationTarget, automatically set to 12 Hour."],
 			Category -> "General"
+		},
+
+		(* Quantification Non-Index matching options *)
+		{
+			OptionName -> IncubationStrategy,
+			Default -> Automatic,
+			AllowNull -> False,
+			Widget -> Widget[
+				Type -> Enumeration,
+				Pattern :> Time|QuantificationTarget
+			],
+			Description -> "The manner in which the end of the incubation period is determined. If the IncubationStrategy is Time, incubation will proceed until after the specified Time has elapsed from the beginning of incubation. If the IncubationStrategy is QuantificationTarget, incubation will proceed until either a) ALL of the samples in the protocol meet their respective MinQuantificationTargets or b) the Time has elapsed, whichever occurs first.",
+			ResolutionDescription -> "If QuantificationMethod or any options defining quantification conditions are specified, automatically set to QuantificationTarget. Otherwise, automatically set to Time.",
+			Category -> If[TrueQ[$IncubateCellsIncubateOnly], "Hidden", "General"]
+		},
+		{
+			OptionName -> QuantificationMethod,
+			Default -> Automatic,
+			AllowNull -> True,
+			Widget -> Widget[
+				Type -> Enumeration,
+				Pattern :> Nephelometry|Absorbance|ColonyCount
+			],
+			Description -> "The analytical method employed to assess the quantity or concentration of cells contained within the sample.",
+			ResolutionDescription -> "If any options unique to a particular QuantificationMethod are specified, automatically set to that method. If IncubationStrategy is set to QuantificationTarget but no options unique to a quantification method are specified, automatically set to Absorbance.",
+			Category -> If[TrueQ[$IncubateCellsIncubateOnly], "Hidden", "Quantification"]
+		},
+		{
+			OptionName -> QuantificationInstrument,
+			Default -> Automatic,
+			AllowNull -> True,
+			Widget -> Widget[
+				Type -> Object,
+				Pattern :> ObjectP[
+					{
+						Object[Instrument, Nephelometer],
+						Object[Instrument, Spectrophotometer],
+						Object[Instrument, PlateReader],
+						Object[Instrument, ColonyHandler],
+						Model[Instrument, Nephelometer],
+						Model[Instrument, Spectrophotometer],
+						Model[Instrument, PlateReader],
+						Model[Instrument, ColonyHandler]
+					}
+				]
+			],
+			Description -> "The instrument used to assess the concentration of cells in the sample at every QuantificationInterval.",
+			ResolutionDescription -> "If QuantificationMethod is not Null, automatically set to an instrument model appropriate for the specified QuantificationMethod and QuantificationWavelength.",
+			Category -> If[TrueQ[$IncubateCellsIncubateOnly], "Hidden", "Quantification"]
+		},
+		{
+			OptionName -> QuantificationInterval,
+			Default -> Automatic,
+			AllowNull -> True,
+			Widget -> Widget[
+				Type -> Quantity,
+				Pattern :> RangeP[1 Hour, $MaxCellIncubationTime],
+				Units -> Hour
+			],
+			Description -> "The duration of time that elapses between each quantification of the cells in the sample.",
+			ResolutionDescription -> "If IncubationStrategy is QuantificationTarget, automatically set to one-fifth of the Time or 1 Hour, whichever is greater.",
+			Category -> If[TrueQ[$IncubateCellsIncubateOnly], "Hidden", "Quantification"]
+		},
+		{
+			OptionName -> QuantificationAliquot,
+			Default -> Automatic,
+			AllowNull -> True,
+			Widget -> Widget[
+				Type -> Enumeration,
+				Pattern :> BooleanP
+			],
+			Description -> "Indicates if an aliquot of cell sample is transferred to a new container prior to quantification rather than being analyzed in the cell sample's current container.",
+			ResolutionDescription -> "If any of QuantificationAliquotVolume, QuantificationAliquotContainer, or QuantificationRecoupSample are specified, automatically set to True. If none of these options are specified but the sample's current container is incompatible with the QuantificationInstrument, automatically set to True.",
+			Category -> If[TrueQ[$IncubateCellsIncubateOnly], "Hidden", "Quantification"]
+		},
+		{
+			OptionName -> QuantificationRecoupSample,
+			Default -> Automatic,
+			AllowNull -> True,
+			Widget -> Widget[
+				Type -> Enumeration,
+				Pattern :> BooleanP
+			],
+			Description -> "Indicates if the sample is to be recovered back into its original container after measurement using the QuantificationMethod.",
+			ResolutionDescription -> "If QuantificationAliquot is True, automatically set to False.",
+			Category -> If[TrueQ[$IncubateCellsIncubateOnly], "Hidden", "Quantification"]
+		},
+		{
+			OptionName -> FailureResponse,
+			Default -> Automatic,
+			AllowNull -> True,
+			Widget -> Widget[
+				Type -> Enumeration,
+				Pattern :> Incubate|Freeze|Discard
+			],
+			Description -> "The manner in which the cell samples are to be processed in the event that the MinQuantificationTarget is not reached before the Time elapses from the beginning of cell incubation. Incubate specifies that the cell sample is to be kept in its current IncubationCondition and is not available for samples using a Custom incubation condition. Freeze specifies that, following addition of a volume of Model[Sample, \"Glycerol\"] equal to 10% of the current sample volume and distribution into cryogenic vials, the cell sample is to be frozen in an isopropanol-filled insulated cooler at -80 Celsius for 12 Hour before being transferred to cryogenic storage. Discard specifies that the sample and its container are to be safely disposed of. Due to equipment constraints, Freeze is only available for protocols with no more than 12 samples, and only suspension samples with a volume of 4.5 Milliliter or less can be frozen. Note that, in the current version of ExperimentIncubateCells, the FailureResponse will be initiated for all samples in a protocol if any one of the samples fails to meet its MinQuantificationTarget before the Time elapses.",
+			ResolutionDescription -> "If IncubationStrategy is QuantificationTarget, automatically set to Discard.",
+			Category -> If[TrueQ[$IncubateCellsIncubateOnly], "Hidden", "Quantification"]
+		},
+		{
+			OptionName -> QuantificationBlankMeasurement,
+			Default -> Automatic,
+			AllowNull -> True,
+			Widget -> Widget[
+				Type -> Enumeration,
+				Pattern :> BooleanP
+			],
+			Description -> "Indicates if a blank measurement is to be recorded and used to subtract background noise from the quantification measurement.",
+			ResolutionDescription -> "If QuantificationMethod is Absorbance or Nephelometry, automatically set to True.",
+			Category -> If[TrueQ[$IncubateCellsIncubateOnly], "Hidden", "Quantification"]
 		},
 		(*Index-matching options*)
 		IndexMatching[
 			IndexMatchingInput -> "experiment samples",
 			{
+				OptionName -> SampleLabel,
+				Default -> Automatic,
+				Description -> "A user defined word or phrase used to identify the input samples to be incubated, for use in downstream unit operations.",
+				AllowNull -> False,
+				Widget -> Widget[
+					Type -> String,
+					Pattern :> _String,
+					Size -> Line
+				],
+				Category -> "General",
+				UnitOperation -> True
+			},
+			{
+				OptionName -> SampleContainerLabel,
+				Default -> Automatic,
+				Description -> "A user defined word or phrase used to identify the container of the input samples to be incubated, for use in downstream unit operations.",
+				AllowNull -> False,
+				Widget -> Widget[
+					Type -> String,
+					Pattern :> _String,
+					Size -> Line
+				],
+				Category -> "General",
+				UnitOperation -> True
+			},
+			{
 				OptionName -> Incubator,
 				Default -> Automatic,
-				AllowNull -> True,
+				AllowNull -> False,
 				Widget -> Widget[
 					Type -> Object,
 					Pattern :> ObjectP[{Model[Instrument, Incubator], Object[Instrument, Incubator]}],
@@ -45,8 +189,9 @@ DefineOptions[
 							Object[Catalog, "Root"],
 							"Instruments",
 							"Storage Devices",
-							"Incubators",
-							"Mammalian Cell Culture"
+							"Incubators"
+							(* Don't show mammalian incubators in catalog for now *)
+							(* "Mammalian Cell Culture" *)
 						},
 						{
 							Object[Catalog, "Root"],
@@ -76,27 +221,65 @@ DefineOptions[
 				Category -> "General"
 			},
 			{
-				OptionName -> CellType,
+				OptionName -> Temperature,
 				Default -> Automatic,
 				AllowNull -> False,
-				Widget -> Widget[
-					Type -> Enumeration,
-					Pattern :> Alternatives[Bacterial, Mammalian, Yeast]
+				Widget -> Alternatives[
+					"Temperature" -> Widget[
+						Type -> Enumeration,
+						Pattern :> CellIncubationTemperatureP (* 30 C, 37 C *)
+					],
+					"Custom Temperature" -> Widget[
+						Type -> Quantity,
+						Pattern :> RangeP[$MinCellIncubationTemperature, $MaxCellIncubationTemperature], (* 28 Celsius, 80 Celsius *)
+						Units -> Celsius
+					]
 				],
-				Description -> "The type of the most abundant cells that are thought to be present in this sample.",
-				ResolutionDescription -> "Automatically set to match the value of CellType of the input sample if it is populated, or set to Mammalian if CultureAdhesion is Adherent or if WorkCell is bioSTAR. If there are multiple cell types in the input sample or if the cell type is unknown, automatically set to Null.",
+				Description -> "Temperature at which the input cells are incubated. 30 Degrees Celsius and 37 Degrees Celsius are supported by default cell culture incubation conditions. Alternatively, a customized temperature can be requested with a dedicated custom incubator between " <> ToString@$MinCellIncubationTemperature <> " and " <> ToString@$MaxCellIncubationTemperature <> " until the protocol is completed. See the IncubationCondition option for more information.",
+				ResolutionDescription -> "Automatically set to match the Temperature field of specified IncubationCondition, see below table. If IncubationCondition is not provided, automatically set to 37 Celsius if CellType is Bacterial or Mammalian, or 30 Celsius if CellType is Yeast.",
 				Category -> "Incubation Condition"
 			},
 			{
-				OptionName -> CultureAdhesion,
+				OptionName -> Shake,
 				Default -> Automatic,
 				AllowNull -> False,
 				Widget -> Widget[
 					Type -> Enumeration,
-					Pattern :> CultureAdhesionP(*Adherent | Suspension | SolidMedia*)
+					Pattern :> BooleanP
 				],
-				Description -> "The manner of cell growth the cells in the sample are thought to employ (i.e., SolidMedia, Suspension, and Adherent). SolidMedia cells grow in colonies on a nutrient rich substrate, suspended cells grow free floating in liquid media, and adherent cells grow as a monolayer attached to a substrate.",
-				ResolutionDescription -> "Automatically set to match the CultureAdhesion value of the input sample if it is populated. Otherwise set to Suspension.",
+				Description -> "Indicates if the input cells are shaken during incubation.",
+				ResolutionDescription -> "Automatically set to True if ShakingRate or ShakingRadius are provided, or if IncubationCondition is BacterialShakingIncubation or YeastShakingIncubation. Otherwise, set to False.",
+				Category -> "Incubation Condition"
+			},
+			{
+				OptionName -> ShakingRate,
+				Default -> Automatic,
+				AllowNull -> True,
+				Widget -> Alternatives[
+					"200 RPM" -> Widget[
+						Type -> Enumeration,
+						Pattern :> CellIncubationShakingRateP(*200 RPM*)
+					],
+					"Custom Shaking Rate" -> Widget[
+						Type -> Quantity,
+						Pattern :> RangeP[$MinCellIncubationShakingRate, $MaxCellIncubationShakingRate],(*20RPM,1000RPM*)
+						Units -> RPM
+					]
+				],
+				Description -> "The frequency at which the sample is agitated by movement in a circular motion. Currently, 200 RPM is supported by preset cell culture incubation conditions with shaking. Alternatively, a customized shaking rate can be requested with a dedicated custom incubator until the protocol is completed. See the IncubationCondition option for more information.",
+				ResolutionDescription -> "If Shake is True, automatically set match the ShakingRate value of specified IncubationCondition if it is provided. If IncubationCondition is not provided, automatically set to 200 RPM.",
+				Category -> "Incubation Condition"
+			},
+			{
+				OptionName -> ShakingRadius,
+				Default -> Automatic,
+				AllowNull -> True,
+				Widget -> Widget[
+					Type -> Enumeration,
+					Pattern :> CellIncubatorShakingRadiusP (*3 Millimeter, 25 Millimeter, 25.4 Millimeter*)
+				],
+				Description -> "The radius of the circle of orbital motion applied to the sample during incubation. The MultitronPro Incubators for plates has a 25 mm shaking radius, and the Innova Incubators have a 25.4 Millimeter shaking radius. See the Instrumentation section of the helpfile for more information.",
+				ResolutionDescription -> "If Shake is True, automatically set to match the ShakingRadius value of specified IncubationCondition if it is provided, or set to the shaking radius of incubator.",
 				Category -> "Incubation Condition"
 			},
 			{
@@ -133,103 +316,73 @@ DefineOptions[
 				Category -> "Incubation Condition"
 			},
 			{
-				OptionName -> Temperature,
+				OptionName -> CellType,
 				Default -> Automatic,
 				AllowNull -> False,
-				Widget -> Alternatives[
-					"Preset Temperature" -> Widget[
-						Type -> Enumeration,
-						Pattern :> CellIncubationTemperatureP (* 30 C, 37 C *)
-					],
-					"Custom Temperature" -> Widget[
-						Type -> Quantity,
-						Pattern :> RangeP[$MinCellIncubationTemperature, $MaxCellIncubationTemperature], (* 28 Celsius, 80 Celsius *)
-						Units -> Celsius
-					]
+				Widget -> Widget[
+					Type -> Enumeration,
+					Pattern :> Alternatives[Bacterial, Mammalian, Yeast]
 				],
-				Description -> "Temperature at which the input cells are incubated. Currently, 30 Degrees Celsius and 37 Degrees Celsius are supported by default cell culture incubation conditions. Alternatively, a customized temperature can be requested with a dedicated custom incubator until the protocol is completed. See the IncubationCondition option for more information.",
-				ResolutionDescription -> "Automatically set to match the Temperature field of specified IncubationCondition, see below table. If IncubationCondition is not provided, automatically set to 37 Celsius if CellType is Bacterial or Mammalian, or 30 Celsius if CellType is Yeast.",
+				Description -> "The type of the most abundant cells that are thought to be present in this sample.",
+				ResolutionDescription -> "Automatically set to match the value of CellType of the input sample if it is populated, or set to Mammalian if CultureAdhesion is Adherent or if WorkCell is bioSTAR. If there are multiple cell types in the input sample or if the cell type is unknown, automatically set to Null.",
+				Category -> "Incubation Condition"
+			},
+			{
+				OptionName -> CultureAdhesion,
+				Default -> Automatic,
+				AllowNull -> False,
+				Widget -> Widget[
+					Type -> Enumeration,
+					Pattern :> CultureAdhesionP(*Adherent | Suspension | SolidMedia*)
+				],
+				Description -> "The manner of cell growth the cells in the sample are thought to employ (i.e., SolidMedia, Suspension, and Adherent). SolidMedia cells grow in colonies on a nutrient rich substrate, suspended cells grow free floating in liquid media, and adherent cells grow attached to a substrate.",
+				ResolutionDescription -> "Automatically set to match the CultureAdhesion value of the input sample if it is populated. Otherwise set to Suspension.",
 				Category -> "Incubation Condition"
 			},
 			{
 				OptionName -> RelativeHumidity,
 				Default -> Automatic,
-				AllowNull -> True,
+				AllowNull -> False,
 				Widget -> Alternatives[
-					"Preset Relative Humidity" -> Widget[
+					"Ambient" -> Widget[
+						Type -> Enumeration,
+						Pattern :> Alternatives[Ambient]
+					],
+					"93 Percent" -> Widget[
 						Type -> Enumeration,
 						Pattern :> CellIncubationRelativeHumidityP (* 93 Percent *)
 					],
-					"Custom Relative Humidity" -> Widget[
+					"Custom" -> Widget[
 						Type -> Quantity,
 						Pattern :> RangeP[0 Percent, 100 Percent],
 						Units -> Percent
 					]
 				],
 				Description -> "Percent humidity at which the input cells are incubated. Currently, 93% Relative Humidity is supported by default cell culture incubation conditions. Alternatively, a customized relative humidity can be requested with a dedicated custom incubator until the protocol is completed. See the IncubationCondition option for more information.",
-				ResolutionDescription -> "Automatically set to match the RelativeHumidity field of specified IncubationCondition, see below table. If IncubationCondition is not provided, automatically set to 93% if CellType is Mammalian, or Null if CellType is Bacterial or Yeast.",
+				ResolutionDescription -> "Automatically set to match the RelativeHumidity field of specified IncubationCondition, see below table. If IncubationCondition is not provided, automatically set to 93% if CellType is Mammalian, or Ambient if CellType is Bacterial or Yeast.",
 				Category -> "Incubation Condition"
 			},
 			{
 				OptionName -> CarbonDioxide,
 				Default -> Automatic,
-				AllowNull -> True,
+				AllowNull -> False,
 				Widget -> Alternatives[
-					"Preset Carbon Dioxide Percentage" -> Widget[
+					"Ambient" -> Widget[
+						Type -> Enumeration,
+						Pattern :> Alternatives[Ambient]
+					],
+					"5 Percent" -> Widget[
 						Type -> Enumeration,
 						Pattern :> CellIncubationCarbonDioxideP (* 5 Percent *)
 					],
-					"Custom Carbon Dioxide Percentage" -> Widget[
+					"Custom" -> Widget[
 						Type -> Quantity,
 						Pattern :> RangeP[0 Percent, $MaxCellIncubationCarbonDioxide],(*20 Percent*)
 						Units -> Percent
 					]
 				],
 				Description -> "Percent CO2 at which the input cells are incubated. Currently, 5% Carbon Dioxide is supported by default cell culture incubation conditions. Alternatively, a customized carbon dioxide percentage can be requested with a dedicated custom incubator until the protocol is completed. See the IncubationCondition option for more information.",
-				ResolutionDescription -> "Automatically set to match the CarbonDioxide field of specified IncubationCondition, see below table. If IncubationCondition is not provided, automatically set to 5% if CellType is Mammalian, or Null if CellType is Bacterial or Yeast.",
-				Category -> "Incubation Condition"
-			},
-			{
-				OptionName -> Shake,
-				Default -> Automatic,
-				AllowNull -> False,
-				Widget -> Widget[
-					Type -> Enumeration,
-					Pattern :> BooleanP
-				],
-				Description -> "Indicates if the input cells are shaken during incubation.",
-				ResolutionDescription -> "Automatically set to True if ShakingRate or ShakingRadius are provided, or if IncubationCondition is BacterialShakingIncubation or YeastShakingIncubation. Otherwise, set to False.",
-				Category -> "Incubation Condition"
-			},
-			{
-				OptionName -> ShakingRate,
-				Default -> Automatic,
-				AllowNull -> True,
-				Widget -> Alternatives[
-					"Preset Shaking Rate" -> Widget[
-						Type -> Enumeration,
-						Pattern :> CellIncubationShakingRateP(*200RPM,250RPM,400RPM*)
-					],
-					"Custom Shaking Rate" -> Widget[
-						Type -> Quantity,
-						Pattern :> RangeP[$MinCellIncubationShakingRate, $MaxCellIncubationShakingRate],(*20RPM,1000RPM*)
-						Units -> RPM
-					]
-				],
-				Description -> "The frequency at which the sample is agitated by movement in a circular motion. Currently, 200 RPM, 250 RPM and 400 RPM are supported by preset cell culture incubation conditions with shaking. Alternatively, a customized shaking rate can be requested with a dedicated custom incubator until the protocol is completed. See the IncubationCondition option for more information.",
-				ResolutionDescription -> "If Shake is True, automatically set match the ShakingRate value of specified IncubationCondition if it is provided. If IncubationCondition is not provided, automatically set to 400 RPM if the input sample is in a plate, or 250 RPM if the input sample is bacterial and in a vessel, or 200 RPM if the input sample is yeast and in a vessel.",
-				Category -> "Incubation Condition"
-			},
-			{
-				OptionName -> ShakingRadius,
-				Default -> Automatic,
-				AllowNull -> True,
-				Widget -> Widget[
-					Type -> Enumeration,
-					Pattern :> CellIncubatorShakingRadiusP (*3 Millimeter, 25 Millimeter, 25.4 Millimeter*)
-				],
-				Description -> "The radius of the circle of orbital motion applied to the sample during incubation. The MultitronPro Incubators for plates has a 25 mm shaking radius, and the Innova Incubators have a 25.4 Millimeter shaking radius. See the Instrumentation section of the helpfile for more information.",
-				ResolutionDescription -> "If Shake is True, automatically set to match the ShakingRadius value of specified IncubationCondition if it is provided, or set to the shaking radius of incubator.",
+				ResolutionDescription -> "Automatically set to match the CarbonDioxide field of specified IncubationCondition, see below table. If IncubationCondition is not provided, automatically set to 5% if CellType is Mammalian, or Ambient if CellType is Bacterial or Yeast.",
 				Category -> "Incubation Condition"
 			},
 			{
@@ -238,25 +391,163 @@ DefineOptions[
 				AllowNull -> False,
 				Widget -> Widget[
 					Type -> Enumeration,
-					Pattern :> SampleStorageTypeP|Disposal
+					Pattern :> IncubatedCellSampleStorageTypeP|Disposal
 				],
 				Description -> "The conditions under which samples will be stored after the protocol is completed.",
 				ResolutionDescription -> "If IncubationCondition is Custom, automatically set based on the CellType and CultureAdhesion of the cells. If CellType and CultureAdhesion are unknown, automatically set to BacterialIncubation if the container is a shallow plate, or BacterialShakingIncubation otherwise. If IncubationCondition is not Custom, automatically set to the IncubationCondition.",
 				Category -> "Post Experiment"
+			},
+
+			(* Index-Matching Quantification Options *)
+
+			(* Quantification Target and Time Options *)
+			{
+				OptionName -> MinQuantificationTarget,
+				Default -> Automatic,
+				AllowNull -> True,
+				Widget -> Alternatives[
+					"Cell/Milliliter" -> Widget[
+						Type -> Quantity,
+						Pattern :> RangeP[0 (EmeraldCell/Milliliter), 10^(12) (EmeraldCell/Milliliter)],
+						Units -> (EmeraldCell/Milliliter)
+					],
+					"OD600" -> Widget[
+						Type -> Quantity,
+						Pattern :> RangeP[0 OD600, 100 OD600],
+						Units -> OD600
+					],
+					"CFU/Milliliter" -> Widget[
+						Type -> Quantity,
+						Pattern :> RangeP[0 (CFU/Milliliter), 10^(12) (CFU/Milliliter)],
+						Units -> (CFU/Milliliter)
+					],
+					"Colony" -> Widget[
+						Type -> Quantity,
+						Pattern :> RangeP[0 Colony, 10^(12) Colony],
+						Units -> Colony
+					],
+					"None" -> Widget[
+						Type -> Enumeration,
+						Pattern :> Alternatives[None]
+					]
+				],
+				Description -> "If IncubationStrategy is QuantificationTarget, the minimum concentration of cells in the sample which must be detected by the QuantificationMethod before incubation is ceased and the protocol proceeds to the next step. Note that if this value is provided with units of Cell/Milliter or OD600, that unit will be used as the QuantificationUnit for ExperimentQuantifyCells. If None is specified, quantification will occur at at every QuantificationInterval until the Time has elapsed to generate a growth curve, and ExperimentQuantifyCells will resolve the QuantificationUnit automatically.",
+				ResolutionDescription -> "If IncubationStrategy is QuantificationTarget, automatically set to None.",
+				Category -> If[TrueQ[$IncubateCellsIncubateOnly], "Hidden", "Quantification"]
+			},
+			{
+				OptionName -> QuantificationTolerance,
+				Default -> Automatic,
+				AllowNull -> True,
+				Widget -> Alternatives[
+					"Cell/Milliliter" -> Widget[
+						Type -> Quantity,
+						Pattern :> RangeP[0 (EmeraldCell/Milliliter), 10^(12) (EmeraldCell/Milliliter)],
+						Units -> (EmeraldCell/Milliliter)
+					],
+					"OD600" -> Widget[
+						Type -> Quantity,
+						Pattern :> RangeP[0 OD600, 100 OD600],
+						Units -> OD600
+					],
+					"CFU/Milliliter" -> Widget[
+						Type -> Quantity,
+						Pattern :> RangeP[0 (CFU/Milliliter), 10^(12) (CFU/Milliliter)],
+						Units -> CFU/Milliliter
+					],
+					"Colony" -> Widget[
+						Type -> Quantity,
+						Pattern :> RangeP[0 Colony, 10^(12) Colony],
+						Units -> Colony
+					],
+					"Percent" -> Widget[
+						Type -> Quantity,
+						Pattern :> RangeP[0 Percent, 100 Percent, 1 Percent],
+						Units -> Percent
+					]
+				],
+				Description -> "The margin of error applied to the MinQualificationTarget such that, if the detected cell concentration exceeds the MinQuantificationTarget minus this value, the quantified concentration is considered to have met the target.",
+				ResolutionDescription -> "If MinQuantificationTarget is not Null or None, automatically set to 10 Percent.",
+				Category -> If[TrueQ[$IncubateCellsIncubateOnly], "Hidden", "Quantification"]
+			},
+			(* Aliquot Options for Quantification *)
+			{
+				OptionName -> QuantificationAliquotVolume,
+				Default -> Automatic,
+				AllowNull -> True,
+				Widget -> Widget[
+					Type -> Quantity,
+					Pattern :> GreaterP[0 Microliter],
+					Units -> {Microliter, {Microliter, Milliliter}}
+				],
+				Description -> "The volume of sample transferred to the QuantificationAliquotContainer to assess the concentration of cells using the QuantificationMethod.",
+				ResolutionDescription -> "If QuantificationAliquot is True, automatically set to the RecommendedFillVolume (or MaxVolume if the RecommendedFillVolume is not known) of the AliquotContainer.",
+				Category -> If[TrueQ[$IncubateCellsIncubateOnly], "Hidden", "Quantification"]
+			},
+			{
+				OptionName -> QuantificationAliquotContainer,
+				Default -> Automatic,
+				AllowNull -> True,
+				Widget -> Widget[
+					Type -> Object,
+					Pattern :> ObjectP[Model[Container]]
+				],
+				Description -> "The container into which a portion of the cell sample is transferred in order to assess the concentration of cells in the sample.",
+				ResolutionDescription -> "If QuantificationAliquot is True, automatically set to a container compatible with the QuantificationInstrument.",
+				Category -> If[TrueQ[$IncubateCellsIncubateOnly], "Hidden", "Quantification"]
+			},
+			{
+				OptionName -> QuantificationBlank,
+				Default -> Automatic,
+				AllowNull -> True,
+				Widget -> Widget[
+					Type -> Object,
+					Pattern :> ObjectP[{Object[Sample], Model[Sample]}]
+				],
+				Description -> "The sample on which the blank measurement is recorded in order to subtract background noise from the quantification measurement.",
+				ResolutionDescription -> "If QuantificationBlankMeasurement is True, automatically set to a solution with identical composition to the media in which the cell sample is being incubated.",
+				Category -> If[TrueQ[$IncubateCellsIncubateOnly], "Hidden", "Quantification"]
+			},
+			{
+				OptionName -> QuantificationWavelength,
+				Default -> Automatic,
+				AllowNull -> True,
+				Widget -> Widget[
+					Type -> Quantity,
+					Pattern :> RangeP[200 Nanometer, 1000 Nanometer, 1 Nanometer],
+					Units -> Nanometer
+				],
+				Description -> "The wavelength at which the quantification measurement is recorded.",
+				ResolutionDescription -> "If QuantificationMethod is Absorbance or Nephelometry, automatically set to 600 Nanometer.",
+				Category -> If[TrueQ[$IncubateCellsIncubateOnly], "Hidden", "Quantification"]
+			},
+			{
+				OptionName -> QuantificationStandardCurve,
+				Default -> Automatic,
+				AllowNull -> True,
+				Widget -> Widget[
+					Type -> Object,
+					Pattern :> ObjectP[Object[Analysis, StandardCurve]]
+				],
+				Description -> "An empirically derived function used to convert the results of quantification measurements to a cell concentration, which is then compared to the MinQuantificationTarget.",
+				ResolutionDescription -> "If QuantificationMethod is Absorbance or Nephelometry and an existing Object[Analysis, StandardCurve] is compatible with the instrument, sample, and unit conversion required for the experiment, automatically set to the appropriate Object[Analysis, StandardCurve].",
+				Category -> If[TrueQ[$IncubateCellsIncubateOnly], "Hidden", "Quantification"]
 			}
 		],
-
 		(* Shared Options *)
 		ProtocolOptions,
 		PreparationOption,
-		WorkCellOption,
-		CacheOption,
+		BiologyWorkCellOption,
 		SimulationOption
 	}
 ];
 
-(* To avoid occupying Robotic WorkCell too long, we have a limit for the max duration of cell culture within LiquidHandlerIntegrated incubator *)
-$RoboticIncubationTimeThreshold = 1 Hour;
+(* Use of the liquid handler-integrated incubator occupies the entire liquid handler for the duration of incubation. To limit this, *)
+(* the max duration of cell culture when Preparation -> Robotic is stored as $MaxRoboticIncubationTime and can be found in Constants.m  *)
+
+(* Patterns specific to ExperimentIncubateCells *)
+(* This is to accommodate the slightly awkward placement of a tube rack inside the plate incubator *)
+plateIncubatorFootprintsP = Alternatives[Plate, Conical15mLTube];
 
 (* ::Subsection::Closed:: *)
 (*ExperimentIncubateCells *)
@@ -278,7 +569,7 @@ ExperimentIncubateCells[myInputs: ListableP[ObjectP[{Object[Container], Object[S
 	gatherTests = MemberQ[output, Tests];
 
 	(* Remove temporal links and named objects. *)
-	{listedContainers, listedOptions} = sanitizeInputs[ToList[myInputs], ToList[myOptions]];
+	{listedContainers, listedOptions} = {ToList[myInputs], ToList[myOptions]};
 
 	(* First, simulate our sample preparation. *)
 	validSamplePreparationResult = Check[
@@ -289,7 +580,7 @@ ExperimentIncubateCells[myInputs: ListableP[ObjectP[{Object[Container], Object[S
 			listedOptions
 		],
 		$Failed,
-		{Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
+		{Download::ObjectDoesNotExist, Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
 	];
 
 	(* If we are given an invalid define name, return early. *)
@@ -298,7 +589,6 @@ ExperimentIncubateCells[myInputs: ListableP[ObjectP[{Object[Container], Object[S
 		(* Note: We've already thrown a message above in simulateSamplePreparationPackets. *)
 		Return[$Failed]
 	];
-
 
 	(* Convert our given containers into samples and sample index-matched options. *)
 	containerToSampleResult = If[gatherTests,
@@ -358,15 +648,14 @@ ExperimentIncubateCells[mySamples: ListableP[ObjectP[Object[Sample]]], myOptions
 	{
 		listedSamples, listedOptions, outputSpecification, output, gatherTests, validSamplePreparationResult, safeOps,
 		safeOpsTests, validLengths, validLengthTests, uploadProtocolOptions, performSimulationQ, templatedOptions,
-		templateTests, inheritedOptions, expandedSafeOps, cacheBall, resolvedOptionsResult, simulatedProtocol, simulation,
-		resolvedOptions, resolvedOptionsTests, collapsedResolvedOptions, resourcePacketTests,
-		instruments, incubationStorageConditions, sampleFields, modelSampleFields, objectContainerFields, modelContainerFields,
-		incubatorRacks, incubatorDecks, incubatorInstrumentFields, incubatorRackFields, incubatorDeckFields,
-		samplesWithPreparedSamplesNamed, optionsWithPreparedSamplesNamed, updatedSimulation, safeOptionsNamed,
-		samplesWithPreparedSamples, optionsWithPreparedSamples, upload, confirm, fastTrack, parentProtocol, cache,
-		downloadedStuff, resolvedPreparation, optionsResolverOnly, returnEarlyBecauseOptionsResolverOnly,
-		returnEarlyBecauseFailuresQ, protocolPacketWithResources, parentProtocolStack, totalTimesEstimate, result,
-		rootProtocol, overclockPacket
+		templateTests, inheritedOptions, expandedSafeOps, cacheBall, resolvedOptionsResult, quantificationPacket, simulatedProtocol, simulationAfterResourcePackets,
+		resolvedOptions, quantificationProtocolPacket, resolvedOptionsTests, resolvedOptionsSimulation, collapsedResolvedOptions, resourcePacketTests, incubators,
+		incubationStorageConditions, sampleFields, modelSampleFields, objectContainerFields, modelContainerFields, incubatorRacks, specifiedQuantificationInstrument,
+		incubatorDecks, incubatorInstrumentFields, incubatorRackFields, incubatorDeckFields, result, rootProtocol, uploadOverlockPacketQ, overclockPacket,
+		samplesWithPreparedSamplesNamed, optionsWithPreparedSamplesNamed, updatedSimulation, safeOptionsNamed, samplesWithPreparedSamples,
+		optionsWithPreparedSamples, upload, confirm, canaryBranch, fastTrack, parentProtocol, cache, downloadedStuff, roboticQ, optionsResolverOnly, resourcePacketResult,
+		returnEarlyBecauseOptionsResolverOnly, returnEarlyBecauseFailuresQ, protocolPacketWithResources, unitOperationPackets, roboticSimulation, failureResponseSimulation, roboticRunTime,
+		totalTimesEstimate, incubateCellsSimulation, incubateCellsSimulationWithFailureResponse, resolvedOptionsFromQuantification
 	},
 
 	(* Determine the requested return value from the function *)
@@ -388,7 +677,7 @@ ExperimentIncubateCells[mySamples: ListableP[ObjectP[Object[Sample]]], myOptions
 			listedOptions
 		],
 		$Failed,
-		{Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
+		{Download::ObjectDoesNotExist, Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
 	];
 
 	(* If we are given an invalid define name, return early. *)
@@ -405,7 +694,7 @@ ExperimentIncubateCells[mySamples: ListableP[ObjectP[Object[Sample]]], myOptions
 	];
 
 	(* Replace all objects referenced by Name to ID *)
-	{samplesWithPreparedSamples, safeOps, optionsWithPreparedSamples} = sanitizeInputs[samplesWithPreparedSamplesNamed, safeOptionsNamed, optionsWithPreparedSamplesNamed];
+	{samplesWithPreparedSamples, safeOps, optionsWithPreparedSamples} = sanitizeInputs[samplesWithPreparedSamplesNamed, safeOptionsNamed, optionsWithPreparedSamplesNamed, Simulation -> updatedSimulation];
 
 	(* If the specified options don't match their patterns or if option lengths are invalid return $Failed *)
 	If[MatchQ[safeOps, $Failed],
@@ -459,15 +748,15 @@ ExperimentIncubateCells[mySamples: ListableP[ObjectP[Object[Sample]]], myOptions
 	inheritedOptions = ReplaceRule[safeOps, templatedOptions];
 
 	(* get assorted hidden options *)
-	{upload, confirm, fastTrack, parentProtocol, cache} = Lookup[inheritedOptions, {Upload, Confirm, FastTrack, ParentProtocol, Cache}];
+	{upload, confirm, canaryBranch, fastTrack, parentProtocol, cache} = Lookup[inheritedOptions, {Upload, Confirm, CanaryBranch, FastTrack, ParentProtocol, Cache}];
 
 	(* Expand index-matching options *)
 	expandedSafeOps = Last[ExpandIndexMatchedInputs[ExperimentIncubateCells, {ToList[listedSamples]}, inheritedOptions]];
 
 	(*-- DOWNLOAD THE INFORMATION THAT WE NEED FOR OUR OPTION RESOLVER AND RESOURCE PACKET FUNCTION --*)
 
-	(* Get the incubator instruments in the lab that are not deprecated. *)
-	instruments = Flatten[{
+	(* Get the incubators in the lab that are not deprecated. *)
+	incubators = Flatten[{
 		nonDeprecatedIncubatorsSearch["Memoization"],
 		Cases[KeyDrop[ToList[myOptions],{Cache,Simulation}], ObjectReferenceP[{Object[Instrument, Incubator], Model[Instrument, Incubator]}], Infinity]
 	}];
@@ -491,18 +780,25 @@ ExperimentIncubateCells[mySamples: ListableP[ObjectP[Object[Sample]]], myOptions
 	objectContainerFields = SamplePreparationCacheFields[Object[Container]];
 	modelContainerFields = SamplePreparationCacheFields[Model[Container]];
 
+	(* Get the QuantificationInstrument if the user specified it. We use this in the resolver to check plate compatibility for plate readers. *)
+	specifiedQuantificationInstrument = If[MatchQ[Lookup[expandedSafeOps, QuantificationInstrument], Automatic|Null],
+		{},
+		Lookup[expandedSafeOps, QuantificationInstrument]
+	];
+
 	(* Combine our downloaded and simulated cache. *)
 	(* It is important that the sample preparation cache is added first to the cache ball, before the main download. *)
 	downloadedStuff = Check[
 		Quiet[
 			Download[
 				{
-					(* Download {CellTypes,ShakingRadius,Positions,MinTemperature,MaxTemperature,MinCO2,MaxCO2,MinHumidity,MaxHumidity} from our instruments. *)
+					(* Download {CellTypes,ShakingRadius,Positions,MinTemperature,MaxTemperature,MinCO2,MaxCO2,MinHumidity,MaxHumidity} from our incubators. *)
 					ToList[listedSamples],
-					instruments,
+					incubators,
 					incubatorRacks,
 					incubatorDecks,
 					incubationStorageConditions,
+					ToList[specifiedQuantificationInstrument],
 					{parentProtocol} /. {Null -> Nothing}
 				},
 				{
@@ -511,13 +807,19 @@ ExperimentIncubateCells[mySamples: ListableP[ObjectP[Object[Sample]]], myOptions
 						Packet[Model[modelSampleFields]],
 						Packet[Container[objectContainerFields]],
 						Packet[Container[Model][modelContainerFields]],
-						Packet[Composition[[All, 2]][{CellType, CultureAdhesion, DoublingTime}]]
+						(* Downloads about composition components standard curves need to mirror ExperimentQuantifyCells *)
+						Packet[Composition[[All, 2]][{CellType, CultureAdhesion, DoublingTime, StandardCurves, StandardCurveProtocols, Molecule, ExtinctionCoefficients, PolymerType, MolecularWeight, IncubationTemperature, Density}]],
+						Packet[Composition[[All, 2]][StandardCurves][{DateCreated, InversePrediction, BestFitFunction, Protocol, StandardDataUnits}]],
+						Packet[Composition[[All, 2]][StandardCurves][Protocol][Instrument, Wavelengths]],
+						Packet[Composition[[All, 2]][StandardCurves][Protocol][Instrument][{Model, Status, WettedMaterials, PlateReaderMode, SamplingPatterns, IntegratedLiquidHandler}]],
+						Packet[Composition[[All, 2]][StandardCurves][Protocol][Instrument][Model][{WettedMaterials, PlateReaderMode, SamplingPatterns, IntegratedLiquidHandlers}]]
 					},
 					{Evaluate[Packet[Sequence @@ incubatorInstrumentFields]]},
 					{Evaluate[Packet[Sequence @@ incubatorRackFields]]},
 					{Evaluate[Packet[Sequence @@ incubatorDeckFields]]},
 					{Packet[StorageCondition, CellType, CultureHandling, Temperature, Humidity, Temperature, CarbonDioxide, ShakingRate, VesselShakingRate, PlateShakingRate, ShakingRadius]},
-					{Object, ParentProtocol..[Object]}
+					{Packet[Manufacturer]},
+					{Packet[RootProtocol]}
 				},
 				Cache -> cache,
 				Simulation -> updatedSimulation,
@@ -529,8 +831,8 @@ ExperimentIncubateCells[mySamples: ListableP[ObjectP[Object[Sample]]], myOptions
 		{Download::ObjectDoesNotExist}
 	];
 
-	(* Pull out the parent protocol stack *)
-	parentProtocolStack = Flatten[downloadedStuff[[6]]];
+	(* Get the RootProtocol *)
+	rootProtocol = Lookup[Flatten[downloadedStuff[[-1]]], RootProtocol, {Null}][[1]];
 
 	(* Return early if objects do not exist *)
 	If[MatchQ[downloadedStuff, $Failed],
@@ -538,15 +840,70 @@ ExperimentIncubateCells[mySamples: ListableP[ObjectP[Object[Sample]]], myOptions
 	];
 	cacheBall = FlattenCachePackets[{cache, Cases[Flatten[downloadedStuff], PacketP[]]}];
 
+	(* Figure out if we need to perform our simulation. If so, we can't return early even though we want to because we *)
+	(* need to return some type of simulation to our parent function that called us. *)
+	performSimulationQ = MemberQ[output, Result|Simulation];
+
 	(* Build the resolved options *)
-	resolvedOptionsResult = Check[
-		{resolvedOptions, resolvedOptionsTests} = If[gatherTests,
-			resolveExperimentIncubateCellsOptions[samplesWithPreparedSamples, expandedSafeOps, Cache -> cacheBall, Simulation -> updatedSimulation, Output -> {Result, Tests}],
-			{resolveExperimentIncubateCellsOptions[samplesWithPreparedSamples, expandedSafeOps, Cache -> cacheBall, Simulation -> updatedSimulation, Output -> Result], {}}
-		],
-		$Failed,
-		{Error::InvalidInput,Error::InvalidOption,Error::ConflictingUnitOperationMethodRequirements}
+	resolvedOptionsResult = If[gatherTests,
+		(* We are gathering tests. This silences any messages being thrown. *)
+		(
+			{{resolvedOptions, quantificationProtocolPacket}, resolvedOptionsTests, resolvedOptionsSimulation} = If[performSimulationQ,
+				resolveExperimentIncubateCellsOptions[
+					samplesWithPreparedSamples,
+					expandedSafeOps,
+					Cache -> cacheBall,
+					Simulation -> updatedSimulation,
+					Output -> {Result, Tests, Simulation}
+				],
+				Module[{options, quantPacket, tests},
+					{{options, quantPacket}, tests} = resolveExperimentIncubateCellsOptions[
+						samplesWithPreparedSamples,
+						expandedSafeOps,
+						Cache -> cacheBall,
+						Simulation -> updatedSimulation,
+						Output -> {Result, Tests}
+					];
+					{{options, quantPacket}, tests, updatedSimulation}
+				]
+			];
+			(* Therefore, we have to run the tests to see if we encountered a failure. *)
+			If[RunUnitTest[<|"Tests" -> resolvedOptionsTests|>, OutputFormat -> SingleBoolean, Verbose -> False],
+				{resolvedOptions, resolvedOptionsTests},
+				$Failed
+			]
+		),
+
+		(* We are not gathering tests. Simply check for Error::InvalidInput, Error::InvalidOption, and Error::ConflictingUnitOperationMethodRequirements *)
+		Check[
+			(
+				resolvedOptionsTests = {};
+				{{resolvedOptions, quantificationProtocolPacket}, resolvedOptionsSimulation} = If[performSimulationQ,
+					resolveExperimentIncubateCellsOptions[
+						samplesWithPreparedSamples,
+						expandedSafeOps,
+						Cache -> cacheBall,
+						Simulation -> updatedSimulation,
+						Output -> {Result, Simulation}
+					],
+					{
+						resolveExperimentIncubateCellsOptions[
+							samplesWithPreparedSamples,
+							expandedSafeOps,
+							Cache -> cacheBall,
+							Simulation -> updatedSimulation
+						],
+						updatedSimulation
+					}
+				]
+			),
+			$Failed,
+			{Error::InvalidInput, Error::InvalidOption, Error::ConflictingUnitOperationMethodRequirements}
+		]
 	];
+
+	(* Isolate the quantification packet and make sure it matches the input pattern of the simulation function. *)
+	quantificationPacket = ToList[quantificationProtocolPacket /. {{} -> Null}][[1]];
 
 	(* Collapse the resolved options *)
 	collapsedResolvedOptions = CollapseIndexMatchedOptions[
@@ -555,9 +912,6 @@ ExperimentIncubateCells[mySamples: ListableP[ObjectP[Object[Sample]]], myOptions
 		Ignore -> listedOptions,
 		Messages -> False
 	];
-
-	(* Lookup our resolved Preparation option. *)
-	resolvedPreparation = Lookup[resolvedOptions, Preparation];
 
 	(* Lookup our OptionsResolverOnly option.  This will determine if we skip the resource packets and simulation functions *)
 	(* if Output contains Result or Simulation, then we can't do this *)
@@ -573,10 +927,6 @@ ExperimentIncubateCells[mySamples: ListableP[ObjectP[Object[Sample]]], myOptions
 		True, False
 	];
 
-	(* Figure out if we need to perform our simulation. If so, we can't return early even though we want to because we *)
-	(* need to return some type of simulation to our parent function that called us. *)
-	performSimulationQ = MemberQ[output, Result|Simulation];
-
 	(* If option resolution failed and we aren't asked for the simulation or output, return early. *)
 	(* for now, just returning early always *)
 	If[!performSimulationQ && (returnEarlyBecauseFailuresQ || returnEarlyBecauseOptionsResolverOnly),
@@ -585,50 +935,87 @@ ExperimentIncubateCells[mySamples: ListableP[ObjectP[Object[Sample]]], myOptions
 			Tests -> Flatten[{safeOpsTests, validLengthTests, templateTests, resolvedOptionsTests}],
 			Options -> RemoveHiddenOptions[ExperimentIncubateCells, collapsedResolvedOptions],
 			Preview -> Null,
-			Simulation -> Simulation[]
+			Simulation -> updatedSimulation
 		}]
 	];
 
-	(* Build packets with resources *)
-	{protocolPacketWithResources, resourcePacketTests} = If[returnEarlyBecauseOptionsResolverOnly || returnEarlyBecauseFailuresQ,
-		{$Failed, {}},
-		If[gatherTests,
-			incubateCellsResourcePackets[
-				samplesWithPreparedSamples,
-				templatedOptions,
-				resolvedOptions,
-				collapsedResolvedOptions,
-				Cache -> cacheBall,
-				Simulation -> updatedSimulation,
-				Output -> {Result, Tests}
-			],
-			{
+	(* Lookup our resolved Preparation option and set a flag. *)
+	roboticQ = MatchQ[Lookup[resolvedOptions, Preparation], Robotic];
+
+	(* If we are aliquoting for quantification, we minimize the time that the cells spend outside the incubator by splitting *)
+	(* the quantification subprotocol into a Transfer sub and an Abs/Neph sub without aliquoting, and we return the cells to *)
+	(* their incubator(s) after the transfer. To do this we pass any resolved quantification options into the resource packets *)
+	resolvedOptionsFromQuantification = If[MatchQ[quantificationPacket, PacketP[]],
+		Lookup[quantificationPacket, ResolvedOptions],
+		{}
+	];
+
+	(* Build packets with resources. Also return any simulation from the failure response. *)
+	{
+		resourcePacketResult,
+		resourcePacketTests
+	} = If[returnEarlyBecauseOptionsResolverOnly || returnEarlyBecauseFailuresQ,
+		{ConstantArray[$Failed, 5], {}},
+		Block[{$IncubateCellsQuantificationOptions = resolvedOptionsFromQuantification},
+			If[gatherTests,
 				incubateCellsResourcePackets[
 					samplesWithPreparedSamples,
 					templatedOptions,
 					resolvedOptions,
 					collapsedResolvedOptions,
 					Cache -> cacheBall,
-					Simulation -> updatedSimulation
+					Simulation -> updatedSimulation,
+					Output -> {Result, Tests}
 				],
-				{}
-			}
+				{
+					incubateCellsResourcePackets[
+						samplesWithPreparedSamples,
+						templatedOptions,
+						resolvedOptions,
+						collapsedResolvedOptions,
+						Cache -> cacheBall,
+						Simulation -> updatedSimulation
+					],
+					{}
+				}
+			]
 		]
 	];
+	(* If we did get the results with 5 variables we wanted, assign to each resource packet result, otherwise assign each a $Fail to avoid weird error *)
+	{protocolPacketWithResources, unitOperationPackets, roboticSimulation, failureResponseSimulation, roboticRunTime} = If[Length[resourcePacketResult] == 5,
+		resourcePacketResult,
+		ConstantArray[$Failed, 5]
+	];
+
+	(* Determine which simulation to pass around following the resource packets. *)
+	simulationAfterResourcePackets = If[roboticQ, roboticSimulation, resolvedOptionsSimulation];
 
 	(* If we were asked for a simulation, also return a simulation. *)
-	{simulatedProtocol, simulation} = Which[
+	{simulatedProtocol, incubateCellsSimulation} = Which[
+		(* If resource packets failed, do not attempt the simulation. *)
 		MatchQ[protocolPacketWithResources, $Failed], {$Failed, updatedSimulation},
+		(* We don't need to do this if we are robotic since RCP handles the simulation in that case. *)
+		roboticQ && MatchQ[roboticSimulation, SimulationP], {Null, roboticSimulation},
+		(* For manual, call the simulation function. *)
 		performSimulationQ,
 			simulateExperimentIncubateCells[
-				protocolPacketWithResources[[1]], (* protocolPacket *)
-				Flatten[ToList[protocolPacketWithResources[[2]]]], (* unitOperationPackets *)
+				protocolPacketWithResources,
+				unitOperationPackets,
+				quantificationPacket,
 				ToList[samplesWithPreparedSamples],
 				resolvedOptions,
 				Cache -> cacheBall,
-				Simulation -> updatedSimulation
+				Simulation -> simulationAfterResourcePackets
 			],
-		True, {Null, Null}
+		(* Failsafe evaluation *)
+		True, {Null, simulationAfterResourcePackets}
+	];
+
+	(* Update the simulation with the failure response simulation. *)
+	(* Note that there is nothing new here unless the FailureResponse is Freeze. *)
+	incubateCellsSimulationWithFailureResponse = If[MatchQ[failureResponseSimulation, SimulationP],
+		UpdateSimulation[simulationAfterResourcePackets, failureResponseSimulation],
+		simulationAfterResourcePackets
 	];
 
 	(* If Result does not exist in the output, return everything without uploading *)
@@ -636,40 +1023,43 @@ ExperimentIncubateCells[mySamples: ListableP[ObjectP[Object[Sample]]], myOptions
 		Return[outputSpecification /. {
 			Result -> Null,
 			Tests -> Flatten[{safeOpsTests, validLengthTests, templateTests, resolvedOptionsTests, resourcePacketTests}],
-			Options -> If[MatchQ[resolvedPreparation, Robotic],
+			Options -> If[roboticQ,
 				resolvedOptions,
 				RemoveHiddenOptions[ExperimentIncubateCells, collapsedResolvedOptions]
 			],
 			Preview -> Null,
-			Simulation -> simulation
+			Simulation -> incubateCellsSimulationWithFailureResponse
 		}]
 	];
 
-	(* Determine the root protocol here and then use that to mark it as Overclock -> True *)
 	(* IncubateCells protocols need Overclock -> True in order to ensure that even if the queue is full, we can handle the cells in a timely fashion *)
 	(* Only need to bother if we're doing Manual or if we haven't failed in the resource packets *)
-	rootProtocol = Which[
-		MatchQ[resolvedPreparation, Robotic], Null,
-		MatchQ[protocolPacketWithResources, $Failed], Null,
-		NullQ[parentProtocol], Lookup[protocolPacketWithResources[[1]], Object],
-		True, Last[parentProtocolStack]
+	uploadOverlockPacketQ = And[
+		!roboticQ,
+		!MatchQ[protocolPacketWithResources, $Failed],
+		MatchQ[rootProtocol, ObjectP[]]
 	];
+
 	(* only add an overclocking packet for the root protocol if we are a subprotocol here *)
 	(* doing this because UploadProtocol behaves oddly when you are uploading a packet and also have a different packet for the same object in the accessory packets overload *)
 	(* thus, if this IncubateCells is the root protocol, we will have already populated that field in the resource packets function *)
-	overclockPacket = If[MatchQ[rootProtocol, ObjectP[]] && Not[NullQ[parentProtocol]],
-		<|Object -> rootProtocol, Overclock -> True|>,
+	overclockPacket = If[uploadOverlockPacketQ,
+		<|Object -> Download[rootProtocol, Object], Overclock -> True|>,
 		Nothing
 	];
 
-	(* Estimate the time; this is solely based on the Time option+some buffer*)
-	totalTimesEstimate = 1.5 * Lookup[resolvedOptions, Time];
+	(* Estimate the time according to the method, adding in some buffer for resource picking, quantifications, etc. *)
+	totalTimesEstimate = If[roboticQ,
+		1.5 * roboticRunTime,
+		1.5 * Lookup[resolvedOptions, Time]
+	];
 
 	(* Put the UploadProtocol options together so we don't have to type them out multiple times*)
 	(* making it a sequence because UploadProtocol misbehaves with lists sometimes *)
 	uploadProtocolOptions = Sequence[
 		Upload -> Lookup[safeOps, Upload],
 		Confirm -> Lookup[safeOps, Confirm],
+		CanaryBranch -> Lookup[safeOps, CanaryBranch],
 		ParentProtocol -> Lookup[safeOps, ParentProtocol],
 		Priority -> Lookup[safeOps, Priority],
 		StartDate -> Lookup[safeOps, StartDate],
@@ -677,24 +1067,25 @@ ExperimentIncubateCells[mySamples: ListableP[ObjectP[Object[Sample]]], myOptions
 		QueuePosition -> Lookup[safeOps, QueuePosition],
 		ConstellationMessage -> {Object[Protocol, IncubateCells]},
 		Cache -> cacheBall,
-		Simulation -> updatedSimulation
+		Simulation -> incubateCellsSimulationWithFailureResponse
 	];
 
 	(* We have to return the result. Call UploadProtocol[...] to prepare our protocol packet (and upload it if asked). *)
-	result = Which[
-		(* If our resource packets failed, we can't upload anything. *)
-		MatchQ[protocolPacketWithResources, $Failed],
+	result = Quiet[
+		Which[
+			(* If our resource packets failed, we can't upload anything. *)
+			MatchQ[protocolPacketWithResources, $Failed],
 			$Failed,
 
-		(* If we're doing Preparation->Robotic, return our unit operations packets back without RequireResources called if *)
-		(* Upload->False. *)
-		MatchQ[resolvedPreparation, Robotic] && MatchQ[Lookup[safeOps, Upload], False],
-			ToList[protocolPacketWithResources[[2]]], (* unitOperationPackets *)
+			(* If we're doing Preparation->Robotic, return our unit operations packets back without RequireResources called if *)
+			(* Upload->False. *)
+			roboticQ && MatchQ[Lookup[safeOps, Upload], False],
+			unitOperationPackets,
 
-		(* If we're doing Preparation->Robotic and Upload->True, call ExperimentRoboticCellPreparation with our primitive. *)
-		MatchQ[resolvedPreparation, Robotic],
+			(* If we're doing Preparation->Robotic and Upload->True, call ExperimentRoboticCellPreparation with our primitive. *)
+			roboticQ,
 			Module[{primitive, nonHiddenOptions},
-				(* Create our IncubateCells primitive to feed into RoboticSamplePreparation. *)
+				(* Create our IncubateCells primitive to feed into ExperimentRoboticCellPreparation. *)
 				primitive = IncubateCells @@ Join[
 					{
 						Sample -> mySamples
@@ -705,7 +1096,7 @@ ExperimentIncubateCells[mySamples: ListableP[ObjectP[Object[Sample]]], myOptions
 				(* Remove any hidden options before returning. *)
 				nonHiddenOptions = RemoveHiddenOptions[ExperimentIncubateCells, resolvedOptions];
 
-				(* Memoize the value of ExperimentTransfer so the framework doesn't spend time resolving it again. *)
+				(* Memoize the value of ExperimentIncubateCells so the framework doesn't spend time resolving it again. *)
 				Internal`InheritedBlock[{ExperimentIncubateCells, $PrimitiveFrameworkResolverOutputCache},
 					$PrimitiveFrameworkResolverOutputCache = <||>;
 
@@ -716,10 +1107,10 @@ ExperimentIncubateCells[mySamples: ListableP[ObjectP[Object[Sample]]], myOptions
 						frameworkOutputSpecification = Lookup[ToList[options], Output];
 
 						frameworkOutputSpecification /. {
-							Result -> protocolPacketWithResources[[2]],
+							Result -> unitOperationPackets,
 							Options -> nonHiddenOptions,
 							Preview -> Null,
-							Simulation -> simulation,
+							Simulation -> incubateCellsSimulationWithFailureResponse,
 							RunTime -> totalTimesEstimate
 						}
 					];
@@ -734,6 +1125,7 @@ ExperimentIncubateCells[mySamples: ListableP[ObjectP[Object[Sample]]], myOptions
 								Name -> Lookup[nonHiddenOptions, Name],
 								Upload -> Lookup[safeOps, Upload],
 								Confirm -> Lookup[safeOps, Confirm],
+								CanaryBranch -> Lookup[safeOps, CanaryBranch],
 								ParentProtocol -> Lookup[safeOps, ParentProtocol],
 								Priority -> Lookup[safeOps, Priority],
 								StartDate -> Lookup[safeOps, StartDate],
@@ -746,34 +1138,33 @@ ExperimentIncubateCells[mySamples: ListableP[ObjectP[Object[Sample]]], myOptions
 				]
 			],
 
-		(* Actually upload our protocol object.  This is only for Manual. *)
-		(* Note that since we only make batched unit operations sometimes and UploadProtocol can't take {} as the second argument, need to do this two different times *)
-		MatchQ[ToList[protocolPacketWithResources[[2]]], {}] && Not[MatchQ[overclockPacket, PacketP[]]],
+			(* Actually upload our protocol object.  This is only for Manual. *)
+			(* Note that since we only make batched unit operations sometimes and UploadProtocol can't take {} as the second argument, need to do this two different times *)
+			MatchQ[unitOperationPackets, {}] && Not[MatchQ[overclockPacket, PacketP[]]],
 			UploadProtocol[
-				(* protocol packet*)
-				protocolPacketWithResources[[1]],
+				protocolPacketWithResources,
 				uploadProtocolOptions
 			],
-		True,
+			True,
 			UploadProtocol[
-				(* protocol packet *)
-				protocolPacketWithResources[[1]],
-				(* unit operation packets *)
-				Flatten[{protocolPacketWithResources[[2]], overclockPacket}],
+				protocolPacketWithResources,
+				Flatten[{unitOperationPackets, overclockPacket}],
 				uploadProtocolOptions
 			]
+		],
+		{Download::MissingCacheField}
 	];
 
 	(* Return requested output *)
 	outputSpecification /. {
 		Result -> result,
 		Tests -> Flatten[{safeOpsTests, validLengthTests, templateTests, resolvedOptionsTests, resourcePacketTests}],
-		Options -> If[MatchQ[resolvedPreparation, Robotic],
+		Options -> If[roboticQ,
 			collapsedResolvedOptions,
 			RemoveHiddenOptions[ExperimentIncubateCells, collapsedResolvedOptions]
 		],
 		Preview -> Null,
-		Simulation -> simulation,
+		Simulation -> incubateCellsSimulationWithFailureResponse,
 		RunTime -> totalTimesEstimate
 	}
 ];
@@ -785,9 +1176,8 @@ ExperimentIncubateCells[mySamples: ListableP[ObjectP[Object[Sample]]], myOptions
 Error::InvalidPlateSamples = "Sample(s) `1` are found in the same container as input sample(s) `2` but they are not specified as input samples. Since a plate is stored inside of the cell incubator as a whole during cell culture, please transfer sample(s) into an empty container beforehand.";
 Error::UnsealedCellCultureVessels = "The sample(s) `1` at indices `2` are in a container `3` without any cover. Please cover `3` with suitable lid or cap beforehand.";
 Error::UnsupportedCellTypes = "The CellType option of sample `1` at indices `2` is set to `3`. Currently, only Mammalian, Bacterial and Yeast cell culture are supported. Please contact us if you have a sample that falls outside our current support.";
-Error::ConflictingWorkCells = "The following requirements can only be performed on a bioSTAR: `1`. However, the following requirements can only be performed on a microbioSTAR: `2`. Please resolve this conflict in order to submit a valid IncubateCells protocol or unit operation.";
+Error::ConflictingIncubationWorkCells = "The following requirements can only be performed on a bioSTAR: `1`. However, the following requirements can only be performed on a microbioSTAR: `2`. Please resolve this conflict in order to submit a valid IncubateCells protocol or unit operation.";
 Error::ConflictingWorkCellWithPreparation = "WorkCell option is set at `1` and Preparation option is set at `2`. If Preparation is Manual, WorkCell must be Null; if Preparation is Robotic, WorkCell must be populated. Please correct the values.";
-Error::ConflictingPreparationWithIncubationTime = "Preparation option is set at `1` and Time is set at `2`. When Preparation is set at Robotic, samples are stored in a liquid handler integrated cell incubator temporarily before robotic cell preparation. Please shorten the Time to 1 Hour or less or select Manual Preparation.";
 Warning::CellTypeNotSpecified = "The sample(s) `1` have no CellType specified in the options or Object. For these sample(s), the CellType is defaulting to Bacterial. If this is not desired, please specify a CellType.";
 Warning::CultureAdhesionNotSpecified = "The sample(s) `1` at indices `2` have no CultureAdhesion specified in the options or Object. For these sample(s), the CultureAdhesion is defaulting to `3`. If this is not desired, please specify a CultureAdhesion.";
 Warning::CustomIncubationConditionNotSpecified = "For sample(s) `1` at indices `2` have IncubationCondition specified as Custom and option(s) `3` are defaulting to `4`. If this is not desired, please specify value for `3`.";
@@ -802,11 +1192,28 @@ Error::ConflictingCellTypeWithIncubator = "The sample(s) `1` at indices `2` have
 Error::ConflictingCultureAdhesionWithContainer = "The sample(s) `1` at indices `2` have a CultureAdhesion specified in the option as `3`. When samples are in plates, CultureAdhesion should be Adherent for liquid media and SolidMedia for solid media. For these sample(s), please specify the same CultureAdhesion as the Object or let the option be set automatically.";
 Error::ConflictingIncubationConditionsForSameContainer = "The sample(s) `1` have different incubation settings `2`, but are in the same container as another sample. For these sample(s), either transfer to different containers, allow the conflicting incubation options to be set automatically, or specify the same incubation conditions for each sample in the same container.";
 Error::ConflictingCellTypeWithStorageCondition = "The sample(s) `1` at indices `2` have a CellType specified in the option as `3` and SamplesOutStorageCondition specified in the option as `4`. `4` is not compatible with `3`. For these sample(s), please change these options to specify a valid protocol.";
-Error::ConflictingCultureAdhesionWithStorageCondition = "The sample(s) `1` at indices `2` have a CultureAdhesion specified in the option as `3` and SamplesOutStorageCondition specified in the option as `4`. `4` is not compatible with `3`. For these sample(s), please change these options to specify a valid protocol.";
+Warning::ConflictingCultureAdhesionWithStorageCondition = "The sample(s) `1` at indices `2` have a CultureAdhesion specified in the option as `3` and SamplesOutStorageCondition specified in the option as `4`. `4` is not compatible with `3`. For these sample(s), please change these options to specify a valid protocol.";
 Error::IncubationMaxTemperature = "The sample(s) `1` at indices `2` are in container(s) `3`, which have MaxTemperature(s) of, `4`. For these sample(s), Temperature cannot be set above the MaxTemperature of the given container(s). Please change these options to specify a valid protocol.";
 Error::NoCompatibleIncubator = "The sample(s) `1` at indices `2` have no cell incubator instruments that are compatible with the footprint of the sample container and the option(s) specified (including specified incubator(s)).  To see the instruments that are compatible with this sample, use the function IncubateCellsDevices.";
-Error::DuplicateSamples = "The following sample(s) `1` are specified more than once.  Please only specify a sample as an input one time in a given experiment call.";
+Error::IncubatorIsIncompatible = "The sample(s) `1` at indices `2` have cell incubator specified as, `3`. However,  this sample can only be incubated in the following cell incubator models, `4`. Please use the function IncubateCellsDevices to select a compatible cell incubator, or allow Incubator to be set automatically.";
+Error::InvalidPropertySamples = "The following sample(s) `1` have invalid sample state or amount. The states are `2`, the volumes are `3`, and the mass are `4`. Only solid and liquid samples with non-zero amount can be used.";
 Error::TooManyIncubationSamples = "The following incubator(s) `1` have enough space for `2` `3`, but `4` were specified instead.  Please split the experiment call into multiple in order to not exceed the capacity of the incubators.";
+Error::ConflictingIncubationStrategy = "The sample(s) `1` at indices `5` have the IncubationStrategy option set to `3`, but the `2` option is set to `4`. Please ensure that quantification options are specified if and only if IncubationStrategy is QuantificationTarget.";
+Error::ConflictingQuantificationOptions = "The sample(s) `1` at indices `6` have the `2` option(s) set to `3`, but the `4` option(s) are set to `5`. Please ensure that all quantification options are compatible or allow them to resolve automatically in order to submit a valid experiment.";
+Error::FailureResponseNotSupported = "The specified FailureResponse is incompatible with one or more of the input samples for the following reason: `1`";
+Error::UnsuitableQuantificationInterval = "The QuantificationInterval option is set to `1` and the Time option is set to `2` for the experiment. When the IncubationStrategy is QuantificationTarget, please specify a QuantificationInterval less than or equal to the Time but no less than 1 Hour in order to submit a valid experiment.";
+Error::ConflictingQuantificationMethodAndInstrument = "The QuantificationInstrument `2` is not capable of the QuantificationMethod `1`. Please ensure that the QuantificationInstrument and QuantificationMethod are compatible in order to submit a valid experiment.";
+Error::ExcessiveQuantificationAliquotVolumeRequired = "The sample(s) `1` at indices `7` have the QuantificationAliquotVolume option set to `2` and the QuantificationRecoupSample option is set to False. Since the QuantificationInterval is `3` and the Time is `4`, it is possible that up to `5` will be removed from the sample(s) for quantification, exceeding the available sample volume of `6`. Please either set QuantificationRecoupSample to True (which increases the chance of contamination) or adjust these options to reduce the maximum volume of sample(s) to be aliquoted in order to submit a valid experiment.";
+Error::QuantificationTargetUnitsMismatch = "The sample(s) `1` at indices `4` have the MinQuantificationTarget option specified as `2` and the QuantificationTolerance specified as `3`. Please ensure that the QuantificationTolerance, if specified, is given in the same units as the MinQuantificationTarget or as a Percent of the MinQuantificationTarget.";
+Error::ExtraneousQuantifyColoniesOptions = "The sample(s) `1` at indices `4` have the `2` option(s) set to `3` while the QuantificationMethod is ColonyCount. ExperimentQuantifyColonies does not require a wavelength, standard curve, or blank measurement, and it does not currently support aliquoting. Please set all of these options to Null or allow them to resolve automatically in order to submit a valid experiment.";
+Error::ConflictingQuantificationAliquotOptions = "The sample(s) `1` at indices `5` have the `2` option(s) set to `3` while QuantificationAliquot is `4`. Please ensure that the options QuantificationAliquotVolume, QuantificationAliquotContainer are specified for each sample if and only if QuantificationAliquot is True.";
+Error::MixedQuantificationAliquotRequirements = "Due to procedural timing constraints in ExperimentIncubateCells, aliquoting for quantification must either occur for ALL samples or for NONE of the samples. However, the QuantificationAliquot option was not specified for this protocol, and the samples `1` at indices `3` have the following aliquot requirements: `2`, where True indicates that aliquoting is necessary either due to either a) the specification of one or more of the options QuantificationAliquotVolume, QuantificationAliquotContainer, or QuantificationRecoupSample, or b) an incompatibility between the sample's container and the QuantificationInstrument. Please either adjust the conditions of the experiment such that aliquoting is not needed for any sample or explicitly set QuantificationAliquot to True in order to submit a valid experiment.";
+Error::AliquotRecoupMismatch = "The QuantificationRecoupSample option is set to True while QuantificationAliquot is False. Please either set QuantificationRecoupSample to False or QuantificationAliquot to True in order to submit a valid experiment.";
+Warning::DiscardUponFailure = "The FailureResponse option will default to Discard when it is left unspecified and the IncubationStrategy is QuantificationTarget. Please specify Incubate or Freeze for this option if you do not intend for the samples to be discarded in the event that the MinQuantificationTarget is not obtained during this experiment.";
+Warning::NoQuantificationTarget = "The sample(s) `1` at indices `2` have the MinQuantificationTarget option unspecified while the IncubationStrategy is QuantificationTarget. The MinQuantificationTarget will default to None. Quantification will occur at each QuantificationInterval until the Time has elapsed, generating a growth curve.";
+Warning::GeneralFailureResponse = "The FailureResponse option is set to `1` with `2` input samples. Please note that, in the current version of ExperimentIncubateCells, the FailureResponse will be executed for ALL samples in a protocol if any of the samples fail to meet their respective MinQuantificationTargets. Consider running one sample at a time if you wish to avoid potential execution of the FailureResponse on samples which successfully meet their MinQuantificationTargets.";
+Warning::QuantificationAliquotRequired = "The QuantificationAliquot option is defaulting to True because a) one or more of the options QuantificationAliquotVolume, QuantificationAliquotContainer, and QuantificationRecoupSample were specified for at least one sample or b) one or more samples are in a container which is not compatible with the QuantificationInstrument.";
+Warning::QuantificationAliquotRecommended = "The QuantificationMethod option is `1` while Preparation is `2` and QuantificationAliquot is `3`. Under these circumstances, it is recommended to set QuantificationAliquot to True to minimize the duration for which the cell sample(s) are outside of the incubator(s). If QuantificationAliquot is False, the cell sample(s) remain outside of the incubator(s) until the quantification procedure is completed. If QuantificationAliquot is True, the source cell samples are returned to the incubators immediately after aliquots are transferred to new containers, and then the quantification measurement is performed on the aliquoted samples.";
 
 (* ::Subsubsection::Closed:: *)
 (*resolveExperimentIncubateCellsOptions *)
@@ -819,16 +1226,20 @@ DefineOptions[
 resolveExperimentIncubateCellsOptions[mySamples: {ObjectP[Object[Sample]]...}, myOptions: {_Rule...}, myResolutionOptions: OptionsPattern[resolveExperimentIncubateCellsOptions]] := Module[
 	{
 		(* Setup *)
-		outputSpecification, output, gatherTests, messages, notInEngine, cacheBall, simulation, fastAssoc,  confirm, template,
-		fastTrack, operator, parentProtocol, upload, outputOption, samplePackets, sampleModelPackets, sampleContainerPackets,
+		outputSpecification, output, performSimulationQ, gatherTests, messages, notInEngine, cacheBall, simulation, fastAssoc,  confirm, canaryBranch,template,
+		fastTrack, operator, parentProtocol, upload, outputOption, quantificationOptionsExceptAliquoting, quantificationAliquotingOptions,
+		samplePackets, sampleModelPackets, sampleContainerPackets,
 		sampleContainerModelPackets, sampleContainerHeights, sampleContainerFootprints, fastAssocKeysIDOnly, incubatorPackets,
-		rackPackets, deckPackets, storageConditionPackets, incubationConditionOptionDefinition, allowedStorageConditionSymbols,
+		rackPackets, deckPackets, storageConditionPackets, plateReaderInstrumentPacket,
+		incubationConditionOptionDefinition, allowedStorageConditionSymbols,
 		customIncubatorPackets, customIncubators,
 		(* Input invalidation check *)
 		discardedSamplePackets, discardedInvalidInputs, discardedTest, deprecatedSampleModelPackets, deprecatedSampleModelInputs,
 		deprecatedSampleInputs, deprecatedTest, mainCellIdentityModels, sampleCellTypes, validCellTypeQs, invalidCellTypeSamples,
 		invalidCellTypePositions, invalidCellTypeCellTypes, invalidCellTypeTest, inputContainerContents, stowawaySamples,
 		invalidPlateSampleInputs, invalidPlateSampleTest, talliedSamples, duplicateSamples, duplicateSamplesTest,
+		invalidPropertySampleInputsRaw, invalidSamplePropertiesRaw,
+		invalidPropertySampleInputs, invalidPropertySampleTest, invalidSampleProperties,
 		(* Option precision check *)
 		roundedIncubateCellsOptions, precisionTests,
 		(* MapThread propagation*)
@@ -837,25 +1248,31 @@ resolveExperimentIncubateCellsOptions[mySamples: {ObjectP[Object[Sample]]...}, m
 		(* Conflicting Check I *)
 		preparationResult, allowedPreparation, preparationTest, resolvedPreparation, roboticPrimitiveQ, workCellResult,
 		allowedWorkCell, workCellTest, resolvedWorkCell, conflictingWorkCellAndPreparationQ, conflictingWorkCellAndPreparationOptions,
-		conflictingWorkCellAndPreparationTest, specifiedTime, incompatiblePreparationAndTimeQ, incompatiblePreparationAndTimeOptions,
-		incompatiblePreparationAndTimeTest, coveredContainerQs, uncoveredSamples, uncoveredSamplePositions, uncoveredContainers,
+		conflictingWorkCellAndPreparationTest, coveredContainerQs, uncoveredSamples, uncoveredSamplePositions, uncoveredContainers,
 		uncoveredSampleInputs, uncoveredContainerTest,
-		(* Single General option Time *)
-		allDoublingTimes, resolvedTime,
+		(* Singleton Options and Labels *)
+		allDoublingTimes, resolvedTime, resolvedIncubationStrategy, resolvedQuantificationInterval, specifiedQuantificationInstrument, resolvedQuantificationMethod,
+		semiResolvedQuantificationInstrument, maxNumberOfQuantifications, resolvedQuantificationBlankMeasurementBool, resolvedSampleLabels, resolvedSampleContainerLabels,
+		preResolvedQuantificationAliquotBool, resolvedRecoupSampleBool,
 		(* MapThread IncubationCondition options and errors *)
 		optionsToPullOut, cellTypes, cultureAdhesions, temperatures, carbonDioxidePercentages, relativeHumidities,
 		shaking, shakingRates, semiResolvedShakingRadii, samplesOutStorageCondition, incubationCondition, cellTypesFromSample,
-		cultureAdhesionsFromSample, conflictingShakingConditionsErrors, conflictingCellTypeErrors, conflictingCultureAdhesionErrors,
+		cultureAdhesionsFromSample, minQuantificationTargets, quantificationTolerances,
+		quantificationAliquotContainers, quantificationAliquotVolumes,
+		quantificationBlanks, quantificationWavelengths, quantificationStandardCurves,
+		conflictingShakingConditionsErrors, conflictingCellTypeErrors, conflictingCultureAdhesionErrors,
 		invalidIncubationConditionErrors, conflictingCellTypeAdhesionErrors, unsupportedCellCultureTypeErrors,
 		conflictingCellTypeWithIncubatorErrors, conflictingCultureAdhesionWithContainerErrors,
-		conflictingCellTypeWithStorageConditionErrors, conflictingCultureAdhesionWithStorageConditionErrors,
+		conflictingCellTypeWithStorageConditionErrors, conflictingCultureAdhesionWithStorageConditionWarnings,
 		cellTypeNotSpecifiedWarnings, cultureAdhesionNotSpecifiedWarnings, customIncubationConditionNotSpecifiedWarnings,
-		unspecifiedMapThreadOptions,
-		(* Incubators *)
-		sampleContainerModels, possibleIncubatorPackets, possibleIncubators, incubators, resolvedShakingRadiiPreRounding,
-		resolvedShakingRadii,
+		minTargetNoneWarningBools, unspecifiedMapThreadOptions,
+		(* Incubators and other Post-MapThread Resolutions *)
+		sampleContainerModels, possibleIncubatorPackets, possibleIncubators, rawIncubators, incubators, defaultIncubatorForNull, noResolvedIncubatorBools,
+		resolvedShakingRadiiPreRounding, resolvedShakingRadii, resolvedFailureResponse, discardUponFailureWarningBool,
 		(* Combine *)
-		email, resolvedOptions, resolvedMapThreadOptions,
+		email, resolvedOptions, resolvedMapThreadOptions, finalQuantificationInstrument, finalAliquotBools, resolvedAliquotBool, finalAliquotVolumes,
+		finalAliquotContainers, finalStandardCurves, finalWavelengths, finalBlanks, quantificationSimulation, simulationWithQuantification,
+		quantificationProtocolPacket, resolvedQuantificationOptions, errorChecksBeforeQuantification, mixedAliquotingQ,
 		(* Unresolvable option check *)
 		containersToSamples, incubatorsToContainers, incubatorFootprints, incubatorsOverCapacityAmounts,
 		(* Conflicting Check II *)
@@ -864,17 +1281,29 @@ resolveExperimentIncubateCellsOptions[mySamples: {ObjectP[Object[Sample]]...}, m
 		conflictingIncubationConditionsForSameContainerTests, temperatureAboveMaxTemperatureQs, incubationMaxTemperatureOptions,
 		incubationMaxTemperatureTests, resolvedUnspecifiedOptions, customIncubationWarningSamples, customIncubationWarningPositions,
 		customIncubationWarningUnspecifiedOptionNames, customIncubationWarningResolvedOptions, customIncubationNotSpecifiedTest,
-		noCompatibleIncubatorErrors, noCompatibleIncubatorTests, noCompatibleIncubatorsInvalidInputs, firstCustomIncubator,
+		noCompatibleIncubatorErrors, noCompatibleIncubatorTests, noCompatibleIncubatorsInvalidInputs,
+		incubatorIsIncompatibleErrors, incubatorIsIncompatibleOptions, incubatorIsIncompatibleTests,
+		firstCustomIncubator,
 		invalidCustomIncubatorsTests, invalidCustomIncubatorsOptions, invalidCustomIncubatorsErrors,
 		invalidShakingConditionsOptions, invalidShakingConditionsTests, conflictingCellTypeOptions, conflictingCellTypeTests,
 		conflictingCultureAdhesionOptions, conflictingCultureAdhesionTests, cellTypeNotSpecifiedTests, cultureAdhesionNotSpecifiedTests,
 		invalidIncubationConditionOptions, invalidIncubationConditionTest, conflictingCellTypeAdhesionOptions,
 		conflictingCellTypeAdhesionTests, unsupportedCellCultureTypeOptions, unsupportedCellCultureTypeTests,
-		conflictingCellTypeWithIncubatorOptions, conflictingCellTypeWithIncubatorTests,
+		conflictingCellTypeWithIncubatorOptions, conflictingCellTypeWithIncubatorTests, extraneousQuantifyColoniesOptionsTest,
 		incubatorOverCapacityIncubators,  incubatorOverCapacityCapacities, incubatorsOverCapacityFootprints,
 		incubatorsOverCapacityQuantities, conflictingCultureAdhesionWithContainerOptions, conflictingCultureAdhesionWithContainerTests,
 		conflictingCellTypeWithStorageConditionOptions, conflictingCellTypeWithStorageConditionTests,
-		conflictingCultureAdhesionWithStorageConditionOptions, conflictingCultureAdhesionWithStorageConditionTests,
+		mixedQuantificationAliquotRequirementsOptions, mixedQuantificationAliquotRequirementsOptionsTests,
+		quantificationAliquotRequiredQ, quantificationAliquotRequiredTest, quantificationAliquotRecommendedQ, quantificationAliquotRecommendedTest,
+		conflictingCultureAdhesionWithStorageConditionTests,
+		conflictingIncubationStrategyCases, conflictingIncubationStrategyTest, unsuitableQuantificationIntervalCases, unsuitableQuantificationIntervalTest,
+		conflictingQuantificationAliquotOptionsCases, conflictingQuantificationAliquotOptions, conflictingQuantificationAliquotOptionsTest,
+		conflictingQuantificationOptionsCases, conflictingQuantificationOptionsTest, failureResponseNotSupportedTest, failureResponseNotSupportedCases,
+		noQuantificationTargetCases, conflictingIncubationStrategyOptions, unsuitableQuantificationIntervalOptions, aliquotRecoupMismatchQ, aliquotRecoupMismatchedOptions, aliquotRecoupMismatchTest,
+		excessiveQuantificationAliquotVolumeRequiredCases, excessiveQuantificationAliquotVolumeRequiredOptions, excessiveQuantificationAliquotVolumeRequiredTest,
+		conflictingQuantificationOptions, failureResponseNotSupportedOptions, extraneousQuantifyColoniesOptions, extraneousQuantifyColoniesOptionsCases,
+		conflictingQuantificationMethodAndInstrumentError, conflictingQuantificationMethodAndInstrumentOptions, conflictingQuantificationMethodAndInstrumentOptionsTest,
+		quantificationTargetUnitsMismatchCases, quantificationTargetUnitsMismatchOptions, quantificationTargetUnitsMismatchTest,
 		(* Wrap up *)
 		invalidInputs, invalidOptions
 	},
@@ -898,24 +1327,40 @@ resolveExperimentIncubateCellsOptions[mySamples: {ObjectP[Object[Sample]]...}, m
 	fastAssoc = makeFastAssocFromCache[cacheBall];
 
 	(* Get the options that do not need to be resolved directly from SafeOptions. *)
-	{confirm, template, fastTrack, operator, parentProtocol, upload, outputOption} = Lookup[
+	{confirm, canaryBranch, template, fastTrack, operator, parentProtocol, upload, outputOption} = Lookup[
 		myOptions,
-		{Confirm, Template, FastTrack, Operator, ParentProtocol, Upload, Output}
+		{Confirm, CanaryBranch, Template, FastTrack, Operator, ParentProtocol, Upload, Output}
 	];
+
+	(* Set variables with lists of the quantification-related options, for use in the resolver. *)
+	(* The QuantificationAliquot Boolean is not included here, nor is the IncubationStrategy master switch. *)
+	quantificationOptionsExceptAliquoting = {
+		QuantificationMethod, MinQuantificationTarget, QuantificationTolerance, QuantificationInterval, FailureResponse,
+		QuantificationInstrument, QuantificationBlank, QuantificationBlankMeasurement, QuantificationWavelength, QuantificationStandardCurve
+	};
+	quantificationAliquotingOptions = {QuantificationAliquotVolume, QuantificationAliquotContainer, QuantificationRecoupSample};
 
 	(* Pull out packets from the fast association *)
 	samplePackets = fetchPacketFromFastAssoc[#, fastAssoc]& /@ mySamples;
 	sampleModelPackets = fastAssocPacketLookup[fastAssoc, #, Model]& /@ mySamples;
-	sampleContainerPackets = fastAssocPacketLookup[fastAssoc, #, Container]& /@ mySamples;
-	sampleContainerModelPackets = fastAssocPacketLookup[fastAssoc, #, {Container, Model}]& /@ mySamples;
+	sampleContainerPackets = Replace[
+		fastAssocPacketLookup[fastAssoc, #, Container]& /@ mySamples,
+		Null -> <||>, {1}];
+	sampleContainerModelPackets = Replace[
+		fastAssocPacketLookup[fastAssoc, #, {Container, Model}]& /@ mySamples,
+		Null|$Failed -> <||>, {1}];
 
 	(* Get the height of the containers and the footprint (will be needed later) *)
 	{sampleContainerHeights, sampleContainerFootprints} = Transpose[Map[
-		{
-			(* Dimensions must be populated here; otherwise this will throw an error, but that is probably ok because if we have no Dimensions we are hosed no matter what *)
-			Lookup[#, Dimensions][[3]],
-			Lookup[#, Footprint]
-		}&,
+		If[MatchQ[#,PacketP[Model[Container]]],
+			(* If the container model packet is actually a packet, not $Failed because our invalid sample may not have a container, do the lookups *)
+			{
+				(* Dimensions must be populated here; otherwise this will throw an error, but that is probably ok because if we have no Dimensions we are hosed no matter what *)
+				Lookup[#, Dimensions][[3]],
+				Lookup[#, Footprint]
+			},
+			{Null,Null} (*Otherwise do not trainwreck error here*)
+		]&,
 		sampleContainerModelPackets
 	]];
 
@@ -925,6 +1370,11 @@ resolveExperimentIncubateCellsOptions[mySamples: {ObjectP[Object[Sample]]...}, m
 	rackPackets = fetchPacketFromFastAssoc[#, fastAssoc]& /@ Cases[fastAssocKeysIDOnly, ObjectP[Model[Container, Rack]]];
 	deckPackets = fetchPacketFromFastAssoc[#, fastAssoc]& /@ Cases[fastAssocKeysIDOnly, ObjectP[Model[Container, Deck]]];
 	storageConditionPackets = fetchPacketFromFastAssoc[#, fastAssoc]& /@ Cases[fastAssocKeysIDOnly, ObjectP[Model[StorageCondition]]];
+
+	(* Get the packet for any specified plate reader or nephelometer - we'll use this to check plate compatibility. *)
+	plateReaderInstrumentPacket = fetchPacketFromFastAssoc[#, fastAssoc]& /@ Cases[fastAssocKeysIDOnly, ObjectP[{
+		Object[Instrument, PlateReader], Model[Instrument, PlateReader], Object[Instrument, Nephelometer], Model[Instrument, Nephelometer]
+	}]];
 
 	(* Pull out the allowed storage condition symbols for the IncubationCondition option *)
 	incubationConditionOptionDefinition = FirstCase[OptionDefinition[ExperimentIncubateCells], KeyValuePattern["OptionName" -> "IncubationCondition"]];
@@ -999,28 +1449,11 @@ resolveExperimentIncubateCellsOptions[mySamples: {ObjectP[Object[Sample]]...}, m
 	(* 3.) Get whether the input cell types are supported *)
 
 	(* first get the main cell object in the composition; if this is a mixture it will pick the one with the highest concentration *)
-	mainCellIdentityModels = Map[
-		Function[{composition},
-			(* this gets the composition sorted in order of its concentration, where the first is the most concentrated *)
-			With[{reverseSortedIdentityModels = ReverseSortBy[composition, First][[All, 2]]},
-				Download[SelectFirst[reverseSortedIdentityModels, MatchQ[#, ObjectP[Model[Cell]]]&, Null], Object]
-			]
-		],
-		Lookup[samplePackets, Composition, {}]
-	];
+	mainCellIdentityModels = selectMainCellFromSample[mySamples, Cache -> cacheBall, Simulation -> simulation];
 
 	(* Determine what kind of cells the input samples are *)
-	sampleCellTypes = MapThread[
-		Function[{samplePacket, modelPacket, mainCellIdentityModel},
-			Which[
-				MatchQ[Lookup[samplePacket, CellType], CellTypeP], Lookup[samplePacket, CellType],
-				!NullQ[modelPacket] && MatchQ[Lookup[modelPacket, CellType], CellTypeP] && MatchQ[modelPacket, PacketP[]], Lookup[modelPacket, CellType],
-				MatchQ[mainCellIdentityModel, ObjectP[Model[Cell]]], fastAssocLookup[fastAssoc, mainCellIdentityModel, CellType],
-				True, Null
-			]
-		],
-		{samplePackets, sampleModelPackets, mainCellIdentityModels}
-	];
+	sampleCellTypes = lookUpCellTypes[samplePackets, sampleModelPackets, mainCellIdentityModels, Cache -> cacheBall];
+
 	(* Note here that Null is acceptable because we're going to assume it's Bacterial later *)
 	validCellTypeQs = MatchQ[#, Mammalian|Yeast|Bacterial|Null]& /@ sampleCellTypes;
 	invalidCellTypeSamples = Lookup[PickList[samplePackets, validCellTypeQs, False], Object, {}];
@@ -1050,7 +1483,7 @@ resolveExperimentIncubateCellsOptions[mySamples: {ObjectP[Object[Sample]]...}, m
 	];
 
 	(* 4.) Get whether there are stowaway samples inside the input plates.  We're forbidding users from incubating samples when there are other samples in the plate already *)
-	inputContainerContents = Lookup[sampleContainerPackets, Contents];
+	inputContainerContents = Lookup[sampleContainerPackets, Contents, {}];
 	stowawaySamples = Map[
 		Function[{contents},
 			Module[{contentsObjects},
@@ -1073,14 +1506,14 @@ resolveExperimentIncubateCellsOptions[mySamples: {ObjectP[Object[Sample]]...}, m
 	(* If we are gathering tests, create a passing and/or failing test with the appropriate result. *)
 	invalidPlateSampleTest = If[gatherTests,
 		Module[{failingTest, passingTest},
-			failingTest = If[Length[invalidCellTypeSamples] == 0,
+			failingTest = If[Length[invalidPlateSampleInputs] == 0,
 				Nothing,
-				Test["The input samples " <> ObjectToString[invalidCellTypeSamples, Cache -> cacheBall] <> " are in containers that do not have other, not-provided samples in them:", True, False]
+				Test["The input samples " <> ObjectToString[invalidPlateSampleInputs, Cache -> cacheBall] <> " are in containers that do not have other, not-provided samples in them:", True, False]
 			];
 
-			passingTest = If[Length[invalidCellTypeSamples] == Length[mySamples],
+			passingTest = If[Length[invalidPlateSampleInputs] == Length[mySamples],
 				Nothing,
-				Test["The input samples " <> ObjectToString[Complement[mySamples, invalidCellTypeSamples], Cache -> cacheBall] <> " are in containers that do not have other, not-provided samples in them:", True, True]
+				Test["The input samples " <> ObjectToString[Complement[mySamples, invalidPlateSampleInputs], Cache -> cacheBall] <> " are in containers that do not have other, not-provided samples in them:", True, True]
 			];
 
 			{failingTest, passingTest}
@@ -1094,7 +1527,7 @@ resolveExperimentIncubateCellsOptions[mySamples: {ObjectP[Object[Sample]]...}, m
 	duplicateSamples = Cases[talliedSamples, {sample_, tally:GreaterEqualP[2]} :> sample];
 
 	If[Length[duplicateSamples] > 0 && messages,
-		Message[Error::DuplicateSamples, ObjectToString[duplicateSamples, Cache -> cacheBall]]
+		Message[Error::DuplicatedSamples, ObjectToString[duplicateSamples, Cache -> cacheBall], "ExperimentIncubateCells"]
 	];
 	duplicateSamplesTest = If[gatherTests,
 		Module[{failingTest, passingTest},
@@ -1103,9 +1536,61 @@ resolveExperimentIncubateCellsOptions[mySamples: {ObjectP[Object[Sample]]...}, m
 				Test["The input samples " <> ObjectToString[duplicateSamples, Cache -> cacheBall] <> " have not been specified more than once:", True, False]
 			];
 
-			passingTest = If[Length[invalidCellTypeSamples] == Length[mySamples],
+			passingTest = If[Length[duplicateSamples] == Length[mySamples],
 				Nothing,
 				Test["The input samples " <> ObjectToString[Complement[mySamples, duplicateSamples], Cache -> cacheBall] <> " have not been specified more than once:", True, True]
+			];
+
+			{failingTest, passingTest}
+		]
+	];
+
+	(* 6.) Throw an error is we have samples with invalid properties, e.g. State -> Gas, Zero mass or volume *)
+	{invalidPropertySampleInputsRaw, invalidSamplePropertiesRaw} = Transpose@Map[
+		Function[samplePacket,
+			Module[{sample, state, volume, mass},
+				{sample, state, volume, mass} = Lookup[samplePacket, {Object, State, Volume, Mass}, Null];
+
+				Switch[{state, volume, mass},
+					(* The sample state is Gas or Null, invalid *)
+					{Except[Liquid|Solid], _, _},
+						{sample, {state, volume, mass}},
+					(* The sample is a zero-volume liquid, invalid *)
+					{Liquid, EqualP[0 Milliliter], _},
+						{sample, {state, volume, mass}},
+					(* The sample is a zero-mass solid, invalid *)
+					{Solid, _, EqualP[0 Gram]},
+					 	{sample, {state, volume, mass}},
+					(* Otherwise all good *)
+					_, {Null, Null}
+				]
+			]
+		],
+		samplePackets
+	];
+
+	invalidPropertySampleInputs = DeleteCases[invalidPropertySampleInputsRaw,Null];
+	invalidSampleProperties = DeleteCases[invalidSamplePropertiesRaw,Null];
+
+	If[Length[invalidPropertySampleInputs] > 0 && messages,
+		Message[Error::InvalidPropertySamples,
+			ObjectToString[invalidPropertySampleInputs, Cache -> cacheBall],
+			invalidSampleProperties[[All,1]],
+			invalidSampleProperties[[All,2]],
+			invalidSampleProperties[[All,3]]
+		]
+	];
+
+	invalidPropertySampleTest = If[gatherTests,
+		Module[{failingTest, passingTest},
+			failingTest = If[Length[invalidPropertySampleInputs] == 0,
+				Nothing,
+				Test["The input samples " <> ObjectToString[invalidPropertySampleInputs, Cache -> cacheBall] <> " are Liquid or Solid with non-zero amount left:", True, False]
+			];
+
+			passingTest = If[Length[invalidPropertySampleInputs] == Length[mySamples],
+				Nothing,
+				Test["The input samples " <> ObjectToString[Complement[mySamples, invalidPropertySampleInputs], Cache -> cacheBall] <> " are Liquid or Solid with non-zero amount left:", True, True]
 			];
 
 			{failingTest, passingTest}
@@ -1118,16 +1603,16 @@ resolveExperimentIncubateCellsOptions[mySamples: {ObjectP[Object[Sample]]...}, m
 		RoundOptionPrecision[
 			(* dropping these two keys because they are often huge and make variables unnecssarily take up memory + become unreadable *)
 			KeyDrop[Association[myOptions], {Cache, Simulation}],
-			{Temperature, Time, CarbonDioxide, RelativeHumidity, ShakingRate},
-			{1 Celsius, 1 Minute, 1 Percent, 1 Percent, 1 RPM},
+			{Temperature, Time, CarbonDioxide, RelativeHumidity, ShakingRate, QuantificationInterval, QuantificationAliquotVolume, QuantificationWavelength},
+			{1 Celsius, 1 Minute, 1 Percent, 1 Percent, 1 RPM, 1 Minute, 10^(-1) Microliter, 1 Nanometer},
 			Output -> {Result, Tests}
 		],
 		{
 			RoundOptionPrecision[
 				(* dropping these two keys because they are often huge and make variables unnecssarily take up memory + become unreadable *)
 				KeyDrop[Association[myOptions], {Cache, Simulation}],
-				{Temperature, Time, CarbonDioxide, RelativeHumidity, ShakingRate},
-				{1 Celsius, 1 Minute, 1 Percent, 1 Percent, 1 RPM}
+				{Temperature, Time, CarbonDioxide, RelativeHumidity, ShakingRate, QuantificationInterval, QuantificationAliquotVolume, QuantificationWavelength},
+				{1 Celsius, 0.1 Hour, 1 Percent, 1 Percent, 1 RPM, 0.1 Hour, 10^(-1) Microliter, 1 Nanometer}
 			],
 			Null
 		}
@@ -1228,15 +1713,18 @@ resolveExperimentIncubateCellsOptions[mySamples: {ObjectP[Object[Sample]]...}, m
 	(* Build a short hand for robotic primitive*)
 	roboticPrimitiveQ = MatchQ[resolvedPreparation, Robotic];
 
+	(* Determine whether we need to perform simulations for the quantification child functions in the resolver. *)
+	performSimulationQ = MemberQ[output, Simulation] && !roboticPrimitiveQ;
+
 	(* Do the same as above except with WorkCell *)
 	workCellResult = Check[
 		{allowedWorkCell, workCellTest} = Which[
 			MatchQ[resolvedPreparation, Manual], {Null, Null},
 			 gatherTests,
-				resolveIncubateCellsWorkCell[mySamples, ReplaceRule[myOptions, {Cache -> cacheBall, Output -> {Result, Tests}}]],
+				resolveIncubateCellsWorkCell[mySamples, ReplaceRule[Normal[roundedIncubateCellsOptions, Association], {Cache -> cacheBall, Output -> {Result, Tests}}]],
 			True,
 				{
-					resolveIncubateCellsWorkCell[mySamples, ReplaceRule[myOptions, {Cache -> cacheBall, Output -> Result}]],
+					resolveIncubateCellsWorkCell[mySamples, ReplaceRule[Normal[roundedIncubateCellsOptions, Association], {Cache -> cacheBall, Output -> Result}]],
 					{}
 				}
 		],
@@ -1257,7 +1745,7 @@ resolveExperimentIncubateCellsOptions[mySamples: {ObjectP[Object[Sample]]...}, m
 		MatchQ[resolvedPreparation, Robotic] && NullQ[resolvedWorkCell],
 		MatchQ[resolvedPreparation, Manual] && Not[NullQ[resolvedWorkCell]]
 	];
-	(* NOT throwing this message if we already thew Error::ConflictingWorkCells because if that message got thrown than our work cell is always Null and so this will always get thrown too *)
+	(* NOT throwing this message if we already thew Error::ConflictingIncubationWorkCells because if that message got thrown than our work cell is always Null and so this will always get thrown too *)
 	conflictingWorkCellAndPreparationOptions = If[conflictingWorkCellAndPreparationQ && Not[MatchQ[workCellResult, $Failed]] && messages,
 		(
 			Message[Error::ConflictingWorkCellWithPreparation, resolvedWorkCell, resolvedPreparation];
@@ -1270,27 +1758,6 @@ resolveExperimentIncubateCellsOptions[mySamples: {ObjectP[Object[Sample]]...}, m
 			conflictingWorkCellAndPreparationQ,
 			False
 		]
-	];
-
-	(* If Preparation -> Robotic, can't have more than 1 hour incubation time *)
-	specifiedTime = Lookup[myOptions, Time];
-	incompatiblePreparationAndTimeQ = roboticPrimitiveQ && TimeQ[specifiedTime] && specifiedTime > $RoboticIncubationTimeThreshold;
-
-	incompatiblePreparationAndTimeOptions = If[incompatiblePreparationAndTimeQ && messages,
-		(
-			Message[Error::ConflictingPreparationWithIncubationTime, resolvedPreparation, specifiedTime];
-			{Preparation, Time}
-		),
-		{}
-	];
-
-	(* If we are gathering tests, create a passing and/or failing test with the appropriate result. *)
-	incompatiblePreparationAndTimeTest = If[gatherTests,
-		Test["If Preparation -> Robotic, Time must not be more than " <> ToString[$RoboticIncubationTimeThreshold] <> ":",
-			incompatiblePreparationAndTimeQ,
-			False
-		],
-		Nothing
 	];
 
 	(* Get whether the input samples are in covered containers *)
@@ -1328,25 +1795,243 @@ resolveExperimentIncubateCellsOptions[mySamples: {ObjectP[Object[Sample]]...}, m
 	];
 
 
-	(* --- Resolve the Time option --- *)
+	(*-- RESOLVE EXPERIMENT OPTIONS --*)
+
+	(* Resolve label options *)
+	resolvedSampleLabels = Module[
+		{specifiedSampleObjects, uniqueSamples, preResolvedSampleLabels, preResolvedSampleLabelLookup},
+		(* Create a unique label for each unique sample in the input *)
+		specifiedSampleObjects = Lookup[samplePackets, Object];
+		uniqueSamples = DeleteDuplicates[specifiedSampleObjects];
+		preResolvedSampleLabels = Table[CreateUniqueLabel["incubate cells input sample"], Length[uniqueSamples]];
+		preResolvedSampleLabelLookup = MapThread[
+			(#1 -> #2)&,
+			{uniqueSamples, preResolvedSampleLabels}
+		];
+		(* Expand the sample-specific unique labels *)
+		MapThread[
+			Function[{object, label},
+				Which[
+					(* respect user specification *)
+					MatchQ[label, Except[Automatic]],
+					label,
+					(* respect upstream LabelSample/LabelContainer input *)
+					MatchQ[simulation, SimulationP] && MatchQ[LookupObjectLabel[simulation, object], _String],
+					LookupObjectLabel[simulation, object],
+					(* get a label from the lookup *)
+					True,
+					Lookup[preResolvedSampleLabelLookup, object]
+				]
+			],
+			{specifiedSampleObjects, Lookup[myOptions, SampleLabel]}
+		]
+	];
+
+	resolvedSampleContainerLabels = Module[
+		{specifiedContainerObjects, uniqueContainers, preResolvedSampleContainerLabels, preResolvedContainerLabelLookup},
+		(* Create a unique label for each unique container in the input *)
+		specifiedContainerObjects = Download[Lookup[samplePackets, Container, {}], Object];
+		uniqueContainers = DeleteDuplicates[specifiedContainerObjects];
+		preResolvedSampleContainerLabels = Table[CreateUniqueLabel["incubate cells input sample container"], Length[uniqueContainers]];
+		preResolvedContainerLabelLookup = MapThread[
+			(#1 -> #2)&,
+			{uniqueContainers, preResolvedSampleContainerLabels}
+		];
+		(* Expand the sample-specific unique labels *)
+		MapThread[
+			Function[{object, label},
+				Which[
+					(* respect user specification *)
+					MatchQ[label, Except[Automatic]],
+					label,
+					(* respect upstream LabelSample/LabelContainer input *)
+					MatchQ[simulation, SimulationP] && MatchQ[LookupObjectLabel[simulation, object], _String],
+					LookupObjectLabel[simulation, object],
+					(* get a label from the lookup *)
+					True,
+					Lookup[preResolvedContainerLabelLookup, object]
+				]
+			],
+			{specifiedContainerObjects, Lookup[myOptions, SampleContainerLabel]}
+		]
+	];
 
 	(* Get all the doubling times of the input cells  *)
 	allDoublingTimes = fastAssocLookup[fastAssoc, #, DoublingTime]& /@ mainCellIdentityModels;
 
+	(* Resolve the IncubationStrategy. *)
+	resolvedIncubationStrategy = Which[
+		(* If the user specified the option, use their specification. *)
+		MatchQ[Lookup[myOptions, IncubationStrategy], Except[Automatic]], Lookup[myOptions, IncubationStrategy],
+		(* If any of the options related to quantification are specified, set this to QuantificationTarget. *)
+		MemberQ[Flatten @ Lookup[myOptions, Join[quantificationOptionsExceptAliquoting, quantificationAliquotingOptions, {QuantificationAliquot}]], Except[Null|False|Automatic]], QuantificationTarget,
+		(* Otherwise, set this to Time. *)
+		True, Time
+	];
+
 	(* Resolve the Time option *)
 	resolvedTime = Which[
 		(* always use user specified time if applicable *)
-		TimeQ[Lookup[myOptions, Time]], Lookup[myOptions, Time],
+		TimeQ[Lookup[roundedIncubateCellsOptions, Time]],
+			Lookup[roundedIncubateCellsOptions, Time],
 		(* if we're robotic, we're rather limited; just take what the default is there *)
-		roboticPrimitiveQ, $RoboticIncubationTimeThreshold,
-		(* if we're manual and know the doubling times of our input samples, then take the shortest one *)
-		MemberQ[allDoublingTimes, TimeP], Min[Cases[allDoublingTimes, TimeP]],
+		roboticPrimitiveQ,
+			$MaxRoboticIncubationTime,
+		(* if the incubation Strategy is QuantificationTarget, set this to 12 Hour *)
+		MatchQ[resolvedIncubationStrategy, QuantificationTarget],
+			12 Hour,
+		(* if we're manual and know the doubling times of our input samples, then take the shortest between $MaxCellIncubationTime and 36 * doubling time across the samples *)
+		MemberQ[allDoublingTimes, TimeP],
+			SafeRound[Min[Sequence @@ (36 * Cases[allDoublingTimes, TimeP]), $MaxCellIncubationTime], 0.1 Hour],
 		(* otherwise, going with 12 hours *)
-		True, 12 Hour
+		True,
+			12 Hour
 	];
 
+	(* Resolve the QuantificationInterval. *)
+	resolvedQuantificationInterval = Which[
+		(* If the user specified the option, use their specification. *)
+		MatchQ[Lookup[roundedIncubateCellsOptions, QuantificationInterval], Except[Automatic]], Lookup[roundedIncubateCellsOptions, QuantificationInterval],
+		(* If the IncubationStrategy is Time, set this to Null. *)
+		MatchQ[resolvedIncubationStrategy, Time], Null,
+		(* Otherwise, set this to the greater of one-fifth the time or one hour. *)
+		True, Max[SafeRound[0.2 * resolvedTime, 0.1 Hour], 1 Hour]
+	];
 
-	(*-- RESOLVE EXPERIMENT OPTIONS --*)
+	(* Get the specified QuantificationInstrument because we're about to look it up a bunch of times. *)
+	specifiedQuantificationInstrument = Lookup[myOptions, QuantificationInstrument];
+
+	(* Resolve the QuantificationMethod. *)
+	resolvedQuantificationMethod = Which[
+		(* If the user specified the option, use their specification. *)
+		MatchQ[Lookup[myOptions, QuantificationMethod], Except[Automatic]], Lookup[myOptions, QuantificationMethod],
+		(* If the IncubationStrategy is Time, set this to Null. *)
+		MatchQ[resolvedIncubationStrategy, Time], Null,
+		(* If QuantificationInstrument is set and is specific to one method, use that method. *)
+		MatchQ[specifiedQuantificationInstrument, ObjectP[{Object[Instrument, Nephelometer], Model[Instrument, Nephelometer]}]], Nephelometry,
+		MatchQ[specifiedQuantificationInstrument, ObjectP[{Object[Instrument, ColonyHandler], Model[Instrument, ColonyHandler]}]], ColonyCount,
+		MatchQ[specifiedQuantificationInstrument, ObjectP[{Object[Instrument, Spectrophotometer], Model[Instrument, Spectrophotometer], Object[Instrument, PlateReader], Model[Instrument, PlateReader]}]],
+			Absorbance,
+		(* If any samples have a Solid State, set this to ColonyCount. *)
+		MemberQ[Lookup[samplePackets, State], Solid], ColonyCount,
+		(* If any specified CultureAdhesion is SolidMedia or Adherent, set this to ColonyCount. *)
+		MemberQ[Lookup[myOptions, CultureAdhesion], Alternatives[SolidMedia, Adherent]], ColonyCount,
+		(* If the CultureAdhesion from any sample object is SolidMedia or Adherent, set this to ColonyCount. *)
+		MemberQ[Lookup[samplePackets, CultureAdhesion], Alternatives[SolidMedia, Adherent]], ColonyCount,
+		(* If the MinQuantificationTarget or QuantificationTolerance is given in Colony units, set this to ColonyCount. *)
+		MemberQ[Units[Flatten @ Lookup[myOptions, {MinQuantificationTarget, QuantificationTolerance}]], Colony], ColonyCount,
+		(* If any cuvettes are specified for the QuantificationAliquotContainer option, set this to Absorbance. *)
+		MemberQ[Lookup[myOptions, QuantificationAliquotContainer], ObjectP[Model[Container, Cuvette]]], Absorbance,
+		(* Otherwise, set this to Absorbance. *)
+		True, Absorbance
+	];
+
+  (* Semi-Resolve the QuantificationInstrument. *)
+	semiResolvedQuantificationInstrument = Which[
+		(* If the user specified the option, use their specification. *)
+		MatchQ[specifiedQuantificationInstrument, Except[Automatic]], specifiedQuantificationInstrument,
+		(* If the IncubationStrategy is Time, set this to Null. *)
+		MatchQ[resolvedIncubationStrategy, Time], Null,
+		(* If the QuantificationMethod is ColonyCount, default to the QPix. *)
+		MatchQ[resolvedQuantificationMethod, ColonyCount], Model[Instrument, ColonyHandler, "id:mnk9jORxz0El"], (* Model[Instrument, ColonyHandler, "QPix 420 HT"] *)
+		(* Otherwise, set this to Automatic and let QuantifyCells resolve it later. *)
+    True, Automatic
+	];
+
+	(* Resolve the QuantificationBlankMeasurement Boolean. *)
+	resolvedQuantificationBlankMeasurementBool = Which[
+		(* If the user specified the option, use their specification. *)
+		MatchQ[Lookup[myOptions, QuantificationBlankMeasurement], Except[Automatic]], Lookup[myOptions, QuantificationBlankMeasurement],
+		(* If a QuantificationBlank is specified, set this to True. *)
+		MemberQ[Lookup[myOptions, QuantificationBlank], ObjectP[]], True,
+		(* If the IncubationStrategy is Time, set this to Null. *)
+		MatchQ[resolvedIncubationStrategy, Time], Null,
+		(* If the QuantificationMethod does not require a blank, set this to False. *)
+		MatchQ[resolvedQuantificationMethod, ColonyCount], False,
+		(* Otherwise, set this to True. *)
+		True, True
+	];
+
+	(* Pre-Resolve the QuantificationAliquot Boolean. Note that if we aliquot any sample we must aliquot ALL samples because *)
+	(* otherwise the timing of the procedure becomes untenable re: aliquoting, returning samples to incubators, and quantifying. *)
+	(* We much prefer to resolve this here if at all possible, as otherwise we may have to wait until ExperimentQuantifyCells fully *)
+	(* resolves the aliquoting options before we know whether we can continue or we have to error out. *)
+	preResolvedQuantificationAliquotBool = Which[
+		(* If the user specified the option, keep the specification. *)
+		MatchQ[Lookup[myOptions, QuantificationAliquot], Except[Automatic]], Lookup[myOptions, QuantificationAliquot],
+		(* If any of the options related to aliquoting are specified, set this to True. *)
+		MemberQ[Flatten @ Lookup[myOptions, quantificationAliquotingOptions], Except[Null|False|Automatic]], True,
+		(* If preparation is Robotic, we are not aliquoting. *)
+		roboticPrimitiveQ, False,
+		(* If the IncubationStrategy is Time, we will not aliquot as this feature is exclusive to quantification. *)
+		MatchQ[resolvedIncubationStrategy, Time], Null,
+		(* If the QuantificationStrategy is ColonyCount, we will not aliquot as this is not supported. *)
+		MatchQ[resolvedQuantificationMethod, ColonyCount], False,
+		(* If any specified CultureAdhesion is SolidMedia or Adherent, we are not aliquoting. *)
+		MemberQ[Lookup[myOptions, CultureAdhesion], Alternatives[SolidMedia, Adherent]], False,
+		(* If the CultureAdhesion from any sample object is SolidMedia or Adherent, we are not aliquoting. *)
+		MemberQ[Lookup[samplePackets, CultureAdhesion], Alternatives[SolidMedia, Adherent]], False,
+		(* If the State of any sample object is Solid, we are not aliquoting. *)
+		MemberQ[Lookup[samplePackets, State], Solid], False,
+		(* If the semiResolvedQuantificationInstrument is a PlateReader but any samples are not in plates, we have to aliquot. *)
+		And[
+			MatchQ[semiResolvedQuantificationInstrument, ObjectP[{
+				Object[Instrument, PlateReader], Object[Instrument, Nephelometer], Model[Instrument, PlateReader], Model[Instrument, Nephelometer]
+			}]],
+			MemberQ[Lookup[sampleContainerModelPackets, Object, Null], Except[ObjectP[Model[Container, Plate]]]]
+		], True,
+		(* If the semiResolvedQuantificationInstrument is a Spectrophotometer but any samples are not in cuvettes, we have to aliquot. *)
+		And[
+			MatchQ[semiResolvedQuantificationInstrument, ObjectP[{Object[Instrument, Spectrophotometer], Model[Instrument, Spectrophotometer]}]],
+			MemberQ[Lookup[sampleContainerModelPackets, Object, Null], Except[ObjectP[Model[Container, Cuvette]]]]
+		], True,
+		(* If QuantificationMethod is Absorbance and the quantification instrument is a BMG plate reader, we need to aliquot if any plates are not compatible. *)
+		And[
+			MatchQ[resolvedQuantificationMethod, Absorbance],
+			MatchQ[semiResolvedQuantificationInstrument, ObjectP[]],
+			MatchQ[Lookup[plateReaderInstrumentPacket, Manufacturer], {ObjectP[Object[Company, Supplier, "id:n0k9mGzREWm6"]]}], (* Object[Company, Supplier, "BMG LabTech"] *)
+			MemberQ[Lookup[sampleContainerModelPackets, Object, Null], Except[ObjectP[List@@BMGCompatiblePlatesP[Absorbance]]]]
+		], True,
+		(* If QuantificationMethod is Nephelometry and the quantification instrument is a BMG plate reader, we need to aliquot if any plates are not compatible. *)
+		And[
+			MatchQ[resolvedQuantificationMethod, Nephelometry],
+			MatchQ[semiResolvedQuantificationInstrument, ObjectP[]],
+			MatchQ[Lookup[plateReaderInstrumentPacket, Manufacturer], ObjectP[Object[Company, Supplier, "id:n0k9mGzREWm6"]]], (* Object[Company, Supplier, "BMG LabTech"] *)
+			MemberQ[Lookup[sampleContainerModelPackets, Object, Null], Except[ObjectP[List@@BMGCompatiblePlatesP[Nephelometry]]]]
+		], True,
+		(* Otherwise, set this to Automatic and let QuantifyCells resolve it. We'll then throw an error if we end up with a mix of True and False. *)
+		True, Automatic
+	];
+
+	(* If we are aliquoting, it doesn't matter whether the QuantificationInstrument is in a sterile environment since the source cell sample *)
+	(* will never be exposed to it. If we haven't fully resolved the instrument but can already tell that we ARE NOT aliquoting, set the *)
+	(* instrument to Model[Instrument, PlateReader, "CLARIOstar Plus with ACU"] such that quantification will occur within a bioSTAR enclosure. *)
+	(* We only need to do this for Absorbance because there are some benchtop absorbance instruments; we have no benchtop nephelometers. *)
+	semiResolvedQuantificationInstrument = If[And[
+		MatchQ[preResolvedQuantificationAliquotBool, False],
+		MatchQ[resolvedQuantificationMethod, Absorbance],
+		MatchQ[semiResolvedQuantificationInstrument, Automatic]
+	],
+		Model[Instrument, PlateReader, "id:zGj91a7Ll0Rv"], (* Model[Instrument, PlateReader, "CLARIOstar Plus with ACU"] *)
+		semiResolvedQuantificationInstrument
+	];
+
+	(* Resolve the RecoupSample boolean. *)
+	resolvedRecoupSampleBool = Which[
+		(* If the user specified the option, keep the specification. *)
+		MatchQ[Lookup[myOptions, QuantificationRecoupSample], Except[Automatic]], Lookup[myOptions, QuantificationRecoupSample],
+		(* If we are aliquoting, set this to False. *)
+		TrueQ[preResolvedQuantificationAliquotBool], False,
+		(* If we are not aliquoting, set this to Null. *)
+		True, Null
+	];
+
+	(* Get the maximum number of quantification steps possible by dividing the Time by the QuantificationInterval *)
+	(* The If[] is to ensure this isn't 0 if the user gives us an interval longer than the time, which trips an error message after the resolver. *)
+	maxNumberOfQuantifications = If[MatchQ[Floor[resolvedTime/resolvedQuantificationInterval], GreaterP[1]],
+		Floor[resolvedTime/resolvedQuantificationInterval],
+		1
+	];
 
 	(* Options that Custom needs specified *)
 	(* want this outside of the MapThread because want to use it below *)
@@ -1364,6 +2049,7 @@ resolveExperimentIncubateCellsOptions[mySamples: {ObjectP[Object[Sample]]...}, m
 
 	(* MapThread over each of our samples. *)
 	{
+		(* Options *)
 		(*1*)cellTypes,
 		(*2*)cultureAdhesions,
 		(*3*)temperatures,
@@ -1376,24 +2062,30 @@ resolveExperimentIncubateCellsOptions[mySamples: {ObjectP[Object[Sample]]...}, m
 		(*10*)incubationCondition,
 		(*11*)cellTypesFromSample,
 		(*12*)cultureAdhesionsFromSample,
-
-		(* Errors *)
-		(*13*)conflictingShakingConditionsErrors,
-		(*14*)conflictingCellTypeErrors,
-		(*15*)conflictingCultureAdhesionErrors,
-		(*16*)invalidIncubationConditionErrors,
-		(*17*)conflictingCellTypeAdhesionErrors,
-		(*18*)unsupportedCellCultureTypeErrors,
-		(*19*)conflictingCellTypeWithIncubatorErrors,
-		(*20*)conflictingCultureAdhesionWithContainerErrors,
-		(*21*)conflictingCellTypeWithStorageConditionErrors,
-		(*22*)conflictingCultureAdhesionWithStorageConditionErrors,
-
+		(*13*)minQuantificationTargets,
+		(*14*)quantificationTolerances,
+		(*15*)quantificationAliquotContainers,
+		(*16*)quantificationAliquotVolumes,
+		(*17*)quantificationBlanks,
+		(*18*)quantificationWavelengths,
+		(*19*)quantificationStandardCurves,
+    (* Errors *)
+		(*20*)conflictingShakingConditionsErrors,
+		(*21*)conflictingCellTypeErrors,
+		(*22*)conflictingCultureAdhesionErrors,
+		(*23*)invalidIncubationConditionErrors,
+		(*24*)conflictingCellTypeAdhesionErrors,
+		(*25*)unsupportedCellCultureTypeErrors,
+		(*26*)conflictingCellTypeWithIncubatorErrors,
+		(*27*)conflictingCultureAdhesionWithContainerErrors,
+		(*28*)conflictingCellTypeWithStorageConditionErrors,
+		(*29*)conflictingCultureAdhesionWithStorageConditionWarnings,
 		(* Warnings *)
-		(*23*)cellTypeNotSpecifiedWarnings,
-		(*24*)cultureAdhesionNotSpecifiedWarnings,
-		(*25*)customIncubationConditionNotSpecifiedWarnings,
-		(*26*)unspecifiedMapThreadOptions
+		(*30*)cellTypeNotSpecifiedWarnings,
+		(*31*)cultureAdhesionNotSpecifiedWarnings,
+		(*32*)customIncubationConditionNotSpecifiedWarnings,
+		(*33*)minTargetNoneWarningBools,
+		(*34*)unspecifiedMapThreadOptions
 	} = Transpose[MapThread[
 		Function[{mySample, options, mainCellIdentityModel},
 			Module[
@@ -1406,11 +2098,15 @@ resolveExperimentIncubateCellsOptions[mySamples: {ObjectP[Object[Sample]]...}, m
 					conflictingCellTypeError, conflictingCultureAdhesionError, specifiedIncubatorModelPacket,
 					conflictingCultureAdhesionWithContainerError, resolvedSamplesOutStorageConditionSymbol,
 					resolvedSamplesOutStorageConditionObject, conflictingCellTypeWithStorageConditionError,
-					conflictingCultureAdhesionWithStorageConditionError, cellTypeNotSpecifiedWarning, cultureAdhesionNotSpecifiedWarning,
-					cellTypeFromSample, cultureAdhesionFromSample, unsupportedCellCultureTypeError, incubatorCellTypes,
-					conflictingCellTypeWithIncubatorError, specifiedTemperature, specifiedCarbonDioxide, specifiedRelativeHumidity,
-					specifiedShake, specifiedShakingRadius, specifiedShakingRate, incubationConditionFromOptions, incubationConditionPattern,
-					specifiedSamplesOutStorageCondition, resolvedIncubationCondition, resolvedIncubationConditionPacket,
+					conflictingCultureAdhesionWithStorageConditionWarning, cellTypeNotSpecifiedWarning, cultureAdhesionNotSpecifiedWarning,
+					cellTypeFromSample, cultureAdhesionFromSample, resolvedMinQuantificationTarget, minTargetNoneWarningBool, resolvedQuantificationTolerance,
+					semiResolvedQuantificationAliquotContainer, semiResolvedQuantificationAliquotVolume,
+					semiResolvedQuantificationBlank, semiResolvedQuantificationWavelength, semiResolvedQuantificationStandardCurve,
+					unsupportedCellCultureTypeError, incubatorCellTypes, conflictingCellTypeWithIncubatorError, specifiedTemperature, specifiedCarbonDioxide,
+					specifiedRelativeHumidity, specifiedShake, specifiedShakingRadius, specifiedShakingRate, incubationConditionFromOptions, incubationConditionPattern,
+					specifiedSamplesOutStorageCondition, specifiedMinQuantificationTarget, specifiedQuantificationTolerance,
+					specifiedQuantificationAliquotContainer, specifiedQuantificationAliquotVolume, specifiedQuantificationBlank,
+					specifiedQuantificationWavelength, specifiedQuantificationStandardCurve, resolvedIncubationCondition, resolvedIncubationConditionPacket,
 					resolvedSamplesOutStorageCondition, customIncubationConditionNotSpecifiedWarning, unspecifiedOptions,
 					invalidIncubationConditionError
 				},
@@ -1427,13 +2123,14 @@ resolveExperimentIncubateCellsOptions[mySamples: {ObjectP[Object[Sample]]...}, m
 					conflictingCellTypeWithIncubatorError,
 					conflictingCultureAdhesionWithContainerError,
 					conflictingCellTypeWithStorageConditionError,
-					conflictingCultureAdhesionWithStorageConditionError,
+					conflictingCultureAdhesionWithStorageConditionWarning,
 
 					(* Warnings *)
 					cellTypeNotSpecifiedWarning,
 					cultureAdhesionNotSpecifiedWarning,
-					customIncubationConditionNotSpecifiedWarning
-				} = ConstantArray[False, 13];
+					customIncubationConditionNotSpecifiedWarning,
+					minTargetNoneWarningBool
+				} = ConstantArray[False, 14];
 
 				(* Lookup information about our sample and container packets *)
 				samplePacket = fetchPacketFromFastAssoc[mySample, fastAssoc];
@@ -1454,7 +2151,14 @@ resolveExperimentIncubateCellsOptions[mySamples: {ObjectP[Object[Sample]]...}, m
 					specifiedShake,
 					specifiedShakingRadius,
 					specifiedShakingRate,
-					specifiedSamplesOutStorageCondition
+					specifiedSamplesOutStorageCondition,
+					specifiedMinQuantificationTarget,
+					specifiedQuantificationTolerance,
+					specifiedQuantificationAliquotContainer,
+					specifiedQuantificationAliquotVolume,
+					specifiedQuantificationBlank,
+					specifiedQuantificationWavelength,
+					specifiedQuantificationStandardCurve
 				} = Lookup[
 					options,
 					{
@@ -1468,7 +2172,14 @@ resolveExperimentIncubateCellsOptions[mySamples: {ObjectP[Object[Sample]]...}, m
 						Shake,
 						ShakingRadius,
 						ShakingRate,
-						SamplesOutStorageCondition
+						SamplesOutStorageCondition,
+						MinQuantificationTarget,
+						QuantificationTolerance,
+						QuantificationAliquotContainer,
+						QuantificationAliquotVolume,
+						QuantificationBlank,
+						QuantificationWavelength,
+						QuantificationStandardCurve
 					}
 				];
 
@@ -1523,8 +2234,6 @@ resolveExperimentIncubateCellsOptions[mySamples: {ObjectP[Object[Sample]]...}, m
 					MatchQ[Lookup[samplePacket, CultureAdhesion], CultureAdhesionP], Lookup[samplePacket, CultureAdhesion],
 					(* if sample doesn't have it but its model does, use that*)
 					Not[NullQ[modelPacket]] && MatchQ[Lookup[modelPacket, CultureAdhesion], CultureAdhesionP], Lookup[modelPacket, CultureAdhesion],
-					(* if there is a cell type identity model in its composition, pick the most concentrated one's CultureAdhesion *)
-					MatchQ[mainCellIdentityModel, ObjectP[Model[Cell]]], Lookup[mainCellIdentityModelPacket, CultureAdhesion],
 					(* otherwise, we have no idea and pick Null *)
 					True, Null
 				];
@@ -1560,23 +2269,25 @@ resolveExperimentIncubateCellsOptions[mySamples: {ObjectP[Object[Sample]]...}, m
 						Humidity -> EqualP[specifiedRelativeHumidity],
 						Nothing
 					],
-					If[DistanceQ[specifiedShakingRadius],
-						ShakingRadius -> EqualP[specifiedShakingRadius],
-						Nothing
+					(* If we've specified shaking radius, take it. If we haven't specified it and we know we're shaking (i.e. some shaking option is specified or CultureAdhesion -> *)
+					(* Suspension, we need the shaking radius to not be Null. If we are not shaking, we need it to be Null. *)
+					Which[
+						DistanceQ[specifiedShakingRadius],
+							ShakingRadius -> EqualP[specifiedShakingRadius],
+						NullQ[specifiedShakingRate] || NullQ[specifiedShakingRadius],
+							ShakingRadius -> Null,
+						TrueQ[specifiedShake] || MatchQ[resolvedCultureAdhesion, Suspension] || RPMQ[specifiedShakingRate],
+							ShakingRadius -> Except[Null],
+						True,
+							ShakingRadius -> Null
 					],
-					If[RPMQ[specifiedShakingRate] && MatchQ[containerModelPacket, ObjectP[Model[Container, Plate]]],
+					If[RPMQ[specifiedShakingRate] && MatchQ[Lookup[containerModelPacket, Footprint], plateIncubatorFootprintsP],
 						PlateShakingRate -> EqualP[specifiedShakingRate],
 						Nothing
 					],
-					If[RPMQ[specifiedShakingRate] && MatchQ[containerModelPacket, ObjectP[Model[Container, Vessel]]],
+					If[RPMQ[specifiedShakingRate] && !MatchQ[Lookup[containerModelPacket, Footprint], plateIncubatorFootprintsP],
 						VesselShakingRate -> EqualP[specifiedShakingRate],
 						Nothing
-					],
-					(* this one is goofy.  Basically, if we haven't specified any other shaking things but we need it to shake, we specify ShakingRadius as non-null (but don't bother if stuff above is already specified *)
-					(* if we are not Suspension and haven't specified any shaking options, then we just want ShakingRadius to be Null *)
-					If[(TrueQ[specifiedShake] || MatchQ[resolvedCultureAdhesion, Suspension]) && Not[RPMQ[specifiedShakingRate]] && Not[DistanceQ[specifiedShakingRadius]],
-						ShakingRadius -> Except[Null],
-						ShakingRadius -> Null
 					]
 				}];
 
@@ -1597,7 +2308,7 @@ resolveExperimentIncubateCellsOptions[mySamples: {ObjectP[Object[Sample]]...}, m
 					(* if Incubator is specified and it's a custom incubator, set to Custom *)
 					MatchQ[specifiedIncubator, ObjectP[]] && MemberQ[customIncubators, ObjectP[specifiedIncubator]], Custom,
 					(* if Incubator is specified otherwise, get its ProvidedStorageCondition (replacing Null with Custom on the off chance we get that) *)
-					MatchQ[specifiedIncubator, ObjectP[]], Lookup[specifiedIncubatorModelPacket, ProvidedStorageCondition] /. {Null -> Custom},
+					MatchQ[specifiedIncubator, ObjectP[]], Download[Lookup[specifiedIncubatorModelPacket, ProvidedStorageCondition], Object] /. {Null -> Custom},
 					(* otherwise we figured out incubation condition based on the specified options, so go with that *)
 					True, incubationConditionFromOptions
 				];
@@ -1663,15 +2374,16 @@ resolveExperimentIncubateCellsOptions[mySamples: {ObjectP[Object[Sample]]...}, m
 						MatchQ[resolvedIncubationConditionPacket, PacketP[Model[StorageCondition]]],
 						Not[NullQ[Lookup[resolvedIncubationConditionPacket, ShakingRadius]]]
 					], True,
-					(* if none of the shaking options are specified and we're in a custom incubation, then suspensions cells should shake and others should not *)
-					MatchQ[resolvedCultureAdhesion, Suspension], True,
+					(* if none of the shaking options are specified and we're in a custom incubation, then suspensions cells should shake and others should not. *)
+					(* Note that it is possible to have Suspension but we respect user input of shaking option set to Null. *)
+					MatchQ[resolvedCultureAdhesion, Suspension] && MatchQ[resolvedIncubationConditionPacket, Custom], True,
 					True, False
 				];
 
 				(* Resolve the ShakingRate option *)
 				resolvedShakingRate = Which[
-					(* If the user directly provided a ShakingRate, use that*)
-					RPMQ[specifiedShakingRate], specifiedShakingRate,
+					(* If the user directly provided a ShakingRate, use that, even if it is Null *)
+					MatchQ[specifiedShakingRate, Except[Automatic]], specifiedShakingRate,
 					(* if Shake is resolved to False, then Null *)
 					Not[resolvedShaking], Null,
 					(* if IncubationCondition is not custom and ShakingRate is populated, then use the Plate/VesselShakingRate *)
@@ -1687,16 +2399,14 @@ resolveExperimentIncubateCellsOptions[mySamples: {ObjectP[Object[Sample]]...}, m
 					], Lookup[resolvedIncubationConditionPacket, VesselShakingRate],
 					(* if an incubator was specified and it has a DefaultShakingRate, go with that; I don't expect this to usually be populated for custom incubators but we can have this here in case *)
 					Not[NullQ[specifiedIncubatorModelPacket]] && RPMQ[Lookup[specifiedIncubatorModelPacket, DefaultShakingRate]], Lookup[specifiedIncubatorModelPacket, DefaultShakingRate],
-					(* if we have nothing else to go on, then do 400 RPM for a plate and 200 RPM (yeast) or 250 RPM (bacterial) otherwise *)
-					MatchQ[containerModelPacket, PacketP[Model[Container, Plate]]], 400 RPM,
-					MatchQ[resolvedCellType, Yeast], 200 RPM,
-					True, 250 RPM
+					(* if we have nothing else to go on, then do 200 RPM *)
+					True, 200 RPM
 				];
 
 				(* Resolve the ShakingRadius option *)
 				semiResolvedShakingRadiusBadFloat = Which[
-					(* If the user directly provided a ShakingRadius, use that*)
-					DistanceQ[specifiedShakingRadius], specifiedShakingRadius,
+					(* If the user directly provided a ShakingRadius, use that, even if it is Null*)
+					MatchQ[specifiedShakingRadius, Except[Automatic]], specifiedShakingRadius,
 					(* if Shake is resolved to False, then Null *)
 					Not[resolvedShaking], Null,
 					(* if IncubationCondition is not custom and ShakingRadius is populated, then use the ShakingRadius *)
@@ -1748,10 +2458,9 @@ resolveExperimentIncubateCellsOptions[mySamples: {ObjectP[Object[Sample]]...}, m
 					(* note that we somehow have a non-cell-culture incubation condition here, don't resolve to that because things are already borked and we don't want to throw unnecessary options together with the necessary ones  *)
 					MatchQ[resolvedIncubationConditionPacket, PacketP[Model[StorageCondition]]] && Not[NullQ[Lookup[resolvedIncubationConditionPacket, CellType]]], Lookup[resolvedIncubationConditionPacket, StorageCondition],
 					(* if IncubationCondition is custom, then pick a storage condition based only on CellType and CultureAdhesion (and just pick something based on CellType otherwise) *)
-					MatchQ[samplesOutStorageConditionPacketForCustom, PacketP[Model[StorageCondition]]], Lookup[samplesOutStorageConditionPacketForCustom, StorageCondition],
-					(* if we somehow can't find anything, just say BacterialShakingIncubation and we're going to throw an error below *)
-					(* we resolve down to BacterialShakingIncubation because we're already resolving to Suspension and so if we do that and non-shaking we're going to throw too many more unncessary errors *)
-					True, Lookup[FirstCase[storageConditionPackets, KeyValuePattern[CellType -> resolvedCellType], <|StorageCondition -> BacterialShakingIncubation|>], StorageCondition]
+					MatchQ[resolvedIncubationCondition,Custom] && MatchQ[samplesOutStorageConditionPacketForCustom, PacketP[Model[StorageCondition]]], Lookup[samplesOutStorageConditionPacketForCustom, StorageCondition],
+					(* if we somehow can't find anything, just go to fridge to avoid throwing too many errors, especially not for values we resolved to *)
+					True, Refrigerator
 				];
 
 				(* Flip error switch for if IncubationCondition is specified and is not an actual IncubationCondition *)
@@ -1796,12 +2505,10 @@ resolveExperimentIncubateCellsOptions[mySamples: {ObjectP[Object[Sample]]...}, m
 
 				(* Flip error switch for if the SamplesOutStorageCondition doesn't agree with what the cells are *)
 				conflictingCellTypeWithStorageConditionError = Which[
-					(* Disposal always ok *)
-					MatchQ[resolvedSamplesOutStorageConditionSymbol, Disposal], False,
+					(* Disposal and Refridgerator always ok *)
+					MatchQ[resolvedSamplesOutStorageConditionSymbol, Disposal|Refrigerator|Ambient], False,
 					(* if CellType is Mammalian, then we need MammalianIncubation *)
 					MatchQ[resolvedCellType, Mammalian], Not[MatchQ[resolvedSamplesOutStorageConditionSymbol, MammalianIncubation]],
-					(* if CultureAdhesion is SolidMedia, then Refrigerator is fine *)
-					MatchQ[resolvedCultureAdhesion, SolidMedia] && MatchQ[resolvedSamplesOutStorageConditionSymbol, Refrigerator], False,
 					(* if CellType is Bacterial, then we need SamplesOutStorageCondition to be BacterialIncubation or BacterialShakingIncubation *)
 					MatchQ[resolvedCellType, Bacterial], Not[MatchQ[resolvedSamplesOutStorageConditionSymbol, BacterialIncubation|BacterialShakingIncubation]],
 					(* if CellType is Yeast, then we need SamplesOutStorageCondition to be YeastIncubation or YeastShakingIncubation *)
@@ -1810,16 +2517,91 @@ resolveExperimentIncubateCellsOptions[mySamples: {ObjectP[Object[Sample]]...}, m
 					True, False
 				];
 
-				(* Flip error switch for if we are trying to store suspension samples without shaking *)
-				conflictingCultureAdhesionWithStorageConditionError = If[MatchQ[resolvedSamplesOutStorageConditionSymbol, Disposal] || NullQ[resolvedSamplesOutStorageConditionObject],
-					(* Disposal is always ok *)
+				(* Flip warning switch for if we are trying to store suspension samples in an incubator without shaking. But do not error if the storage condition is just a continuance of the incubation condition. *)
+				conflictingCultureAdhesionWithStorageConditionWarning = If[MatchQ[resolvedSamplesOutStorageConditionSymbol, Disposal|Refrigerator|Ambient] || NullQ[resolvedSamplesOutStorageConditionObject],
+					(* Disposal|Refrigerator|Ambient is always ok *)
 					False,
-					(* if CultureAdhesion is Suspension, we have to have a shaking storage condition *)
-					MatchQ[resolvedCultureAdhesion, Suspension] && NullQ[fastAssocLookup[fastAssoc, resolvedSamplesOutStorageConditionObject, ShakingRadius]]
+					(* if CultureAdhesion is Suspension, we warn the user if it's not a direct continuance of the incubation condition *)
+					MatchQ[resolvedCultureAdhesion, Suspension] && NullQ[fastAssocLookup[fastAssoc, resolvedSamplesOutStorageConditionObject, ShakingRadius]] && !MatchQ[resolvedIncubationCondition, ObjectP[resolvedSamplesOutStorageConditionObject]]
+				];
+
+				(* RESOLVE INDEX-MATCHING QUANTIFICATION OPTIONS AND ASSOCIATED ERRORS/WARNINGS *)
+
+				(* Resolve the MinQuantificationTarget. Also throw a warning if we resolve to None from Automatic. *)
+				{resolvedMinQuantificationTarget, minTargetNoneWarningBool} = Which[
+					(* If the user specified the option, use their specification. *)
+					MatchQ[specifiedMinQuantificationTarget, Except[Automatic]], {specifiedMinQuantificationTarget, False},
+					(* If the IncubationStrategy is Time, set this to Null. *)
+					MatchQ[resolvedIncubationStrategy, Time], {Null, False},
+					(* Otherwise, set this to None and throw the warning switch. *)
+					True, {None, True}
+				];
+
+				(* Resolve the QuantificationTolerance. *)
+				resolvedQuantificationTolerance = Which[
+					(* If the user specified the option, use their specification. *)
+					MatchQ[specifiedQuantificationTolerance, Except[Automatic]], specifiedQuantificationTolerance,
+					(* If the MinQuantificationTarget is Null or None, set this to Null. *)
+					MatchQ[resolvedMinQuantificationTarget, Alternatives[Null, None]], Null,
+					(* Otherwise, set this to 10 Percent. *)
+					True, 10 Percent
+				];
+
+				(* Resolve the QuantificationWavelength. *)
+				semiResolvedQuantificationWavelength = Which[
+					(* If the user specified the option, use their specification. *)
+					MatchQ[specifiedQuantificationWavelength, Except[Automatic]], specifiedQuantificationWavelength,
+					(* If QuantificationMethod is not Absorbance or Nephelometry, set this to Null. *)
+					MatchQ[resolvedQuantificationMethod, Except[Absorbance|Nephelometry]], Null,
+					(* Otherwise, set this Automatic and let QuantifyCells handle it. *)
+					True, Automatic
+				];
+
+				(* Resolve the QuantificationBlank. *)
+				semiResolvedQuantificationBlank = Which[
+					(* If the user specified the option, use their specification. *)
+					MatchQ[specifiedQuantificationBlank, Except[Automatic]], specifiedQuantificationBlank,
+					(* If QuantificationBlankMeasurement is not True, set this to Null. *)
+					MatchQ[resolvedQuantificationBlankMeasurementBool, Except[True]], Null,
+					(* Set this to the Solvent field of the input sample, if available. *)
+					MatchQ[Lookup[samplePacket, Solvent], ObjectP[]], Lookup[samplePacket, Solvent],
+					(* Otherwise, set this to Milli-Q water. *)
+					True, Model[Sample, "Milli-Q water"]
+				];
+
+				(* Resolve the QuantificationStandardCurve. Note that we may leave this as Automatic and pass it to QuantifyCells to resolve. *)
+				semiResolvedQuantificationStandardCurve = Which[
+					(* If the user specified the option, use their specification. *)
+					MatchQ[specifiedQuantificationStandardCurve, Except[Automatic]], specifiedQuantificationStandardCurve,
+					(* If the QuantificationMethod is not Absorbance or Nephelometry, set this to Null. *)
+					MatchQ[resolvedQuantificationMethod, Except[Absorbance | Nephelometry]], Null,
+					(* Otherwise, set this to Automatic and allow ExperimentQuantifyCells to resolve it. *)
+					True, Automatic
+				];
+
+				(* Resolve the QuantificationAliquotContainer. *)
+				semiResolvedQuantificationAliquotContainer = Which[
+					(* If the user specified the option, use their specification. *)
+					MatchQ[specifiedQuantificationAliquotContainer, Except[Automatic]], specifiedQuantificationAliquotContainer,
+					(* If the QuantificationAliquot Boolean is False or Null, set this to Null. *)
+					MatchQ[preResolvedQuantificationAliquotBool, False|Null], Null,
+					(* Otherwise, set this to Automatic and let QuantifyCell resolve it. *)
+					True, Automatic
+				];
+
+				(* Resolve the QuantificationAliquotVolume. *)
+				semiResolvedQuantificationAliquotVolume = Which[
+					(* If the user specified the option, use their specification. *)
+					MatchQ[specifiedQuantificationAliquotVolume, Except[Automatic]], specifiedQuantificationAliquotVolume,
+					(* If the QuantificationAliquot Boolean is False or Null, set this to Null. *)
+					MatchQ[preResolvedQuantificationAliquotBool, False|Null], Null,
+					(* Otherwise, set this Automatic and let QuantifyCells handle it. *)
+					True, Automatic
 				];
 
 				(* Gather MapThread results *)
 				{
+					(* Options *)
 					(*1*)resolvedCellType,
 					(*2*)resolvedCultureAdhesion,
 					(*3*)resolvedTemperature,
@@ -1832,31 +2614,51 @@ resolveExperimentIncubateCellsOptions[mySamples: {ObjectP[Object[Sample]]...}, m
 					(*10*)resolvedIncubationCondition,
 					(*11*)cellTypeFromSample,
 					(*12*)cultureAdhesionFromSample,
-					(*13*)conflictingShakingConditionsError,
-					(*14*)conflictingCellTypeError,
-					(*15*)conflictingCultureAdhesionError,
-					(*16*)invalidIncubationConditionError,
-					(*17*)conflictingCellTypeAdhesionError,
-					(*18*)unsupportedCellCultureTypeError,
-					(*19*)conflictingCellTypeWithIncubatorError,
-					(*20*)conflictingCultureAdhesionWithContainerError,
-					(*21*)conflictingCellTypeWithStorageConditionError,
-					(*22*)conflictingCultureAdhesionWithStorageConditionError,
-					(*23*)cellTypeNotSpecifiedWarning,
-					(*24*)cultureAdhesionNotSpecifiedWarning,
-					(*25*)customIncubationConditionNotSpecifiedWarning,
-					(*26*)unspecifiedOptions
+					(*13*)resolvedMinQuantificationTarget,
+					(*14*)resolvedQuantificationTolerance,
+					(*15*)semiResolvedQuantificationAliquotContainer,
+					(*16*)semiResolvedQuantificationAliquotVolume,
+					(*17*)semiResolvedQuantificationBlank,
+					(*18*)semiResolvedQuantificationWavelength,
+					(*19*)semiResolvedQuantificationStandardCurve,
+					(* Errors *)
+					(*20*)conflictingShakingConditionsError,
+					(*21*)conflictingCellTypeError,
+					(*22*)conflictingCultureAdhesionError,
+					(*23*)invalidIncubationConditionError,
+					(*24*)conflictingCellTypeAdhesionError,
+					(*25*)unsupportedCellCultureTypeError,
+					(*26*)conflictingCellTypeWithIncubatorError,
+					(*27*)conflictingCultureAdhesionWithContainerError,
+					(*28*)conflictingCellTypeWithStorageConditionError,
+					(*29*)conflictingCultureAdhesionWithStorageConditionWarning,
+					(* Warnings *)
+					(*30*)cellTypeNotSpecifiedWarning,
+					(*31*)cultureAdhesionNotSpecifiedWarning,
+					(*32*)customIncubationConditionNotSpecifiedWarning,
+					(*33*)minTargetNoneWarningBool,
+					(*34*)unspecifiedOptions
 				}
 			]
 		],
 		{mySamples, mapThreadFriendlyOptions, mainCellIdentityModels}
 	]];
 
+	(* Resolve the FailureResponse. *)
+	{resolvedFailureResponse, discardUponFailureWarningBool} = Which[
+		(* If the user specified the option, use their specification. *)
+		MatchQ[Lookup[myOptions, FailureResponse], Except[Automatic]], {Lookup[myOptions, FailureResponse], False},
+		(* If all of the MinQuantificationTargets are Null or None, set this to Null. *)
+		MatchQ[minQuantificationTargets, {Alternatives[Null, None]..}], {Null, False},
+		(* Otherwise, set this to Discard and warn that all of the samples will be discarded in the failure scenario. *)
+		True, {Discard, True}
+	];
+
 	(* To avoid mapping IncubateCellsDevices, once all other options are resolved in the MapThread above, pass the all the resolved options and the cache
 		to IncubateCellsDevices (using sample's containers as inputs) *)
 
-	(* Stash the container models to use as input*)
-	sampleContainerModels = Lookup[sampleContainerModelPackets, Object];
+	(* Stash the container models to use as input. In case the sample does not have container model, just use a default plate model so that we have some incubator to proceed *)
+	sampleContainerModels = Lookup[sampleContainerModelPackets, Object, Null] /. Null -> Model[Container,Plate,"id:O81aEBZjRXvx"] (* Model[Container, Plate, "Omni Tray Sterile Media Plate"] *);
 
 	(* Call IncubateCellsDevices to find all compatible incubators. If a list other than {} is returned, check the mode and return one valid instrument model*)
 	possibleIncubators = IncubateCellsDevices[
@@ -1864,8 +2666,8 @@ resolveExperimentIncubateCellsOptions[mySamples: {ObjectP[Object[Sample]]...}, m
 		CellType -> cellTypes,
 		CultureAdhesion -> cultureAdhesions,
 		Temperature -> temperatures,
-		CarbonDioxide -> carbonDioxidePercentages,
-		RelativeHumidity -> relativeHumidities,
+		CarbonDioxide -> carbonDioxidePercentages /. Ambient -> Null,
+		RelativeHumidity -> relativeHumidities /. Ambient -> Null,
 		Shake -> shaking,
 		ShakingRate -> shakingRates,
 		ShakingRadius -> semiResolvedShakingRadii,
@@ -1880,12 +2682,12 @@ resolveExperimentIncubateCellsOptions[mySamples: {ObjectP[Object[Sample]]...}, m
 	];
 
 	(* Resolve the incubator based on the information we had above from IncubateCellsDevices and the MapThread *)
-	incubators = MapThread[
+	rawIncubators = MapThread[
 		Function[{potentialIncubatorPacketsPerSample, desiredIncubator, resolvedCondition},
 			Which[
 				(* If user specified, just go with that *)
 				MatchQ[desiredIncubator, ObjectP[{Model[Instrument, Incubator], Object[Instrument, Incubator]}]], desiredIncubator,
-				(* If potential incubators is {}, then we're just picking Null and throwing an error below *)
+				(* If potential incubators is {}, then we're just picking Null. The final returned value will be replaced to a real model below, and an error will be thrown *)
 				MatchQ[potentialIncubatorPacketsPerSample, {}], Null,
 				(* If we're dealing with Robotic and on the bioSTAR, pick a robotic NonMicrobial incubator, pick the one that matches the desired work cell *)
 				(* doing this <|Object -> Null|> trick because obviously we can't do Lookup[Null, Object] and we're dealing with packets.  I know it's kind of dumb *)
@@ -1916,6 +2718,22 @@ resolveExperimentIncubateCellsOptions[mySamples: {ObjectP[Object[Sample]]...}, m
 			]
 		],
 		{possibleIncubatorPackets, Lookup[mapThreadFriendlyOptions, Incubator], incubationCondition}
+	];
+	(* If any incubator got resolved, use that as the default for Null cases. Otherwise just use a custom incubator *)
+	defaultIncubatorForNull = FirstOrDefault[
+		Cases[DeleteCases[rawIncubators, Null], ObjectP[]],
+		Model[Instrument, Incubator, "id:AEqRl954GG0l"](*"Multitron Pro with 25mm Orbit"*)
+	];
+
+	(* Make a list of boolean to keep track whether an incubator was raw-resolved to Null. Because Incubator option is AllowNull -> False, we should never return Null, so we need to replace with a real model, but need to keep track so that in downstream error checking, we do not further error out because of the incubator model we picked. *)
+	{incubators, noResolvedIncubatorBools} = Transpose@Map[
+		Function[rawIncubator,
+			If[NullQ[rawIncubator],
+				{defaultIncubatorForNull, True},
+				{rawIncubator, False}
+			]
+		],
+		rawIncubators
 	];
 
 	(* Finally resolve the ShakingRadius now that we know the incubator we're using  *)
@@ -1949,24 +2767,811 @@ resolveExperimentIncubateCellsOptions[mySamples: {ObjectP[Object[Sample]]...}, m
 		True, Lookup[myOptions, Email]
 	];
 
+	(* Do as much quantification-related error checking as possible before we call any Quantification experiments so that we know whether to run them. *)
+	(* This is to avoid long wait times just to return errors. Any error checks involving options that are semi-resolved in the Incubate resolver and then *)
+	(* fully resolved by the Quantify child function have to wait until after we run the child function's resolver. *)
+
+	(* Check that the QuantificationMethod and QuantificationInstrument, if specified, are compatible and/or resolvable. *)
+	conflictingQuantificationMethodAndInstrumentError = If[
+		Or[
+			And[
+				MatchQ[resolvedQuantificationMethod, Absorbance],
+				MatchQ[semiResolvedQuantificationInstrument, Except[Automatic|ObjectP[{Object[Instrument, PlateReader], Model[Instrument, PlateReader], Object[Instrument, Spectrophotometer], Model[Instrument, Spectrophotometer]}]]]
+			],
+			And[
+				MatchQ[resolvedQuantificationMethod, Nephelometry],
+				MatchQ[semiResolvedQuantificationInstrument, Except[Automatic|ObjectP[{Object[Instrument, Nephelometer], Model[Instrument, Nephelometer]}]]]
+			],
+			And[
+				MatchQ[resolvedQuantificationMethod, ColonyCount],
+				MatchQ[semiResolvedQuantificationInstrument, Except[Automatic|ObjectP[{Object[Instrument, ColonyHandler], Model[Instrument, ColonyHandler]}]]]
+			]
+		],
+		{resolvedQuantificationMethod, semiResolvedQuantificationInstrument},
+		{}
+	];
+
+	conflictingQuantificationMethodAndInstrumentOptions = If[MatchQ[Length[conflictingQuantificationMethodAndInstrumentError], GreaterP[0]] && messages,
+		(
+			Message[
+				Error::ConflictingQuantificationMethodAndInstrument,
+				ObjectToString[resolvedQuantificationMethod, Cache -> cacheBall],
+				ObjectToString[semiResolvedQuantificationInstrument, Cache -> cacheBall]
+			];
+			{QuantificationMethod, QuantificationInstrument}
+		),
+		{}
+	];
+
+	conflictingQuantificationMethodAndInstrumentOptionsTest = If[gatherTests,
+		Module[{affectedSamples, failingTest, passingTest},
+			affectedSamples = If[MatchQ[conflictingQuantificationMethodAndInstrumentError, {}], {}, mySamples];
+
+			failingTest = If[Length[affectedSamples] == 0,
+				Nothing,
+				Test["The QuantificationInstrument and QuantificationMethod for the sample(s) " <> ObjectToString[affectedSamples, Cache -> cacheBall] <> " are compatible with one another:", True, False]
+			];
+
+			passingTest = If[Length[affectedSamples] == Length[mySamples],
+				Nothing,
+				Test["The QuantificationInstrument and QuantificationMethod for the sample(s) " <> ObjectToString[Complement[mySamples, affectedSamples], Cache -> cacheBall] <> " are compatible with one another:", True, True]
+			];
+
+			{failingTest, passingTest}
+		],
+		Nothing
+	];
+
+	(* Test for quantification options which are in direct conflict with one another. *)
+	conflictingQuantificationOptionsCases = Join @@ MapThread[
+		Function[
+			{
+				sample,
+				target,
+				tolerance,
+				index
+			},
+			{
+				If[MatchQ[target, Except[Null|None]] && MatchQ[tolerance, Null],
+					{sample, MinQuantificationTarget, target, QuantificationTolerance, tolerance, index},
+					Nothing
+				],
+				If[MatchQ[target, (Null|None)] && MatchQ[tolerance, Except[Null]],
+					{sample, MinQuantificationTarget, target, QuantificationTolerance, tolerance, index},
+					Nothing
+				],
+				If[MatchQ[target, Except[Null|None]] && MatchQ[resolvedFailureResponse, Null],
+					{sample, MinQuantificationTarget, target, FailureResponse, resolvedFailureResponse, index},
+					Nothing
+				]
+			}
+		],
+		{
+			mySamples,
+			minQuantificationTargets,
+			quantificationTolerances,
+			Range[Length[mySamples]]
+		}
+	];
+
+	conflictingQuantificationOptions = If[MatchQ[Length[conflictingQuantificationOptionsCases], GreaterP[0]] && messages,
+		(
+			Message[
+				Error::ConflictingQuantificationOptions,
+				ObjectToString[conflictingQuantificationOptionsCases[[All,1]], Cache -> cacheBall],
+				ObjectToString[conflictingQuantificationOptionsCases[[All,2]], Cache -> cacheBall],
+				ObjectToString[conflictingQuantificationOptionsCases[[All,3]], Cache -> cacheBall],
+				ObjectToString[conflictingQuantificationOptionsCases[[All,4]], Cache -> cacheBall],
+				ObjectToString[conflictingQuantificationOptionsCases[[All,5]], Cache -> cacheBall],
+				conflictingQuantificationOptionsCases[[All, 6]]
+			];
+			DeleteDuplicates @ Flatten[{conflictingQuantificationOptionsCases[[All, {2, 4}]]}]
+		),
+		{}
+	];
+
+	conflictingQuantificationOptionsTest = If[gatherTests,
+		Module[{affectedSamples, failingTest, passingTest},
+			affectedSamples = If[MatchQ[conflictingQuantificationOptionsCases, {}], {}, mySamples];
+
+			failingTest = If[Length[affectedSamples] == 0,
+				Nothing,
+				Test["The FailureResponse, QuantificationTarget and QuantificationTolerance options for the sample(s) " <> ObjectToString[affectedSamples, Cache -> cacheBall] <> " are compatible with one another:", True, False]
+			];
+
+			passingTest = If[Length[affectedSamples] == Length[mySamples],
+				Nothing,
+				Test["The FailureResponse, QuantificationTarget and QuantificationTolerance options for the sample(s) " <> ObjectToString[Complement[mySamples, affectedSamples], Cache -> cacheBall] <> " are compatible with one another:", True, True]
+			];
+
+			{failingTest, passingTest}
+		],
+		Null
+	];
+
+	(* Test for quantification aliquot options which are in direct conflict with one another. *)
+	conflictingQuantificationAliquotOptionsCases = Join @@ MapThread[
+		Function[
+			{
+				sample,
+				aliquotContainer,
+				aliquotVolume,
+				index
+			},
+			{
+				If[TrueQ[preResolvedQuantificationAliquotBool] && MatchQ[aliquotContainer, Null],
+					{sample, QuantificationAliquotContainer, aliquotContainer, index},
+					Nothing
+				],
+				If[TrueQ[preResolvedQuantificationAliquotBool] && MatchQ[aliquotVolume, Null],
+					{sample, QuantificationAliquotVolume, aliquotVolume, index},
+					Nothing
+				],
+				If[!MatchQ[preResolvedQuantificationAliquotBool, True|Automatic] && MatchQ[aliquotContainer, Except[Null]],
+					{sample, QuantificationAliquotContainer, aliquotContainer, index},
+					Nothing
+				],
+				If[!MatchQ[preResolvedQuantificationAliquotBool, True|Automatic] && MatchQ[aliquotVolume, Except[Null]],
+					{sample, QuantificationAliquotVolume, aliquotVolume, index},
+					Nothing
+				]
+			}
+		],
+		{
+			mySamples,
+			quantificationAliquotContainers,
+			quantificationAliquotVolumes,
+			Range[Length[mySamples]]
+		}
+	];
+
+	conflictingQuantificationAliquotOptions = If[MatchQ[Length[conflictingQuantificationAliquotOptionsCases], GreaterP[0]] && messages,
+		(
+			Message[
+				Error::ConflictingQuantificationAliquotOptions,
+				ObjectToString[conflictingQuantificationAliquotOptionsCases[[All,1]], Cache -> cacheBall],
+				ObjectToString[conflictingQuantificationAliquotOptionsCases[[All,2]], Cache -> cacheBall],
+				ObjectToString[conflictingQuantificationAliquotOptionsCases[[All,3]], Cache -> cacheBall],
+				ObjectToString[preResolvedQuantificationAliquotBool, Cache -> cacheBall],
+				conflictingQuantificationAliquotOptionsCases[[All, 4]]
+			];
+			Append[conflictingQuantificationAliquotOptionsCases[[All,2]], QuantificationAliquot]
+		),
+		{}
+	];
+
+	conflictingQuantificationAliquotOptionsTest = If[gatherTests,
+		Module[{affectedSamples, failingTest, passingTest},
+			affectedSamples = conflictingQuantificationAliquotOptionsCases[[All, 1]];
+
+			failingTest = If[Length[affectedSamples] == 0,
+				Nothing,
+				Test["The QuantificationAliquotVolume and QuantificationAliquotContainer options for the sample(s) " <> ObjectToString[affectedSamples, Cache -> cacheBall] <> " are compatible with the QuantificationAliquot option:", True, False]
+			];
+
+			passingTest = If[Length[affectedSamples] == Length[mySamples],
+				Nothing,
+				Test["The QuantificationAliquotVolume and QuantificationAliquotContainer options for the sample(s) " <> ObjectToString[Complement[mySamples, affectedSamples], Cache -> cacheBall] <> " are compatible with the QuantificationAliquot option:", True, True]
+			];
+
+			{failingTest, passingTest}
+		],
+		Null
+	];
+
+	(* Check that the resolvedQuantificationInterval is at least 1 Hour and no more than the maximum Time if we're quantifying. *)
+	unsuitableQuantificationIntervalCases = If[
+		And[
+			!MatchQ[resolvedQuantificationInterval, RangeP[1 Hour, resolvedTime]],
+			MatchQ[resolvedIncubationStrategy, QuantificationTarget]
+		],
+		{resolvedQuantificationInterval, resolvedTime},
+		Nothing
+	];
+
+	unsuitableQuantificationIntervalOptions = If[MatchQ[Length[unsuitableQuantificationIntervalCases], GreaterP[0]] && messages,
+		(
+			Message[
+				Error::UnsuitableQuantificationInterval,
+				ObjectToString[unsuitableQuantificationIntervalCases[[1]], Cache -> cacheBall],
+				ObjectToString[unsuitableQuantificationIntervalCases[[2]], Cache -> cacheBall]
+			];
+			{Time, QuantificationInterval}
+		),
+		{}
+	];
+
+	unsuitableQuantificationIntervalTest = If[gatherTests,
+		Module[{affectedSamples, failingTest, passingTest},
+			affectedSamples = If[MatchQ[unsuitableQuantificationIntervalCases, Nothing], {}, mySamples];
+
+			failingTest = If[Length[affectedSamples] == 0,
+				Nothing,
+				Test["The QuantificationInterval for the sample(s) " <> ObjectToString[affectedSamples, Cache -> cacheBall] <> " is no shorter than 1 Hour and no longer than the Time:", True, False]
+			];
+
+			passingTest = If[Length[affectedSamples] == Length[mySamples],
+				Nothing,
+				Test["The QuantificationInterval for the sample(s) " <> ObjectToString[Complement[mySamples, affectedSamples], Cache -> cacheBall] <> " is no shorter than 1 Hour and no longer than the Time:", True, True]
+			];
+
+			{failingTest, passingTest}
+		],
+		Null
+	];
+
+	(* Check to see if the user gave us a units mismatch for MinQuantificationTarget and QuantificationTolerance. *)
+	(* Don't throw the error if either option is Null|None, or if the QuantificationTolerance is given as a Percent. *)
+	quantificationTargetUnitsMismatchCases = MapThread[
+		Function[
+			{sample, target, tolerance, index},
+			If[
+				And[
+					MatchQ[target, Except[Null|None]],
+					MatchQ[tolerance, Except[Null]],
+					!MatchQ[Units[target], Units[tolerance]],
+					!MatchQ[Units[tolerance], Percent]
+				],
+				{sample, target, tolerance, index},
+				Nothing
+			]
+		],
+		{mySamples, minQuantificationTargets, quantificationTolerances, Range[Length[mySamples]]}
+	];
+
+	quantificationTargetUnitsMismatchOptions = If[MatchQ[Length[quantificationTargetUnitsMismatchCases], GreaterP[0]] && messages,
+		(
+			Message[
+				Error::QuantificationTargetUnitsMismatch,
+				ObjectToString[quantificationTargetUnitsMismatchCases[[All,1]], Cache -> cacheBall],
+				ObjectToString[quantificationTargetUnitsMismatchCases[[All,2]], Cache -> cacheBall],
+				ObjectToString[quantificationTargetUnitsMismatchCases[[All,3]], Cache -> cacheBall],
+				quantificationTargetUnitsMismatchCases[[All, 4]]
+			];
+			{MinQuantificationTarget, QuantificationTolerance}
+		),
+		{}
+	];
+
+	quantificationTargetUnitsMismatchTest = If[gatherTests,
+		Module[{affectedSamples, failingTest, passingTest},
+			affectedSamples = quantificationTargetUnitsMismatchCases[[All, 1]];
+
+			failingTest = If[Length[affectedSamples] == 0,
+				Nothing,
+				Test["The QuantificationTolerance for the sample(s) " <> ObjectToString[affectedSamples, Cache -> cacheBall] <> " must be given as a Percent or in the same units as the MinQuantificationTarget is the MinQuantificationTarget is a quantity:", True, False]
+			];
+
+			passingTest = If[Length[affectedSamples] == Length[mySamples],
+				Nothing,
+				Test["The QuantificationTolerance for the sample(s) " <> ObjectToString[Complement[mySamples, affectedSamples], Cache -> cacheBall] <> " must be given as a Percent or in the same units as the MinQuantificationTarget is the MinQuantificationTarget is a quantity:", True, True]
+			];
+
+			{failingTest, passingTest}
+		],
+		Null
+	];
+
+	(* Check whether some options that aren't relevant to QuantifyColonies have non-Null values. *)
+	extraneousQuantifyColoniesOptionsCases = If[MatchQ[resolvedQuantificationMethod, ColonyCount],
+		Join @@ MapThread[
+			Function[
+				{
+					sample,
+					aliquotContainer,
+					aliquotVolume,
+					blank,
+					wavelength,
+					curve,
+					index
+				},
+				{
+					If[!MatchQ[preResolvedQuantificationAliquotBool, (Null|False|Automatic)],
+						{sample, QuantificationAliquot, preResolvedQuantificationAliquotBool, index},
+						Nothing
+					],
+					If[!MatchQ[aliquotContainer, (Null|Automatic)],
+						{sample, QuantificationAliquotContainer, aliquotContainer, index},
+						Nothing
+					],
+					If[!MatchQ[aliquotVolume, (Null|Automatic)],
+						{sample, QuantificationAliquotVolume, aliquotVolume, index},
+						Nothing
+					],
+					If[!MatchQ[blank, (Null|False|Automatic)],
+						{sample, QuantificationBlank, blank, index},
+						Nothing
+					],
+					If[!MatchQ[wavelength, (Null|Automatic)],
+						{sample, QuantificationWavelength, wavelength, index},
+						Nothing
+					],
+					If[!MatchQ[curve, (Null|Automatic)],
+						{sample, QuantificationStandardCurve, curve, index},
+						Nothing
+					]
+				}
+			],
+			{
+				mySamples,
+				quantificationAliquotContainers,
+				quantificationAliquotVolumes,
+				quantificationBlanks,
+				quantificationWavelengths,
+				quantificationStandardCurves,
+				Range[Length[mySamples]]
+			}
+		],
+		{}
+	];
+
+	extraneousQuantifyColoniesOptions = If[MatchQ[Length[extraneousQuantifyColoniesOptionsCases], GreaterP[0]] && messages,
+		(
+			Message[
+				Error::ExtraneousQuantifyColoniesOptions,
+				ObjectToString[extraneousQuantifyColoniesOptionsCases[[All,1]], Cache -> cacheBall],
+				ObjectToString[extraneousQuantifyColoniesOptionsCases[[All,2]], Cache -> cacheBall],
+				ObjectToString[extraneousQuantifyColoniesOptionsCases[[All,3]], Cache -> cacheBall],
+				extraneousQuantifyColoniesOptionsCases[[All, 4]]
+			];
+			DeleteDuplicates @ Flatten[{QuantificationMethod, extraneousQuantifyColoniesOptionsCases[[All,2]]}]
+		),
+		{}
+	];
+
+	extraneousQuantifyColoniesOptionsTest = If[gatherTests,
+		Module[{affectedSamples, failingTest, passingTest},
+			affectedSamples = extraneousQuantifyColoniesOptionsCases[[All,1]];
+
+			failingTest = If[Length[affectedSamples] == 0,
+				Nothing,
+				Test["None of the options QuantificationAliquot, QuantificationAliquotContainer, QuantificationAliquotVolume, QuantificationBlankMeasurement, QuantificationBlank, QuantificationWavelength, or QuantificationStandardCurve are specified (or True) for the sample(s) " <> ObjectToString[affectedSamples, Cache -> cacheBall] <> " if the QuantificationMethod is ColonyCount:", True, False]
+			];
+
+			passingTest = If[Length[affectedSamples] == Length[mySamples],
+				Nothing,
+				Test["None of the options QuantificationAliquot, QuantificationAliquotContainer, QuantificationAliquotVolume, QuantificationBlankMeasurement, QuantificationBlank, QuantificationWavelength, or QuantificationStandardCurve are specified (or True) for the sample(s) " <> ObjectToString[Complement[mySamples, affectedSamples], Cache -> cacheBall] <> " if the QuantificationMethod is ColonyCount:", True, True]
+			];
+
+			{failingTest, passingTest}
+		],
+		Null
+	];
+
+	(* Check that the FailureResponse is not Incubate if we have a Custom incubation condition at any index, and that it is not Freeze if *)
+	(* splitting the total volume into replicates would require more cryovials than a single Mr Frosty rack can hold. *)
+	failureResponseNotSupportedCases = Module[
+		{
+			nonSuspensionSamplesToFreeze, nonSuspensionCultureAdhesions, nonSuspensionIndices, replicatesRequired,
+			largestSampleVolume, cryoVialModel, frostyRackModel, frostyRackNumPositions, errorString
+		},
+
+		(* If applicable, find any samples which do not have a CultureAdhesion of Suspension. *)
+		{nonSuspensionSamplesToFreeze, nonSuspensionCultureAdhesions, nonSuspensionIndices} = If[MatchQ[resolvedFailureResponse, Freeze] && MemberQ[cultureAdhesions, Except[Suspension]],
+			Transpose @ MapThread[
+				Function[
+					{sample, cultureAdhesion, index},
+					If[!MatchQ[cultureAdhesion, Suspension],
+						{sample, cultureAdhesion, index},
+						Nothing
+					]
+				],
+				{mySamples, cultureAdhesions, Range[Length[mySamples]]}
+			],
+			{Null, Null, Null}
+		];
+
+		(* If applicable, determine the volumes and hardware required for a Freeze failure response. *)
+		{replicatesRequired, largestSampleVolume, cryoVialModel, frostyRackModel, frostyRackNumPositions} = If[!MatchQ[resolvedFailureResponse, Freeze] || MemberQ[cultureAdhesions, Except[Suspension]],
+			ConstantArray[Null, 5],
+			Module[
+				{inputSampleVolumes, failureSampleVolumes, largestSampleVolumeUponFailure, cryogenicSampleContainer, mrFrostyRack, rackPositions, numberOfCryovialsNeeded},
+
+				(* Get the current volumes of all the input samples. *)
+				inputSampleVolumes = ToList[Lookup[samplePackets, Volume]];
+
+				(* Get the expected sample volumes upon failure, i.e. once we have already done the maximum number of quantifications. *)
+				failureSampleVolumes = MapThread[
+					Function[
+						{inputVolume, aliquotVolume},
+						If[!GreaterQ[aliquotVolume, 0 Milliliter] || TrueQ[resolvedRecoupSampleBool],
+							(* If there is NOT a known aliquot volume for this sample (or if we are recouping the sample after aliquoting), use the input volume. *)
+							(* If we do end up aliquoting, the sample volume will decrease, which will not hurt us here. *)
+							inputVolume,
+							(* If we're aliquoting and not recouping the aliquoted volume, assume that the volume upon failure is the input volume minus the aliquot volume. *)
+							(* We only subtract the aliquot volume once (even though we could be aliquoting multiple times before failure) because there is a scenario in *)
+							(* which we go into troubleshooting while the sample is in the incubator and exceed the total Time before doing the max number of quantifications. *)
+							(* In other words, we're only guaranteed to aliquot one time, and it is safer to overestimate the sample volume here than to underestimate it. *)
+							inputVolume - aliquotVolume
+						]
+					],
+					{inputSampleVolumes, quantificationAliquotVolumes}
+				];
+
+				(* Get the largest sample volumes upon failure. *)
+				largestSampleVolumeUponFailure = Max[failureSampleVolumes];
+
+				(* Determine whether to use 2mL or 5mL vials and the corresponding Mr Frosty rack based on the largest sample volume. *)
+				{cryogenicSampleContainer, mrFrostyRack, rackPositions} = If[MatchQ[largestSampleVolumeUponFailure, LessEqualP[1.2 Milliliter]],
+					(* Model[Container, Vessel, "2mL Cryogenic Vial"] and Model[Container, Rack, InsulatedCooler, "2mL Mr. Frosty Rack"] *)
+					{Model[Container, Vessel, "id:vXl9j5qEnnOB"], Model[Container, Rack, InsulatedCooler, "id:7X104vnMk93w"], 18},
+					(* Model[Container, Vessel, "5mL Cryogenic Vial"] and Model[Container, Rack, InsulatedCooler, "5mL Mr. Frosty Rack"] *)
+					{Model[Container, Vessel, "id:o1k9jAG1Nl57"], Model[Container, Rack, InsulatedCooler, "5mL Mr. Frosty Rack"], 12}
+				];
+
+				(* Determine the number of cryo vials we need based on the largest volume. *)
+				numberOfCryovialsNeeded = If[MatchQ[cryogenicSampleContainer, ObjectP[Model[Container, Vessel, "id:vXl9j5qEnnOB"]]],
+					Ceiling[largestSampleVolumeUponFailure / (1.2 Milliliter)],
+					Ceiling[largestSampleVolumeUponFailure / (3 Milliliter)]
+				];
+
+				(* Return all of the parameters we need. *)
+				{numberOfCryovialsNeeded, largestSampleVolumeUponFailure, cryogenicSampleContainer, mrFrostyRack, rackPositions}
+			]
+		];
+
+		(* Generate the error string. *)
+		errorString = Which[
+			(* We can't use an Incubate FailureResponse for Custom incubation. *)
+			MatchQ[resolvedFailureResponse, Incubate] && MemberQ[incubationCondition, Custom],
+				"The FailureResponse is Incubate, and this is not available when a Custom IncubationCondition is specified for any sample(s).",
+			(* We can't use Freeze if the CultureAdhesion is not Suspension for any sample. *)
+			MemberQ[nonSuspensionSamplesToFreeze, ObjectP[]],
+				"The FailureResponse is Freeze, and the samples " <> ObjectToString[nonSuspensionSamplesToFreeze, Cache -> cacheBall] <> " at indices " <> ToString[nonSuspensionIndices] <> " have CultureAdhesion set to " <> ObjectToString[nonSuspensionCultureAdhesions, Cache -> cacheBall] <> ". The Freeze FailureResponse is only compatible with Suspension samples.",
+			(* We don't allow Freeze if the experiment demands more than 1 Mr Frosty Rack. *)
+			!NullQ[replicatesRequired] && GreaterQ[replicatesRequired, frostyRackNumPositions],
+				"The FailureResponse is Freeze and the largest input sample has a volume of " <> ToString[largestSampleVolume] <> ". In the event of failure, the input samples will be transferred into " <> ToString[replicatesRequired] <> " cryogenic vials of " <> ObjectToString[cryoVialModel, Cache -> cacheBall] <> " to accommodate the sample volume and added cryoprotectant volume. This would require the use of more than one insulated cooler rack of " <> ObjectToString[frostyRackModel, Cache -> cacheBall] <> ", which has " <> ToString[frostyRackNumPositions] <> " positions. Due to equipment constraints, the Freeze FailureResponse is only available for protocols which require no more than one full insulated cooler rack in the event of failure.",
+			(* Otherwise, everything is cool. *)
+			True, Null
+		];
+
+		(* Return the affected samples and error string. *)
+		Which[
+			(* If there are nonSuspensionSamplesToFreeze, these are the affected samples. *)
+			MemberQ[nonSuspensionSamplesToFreeze, ObjectP[]], {nonSuspensionSamplesToFreeze, errorString},
+			(* If there is an error string, all samples are affected. *)
+			StringQ[errorString], {mySamples, errorString},
+			(* Otherwise, return an empty list so we don't throw the error. *)
+			True, {}
+		]
+	];
+
+	failureResponseNotSupportedOptions = If[MatchQ[Length[failureResponseNotSupportedCases], GreaterP[0]] && messages,
+		(
+			Message[Error::FailureResponseNotSupported, failureResponseNotSupportedCases[[2]]];
+			{FailureResponse}
+		),
+		{}
+	];
+
+	failureResponseNotSupportedTest = If[gatherTests,
+		Module[{affectedSamples, failingTest, passingTest},
+			affectedSamples = If[SameQ[failureResponseNotSupportedCases, {}], {}, failureResponseNotSupportedCases[[1]]];
+
+			failingTest = If[Length[affectedSamples] == 0,
+				Nothing,
+				Test["The FailureResponse for the sample(s) " <> ObjectToString[affectedSamples, Cache -> cacheBall] <> " is not Incubate if the IncubationCondition is Custom and is not Freeze if the samples are not Suspension samples, or if the Freeze response requires more than one insulated cooler rack:", True, False]
+			];
+
+			passingTest = If[Length[affectedSamples] == Length[mySamples],
+				Nothing,
+				Test["The FailureResponse for the sample(s) " <> ObjectToString[Complement[mySamples, affectedSamples], Cache -> cacheBall] <> " is not Incubate if the IncubationCondition is Custom and is not Freeze if the samples are not Suspension samples, or if the Freeze response requires more than one insulated cooler rack:", True, True]
+			];
+
+			{failingTest, passingTest}
+		],
+		Null
+	];
+
+	(* Check that QuantificationRecoupSample is not True while QuantificationAliquot is False. *)
+	aliquotRecoupMismatchQ = And[
+		TrueQ[Lookup[myOptions, QuantificationRecoupSample]],
+		!TrueQ[preResolvedQuantificationAliquotBool]
+	];
+
+	aliquotRecoupMismatchedOptions = If[aliquotRecoupMismatchQ && messages,
+		(
+			Message[Error::AliquotRecoupMismatch];
+			{QuantificationRecoupSample, QuantificationAliquot}
+		),
+		{}
+	];
+
+	aliquotRecoupMismatchTest = If[gatherTests,
+		Module[{failingTest, passingTest},
+
+			failingTest = If[!aliquotRecoupMismatchQ,
+				Nothing,
+				Test["QuantificationRecoupSample is not True while QuantificationAliquot is False:", True, False]
+			];
+
+			passingTest = If[aliquotRecoupMismatchQ,
+				Nothing,
+				Test["QuantificationRecoupSample is not True while QuantificationAliquot is False:", True, True]
+			];
+
+			{failingTest, passingTest}
+		],
+		Null
+	];
+
+	(* Gather all of the error checks and flatten them out. We're doing this to determine whether to actually run the quantify child functions. *)
+	errorChecksBeforeQuantification = Flatten @ {
+		conflictingQuantificationMethodAndInstrumentError,
+    conflictingQuantificationOptionsCases,
+		conflictingQuantificationAliquotOptionsCases,
+		unsuitableQuantificationIntervalCases,
+		quantificationTargetUnitsMismatchCases,
+		extraneousQuantifyColoniesOptionsCases,
+		failureResponseNotSupportedCases,
+		aliquotRecoupMismatchedOptions
+	};
+
+	(* Run the Quantify child functions, if applicable. *)
+
+	(* If we're quantifying, run the resolvers for QuantifyColonies or QuantifyCells as needed. *)
+	(* If we're performing a simulation, we also get a protocol packet and a simulation. *)
+	{quantificationProtocolPacket, quantificationSimulation, resolvedQuantificationOptions} = Which[
+		(* If any of our error checks to this point have been tripped, skip this. *)
+		MatchQ[Length[errorChecksBeforeQuantification], GreaterP[0]], {{}, {}, {}},
+		(* If there are any Nulls in the singleton options required for quantification, skip this and move onto error checks. *)
+		MemberQ[{resolvedQuantificationInterval, resolvedQuantificationMethod, semiResolvedQuantificationInstrument, resolvedQuantificationBlankMeasurementBool}, Null], {{}, {}, {}},
+		(* If we're counting colonies, run QuantifyColonies. *)
+		MatchQ[resolvedQuantificationMethod, ColonyCount],
+			Module[
+				{quantifyColoniesOutputOption, quantifyColoniesResolverOnlyOption, quantifyColoniesOptions, quantifyColoniesOptionNamesMap},
+
+				(* If we are simulating, we need to include this in our output. If not, we only want the options. *)
+				(* For the same reasons, we run OptionsResolverOnly if we don't need to simulate a Quantify function. *)
+				{quantifyColoniesOutputOption, quantifyColoniesResolverOnlyOption} = If[performSimulationQ,
+					{Output -> {Result, Simulation, Options}, OptionsResolverOnly -> False},
+					{Output -> Options, OptionsResolverOnly -> True}
+				];
+
+				(* Set up our option specs for QuantifyColonies. *)
+				quantifyColoniesOptions = {
+					QuantificationInstrument -> semiResolvedQuantificationInstrument,
+					quantifyColoniesOutputOption,
+					quantifyColoniesResolverOnlyOption,
+					Upload -> False
+				};
+
+        (* Map from the QuantifyCells option namespace to the namespace for IncubateCells. *)
+				quantifyColoniesOptionNamesMap = {
+					QuantificationInstrument -> ImagingInstrument
+				};
+
+				(* Call ModifyFunctionMessages to resolve the options and modify any messages. *)
+				If[performSimulationQ,
+					(* If we're simulating, we will obtain the protocol packet, simulation, and the options. *)
+					Quiet[
+						ModifyFunctionMessages[
+							ExperimentQuantifyColonies,
+							{mySamples},
+							"",
+							quantifyColoniesOptionNamesMap,
+							quantifyColoniesOptions,
+							Cache -> cacheBall,
+							Simulation -> simulation,
+							Output -> Result
+						],
+						{Download::MissingCacheField}
+					],
+					(* If we're not simulating, we only need the options but will assign the protocol packet and simulation variables as empty lists. *)
+					{
+						{},
+						{},
+						Quiet[
+							ModifyFunctionMessages[
+								ExperimentQuantifyColonies,
+								{mySamples},
+								"",
+								quantifyColoniesOptionNamesMap,
+								quantifyColoniesOptions,
+								Cache -> cacheBall,
+								Simulation -> simulation,
+								Output -> Result
+							],
+							{Download::MissingCacheField}
+						]
+					}
+				]
+
+			],
+
+		(* In any other case, we run QuantifyCells. *)
+		True,
+			Module[
+				{
+					aliquotOption, aliquotContainerOption, aliquotVolumeOption, blankBoolOption, blankOption, standardCurveOption,
+					quantifyCellsOutputOption, quantifyCellsResolverOnlyOption, quantificationUnits, quantifyCellsOptions, quantifyCellsOptionNamesMap
+				},
+
+				(* The names of certain options in QuantifyCells depend upon the method, so use the correct ones here. *)
+				{aliquotOption, aliquotContainerOption, aliquotVolumeOption, blankBoolOption, blankOption, standardCurveOption} = If[
+					MatchQ[resolvedQuantificationMethod, Absorbance],
+					{AbsorbanceAliquot, AbsorbanceAliquotContainer, AbsorbanceAliquotAmount, AbsorbanceBlankMeasurement, AbsorbanceBlank, AbsorbanceStandardCurve},
+					{NephelometryAliquot, NephelometryAliquotContainer, NephelometryAliquotAmount, NephelometryBlankMeasurement, NephelometryBlank, NephelometryStandardCurve}
+				];
+
+				(* Get the quantification units from the MinQuantificationTargets. *)
+				(* Convert any cell concentrations to just the units, and any Nones to Automatics so that ExperimentQuantifyCells can resolve them appropriately. *)
+				quantificationUnits = If[MatchQ[Units[#], CellConcentrationUnitsP],
+					(* Convert it to string form due to widget change in ExperimentQuantifyCells' QuantificationUnit option *)
+					Units[#] /. $CellQuantificationUnitToStringLookup,
+					Automatic
+				] & /@ minQuantificationTargets;
+
+				(* If we are simulating, we need to include this in our output. If not, we only want the options. *)
+				(* For the same reasons, we run OptionsResolverOnly if we don't need to simulate a Quantify function. *)
+				{quantifyCellsOutputOption, quantifyCellsResolverOnlyOption} = If[performSimulationQ,
+					{Output -> {Result, Simulation, Options}, OptionsResolverOnly -> False},
+					{Output -> Options, OptionsResolverOnly -> True}
+				];
+
+				(* Set up our option specs for QuantifyCells. *)
+				quantifyCellsOptions = {
+					SampleLabel -> resolvedSampleLabels,
+					SampleContainerLabel -> resolvedSampleContainerLabels,
+					QuantificationMethod -> resolvedQuantificationMethod,
+					QuantificationInstrument -> semiResolvedQuantificationInstrument,
+					QuantificationWavelength -> quantificationWavelengths,
+					QuantificationUnit -> quantificationUnits,
+					QuantificationAliquot -> preResolvedQuantificationAliquotBool,
+					QuantificationBlankMeasurement -> resolvedQuantificationBlankMeasurementBool,
+					QuantificationBlank -> quantificationBlanks,
+					QuantificationAliquotContainer -> quantificationAliquotContainers,
+					QuantificationAliquotVolume -> quantificationAliquotVolumes,
+					QuantificationStandardCurve -> quantificationStandardCurves,
+					RecoupSample -> resolvedRecoupSampleBool,
+					Preparation -> resolvedPreparation,
+					quantifyCellsOutputOption,
+					quantifyCellsResolverOnlyOption,
+					Upload -> False
+				};
+
+				(* Map from the QuantifyCells option namespace to the namespace for IncubateCells. *)
+				quantifyCellsOptionNamesMap = {
+					QuantificationMethod -> Methods,
+					QuantificationInstrument -> Instruments,
+					QuantificationWavelength -> Wavelength,
+					QuantificationAliquot -> aliquotOption,
+					QuantificationAliquotContainer -> aliquotContainerOption,
+					QuantificationAliquotVolume -> aliquotVolumeOption,
+					QuantificationBlankMeasurement -> blankBoolOption,
+					QuantificationBlank -> blankOption,
+					QuantificationStandardCurve -> standardCurveOption
+				};
+
+				(* Call ModifyFunctionMessages to resolve the options and modify any messages. *)
+				If[performSimulationQ,
+					(* If we're simulating, we will obtain the protocol packet, simulation, and the options. *)
+					Quiet[
+						ModifyFunctionMessages[
+							ExperimentQuantifyCells,
+							{mySamples},
+							"",
+							quantifyCellsOptionNamesMap,
+							quantifyCellsOptions,
+							Cache -> cacheBall,
+							Simulation -> simulation,
+							Output -> Result
+						],
+						{Download::MissingCacheField, Warning::AliquotRequired}(* Quieting AliquotRequired because ExperimentIncubateCells does its own QuantificationAliquotRequired checking *)
+					],
+					(* If we're not simulating, we only need the options but will assign the protocol packet and simulation variables as empty lists. *)
+					{
+						{},
+						{},
+						Quiet[
+							ModifyFunctionMessages[
+								ExperimentQuantifyCells,
+								{mySamples},
+								"",
+								quantifyCellsOptionNamesMap,
+								quantifyCellsOptions,
+								Cache -> cacheBall,
+								Simulation -> simulation,
+								Output -> Result
+							],
+							{Download::MissingCacheField, Warning::AliquotRequired}(* Quieting AliquotRequired because ExperimentIncubateCells does its own QuantificationAliquotRequired checking *)
+						]
+					}
+				]
+
+			]
+	];
+
+	(* If we ran QuantifyCells, we may have further resolved the options at some indices, in which case we pass these values into the resolved options below. *)
+	{
+		finalQuantificationInstrument,
+		finalAliquotBools,
+		finalAliquotVolumes,
+		finalAliquotContainers,
+		finalStandardCurves,
+		finalBlanks,
+		finalWavelengths
+	} = If[
+		(* If we ran QuantifyCells, replace all of the following options. *)
+		And[
+			MatchQ[Length[resolvedQuantificationOptions], GreaterP[0]],
+			MatchQ[resolvedQuantificationMethod, (Absorbance|Nephelometry)]
+		],
+			Lookup[resolvedQuantificationOptions,
+				{
+					QuantificationInstrument,
+					QuantificationAliquot,
+					QuantificationAliquotVolume,
+					QuantificationAliquotContainer,
+					QuantificationStandardCurve,
+					QuantificationBlank,
+					QuantificationWavelength
+				}
+			],
+		(* Otherwise we didn't run a quantify function, so keep all of this as is. *)
+		{
+			semiResolvedQuantificationInstrument,
+			Null,
+			quantificationAliquotVolumes,
+			quantificationAliquotContainers,
+			quantificationStandardCurves,
+			quantificationBlanks,
+			quantificationWavelengths
+		}
+	];
+
+	(* Determine whether our aliquoting boolean resolved in an acceptable way. *)
+	{resolvedAliquotBool, mixedAliquotingQ} = Which[
+		(* If we ended up with a singleton True, False or Null, keep it and throw no messages. *)
+		MatchQ[finalAliquotBools, True|False|Null], {finalAliquotBools, False},
+		(* If we get a list of all True, all False, or all Null, set this to the appropriate symbol but no message is needed. *)
+		MatchQ[finalAliquotBools, {True..}|{False..}|{Null..}], {finalAliquotBools[[1]], False},
+		(* Otherwise, we have a mix of different aliquoting options. Default to True and flip the error switch. *)
+		True, {True, True}
+	];
+
+	(* If we ran a simulation for a quantify function, update the current simulation. *)
+	simulationWithQuantification = If[MatchQ[quantificationSimulation, SimulationP],
+		UpdateSimulation[simulation, quantificationSimulation],
+		simulation
+	];
+
 	(* Combine the resolved options together at this point; everything after is error checking, and for the warning below I need this for better error checking *)
 	resolvedOptions = ReplaceRule[
 		myOptions,
 		Flatten[{
+			SampleLabel -> resolvedSampleLabels,
+			SampleContainerLabel -> resolvedSampleContainerLabels,
 			Incubator -> incubators,
 			CellType -> cellTypes,
 			CultureAdhesion -> cultureAdhesions,
 			Temperature -> temperatures,
-			CarbonDioxide -> carbonDioxidePercentages,
-			RelativeHumidity -> relativeHumidities,
+			CarbonDioxide -> carbonDioxidePercentages /. Null -> Ambient,
+			RelativeHumidity -> relativeHumidities /. Null -> Ambient,
 			Time -> resolvedTime,
 			Shake -> shaking,
 			ShakingRate -> shakingRates,
 			ShakingRadius -> resolvedShakingRadii,
 			IncubationCondition -> incubationCondition,
 			SamplesOutStorageCondition -> samplesOutStorageCondition,
+			IncubationStrategy -> resolvedIncubationStrategy,
+			QuantificationMethod -> resolvedQuantificationMethod,
+			QuantificationInstrument -> finalQuantificationInstrument,
+			QuantificationInterval -> resolvedQuantificationInterval,
+			MinQuantificationTarget -> minQuantificationTargets,
+			QuantificationTolerance -> quantificationTolerances,
+			QuantificationAliquot -> resolvedAliquotBool,
+			QuantificationAliquotVolume -> finalAliquotVolumes,
+			QuantificationAliquotContainer -> Cases[Flatten[finalAliquotContainers], (ObjectP[]|Null)],
+			QuantificationRecoupSample -> resolvedRecoupSampleBool,
+			QuantificationBlankMeasurement -> resolvedQuantificationBlankMeasurementBool,
+			QuantificationBlank -> finalBlanks,
+			QuantificationWavelength -> finalWavelengths,
+			QuantificationStandardCurve -> finalStandardCurves,
+			FailureResponse -> resolvedFailureResponse,
 			Email -> email,
 			Confirm -> confirm,
+			CanaryBranch -> canaryBranch,
 			Template -> template,
 			Preparation -> resolvedPreparation,
 			WorkCell -> resolvedWorkCell,
@@ -1990,7 +3595,7 @@ resolveExperimentIncubateCellsOptions[mySamples: {ObjectP[Object[Sample]]...}, m
 	containersToSamples = Merge[
 		MapThread[
 			#1 -> #2&,
-			{Lookup[sampleContainerPackets, Object], Lookup[samplePackets, Object]}
+			{Lookup[sampleContainerPackets, Object, Null], Lookup[samplePackets, Object]}
 		],
 		Join
 	];
@@ -2000,7 +3605,7 @@ resolveExperimentIncubateCellsOptions[mySamples: {ObjectP[Object[Sample]]...}, m
 	incubatorsToContainers = Merge[
 		MapThread[
 			#1 -> #2&,
-			{incubators, Lookup[sampleContainerPackets, Object]}
+			{rawIncubators, Lookup[sampleContainerPackets, Object, Null]}
 		],
 		DeleteDuplicates[Join[#]] &
 	];
@@ -2166,7 +3771,7 @@ resolveExperimentIncubateCellsOptions[mySamples: {ObjectP[Object[Sample]]...}, m
 
 	(* If the Temperature is greater than the MaxTemperature of an input container, throw an error *)
 	temperatureAboveMaxTemperatureQs = MapThread[
-		With[{maxTemp = Lookup[#1, MaxTemperature]},
+		With[{maxTemp = Lookup[#1, MaxTemperature, Null]},
 			TemperatureQ[maxTemp] && maxTemp < #2
 		]&,
 		{sampleContainerModelPackets, temperatures}
@@ -2177,8 +3782,8 @@ resolveExperimentIncubateCellsOptions[mySamples: {ObjectP[Object[Sample]]...}, m
 				Error::IncubationMaxTemperature,
 				ObjectToString[PickList[mySamples, temperatureAboveMaxTemperatureQs], Cache -> cacheBall],
 				First /@ Position[temperatureAboveMaxTemperatureQs, True],
-				ObjectToString[PickList[Lookup[sampleContainerModelPackets, Object], temperatureAboveMaxTemperatureQs], Cache -> cacheBall],
-				PickList[Lookup[sampleContainerModelPackets, MaxTemperature], temperatureAboveMaxTemperatureQs]
+				ObjectToString[PickList[Lookup[sampleContainerModelPackets, Object, Null], temperatureAboveMaxTemperatureQs], Cache -> cacheBall],
+				PickList[Lookup[sampleContainerModelPackets, MaxTemperature, Null], temperatureAboveMaxTemperatureQs]
 			];
 			{Temperature}
 		),
@@ -2227,7 +3832,7 @@ resolveExperimentIncubateCellsOptions[mySamples: {ObjectP[Object[Sample]]...}, m
 		]&,
 		{customIncubationConditionNotSpecifiedWarnings, resolvedMapThreadOptions, unspecifiedMapThreadOptions}
 	];
-	If[MemberQ[customIncubationConditionNotSpecifiedWarnings, True] && messages && Not[MatchQ[$ECLApplication, Engine]],
+	If[MemberQ[customIncubationConditionNotSpecifiedWarnings, True] && messages && notInEngine,
 		Message[
 			Warning::CustomIncubationConditionNotSpecified,
 			ObjectToString[customIncubationWarningSamples, Cache -> cacheBall],
@@ -2299,13 +3904,90 @@ resolveExperimentIncubateCellsOptions[mySamples: {ObjectP[Object[Sample]]...}, m
 
 			(* Create a test for the non-passing inputs. *)
 			failingInputTest=If[Length[failingInputs]>0,
-				Test["The following samples, " <> ObjectToString[failingInputs, Cache -> cacheBall] <> ", have a valid incubator capable of incubating the samples with the provided options", True, False],
+				Test["The following samples, " <> ObjectToString[failingInputs, Cache -> cacheBall] <> ", have a valid incubator capable of incubating the samples with the provided options:", True, False],
 				Nothing
 			];
 
 			(* Create a test for the passing inputs. *)
 			passingInputsTest = If[Length[passingInputs]>0,
-				Test["The following samples, " <> ObjectToString[passingInputs, Cache -> cacheBall] <> ", have a valid incubator capable of incubating the samples with the provided options", True, True],
+				Test["The following samples, " <> ObjectToString[passingInputs, Cache -> cacheBall] <> ", have a valid incubator capable of incubating the samples with the provided options:", True, True],
+				Nothing
+			];
+
+			(* Return our created tests. *)
+			{
+				passingInputsTest,
+				failingInputTest
+			}
+		],
+		(* We aren't gathering tests. No tests to create. *)
+		{}
+	];
+
+	(* Incubator is incompatible error check *)
+	incubatorIsIncompatibleErrors = MapThread[
+		Function[{resolvedIncubator, allowedIncubators},
+			Module[{resolvedIncubatorModel},
+				(* If the incubator is specified to be an object, get its model, otherwise leave as it is *)
+				resolvedIncubatorModel = If[MatchQ[resolvedIncubator,ObjectP[Object[Instrument, Incubator]]],
+					fastAssocLookup[fastAssoc, resolvedIncubator, Model],
+					resolvedIncubator
+				];
+				(* Determine whether to throw an error for this sample *)
+				If[
+					And[
+						(* Empty possibleIncubators is caught by another error*)
+						!MatchQ[allowedIncubators,({}|Null)],
+						(* Incubator model is indeed a model *)
+						MatchQ[resolvedIncubatorModel, ObjectP[Model[Instrument, Incubator]]],
+						(* But incubator is not in possibleIncubators. Here we are guaranteed that this incubator is user-specified*)
+						!MemberQ[allowedIncubators,ObjectP[resolvedIncubatorModel]]
+					],
+					True,
+					False
+				]
+			]
+		],
+		{rawIncubators, possibleIncubators}
+	];
+
+	incubatorIsIncompatibleOptions = If[Or@@incubatorIsIncompatibleErrors && !gatherTests,
+		Module[{invalidSamples},
+			(* Get the samples that correspond to this error. *)
+			invalidSamples = PickList[mySamples, incubatorIsIncompatibleErrors];
+
+			(* Throw the corresponding error. *)
+			Message[Error::IncubatorIsIncompatible,
+				ObjectToString[invalidSamples, Cache -> cacheBall],
+				First /@ Position[incubatorIsIncompatibleErrors, True],
+				ObjectToString[PickList[incubators, incubatorIsIncompatibleErrors], Cache -> cacheBall],
+				ObjectToString[PickList[possibleIncubators, incubatorIsIncompatibleErrors], Cache -> cacheBall]
+			];
+
+			(* Return our invalid options. *)
+			{Incubator}
+		],
+		{}
+	];
+	(* Create the corresponding test for the invalid options. *)
+	incubatorIsIncompatibleTests = If[gatherTests,
+		(* We're gathering tests. Create the appropriate tests. *)
+		Module[{failingInputs, passingInputs, passingInputsTest, failingInputTest},
+			(* Get the inputs that fail this test. *)
+			failingInputs = PickList[mySamples, incubatorIsIncompatibleErrors];
+
+			(* Get the inputs that pass this test. *)
+			passingInputs = Complement[mySamples, failingInputs];
+
+			(* Create a test for the non-passing inputs. *)
+			failingInputTest=If[Length[failingInputs]>0,
+				Test["The following samples, " <> ObjectToString[failingInputs, Cache -> cacheBall] <> ", has the incubator compatible if specified:", True, False],
+				Nothing
+			];
+
+			(* Create a test for the passing inputs. *)
+			passingInputsTest = If[Length[passingInputs]>0,
+				Test["The following samples, " <> ObjectToString[passingInputs, Cache -> cacheBall] <> ", has the incubator compatible if specified:", True, True],
 				Nothing
 			];
 
@@ -2320,9 +4002,9 @@ resolveExperimentIncubateCellsOptions[mySamples: {ObjectP[Object[Sample]]...}, m
 	];
 
 
-	firstCustomIncubator = FirstCase[incubators, Alternatives @@ customIncubators];
+	firstCustomIncubator = FirstCase[rawIncubators, Alternatives @@ customIncubators];
 	(*Too many custom incubator options error check *)
-	invalidCustomIncubatorsErrors = MatchQ[#, Alternatives @@ DeleteCases[customIncubators, firstCustomIncubator]]& /@ incubators;
+	invalidCustomIncubatorsErrors = MatchQ[#, Alternatives @@ DeleteCases[customIncubators, firstCustomIncubator]]& /@ rawIncubators;
 
 	invalidCustomIncubatorsOptions = If[Or @@ invalidCustomIncubatorsErrors && !gatherTests,
 		Module[{invalidSamples, invalidOptions},
@@ -2333,7 +4015,7 @@ resolveExperimentIncubateCellsOptions[mySamples: {ObjectP[Object[Sample]]...}, m
 			(* Throw the corresponding error. *)
 			Message[Error::TooManyCustomIncubationConditions,
 				ObjectToString[invalidSamples, Cache -> cacheBall],
-				ObjectToString[PickList[incubators, invalidCustomIncubatorsErrors]],
+				ObjectToString[PickList[rawIncubators, invalidCustomIncubatorsErrors]],
 				ObjectToString[firstCustomIncubator]
 			];
 
@@ -2534,7 +4216,7 @@ resolveExperimentIncubateCellsOptions[mySamples: {ObjectP[Object[Sample]]...}, m
 
 
 	(* CellType not specified options warning check *)
-	If[Or@@cellTypeNotSpecifiedWarnings&&!gatherTests && Not[MatchQ[$ECLApplication, Engine]],
+	If[Or@@cellTypeNotSpecifiedWarnings&&!gatherTests && notInEngine,
 		Message[Warning::CellTypeNotSpecified, ObjectToString[PickList[mySamples, cellTypeNotSpecifiedWarnings], Cache -> cacheBall]]
 	];
 
@@ -2571,7 +4253,7 @@ resolveExperimentIncubateCellsOptions[mySamples: {ObjectP[Object[Sample]]...}, m
 	];
 
 	(* CultureAdhesion not specified options warning check *)
-	If[Or @@ cultureAdhesionNotSpecifiedWarnings && !gatherTests && Not[MatchQ[$ECLApplication, Engine]],
+	If[Or @@ cultureAdhesionNotSpecifiedWarnings && !gatherTests && notInEngine,
 		Message[
 			Warning::CultureAdhesionNotSpecified,
 			ObjectToString[PickList[mySamples, cultureAdhesionNotSpecifiedWarnings], Cache -> cacheBall],
@@ -2878,25 +4560,25 @@ resolveExperimentIncubateCellsOptions[mySamples: {ObjectP[Object[Sample]]...}, m
 		{}
 	];
 
-	(* If not disposing of things, then SamplesOutStorageCondition must be in agreement with CultureAdhesion *)
-	conflictingCultureAdhesionWithStorageConditionOptions = If[MemberQ[conflictingCultureAdhesionWithStorageConditionErrors, True] && messages,
+	(* If not disposing of things or putting things in fridge/ambient, then warn the user if SamplesOutStorageCondition is not in agreement with CultureAdhesion *)If[MemberQ[conflictingCultureAdhesionWithStorageConditionWarnings, True] && messages,
 		(
 			Message[
-				Error::ConflictingCultureAdhesionWithStorageCondition,
-				ObjectToString[PickList[mySamples, conflictingCultureAdhesionWithStorageConditionErrors], Cache -> cacheBall],
-				First /@ Position[conflictingCultureAdhesionWithStorageConditionErrors, True],
-				PickList[cultureAdhesions, conflictingCultureAdhesionWithStorageConditionErrors],
-				PickList[samplesOutStorageCondition, conflictingCultureAdhesionWithStorageConditionErrors]
+				Warning::ConflictingCultureAdhesionWithStorageCondition,
+				ObjectToString[PickList[mySamples, conflictingCultureAdhesionWithStorageConditionWarnings], Cache -> cacheBall],
+				First /@ Position[conflictingCultureAdhesionWithStorageConditionWarnings, True],
+				PickList[cultureAdhesions, conflictingCultureAdhesionWithStorageConditionWarnings],
+				PickList[samplesOutStorageCondition, conflictingCultureAdhesionWithStorageConditionWarnings]
 			];
 			{CultureAdhesion, SamplesOutStorageCondition}
 		),
 		{}
 	];
+
 	conflictingCultureAdhesionWithStorageConditionTests = If[gatherTests,
 		(* We're gathering tests. Create the appropriate tests. *)
 		Module[{failingInputs, passingInputs, passingInputsTest, failingInputTest},
 			(* Get the inputs that fail this test. *)
-			failingInputs = PickList[mySamples, conflictingCultureAdhesionWithStorageConditionErrors];
+			failingInputs = PickList[mySamples, conflictingCultureAdhesionWithStorageConditionWarnings];
 
 			(* Get the inputs that pass this test. *)
 			passingInputs = Complement[mySamples, failingInputs];
@@ -2923,6 +4605,315 @@ resolveExperimentIncubateCellsOptions[mySamples: {ObjectP[Object[Sample]]...}, m
 		{}
 	];
 
+	(* Throw an error if ExperimentQuantifyCells resolves the QuantificationAliquot option but gives a mix of True and False. *)
+	(* The scenario which requires us to throw this error is pretty unlikely - e.g. the user has multiple samples and some but not all *)
+	(* are compatible with the quantification instrument and the user doesn't set any aliquoting options explicitly. *)
+	mixedQuantificationAliquotRequirementsOptions = If[MatchQ[mixedAliquotingQ, True] && messages,
+		(
+			Message[
+				Error::MixedQuantificationAliquotRequirements,
+				ObjectToString[mySamples, Cache -> cacheBall],
+				finalAliquotBools,
+				Range[Length[mySamples]]
+			];
+			{QuantificationAliquot}
+		),
+		{}
+	];
+	mixedQuantificationAliquotRequirementsOptionsTests = If[gatherTests,
+		(* We're gathering tests. Create the appropriate tests. *)
+		Module[{failingInputs, passingInputs, passingInputsTest, failingInputTest},
+			(* Get the inputs that fail this test. *)
+			failingInputs = If[MatchQ[mixedQuantificationAliquotRequirementsOptions, {}], {}, mySamples];
+
+			(* Get the inputs that pass this test. *)
+			passingInputs = Complement[mySamples, failingInputs];
+
+			(* Create a test for the non-passing inputs. *)
+			failingInputTest = If[Length[failingInputs] > 0,
+				Test["Some but not all of the following samples, " <> ObjectToString[failingInputs, Cache -> cacheBall] <> " require aliquoting for quantification, but QuantificationAliquot is not explicitly set to True:", True, False],
+				Nothing
+			];
+
+			(* Create a test for the passing inputs. *)
+			passingInputsTest = If[Length[passingInputs] > 0,
+				Test["The QuantificationAliquot option resolved to either all True, all False, or all Null for the following samples, " <> ObjectToString[passingInputs, Cache -> cacheBall] <> ":", True, True],
+				Nothing
+			];
+
+			(* Return our created tests. *)
+			{
+				passingInputsTest,
+				failingInputTest
+			}
+		],
+		(* We aren't gathering tests. No tests to create. *)
+		{}
+	];
+
+	(* Throw a warning if QuantificationAliquot resolves to True from Automatic. *)
+	quantificationAliquotRequiredQ = And[
+		messages,
+		notInEngine,
+		MatchQ[Lookup[myOptions, QuantificationAliquot], Except[True]],
+		TrueQ[resolvedAliquotBool],
+		!TrueQ[mixedAliquotingQ] (* this message is likely to confuse the user if we're also throwing the mixed aliquoting message *)
+	];
+	If[quantificationAliquotRequiredQ, Message[Warning::QuantificationAliquotRequired]];
+
+	(* Create the corresponding test for the invalid options. *)
+	quantificationAliquotRequiredTest = If[gatherTests,
+		Module[{failingTest, passingTest},
+
+			failingTest = If[!quantificationAliquotRequiredQ,
+				Nothing,
+				Test["QuantificationAliquot does not resolve to True from Automatic:", True, False]
+			];
+
+			passingTest = If[quantificationAliquotRequiredQ,
+				Nothing,
+				Test["QuantificationAliquot does not resolve to True from Automatic:", True, True]
+			];
+
+			{failingTest, passingTest}
+		],
+		Null
+	];
+
+	(* Throw a warning if we're quantifying with Abs or Neph in a manual protocol and QuantificationAliquot is False. *)
+	quantificationAliquotRecommendedQ = And[
+		messages,
+		notInEngine,
+		MatchQ[resolvedQuantificationMethod, Absorbance|Nephelometry],
+		MatchQ[resolvedPreparation, Manual],
+		!MatchQ[resolvedAliquotBool, True],
+		!MatchQ[Length[errorChecksBeforeQuantification], GreaterP[0]] (* if this matches, we didn't run QuantifyCells because there was a problem beforehand *)
+	];
+	If[quantificationAliquotRecommendedQ,
+		Message[
+			Warning::QuantificationAliquotRecommended,
+			resolvedQuantificationMethod,
+			resolvedPreparation,
+			resolvedAliquotBool
+		]
+	];
+
+	(* Create the corresponding test for the invalid options. *)
+	quantificationAliquotRecommendedTest = If[gatherTests,
+		Module[{failingTest, passingTest},
+
+			failingTest = If[!quantificationAliquotRecommendedQ,
+				Nothing,
+				Test["QuantificationAliquot is not False while QuantificationMethod is Absorbance or Nephelometry:", True, False]
+			];
+
+			passingTest = If[quantificationAliquotRecommendedQ,
+				Nothing,
+				Test["QuantificationAliquot is not False while QuantificationMethod is Absorbance or Nephelometry:", True, True]
+			];
+
+			{failingTest, passingTest}
+		],
+		Null
+	];
+
+	(* IncubationStrategy must be compatible with the settings of all quantification options. *)
+	conflictingIncubationStrategyCases = Join @@ MapThread[
+		Function[
+			{
+				sample,
+				target,
+				tolerance,
+				wavelength,
+				curve,
+				index
+			},
+			{
+				If[MatchQ[resolvedIncubationStrategy, Time] && MatchQ[target, Except[Null]],
+					{sample, MinQuantificationTarget, resolvedIncubationStrategy, target, index},
+					Nothing
+				],
+				If[MatchQ[resolvedIncubationStrategy, Time] && MatchQ[tolerance, Except[Null]],
+					{sample, QuantificationTolerance, resolvedIncubationStrategy, tolerance, index},
+					Nothing
+				],
+				If[MatchQ[resolvedIncubationStrategy, Time] && MatchQ[resolvedAliquotBool, True],
+					{sample, QuantificationAliquot, resolvedIncubationStrategy, resolvedAliquotBool, index},
+					Nothing
+				],
+				If[MatchQ[resolvedIncubationStrategy, Time] && MatchQ[resolvedQuantificationBlankMeasurementBool, True],
+					{sample, QuantificationBlankMeasurement, resolvedIncubationStrategy, resolvedQuantificationBlankMeasurementBool, index},
+					Nothing
+				],
+				If[MatchQ[resolvedIncubationStrategy, Time] && MatchQ[wavelength, Except[Null]],
+					{sample, QuantificationWavelength, resolvedIncubationStrategy, wavelength, index},
+					Nothing
+				],
+				If[MatchQ[resolvedIncubationStrategy, Time] && MatchQ[curve, Except[Null]],
+					{sample, QuantificationStandardCurve, resolvedIncubationStrategy, curve, index},
+					Nothing
+				],
+				If[MatchQ[resolvedIncubationStrategy, Time] && MatchQ[resolvedFailureResponse, Except[Null]],
+					{sample, FailureResponse, resolvedIncubationStrategy, resolvedFailureResponse, index},
+					Nothing
+				],
+				If[MatchQ[resolvedIncubationStrategy, Time] && MatchQ[finalQuantificationInstrument, Except[Null]],
+					{sample, QuantificationInstrument, resolvedIncubationStrategy, finalQuantificationInstrument, index},
+					Nothing
+				],
+				If[MatchQ[resolvedIncubationStrategy, QuantificationTarget] && MatchQ[finalQuantificationInstrument, Null],
+					{sample, QuantificationInstrument, resolvedIncubationStrategy, finalQuantificationInstrument, index},
+					Nothing
+				],
+				If[MatchQ[resolvedIncubationStrategy, Time] && MatchQ[resolvedQuantificationMethod, Except[Null]],
+					{sample, QuantificationMethod, resolvedIncubationStrategy, resolvedQuantificationMethod, index},
+					Nothing
+				],
+				If[MatchQ[resolvedIncubationStrategy, QuantificationTarget] && MatchQ[resolvedQuantificationMethod, Null],
+					{sample, QuantificationMethod, resolvedIncubationStrategy, resolvedQuantificationMethod, index},
+					Nothing
+				]
+			}
+		],
+		{
+			mySamples,
+			minQuantificationTargets,
+			quantificationTolerances,
+			finalWavelengths,
+			finalStandardCurves,
+			Range[Length[mySamples]]
+		}
+	];
+
+	conflictingIncubationStrategyOptions = If[MatchQ[Length[conflictingIncubationStrategyCases], GreaterP[0]] && messages,
+		(
+			Message[
+				Error::ConflictingIncubationStrategy,
+				ObjectToString[conflictingIncubationStrategyCases[[All,1]], Cache -> cacheBall],
+				ObjectToString[conflictingIncubationStrategyCases[[All,2]], Cache -> cacheBall],
+				ObjectToString[conflictingIncubationStrategyCases[[All,3]], Cache -> cacheBall],
+				ObjectToString[conflictingIncubationStrategyCases[[All,4]], Cache -> cacheBall],
+				conflictingIncubationStrategyCases[[All, 5]]
+			];
+			DeleteDuplicates @ Flatten[{IncubationStrategy, conflictingIncubationStrategyCases[[All,2]]}]
+		),
+		{}
+	];
+
+	conflictingIncubationStrategyTest = If[gatherTests,
+		Module[{affectedSamples, failingTest, passingTest},
+			affectedSamples = conflictingIncubationStrategyCases[[All,1]];
+
+			failingTest = If[Length[affectedSamples] == 0,
+				Nothing,
+				Test["Quantification options are specified for the sample(s) " <> ObjectToString[affectedSamples, Cache -> cacheBall] <> " if and only if the IncubationStrategy is QuantificationTarget:", True, False]
+			];
+
+			passingTest = If[Length[affectedSamples] == Length[mySamples],
+				Nothing,
+				Test["Quantification options are specified for the sample(s) " <> ObjectToString[Complement[mySamples, affectedSamples], Cache -> cacheBall] <> " if and only if the IncubationStrategy is QuantificationTarget:", True, True]
+			];
+
+			{failingTest, passingTest}
+		],
+		Null
+	];
+
+	(* Check whether the quantification schedule and aliquoting will require us to use more sample than we have available. *)
+	excessiveQuantificationAliquotVolumeRequiredCases = MapThread[
+		Function[
+			{sample, aliquotVolume, sampleVolume, index},
+			If[
+				And[
+					MatchQ[(maxNumberOfQuantifications * aliquotVolume), GreaterP[sampleVolume]],
+          MatchQ[resolvedAliquotBool, True],
+					!TrueQ[Lookup[resolvedOptions, QuantificationRecoupSample]]
+				],
+				{sample, aliquotVolume, resolvedQuantificationInterval, resolvedTime, (maxNumberOfQuantifications * aliquotVolume), sampleVolume, index},
+				Nothing
+			]
+		],
+		{
+			mySamples,
+			finalAliquotVolumes,
+			Lookup[samplePackets, Volume, 0 Microliter],
+			Range[Length[mySamples]]
+		}
+	];
+
+	excessiveQuantificationAliquotVolumeRequiredOptions = If[MatchQ[Length[excessiveQuantificationAliquotVolumeRequiredCases], GreaterP[0]] && messages,
+		(
+			Message[
+				Error::ExcessiveQuantificationAliquotVolumeRequired,
+				ObjectToString[excessiveQuantificationAliquotVolumeRequiredCases[[All,1]], Cache -> cacheBall],
+				ObjectToString[excessiveQuantificationAliquotVolumeRequiredCases[[All,2]], Cache -> cacheBall],
+				ObjectToString[excessiveQuantificationAliquotVolumeRequiredCases[[All,3]], Cache -> cacheBall],
+				ObjectToString[excessiveQuantificationAliquotVolumeRequiredCases[[All,4]], Cache -> cacheBall],
+				ObjectToString[excessiveQuantificationAliquotVolumeRequiredCases[[All,5]], Cache -> cacheBall],
+				ObjectToString[excessiveQuantificationAliquotVolumeRequiredCases[[All,6]], Cache -> cacheBall],
+				excessiveQuantificationAliquotVolumeRequiredCases[[All,7]]
+			];
+			DeleteDuplicates @ Flatten[{QuantificationAliquot, QuantificationRecoupSample, QuantificationAliquotVolume, Time, QuantificationInterval}]
+		),
+		{}
+	];
+
+	excessiveQuantificationAliquotVolumeRequiredTest = If[gatherTests,
+		Module[{affectedSamples, failingTest, passingTest},
+			affectedSamples = excessiveQuantificationAliquotVolumeRequiredCases[[All, 1]];
+
+			failingTest = If[Length[affectedSamples] == 0,
+				Nothing,
+				Test["The QuantificationAliquotVolume times the maximum number of quantifications for the sample(s) " <> ObjectToString[affectedSamples, Cache -> cacheBall] <> " does not exceed the available sample volume while QuantificationRecoupSample is False:", True, False]
+			];
+
+			passingTest = If[Length[affectedSamples] == Length[mySamples],
+				Nothing,
+				Test["The QuantificationAliquotVolume times the maximum number of quantifications for the sample(s) " <> ObjectToString[Complement[mySamples, affectedSamples], Cache -> cacheBall] <> " does not exceed the available sample volume while QuantificationRecoupSample is False:", True, True]
+			];
+
+			{failingTest, passingTest}
+		],
+		Null
+	];
+
+	(* Throw a warning if the user doesn't specify FailureResponse and it resolves to Discard. *)
+  If[MatchQ[discardUponFailureWarningBool, True] && messages && notInEngine,
+    Message[Warning::DiscardUponFailure];
+  ];
+
+	(* Throw the GeneralFailureResponse warning if there is a non-Null FailureResponse and multiple samples are in the protocol. *)
+	If[And[
+		MatchQ[resolvedFailureResponse, Except[Null]],
+		MatchQ[Length[mySamples], GreaterP[1]],
+		messages,
+		notInEngine
+	],
+		Message[
+			Warning::GeneralFailureResponse,
+			ObjectToString[resolvedFailureResponse, Cache -> cacheBall],
+			Length[mySamples]
+		];
+	];
+
+	(* Throw a warning to tell the user that the MinQuantificationTarget defaulted to None from Automatic. *)
+	noQuantificationTargetCases = If[
+		MemberQ[minTargetNoneWarningBools, True],
+		Transpose @ {
+			PickList[mySamples, minTargetNoneWarningBools],
+			PickList[Range[Length[mySamples]], minTargetNoneWarningBools]
+		},
+		{}
+	];
+
+	If[MatchQ[Length[noQuantificationTargetCases], GreaterP[0]] && messages && notInEngine,
+		Message[
+			Warning::NoQuantificationTarget,
+			ObjectToString[noQuantificationTargetCases[[All,1]], Cache -> cacheBall],
+			noQuantificationTargetCases[[All, 2]]
+		];
+	];
+
 	(* -- MESSAGE AND RETURN --*)
 
 
@@ -2932,6 +4923,7 @@ resolveExperimentIncubateCellsOptions[mySamples: {ObjectP[Object[Sample]]...}, m
 			{
 				discardedInvalidInputs,
 				deprecatedSampleInputs,
+				invalidPropertySampleInputs,
 				uncoveredSampleInputs,
 				invalidCellTypeSamples,
 				invalidPlateSampleInputs,
@@ -2944,7 +4936,6 @@ resolveExperimentIncubateCellsOptions[mySamples: {ObjectP[Object[Sample]]...}, m
 	invalidOptions = DeleteDuplicates[Flatten[
 			{
 				invalidShakingConditionsOptions,
-				incompatiblePreparationAndTimeOptions,
 				conflictingWorkCellAndPreparationOptions,
 				conflictingCellTypeOptions,
 				conflictingCultureAdhesionOptions,
@@ -2955,9 +4946,20 @@ resolveExperimentIncubateCellsOptions[mySamples: {ObjectP[Object[Sample]]...}, m
 				conflictingCellTypeWithIncubatorOptions,
 				conflictingCultureAdhesionWithContainerOptions,
 				conflictingCellTypeWithStorageConditionOptions,
-				conflictingCultureAdhesionWithStorageConditionOptions,
+				mixedQuantificationAliquotRequirementsOptions,
 				conflictingIncubationConditionsForSameContainerOptions,
 				incubationMaxTemperatureOptions,
+				conflictingIncubationStrategyOptions,
+				conflictingQuantificationAliquotOptions,
+				unsuitableQuantificationIntervalOptions,
+				conflictingQuantificationOptions,
+				failureResponseNotSupportedOptions,
+				conflictingQuantificationMethodAndInstrumentOptions,
+				excessiveQuantificationAliquotVolumeRequiredOptions,
+				quantificationTargetUnitsMismatchOptions,
+				extraneousQuantifyColoniesOptions,
+				aliquotRecoupMismatchedOptions,
+				incubatorIsIncompatibleOptions,
 				If[MatchQ[preparationResult, $Failed],
 					{Preparation},
 					Nothing
@@ -2980,10 +4982,10 @@ resolveExperimentIncubateCellsOptions[mySamples: {ObjectP[Object[Sample]]...}, m
 		Message[Error::InvalidOption, invalidOptions]
 	];
 
-
 	(* Return our resolved options and/or tests. *)
 	outputSpecification/.{
-		Result -> resolvedOptions,
+		Result -> {resolvedOptions, quantificationProtocolPacket},
+		Simulation -> simulationWithQuantification,
 		Tests -> Cases[Flatten[{
 			discardedTest,
 			deprecatedTest,
@@ -2991,7 +4993,7 @@ resolveExperimentIncubateCellsOptions[mySamples: {ObjectP[Object[Sample]]...}, m
 			invalidCellTypeTest,
 			invalidPlateSampleTest,
 			duplicateSamplesTest,
-			incompatiblePreparationAndTimeTest,
+			invalidPropertySampleTest,
 			conflictingWorkCellAndPreparationTest,
 			precisionTests,
 			preparationTest,
@@ -3010,10 +5012,24 @@ resolveExperimentIncubateCellsOptions[mySamples: {ObjectP[Object[Sample]]...}, m
 			conflictingCultureAdhesionWithContainerTests,
 			conflictingCellTypeWithStorageConditionTests,
 			conflictingCultureAdhesionWithStorageConditionTests,
+			mixedQuantificationAliquotRequirementsOptionsTests,
 			conflictingIncubationConditionsForSameContainerTests,
 			incubationMaxTemperatureTests,
 			tooManySamplesTest,
-			workCellTest
+			workCellTest,
+			conflictingIncubationStrategyTest,
+			conflictingQuantificationAliquotOptionsTest,
+			unsuitableQuantificationIntervalTest,
+			conflictingQuantificationOptionsTest,
+			failureResponseNotSupportedTest,
+			conflictingQuantificationMethodAndInstrumentOptionsTest,
+			excessiveQuantificationAliquotVolumeRequiredTest,
+			quantificationTargetUnitsMismatchTest,
+			extraneousQuantifyColoniesOptionsTest,
+			aliquotRecoupMismatchTest,
+			incubatorIsIncompatibleTests,
+			quantificationAliquotRequiredTest,
+			quantificationAliquotRecommendedTest
 		}], _EmeraldTest]
 	}
 ];
@@ -3034,17 +5050,22 @@ DefineOptions[
 incubateCellsResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myUnresolvedOptions:{___Rule}, myResolvedOptions:{___Rule}, myCollapsedResolvedOptions: {___Rule}, ops:OptionsPattern[]] := Module[
 	{
 		unresolvedOptionsNoHidden, resolvedOptionsNoHidden, outputSpecification, output, gatherTests, messages, simulation,
-		samplePackets, containersNoDupes, sampleResources, sampleContainerResources, allResourceBlobs, fulfillable, frqTests,
+		samplePackets, inputContainersNoDupes, sampleResources, sampleContainerResources, allResourceBlobs, fulfillable, frqTests,
 		testsRule, resultRule, customIncubationOptions, containerResourceRules, allIncubationStorageConditionSymbols,
-		protocolID, unitOperationID, cellTypes, cultureAdhesions, temperatures, carbonDioxidePercentages, relativeHumidities,
+		protocolID, unitOperationID, sampleLabels, sampleContainerLabels, cellTypes, cultureAdhesions, temperatures, carbonDioxidePercentages, relativeHumidities,
 		time, shakingRates, incubators, resolvedStorageConditions, groupedOptions, customIncubators, uniqueContainerPositions,
-		parentProtocol, instrumentResourcesLink, incubatorResources, previewRule, optionsRule, nonHiddenOptions, safeOps,
-		cache, fastAssoc, containerPackets, preparation, incubationConditions, containers, containerMovesToDifferentStorageConditionQs,
+		parentProtocol, failureResponse, quantificationMethod, quantificationInstrument, quantificationInterval,
+		minQuantificationTargets, quantificationTolerances, quantificationAliquotBool, quantificationAliquotVolumes, quantificationAliquotContainers, quantificationRecoupSampleBool,
+		quantificationBlanks, quantificationBlankMeasurement, quantificationWavelengths, quantificationStandardCurves, roboticQ, minQuantificationTargetsWithoutNone,
+		instrumentResourcesLink, failureResponseUnitOperation, failureResponseSimulation, simulationWithFailureResponse, incubatorResources,
+		previewRule, optionsRule, nonHiddenOptions, nonHiddenOptionsWithoutTarget, safeOps, cache, fastAssoc, containerPackets, preparation,
+		incubationConditions, containers, containerMovesToDifferentStorageConditionQs, labelSamplePrimitive, allPrimitivesExceptIncubateCells,
 		containerStoredInNonIncubatorQs, nonIncubationStorageContainerObjs, nonIncubationStorageContainerResources,
 		defaultIncubatorQs, nonIncubationStorageContainerConditions, postDefaultIncubationContainerObjs,
 		postDefaultIncubationContainerResources, defaultIncubationContainerObjs, defaultIncubationContainerResources,
-		shakes, shakingRadii, samplesOutStorageConditionSymbols, unitOperationPacket, fastAssocKeysIDOnly, storageConditionPackets,
-		incubationConditionSymbols, incubationConditionObjects, incubationStorageConditionSymbols, manualProtocolPacket
+		shakes, shakingRadii, samplesOutStorageConditionSymbols, unitOperationPacket, simulationWithRoboticUOs, runTime, fastAssocKeysIDOnly, storageConditionPackets,
+		incubationConditionSymbols, incubationConditionObjects, incubationStorageConditionSymbols, maxNumberOfQuantifications, manualProtocolPacket,
+		incubateCellsRoboticPrimitive, finalRoboticUnitOperationPackets, finalRoboticRunTime, quantificationAliquotUnitOperation, quantificationProcessingTimes
 	},
 
 	(* Get the collapsed unresolved index-matching options that don't include hidden options *)
@@ -3066,7 +5087,7 @@ incubateCellsResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myUnresolved
 	output = ToList[outputSpecification];
 
 	(* Decide if we are gathering tests or throwing messages *)
-	gatherTests = MemberQ[Output, Tests];
+	gatherTests = MemberQ[output, Tests];
 	messages = Not[gatherTests];
 
 	(* Lookup helper options *)
@@ -3092,6 +5113,8 @@ incubateCellsResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myUnresolved
 
 	(* Pull out the necessary resolved options that need to be in discrete fields in the protocol object *)
 	{
+		sampleLabels,
+		sampleContainerLabels,
 		cellTypes,
 		cultureAdhesions,
 		temperatures,
@@ -3105,9 +5128,25 @@ incubateCellsResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myUnresolved
 		resolvedStorageConditions,
 		incubationConditions,
 		preparation,
-		parentProtocol
+		parentProtocol,
+		failureResponse,
+		quantificationMethod,
+		quantificationInstrument,
+		quantificationInterval,
+		minQuantificationTargets,
+		quantificationTolerances,
+		quantificationAliquotBool,
+		quantificationAliquotVolumes,
+		quantificationAliquotContainers,
+		quantificationRecoupSampleBool,
+		quantificationBlanks,
+		quantificationBlankMeasurement,
+		quantificationWavelengths,
+		quantificationStandardCurves
 	} = Lookup[myResolvedOptions,
 		{
+			SampleLabel,
+			SampleContainerLabel,
 			CellType,
 			CultureAdhesion,
 			Temperature,
@@ -3121,14 +5160,44 @@ incubateCellsResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myUnresolved
 			SamplesOutStorageCondition,
 			IncubationCondition,
 			Preparation,
-			ParentProtocol
+			ParentProtocol,
+			FailureResponse,
+			QuantificationMethod,
+			QuantificationInstrument,
+			QuantificationInterval,
+			MinQuantificationTarget,
+			QuantificationTolerance,
+			QuantificationAliquot,
+			QuantificationAliquotVolume,
+			QuantificationAliquotContainer,
+			QuantificationRecoupSample,
+			QuantificationBlank,
+			QuantificationBlankMeasurement,
+			QuantificationWavelength,
+			QuantificationStandardCurve
 		}
 	];
 
+	(* Set a flag for our preparation option. *)
+	roboticQ = MatchQ[preparation, Robotic];
+
+	(* Get the max number of quantifications by dividing the Time by the interval. If we are NOT quantifying, set this to 0 since we use it to pad out some lists later. *)
+	maxNumberOfQuantifications = If[TimeQ[quantificationInterval],
+		Quotient[time, quantificationInterval],
+		0
+	];
+
+	(* label primitives for SamplesIn, use ContainerLabel key to also label the ContainersIn *)
+	labelSamplePrimitive = LabelSample[
+		Sample -> mySamples,
+		Label -> sampleLabels,
+		ContainerLabel -> sampleContainerLabels
+	];
+
 	(* Prepare the container resources *)
-	containersNoDupes = DeleteDuplicates[containers];
-	sampleContainerResources = Resource[Sample -> #, Name -> ToString[#]]& /@ containersNoDupes;
-	containerResourceRules = AssociationThread[containersNoDupes, sampleContainerResources];
+	inputContainersNoDupes = DeleteDuplicates[containers];
+	sampleContainerResources = Resource[Sample -> #, Name -> ToString[#]]& /@ inputContainersNoDupes;
+	containerResourceRules = AssociationThread[inputContainersNoDupes, sampleContainerResources];
 
 	(* Create a list of all of the possible incubation storage condition sybmols *)
 	allIncubationStorageConditionSymbols = Lookup[storageConditionPackets,StorageCondition];
@@ -3203,22 +5272,178 @@ incubateCellsResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myUnresolved
 	postDefaultIncubationContainerResources = postDefaultIncubationContainerObjs /. containerResourceRules;
 
 	(* If we have a custom incubator, make a resource for that incubator (note that we do NOT make resources for non-custom incubators) *)
-	(* note that we're excluding the robotic custom incubators because the framework will make those resources *)
-	customIncubators = If[MatchQ[preparation, Robotic],
-		{},
-		DeleteDuplicates[PickList[incubators, incubationConditions, Custom]]
-	];
+	customIncubators = DeleteDuplicates[PickList[incubators, incubationConditions, Custom]];
 	incubatorResources = Map[
 		Resource[Instrument -> #, Time -> time, Name -> ToString[#]]&,
 		customIncubators
 	];
 	instrumentResourcesLink = Link /@ (incubators /. AssociationThread[customIncubators, incubatorResources]);
 
+	(* If we are aliquoting for quantification, we want to aliquot, return the source samples to their incubators, and then quantify on the aliquots. *)
+	(* This is to minimize the time that the cells spend outside of the incubator during the quantification subprotocol, which likely takes multiple hours *)
+	(* and is prolonged significantly if the protocol goes into troubleshooting. So here we build a transfer primitive which we will store in the protocol packet. *)
+	quantificationAliquotUnitOperation = If[And[
+		!MatchQ[quantificationAliquotBool, True],
+		!roboticQ
+	],
+		(* If there's no manual quantification aliquoting (or no quantification altogether), we can just move on. *)
+		Null,
+		(* If we are aliquoting, build up a transfer unit operation from the relevant options. QAP == quantification aliquot primitive. *)
+		Module[
+			{optionNames, sampleLabelQAP, quantificationAliquotVolumeQAP, quantificationAliquotContainerQAP, destinationWellQAP, cellTypeToBSC},
+
+			(* We don't support mixed quantification methods, so get the list of option names for either Absorbance or Nephelometry. *)
+			optionNames = If[MatchQ[quantificationMethod, Absorbance],
+				{SampleLabel, AbsorbanceAliquotAmount, AbsorbanceAliquotContainer, AbsorbanceDestinationWell},
+				{SampleLabel, NephelometryAliquotAmount, NephelometryAliquotContainer, NephelometryDestinationWell}
+			];
+
+			(* Get the values from the quantification options. *)
+			{sampleLabelQAP, quantificationAliquotVolumeQAP, quantificationAliquotContainerQAP, destinationWellQAP} = Lookup[$IncubateCellsQuantificationOptions, optionNames];
+
+			(* Create a lookup from the cellType to the preferred BSC transfer environment. *)
+			cellTypeToBSC = {
+				(* Model[Instrument, BiosafetyCabinet, "Thermo Scientific 1300 Series Class II, Type A2 Biosafety Cabinet (Microbial)"] *)
+				Bacterial -> Model[Instrument, BiosafetyCabinet, "id:WNa4ZjKZpBeL"],
+				(* Model[Instrument, BiosafetyCabinet, "Thermo Scientific 1300 Series Class II, Type A2 Biosafety Cabinet (Tissue Culture)"] *)
+				Mammalian -> Model[Instrument, BiosafetyCabinet, "id:dORYzZJzEBdE"],
+				(* Model[Instrument, BiosafetyCabinet, "Thermo Scientific 1300 Series Class II, Type A2 Biosafety Cabinet (Microbial)"] *)
+				Yeast | Plant | Insect | Fungal -> Model[Instrument, BiosafetyCabinet, "id:WNa4ZjKZpBeL"]
+			};
+
+			(* Generate the primitive. *)
+			Transfer @ {
+				Source -> sampleLabelQAP,
+				Destination -> quantificationAliquotContainerQAP,
+				Amount -> quantificationAliquotVolumeQAP,
+				DestinationWell -> destinationWellQAP,
+				TransferEnvironment -> cellTypes /. cellTypeToBSC,
+				KeepSourceCovered -> True,
+				KeepDestinationCovered -> True,
+				SterileTechnique -> True,
+				ImageSample -> False,
+				MeasureWeight -> False,
+				MeasureVolume -> False
+			}
+		]
+	];
+
+	(* In quantification protocols where we do not aliquot, the time the cells spend in the incubator is exactly the QuantificationInterval. HOWEVER, *)
+	(* when we aliquot for quantification, the cells go back into the incubator after the aliquot and the processing step does not start right away. *)
+	(* This leads to a disparity which we correct for later, storing the correct values in the field QuantificationProcessingTimes. IMPORTANTLY, this needs to have *)
+	(* length == MaxNumberOfQuantifications whether we are aliquoting or not because we loop over this field in the procedure whenever we are quantifying. *)
+	(* We initialize this here and will update it as needed during the procedure using the execute incubateCellsParseQuantification. *)
+	quantificationProcessingTimes = If[MatchQ[quantificationMethod, Alternatives[Absorbance, Nephelometry, ColonyCount]],
+		ConstantArray[quantificationInterval, maxNumberOfQuantifications],
+		{}
+	];
+
+	(* If the FailureResponse is Freeze, we have to generate FreezeCells unit operations and store them in the IncubateCells protocol object. *)
+	(* This normally wouldn't require running ExperimentFreezeCells here, but we also need to simulate the failure response, so we run the experiment *)
+	(* function and pass the simulation from the resource packets into the main function after simulating everything else. *)
+	{failureResponseUnitOperation, failureResponseSimulation} = If[
+		(* For now, the only failure response we support that requires a unit operation is Freeze. *)
+		!MatchQ[failureResponse, Freeze],
+		{Null, Null},
+		(* Note that we have to use either 2 mL or 5 mL cryovials because those fit our MrFrosty racks. We're going to add a 50% volume equivalent of cryoprotectant. *)
+		(* So set the cutoff volumes to 3 mL for a 5mL cryovial and 1.2 mL for a 2mL vial (for a final max volume of 1.8 mL for a 2mL vial and 4.5 mL for a 5mL vial). *)
+		(* We'll use the same size vial and hence the same size MrFrosty container for all samples to hopefully keep this as operationally simple as possible. *)
+		Module[
+			{
+				inputSampleVolumes, failureSampleVolumes, largestSampleVolumeUponFailure, cryogenicSampleContainer,
+				numberOfReplicates, freezeCellsResolvedOptions, freezeCellsProtocolPacketWithResources, freezeCellsSimulation, freezeCellsUnitOperation
+			},
+
+			(* Get the current volumes of all the input samples. *)
+			inputSampleVolumes = ToList[Lookup[samplePackets, Volume]];
+
+			(* The input sample volume we have to simulate is not the current volume of the sample but the volume *)
+			(* of each sample upon failure, i.e. once we have already done the maximum number of quantifications. *)
+			(* Get the sample volumes upon failure. *)
+			failureSampleVolumes = MapThread[
+				Function[
+					{inputVolume, aliquotVolume},
+					If[!quantificationAliquotBool || quantificationRecoupSampleBool,
+						(* If the sample is not aliquoted OR if the aliquots are recouped, the sample volume upon failure is equal to the input volume. *)
+						inputVolume,
+						(* If we're aliquoting and not recouping the aliquoted volume, assume that the volume upon failure is the input volume minus the aliquot volume. *)
+						(* We only subtract the aliquot volume once (even though we could be aliquoting multiple times before failure) because there is a scenario in *)
+						(* which we go into troubleshooting while the sample is in the incubator and exceed the total Time before doing the max number of quantifications. *)
+						(* In other words, we're only guaranteed to aliquot one time, and it is safer to overestimate the sample volume here than to underestimate it. *)
+						inputVolume - aliquotVolume
+					]
+				],
+				{inputSampleVolumes, quantificationAliquotVolumes}
+			];
+
+			(* Get the largest sample volumes upon failure. *)
+			largestSampleVolumeUponFailure = Max[failureSampleVolumes];
+
+			(* Determine whether to use 2mL or 5mL vials based on the largest sample volume. *)
+			cryogenicSampleContainer = If[MatchQ[largestSampleVolumeUponFailure, LessEqualP[1.2 Milliliter]],
+				Model[Container, Vessel, "id:vXl9j5qEnnOB"], (* Model[Container, Vessel, "2mL Cryogenic Vial"] *)
+				Model[Container, Vessel, "id:o1k9jAG1Nl57"]  (* Model[Container, Vessel, "5mL Cryogenic Vial"] *)
+			];
+
+			(* Determine the number of replicates based on the largest volume. *)
+			numberOfReplicates = If[MatchQ[cryogenicSampleContainer, ObjectP[Model[Container, Vessel, "id:vXl9j5qEnnOB"]]],
+				Ceiling[largestSampleVolumeUponFailure / (1 Milliliter)],
+				Ceiling[largestSampleVolumeUponFailure / (2.5 Milliliter)]
+			];
+
+			(* Run ExperimentFreezeCells to get the resolved options and simulation. *)
+			{freezeCellsResolvedOptions, freezeCellsProtocolPacketWithResources, freezeCellsSimulation} = Quiet[
+				ExperimentFreezeCells[
+					mySamples,
+					CellType -> cellTypes,
+					CultureAdhesion -> cultureAdhesions,
+					CryogenicSampleContainer -> cryogenicSampleContainer,
+					FreezingStrategy -> InsulatedCooler,
+					Aliquot -> True,
+					AliquotVolume -> failureSampleVolumes/numberOfReplicates,
+					CryoprotectionStrategy -> AddCryoprotectant,
+					CryoprotectantSolution -> Model[Sample, StockSolution, "id:E8zoYvzX1NKB"], (* Model[Sample, StockSolution, "50% Glycerol in Milli-Q water, Autoclaved"] *)
+					CryoprotectantSolutionVolume -> 0.5 * failureSampleVolumes/numberOfReplicates,
+					NumberOfReplicates -> numberOfReplicates /. {1 -> Null},
+					Output -> {Options, Result, Simulation},
+					Simulation -> simulation,
+					Cache -> cache,
+					Upload -> False
+				],
+				(* Quieting FreezeCellsUnusedSample because we haven't passed any sample transfer simulations from the child Quantify function in and it will give false positives. *)
+				(* Also Quiet warnings for instrument precision and replicate labels because we're very likely to trip these but they are not problematic. *)
+				{Warning::FreezeCellsUnusedSample, Download::MissingCacheField, Warning::InstrumentPrecision, Warning::FreezeCellsReplicateLabels}
+			];
+
+			(* Note that we could in theory get a unit operation object from the above experiment call, but this would require us to upload. *)
+			(* Instead, we generate the primitive from the resolved options and we don't upload anything to the database in doing so. *)
+			(* We are casing out the options with Null values because they aren't needed and to guarantee that our unit op matches FreezeCellsP. *)
+			(* Also remove the CryogenicSampleContainerLabel specification, so that we don't feed pre-expanded replicate labels into MCP. *)
+			freezeCellsUnitOperation = FreezeCells @ {
+				Sample -> mySamples,
+				Sequence @@ Cases[freezeCellsResolvedOptions, Except[(_ -> Null) | (CryogenicSampleContainerLabel -> _)]]
+			};
+
+			(* Return the batched unit operations and the simulation. *)
+			{freezeCellsUnitOperation, freezeCellsSimulation}
+		]
+	];
+
+	(* Update our simulation with the failure response simulation. *)
+	simulationWithFailureResponse = If[MatchQ[failureResponseSimulation, SimulationP],
+		UpdateSimulation[simulation, failureResponseSimulation],
+		simulation
+	];
+
 	(* --- Batch the manual stuff --- *)
 
 	(* We want to work with everything in terms of Containers*)
 	(* Get the first position of each unique container *)
-	uniqueContainerPositions = FirstPosition[containers,#]&/@containersNoDupes;
+	uniqueContainerPositions = FirstPosition[containers,#]&/@inputContainersNoDupes;
+
+	(* Replace all Nones with Nulls in minQuantificationTargets so that we match the storage pattern for the protocol object. *)
+	(* This is only necessary for the protocol object; we use splitfields for MinQuantificationTarget in the unit operation object. *)
+	minQuantificationTargetsWithoutNone = minQuantificationTargets /. {None -> Null};
 	
 	(* Group the options by incubation condition; really all I want here are the custom incubations that I can then put together in a UnitOperation object *)
 	(* the default incubations will get made during an execute function later *)
@@ -3236,10 +5461,21 @@ incubateCellsResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myUnresolved
 			ShakingRadius -> Extract[shakingRadii, uniqueContainerPositions],
 			Incubator -> Extract[instrumentResourcesLink, uniqueContainerPositions],
 			SamplesOutStorageCondition -> Extract[samplesOutStorageConditionSymbols, uniqueContainerPositions],
-			IncubationCondition -> Extract[incubationConditions, uniqueContainerPositions]
+			IncubationCondition -> Extract[incubationConditions, uniqueContainerPositions],
+			FailureResponse -> failureResponse,
+			QuantificationMethod -> quantificationMethod,
+			QuantificationInstrument -> Link[quantificationInstrument],
+			QuantificationInterval -> quantificationInterval,
+			MinQuantificationTarget -> Extract[minQuantificationTargets, uniqueContainerPositions],
+			QuantificationTolerance -> Extract[quantificationTolerances, uniqueContainerPositions],
+			QuantificationAliquotVolume -> Extract[quantificationAliquotVolumes, uniqueContainerPositions],
+			QuantificationRecoupSample -> quantificationRecoupSampleBool,
+			QuantificationBlank -> Link /@ Extract[quantificationBlanks, uniqueContainerPositions],
+			QuantificationWavelength -> Extract[quantificationWavelengths, uniqueContainerPositions],
+			QuantificationStandardCurve -> Link /@ Extract[quantificationStandardCurves, uniqueContainerPositions]
 		},
 		(* note that we don't actually have to do any grouping if we're doing robotic *)
-		If[MatchQ[preparation, Robotic],
+		If[roboticQ,
 			{},
 			{IncubationCondition}
 		]
@@ -3251,9 +5487,9 @@ incubateCellsResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myUnresolved
 	(* Make the IDs for the protocol object and the unit operation objects *)
 	{protocolID, unitOperationID} = Which[
 		(* for robotic, don't need to do either of these *)
-		MatchQ[preparation, Robotic], {Null, Null},
+		roboticQ, {Null, Null},
 		(* for manual with no custom, only need to make protocol object *)
-		Not[MemberQ[incubationConditions, Custom]], {CreateID[Object[Protocol, IncubateCells]], Null},
+		Not[MemberQ[incubationConditions, Custom]], {CreateID[Object[Protocol, IncubateCells]], {}},
 		(* for manual with custom, we need to make precisely one unit operation object (because we can only have one custom batch) *)
 		True, CreateID[{Object[Protocol, IncubateCells], Object[UnitOperation, IncubateCells]}]
 	];
@@ -3261,10 +5497,16 @@ incubateCellsResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myUnresolved
 	(* Get all the non-hidden options that go into the unit operation objects *)
 	nonHiddenOptions = allowedKeysForUnitOperationType[Object[UnitOperation, IncubateCells]];
 
-	(* Generate the relevant unit operation packets *)
-	unitOperationPacket = Which[
-		MatchQ[preparation, Manual] && NullQ[customIncubationOptions], {},
-		MatchQ[preparation, Manual],
+	(* Drop the MinQuantificationTarget from the nonHiddenOptions so that we can add in the version without Nones later. *)
+	nonHiddenOptionsWithoutTarget = DeleteCases[nonHiddenOptions, MinQuantificationTarget];
+
+	(* Generate the relevant unit operation packets, simulation with robotic unit ops, and run time. *)
+	{unitOperationPacket, simulationWithRoboticUOs, runTime} = Which[
+		(* Nothing is needed here if we are doing manual incubation in default incubators only. *)
+		!roboticQ && NullQ[customIncubationOptions],
+			{{}, simulation, Null},
+		(* If we're manual and have a custom incubator, generate a unit operation for custom incubation. *)
+		!roboticQ,
 			Module[{customUnitOperation, unitOpPacket},
 
 				customUnitOperation = IncubateCells @@ ReplaceRule[
@@ -3282,7 +5524,18 @@ incubateCellsResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myUnresolved
 						ShakingRadius -> Lookup[customIncubationOptions, ShakingRadius],
 						Incubator -> Lookup[customIncubationOptions, Incubator],
 						SamplesOutStorageCondition -> Lookup[customIncubationOptions, SamplesOutStorageCondition],
-						IncubationCondition -> Lookup[customIncubationOptions, IncubationCondition]
+						IncubationCondition -> Lookup[customIncubationOptions, IncubationCondition],
+						FailureResponse -> Lookup[customIncubationOptions, FailureResponse],
+						QuantificationMethod -> Lookup[customIncubationOptions, QuantificationMethod],
+						QuantificationInstrument -> Lookup[customIncubationOptions, QuantificationInstrument],
+						QuantificationInterval -> Lookup[customIncubationOptions, QuantificationInterval],
+						MinQuantificationTarget -> Lookup[customIncubationOptions, MinQuantificationTarget],
+						QuantificationTolerance -> Lookup[customIncubationOptions, QuantificationTolerance],
+						QuantificationAliquotVolume -> Lookup[customIncubationOptions, QuantificationAliquotVolume],
+						QuantificationRecoupSample -> Lookup[customIncubationOptions, QuantificationRecoupSample],
+						QuantificationBlank -> Lookup[customIncubationOptions, QuantificationBlank],
+						QuantificationWavelength -> Lookup[customIncubationOptions, QuantificationWavelength],
+						QuantificationStandardCurve -> Lookup[customIncubationOptions, QuantificationStandardCurve]
 					}
 				];
 
@@ -3292,66 +5545,294 @@ incubateCellsResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myUnresolved
 					Preparation -> Manual,
 					FastTrack -> True,
 					Upload -> False
-				]
+				];
+
+				(* Return *)
+				{unitOpPacket, simulation, {}}
 			],
-		(* Robotic branch *)
+		(* Robotic branch: here we need robotic unit operations, an updated simulation, and robotic run time. *)
 		True,
-			UploadUnitOperation[
-				IncubateCells @@ Join[
+			Module[
+				{
+					quantificationPrimitive, simulatedObjectsToLabel, myResolvedOptionsWithLabels, roboticUnitOperationPackets, roboticRunTime,
+					roboticSimulation, incubateCellsPrimitive, outputUnitOperationPacket, roboticSimulationOutputUO
+				},
+				(* Generate the QuantifyCells primitive if we are quantifying. *)
+				quantificationPrimitive = Which[
+					(* If we're using Nephelometry, generate a QuantifyCells unit operation with Nephelometry options specified. *)
+					MatchQ[quantificationMethod, Nephelometry],
+						QuantifyCells @ {
+							Sample -> sampleLabels,
+							Instruments -> quantificationInstrument,
+							NephelometryStandardCurve -> quantificationStandardCurves,
+							NephelometryAliquotContainer -> quantificationAliquotContainers,
+							NephelometryAliquotAmount -> quantificationAliquotVolumes,
+							NephelometryBlank -> quantificationBlanks,
+							NephelometryBlankMeasurement -> quantificationBlankMeasurement,
+							Wavelength -> quantificationWavelengths,
+							Preparation -> Robotic
+						},
+					(* If we're using Absorbance, generate a QuantifyCells unit operation with Absorbance options specified. *)
+					MatchQ[quantificationMethod, Absorbance],
+						QuantifyCells @ {
+							Sample -> sampleLabels,
+							Instruments -> quantificationInstrument,
+							AbsorbanceStandardCurve -> quantificationStandardCurves,
+							AbsorbanceAliquotContainer -> quantificationAliquotContainers,
+							AbsorbanceAliquotAmount -> quantificationAliquotVolumes,
+							AbsorbanceBlank -> quantificationBlanks,
+							AbsorbanceBlankMeasurement -> quantificationBlankMeasurement,
+							Wavelength -> quantificationWavelengths,
+							Preparation -> Robotic
+						},
+					(* Otherwise we are not quantifying and we do not need to generate a unit operation here. *)
+					(* Note that we do not currently support the combination of robotic incubate cells with *)
+					(* QuantifyColonies for quantification, as this requires two different workcells and is a fringe usde case to begin with. *)
+					True, {}
+				];
+
+				(* We need to run all primitives except for the IncubateCells primitive(s) through RCP to get unit op packets and simulation. *)
+				(* Ideally we'd pass in the IncubateCells primitives, too, but this would cause an endless RCP cascade. *)
+				allPrimitivesExceptIncubateCells = Flatten[{labelSamplePrimitive, ConstantArray[quantificationPrimitive, maxNumberOfQuantifications]}];
+
+				{{roboticUnitOperationPackets, roboticRunTime}, roboticSimulation} = ExperimentRoboticCellPreparation[
+					allPrimitivesExceptIncubateCells,
+					UnitOperationPackets -> True,
+					Output -> {Result, Simulation},
+					FastTrack -> Lookup[myResolvedOptions, FastTrack],
+					ParentProtocol -> Lookup[myResolvedOptions, ParentProtocol],
+					Name -> Lookup[myResolvedOptions, Name],
+					Simulation -> simulation,
+					Upload -> False,
+					ImageSample -> Lookup[myResolvedOptions, ImageSample, False],
+					MeasureVolume -> Lookup[myResolvedOptions, MeasureVolume, False],
+					MeasureWeight -> Lookup[myResolvedOptions, MeasureWeight, False],
+					Priority -> Lookup[myResolvedOptions, Priority],
+					StartDate -> Lookup[myResolvedOptions, StartDate],
+					HoldOrder -> Lookup[myResolvedOptions, HoldOrder],
+					QueuePosition -> Lookup[myResolvedOptions, QueuePosition],
+					(* We need to set OptimizeUnitOperations to False since the order very much matters for quantification. *)
+					OptimizeUnitOperations -> False,
+					CoverAtEnd -> False,
+					Debug -> False
+				];
+
+				(* Combine the primitives to pass into RCP. *)
+				incubateCellsRoboticPrimitive = Module[
+					{quantifyQ, roboticIncubationTime},
+					(* Set a flag for whether we are quantifying. *)
+					quantifyQ = MatchQ[maxNumberOfQuantifications, GreaterP[0]];
+					(* If we are quantifying, use the quantification interval for the time. Otherwise use the value of the Time option. *)
+					roboticIncubationTime = If[quantifyQ, quantificationInterval, time];
+					(* Now generate the primitive. *)
+					IncubateCells @@ {
+						SampleLabel -> sampleLabels,
+						SampleContainerLabel -> sampleContainerLabels,
+						CellType -> cellTypes,
+						CultureAdhesion -> cultureAdhesions,
+						Incubator -> instrumentResourcesLink,
+						Time -> roboticIncubationTime,
+						IncubationCondition -> Custom,
+						Temperature -> temperatures,
+						CarbonDioxide -> carbonDioxidePercentages,
+						RelativeHumidity -> relativeHumidities,
+						Shake -> shakes,
+						ShakingRadius -> shakingRadii,
+						ShakingRate -> shakingRates
+					}
+				];
+
+				(* Generate the incubate cells robotic unit op packets and insert them into the list of robotic UO packets appropriately. *)
+				finalRoboticUnitOperationPackets = Module[
+					{numberOfIncubationCycles, incubateCellsRoboticUnitOperationPackets, sampleLink, modifiedIncubateCellsRoboticUnitOperationPackets},
+					(* Find the number of incubation cycles we need, which is at least 1. *)
+					numberOfIncubationCycles = Max[maxNumberOfQuantifications, 1];
+					(* Generate the incubate cells robotic unit operations. *)
+					incubateCellsRoboticUnitOperationPackets = UploadUnitOperation[
+						ConstantArray[incubateCellsRoboticPrimitive, numberOfIncubationCycles],
+						Preparation -> Robotic,
+						UnitOperationType -> Output,
+						FastTrack -> True,
+						Upload -> False
+					];
+					(* Get SampleLink and ContainerLink from the LabelSample primitive. *)
+					sampleLink = Lookup[roboticUnitOperationPackets[[1]], Replace[SampleLink]];
+					(* Add the samples, containers, and their labels in. *)
+					modifiedIncubateCellsRoboticUnitOperationPackets = Map[
+						Function[{incubateCellsRoboticUOPacket},
+							Join[
+								incubateCellsRoboticUOPacket,
+								Association[
+									Replace[SampleLabel] -> sampleLabels,
+									Replace[SampleContainerLabel] -> sampleContainerLabels,
+									Replace[SampleLink] -> sampleLink,
+									Replace[LabeledObjects] -> Transpose @ {sampleLabels, sampleLink}
+								]
+							]
+						],
+						incubateCellsRoboticUnitOperationPackets
+					];
+					(* Combine the robotic unit operation packets in the correct order. This looks rather hairy but the idea is to begin with our *)
+					(* LabelSample primitive, then alternate between IncubateCells primitives and whatever primitives are needed for quantification. *)
+					(* The ArrayReshape call partitions whatever primitives are generated for quantification into sublists, e.g. *)
+					(*
+						{
+							Object[UnitOperation, QuantifyCells], Object[UnitOperation, LabelSample], Object[UnitOperation, AbsorbanceIntensity],
+							Object[UnitOperation, QuantifyCells], Object[UnitOperation, LabelSample], Object[UnitOperation, AbsorbanceIntensity],
+							Object[UnitOperation, QuantifyCells], Object[UnitOperation, LabelSample], Object[UnitOperation, AbsorbanceIntensity]
+						}
+						becomes
+						{
+							{Object[UnitOperation, QuantifyCells], Object[UnitOperation, LabelSample], Object[UnitOperation, AbsorbanceIntensity]},
+							{Object[UnitOperation, QuantifyCells], Object[UnitOperation, LabelSample], Object[UnitOperation, AbsorbanceIntensity]},
+							{Object[UnitOperation, QuantifyCells], Object[UnitOperation, LabelSample], Object[UnitOperation, AbsorbanceIntensity]}
+						}
+					*)
+					(* We then use Riffle to slot in the IncubateCells primitives before each grouping of quantification primitives. *)
+					Flatten[{
+						roboticUnitOperationPackets[[1]],
+						Riffle[
+							modifiedIncubateCellsRoboticUnitOperationPackets,
+							ArrayReshape[
+								roboticUnitOperationPackets[[2;;]],
+								{numberOfIncubationCycles, (Length[roboticUnitOperationPackets] - 1)/numberOfIncubationCycles}]
+						]
+					}]
+				];
+
+				(* determine which objects in the simulation are simulated and make replace rules for those *)
+				simulatedObjectsToLabel = If[NullQ[roboticSimulation],
+					{},
+					Module[{allObjectsInSimulation, simulatedQ},
+						(* Get all objects out of our simulation. *)
+						allObjectsInSimulation = Download[Lookup[roboticSimulation[[1]], Labels][[All, 2]], Object];
+						(* Figure out which objects are simulated. *)
+						simulatedQ = Experiment`Private`simulatedObjectQs[allObjectsInSimulation, roboticSimulation];
+						(Reverse /@ PickList[Lookup[roboticSimulation[[1]], Labels], simulatedQ]) /. {link_Link :> Download[link, Object]}
+					]
+				];
+
+				(* get the resolved options with simulated objects replaced with labels *)
+				myResolvedOptionsWithLabels = myResolvedOptions /. simulatedObjectsToLabel;
+
+				(* Generate the incubate cells primitive(s). If we are quantifying more than one time, we set the time to the quantification interval *)
+				(* and split the incubation into multiple IncubateCells unit operations, following each with a quantification unit operation. *)
+				incubateCellsPrimitive = IncubateCells @@ Join[
+					Cases[myResolvedOptionsWithLabels, Verbatim[Rule][Alternatives @@ nonHiddenOptionsWithoutTarget, _]],
 					{
-						Sample -> sampleResources
-					},
-					Cases[myResolvedOptions, Verbatim[Rule][Alternatives @@ nonHiddenOptions, _]]
-				],
-				Preparation -> Robotic,
-				UnitOperationType -> Output,
-				FastTrack -> True,
-				Upload -> False
+						Sample -> sampleResources,
+						MinQuantificationTarget -> minQuantificationTargets,
+						RoboticUnitOperations -> If[Length[finalRoboticUnitOperationPackets] == 0,
+							{},
+							(Link /@ Lookup[finalRoboticUnitOperationPackets, Object])
+						]
+					}
+				];
+
+				(* Upload the IncubateCells output unit operation. *)
+				outputUnitOperationPacket = UploadUnitOperation[
+					incubateCellsPrimitive,
+					Preparation -> Robotic,
+					UnitOperationType -> Output,
+					FastTrack -> True,
+					Upload -> False
+				];
+
+				roboticSimulationOutputUO = UpdateSimulation[
+					roboticSimulation,
+					Module[{protocolPacket},
+						protocolPacket = <|
+							Object -> SimulateCreateID[Object[Protocol, RoboticCellPreparation]],
+							Replace[OutputUnitOperations] -> (Link[Lookup[outputUnitOperationPacket, Object], Protocol]),
+							ResolvedOptions -> {}
+						|>;
+						SimulateResources[
+							protocolPacket,
+							Flatten[{outputUnitOperationPacket, finalRoboticUnitOperationPackets}],
+							ParentProtocol -> Lookup[myResolvedOptions, ParentProtocol, Null],
+							Simulation -> simulation
+						]
+					]
+				];
+
+				(* The final robotic run time is the one we got from RCP plus any incubation time. *)
+				finalRoboticRunTime = If[MatchQ[maxNumberOfQuantifications, GreaterP[0]],
+					maxNumberOfQuantifications * quantificationInterval,
+					time
+				];
+
+				(* Return *)
+				{Flatten @ {outputUnitOperationPacket, finalRoboticUnitOperationPackets}, roboticSimulationOutputUO, roboticRunTime + 10 Minute}
 			]
 	];
 
 	(* Generate the raw protocol packet *)
-	manualProtocolPacket = <|
-		Object -> protocolID,
-		Replace[BatchedUnitOperations] -> If[MatchQ[unitOperationPacket, {}],
-			{},
-			{Link[Lookup[unitOperationPacket, Object], Protocol]}
+	manualProtocolPacket = If[!roboticQ,
+		Module[
+			{safeQuantificationNumber},
+			(* MaxNumberOfQuantifications and QuantificationsRemaining should be Null if we're not quantifying. *)
+			safeQuantificationNumber = maxNumberOfQuantifications /. 0 -> Null;
+			<|
+				Object -> protocolID,
+				Replace[BatchedUnitOperations] -> If[MatchQ[unitOperationPacket, {}],
+					{},
+					{Link[Lookup[unitOperationPacket, Object], Protocol]}
+				],
+				Name -> Lookup[myResolvedOptions, Name],
+				Replace[SamplesIn] -> (Link[#, Protocols]& /@ sampleResources),
+				Replace[ContainersIn] -> (Link[#, Protocols]& /@ sampleContainerResources),
+				(* if we are in the root protocol here, then mark it as Overclock -> True *)
+				(* if we're not in the root protocol here, then don't worry about it and in the parent function we will mark the root as Overclock -> True *)
+				(* if we're robotic then it will get set in RCP itself *)
+				If[NullQ[parentProtocol],
+					Overclock -> True,
+					Nothing
+				],
+				Time -> time,
+				FailureResponse -> failureResponse,
+				FailureResponseUnitOperation -> failureResponseUnitOperation,
+				QuantificationMethod -> quantificationMethod,
+				QuantificationInstrument -> Link[quantificationInstrument],
+				QuantificationInterval -> quantificationInterval,
+				MaxNumberOfQuantifications -> safeQuantificationNumber,
+				QuantificationsRemaining -> safeQuantificationNumber,
+				QuantificationRecoupSample -> quantificationRecoupSampleBool,
+				Replace[Incubators] -> instrumentResourcesLink,
+				Replace[IncubationConditions] -> incubationConditionSymbols,
+				Replace[IncubationConditionObjects] -> Link[incubationConditionObjects],
+				Replace[Temperatures] -> temperatures,
+				Replace[RelativeHumidities] -> relativeHumidities /. Ambient -> Null,
+				Replace[CarbonDioxide] -> carbonDioxidePercentages /. Ambient -> Null,
+				Replace[CellTypes] -> cellTypes,
+				Replace[CultureAdhesions] -> cultureAdhesions,
+				Replace[ShakingRates] -> shakingRates,
+				Replace[ShakingRadii] -> shakingRadii,
+				Replace[DefaultIncubationContainers] -> (Link[#] & /@ defaultIncubationContainerResources),
+				Replace[PostDefaultIncubationContainers] -> (Link[#]& /@ postDefaultIncubationContainerResources),
+				Replace[NonIncubationStorageContainers] -> Link /@ nonIncubationStorageContainerResources,
+				Replace[NonIncubationStorageContainerConditions] -> nonIncubationStorageContainerConditions,
+				Replace[SamplesOutStorage] -> samplesOutStorageConditionSymbols,
+				Replace[MinQuantificationTargets] -> minQuantificationTargetsWithoutNone,
+				Replace[QuantificationTolerances] -> quantificationTolerances,
+				Replace[QuantificationAliquotVolumes] -> quantificationAliquotVolumes,
+				Replace[QuantificationAliquotContainers] -> Link /@ quantificationAliquotContainers,
+				Replace[QuantificationAliquotUnitOperation] -> quantificationAliquotUnitOperation,
+				Replace[QuantificationProcessingTimes] -> quantificationProcessingTimes,
+				Replace[QuantificationBlanks] -> Link /@ quantificationBlanks,
+				Replace[QuantificationWavelengths] -> quantificationWavelengths,
+				Replace[QuantificationStandardCurves] -> Link /@ quantificationStandardCurves,
+				UnresolvedOptions -> unresolvedOptionsNoHidden,
+				ResolvedOptions -> resolvedOptionsNoHidden,
+				Replace[Checkpoints] -> {
+					{"Reserving Incubators", 5 Minute, "Reservations of StorageAvailability of Default incubators.", Link[Resource[Operator -> $BaselineOperator, Time -> 5 Minute]]},
+					{"Loading Incubators", 30 Minute, "Store containers into cell incubators with desired incubation conditions-PreIncubation Loop.", Link[Resource[Operator -> $BaselineOperator, Time -> 30 Minute]]},
+					{"Incubating Samples", time, "Keep containers inside of cell incubators with desired incubation conditions.", Link[Resource[Operator -> $BaselineOperator, Time -> time]]},
+					{"Storing Samples", 30 Minute, "Store containers into SamplesOutStorageCondition -PostIncubation Loop.", Link[Resource[Operator -> $BaselineOperator, Time -> 30 Minute]]}
+				}
+			|>
 		],
-		Name -> Lookup[myResolvedOptions, Name],
-		Replace[SamplesIn] -> (Link[#, Protocols]& /@ sampleResources),
-		Replace[ContainersIn] -> (Link[#, Protocols]& /@ sampleContainerResources),
-		(* if we are in the root protocol here, then mark it as Overclock -> True *)
-		(* if we're not in the root protocol here, then don't worry about it and in the parent function we will mark the root as Overclock -> True *)
-		(* if we're robotic then it will get set in RCP itself *)
-		If[NullQ[parentProtocol],
-			Overclock -> True,
-			Nothing
-		],
-		Time -> time,
-		Replace[Incubators] -> instrumentResourcesLink,
-		Replace[IncubationConditions] -> incubationConditionSymbols,
-		Replace[IncubationConditionObjects] -> Link[incubationConditionObjects],
-		Replace[Temperatures] -> temperatures,
-		Replace[RelativeHumidities] -> relativeHumidities,
-		Replace[CarbonDioxide] -> carbonDioxidePercentages,
-		Replace[CellTypes] -> cellTypes,
-		Replace[CultureAdhesions] -> cultureAdhesions,
-		Replace[ShakingRates] -> shakingRates,
-		Replace[ShakingRadii] -> shakingRadii,
-		Replace[DefaultIncubationContainers] -> (Link[#] & /@ defaultIncubationContainerResources),
-		Replace[PostDefaultIncubationContainers] -> (Link[#]& /@ postDefaultIncubationContainerResources),
-		Replace[NonIncubationStorageContainers] -> Link /@ nonIncubationStorageContainerResources,
-		Replace[NonIncubationStorageContainerConditions] -> nonIncubationStorageContainerConditions,
-		Replace[SamplesOutStorage] -> samplesOutStorageConditionSymbols,
-		UnresolvedOptions -> unresolvedOptionsNoHidden,
-		ResolvedOptions -> resolvedOptionsNoHidden,
-		Replace[Checkpoints] -> {
-			{"Reserving Incubators", 5 Minute, "Reservations of StorageAvailability of Default incubators.", Link[Resource[Operator -> Model[User, Emerald, Operator, "Trainee"], Time -> 5 Minute]]},
-			{"Loading Incubators", 30 Minute, "Store containers into cell incubators with desired incubation conditions-PreIncubation Loop.", Link[Resource[Operator -> Model[User, Emerald, Operator, "Trainee"], Time -> 30 Minute]]},
-			{"Incubating Samples", time, "Keep containers inside of cell incubators with desired incubation conditions.", Link[Resource[Operator -> Model[User, Emerald, Operator, "Trainee"], Time -> time]]},
-			{"Storing Samples", 30 Minute, "Store containers into SamplesOutStorageCondition -PostIncubation Loop.", Link[Resource[Operator -> Model[User, Emerald, Operator, "Trainee"], Time -> 30 Minute]]}
-		}
-	|>;
+		{}
+	];
 
 	(* Get all of the resource out of the packet so they can be tested*)
 	allResourceBlobs = DeleteDuplicates[Cases[Flatten[{unitOperationPacket, manualProtocolPacket}], _Resource, Infinity]];
@@ -3359,10 +5840,10 @@ incubateCellsResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myUnresolved
 	(* Call fulfillableResourceQ on all the resources we created *)
 	{fulfillable, frqTests} = Which[
 		MatchQ[$ECLApplication, Engine], {True, {}},
-		(* don't need to do this here becuase framework will already call it itself for the robotic case *)
-		MatchQ[preparation, Robotic], {True, {}},
-		gatherTests, Resources`Private`fulfillableResourceQ[allResourceBlobs, Output -> {Result, Tests}, FastTrack -> Lookup[myResolvedOptions, FastTrack], Site -> Lookup[myResolvedOptions, Site], Simulation -> simulation, Cache -> cache],
-		True, {Resources`Private`fulfillableResourceQ[allResourceBlobs, FastTrack -> Lookup[myResolvedOptions, FastTrack], Site -> Lookup[myResolvedOptions, Site], Simulation -> simulation, Messages -> messages, Cache -> cache], Null}
+		(* don't need to do this here because framework will already call it itself for the robotic case *)
+		roboticQ, {True, {}},
+		gatherTests, Resources`Private`fulfillableResourceQ[allResourceBlobs, Output -> {Result, Tests}, FastTrack -> Lookup[myResolvedOptions, FastTrack], Site -> Lookup[myResolvedOptions, Site], Simulation -> simulationWithFailureResponse, Cache -> cache],
+		True, {Resources`Private`fulfillableResourceQ[allResourceBlobs, FastTrack -> Lookup[myResolvedOptions, FastTrack], Site -> Lookup[myResolvedOptions, Site], Simulation -> simulationWithFailureResponse, Messages -> messages, Cache -> cache], Null}
 	];
 
 	(* --- Output --- *)
@@ -3384,11 +5865,11 @@ incubateCellsResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myUnresolved
 	(* Generate the Result output rule *)
 	(* if not returning Result, or the resources are not fulfillable, Results rule is just $Failed *)
 	resultRule = Result -> Which[
-		MatchQ[preparation, Manual] && MemberQ[output, Result] && TrueQ[fulfillable],
-			{manualProtocolPacket, unitOperationPacket},
+		!roboticQ && MemberQ[output, Result] && TrueQ[fulfillable],
+			{manualProtocolPacket, unitOperationPacket, Null, failureResponseSimulation, Null},
 		(* for robotic, the result is Null for the protocol packet (because we're going to generate the real thing later in RoboticCellPreparation) *)
 		MemberQ[output, Result] && TrueQ[fulfillable],
-			{Null, unitOperationPacket},
+			{Null, unitOperationPacket, simulationWithRoboticUOs, failureResponseSimulation, runTime},
 		True, $Failed
 	];
 
@@ -3407,13 +5888,13 @@ DefineOptions[
 
 simulateExperimentIncubateCells[
 	myProtocolPacket : (PacketP[Object[Protocol, IncubateCells], {Object, ResolvedOptions}] | $Failed | Null),
-	myUnitOperationPackets : ({PacketP[]...} | $Failed),
+	myUnitOperationPackets : ListableP[(PacketP[]...) | $Failed],
+	myQuantificationPacket : (PacketP[{Object[Protocol, QuantifyColonies], Object[UnitOperation, QuantifyColonies], Object[Protocol, QuantifyCells], Object[UnitOperation, QuantifyCells]}] | Null | $Failed),
 	mySamples : {ObjectP[Object[Sample]]...},
 	myResolvedOptions : {_Rule...},
 	myResolutionOptions : OptionsPattern[simulateExperimentIncubateCells]
 ] := Module[
-	{cache, simulation, samplePackets, protocolObject, resolvedPreparation,
-		fulfillmentSimulation, fastAssoc},
+	{cache, simulation, fastAssoc, samplePackets, protocolObject, resolvedPreparation, fulfillmentSimulation, updatedSimulation, labelSimulation},
 
 	(* Lookup our cache and simulation. *)
 	cache = Lookup[ToList[myResolutionOptions], Cache, {}];
@@ -3445,7 +5926,7 @@ simulateExperimentIncubateCells[
 	fulfillmentSimulation = Which[
 		(* When Preparation -> Robotic, we have unit operation packets but not a protocol object. Just make a shell of a *)
 		(* Object[Protocol, RoboticCellPreparation] so that we can call SimulateResources. *)
-		MatchQ[myProtocolPacket, Null] && MatchQ[myUnitOperationPackets, {PacketP[Object[UnitOperation, IncubateCells]]..}],
+		MatchQ[myProtocolPacket, Null] && MatchQ[myUnitOperationPackets, ListableP[PacketP[Object[UnitOperation]]]],
 			Module[{protocolPacket},
 				protocolPacket = <|
 					Object -> protocolObject,
@@ -3465,7 +5946,7 @@ simulateExperimentIncubateCells[
 
 				SimulateResources[
 					protocolPacket,
-					myUnitOperationPackets,
+					ToList[myUnitOperationPackets],
 					ParentProtocol -> Lookup[myResolvedOptions, ParentProtocol, Null],
 					Cache -> cache,
 					Simulation -> simulation
@@ -3476,18 +5957,141 @@ simulateExperimentIncubateCells[
 		True,
 			SimulateResources[
 				myProtocolPacket,
-				myUnitOperationPackets,
+				ToList[myUnitOperationPackets],
 				Cache -> cache,
 				Simulation -> simulation
 			]
 	];
 
+	(* Update the simulations with the quantifications. *)
+	updatedSimulation = If[MatchQ[resolvedPreparation, Robotic],
+		(* If we are Robotic, we do not need to update here since this was already done in the resource packets. *)
+		simulation,
+		(* For manual, we have to simulate all of the possible quantification steps here. *)
+		Module[
+			{
+				simulationWithFirstQuantification, quantificationInterval, maxTime, maxQuantifications,
+				quantificationType, resolvedQuantificationOptions, unresolvedQuantificationOptions,
+				quantificationFunction, additionalSimulationsQ, updatedSimulationWithQuantifications
+			},
+
+			(* Update the fulfillment simulation with the quantification simulation from the resource packets. *)
+			simulationWithFirstQuantification = UpdateSimulation[fulfillmentSimulation, simulation];
+			(* Get the QuantificationInterval and Time fields from the IncubateCells protocol packet or unit operation packet if there is a custom condition. *)
+			{quantificationInterval, maxTime} = If[NullQ[myProtocolPacket],
+				Lookup[ToList[myUnitOperationPackets][[1]], {QuantificationInterval, Time}],
+				Lookup[myProtocolPacket, {QuantificationInterval, Time}]
+			];
+			(* From these, calculate the maximum number of quantifications. *)
+			maxQuantifications = If[NullQ[quantificationInterval],
+				Null,
+				Floor[maxTime/quantificationInterval]
+			];
+			(* Get the quantification type and the resolved and unresolved options from the quantification Packet *)
+			{quantificationType, resolvedQuantificationOptions, unresolvedQuantificationOptions} = If[NullQ[myQuantificationPacket],
+				{Null, Null, Null},
+				Lookup[myQuantificationPacket, {Type, ResolvedOptions, UnresolvedOptions}]
+			];
+			(* Get the quantification function from the type. *)
+			quantificationFunction = If[MatchQ[quantificationType, TypeP[]], quantificationType[[-1]], Null];
+
+			(* We may need to perform successive simulations if we're running quantify cells with aliquoting turned on and the max number of quantifications is greater than one. *)
+			(* We're making the conservative assumption that the maximum number of quantification events will always take place. *)
+			(* We don't need to do this for QuantifyColonies because there is no aliquoting required in that case. *)
+			additionalSimulationsQ = Which[
+				(* If we are quantifying colonies or not quantifying at all, we don't need to run any more quantify simulations. *)
+				MatchQ[quantificationFunction, QuantifyColonies|Null], False,
+				(* If the max number of quantifications is one, we've already simulated that one quantification. *)
+				MatchQ[maxQuantifications, LessP[2]], False,
+				(* Else, we have to simulate every subsequent quantification. *)
+				True, True
+			];
+
+			(* Run the simulation for the subsequent quantification steps, if applicable. *)
+			updatedSimulationWithQuantifications = If[additionalSimulationsQ,
+				Module[
+					{
+						checkpointsRule, quantificationPacketWithCheckpoints, quantificationSimulations, quantificationCounter, newestSimulation, simulationWithMostRecentQuantification
+					},
+
+					(* The checkpoints don't get passed into the quantification packet, and this can disrupt the processing of the operator *)
+					(* resources when we run SimulateResources. To avoid this, we generate checkpoints with rough time estimates here. *)
+					checkpointsRule = Replace[Checkpoints] -> {
+						{"Quantifying Samples", 30 * Minute, "Cell concentrations of the input samples are measured by different experimental instrumentation specified in Methods.", Link[Resource[Operator -> $BaselineOperator, Time -> 30 * Minute]]},
+						{"Returning Materials", 20 * Minute, "Samples are retrieved from instrumentation and materials are cleaned and returned to storage.", Link[Resource[Operator -> $BaselineOperator, Time -> 20 * Minute]]}
+					};
+					(* Drop the existing checkpoints and replace with the ones we just created. *)
+					(* Also make sure we're passing in the samples, which can be messed up here if these samples are simulated. *)
+					quantificationPacketWithCheckpoints = Join[myQuantificationPacket, <|checkpointsRule, SamplesIn -> mySamples|>];
+
+					(* Initialize a list of quantification simulations, starting with the one we got from calling the child experiment function in the resolver. *)
+					(* Also set a quantification counter so we know when to stop looping. It starts at 2 because we've already simulated the first quantification. *)
+					quantificationSimulations = {simulationWithFirstQuantification};
+					quantificationCounter = 2;
+
+					(* Simulate QuantifyCells for each subsequent quantification up until the maximum number of possible quantifications, updating along the way. *)
+					(* This iterative simulation is not ideal, but it seems to be the least bad of all the alternatives for the time being. *)
+					(* Remember that we already simulated once, so we're simulating one less than the max number of quantification rounds here. *)
+
+					While[MatchQ[quantificationCounter, LessEqualP[maxQuantifications]],
+							(* Now run the simulation for ExperimentQuantifyCells and take the second part of the output, since the first part is the protocol object. *)
+							newestSimulation = simulateExperimentQuantifyCells[
+								quantificationPacketWithCheckpoints,
+								{},
+								mySamples,
+								unresolvedQuantificationOptions,
+								resolvedQuantificationOptions,
+								Cache -> cache,
+								Simulation -> quantificationSimulations[[-1]]
+							][[2]];
+							(* Update the current simulation with this latest simulation. *)
+							simulationWithMostRecentQuantification = UpdateSimulation[quantificationSimulations[[-1]], newestSimulation];
+							(* Append this simulation to our list of quantification simulations. *)
+							quantificationSimulations = Append[quantificationSimulations, simulationWithMostRecentQuantification];
+							(* Iterate the quantifcation counter. *)
+							quantificationCounter++
+						];
+
+					(* Once we've looped over all of the above, the list item in the quantificationSimulations list is the one we want. *)
+					quantificationSimulations[[-1]]
+				],
+				(* If we didn't have to do any of the additional simulations, we just keep the first one. *)
+				simulationWithFirstQuantification
+			]
+		]
+	];
+
+	(* --- Upload Labels for unit operations --- *)
+	labelSimulation = Simulation[
+		Labels -> Join[
+			Rule @@@ Cases[
+				Transpose[{Lookup[myResolvedOptions, SampleLabel], Lookup[samplePackets, Object]}],
+				{_String, ObjectP[]}
+			],
+			Rule @@@ Cases[
+				Transpose[{Lookup[myResolvedOptions, SampleContainerLabel], Lookup[samplePackets, Container]}],
+				{_String, ObjectP[]}
+			]
+		],
+		LabelFields -> If[MatchQ[Lookup[myResolvedOptions, Preparation], Manual],
+			Join[
+				Rule @@@ Cases[
+					Transpose[{Lookup[myResolvedOptions, SampleLabel], (Field[SampleLink[[#]]]&) /@ Range[Length[mySamples]]}],
+					{_String, _}
+				],
+				Rule @@@ Cases[
+					Transpose[{Lookup[myResolvedOptions, SampleContainerLabel], (Field[SampleLink[[#]][Container]]&) /@ Range[Length[mySamples]]}],
+					{_String, _}
+				]
+			],
+			{}
+		]
+	];
 
 	(* Merge our packets with our simulation. *)
-	(* note that we don't have any label options for our current experiment so truly all this is is passing the SimulateResources down *)
 	{
 		protocolObject,
-		fulfillmentSimulation
+		UpdateSimulation[updatedSimulation, labelSimulation]
 	}
 ];
 
@@ -3537,7 +6141,7 @@ allCellIncubationContainersSearch[testString: _String] := allCellIncubationConta
 	AppendTo[$Memoization, Experiment`Private`allCellIncubationContainersSearch];
 	Flatten@Search[
 		{Model[Container, Plate], Model[Container, Vessel]},
-		Footprint == (Erlenmeyer50mLFlask|Erlenmeyer125mLFlask|Erlenmeyer250mLFlask|Erlenmeyer500mLFlask|Erlenmeyer1000mLFlask|Plate),
+		Footprint == (Erlenmeyer50mLFlask|Erlenmeyer125mLFlask|Erlenmeyer250mLFlask|Erlenmeyer500mLFlask|Erlenmeyer1000mLFlask|Plate|Conical15mLTube),
 		SubTypes -> False
 	]
 ];
@@ -3565,9 +6169,9 @@ $CellIncubatorMaxCapacity = <|
 	(*"Bactomat HERAcell 240i TT 10 for Bacteria"*)
 	Model[Instrument, Incubator, "id:xRO9n3vk1JbO"] -> <|Plate -> 210|>,
 	(*"Innova 44 for Yeast Plates"*)
-	Model[Instrument, Incubator, "id:O81aEB4kJJre"] -> <|Plate -> 48|>,
+	Model[Instrument, Incubator, "id:O81aEB4kJJre"] -> <|Plate -> 39, Conical15mLTube -> 31|>,
 	(*"Innova 44 for Bacterial Plates"*)
-	Model[Instrument, Incubator, "id:AEqRl954Gpjw"] -> <|Plate -> 48|>,
+	Model[Instrument, Incubator, "id:AEqRl954Gpjw"] -> <|Plate -> 39, Conical15mLTube -> 31|>,
 	(*"Innova 44 for Bacterial Flasks"*)
 	Model[Instrument, Incubator, "id:D8KAEvdqzXok"] -> <|Erlenmeyer1000mLFlask -> 6, Erlenmeyer250mLFlask -> 8, Erlenmeyer125mLFlask -> 11|>,
 	(*"Innova 44 for Yeast Flasks"*)
@@ -4848,14 +7452,14 @@ IncubateCellsDevices[myInputs: {ObjectP[{Model[Container], Object[Container], Ob
 							(* the allowed tolerance *)
 							MatchQ[incubatorDefaultShakingRate, Null],
 								Or[
-									RangeQ[desiredShakingRadius, {(incubatorShakingRadius - 0.1 Centimeter), (incubatorShakingRadius + 0.1 Centimeter)}] && MatchQ[shakeQ, True|Automatic],
+									RangeQ[desiredShakingRadius, {(incubatorShakingRadius - 0.01 Centimeter), (incubatorShakingRadius + 0.01 Centimeter)}] && MatchQ[shakeQ, True|Automatic],
 									MatchQ[desiredShakingRadius, Null] && !TrueQ[shakeQ],
 									MatchQ[desiredShakingRadius, Automatic]
 								],
 							(* If incubator default shaking rate is informed, it is a default incubator, so only check whether the value is in the tolerances *)
 							True,
 								Or[
-									RangeQ[desiredShakingRadius, {(incubatorShakingRadius - 0.1 Centimeter), (incubatorShakingRadius + 0.1 Centimeter)}] && MatchQ[shakeQ, True|Automatic],
+									RangeQ[desiredShakingRadius, {(incubatorShakingRadius - 0.01 Centimeter), (incubatorShakingRadius + 0.01 Centimeter)}] && MatchQ[shakeQ, True|Automatic],
 									MatchQ[desiredShakingRadius, Automatic] && MatchQ[shakeQ, True|Automatic]
 								]
 						];
@@ -4938,15 +7542,39 @@ incubatorsForFootprint[
 		racks, rackFootprints, rackPositions, decksWithRacks, decksWithRacksRackFootprints,
 		relevantRacks, relevantRacksPositions, relevantRacksFootprints, relevantRacksPositionsFootprints, relevantRacksMaxHeights,
 		racksWithFootprintsAndMaxHeights, deckRackReplacementRules, incubatorDeckOrRackCombos,
-		finalIncubatorDeckOrRackCombos, possibleIncubatorsByFootprint, openIncubatorShelfHeights, openFootprintIncubators, openIncubatorAndMaxHeightPairs
+		finalIncubatorDeckOrRackCombos, possibleIncubatorsByFootprint, openIncubatorShelfHeights, openFootprintIncubators,
+		openIncubatorAndMaxHeightPairs, incubatorModelsWithDupes, incubatorDeckFootprintsFlat, incubatorPositionsWithDupes,
+		finalIncubatorDeckOrRackCombosWithDupes
 	},
 
 	(* Stash the list of incubator models & their positions *)
 	incubatorModels = Lookup[Flatten[myIncubatorInstrumentPackets], Object];
 	incubatorPositions = Lookup[Flatten[myIncubatorInstrumentPackets], Positions];
 
-	(* Stash all the footprints of the incubator's decks*)
-	incubatorDeckFootprints = Lookup[incubatorPositions[[All, 1]], Footprint];
+	(* Stash all the footprints of the incubators' decks *)
+	(* We don't want to inadvertently pick up sensor probes or storage slots *)
+	incubatorDeckFootprints = DeleteCases[
+		Lookup[#, Footprint],
+		EnvironmentalSensorProbe
+	]&/@incubatorPositions;
+
+	incubatorDeckFootprintsFlat = Flatten[incubatorDeckFootprints];
+
+	(* Since a given incubator model may have more than one deck, we need to keep our list lengths happy *)
+	incubatorModelsWithDupes = Flatten[
+		MapThread[
+			ConstantArray[#1, Length[#2]]&,
+			{incubatorModels, incubatorDeckFootprints}
+		]
+	];
+
+	incubatorPositionsWithDupes = Flatten[
+		MapThread[
+			ConstantArray[#1, Length[#2]]&,
+			{incubatorPositions, incubatorDeckFootprints}
+		],
+		1
+	];
 
 	(* Convert to a list of alternatives to help filtering out decks and racks below *)
 	incubatorModelsAlternatives = Alternatives @@ incubatorModels;
@@ -4963,10 +7591,10 @@ incubatorsForFootprint[
 	};
 
 	(* Get the incubators relevant to the decks from their Positions Footprint *)
-	incubatorsForDecks = PickList[incubatorModels, (MatchQ[#, CellIncubatorDeckP]& /@ incubatorDeckFootprints)];
+	incubatorsForDecks = PickList[incubatorModelsWithDupes, (MatchQ[#, CellIncubatorDeckP]& /@ incubatorDeckFootprintsFlat)];
 
 	(* Get the relevant incubators' deck Positions Footprint *)
-	incubatorsForDecksFootprints = PickList[incubatorDeckFootprints, (MatchQ[#, CellIncubatorDeckP]& /@ incubatorDeckFootprints)];
+	incubatorsForDecksFootprints = PickList[incubatorDeckFootprintsFlat, (MatchQ[#, CellIncubatorDeckP]& /@ incubatorDeckFootprintsFlat)];
 
 	(* Filter out only the relevant decks that are in incubators *)
 	relevantDecks =
@@ -4981,10 +7609,10 @@ incubatorsForFootprint[
 	relevantDecksPositions = PickList[deckPositions, MatchQ[#, CellIncubatorDeckP]& /@ deckFootprints];
 
 	(* Stash the incubator models with an open shelf footprint*)
-	openFootprintIncubators = PickList[incubatorModels, (MatchQ[#, IncubatorShelf]& /@ incubatorDeckFootprints)];
+	openFootprintIncubators = PickList[incubatorModelsWithDupes, (MatchQ[#, IncubatorShelf]& /@ incubatorDeckFootprintsFlat)];
 
 	(* Stash the open shelf incubator position's max allowed height*)
-	openIncubatorShelfHeights = Max[Lookup[#, MaxHeight]]& /@ PickList[incubatorPositions, (MatchQ[#, IncubatorShelf]& /@ incubatorDeckFootprints)];
+	openIncubatorShelfHeights = Max[Lookup[#, MaxHeight]]& /@ PickList[incubatorPositionsWithDupes, (MatchQ[#, IncubatorShelf]& /@ incubatorDeckFootprintsFlat)];
 
 	(* Pair the open shelf incubators with their max supported height*)
 	openIncubatorAndMaxHeightPairs = Transpose[{openFootprintIncubators, openIncubatorShelfHeights}];
@@ -5069,7 +7697,7 @@ incubatorsForFootprint[
 	deckRackReplacementRules = Normal[
 		AssociationThread[
 			Flatten[decksWithRacks],
-			Flatten[decksWithRacksRackFootprints]
+			decksWithRacksRackFootprints
 		]
 	] /. Normal[AssociationThread[relevantRacksFootprints, racksWithFootprintsAndMaxHeights]];
 
@@ -5081,6 +7709,26 @@ incubatorsForFootprint[
 	This should result in a final list of {{incubator,rack|deck,{footprints},maxheight}..} to compare the container with *)
 
 	finalIncubatorDeckOrRackCombos = Flatten[#, 1]& /@ (incubatorDeckOrRackCombos /. relevantDecksReplaceRules);
+
+	(* One last thing: if a given deck has racks with more than one footprint, we need to duplicate the incubator with that deck *)
+	finalIncubatorDeckOrRackCombosWithDupes = Map[
+		Function[
+			{combo},
+			If[MatchQ[combo[[2]], _List],
+				Splice[
+					Map[
+						Function[
+							{rack},
+							Flatten[{First[combo], rack},	1]
+						],
+						Rest[combo]
+					]
+				],
+				combo
+			]
+		],
+		finalIncubatorDeckOrRackCombos
+	];
 
 	(* Pick out the possible incubators for each footprint and MaxHeight to return an
 	index-matched list of incubators for each provided footprint/MaxHeight input *)
@@ -5111,7 +7759,7 @@ incubatorsForFootprint[
 							Flatten[{possibleIncubators, openIncubators}]
 						]
 					],
-					Transpose[finalIncubatorDeckOrRackCombos]
+					Transpose[finalIncubatorDeckOrRackCombosWithDupes]
 				]
 			]
 		],
@@ -5185,21 +7833,18 @@ resolveIncubateCellsMethodCore[
 ] := Module[
 	{allSamplePackets, downloadedPacketsFromContainers,
 		downloadedPacketsFromSamples, downloadedPacketsFronInstruments, downloadedPacketsFromInstrumentModels,
-		cache, simulation, listedInputs, specifiedPreparation, safeOps, fastAssoc,
-		gatherTests, outputSpecification, output, result, tests, manualRequirementStrings, roboticRequirementStrings,
+		cache, simulation, listedInputs, specifiedPreparation, safeOps, fastAssoc, quantificationMethod, quantificationInstrument,
+		gatherTests, outputSpecification, output, tests, manualRequirementStrings, roboticRequirementStrings,
 		allFootprintsRobotCompatibleQ, roboticIncubatorQ, fromExperimentIncubateCellsQ, specifiedWorkCell,
 		allModelContainerPackets, allModelContainerFootprints, allInstrumentObjects, inputContainers, inputSamples,
-		inputInstruments, inputInstrumentModels, allInstrumentModelPackets, incubator, compositionCellTypes,
+		inputInstruments, inputInstrumentModels, allInstrumentModelPackets, incubator, time, compositionCellTypes,
 		allSampleCellTypes, optionsCellTypes, allCellTypes, workCellBasedOnCellType, incubatorCellTypes, workCellResult,
 		workCellBasedOnIncubators, bioSTARRequirementStrings, microbioSTARRequirementStrings, methodResult},
 
-	(* make sure these are a list *)
+	(* Make sure these are a list *)
 	listedInputs = ToList[myContainers];
 
-	(* Determine if we should keep a running list of tests *)
-	gatherTests = MemberQ[output, Tests];
-
-	(* get the safe options*)
+	(* Get the safe options *)
 	(* resolveIncubateCellsMethod and resolveIncubateCellsWorkCell have the same options so just pick one *)
 	safeOps = SafeOptions[resolveIncubateCellsMethod, ToList[myOptions]];
 
@@ -5207,11 +7852,15 @@ resolveIncubateCellsMethodCore[
 	outputSpecification = Lookup[safeOps, Output];
 	output = ToList[outputSpecification];
 
-
 	(* pull out the cache, simulation, incubator, and specified preparation *)
-	{cache, simulation, specifiedPreparation, specifiedWorkCell, incubator} = Lookup[safeOps, {Cache, Simulation, Preparation, WorkCell, Incubator}];
+	{
+		cache, simulation, specifiedPreparation, specifiedWorkCell, incubator, time, quantificationMethod, quantificationInstrument
+	} = Lookup[safeOps, {Cache, Simulation, Preparation, WorkCell, Incubator, Time, QuantificationMethod, QuantificationInstrument}];
 
-	(* generate a fast assoc from the cache passed in; if we're from within ExperimentIncubateCells then we don't need to Download information over again *)
+	(* Determine if we should keep a running list of tests *)
+	gatherTests = MemberQ[output, Tests];
+
+	(* Generate a fast assoc from the cache passed in; if we're from within ExperimentIncubateCells then we don't need to Download information over again *)
 	fromExperimentIncubateCellsQ = Lookup[safeOps, FromExperimentIncubateCells];
 	fastAssoc = If[fromExperimentIncubateCellsQ,
 		makeFastAssocFromCache[cache],
@@ -5220,8 +7869,8 @@ resolveIncubateCellsMethodCore[
 
 	inputContainers = Cases[myContainers, ObjectP[Object[Container]]];
 	inputSamples = Cases[myContainers, ObjectP[Object[Sample]]];
-	inputInstruments = Cases[ToList[incubator], ObjectP[Object[Instrument]]];
-	inputInstrumentModels = Cases[ToList[incubator], ObjectP[Model[Instrument]]];
+	inputInstruments = Cases[Flatten[{incubator, quantificationInstrument}], ObjectP[Object[Instrument]]];
+	inputInstrumentModels = Cases[Flatten[{incubator, quantificationInstrument}], ObjectP[Model[Instrument]]];
 
 	(* Download information that we need from our inputs and/or options. *)
 	(* pull the information out of the fastAssoc and use that instead of the Download if we have it *)
@@ -5256,7 +7905,7 @@ resolveIncubateCellsMethodCore[
 					},
 					(* getting the model packet from the Object[Instrument] *)
 					{Packet[Model[{Mode, CellTypes}]]},
-					(* getting the model pacekt from the Model[Instrument] *)
+					(* getting the model packet from the Model[Instrument] *)
 					{Packet[Mode, CellTypes]}
 				},
 				Simulation -> simulation
@@ -5293,18 +7942,18 @@ resolveIncubateCellsMethodCore[
 	allSamplePackets = Cases[Flatten[{downloadedPacketsFromContainers, downloadedPacketsFromSamples}], PacketP[Object[Sample]]];
 	allInstrumentModelPackets = Cases[Flatten[{downloadedPacketsFronInstruments, downloadedPacketsFromInstrumentModels}], PacketP[Model[Instrument]]];
 
-	(* determine if all the container model packets in question can fit on the liquid handler *)
+	(* Determine if all the container model packets in question can fit on the liquid handler *)
 	allModelContainerFootprints = Lookup[allModelContainerPackets, Footprint, {}];
 	allFootprintsRobotCompatibleQ = MatchQ[allModelContainerFootprints, {LiquidHandlerCompatibleFootprintP..}];
 
 	(* Get all of our Model[Instrument]s *)
 	allInstrumentObjects = Lookup[allInstrumentModelPackets, Object, {}];
 
-	(* determine whether we're using a robotic incubator; don't love this hardcoded list but going with it for now *)
+	(* Determine whether we're using a robotic incubator; don't love this hardcoded list but going with it for now *)
 	(* {Model[Instrument, Incubator, "STX44-ICBT with Humidity Control"], Model[Instrument, Incubator, "STX44-ICBT with Shaking"]} *)
 	roboticIncubatorQ = MemberQ[allInstrumentObjects, ObjectP[{Model[Instrument, Incubator, "id:AEqRl954GpOw"], Model[Instrument, Incubator, "id:N80DNjlYwELl"]}]];
 
-	(* get all the CellTypes of the samples *)
+	(* Get all the CellTypes of the samples *)
 	(* if we can't figure it out from the CellType field, go to the Composition field.  If we can't figure it out from there, look at what was specified *)
 	compositionCellTypes = Map[
 		Function[{composition},
@@ -5326,11 +7975,11 @@ resolveIncubateCellsMethodCore[
 		{allSamplePackets, compositionCellTypes}
 	];
 
-	(* figure out the CellTypes specified in the options, then smush it all together *)
+	(* Figure out the CellTypes specified in the options, then smash it all together *)
 	optionsCellTypes = ToList[Lookup[safeOps, CellType]];
 	allCellTypes = Cases[Flatten[{allSampleCellTypes, optionsCellTypes}], CellTypeP|Null];
 
-	(* determine what work cell we can use based on the cell type *)
+	(* Determine what work cell we can use based on the cell type *)
 	workCellBasedOnCellType = Which[
 		(* if we're ONLY Nulls, then we don't know and can just pick either *)
 		MatchQ[allCellTypes, {Null..}], {microbioSTAR, bioSTAR},
@@ -5342,7 +7991,7 @@ resolveIncubateCellsMethodCore[
 		True, {}
 	];
 
-	(* determine which work cell we can use based on the incubator(s) specified *)
+	(* Determine which work cell we can use based on the incubator(s) specified *)
 	incubatorCellTypes = Flatten[Lookup[allInstrumentModelPackets, CellTypes, {}]];
 	workCellBasedOnIncubators = Which[
 		(* if we didn't specify an incubator, we don't have a preference at this point *)
@@ -5361,6 +8010,18 @@ resolveIncubateCellsMethodCore[
 		],
 		If[MemberQ[allModelContainerFootprints, Except[Plate]],
 			"the sample containers do not have Plate footprint for Robotic incubation",
+			Nothing
+		],
+		If[MatchQ[time, GreaterP[$MaxRoboticIncubationTime]],
+			"the specified Time of "<> ToString[time] <> " exceeds the maximum time (" <> ToString[$MaxRoboticIncubationTime] <> ") allowed for incubation with Robotic preparation",
+			Nothing
+		],
+		If[MatchQ[quantificationMethod, ColonyCount],
+			"the QuantificationMethod is ColonyCount, which is not compatible with Robotic incubation using a liquid handler and its integrations",
+			Nothing
+		],
+		If[MemberQ[allInstrumentObjects, ObjectP[Model[Instrument, ColonyHandler]]],
+			"the QuantificationInstrument is a colony handler, which is not compatible with Robotic incubation using a liquid handler and its integrations",
 			Nothing
 		]
 	};
@@ -5395,8 +8056,13 @@ resolveIncubateCellsMethodCore[
 		!MatchQ[specifiedPreparation, Automatic], specifiedPreparation,
 		(* If we have any non-plate footprints we definitely can only do this manually *)
 		MemberQ[allModelContainerFootprints, Except[Plate]], Manual,
-		(* If any robotic incubators are specified, it should be robotic*)
+		(* If the Time exceeds the $MaxRoboticIncubationTime, we have to do Manual. *)
+		MatchQ[time, GreaterP[$MaxRoboticIncubationTime]], Manual,
+		(* If we are counting colonies, we have to do manual because Robotic would require multiple work cells (bioSTAR and QPix) *)
+		MemberQ[allInstrumentObjects, ObjectP[Model[Instrument, ColonyHandler]]] || MatchQ[quantificationMethod, ColonyCount], Manual,
+		(* If any robotic incubators are specified, it should be robotic *)
 		roboticIncubatorQ, Robotic,
+		(* Otherwise, allow both *)
 		True, {Manual, Robotic}
 	];
 
@@ -5440,15 +8106,14 @@ resolveIncubateCellsMethodCore[
 		]
 	};
 
-
-	(* throw an error if we don't have a work cell we can use *)
+	(* Throw an error if we don't have a work cell we can use *)
 	(* only bother with this if we're using Robotic anyway *)
 	(* Throw an error if the user has already specified the Preparation option and it's in conflict with our requirements. *)
 	If[MatchQ[myMethodOrWorkCell, WorkCell] && MemberQ[ToList[methodResult], Robotic] && Length[bioSTARRequirementStrings] > 0 && Length[microbioSTARRequirementStrings] > 0 && !gatherTests,
 		(* NOTE: Blocking $MessagePrePrint stops our error message from being truncated with ... if it gets too long. *)
 		Block[{$MessagePrePrint},
 			Message[
-				Error::ConflictingWorkCells,
+				Error::ConflictingIncubationWorkCells,
 				listToString[bioSTARRequirementStrings],
 				listToString[microbioSTARRequirementStrings]
 			]

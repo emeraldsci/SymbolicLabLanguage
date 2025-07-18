@@ -57,7 +57,7 @@ DefineObjectType[Object[Data, CoulterCount], {
 		ApertureCurrent -> {
 			Format -> Single,
 			Class -> Real,
-			Pattern :> GreaterEqualP[Microampere],
+			Pattern :> GreaterEqualP[0 * Microampere],
 			Units -> Microampere,
 			Description -> "The value of the constant current that passes through the aperture of the ApertureTube during the measurement that generated this data in order to measure the momentary electrical resistance change per particle passage through the aperture of the ApertureTube.",
 			Category -> "General"
@@ -142,14 +142,14 @@ DefineObjectType[Object[Data, CoulterCount], {
 		RawTotalCount -> {
 			Format -> Multiple,
 			Class -> Real,
-			Pattern :> GreaterEqualP[0],
+			Pattern :> _?NumericQ,
 			Description -> "Total number of voltage pulses (particle count) registered by the electronics during all measurements specified by NumberOfReadings that generated this data with no correction for blank count and coincident effects.",
 			Category -> "Experimental Results"
 		},
 		UnblankedTotalCount -> {
 			Format -> Multiple,
 			Class -> Real,
-			Pattern :> GreaterEqualP[0],
+			Pattern :> _?NumericQ,
 			Description -> "Total number of voltage pulses (particle count) registered by the electronics during all measurements specified by NumberOfReadings that generated this data with no correction for blank count.",
 			Category -> "Experimental Results"
 		},
@@ -179,7 +179,8 @@ DefineObjectType[Object[Data, CoulterCount], {
 		UnblankedDiameterDistribution -> {
 			Format -> Multiple,
 			Class -> QuantityArray,
-			Pattern :> QuantityArrayP[],
+			Pattern :> QuantityCoordinatesP[{Micrometer, None}],
+			Units -> {Micrometer, None},
 			Description -> "The distribution of the diameter of particles that were counted during all measurements specified by NumberOfReadings that generated this data in the form of {Diameter, Raw Count}. Particle diamter is calculated from the volume assuming that each particle is a perfect sphere. The particle count in this distribution is corrected for coincident effects but not for blank count.",
 			Category -> "Analysis & Reports"
 		},
@@ -208,8 +209,17 @@ DefineObjectType[Object[Data, CoulterCount], {
 		DiameterDistribution -> {
 			Format -> Multiple,
 			Class -> QuantityArray,
-			Pattern :> QuantityArrayP[],
+			Pattern :> QuantityCoordinatesP[{Micrometer, None}],
+			Units -> {Micrometer, None},
 			Description -> "The distribution of the diameter of particles that were counted during all measurements specified by NumberOfReadings that generated this data in the form of {Diameter, Count} with the particle count corrected for blank and coincident effects. Particle diamter is calculated from the volume assuming that each particle is a perfect sphere.",
+			Category -> "Analysis & Reports"
+		},
+		DiameterPeaksAnalyses -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[Analysis][Reference],
+			Description -> "The analysis object to analyze peak distribution of the data stored in DiameterDistribution field.",
 			Category -> "Analysis & Reports"
 		},
 		(* blank data *)
@@ -237,14 +247,15 @@ DefineObjectType[Object[Data, CoulterCount], {
 		BlankDiameterDistribution -> {
 			Format -> Multiple,
 			Class -> QuantityArray,
-			Pattern :> QuantityArrayP[],
+			Pattern :> QuantityCoordinatesP[{Micrometer, None}],
+			Units -> {Micrometer, None},
 			Description -> "The distribution of the diameter of particles that were counted in an electrolyte solution in the same MeasurementContainer with no sample added in the form of {Diameter, Blank Count}. Particle diamter is calculated from the volume assuming that each particle is a perfect sphere.",
 			Category -> "Analysis & Reports"
 		},
 		BlankTotalCount -> {
 			Format -> Multiple,
 			Class -> Real,
-			Pattern :> GreaterEqualP[0],
+			Pattern :> _?NumericQ,
 			Description -> "Total number of voltage pulses (particle count) measured in an electrolyte solution in the same MeasurementContainer with no sample added.",
 			Category -> "Analysis & Reports"
 		},
@@ -259,7 +270,7 @@ DefineObjectType[Object[Data, CoulterCount], {
 		TotalCount -> {
 			Format -> Multiple,
 			Class -> Real,
-			Pattern :> GreaterEqualP[0],
+			Pattern :> _?NumericQ,
 			Description -> "Total number of voltage pulses (particle count) registered by the electronics during all measurements specified by NumberOfReadings that generated this data with corrections for blank count and coincident effects.",
 			Category -> "Analysis & Reports"
 		},
@@ -269,6 +280,14 @@ DefineObjectType[Object[Data, CoulterCount], {
 			Pattern :> DistributionP[Millimeter^3],
 			Units -> Millimeter^3,
 			Description -> "The measured mean particle volume of the sample obtained from averaging over VolumeDistribution and NumberOfReadings.",
+			Category -> "Analysis & Reports"
+		},
+		ModalDiameter -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterEqualP[0 * Micrometer],
+			Units -> Micrometer,
+			Description -> "The particle diameter that appear most frequently in the DiameterDistribution.",
 			Category -> "Analysis & Reports"
 		},
 		AverageDiameter -> {
@@ -282,7 +301,7 @@ DefineObjectType[Object[Data, CoulterCount], {
 		UnblankedConcentration -> {
 			Format -> Multiple,
 			Class -> VariableUnit,
-			Pattern :> GreaterEqualP[0 Particle / Milliliter] | GreaterEqualP[0 EmeraldCell / Milliliter] | GreaterEqualP[0 Molar] | GreaterEqualP[0 / Milliliter],
+			Pattern :> UnitsP[0 Particle / Milliliter] | UnitsP[0 EmeraldCell / Milliliter] | UnitsP[0 Molar] | UnitsP[0 / Milliliter],
 			Units -> None,
 			Description -> "The particle count per unit volume in the measurement samples that were directly loaded to the instrument to generate this data.",
 			Category -> "Analysis & Reports"
@@ -290,7 +309,7 @@ DefineObjectType[Object[Data, CoulterCount], {
 		Concentration -> {
 			Format -> Single,
 			Class -> VariableUnit,
-			Pattern :> GreaterEqualP[0 Particle / Milliliter] | GreaterEqualP[0 EmeraldCell / Milliliter] | GreaterEqualP[0 Molar] | GreaterEqualP[0 / Milliliter],
+			Pattern :> UnitsP[0 Particle / Milliliter] | UnitsP[0 EmeraldCell / Milliliter] | UnitsP[0 Molar] | UnitsP[0 / Milliliter],
 			Units -> None,
 			Description -> "The particle count per unit volume in the measurement samples that were directly loaded to the instrument to generate this data.",
 			Category -> "Analysis & Reports"
@@ -298,7 +317,7 @@ DefineObjectType[Object[Data, CoulterCount], {
 		DerivedConcentration -> {
 			Format -> Single,
 			Class -> VariableUnit,
-			Pattern :> GreaterEqualP[0 Particle / Milliliter] | GreaterEqualP[0 EmeraldCell / Milliliter] | GreaterEqualP[0 Molar] | GreaterEqualP[0 / Milliliter],
+			Pattern :> UnitsP[0 Particle / Milliliter] | UnitsP[0 EmeraldCell / Milliliter] | UnitsP[0 Molar] | UnitsP[0 / Milliliter],
 			Units -> None,
 			Description -> "The particle count per unit volume in SamplesIn calculated from TotalCount, RunVolume, SampleAmount, ElectrolyteSampleDilutionVolume, dilution factors.",
 			Category -> "Analysis & Reports"

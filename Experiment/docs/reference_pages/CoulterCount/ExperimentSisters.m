@@ -22,12 +22,20 @@ DefineUsage[ValidExperimentCoulterCountQ,
 						{
 							InputName -> "Samples",
 							Description -> "The samples (typically cells) to be counted and sized by the electrical resistance measurement.",
-							Widget -> Widget[
-								Type -> Object,
-								Pattern :> ObjectP[{Object[Sample], Object[Container]}],
-								Dereference -> {
-									Object[Container] -> Field[Contents[[All, 2]]]
-								}
+							Widget -> Alternatives[
+								"Sample or Container" -> Widget[
+									Type -> Object,
+									Pattern :> ObjectP[{Object[Sample], Object[Container]}],
+									ObjectTypes -> {Object[Sample], Object[Container]},
+									Dereference -> {
+										Object[Container] -> Field[Contents[[All, 2]]]
+									}
+								],
+								"Model Sample"->Widget[
+									Type -> Object,
+									Pattern :> ObjectP[Model[Sample]],
+									ObjectTypes -> {Model[Sample]}
+								]
 							],
 							Expandable -> False
 						},
@@ -75,12 +83,20 @@ DefineUsage[ExperimentCoulterCountOptions,
 						{
 							InputName -> "Samples",
 							Description -> "The samples (typically cells) to be counted and sized by the electrical resistance measurement.",
-							Widget -> Widget[
-								Type -> Object,
-								Pattern :> ObjectP[{Object[Sample], Object[Container]}],
-								Dereference -> {
-									Object[Container] -> Field[Contents[[All, 2]]]
-								}
+							Widget -> Alternatives[
+								"Sample or Container" -> Widget[
+									Type -> Object,
+									Pattern :> ObjectP[{Object[Sample], Object[Container]}],
+									ObjectTypes -> {Object[Sample], Object[Container]},
+									Dereference -> {
+										Object[Container] -> Field[Contents[[All, 2]]]
+									}
+								],
+								"Model Sample"->Widget[
+									Type -> Object,
+									Pattern :> ObjectP[Model[Sample]],
+									ObjectTypes -> {Model[Sample]}
+								]
 							],
 							Expandable -> False
 						},
@@ -130,12 +146,20 @@ DefineUsage[ExperimentCoulterCountPreview,
 						{
 							InputName -> "Samples",
 							Description -> "The samples (typically cells) to be counted and sized by the electrical resistance measurement.",
-							Widget -> Widget[
-								Type -> Object,
-								Pattern :> ObjectP[{Object[Sample], Object[Container]}],
-								Dereference -> {
-									Object[Container] -> Field[Contents[[All, 2]]]
-								}
+							Widget -> Alternatives[
+								"Sample or Container" -> Widget[
+									Type -> Object,
+									Pattern :> ObjectP[{Object[Sample], Object[Container]}],
+									ObjectTypes -> {Object[Sample], Object[Container]},
+									Dereference -> {
+										Object[Container] -> Field[Contents[[All, 2]]]
+									}
+								],
+								"Model Sample"->Widget[
+									Type -> Object,
+									Pattern :> ObjectP[Model[Sample]],
+									ObjectTypes -> {Model[Sample]}
+								]
 							],
 							Expandable -> False
 						},

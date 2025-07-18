@@ -262,7 +262,7 @@ DefineOptions[UploadMedia,
 						Pattern:>Alternatives[None,Automatic]
 					]
 				],
-				ResolutionDescription->"Automatically set to {Model[Sample, \"Agar\"], 20*Gram/Liter} if MediaPhase is set to Solid. If any GellingAgent is detected in the Formula field of Model[Sample,Media], it will be removed from the Formula and ."
+				ResolutionDescription->"Automatically set to {Model[Sample, \"Agar\"], 20*Gram/Liter} if MediaPhase is set to Solid and there is no GellingAgent present in the Formula field. If any GellingAgent is detected in the Formula field of Model[Sample,Media] and the GellingAgents option has been specified, the former will be removed from the Formula and replaced with GellingAgents."
 			},
 			{
 				OptionName->MediaPhase,
@@ -781,6 +781,17 @@ DefineOptions[UploadMedia,
 				Category->"Storage Information"
 			},
 			{
+				OptionName -> DiscardThreshold,
+				Default -> 5 Percent,
+				AllowNull -> False,
+				Widget -> Widget[
+					Type -> Quantity,
+					Pattern :> RangeP[0 Percent, 100 Percent], Units -> {1, {Percent, {Percent}}}
+				],
+				Description -> "The percent of the total initial volume of samples of this media below which the stock solution will automatically marked as AwaitingDisposal.  For instance, if DiscardThreshold is set to 5% and the initial volume of the media was set to 100 mL, that media sample is automatically marked as AwaitingDisposal once its volume is below 5mL.",
+				Category -> "Storage Information"
+			},
+			{
 				OptionName->ShelfLife,
 				Default->Automatic,
 				AllowNull->True,
@@ -806,7 +817,7 @@ DefineOptions[UploadMedia,
 			},
 			{
 				OptionName->DefaultStorageCondition,
-				Default->Automatic,
+				Default->Refrigerator,
 				AllowNull->False,
 				Widget->Alternatives[
 					Widget[
@@ -820,27 +831,14 @@ DefineOptions[UploadMedia,
 				Category->"Storage Information"
 			},
 			{
-				OptionName->TransportChilled,
+				OptionName->TransportTemperature,
 				Default->Automatic,
-				AllowNull->False,
-				Widget->Widget[
-					Type->Enumeration,
-					Pattern :> BooleanP
-				],
-				Description->"Indicates if medias of this model should be refrigerated during transport when used in experiments.",
-				ResolutionDescription->"Automatically resolves to False for a new formula, or to the same as the TransportChilled property of a provided template model.",
-				Category->"Storage Information"
-			},
-			{
-				OptionName->TransportWarmed,
-				Default->Null,
 				AllowNull->True,
-				Widget->Widget[
-					Type->Quantity,
-					Pattern :> RangeP[27*Celsius, 105*Celsius],
-					Units->{1, {Celsius, {Celsius, Fahrenheit, Kelvin}}}
+				Widget -> Alternatives[
+					"Transport Cold" -> Widget[Type -> Quantity, Pattern :> RangeP[-86 Celsius, 10 Celsius],Units -> {1, {Celsius, {Celsius, Fahrenheit, Kelvin}}}],
+					"Transport Warmed" -> Widget[Type -> Quantity, Pattern :> RangeP[27 Celsius, 105 Celsius],Units -> {1, {Celsius, {Celsius, Fahrenheit, Kelvin}}}]
 				],
-				Description->"Indicates the temperature by which medias prepared according to the provided formula should be heated during transport when used in experiments.",
+				Description->"Indicates the temperature by which medias prepared according to the provided formula should be heated or chilled during transport when used in experiments.",
 				Category->"Storage Information"
 			},
 
@@ -971,7 +969,10 @@ DefineOptions[UploadMedia,
 				OptionName->IncompatibleMaterials,
 				Default->Automatic,
 				AllowNull->True,
-				Widget->With[{insertMe=Flatten[Append[MaterialP,None]]},Widget[Type->MultiSelect,Pattern:>DuplicateFreeListableP[insertMe]]],
+				Widget->Alternatives[
+					With[{insertMe=Flatten[MaterialP]},Widget[Type->MultiSelect,Pattern:>DuplicateFreeListableP[insertMe]]],
+					Widget[Type->Enumeration, Pattern:>Alternatives[{None}]]
+				],
 				Description->"A list of materials that would be damaged if contacted by this model.",
 				ResolutionDescription->"Automatically resolves to None for a new formula, or to the same as the IncompatibleMaterials listing of a provided template model.",
 				Category->"Compatibility"
@@ -1205,7 +1206,8 @@ Error::GellingAgentMissingMeltingPoint="At position `1` for the input `2`, the f
 Error::GellingAgentsForLiquidMedia="At position `1` for the template media model input `2`, the following `3` were specified the \"GellingAgents\" option while the \"MediaPhase\" option was set to Liquid. GellingAgents refer to materials such as Agar and Gelatin, which are added for the preparation of solid media. Please leave the \"GellingAgents\" option un-specified if you desire to prepare a liquid media.";
 Warning::DropOutMissingFromTemplate="At position `1` for the template model input `2`, the following `3` specified for the \"DropOuts\" option are not present in the composition of `2`, which is `4`. DropOut options not present in the template media model will be ignored.";
 Warning::RedundantSupplements="At position `1`, the specified Supplements `2` are already present in the Formula of the template model media `3`: `4`.";
-Warning::RedundantGellingAgents="At position `1`, the specified GellingAgents `2` are already present in the Formula of the template model media `3`: `4`.";
+Warning::RedundantGellingAgents="At position `1`, the specified GellingAgents `2` are already present in the Formula of `3`: `4`.";
+Error::DuplicateNameForMedia="At position `1`, the specified name `2` already exists in the database. Please use another name.";
 
 (* Singleton formula Overload with FillToVolumeSolvent & FillToVolume *)
 UploadMedia[
@@ -1346,12 +1348,15 @@ UploadMedia[
 
 				Append[packetWithNewObject,
 					{
-						Name->name,
-						If[!MatchQ[gellingAgents,None],
-							Append[GellingAgents] -> Map[{#[[1]],Link[#[[2]]]}&,gellingAgents],
+						(* If Name or BaseMedia is Null, we are not going to change anything *)
+						If[!NullQ[name],
+							Name->name,
 							Nothing
 						],
-						BaseMedia -> baseMedia,
+						If[!NullQ[baseMedia],
+							BaseMedia -> baseMedia,
+							Nothing
+						],
 						PlateMedia -> plateMedia
 					}
 				]
@@ -1362,7 +1367,7 @@ UploadMedia[
 
 	allTests = Flatten[{safeOptionsUploadMediaTests,resolvedUploadMediaTests}];
 
-	result = If[MemberQ[listedOutput,Result],
+	result = If[MemberQ[listedOutput,Result] && !MemberQ[preliminaryUploadMediaPackets, <|Object -> $Failed|>],
 		If[upload,
 			Upload[finalUploadMediaPackets],
 			finalUploadMediaPackets
@@ -1380,7 +1385,7 @@ UploadMedia[
 	outputSpecification/.{
 		Result->result,
 		Tests->tests,
-		Options->RemoveHiddenOptions[UploadMedia,resolvedUploadMediaOptions],
+		Options->options,
 		Preview->Null
 	}
 ];
@@ -1395,7 +1400,7 @@ UploadMedia[
 UploadMedia[
 	myMediaModels:{ObjectP[Model[Sample,Media]]..},
 	myOptions:OptionsPattern[UploadMedia]
-]:=Module[{outputSpecification,listedOutput,gatherTests,messages,mediaModelsWithoutTemporalLinks,optionsWithoutTemporalLinks,safeOptionsUploadMediaWithNames,safeOptionsUploadMediaTests,safeOptionsUploadMedia,fastTrack,cache,upload,allDownloads,mediaSets,cacheBall,resolvedUploadMediaOptionsResult,resolvedUploadMediaTests,collapsedResolvedUploadMediaOptions,resolvedUploadMediaInputs,resolvedUploadMediaOptions,preliminaryUploadMediaPackets,uploadMediaOptions,unexpandedUploadStockSolutionOptions,expandedUploadStockSolutionOptions,finalUploadMediaPackets,allTests,result,options,tests},
+]:=Module[{outputSpecification,listedOutput,gatherTests,messages,mediaModelsWithoutTemporalLinks,optionsWithoutTemporalLinks,safeOptionsUploadMediaWithNames,safeOptionsUploadMediaTests,safeOptionsUploadMedia,fastTrack,cache,upload,allDownloads,mediaSets,cacheBall,resolvedUploadMediaOptionsResult,resolvedUploadMediaTests,collapsedResolvedUploadMediaOptions,resolvedUploadMediaInputs,resolvedUploadMediaOptions,preliminaryUploadMediaPackets,uploadMediaOptions,unexpandedUploadStockSolutionOptions,expandedUploadStockSolutionOptions,finalUploadMediaPackets,allTests,result,options,tests,preResolvedNames},
 
 	(* Determine the requested output format of this function. *)
 	outputSpecification = Quiet[OptionValue[Output]];
@@ -1534,8 +1539,15 @@ UploadMedia[
 			(* Re-return the basic <|Object->Model[Sample,Media,id]|> packet if not creating a new media model, aka not updating any fields from the template media model *)
 			Append[packetWithNewObject,
 				{
-					Name->name,
-					BaseMedia -> baseMedia,
+					(* If Name -> Null, we are not going to change anything *)
+					If[!NullQ[name],
+						Name->name,
+						Nothing
+					],
+					If[!NullQ[baseMedia],
+						BaseMedia -> baseMedia,
+						Nothing
+					],
 					PlateMedia -> plateMedia
 				}
 			]
@@ -1544,7 +1556,7 @@ UploadMedia[
 
 	allTests = Flatten[{safeOptionsUploadMediaTests,resolvedUploadMediaTests}];
 
-	result = If[MemberQ[listedOutput,Result],
+	result = If[MemberQ[listedOutput,Result] && !MemberQ[preliminaryUploadMediaPackets, <|Object -> $Failed|>],
 		If[upload,
 			Upload[finalUploadMediaPackets],
 			finalUploadMediaPackets
@@ -1608,7 +1620,11 @@ resolveUploadMediaOptions[
 		}]
 	];
 
-	expandedUnresolvedTemplatedOptionsUploadMedia = Last[ExpandIndexMatchedInputs[UploadMedia,{formulaSpecsWithoutTemporalLinks,solventsWithoutTemporalLinks,myVolumes},safeOptionsUploadMedia]];
+	(* When expanding the index-matched inputs, we need to provide the definition number (defaults to 1) of the input for UploadMedia (defined in the reference page) *)
+	expandedUnresolvedTemplatedOptionsUploadMedia = If[MatchQ[myTemplateMediaModels, {Null..}],
+		Last[ExpandIndexMatchedInputs[UploadMedia,{formulaSpecsWithoutTemporalLinks,solventsWithoutTemporalLinks,myVolumes},safeOptionsUploadMedia]],
+		Last[ExpandIndexMatchedInputs[UploadMedia,{myTemplateMediaModels},safeOptionsUploadMedia,2]]
+	];
 
 	(*=====MEDIA OPTIONS CHECK=====*)
 
@@ -1781,7 +1797,7 @@ resolveUploadMediaOptions[
 	} =
 
 	Transpose[MapThread[Function[{options,myOriginalFormulaSpec,mySolvent,myVolume,templateFormulaPacket,supplementsCompositionPacket,gellingAgentsPacket,templateFormulaCompositionPacket},
-		Module[{specifiedMediaName,specifiedSupplements,specifiedDropOuts,specifiedGellingAgents,specifiedMediaPhase,specifiedPlateMediaQ,originalFormula,solvent,totalVolume,supplementDropOutConflictsCheck,supplementDropOutConflictsErrorQ,gellingAgentsDropOutConflictsErrorQ,dropOutMissingFromTemplateCheck,dropOutPresentInTemplateCheck,templateFormulaWithSupplements,redundantSupplementsCheck,templateFormulaWithSupplementsAndGellingAgents,redundantGellingAgentsCheck,redundantSupplementInFormulaQ,templateFormulaPacketWithSupplements,redundantGellingAgentInFormulaQ,templateFormulaPacketWithSupplementsAndGellingAgents,dropOutsMissingFromTemplateQ,formulaWithSupplements,needRevisedFormulaQ,formulaWithSupplementsAndDropOuts,finalFormulaCompositionPacket, gellingAgentsForLiquidMediaErrorQ,plateMediaFalseForSolidMediaQ,plateMediaTrueForLiquidMediaQ,resolvedPlateMediaQ,resolvedGellingAgents,resolvedMediaPhase,gellingAgentsForLiquidMediaCheck,gellingAgentsMissingMeltingPointErrorQ,plateMediaFalseForSolidMediaWarningQ,gellingAgentDropOutConflictsCheck,gellingAgentsMissingMeltingPointCheck,templateFormulaPacketWithChecks,newModelUploadQ,uploadMediaInput,resolvedSupplements,resolvedDropOuts,resolvedHeatSensitiveReagents,specifiedHeatSensitiveReagents},
+		Module[{specifiedMediaName,specifiedSupplements,specifiedDropOuts,specifiedGellingAgents,specifiedMediaPhase,specifiedPlateMediaQ,originalFormula,solvent,totalVolume,supplementDropOutConflictsCheck,supplementDropOutConflictsErrorQ,gellingAgentsDropOutConflictsErrorQ,dropOutMissingFromTemplateCheck,dropOutPresentInTemplateCheck,templateFormulaWithSupplements,redundantSupplementsCheck,templateFormulaWithSupplementsAndGellingAgents,redundantGellingAgentsCheck,redundantSupplementInFormulaQ,templateFormulaPacketWithSupplements,redundantGellingAgentInFormulaQ,templateFormulaPacketWithSupplementsAndGellingAgents,dropOutsMissingFromTemplateQ,formulaWithSupplements,needRevisedFormulaQ,formulaWithSupplementsAndDropOuts,finalFormulaCompositionPacket, gellingAgentsForLiquidMediaErrorQ,plateMediaFalseForSolidMediaQ,plateMediaTrueForLiquidMediaQ,resolvedPlateMediaQ,resolvedGellingAgents,resolvedMediaPhase,gellingAgentsForLiquidMediaCheck,gellingAgentsMissingMeltingPointErrorQ,plateMediaFalseForSolidMediaWarningQ,gellingAgentDropOutConflictsCheck,gellingAgentsMissingMeltingPointCheck,templateFormulaPacketWithChecks,newModelUploadQ,uploadMediaInput,resolvedSupplements,resolvedDropOuts,resolvedHeatSensitiveReagents,specifiedHeatSensitiveReagents,resolvedGellingAgentsNotFromFormula},
 
 			(* error checking variables here *)
 			{
@@ -1821,16 +1837,26 @@ resolveUploadMediaOptions[
 
 			(* If the user has not specifically set the PlateMedia option, automatically set to False since there is no harm in keeping around solid media in the bottle that it was originally prepared in. *)
 			(* If the MediaPhase is specified as either Solid or SemiSolid but GellingAgents is not specified, default to the appropriate concentration of Agar for each MediaPhase. *)
+			(* One last note here: if we are getting the gelling agents from the formula, it does not make sense to pass those back when we use addSupplementsToTemplateFormula. *)
+			(* Therefore, we use a second variable to keep the gelling agents that are derived from the formula away from that route. *)
 			resolvedPlateMediaQ = specifiedPlateMediaQ/.{Automatic->False};
-			resolvedGellingAgents = Which[
+			{resolvedGellingAgents, resolvedGellingAgentsNotFromFormula} = Which[
+				(* If the user has specified, use that *)
+				!MatchQ[specifiedGellingAgents,{}],
+					ConstantArray[specifiedGellingAgents, 2],
+
+				(* Importantly, if there are any GellingAgents present in the Formula, we use those *)
+				MemberQ[myOriginalFormulaSpec, {_, GellingAgentsP}],
+					{Cases[myOriginalFormulaSpec, {_, GellingAgentsP}], {}},
+
 				MatchQ[specifiedGellingAgents,{}] && MatchQ[specifiedMediaPhase,Solid],
-				{{20*Gram/Liter,Model[Sample,"id:9RdZXvKBee1Z"]}} (* Agar *),
+					ConstantArray[{{20*Gram/Liter,Model[Sample,"id:9RdZXvKBee1Z"]}}, 2] (* Agar *),
 
 				MatchQ[specifiedGellingAgents,{}] && MatchQ[specifiedMediaPhase,SemiSolid],
-				{{10*Gram/Liter,Model[Sample,"id:9RdZXvKBee1Z"]}} (* Agar *),
+					ConstantArray[{{10*Gram/Liter,Model[Sample,"id:9RdZXvKBee1Z"]}}, 2] (* Agar *),
 
 				True,
-				specifiedGellingAgents/.{{}->None}
+					ConstantArray[specifiedGellingAgents/.{{}->None}, 2]
 			];
 			resolvedMediaPhase = specifiedMediaPhase/.{Automatic->If[
 				MatchQ[specifiedGellingAgents,{}],
@@ -1888,7 +1914,7 @@ resolveUploadMediaOptions[
 			templateFormulaPacketWithSupplements = Association[Normal@templateFormulaPacketWithChecks/.{
 				(Formula->_) -> (Formula -> templateFormulaWithSupplements)
 			}];
-			{templateFormulaWithSupplementsAndGellingAgents,redundantGellingAgentsCheck} = addSupplementsToTemplateFormula[templateFormulaPacketWithSupplements,templateFormulaWithSupplements,resolvedGellingAgents/.{None->{}}];
+			{templateFormulaWithSupplementsAndGellingAgents,redundantGellingAgentsCheck} = addSupplementsToTemplateFormula[templateFormulaPacketWithSupplements,templateFormulaWithSupplements,resolvedGellingAgentsNotFromFormula/.{None->{}}];
 			redundantGellingAgentInFormulaQ = !MatchQ[redundantGellingAgentsCheck,{}];
 
 			templateFormulaPacketWithSupplementsAndGellingAgents = Association[Normal@templateFormulaPacketWithChecks/.{
@@ -2141,7 +2167,7 @@ resolveUploadMediaOptions[
 				Message[Warning::RedundantGellingAgents,
 					position,
 					redundantGellingAgentsFromTemplate,
-					templateModel,
+					If[MatchQ[templateModel,ObjectP[]],templateModel,"the provided input"],
 					templateFormula
 				]
 			]

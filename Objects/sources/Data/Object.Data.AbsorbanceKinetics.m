@@ -43,6 +43,24 @@ DefineObjectType[Object[Data, AbsorbanceKinetics], {
 			Description -> "The desired temperature of the sample chamber during the experimental run.",
 			Category -> "General"
 		},
+		NominalOxygenLevel -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterP[0*Percent],
+			Units -> Percent,
+			Description -> "The target oxygen level in the atmosphere inside the instrument set by the protocol.",
+			Category -> "General",
+			Abstract -> True
+		},
+		NominalCarbonDioxideLevel -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterP[0*Percent],
+			Units -> Percent,
+			Description -> "The target carbon dioxide level in the atmosphere inside the instrument set by the protocol.",
+			Category -> "General",
+			Abstract -> True
+		},
 		NumberOfReadings -> {
 			Format -> Single,
 			Class -> Integer,
@@ -130,7 +148,22 @@ DefineObjectType[Object[Data, AbsorbanceKinetics], {
 			Description -> "Temperature readings taken in the sample chamber over the course of the absorbance measurements.",
 			Category -> "Experimental Results"
 		},
-
+		OxygenLevel -> {
+			Format -> Single,
+			Class -> QuantityArray,
+			Pattern :> QuantityCoordinatesP[{Second,Percent}],
+			Units -> {Second, Percent},
+			Description -> "Oxygen level readings taken in the sample chamber over the course of the absorbance measurements.",
+			Category -> "Experimental Results"
+		},
+		CarbonDioxideLevel -> {
+			Format -> Single,
+			Class -> QuantityArray,
+			Pattern :> QuantityCoordinatesP[{Second,Percent}],
+			Units -> {Second, Percent},
+			Description -> "Carbon dioxide level readings taken in the sample chamber over the course of the absorbance measurements.",
+			Category -> "Experimental Results"
+		},
 	(* -- Data Processing -- *)
 		UnblankedAbsorbanceTrajectories -> {
 			Format -> Multiple,
@@ -164,6 +197,13 @@ DefineObjectType[Object[Data, AbsorbanceKinetics], {
 			Relation -> Object[Data, AbsorbanceKinetics],
 			Description -> "The data for the blank sample used to subtract the background signal from this data.",
 			Category -> "Data Processing"
+		},
+		AbsorbanceSaturated -> {
+			Format -> Single,
+			Class -> Boolean,
+			Pattern :> BooleanP,
+			Description -> "Indicates that the absorbance reading is unavailable, likely due to detector over-saturation. For BMG plate readers, the instrument displays an \"overflow\" value if the absorbance exceeds the limit (range 0 AU to 3.5 AU). It is recommended to dilute the sample for re-measurement.",
+			Category -> "Analysis & Reports"
 		}
 	}
 }];

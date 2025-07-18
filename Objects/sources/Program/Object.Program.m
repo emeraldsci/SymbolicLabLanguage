@@ -68,7 +68,6 @@ DefineObjectType[Object[Program], {
 			Class -> Link,
 			Pattern :> _Link,
 			Relation -> Alternatives[
-				Object[Maintenance, CellBleach][CellBleachProgram],
 				Object[Maintenance, ReceiveInventory][ReceiveInventoryPrograms]
 			],
 			Description -> "The maintenance protocol that generated this program.",

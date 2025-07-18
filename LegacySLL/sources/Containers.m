@@ -152,8 +152,8 @@ AllWells[ops:OptionsPattern[]]:=Module[
 	{safeOps, rowColResults, numberOfWells, rows, cols, outputFormat, cache, model, newOps, optionAspectRatio,
 		optionNumWells, modelAspectRatio, modelNumWells},
 
-	(* if just provided as AllWells[], with no options, just return the 96 well configuration directly *)
-	If[MatchQ[ToList[ops], {}],
+	(* if just provided as AllWells[], with no options (or saying NumberOfWells -> 96), just return the 96 well configuration directly *)
+	If[MatchQ[ToList[ops], {} | {NumberOfWells->96}],
 		Return[{
 			{"A1", "A2", "A3", "A4", "A5", "A6", "A7", "A8", "A9", "A10", "A11", "A12"},
 			{"B1", "B2", "B3", "B4", "B5", "B6", "B7", "B8", "B9", "B10", "B11", "B12"},
@@ -165,7 +165,7 @@ AllWells[ops:OptionsPattern[]]:=Module[
 			{"H1", "H2", "H3", "H4", "H5", "H6", "H7", "H8", "H9", "H10", "H11", "H12"}
 		}]
 	];
-	(* Hardcode 384 AllWells for speed *)
+	(* Hardcode 384 or 96 AllWells for speed *)
 	If[MatchQ[ToList[ops], {NumberOfWells->384}],
 		Return[
 			{
@@ -390,7 +390,7 @@ AllWells[startWells:{WellP..},endWells:{WellP..},ops:OptionsPattern[]]:=Module[
 	];
 
 	(* if the length of the start and end wells are the same, then we will just MapThread them *)
-	(* if the lenght of the start and end wells are not the same, assume we want to get every combination of start and end wells and use Tuples to MapThread over *)
+	(* if the length of the start and end wells are not the same, assume we want to get every combination of start and end wells and use Tuples to MapThread over *)
 	mapThreadPair = If[SameLengthQ[startWells, endWells],
 		{startWells, endWells},
 		Transpose[Tuples[{startWells, endWells}]]
@@ -1003,7 +1003,94 @@ centrifugeBalance[{myUnpairedContainers:{{ObjectP[Object[Container]],MassP,{_Int
 
 (* ::Subsection:: *)
 (*PreferredContainer*)
-
+(* List any container model in preferred container hard coded lists here with 1 compatible cover model *)
+(* Follow the format: container model -> cover model *)
+(* This lookup is used in UploadSample when SimulationMode is True (for example when we call SimulateResources *)
+$PreferredContainerCoverLookup = <|
+	Model[Container, Plate, "id:O81aEBZjRXvx"]->Model[Item, Lid, "id:4pO6dM56Zpar"],(*Omni Tray Sterile Media Plate*)(*Model[Item, Lid, "Universal Clear Lid, Sterile"]*)
+	Model[Container, Plate, "id:lYq9jRqw70m4"]->Model[Item, PlateSeal, "id:1ZA60vLqbXO6"],(*4-well V-bottom 10 mL Deep Well Plate Non-Sterile*)(*Model[Item, PlateSeal, "96-Well Plate Seal, EZ-Pierce Zone-Free"]*)
+	Model[Container, Plate, "id:AEqRl9qmr111"]->Model[Item, PlateSeal, "id:1ZA60vLqbXO6"],(*4-well V-bottom 75 mL Deep Well Plate Non-Sterile*)(*Model[Item, PlateSeal, "96-Well Plate Seal, EZ-Pierce Zone-Free"]*)
+	Model[Container, Plate, "id:R8e1PjeVbJ4X"]->Model[Item, PlateSeal, "id:1ZA60vLqbXO6"],(*4-well V-bottom 75 mL Deep Well Plate Serile*)(*Model[Item, PlateSeal, "96-Well Plate Seal, EZ-Pierce Zone-Free"]*)
+	Model[Container, Plate, "id:L8kPEjnY8dME"]->Model[Item, Lid, "id:qdkmxzqM8Gnx"],(*Nunc Non-Treated 6-well Plate*)(*Model[Item, Lid, "Nunc 6-well Plate Lid"]*)
+	Model[Container, Plate, "id:eGakld01zzLx"]->Model[Item, Lid, "id:P5ZnEjdR84al"],(*6-well Tissue Culture Plate*)(*Model[Item, Lid, "Universal SBS Tissue Culture 6 Well Plate Lid"]*)
+	Model[Container, Plate, "id:dORYzZJwOJb5"]->Model[Item, Lid, "id:O81aEBZqJv0D"],(*Nunc Non-Treated 12-well Plate*)(*Model[Item, Lid, "Nunc 12-well Plate Lid"]*)
+	Model[Container, Plate, "id:GmzlKjY5EE8e"]->Model[Item, Lid, "id:BYDOjvGJAGZX"],(*12-well Tissue Culture Plate*)(*Model[Item, Lid, "Universal SBS Tissue Culture 12 Well Plate Lid"]*)
+	Model[Container, Plate, "id:1ZA60vLlZzrM"]->Model[Item, Lid, "id:zGj91a7MdkXL"],(*Nunc Non-Treated 24-well Plate*)(*Model[Item, Lid, "Nunc 24-well Plate Lid"]*)
+	Model[Container, Plate, "id:jLq9jXY4kkMq"]->Model[Item, PlateSeal, "id:vXl9j57mandN"],(*24-well Round Bottom Deep Well Plate, Steril*)(*Model[Item, PlateSeal, "AeraSeal Plate Seal, Breathable"]*)
+	Model[Container, Plate, "id:qdkmxzkKwn11"]->Model[Item, Lid, "id:XnlV5jKj6AEN"],(*24-well V-bottom 10 mL Deep Well Plate Sterile*)(*Model[Item, Lid, "Universal Clear Lid"]*)
+	Model[Container, Plate, "id:E8zoYveRlldX"]->Model[Item, Lid, "id:D8KAEvGrzKml"],(*"24-well Tissue Culture Plate",*)(*Model[Item, Lid, "Universal SBS Tissue Culture 24 Well Plate Lid"]*)
+	Model[Container, Plate, "id:Y0lXejMW7NMo"]->Model[Item, Lid, "id:L8kPEjn4DO7P"],(*Nunc Non-Treated 48-well Plat*)(*Model[Item, Lid, "Nunc 48-well Plate Lid"]*)
+	Model[Container, Plate, "id:Vrbp1jKw7W9q"]->Model[Item, Lid, "id:L8kPEjn4DO7P"],(*Corning, TC-Surface 48-well Plate*)(*Model[Item, Lid, "Nunc 48-well Plate Lid"]*)
+	Model[Container, Plate, "id:E8zoYveRllM7"]->Model[Item, PlateSeal, "id:1ZA60vLqbXO6"],(*48-well Pyramid Bottom Deep Well Plate*)(*Model[Item, PlateSeal, "96-Well Plate Seal, EZ-Pierce Zone-Free"]*)
+	Model[Container, Plate, "id:P5ZnEjx9Zllk"]->Model[Item, PlateSeal, "id:1ZA60vLqbXO6"],(*48-well Pyramid Bottom Deep Well Plate, Sterile*)(*Model[Item, PlateSeal, "96-Well Plate Seal, EZ-Pierce Zone-Free"]*)
+	Model[Container, Plate, "id:jLq9jXY4kkKW"]->Model[Item, Lid, "id:xRO9n3BM1Oww"],(*96-well Greiner Tissue Culture Plate*)(*Model[Item, Lid, "96 Well Greiner Plate Lid"]*)
+	Model[Container, Plate, "id:4pO6dMOqKBaX"]->Model[Item, Lid, "id:xRO9n3BM1Oww"],(*96-well flat bottom plate, Sterile*)(*Model[Item, Lid, "96 Well Greiner Plate Lid"]*)
+	Model[Container, Plate, "id:L8kPEjno5XoE"]->Model[Item, Lid, "id:xRO9n3BM1Oww"],(*96-well Black Wall Tissue Culture Plate*)(*Model[Item, Lid, "96 Well Greiner Plate Lid"]*)
+	Model[Container, Plate, "id:6V0npvK611zG"]->Model[Item, PlateSeal, "id:1ZA60vLqbXO6"],(*96-well Black Wall Plate*)(*Model[Item, PlateSeal, "96-Well Plate Seal, EZ-Pierce Zone-Free"]*)
+	Model[Container, Plate, "id:L8kPEjkmLbvW"]->Model[Item, PlateSeal, "id:pZx9jo8MJAXM"],(*96-well 2mL Deep Well Plate*)(*Model[Item, PlateSeal, "Plate Seal, 96-Well Square"]*)
+	Model[Container, Plate, "id:n0k9mGkwbvG4"]->Model[Item, PlateSeal, "id:pZx9jo8MJAXM"],(*"96-well 2mL Deep Well Plate, Sterile"*)(*Model[Item, PlateSeal, "Plate Seal, 96-Well Square"]*)
+	Model[Container, Plate, "id:4pO6dMmErzez"]->Model[Item, PlateSeal, "id:1ZA60vLqbXO6"],(*Sterile Deep Round Well, 2 mL*)(*Model[Item, PlateSeal, "96-Well Plate Seal, EZ-Pierce Zone-Free"]*)
+	Model[Container, Plate, "id:1ZA60vAn9RVP"]->Model[Item, Lid, "id:xRO9n3BM1Oww"],(*96-well Greiner Tissue Culture Plate, Untreated*)(*Model[Item, Lid, "96 Well Greiner Plate Lid"]*)
+	Model[Container, Plate, "id:pZx9joxDA8Bj"]->Model[Item, PlateSeal, "id:dORYzZJMop8e"],(*Greiner MasterBlock 1.2ml Deep Well Plate*)(*Model[Item, PlateSeal, "Plate Seal, Aluminum"]*)
+	Model[Container, Plate, "id:54n6evLWKqbG"]->Model[Item, PlateSeal, "id:1ZA60vLqbXO6"],(*200mL Polypropylene Robotic Reservoir*)(*Model[Item, PlateSeal, "96-Well Plate Seal, EZ-Pierce Zone-Free"]*)
+	Model[Container, Plate, "id:AEqRl9qm8rwv"]->Model[Item, PlateSeal, "id:1ZA60vLqbXO6"],(*200mL Polypropylene Robotic Reservoir, Sterile*)(*Model[Item, PlateSeal, "96-Well Plate Seal, EZ-Pierce Zone-Free"]*)
+	Model[Container, Plate, "id:01G6nvwNDARA"]->Model[Item, PlateSeal, "id:L8kPEjnvlDrN"],(*384-well Low Dead Volume Echo Qualified Plate*)(*Model[Item, PlateSeal, "qPCR Plate Seal, Clear"]*)
+	Model[Container, Plate, "id:7X104vn56dLX"]->Model[Item, PlateSeal, "id:L8kPEjnvlDrN"],(*384-well Polypropylene Echo Qualified Plate*)(*Model[Item, PlateSeal, "qPCR Plate Seal, Clear"]*)
+	Model[Container, Vessel, "id:jLq9jXvxr6OZ"]->Model[Item, Cap, "id:rea9jl1XXBae"],(*HPLC vial (high recovery)*)(*Model[Item, Cap, "2 mL glass CE vial cap"]*)
+	Model[Container, Vessel, "id:GmzlKjznOxmE"]->Model[Item, Cap, "id:rea9jl1XXBae"],(*Amber HPLC vial (high recovery)*)(*Model[Item, Cap, "2 mL glass CE vial cap"]*)
+	Model[Container, Vessel, "id:qdkmxzqEvPjV"]->Model[Item, Cap, "id:1ZA60vLqbAG5"],(*"2mL small clear glass HPLC vial"*)(*Model[Item, Cap, "Vial Crimp Cap, 11x6mm"]*)
+	Model[Container, Vessel, "id:AEqRl9KmRnj1"]->Model[Item, Cap, "id:rea9jl1XXBae"],(*2 mL clear glass GC vial*)(*Model[Item, Cap, "2 mL glass CE vial cap"]*)
+	Model[Container, Vessel, "id:01G6nvwz9ekA"]->Model[Item, Cap, "id:Vrbp1jKl0vVo"],(*T25 EasYFlask*)(*Model[Item, Cap, "Flask Cap, 26x16mm"]*)
+	Model[Container, Vessel, "id:8qZ1VW0np53Z"]->Model[Item, Cap, "id:01G6nvwXrDeD"],(*T75 EasYFlask*)(*Model[Item, Cap, "Flask Cap, 32x20mm"]*)
+	Model[Container, Vessel, "id:qdkmxzqXdJra"]->Model[Item, Cap, "id:eGakldJMze3n"],(*T175 EasYFlask*)(*Model[Item, Cap, "Flask Cap, 34x22mm"]*)
+	Model[Container, Vessel, "id:o1k9jAG00e3N"]->Model[Item, Cap, "id:wqW9BP4Y06aR"],(*New 0.5mL Tube with 2mL Tube Skirt*)(*Model[Item, Cap, "2 mL tube cap, standard"]*)
+	Model[Container, Vessel, "id:eGakld01zzpq"]->Model[Item, Cap, "id:wqW9BP4Y06aR"],(*"1.5mL Tube with 2mL Tube Skirt"*)(*Model[Item, Cap, "2 mL tube cap, standard"]*)
+	Model[Container, Vessel, "id:3em6Zv9NjjN8"]->Model[Item, Cap, "id:wqW9BP4Y06aR"],(*2mL Tube*)(*Model[Item, Cap, "2 mL tube cap, standard"]*)
+	Model[Container, Vessel, "id:M8n3rx03Ykp9"]->Model[Item, Cap, "id:wqW9BP4Y06aR"],(*2mL brown tube*)(*Model[Item, Cap, "2 mL tube cap, standard"]*)
+	Model[Container, Vessel, "id:bq9LA0dBGGR6"]->Model[Item, Cap, "id:54n6evKx0oqq"],(*50mL Tube*)(*Model[Item, Cap, "50 mL tube cap"]*)
+	Model[Container, Vessel, "id:bq9LA0dBGGrd"]->Model[Item, Cap, "id:54n6evKx0oqq"],(*50mL Light Sensitive Centrifuge Tube*)(*Model[Item, Cap, "50 mL tube cap"]*)
+	Model[Container, Vessel, "id:jLq9jXvA8ewR"]->Model[Item, Cap, "id:jLq9jXvMkYPE"],(*100 mL Glass Bottle*)(*Model[Item, Cap, "GL45 Bottle Cap"]*)
+	Model[Container, Vessel, "id:01G6nvwPempK"]->Model[Item, Cap, "id:jLq9jXvMkYPE"],(*150 mL Glass Bottle*)(*Model[Item, Cap, "GL45 Bottle Cap"]*)
+	Model[Container, Vessel, "id:J8AY5jwzPPR7"]->Model[Item, Cap, "id:jLq9jXvMkYPE"],(*250 mL Glass Bottle*)(*Model[Item, Cap, "GL45 Bottle Cap"]*)
+	Model[Container, Vessel, "id:XnlV5jKRKBYZ"]->Model[Item, Cap, "id:jLq9jXvMkYPE"],(*250 mL Glass Bottle, Sterile*)(*Model[Item, Cap, "GL45 Bottle Cap"]*)
+	Model[Container, Vessel, "id:J8AY5jwzPPex"]->Model[Item, Cap, "id:jLq9jXvMkYPE"],(*250 mL Amber Glass Bottle *)(*Model[Item, Cap, "GL45 Bottle Cap"]*)
+	Model[Container, Vessel, "id:4pO6dM5E5AaM"]->Model[Item, Cap, "id:jLq9jXvMkYPE"],(*250 mL Amber Glass Bottle, Sterile *)(*Model[Item, Cap, "GL45 Bottle Cap"]*)
+	Model[Container, Vessel, "id:aXRlGnZmOONB"]->Model[Item, Cap, "id:jLq9jXvMkYPE"],(*500 mL Glass Bottle*)(*Model[Item, Cap, "GL45 Bottle Cap"]*)
+	Model[Container, Vessel, "id:pZx9jo8A8lVp"]->Model[Item, Cap, "id:jLq9jXvMkYPE"],(*500 mL Glass Bottle,Sterile*)(*Model[Item, Cap, "GL45 Bottle Cap"]*)
+	Model[Container, Vessel, "id:8qZ1VWNmddlD"]->Model[Item, Cap, "id:jLq9jXvMkYPE"],(*500 mL Amber Glass Bottle*)(*Model[Item, Cap, "GL45 Bottle Cap"]*)
+	Model[Container, Vessel, "id:Vrbp1jKoKz7E"]->Model[Item, Cap, "id:jLq9jXvMkYPE"],(*500 mL Amber Glass Bottle, Sterile*)(*Model[Item, Cap, "GL45 Bottle Cap"]*)
+	Model[Container, Vessel, "id:zGj91aR3ddXJ"]->Model[Item, Cap, "id:jLq9jXvMkYPE"],(*1L Glass Bottle*)(*Model[Item, Cap, "GL45 Bottle Cap"]*)
+	Model[Container, Vessel, "id:XnlV5jKRKBqn"]->Model[Item, Cap, "id:jLq9jXvMkYPE"],(*1L Glass Bottle, Sterile*)(*Model[Item, Cap, "GL45 Bottle Cap"]*)
+	Model[Container, Vessel, "id:3em6Zv9Njjbv"]->Model[Item, Cap, "id:jLq9jXvMkYPE"],(*2L Glass Bottle*)(*Model[Item, Cap, "GL45 Bottle Cap"]*)
+	Model[Container, Vessel, "id:O81aEBZpZODD"]->Model[Item, Cap, "id:jLq9jXvMkYPE"],(*2L Glass Bottle, Sterile*)(*Model[Item, Cap, "GL45 Bottle Cap"]*)
+	Model[Container, Vessel, "id:Vrbp1jG800Zm"]->Model[Item, Cap, "id:D8KAEvGrzdLY"],(*"Amber Glass Bottle 4 L"*)(*Model[Item, Cap, "38-430 Bottle Cap"]*)
+	Model[Container, Vessel, "id:7X104vnY15Z6"]->Model[Item, Cap, "id:D8KAEvGrzdLY"],(*"Amber Glass Bottle 4 L, Sterile"*)(*Model[Item, Cap, "38-430 Bottle Cap"]*)
+	Model[Container, Vessel, "id:dORYzZJpO79e"]->Model[Item, Cap, "id:jLq9jXvMkYPE"],(*5L Glass Bottle*)(*Model[Item, Cap, "GL45 Bottle Cap"]*)
+	Model[Container, Vessel, "id:4pO6dM5Epa87"]->Model[Item, Cap, "id:jLq9jXvMkYPE"],(*5L Glass Bottle, Sterile*)(*Model[Item, Cap, "GL45 Bottle Cap"]*)
+	Model[Container, Vessel, "id:mnk9jOkn6oMZ"]->Model[Item, Cap, "id:jLq9jXvMkYPE"],(*Corning Reusable Plastic Reagent Bottles with GL-45 PP Screw Cap*)(*Model[Item, Cap, "GL45 Bottle Cap"]*)
+	Model[Container, Vessel, "id:Vrbp1jG800lE"]->Model[Item, Cap, "id:jLq9jXvMkYPE"],(*5L Plastic Container*)(*Model[Item, Cap, "GL45 Bottle Cap"]*)
+	Model[Container, Vessel, "id:aXRlGnZmOOB9"]->Model[Item, Cap, "id:P5ZnEj4P88aO"],(*"10L Polypropylene Carboy"*)(*Model[Item, Cap, "Nalgene carboy cap, 83 mm"]*)
+	Model[Container, Vessel, "id:Vrbp1jKoKMmq"]->Model[Item, Cap, "id:P5ZnEj4P88aO"],(*"10L Polypropylene Carboy, Sterile"*)(*Model[Item, Cap, "Nalgene carboy cap, 83 mm"]*)
+	Model[Container, Vessel, "id:3em6Zv9NjjkY"]->Model[Item, Cap, "id:P5ZnEj4P88aO"],(*"20L Polypropylene Carboy"*)(*Model[Item, Cap, "Nalgene carboy cap, 83 mm"]*)
+	Model[Container, Vessel, "id:1ZA60vLXLRzw"]->Model[Item, Cap, "id:P5ZnEj4P88aO"],(*"20L Polypropylene Carboy, Sterile"*)(*Model[Item, Cap, "Nalgene carboy cap, 83 mm"]*)
+	Model[Container, Vessel, "id:N80DNj0dwPBE"]->Model[Item, Cap, "id:01G6nvG9P0bm"],(*Membrane Aerated 50mL Tube*)(*Model[Item, Cap, "id:01G6nvG9P0bm"]*)
+	Model[Container, Vessel, "id:N80DNjlYwwjo"]->Model[Item, Lid, "id:7X104v1N35pw"],(*125mL Erlenmeyer Flask*)(*Model[Item, Lid, "Aluminum Foil Cover"]*)
+	Model[Container, Vessel, "id:jLq9jXY4kkXE"]->Model[Item, Lid, "id:7X104v1N35pw"],(*"250mL Erlenmeyer Flask"*)(*Model[Item, Lid, "Aluminum Foil Cover"]*)
+	Model[Container, Vessel, "id:bq9LA0dBGG0b"]->Model[Item, Lid, "id:7X104v1N35pw"],(*500mL Erlenmeyer Flask*)(*Model[Item, Lid, "Aluminum Foil Cover"]*)
+	Model[Container, Vessel, "id:8qZ1VWNmddWR"]->Model[Item, Lid, "id:7X104v1N35pw"],(*1000mL Erlenmeyer Flask*)(*Model[Item, Lid, "Aluminum Foil Cover"]*)
+	Model[Container, Vessel, "id:AEqRl9KXBDoW"]->Model[Item, Cap, "id:WNa4ZjKL5MpR"],(*Falcon Round-Bottom Polypropylene 14mL Test Tube With Cap*)(*Model[Item, Cap, "Tube Cap, 22x19mm"]*)
+	Model[Container, Vessel, "id:GmzlKjPen8z4"]->Model[Item, Cap, "id:O81aEB1DnzWN"],(*8.9mL OptiSeal Centrifuge Tube*)(*Model[Item, Cap, "8.9mL OptiSeal Centrifuge Tube Cover"]*)
+	Model[Container, Vessel, "id:KBL5DvwXoBx7"]->Null,(*32.4mL OptiSeal Centrifuge Tube*)
+	Model[Container, Vessel, "id:KBL5DvwXoBMx"]->Null,(*"94mL UltraClear Centrifuge Tube"*)
+	Model[Container, Vessel, "id:dORYzZJNGlVA"]->Null,(*125 mL Filter Flask*)
+	Model[Container, Vessel, "id:eGakldJNAL4n"]->Null,(*500 mL Filter Flask*)
+	Model[Container, Vessel, "id:pZx9jo8varzP"]->Null,(*1000 mL Filter Flask*)
+	Model[Container, Vessel, "id:BYDOjv1VAAxz"]->Null,(*"5mL Tube"*)
+	(* container does not require cover defined in storageCoverSubprotocolAssociation *)
+	Model[Container, Plate, "id:P5ZnEjdmXJmE"]->Null,(* MicroQC Performance Testing Plate (Phosentix) *)
+	Model[Container, Plate, "id:rea9jlaZGKnx"]->Null,(* Deck calibration plate for Hamilton *)
+	Model[Container, Vessel, "id:9RdZXvKx1kAa"]->Null(* Built-in water reservoir in Cell Culture Incubator *)
+|>;
 
 (* ::Subsubsection::Closed:: *)
 (*PreferredContainer Options and Messages*)
@@ -1026,12 +1113,15 @@ DefineOptions[
 		{UltracentrifugeCompatible->Automatic,ListableP[Alternatives[Automatic,BooleanP]],"Indicates whether the containers returned must be compatible with the ultracentrifuge instruments."},
 		{CellType->Automatic,ListableP[Alternatives[CellTypeP,Null,Automatic]],"Indicates if the container should be compatible with tissue or bacterial cell cultures."},
 		{CultureAdhesion->Automatic,ListableP[CultureAdhesionP | Null | Automatic],"Indicates if the container should be treated for adherent cells or untreated for suspension cells."},
-		CacheOption
+		{IncompatibleMaterials -> Automatic, ListableP[(Automatic|{(None | MaterialP)...})], "Indicate if container of certain materials needs to be avoided."},
+		CacheOption,
+		SimulationOption
 	}
 ];
 
 PreferredContainer::ContainerTypeNotFound="For the given combination of options, there is no compatible container with type `1`. Please consider removing some specific options, or requesting the following container type: `2`.";
 PreferredContainer::ContainerNotFound="For the given combination of options, the current range of volumes for which compatible containers exist is `2` to `3`; the requested volume `1` falls outside this range. Please consider removing some specific options, or requesting a volume in the possible range for the current options.";
+PreferredContainer::NoContainerOfSpecifiedMaterials = "PreferredContainer failed to find a container that's not made of the following materials: `1` to hold `2` sample. ";
 
 
 (* ::Subsubsection::Closed:: *)
@@ -1046,14 +1136,14 @@ PreferredContainer[{},volume:{}|ListableP[(GreaterP[0 Milliliter]|All)],myOption
 
 
 (* ::Subsubsubsection::Closed:: *)
-(*Model*)
+(*Model/Object*)
 
-PreferredContainer[models:{ObjectP[Model[Sample]]..},volume:(GreaterP[0 Milliliter]|All),myOptions:OptionsPattern[]]:=PreferredContainer[models,ConstantArray[volume,Length[models]],myOptions];
+PreferredContainer[models:{ObjectP[{Model[Sample], Object[Sample]}]..},volume:(GreaterP[0 Milliliter]|All),myOptions:OptionsPattern[]]:=PreferredContainer[models,ConstantArray[volume,Length[models]],myOptions];
 
 (* Listable version *)
-PreferredContainer[models:{ObjectP[Model[Sample]]..},volumes:{(GreaterP[0 Milliliter]|All)..},myOptions:OptionsPattern[]]:=Module[
+PreferredContainer[models:{ObjectP[{Model[Sample], Object[Sample]}]..},volumes:{(GreaterP[0 Milliliter]|All)..},myOptions:OptionsPattern[]]:=Module[
 	{listedOps,safeOps,cache,newCache,downloadFields,packets,resolvedLightSensitive,resolvedSterile,resolvedAllOption,resolvedTypeOption,
-		resolvedMaxTemperatureOption,resolvedMinTemperatureOption, resolvedVacuumFlask},
+		resolvedMaxTemperatureOption,resolvedMinTemperatureOption, resolvedVacuumFlask, resolvedIncompatibleMaterials, simulation, resolvedCellType},
 
 	listedOps = ToList[myOptions];
 	safeOps = SafeOptions[PreferredContainer,listedOps];
@@ -1065,23 +1155,38 @@ PreferredContainer[models:{ObjectP[Model[Sample]]..},volumes:{(GreaterP[0 Millil
 	];
 
 	(* Expand options into a mapthreadable version *)
-	{resolvedLightSensitive,resolvedSterile,resolvedAllOption,resolvedTypeOption,resolvedMaxTemperatureOption, resolvedMinTemperatureOption, resolvedVacuumFlask} = Module[
+	{resolvedLightSensitive,resolvedSterile,resolvedAllOption,resolvedTypeOption,resolvedMaxTemperatureOption, resolvedMinTemperatureOption, resolvedVacuumFlask, resolvedIncompatibleMaterials, resolvedCellType} = Module[
 		{optionDefaults,unresolvedLightSensitive,unresolvedSterile,unresolvedAllOption,unresolvedTypeOption,
-			unresolvedMaxTemperatureOption,unresolvedMinTemperatureOption, unresolvedVacuumFlask},
+			unresolvedMaxTemperatureOption,unresolvedMinTemperatureOption, unresolvedVacuumFlask, unresolvedIncompatibleMaterials, indexMatchingIncompatibleMaterials, unresolvedCellType},
 
 		(* Save all the option defaults *)
 		optionDefaults = SafeOptions[PreferredContainer];
 
 		(* As we do this, we need to make sure ValidInputLengthsQ didn't return $Failed. If it did, just default the options *)
-		{unresolvedLightSensitive,unresolvedSterile,unresolvedAllOption,unresolvedTypeOption,unresolvedMaxTemperatureOption,unresolvedMinTemperatureOption, unresolvedVacuumFlask} = MapThread[
+		{unresolvedLightSensitive,unresolvedSterile,unresolvedAllOption,unresolvedTypeOption,unresolvedMaxTemperatureOption,unresolvedMinTemperatureOption, unresolvedVacuumFlask, unresolvedCellType} = MapThread[
 			If[Not[Length[ToList[#2]]==1]&&!SameLengthQ[models,#2],
 				Lookup[optionDefaults,#1],
 				#2
 			]&,
 			{
-				{LightSensitive,Sterile,All,Type,MaxTemperature,MinTemperature, VacuumFlask},
-				Lookup[safeOps,{LightSensitive,Sterile,All,Type,MaxTemperature,MinTemperature, VacuumFlask}]
+				{LightSensitive,Sterile,All,Type,MaxTemperature,MinTemperature, VacuumFlask, CellType},
+				Lookup[safeOps,{LightSensitive,Sterile,All,Type,MaxTemperature,MinTemperature, VacuumFlask, CellType}]
 			}
+		];
+
+		(* Make a special case for IncompatibleMaterials because this option can be List or List of List, can cause bug if interpreted incorrectly *)
+		(* Also, samples should have their IncompatibleMaterials populated to pass VOQ, but there always are samples with IncompatibleMaterials == {}. In that case make it {None} *)
+		unresolvedIncompatibleMaterials = Lookup[safeOps, IncompatibleMaterials];
+		indexMatchingIncompatibleMaterials = Which[
+			(* If option value is a single List or a single Automatic, duplicate that *)
+			MatchQ[unresolvedIncompatibleMaterials, (Automatic|{(None | MaterialP)..})],
+				Replace[ConstantArray[unresolvedIncompatibleMaterials, Length[models]], {} -> {None}, 1],
+			(* If option value is the same length as models, use it *)
+			SameLengthQ[unresolvedIncompatibleMaterials, models],
+				Replace[unresolvedIncompatibleMaterials, {} -> {None}, 1],
+			(* Finally, if the option value length mismatch, use default *)
+			True,
+				Lookup[optionDefaults, IncompatibleMaterials]
 		];
 
 		(* Expand any unlisted option to make them MapThread-able and return all, now-expanded, options *)
@@ -1096,40 +1201,41 @@ PreferredContainer[models:{ObjectP[Model[Sample]]..},volumes:{(GreaterP[0 Millil
 				]
 			],
 			{
-				{LightSensitive,Sterile,All,Type,MaxTemperature,MinTemperature, VacuumFlask},
-				{unresolvedLightSensitive,unresolvedSterile,unresolvedAllOption,unresolvedTypeOption,unresolvedMaxTemperatureOption,unresolvedMinTemperatureOption, unresolvedVacuumFlask}
+				{LightSensitive,Sterile,All,Type,MaxTemperature,MinTemperature, VacuumFlask, IncompatibleMaterials, CellType},
+				{unresolvedLightSensitive,unresolvedSterile,unresolvedAllOption,unresolvedTypeOption,unresolvedMaxTemperatureOption,unresolvedMinTemperatureOption, unresolvedVacuumFlask, indexMatchingIncompatibleMaterials, unresolvedCellType}
 			}
 		]
 	];
 
 	(* Store any cache we were passed *)
 	cache = Lookup[safeOps,Cache];
+	simulation = Lookup[safeOps, Simulation];
 
 	(* If the sample we're handling is a StockSolution *)
 	downloadFields = If[MatchQ[#,ObjectP[Model[Sample,StockSolution]]],
 
 		(* Indicate we should download PreferredContainers in addition to the Model[Sample] fields *)
 		{
-			Packet[State,LightSensitive,Sterile,PreferredContainers],
-			Packet[PreferredContainers[{Object,Deprecated,Sterile,Opaque,MaxVolume,MinVolume}]]
+			Packet[State,LightSensitive,Sterile,PreferredContainers, IncompatibleMaterials],
+			Packet[PreferredContainers[{Object,Deprecated,Sterile,Opaque,MaxVolume,MinVolume, ContainerMaterials}]]
 		},
 
 		(* Otherwise, just get the Model[Sample] fields *)
 		{
-			Packet[State,LightSensitive,Sterile],
+			Packet[State,LightSensitive,Sterile, IncompatibleMaterials],
 			Packet[]
 		}
 	]&/@models;
 
 	(* Pull the important information from the model *)
-	packets = Flatten[Download[models,Evaluate[downloadFields],Cache->cache]];
+	packets = Flatten[Download[models,Evaluate[downloadFields],Cache->cache, Simulation -> simulation]];
 
 	(* Join the new packets with the cache passed in *)
 	newCache = Join[cache,packets];
 
 	MapThread[
 		Function[
-			{model, volume, lightSentsitive, sterile, allOption, typeOption, maxTempOption, minTempOption, vacuumFlaskOption},
+			{model, volume, lightSentsitive, sterile, allOption, typeOption, maxTempOption, minTempOption, vacuumFlaskOption, incompatibleMaterials, cellType},
 			PreferredContainer[
 				model,
 				volume,
@@ -1140,41 +1246,44 @@ PreferredContainer[models:{ObjectP[Model[Sample]]..},volumes:{(GreaterP[0 Millil
 				Type -> typeOption,
 				MaxTemperature -> maxTempOption,
 				MinTemperature -> minTempOption,
-				VacuumFlask -> vacuumFlaskOption
+				VacuumFlask -> vacuumFlaskOption,
+				IncompatibleMaterials -> incompatibleMaterials,
+				CellType -> cellType
 			]
 		],
-		{models, volumes, resolvedLightSensitive, resolvedSterile, resolvedAllOption, resolvedTypeOption, resolvedMaxTemperatureOption, resolvedMinTemperatureOption, resolvedVacuumFlask}
+		{models, volumes, resolvedLightSensitive, resolvedSterile, resolvedAllOption, resolvedTypeOption, resolvedMaxTemperatureOption, resolvedMinTemperatureOption, resolvedVacuumFlask, resolvedIncompatibleMaterials, resolvedCellType}
 	]
 ];
 
 (* Single overload *)
-PreferredContainer[model:ObjectP[Model[Sample]],myVolume:(GreaterP[0 Milliliter]|All),myOptions:OptionsPattern[]]:=Module[
-	{listedOps,safeOps,cache,downloadFields,modelPacket,containerPackets,resolvedLightSensitive,resolvedSterile,resolvedCellType,resolvedCultureAdhesion},
+PreferredContainer[model:ObjectP[{Model[Sample], Object[Sample]}],myVolume:(GreaterP[0 Milliliter]|All),myOptions:OptionsPattern[]]:=Module[
+	{listedOps,safeOps,cache,downloadFields,modelPacket,containerPackets,resolvedLightSensitive,resolvedSterile,resolvedCellType,resolvedCultureAdhesion, resolvedIncompatibleMaterials, simulation},
 
 	listedOps = ToList[myOptions];
 	safeOps = SafeOptions[PreferredContainer,listedOps];
 
 	(* Store any cache we were passed *)
 	cache = Lookup[safeOps,Cache];
+	simulation = Lookup[safeOps, Simulation];
 
 	(* If the sample we're handling is a StockSolution *)
 	downloadFields=If[MatchQ[model,ObjectP[Model[Sample,StockSolution]]],
 
 		(* Indicate we should download PreferredContainers in addition to the Model[Sample] fields *)
 		{
-			Packet[State,LightSensitive,Sterile,PreferredContainers],
-			Packet[PreferredContainers[{Object,Deprecated,Sterile,Opaque,MaxVolume,MinVolume, Connectors}]]
+			Packet[State,LightSensitive,Sterile,PreferredContainers, IncompatibleMaterials],
+			Packet[PreferredContainers[{Object,Deprecated,Sterile,Opaque,MaxVolume,MinVolume, Connectors, ContainerMaterials}]]
 		},
 
 		(* Otherwise, just get the Model[Sample] fields *)
 		{
-			Packet[State,LightSensitive,Sterile,CellType],
+			Packet[State,LightSensitive,Sterile,CellType, IncompatibleMaterials],
 			Packet[]
 		}
 	];
 
 	(* Pull the important information from the model *)
-	{modelPacket,containerPackets} = Quiet[Download[model,Evaluate[downloadFields],Cache->cache]];
+	{modelPacket,containerPackets} = Quiet[Download[model,Evaluate[downloadFields],Cache->cache, Simulation -> simulation]];
 
 	(* Determine if LightSensitive was provided and if not, determine how to resolve it *)
 	resolvedLightSensitive = If[MatchQ[Lookup[safeOps,LightSensitive],Automatic],
@@ -1220,12 +1329,32 @@ PreferredContainer[model:ObjectP[Model[Sample]],myVolume:(GreaterP[0 Milliliter]
 		(* Otherwise use whatever was provided to use *)
 		Lookup[safeOps,CultureAdhesion]
 	];
+	(* Determine if IncompatibleMaterials was provided; if not, determine how to resolve it *)
+	resolvedIncompatibleMaterials = If[MatchQ[Lookup[safeOps, IncompatibleMaterials], Automatic],
+		(* For automatic option, use the IncompatibleMaterials field from Model *)
+		(* In case the IncompatibleMaterials == {} from model, correct it. This won't pass VOQ but it just happens sometimes *)
+		Replace[Lookup[modelPacket, IncompatibleMaterials, {None}], {} -> {None}],
+		(* If option is specified, COMBINE the option and IncompatibleMaterials from input Model. *)
+		Module[{combinedIncompatibleMaterials},
+			combinedIncompatibleMaterials = Union[
+				Lookup[safeOps, IncompatibleMaterials],
+				Lookup[modelPacket, IncompatibleMaterials, {None}],
+				(* Always include a None into this list, in case the other two are both {} *)
+				{None}
+			];
+			(* If only thing in combined materials is None, use that; otherwise remove the None from list *)
+			If[MatchQ[combinedIncompatibleMaterials, {None}],
+				{None},
+				DeleteCases[combinedIncompatibleMaterials, None]
+			]
+		]
+	];
 
 	(* If the PreferredContainers were provided, check if we can use one of those containers *)
 	If[MatchQ[containerPackets,{PacketP[Model[Container]]..}],
 
 		(* Build a decision tree that will chose a preferred container if possible *)
-		Module[{nonDeprecatedContainers,preferredContainersList,compatibleVolumeP,possibleContainersList,typeCompatibleContainers},
+		Module[{nonDeprecatedContainers,preferredContainersList,compatibleVolumeP,possibleContainersList,typeCompatibleContainers, materialFilteredPossibleContainerList},
 
 			(* Remove any Deprecated models or any models whose MinVolume > myVolume from our list of possible containers *)
 			nonDeprecatedContainers = DeleteCases[containerPackets,Alternatives[KeyValuePattern[Deprecated->True],KeyValuePattern[MinVolume->GreaterP[myVolume]]]];
@@ -1237,9 +1366,9 @@ PreferredContainer[model:ObjectP[Model[Sample]],myVolume:(GreaterP[0 Milliliter]
 				Vessel, Cases[nonDeprecatedContainers,ObjectP[Model[Container, Vessel]]]
 			];
 
-			(* Generate a lookup table of the form: {Container, MaxVolume, Sterile, LightSensitive} and sort it by MaxVolume *)
+			(* Generate a lookup table of the form: {Container, MaxVolume, Sterile, LightSensitive, ContainerMaterials} and sort it by MaxVolume *)
 			preferredContainersList = SortBy[
-				Lookup[typeCompatibleContainers,{Object,MaxVolume,Sterile,Opaque}],
+				Lookup[typeCompatibleContainers,{Object,MaxVolume,Sterile,Opaque, ContainerMaterials}],
 				#[[2]]&
 			];
 
@@ -1256,31 +1385,43 @@ PreferredContainer[model:ObjectP[Model[Sample]],myVolume:(GreaterP[0 Milliliter]
 			(* Find all the lists that match our required container criteria *)
 			(* If our container is Sterile or LightSensitive but it is not required, we should still be able to use it *)
 			(* All our standard disposable tubes like 0.5/1.5/2/50 tubes are Sterile *)
-			possibleContainersList = If[MatchQ[#,{_,compatibleVolumeP,(resolvedSterile|True),(resolvedLightSensitive|True)}],
+			possibleContainersList = If[MatchQ[#,{_,compatibleVolumeP,(resolvedSterile|True),(resolvedLightSensitive|True), _}],
 				#,
 				Nothing
 			]&/@preferredContainersList;
 
+			(* Do another filter by ContainerMaterials and IncompatibleMaterials *)
+			materialFilteredPossibleContainerList =If[MemberQ[resolvedIncompatibleMaterials, None],
+				possibleContainersList,
+				Map[
+					If[MatchQ[Intersection[resolvedIncompatibleMaterials, #[[5]]], {}],
+						#,
+						Nothing
+					]&,
+					possibleContainersList
+				]
+			];
+
 			(* If we found containers in PreferredContainers that would work *)
-			If[!MatchQ[possibleContainersList,{}],
+			If[!MatchQ[materialFilteredPossibleContainerList,{}],
 
 				(* If myVolume -> All *)
 				If[MatchQ[myVolume,All],
 
 					(* Return all possible container models that would work by taking the first index of our lists *)
-					Download[possibleContainersList[[All,1]],Object],
+					Download[materialFilteredPossibleContainerList[[All,1]],Object],
 
 					(* If it's a specific volume, pick the smallest of these valid types *)
-					Download[First[First[possibleContainersList]],Object]
+					Download[First[First[materialFilteredPossibleContainerList]],Object]
 				],
 
 				(* Otherwise pass our resolved criteria down to PreferredContainer Volume overload *)
-				PreferredContainer[myVolume, ReplaceRule[safeOps, {Sterile->resolvedSterile, LightSensitive->resolvedLightSensitive,CultureAdhesion->resolvedCultureAdhesion,CellType->resolvedCellType}]]
+				PreferredContainer[myVolume, ReplaceRule[safeOps, {Sterile->resolvedSterile, LightSensitive->resolvedLightSensitive,CultureAdhesion->resolvedCultureAdhesion,CellType->resolvedCellType, IncompatibleMaterials -> resolvedIncompatibleMaterials}]]
 			]
 		],
 
 		(* Otherewise take the resolved criteria from model and pass them to the volume overload *)
-		PreferredContainer[myVolume, ReplaceRule[safeOps, {Sterile->resolvedSterile, LightSensitive->resolvedLightSensitive,CultureAdhesion->resolvedCultureAdhesion,CellType->resolvedCellType}]]
+		PreferredContainer[myVolume, ReplaceRule[safeOps, {Sterile->resolvedSterile, LightSensitive->resolvedLightSensitive,CultureAdhesion->resolvedCultureAdhesion,CellType->resolvedCellType, IncompatibleMaterials -> resolvedIncompatibleMaterials}]]
 	]
 ];
 
@@ -1290,7 +1431,7 @@ PreferredContainer[myVolume:(GreaterP[0 Milliliter]|All),myContainer:{},myOption
 PreferredContainer[myVolume:(GreaterP[0 Milliliter]|All),myContainer:ObjectP[Model[Container]],myOptions:OptionsPattern[]]:=PreferredContainer[myVolume,{myContainer},myOptions];
 PreferredContainer[myVolume:(GreaterP[0 Milliliter]|All),myContainers:{ObjectP[Model[Container]]..},myOptions:OptionsPattern[]]:=Module[
 	{listedOps, safeOps, cache, vacuumFlask, containerPackets, sterile, lightSensitive, resolvedLightSensitive, resolvedSterile,
-		cultureAdhesion,cellType,resolvedCultureAdhesion,resolvedCellType},
+		cultureAdhesion,cellType,resolvedCultureAdhesion,resolvedCellType, resolvedIncompatibleMaterials, incompatibleMaterials},
 
 	listedOps = ToList[myOptions];
 	safeOps = SafeOptions[PreferredContainer,listedOps];
@@ -1300,12 +1441,12 @@ PreferredContainer[myVolume:(GreaterP[0 Milliliter]|All),myContainers:{ObjectP[M
 
 	(* Pull the important information from the model *)
 	containerPackets = Download[myContainers,
-		Packet[Deprecated,Sterile,Opaque,MaxVolume,MaxTemperature,MinTemperature, Connectors],
+		Packet[Deprecated,Sterile,Opaque,MaxVolume,MaxTemperature,MinTemperature, Connectors, ContainerMaterials],
 		Cache->cache
 	];
 
 	(* Define sterility/light-sensitivity toggling booleans *)
-	{sterile, lightSensitive, vacuumFlask, cultureAdhesion, cellType} = Lookup[safeOps, {Sterile, LightSensitive, VacuumFlask, CultureAdhesion,CellType}];
+	{sterile, lightSensitive, vacuumFlask, cultureAdhesion, cellType, incompatibleMaterials} = Lookup[safeOps, {Sterile, LightSensitive, VacuumFlask, CultureAdhesion,CellType, IncompatibleMaterials}];
 
 	(* Resolve any Automatics to False *)
 	{resolvedSterile,resolvedLightSensitive}=ReplaceAll[{sterile,lightSensitive}, Automatic -> False];
@@ -1313,9 +1454,20 @@ PreferredContainer[myVolume:(GreaterP[0 Milliliter]|All),myContainers:{ObjectP[M
 	(* Resolve any Automatics to Null *)
 	{resolvedCultureAdhesion,resolvedCellType}=ReplaceAll[{cultureAdhesion,cellType}, Automatic -> Null];
 
+	(* resolve IncompatibleMaterials. The option value allows list of Automatic or List of List of materials; however here it really should just be Automatic or single list *)
+	resolvedIncompatibleMaterials = Switch[incompatibleMaterials,
+		Automatic,
+			{None},
+		{(None | MaterialP)..},
+			incompatibleMaterials,
+		(* If the option pattern is incorrect, use the default value *)
+		_,
+			{None}
+	];
+
 	(* Build a decision tree that will chose a preferred container if possible *)
 	Module[{nonDeprecatedContainers,preferredContainersList,compatibleVolumeP,possibleContainersList,typeCompatibleContainers,
-		vacuumFlaskCompatibleContainers},
+		vacuumFlaskCompatibleContainers, materialFilteredPossibleContainerList},
 
 		(* Remove any Deprecated models from our list of possible containers *)
 		nonDeprecatedContainers = DeleteCases[containerPackets,AssociationMatchP[Association[Deprecated->True],AllowForeignKeys->True]];
@@ -1333,9 +1485,9 @@ PreferredContainer[myVolume:(GreaterP[0 Milliliter]|All),myContainers:{ObjectP[M
 			typeCompatibleContainers
 		];
 
-		(* Generate a lookup table of the form: {Container, MaxVolume, Sterile, LightSensitive} and sort it by MaxVolume *)
+		(* Generate a lookup table of the form: {Container, MaxVolume, Sterile, LightSensitive, IncompatibleMaterials} and sort it by MaxVolume *)
 		preferredContainersList = SortBy[
-			Lookup[vacuumFlaskCompatibleContainers,{Object,MaxVolume,Sterile,Opaque}],
+			Lookup[vacuumFlaskCompatibleContainers,{Object,MaxVolume,Sterile,Opaque, ContainerMaterials}],
 			#[[2]]&
 		];
 
@@ -1350,26 +1502,38 @@ PreferredContainer[myVolume:(GreaterP[0 Milliliter]|All),myContainers:{ObjectP[M
 		];
 
 		(* Find all the lists that match our required container criteria *)
-		possibleContainersList = If[MatchQ[#,{_,compatibleVolumeP,resolvedSterile,resolvedLightSensitive}],
+		possibleContainersList = If[MatchQ[#,{_,compatibleVolumeP,resolvedSterile,resolvedLightSensitive, _}],
 			#,
 			Nothing
 		]&/@preferredContainersList;
 
+		(* Do another filter by ContainerMaterials and IncompatibleMaterials *)
+		materialFilteredPossibleContainerList =If[MemberQ[resolvedIncompatibleMaterials, None],
+			possibleContainersList,
+			Map[
+				If[MatchQ[Intersection[resolvedIncompatibleMaterials, #[[5]]], {}],
+					#,
+					Nothing
+				]&,
+				possibleContainersList
+			]
+		];
+
 		(* If we found containers in PreferredContainers that would work *)
-		If[!MatchQ[possibleContainersList,{}],
+		If[!MatchQ[materialFilteredPossibleContainerList,{}],
 
 			(* If myVolume -> All *)
 			If[MatchQ[myVolume,All],
 
 				(* Return all possible container models that would work by taking the first index of our lists *)
-				Download[possibleContainersList[[All,1]],Object],
+				Download[materialFilteredPossibleContainerList[[All,1]],Object],
 
 				(* If it's a specific volume, pick the smallest of these valid types *)
-				Download[First[First[possibleContainersList]],Object]
+				Download[First[First[materialFilteredPossibleContainerList]],Object]
 			],
 
 			(* Otherwise pass our resolved criteria down to PreferredContainer Volume overload *)
-			PreferredContainer[myVolume, ReplaceRule[safeOps, {Sterile->resolvedSterile, LightSensitive->resolvedLightSensitive,CultureAdhesion->resolvedCultureAdhesion,CellType->resolvedCellType}]]
+			PreferredContainer[myVolume, ReplaceRule[safeOps, {Sterile->resolvedSterile, LightSensitive->resolvedLightSensitive,CultureAdhesion->resolvedCultureAdhesion,CellType->resolvedCellType, IncompatibleMaterials -> resolvedIncompatibleMaterials}]]
 		]
 	]
 ];
@@ -1388,7 +1552,7 @@ PreferredContainer[myVolume:(GreaterEqualP[0 Milliliter]|All),myOptions:OptionsP
 		acousticLiquidHandlerContainerLookup, containerTypesFromLookup,cultureAdhesion, cellType,resolvedCultureAdhesion,resolvedCellType,
 		adherentNonMicrobialCellContainerLookup,adherentRoboticNonMicrobialCellContainerLookup,suspensionNonMicrobialCellContainerLookup,suspensionRoboticNonMicrobialCellContainerLookup,
 		microbiologySolidMediaCellContainerLookup,microbiologyNonSolidMediaCellContainerLookup,microbiologyRoboticNonSolidMediaCellContainerLookup,vacuumFlask, vacuumFlaskContainerLookup,
-		ultracentrifugeContainerLookup, liquidHandlerSterileContainerLookup
+		ultracentrifugeContainerLookup, liquidHandlerSterileContainerLookup, materialCompatibleLookup, lightSensitiveLiquidHandlerContainerLookup, lightSensitiveSterileLiquidHandlerContainerLookup
 	},
 
 	(* Validate input options *)
@@ -1404,8 +1568,7 @@ PreferredContainer[myVolume:(GreaterEqualP[0 Milliliter]|All),myOptions:OptionsP
 		ultracentrifuge,
 		cultureAdhesion,
 		cellType
-	}=
-     Lookup[safeOptions,{
+	}= Lookup[safeOptions,{
 		 Sterile,
 		 LightSensitive,
 		 LiquidHandlerCompatible,
@@ -1440,154 +1603,202 @@ PreferredContainer[myVolume:(GreaterEqualP[0 Milliliter]|All),myOptions:OptionsP
 
 
 	(* define lookup tables that contain all information for selecting an appropriate container: {containerModel,volumeMin,volumeMax} *)
+	(* Note: if updating PreferredContainer, remember to update cover lookup table $PreferredContainerCoverLookup as well *)
 	standardContainerLookup={
 		(* note that a 2mL tube can't actually hold 2mL so the limit is actually 1.9 mL *)
-		{Model[Container, Vessel,"id:o1k9jAG00e3N"],0 Milliliter,0.5Milliliter,121 Celsius,-196 Celsius},
-		{Model[Container,Vessel,"id:eGakld01zzpq"],0 Milliliter,1.5Milliliter, 121 Celsius,-196 Celsius},
-		{Model[Container,Vessel,"id:3em6Zv9NjjN8"],0 Milliliter,1.9 Milliliter, 121 Celsius,-196 Celsius},
-		{Model[Container,Vessel,"id:bq9LA0dBGGR6"],1.9 Milliliter,50 Milliliter, 80 Celsius, -196 Celsius},
-		{Model[Container,Vessel,"id:jLq9jXvA8ewR"],50 Milliliter,100 Milliliter, 500 Celsius, -192 Celsius},
-		{Model[Container,Vessel,"id:01G6nvwPempK"],100 Milliliter,150 Milliliter, 500 Celsius,-192 Celsius},
-		{Model[Container,Vessel,"id:J8AY5jwzPPR7"],150 Milliliter,250 Milliliter, 500 Celsius,-192 Celsius},
-		{Model[Container,Vessel,"id:aXRlGnZmOONB"],250 Milliliter,500 Milliliter, 140 Celsius,-80 Celsius},
-		{Model[Container,Vessel,"id:zGj91aR3ddXJ"],500 Milliliter,1 Liter, 140 Celsius, 0 Celsius},
-		{Model[Container,Vessel,"id:3em6Zv9Njjbv"],1 Liter,2 Liter, 140 Celsius, -80 Celsius},
-		{Model[Container,Vessel,"id:Vrbp1jG800Zm"],2 Liter,4 Liter, 120 Celsius, 0 Celsius},
-		{Model[Container,Vessel,"id:dORYzZJpO79e"],4 Liter,5 Liter, 140 Celsius, 0 Celsius},
-		{Model[Container,Vessel,"id:aXRlGnZmOOB9"],5 Liter,10 Liter, 130 Celsius, 0 Celsius},
-		{Model[Container,Vessel,"id:3em6Zv9NjjkY"],10 Liter,20 Liter, 130 Celsius, 0 Celsius},
-		{Model[Container,Plate,"id:L8kPEjkmLbvW"],0 Milliliter,2. Milliliter, 121 Celsius, -80 Celsius},
-		{Model[Container,Plate,"id:E8zoYveRllM7"],2. Milliliter,4.5 Milliliter, 121 Celsius, -80 Celsius}
+		{Model[Container, Vessel,"id:o1k9jAG00e3N"],0 Milliliter,0.5Milliliter,121 Celsius,-196 Celsius, {Polypropylene}},
+		{Model[Container,Vessel,"id:eGakld01zzpq"],0 Milliliter,1.5Milliliter, 121 Celsius,-196 Celsius, {Polypropylene}},
+		{Model[Container,Vessel,"id:3em6Zv9NjjN8"],0 Milliliter,1.9 Milliliter, 121 Celsius,-196 Celsius, {Polypropylene}},
+		{Model[Container,Vessel,"id:bq9LA0dBGGR6"],1.9 Milliliter,50 Milliliter, 80 Celsius, -196 Celsius, {Polypropylene}},
+		{Model[Container,Vessel,"id:jLq9jXvA8ewR"],0 Milliliter,100 Milliliter, 500 Celsius, -192 Celsius, {Glass}},
+		{Model[Container,Vessel,"id:01G6nvwPempK"],100 Milliliter,150 Milliliter, 500 Celsius,-192 Celsius, {Glass}},
+		{Model[Container,Vessel,"id:J8AY5jwzPPR7"],150 Milliliter,250 Milliliter, 500 Celsius,-192 Celsius, {Glass}},
+		{Model[Container,Vessel,"id:aXRlGnZmOONB"],250 Milliliter,500 Milliliter, 140 Celsius,-80 Celsius, {Glass}},
+		{Model[Container,Vessel,"id:zGj91aR3ddXJ"],500 Milliliter,1 Liter, 140 Celsius, 0 Celsius, {Glass}},
+		{Model[Container,Vessel,"id:3em6Zv9Njjbv"],1 Liter,2 Liter, 140 Celsius, -80 Celsius, {Glass}},
+		{Model[Container,Vessel,"id:Vrbp1jG800Zm"],2 Liter,4 Liter, 120 Celsius, 0 Celsius, {Glass}},
+		{Model[Container,Vessel,"id:dORYzZJpO79e"],4 Liter,5 Liter, 140 Celsius, 0 Celsius, {Glass}},
+		{Model[Container, Vessel, "id:mnk9jOkn6oMZ"], 50 Milliliter, 2 Liter, 80 Celsius, -50 Celsius, {Polypropylene}},
+		{Model[Container, Vessel, "id:Vrbp1jG800lE"], 2 Liter, 5 Liter, 120 Celsius, -80 Celsius, {Polypropylene}},
+		{Model[Container,Vessel,"id:aXRlGnZmOOB9"],5 Liter,10 Liter, 130 Celsius, 0 Celsius, {Polypropylene}},
+		{Model[Container,Vessel,"id:3em6Zv9NjjkY"],10 Liter,20 Liter, 130 Celsius, 0 Celsius, {Polypropylene}},
+		{Model[Container,Plate,"id:L8kPEjkmLbvW"],0 Milliliter,2. Milliliter, 121 Celsius, -80 Celsius, {Polypropylene}},
+		{Model[Container,Plate,"id:E8zoYveRllM7"],2. Milliliter,3.5 Milliliter, 121 Celsius, -80 Celsius, {Polypropylene}},
+		{Model[Container,Plate,"id:lYq9jRqw70m4"], 5 Microliter,10 Milliliter,121 Celsius,-80 Celsius, {Polypropylene}}, (* 24-well V-bottom 10 mL Deep Well Plate Non-Sterile *)
+		{Model[Container, Plate, "id:AEqRl9qmr111"], 540 Microliter, 75 Milliliter, 121 Celsius, -195 Celsius, {Polypropylene}} (* 4-well V-bottom 75mL Deep Well Plate Non-Sterile*)
 	};
 	liquidHandlerContainerLookup={
-		{Model[Container, Vessel, "id:o1k9jAG00e3N"],0 Milliliter,0.5 Milliliter,121 Celsius,-196 Celsius}, (* "New 0.5mL Tube with 2mL Tube Skirt" *)
+		{Model[Container, Vessel, "id:o1k9jAG00e3N"],0 Milliliter,0.5 Milliliter,121 Celsius,-196 Celsius, {Polypropylene}}, (* "New 0.5mL Tube with 2mL Tube Skirt" *)
 		(* note that a 2mL tube can't actually hold 2mL so the limit is actually 1.9 mL *)
-		{Model[Container,Vessel,"id:3em6Zv9NjjN8"],0.5 Milliliter,1.9 Milliliter, 121 Celsius,-196 Celsius}, (* "2mL Tube" *)
-		{Model[Container,Vessel,"id:bq9LA0dBGGR6"],1.9 Milliliter,50 Milliliter, 80 Celsius, -196 Celsius}, (* "50mL Tube" *)
-		{Model[Container,Plate,"id:L8kPEjkmLbvW"],0 Milliliter, 2 Milliliter,121 Celsius,-80 Celsius}, (* "96-well 2mL Deep Well Plate" *)
-		{Model[Container,Plate,"id:E8zoYveRllM7"],2 Milliliter,3.5 Milliliter,121 Celsius,-80 Celsius}, (* "48-well Pyramid Bottom Deep Well Plate" *)
-		(* Model[Container, Plate, "24-well V-bottom 10 mL Deep Well Plate Non-Sterile"] *) (* TODO: Replace sterile model after DB Refresh. *)
-		{Model[Container,Plate,"id:qdkmxzkKwn11"],5 Microliter,10 Milliliter,121 Celsius,-80 Celsius}, (* 24-well V-bottom 10 mL Deep Well Plate Sterile *)
-		(* Model[Container, Plate, "4-well V-bottom 75mL Deep Well Plate Non-Sterile"] *) (* TODO: Include after DB Refresh. *)
-		{Model[Container, Plate, "id:R8e1PjeVbJ4X"], 540 Microliter, 75 Milliliter, 121 Celsius, -195 Celsius}, (* 4-well V-bottom 75mL Deep Well Plate Sterile *)
-		{Model[Container,Plate,"id:54n6evLWKqbG"],50 Milliliter,200 Milliliter, 121 Celsius,-196 Celsius} (* 200mL Polypropylene Robotic Reservoir, non-sterile *)
+		{Model[Container,Vessel,"id:3em6Zv9NjjN8"],0.5 Milliliter,1.9 Milliliter, 121 Celsius,-196 Celsius, {Polypropylene}}, (* "2mL Tube" *)
+		{Model[Container,Vessel,"id:bq9LA0dBGGR6"],1.9 Milliliter,50 Milliliter, 80 Celsius, -196 Celsius, {Polypropylene}}, (* "50mL Tube" *)
+		{Model[Container,Plate,"id:L8kPEjkmLbvW"],0 Milliliter, 2 Milliliter,121 Celsius,-80 Celsius, {Polypropylene}}, (* "96-well 2mL Deep Well Plate" *)
+		{Model[Container,Plate,"id:E8zoYveRllM7"],2 Milliliter,3.5 Milliliter,121 Celsius,-80 Celsius, {Polypropylene}}, (* "48-well Pyramid Bottom Deep Well Plate" *)
+		{Model[Container,Plate,"id:lYq9jRqw70m4"], 5 Microliter,10 Milliliter,121 Celsius,-80 Celsius, {Polypropylene}}, (* 24-well V-bottom 10 mL Deep Well Plate Non-Sterile *)
+		{Model[Container, Plate, "id:AEqRl9qmr111"], 540 Microliter, 75 Milliliter, 121 Celsius, -195 Celsius, {Polypropylene}}, (* 4-well V-bottom 75mL Deep Well Plate Non-Sterile*)
+		{Model[Container,Plate,"id:54n6evLWKqbG"],50 Milliliter,200 Milliliter, 121 Celsius,-196 Celsius, {Polypropylene}}, (* 200mL Polypropylene Robotic Reservoir, non-sterile *)
+		{Model[Container, Plate, "id:L8kPEjno5XoE"], 50 Microliter, 300 Microliter, 100 Celsius, -80 Celsius, {Polystyrene}},(*Model[Container, Plate, "96-well Black Wall Tissue Culture Plate"]*)
+		{Model[Container,Vessel,"id:jLq9jXvxr6OZ"], 0 Milliliter, 1.2 Milliliter, 121 Celsius, -80 Celsius, {Glass}}, (* "HPLC vial (high recovery)" *)
+		{Model[Container, Vessel, "id:qdkmxzqEvPjV"], 1.2 Milliliter, 2.0 Milliliter, 121 Celsius, -80 Celsius, {Glass}} (* "2mL small clear glass HPLC vial" *)
 	};
 	liquidHandlerSterileContainerLookup={
-		{Model[Container, Vessel, "id:o1k9jAG00e3N"],0 Milliliter,0.5 Milliliter,121 Celsius,-196 Celsius}, (* "New 0.5mL Tube with 2mL Tube Skirt" *)
+		{Model[Container, Vessel, "id:o1k9jAG00e3N"], 0 Milliliter, 0.5 Milliliter, 121 Celsius, -196 Celsius, {Polypropylene}}, (* "New 0.5mL Tube with 2mL Tube Skirt" *)
 		(* note that a 2mL tube can't actually hold 2mL so the limit is actually 1.9 mL *)
-		{Model[Container,Vessel,"id:3em6Zv9NjjN8"],0.5 Milliliter,1.9 Milliliter, 121 Celsius,-196 Celsius}, (* "2mL Tube" *)
-		{Model[Container,Vessel,"id:bq9LA0dBGGR6"],1.9 Milliliter,50 Milliliter, 80 Celsius, -196 Celsius}, (* "50mL Tube" *)
-		{Model[Container, Plate, "id:4pO6dMOqKBaX"], 0 Milliliter, 0.2 Milliliter, 100 Celsius, -80 Celsius}, (* 96-well flat bottom plate, Sterile, Nuclease-Free *)
-		{Model[Container, Plate, "id:n0k9mGkwbvG4"], 0 Milliliter, 2 Milliliter, 121 Celsius, -80 Celsius}, (* 96-well 2mL Deep Well Plate, Sterile *)
-		{Model[Container, Plate, "id:qdkmxzkKwn11"], 5 Microliter, 10 Milliliter, 121 Celsius, -196 Celsius}, (* 24-well V-bottom 10 mL Deep Well Plate Sterile *)
-		{Model[Container, Plate, "id:R8e1PjeVbJ4X"], 540 Microliter, 75 Milliliter, 121 Celsius, -195 Celsius}, (* 4-well V-bottom 75mL Deep Well Plate Sterile *)
-		{Model[Container, Plate, "id:AEqRl9qm8rwv"], 50 Milliliter, 200 Milliliter, 121 Celsius, -196 Celsius} (*200mL Polypropylene Robotic Reservoir, sterile*)
+		{Model[Container, Vessel, "id:3em6Zv9NjjN8"], 0.5 Milliliter, 1.9 Milliliter, 121 Celsius, -196 Celsius, {Polypropylene}}, (* "2mL Tube" *)
+		{Model[Container, Vessel, "id:bq9LA0dBGGR6"], 1.9 Milliliter, 50 Milliliter, 80 Celsius, -196 Celsius, {Polypropylene}}, (* "50mL Tube" *)
+		{Model[Container, Vessel, "id:jLq9jXvxr6OZ"], 0 Milliliter, 1.2 Milliliter, 121 Celsius, -80 Celsius, {Glass}}, (* "HPLC vial (high recovery)" *)
+		{Model[Container, Vessel, "id:qdkmxzqEvPjV"], 1.2 Milliliter, 2.0 Milliliter, 121 Celsius, -80 Celsius, {Glass}}, (* "2mL small clear glass HPLC vial" *)
+		{Model[Container, Plate, "id:4pO6dMOqKBaX"], 0 Milliliter, 0.2 Milliliter, 100 Celsius, -80 Celsius, {Polypropylene}}, (* 96-well flat bottom plate, Sterile, Nuclease-Free *)
+		{Model[Container, Plate, "id:n0k9mGkwbvG4"], 0 Milliliter, 2 Milliliter, 121 Celsius, -80 Celsius, {Polypropylene}}, (* 96-well 2mL Deep Well Plate, Sterile *)
+		{Model[Container, Plate, "id:qdkmxzkKwn11"], 5 Microliter, 10 Milliliter, 121 Celsius, -196 Celsius, {Polypropylene}}, (* 24-well V-bottom 10 mL Deep Well Plate Sterile *)
+		{Model[Container, Plate, "id:R8e1PjeVbJ4X"], 540 Microliter, 75 Milliliter, 121 Celsius, -195 Celsius, {Polypropylene}}, (* 4-well V-bottom 75mL Deep Well Plate Sterile *)
+		{Model[Container, Plate, "id:AEqRl9qm8rwv"], 50 Milliliter, 200 Milliliter, 121 Celsius, -196 Celsius, {Polypropylene}}, (*200mL Polypropylene Robotic Reservoir, sterile*)
+		{Model[Container, Plate, "id:eGakld01zzLx"], 0.2 Milliliter, 4 Milliliter, 100 Celsius, -80 Celsius, {Polystyrene}},(*Model[Container, Plate, "6-well Tissue Culture Plate"]*)
+		{Model[Container, Plate, "id:jLq9jXY4kkMq"], 2 Milliliter, 10 Milliliter, 121 Celsius, -80 Celsius, {Polypropylene}},(*Model[Container, Plate, "24-well Round Bottom Deep Well Plate, Sterile"]*)
+		{Model[Container, Plate, "id:P5ZnEjx9Zllk"], 2 Milliliter, 3.5 Milliliter, 121 Celsius, -80 Celsius, {Polypropylene}}, (* "48-well Pyramid Bottom Deep Well Plate, Sterile" *)
+		{Model[Container, Plate, "id:jLq9jXY4kkKW"], 20 Microliter, 300 Microliter, 60 Celsius, -20 Celsius, {Polystyrene}},(*Model[Container, Plate, "96-well Greiner Tissue Culture Plate"]*)
+		{Model[Container, Plate, "id:1ZA60vAn9RVP"], 20 Microliter, 300 Microliter, 60 Celsius, -20 Celsius, {Polystyrene}},(*Model[Container, Plate, "96-well Greiner Tissue Culture Plate, Untreated"]*)
+		{Model[Container, Plate, "id:L8kPEjno5XoE"], 50 Microliter, 300 Microliter, 100 Celsius, -80 Celsius, {Polystyrene}},(*Model[Container, Plate, "96-well Black Wall Tissue Culture Plate"]*)
+		{Model[Container, Plate, "id:pZx9joxDA8Bj"], 10 Microliter, 1.2 Milliliter, 121 Celsius, -80 Celsius, {Polypropylene}}, (* Model[Container, Plate, "Greiner MasterBlock 1.2ml Deep Well Plate, Sterile"] *)
+		{Model[Container, Plate, "id:4pO6dMmErzez"], 1 Microliter, 2 Milliliter, 121 Celsius, -80 Celsius, {Polypropylene}} (* Model[Container, Plate, "Sterile Deep Round Well, 2 mL, Polypropylene, U-Bottom"] *)
 	};
 	acousticLiquidHandlerContainerLookup={
-		{Model[Container,Plate,"id:01G6nvwNDARA"],2.5 Microliter,12 Microliter,121 Celsius,-80 Celsius},
-		{Model[Container,Plate,"id:7X104vn56dLX"],15 Microliter,65 Microliter,121 Celsius,-80 Celsius}
+		{Model[Container,Plate,"id:01G6nvwNDARA"],2.5 Microliter,12 Microliter,121 Celsius,-80 Celsius, {Cycloolefine}},
+		{Model[Container,Plate,"id:7X104vn56dLX"],15 Microliter,65 Microliter,121 Celsius,-80 Celsius, {Polypropylene}}
 	};
 	ultracentrifugeContainerLookup={
-		{Model[Container,Vessel,"id:GmzlKjPen8z4"],0 Milliliter,8.9 Milliliter,121 Celsius,-80 Celsius},
-		{Model[Container,Vessel,"id:KBL5DvwXoBx7"],0 Milliliter,32.4 Milliliter,121 Celsius,-80 Celsius},
-		{Model[Container,Vessel,"id:KBL5DvwXoBMx"],0 Milliliter,94 Milliliter,80 Celsius,-50 Celsius}
+		{Model[Container,Vessel,"id:GmzlKjPen8z4"],0 Milliliter,8.9 Milliliter,121 Celsius,-80 Celsius, {Polypropylene}}, (* "8.9mL OptiSeal Centrifuge Tube" *)
+		{Model[Container,Vessel,"id:KBL5DvwXoBx7"],0 Milliliter,32.4 Milliliter,121 Celsius,-80 Celsius, {Polypropylene}}, (* "32.4mL OptiSeal Centrifuge Tube" *)
+		{Model[Container,Vessel,"id:KBL5DvwXoBMx"],0 Milliliter,94 Milliliter,80 Celsius,-50 Celsius, {Polypropylene}} (* "94mL UltraClear Centrifuge Tube" *)
 	};
 	sterileContainerLookup={
-		{Model[Container,Vessel,"id:o1k9jAG00e3N"],0 Milliliter,0.5Milliliter,121 Celsius,-196 Celsius},
+		{Model[Container, Vessel, "id:o1k9jAG00e3N"], 0 Milliliter, 0.5Milliliter, 121 Celsius, -196 Celsius, {Polypropylene}},(*Model[Container, Vessel, "New 0.5mL Tube with 2mL Tube Skirt"]*)
 		(* note that a 2mL tube can't actually hold 2mL so the limit is actually 1.9 mL *)
-		{Model[Container,Vessel,"id:3em6Zv9NjjN8"],0 Milliliter,1.9 Milliliter, 121 Celsius,-196 Celsius},
-		{Model[Container,Vessel,"id:bq9LA0dBGGR6"],1.9 Milliliter,50 Milliliter, 80 Celsius,-196 Celsius},
-		{Model[Container,Vessel,"id:XnlV5jKRKBYZ"],50 Milliliter,250 Milliliter, 140 Celsius,-20 Celsius},
-		{Model[Container,Vessel,"id:pZx9jo8A8lVp"],250 Milliliter,500 Milliliter, 140 Celsius,-80 Celsius},
-		{Model[Container,Vessel,"id:XnlV5jKRKBqn"],500 Milliliter,1 Liter, 140 Celsius,-80 Celsius},
-		{Model[Container,Vessel,"id:O81aEBZpZODD"],1 Liter,2 Liter, 140 Celsius,-80 Celsius},
-		{Model[Container,Vessel,"id:7X104vnY15Z6"],2 Liter,4 Liter, 121 Celsius,0 Celsius},
-		{Model[Container,Vessel,"id:4pO6dM5Epa87"],4 Liter,5 Liter, 140 Celsius,0 Celsius},
-		{Model[Container,Vessel,"id:Vrbp1jKoKMmq"],5 Liter,10 Liter, 130 Celsius, 0 Celsius},
-		{Model[Container,Vessel,"id:1ZA60vLXLRzw"],10 Liter,20 Liter, 130 Celsius, 0 Celsius}
+		{Model[Container, Vessel, "id:3em6Zv9NjjN8"], 0 Milliliter, 1.9 Milliliter, 121 Celsius, -196 Celsius, {Polypropylene}},(*Model[Container, Vessel, "2mL Tube"]*)
+		{Model[Container, Vessel, "id:bq9LA0dBGGR6"], 1.9 Milliliter, 50 Milliliter, 80 Celsius, -196 Celsius, {Polypropylene}},(*Model[Container, Vessel, "50mL Tube"]*)
+		{Model[Container, Vessel, "id:jLq9jXvxr6OZ"], 0 Milliliter, 1.2 Milliliter, 121 Celsius, -80 Celsius, {Glass}}, (* "HPLC vial (high recovery)" *)
+		{Model[Container, Vessel, "id:qdkmxzqEvPjV"], 1.2 Milliliter, 2.0 Milliliter, 121 Celsius, -80 Celsius, {Glass}}, (* "2mL small clear glass HPLC vial" *)
+		{Model[Container, Vessel, "id:XnlV5jKRKBYZ"], 50 Milliliter, 250 Milliliter, 140 Celsius, -20 Celsius, {Glass}},(*Model[Container, Vessel, "250mL Glass Bottle, Sterile"]*)
+		{Model[Container, Vessel, "id:pZx9jo8A8lVp"], 250 Milliliter, 500 Milliliter, 140 Celsius, -80 Celsius, {Glass}},(*Model[Container, Vessel, "500mL Glass Bottle, Sterile"]*)
+		{Model[Container, Vessel, "id:XnlV5jKRKBqn"], 500 Milliliter, 1 Liter, 140 Celsius, -80 Celsius, {Glass}},(*Model[Container, Vessel, "1L Glass Bottle, Sterile"]*)
+		{Model[Container, Vessel, "id:O81aEBZpZODD"], 1 Liter, 2 Liter, 140 Celsius,-80 Celsius, {Glass}},(*Model[Container, Vessel, "2L Glass Bottle, Sterile"]*)
+		{Model[Container, Vessel, "id:7X104vnY15Z6"], 2 Liter, 4 Liter, 121 Celsius,0 Celsius, {Glass}},(*Model[Container, Vessel, "Amber Glass Bottle 4 L, Sterile"]*)
+		{Model[Container, Vessel, "id:4pO6dM5Epa87"], 4 Liter, 5 Liter, 140 Celsius,0 Celsius, {Glass}},(*Model[Container, Vessel, "5L Glass Bottle, Sterile"]*)
+		{Model[Container, Vessel, "id:Vrbp1jKoKMmq"], 5 Liter, 10 Liter, 130 Celsius, 0 Celsius, {Polypropylene}},(*Model[Container, Vessel, "10L Polypropylene Carboy, Sterile"]*)
+		{Model[Container, Vessel, "id:1ZA60vLXLRzw"], 10 Liter, 20 Liter, 130 Celsius, 0 Celsius, {Polypropylene}},(*Model[Container, Vessel, "20L Polypropylene Carboy, Sterile"]*)
+		{Model[Container, Vessel, "id:AEqRl9KXBDoW"], 140 Milliliter, 14 Milliliter, 80 Celsius, -4 Celsius, {Polypropylene}},(*"Falcon Round-Bottom Polypropylene 14mL Test Tube With Cap"*)
+
+		{Model[Container, Plate, "id:4pO6dMOqKBaX"], 0 Milliliter, 0.2 Milliliter, 100 Celsius, -80 Celsius, {Polypropylene}}, (* 96-well flat bottom plate, Sterile, Nuclease-Free *)
+		{Model[Container, Plate, "id:n0k9mGkwbvG4"], 0 Milliliter, 2 Milliliter, 121 Celsius, -80 Celsius, {Polypropylene}}, (* 96-well 2mL Deep Well Plate, Sterile *)
+		{Model[Container, Plate, "id:qdkmxzkKwn11"], 5 Microliter, 10 Milliliter, 121 Celsius, -196 Celsius, {Polypropylene}}, (* 24-well V-bottom 10 mL Deep Well Plate Sterile *)
+		{Model[Container, Plate, "id:R8e1PjeVbJ4X"], 540 Microliter, 75 Milliliter, 121 Celsius, -195 Celsius, {Polypropylene}}, (* 4-well V-bottom 75mL Deep Well Plate Sterile *)
+		{Model[Container, Plate, "id:AEqRl9qm8rwv"], 50 Milliliter, 200 Milliliter, 121 Celsius, -196 Celsius, {Polypropylene}}, (*200mL Polypropylene Robotic Reservoir, sterile*)
+		{Model[Container, Plate, "id:eGakld01zzLx"], 0.2 Milliliter, 4 Milliliter, 100 Celsius, -80 Celsius, {Polystyrene}},(*Model[Container, Plate, "6-well Tissue Culture Plate"]*)
+		{Model[Container, Plate, "id:GmzlKjY5EE8e"], 0.1 Milliliter, 2 Milliliter, 100 Celsius, -80 Celsius, {Polystyrene}},(*Model[Container, Plate, "12-well Tissue Culture Plate"]*)
+		{Model[Container, Plate, "id:E8zoYveRlldX"], 50 Microliter, 1 Milliliter, 100 Celsius, -80 Celsius, {Polystyrene}},(*Model[Container, Plate, "24-well Tissue Culture Plate"]*)
+		{Model[Container, Plate, "id:jLq9jXY4kkMq"], 2 Milliliter, 10 Milliliter, 121 Celsius, -80 Celsius, {Polypropylene}},(*Model[Container, Plate, "24-well Round Bottom Deep Well Plate, Sterile"]*)
+		{Model[Container, Plate, "id:P5ZnEjx9Zllk"], 2 Milliliter, 3.5 Milliliter, 121 Celsius, -80 Celsius, {Polypropylene}}, (* "48-well Pyramid Bottom Deep Well Plate, Sterile" *)
+		{Model[Container, Plate, "id:jLq9jXY4kkKW"], 20 Microliter, 300 Microliter, 60 Celsius, -20 Celsius, {Polystyrene}},(*Model[Container, Plate, "96-well Greiner Tissue Culture Plate"]*)
+		{Model[Container, Plate, "id:1ZA60vAn9RVP"], 20 Microliter, 300 Microliter, 60 Celsius, -20 Celsius, {Polystyrene}},(*Model[Container, Plate, "96-well Greiner Tissue Culture Plate, Untreated"]*)
+		{Model[Container, Plate, "id:L8kPEjno5XoE"], 50 Microliter, 300 Microliter, 100 Celsius, -80 Celsius, {Polystyrene}},(*Model[Container, Plate, "96-well Black Wall Tissue Culture Plate"]*)
+		{Model[Container, Plate, "id:pZx9joxDA8Bj"], 10 Microliter, 1.2 Milliliter, 121 Celsius, -80 Celsius, {Polypropylene}}, (* Model[Container, Plate, "Greiner MasterBlock 1.2ml Deep Well Plate, Sterile"] *)
+		{Model[Container, Plate, "id:4pO6dMmErzez"], 1 Microliter, 2 Milliliter, 121 Celsius, -80 Celsius, {Polypropylene}} (* Model[Container, Plate, "Sterile Deep Round Well, 2 mL, Polypropylene, U-Bottom"] *)
 	};
 	lightSensitiveContainerLookup={
 		(* note that a 2mL tube can't actually hold 2mL; the limit already set is 1.75 mL *)
-		{Model[Container,Vessel,"id:M8n3rx03Ykp9"],0 Milliliter,1.75 Milliliter, 121 Celsius,-80 Celsius},
-		{Model[Container, Plate, "id:6V0npvK611zG"], 0.05 Milliliter, 0.3 Milliliter, 100 Celsius,-80 Celsius},
-		{Model[Container,Vessel,"id:bq9LA0dBGGrd"],1.75 Milliliter,50 Milliliter, 80 Celsius,-80 Celsius},
-		{Model[Container,Vessel,"id:J8AY5jwzPPex"],50 Milliliter,250 Milliliter, 121 Celsius,-40 Celsius},
-		{Model[Container,Vessel,"id:8qZ1VWNmddlD"],250 Milliliter,500 Milliliter, 121 Celsius,-80 Celsius},
-		{Model[Container,Vessel,"id:Vrbp1jG800Zm"],500 Milliliter,4 Liter, 120 Celsius, 0 Celsius}
+		{Model[Container,Vessel,"id:M8n3rx03Ykp9"],0 Milliliter,1.75 Milliliter, 121 Celsius,-80 Celsius, {Polypropylene}},
+		{Model[Container, Plate, "id:6V0npvK611zG"], 0.05 Milliliter, 0.3 Milliliter, 100 Celsius,-80 Celsius, {Polypropylene}},
+		{Model[Container,Vessel,"id:bq9LA0dBGGrd"],1.75 Milliliter,50 Milliliter, 80 Celsius,-80 Celsius, {Polypropylene}},
+		{Model[Container,Vessel,"id:GmzlKjznOxmE"], 0 Milliliter, 1.2 Milliliter, 121 Celsius, -80 Celsius, {Glass}}, (* "Amber HPLC vial (high recovery)" *)
+		{Model[Container,Vessel,"id:J8AY5jwzPPex"],1.2 Milliliter,250 Milliliter, 121 Celsius,-40 Celsius, {Glass}},
+		{Model[Container,Vessel,"id:8qZ1VWNmddlD"],250 Milliliter,500 Milliliter, 121 Celsius,-80 Celsius, {Glass}},
+		{Model[Container,Vessel,"id:Vrbp1jG800Zm"],500 Milliliter,4 Liter, 120 Celsius, 0 Celsius, {Glass}}
+	};
+	lightSensitiveLiquidHandlerContainerLookup = {
+		{Model[Container,Vessel,"id:M8n3rx03Ykp9"],0 Milliliter,1.75 Milliliter, 121 Celsius,-80 Celsius, {Polypropylene}},
+		{Model[Container,Vessel,"id:bq9LA0dBGGrd"],1.75 Milliliter,50 Milliliter, 80 Celsius,-80 Celsius, {Polypropylene}}
+	};
+	lightSensitiveSterileLiquidHandlerContainerLookup = {
+		{Model[Container,Vessel,"id:M8n3rx03Ykp9"],0 Milliliter,1.75 Milliliter, 121 Celsius,-80 Celsius, {Polypropylene}},
+		{Model[Container,Vessel,"id:bq9LA0dBGGrd"],1.75 Milliliter,50 Milliliter, 80 Celsius,-80 Celsius, {Polypropylene}}
 	};
 	lightSensitiveSterileContainerLookup={
-		{Model[Container,Vessel,"id:bq9LA0dBGGrd"],2 Milliliter,50 Milliliter, 80 Celsius, -80 Celsius},
-		{Model[Container,Vessel,"id:4pO6dM5E5AaM"],50 Milliliter,250 Milliliter, 121 Celsius, -40 Celsius},
-		{Model[Container,Vessel,"id:Vrbp1jKoKz7E"],250 Milliliter,500 Milliliter, 121 Celsius, -80 Celsius},
-		{Model[Container,Vessel,"id:7X104vnY15Z6"],500 Milliliter,4 Liter, 121 Celsius, 0 Celsius}
+		{Model[Container,Vessel,"id:bq9LA0dBGGrd"],2 Milliliter,50 Milliliter, 80 Celsius, -80 Celsius, {Polypropylene}},
+		{Model[Container,Vessel,"id:4pO6dM5E5AaM"],50 Milliliter,250 Milliliter, 121 Celsius, -40 Celsius, {Glass}},
+		{Model[Container,Vessel,"id:Vrbp1jKoKz7E"],250 Milliliter,500 Milliliter, 121 Celsius, -80 Celsius, {Glass}},
+		{Model[Container,Vessel,"id:7X104vnY15Z6"],500 Milliliter,4 Liter, 121 Celsius, 0 Celsius, {Glass}}
 	};
 	adherentNonMicrobialCellContainerLookup={
-		{Model[Container, Plate, "id:jLq9jXY4kkKW"], 0 Milliliter,0.2 Milliliter,100 Celsius, -80 Celsius}, (* "96-well Greiner Tissue Culture Plate" *)
-		{Model[Container, Plate, "id:Vrbp1jKw7W9q"], 0.2 Milliliter,0.4 Milliliter,100 Celsius, -80 Celsius}, (* "Corning, TC-Surface 48-well Plate" *)
-		{Model[Container, Plate, "id:E8zoYveRlldX"], 0.4 Milliliter,1 Milliliter,100 Celsius, -80 Celsius}, (* "24-well Tissue Culture Plate" *)
-		{Model[Container, Plate, "id:GmzlKjY5EE8e"], 1 Milliliter,2 Milliliter,100 Celsius, -80 Celsius}, (* "12-well Tissue Culture Plate" *)
-		{Model[Container, Plate, "id:eGakld01zzLx"], 2 Milliliter,3 Milliliter,100 Celsius, -80 Celsius}, (* "6-well Tissue Culture Plate" *)
-		{Model[Container, Vessel, "id:01G6nvwz9ekA"], 3 Milliliter,5 Milliliter,100 Celsius, -80 Celsius}, (* "T25 EasYFlask, TC Surface, Filter Cap" *)
-		{Model[Container, Vessel, "id:8qZ1VW0np53Z"], 5 Milliliter,15 Milliliter,100 Celsius, -80 Celsius}, (* "T75 EasYFlask, TC Surface, Filter Cap" *)
-		{Model[Container, Vessel, "id:qdkmxzqXdJra"], 15 Milliliter,53 Milliliter,100 Celsius, -80 Celsius} (* "T175 EasYFlask, TC Surface, Filter Cap" *)
+		{Model[Container, Plate, "id:jLq9jXY4kkKW"], 0 Milliliter,0.2 Milliliter,100 Celsius, -80 Celsius, {Polystyrene}}, (* "96-well Greiner Tissue Culture Plate" *)
+		{Model[Container, Plate, "id:Vrbp1jKw7W9q"], 0.2 Milliliter,0.4 Milliliter,100 Celsius, -80 Celsius, {Polystyrene}}, (* "Corning, TC-Surface 48-well Plate" *)
+		{Model[Container, Plate, "id:E8zoYveRlldX"], 0.4 Milliliter,1 Milliliter,100 Celsius, -80 Celsius, {Polystyrene}}, (* "24-well Tissue Culture Plate" *)
+		{Model[Container, Plate, "id:GmzlKjY5EE8e"], 1 Milliliter,2 Milliliter,100 Celsius, -80 Celsius, {Polystyrene}}, (* "12-well Tissue Culture Plate" *)
+		{Model[Container, Plate, "id:eGakld01zzLx"], 2 Milliliter,3 Milliliter,100 Celsius, -80 Celsius, {Polystyrene}}, (* "6-well Tissue Culture Plate" *)
+		{Model[Container, Vessel, "id:01G6nvwz9ekA"], 3 Milliliter,5 Milliliter,100 Celsius, -80 Celsius, {Polystyrene}}, (* "T25 EasYFlask, TC Surface, Filter Cap" *)
+		{Model[Container, Vessel, "id:8qZ1VW0np53Z"], 5 Milliliter,15 Milliliter,100 Celsius, -80 Celsius, {Polystyrene}}, (* "T75 EasYFlask, TC Surface, Filter Cap" *)
+		{Model[Container, Vessel, "id:qdkmxzqXdJra"], 15 Milliliter,53 Milliliter,100 Celsius, -80 Celsius, {Polystyrene}} (* "T175 EasYFlask, TC Surface, Filter Cap" *)
 	};
 	adherentRoboticNonMicrobialCellContainerLookup={
-		{Model[Container, Plate, "id:jLq9jXY4kkKW"], 0 Milliliter,0.2 Milliliter,100 Celsius, -80 Celsius}, (* "96-well Greiner Tissue Culture Plate" *)
-		{Model[Container, Plate, "id:Vrbp1jKw7W9q"], 0.2 Milliliter,0.4 Milliliter,100 Celsius, -80 Celsius}, (* "Corning, TC-Surface 48-well Plate" *)
-		{Model[Container, Plate, "id:E8zoYveRlldX"], 0.4 Milliliter,1 Milliliter,100 Celsius, -80 Celsius}, (* "24-well Tissue Culture Plate" *)
-		{Model[Container, Plate, "id:GmzlKjY5EE8e"], 1 Milliliter,2 Milliliter,100 Celsius, -80 Celsius}, (* "12-well Tissue Culture Plate" *)
-		{Model[Container, Plate, "id:eGakld01zzLx"], 2 Milliliter,3 Milliliter,100 Celsius, -80 Celsius} (* "6-well Tissue Culture Plate" *)
+		{Model[Container, Plate, "id:jLq9jXY4kkKW"], 0 Milliliter,0.2 Milliliter,100 Celsius, -80 Celsius, {Polystyrene}}, (* "96-well Greiner Tissue Culture Plate" *)
+		{Model[Container, Plate, "id:Vrbp1jKw7W9q"], 0.2 Milliliter,0.4 Milliliter,100 Celsius, -80 Celsius, {Polystyrene}}, (* "Corning, TC-Surface 48-well Plate" *)
+		{Model[Container, Plate, "id:E8zoYveRlldX"], 0.4 Milliliter,1 Milliliter,100 Celsius, -80 Celsius, {Polystyrene}}, (* "24-well Tissue Culture Plate" *)
+		{Model[Container, Plate, "id:GmzlKjY5EE8e"], 1 Milliliter,2 Milliliter,100 Celsius, -80 Celsius, {Polystyrene}}, (* "12-well Tissue Culture Plate" *)
+		{Model[Container, Plate, "id:eGakld01zzLx"], 2 Milliliter,3 Milliliter,100 Celsius, -80 Celsius, {Polystyrene}} (* "6-well Tissue Culture Plate" *)
 	};
 	suspensionNonMicrobialCellContainerLookup={
-		{Model[Container, Plate, "id:Y0lXejMW7NMo"], 0 Milliliter,0.4 Milliliter,100 Celsius, -80 Celsius}, (* "Nunc Non-Treated 48-well Plate" *)
-		{Model[Container, Plate, "id:1ZA60vLlZzrM"], 0.4 Milliliter,1 Milliliter,100 Celsius, -80 Celsius}, (* "Nunc Non-Treated 24-well Plate" *)
-		{Model[Container, Plate, "id:dORYzZJwOJb5"], 1 Milliliter,2 Milliliter,100 Celsius, -80 Celsius}, (* "Nunc Non-Treated 12-well Plate" *)
-		{Model[Container, Plate, "id:L8kPEjnY8dME"], 2 Milliliter,3 Milliliter,100 Celsius, -80 Celsius}, (* "Nunc Non-Treated 6-well Plate" *)
-		{Model[Container, Vessel, "id:N80DNj0dwPBE"], 3 Milliliter, 35 Milliliter,80 Celsius, -196 Celsius}, (* "Membrane Aerated 50mL Tube" *)
-		{Model[Container, Vessel, "id:01G6nvwz9YqA"], 3 Milliliter,5 Milliliter,100 Celsius, -80 Celsius}, (* "T25 EasYFlask, Non-Treated Surface, Filter Cap" *)
-		{Model[Container, Vessel, "id:01G6nvwz9qLD"], 5 Milliliter,15 Milliliter,100 Celsius, -80 Celsius}, (* "T75 EasYFlask, Non-Treated Surface, Filter Cap" *)
-		{Model[Container, Vessel, "id:lYq9jRxdYVdl"], 15 Milliliter,53 Milliliter,100 Celsius, -80 Celsius} (* "T175 EasYFlask, Non-Treated Surface, Filter Cap" *)
+		{Model[Container, Plate, "id:Y0lXejMW7NMo"], 0 Milliliter,0.4 Milliliter,100 Celsius, -80 Celsius, {Polystyrene}}, (* "Nunc Non-Treated 48-well Plate" *)
+		{Model[Container, Plate, "id:1ZA60vLlZzrM"], 0.4 Milliliter,1 Milliliter,100 Celsius, -80 Celsius, {Polystyrene}}, (* "Nunc Non-Treated 24-well Plate" *)
+		{Model[Container, Plate, "id:dORYzZJwOJb5"], 1 Milliliter,2 Milliliter,100 Celsius, -80 Celsius, {Polystyrene}}, (* "Nunc Non-Treated 12-well Plate" *)
+		{Model[Container, Plate, "id:L8kPEjnY8dME"], 2 Milliliter,3 Milliliter,100 Celsius, -80 Celsius, {Polystyrene}}, (* "Nunc Non-Treated 6-well Plate" *)
+		{Model[Container, Plate, "id:4pO6dMmErzez"], 1 Microliter, 2 Milliliter, 121 Celsius, -80 Celsius, {Polypropylene}}, (* "Sterile Deep Round Well, 2 mL, Polypropylene, U-Bottom" *)
+		{Model[Container, Vessel, "id:N80DNj0dwPBE"], 3 Milliliter, 35 Milliliter,80 Celsius, -196 Celsius, {Polystyrene}}, (* "Membrane Aerated 50mL Tube" *)
+		{Model[Container, Vessel, "id:BYDOjv1VAAxz"], 500 Microliter, 5 Milliliter, 70 Celsius, -40 Celsius, {Polypropylene}}, (* "5mL Tube" *)
+		{Model[Container, Vessel, "id:01G6nvwz9YqA"], 3 Milliliter,5 Milliliter,100 Celsius, -80 Celsius, {Polystyrene}}, (* "T25 EasYFlask, Non-Treated Surface, Filter Cap" *)
+		{Model[Container, Vessel, "id:01G6nvwz9qLD"], 5 Milliliter,15 Milliliter,100 Celsius, -80 Celsius, {Polystyrene}}, (* "T75 EasYFlask, Non-Treated Surface, Filter Cap" *)
+		{Model[Container, Vessel, "id:lYq9jRxdYVdl"], 15 Milliliter,53 Milliliter,100 Celsius, -80 Celsius, {Polystyrene}} (* "T175 EasYFlask, Non-Treated Surface, Filter Cap" *)
 	};
 	suspensionRoboticNonMicrobialCellContainerLookup={
-		{Model[Container, Plate, "id:Y0lXejMW7NMo"], 0 Milliliter,0.4 Milliliter,100 Celsius, -80 Celsius}, (* "Nunc Non-Treated 48-well Plate" *)
-		{Model[Container, Plate, "id:1ZA60vLlZzrM"], 0.4 Milliliter,1 Milliliter,100 Celsius, -80 Celsius}, (* "Nunc Non-Treated 24-well Plate" *)
-		{Model[Container, Plate, "id:dORYzZJwOJb5"], 1 Milliliter,2 Milliliter,100 Celsius, -80 Celsius}, (* "Nunc Non-Treated 12-well Plate" *)
-		{Model[Container, Plate, "id:L8kPEjnY8dME"], 2 Milliliter,3 Milliliter,100 Celsius, -80 Celsius}, (* "Nunc Non-Treated 6-well Plate" *)
-		{Model[Container, Vessel, "id:N80DNj0dwPBE"], 3 Milliliter, 35 Milliliter,80 Celsius, -196 Celsius} (* "Membrane Aerated 50mL Tube" *)
+		{Model[Container, Plate, "id:qdkmxzkKwn11"], 5 Microliter, 10 Milliliter, 121 Celsius, -196 Celsius, {Polypropylene}}, (* 24-well V-bottom 10 mL Deep Well Plate Sterile *)
+		{Model[Container, Plate, "id:4pO6dMmErzez"], 1 Microliter, 2 Milliliter, 121 Celsius, -80 Celsius, {Polypropylene}}, (* "Sterile Deep Round Well, 2 mL, Polypropylene, U-Bottom" *)
+		{Model[Container, Plate, "id:L8kPEjnY8dME"], 2 Milliliter,3 Milliliter,100 Celsius, -80 Celsius, {Polystyrene}}, (* "Nunc Non-Treated 6-well Plate" *)
+		{Model[Container, Vessel, "id:N80DNj0dwPBE"], 3 Milliliter, 35 Milliliter,80 Celsius, -196 Celsius, {Polypropylene}} (* "Membrane Aerated 50mL Tube" *)
 	};
 	microbiologySolidMediaCellContainerLookup={
-		{Model[Container, Plate, "id:O81aEBZjRXvx"], 0 Milliliter, 80 Milliliter, 100 Celsius, -80 Celsius}
+		{Model[Container, Plate, "id:O81aEBZjRXvx"], 0 Milliliter, 80 Milliliter, 100 Celsius, -80 Celsius, {Polystyrene}}(*Model[Container, Plate, "Omni Tray Sterile Media Plate"]*)
 	};
 	microbiologyNonSolidMediaCellContainerLookup={
-		{Model[Container, Plate, "id:Y0lXejMW7NMo"], 0 Milliliter,0.4 Milliliter,100 Celsius, -80 Celsius}, (* "Nunc Non-Treated 48-well Plate" *)
-		{Model[Container, Plate, "id:1ZA60vLlZzrM"], 0.4 Milliliter,1 Milliliter,100 Celsius, -80 Celsius}, (* "Nunc Non-Treated 24-well Plate" *)
-		{Model[Container, Plate, "id:dORYzZJwOJb5"], 1 Milliliter,2 Milliliter,100 Celsius, -80 Celsius}, (* "Nunc Non-Treated 12-well Plate" *)
-		{Model[Container, Plate, "id:L8kPEjnY8dME"], 2 Milliliter,3 Milliliter,100 Celsius, -80 Celsius}, (* "Nunc Non-Treated 6-well Plate" *)
-		{Model[Container, Vessel, "id:N80DNj0dwPBE"], 3 Milliliter, 35 Milliliter,80 Celsius, -196 Celsius}, (* "Membrane Aerated 50mL Tube" *)
-		{Model[Container, Vessel, "id:xRO9n3vk115Y"], 3 Milliliter,10 Milliliter,100 Celsius, -80 Celsius}, (* "50mL Erlenmeyer Flask" *)
-		{Model[Container, Vessel, "id:N80DNjlYwwjo"], 10 Milliliter,25 Milliliter,100 Celsius, -80 Celsius}, (* "125mL Erlenmeyer Flask" *)
-		{Model[Container, Vessel, "id:jLq9jXY4kkXE"], 25 Milliliter,50 Milliliter,100 Celsius, -80 Celsius}, (* "250mL Erlenmeyer Flask" *)
-		{Model[Container, Vessel, "id:bq9LA0dBGG0b"], 50 Milliliter,100 Milliliter,100 Celsius, -80 Celsius}, (* "500mL Erlenmeyer Flask" *)
-		{Model[Container, Vessel, "id:8qZ1VWNmddWR"], 100 Milliliter,200 Milliliter,100 Celsius, -80 Celsius}, (* "1000mL Erlenmeyer Flask" *)
-		{Model[Container, Vessel, "id:mnk9jORem9vw"], 200 Milliliter,400 Milliliter,100 Celsius, -80 Celsius} (* "2000 mL Erlenmeyer Flask, Narrow Mouth" *)
+		{Model[Container, Vessel, "id:N80DNjlYwwjo"], 10 Milliliter, 25 Milliliter, 100 Celsius, -80 Celsius, {Glass}}, (* "125mL Erlenmeyer Flask" *)
+		{Model[Container, Vessel, "id:jLq9jXY4kkXE"], 25 Milliliter, 50 Milliliter, 100 Celsius, -80 Celsius, {Glass}}, (* "250mL Erlenmeyer Flask" *)
+		{Model[Container, Vessel, "id:bq9LA0dBGG0b"], 50 Milliliter,100 Milliliter,100 Celsius, -80 Celsius, {Glass}}, (* "500mL Erlenmeyer Flask" *)
+		{Model[Container, Vessel, "id:8qZ1VWNmddWR"], 100 Milliliter, 200 Milliliter, 100 Celsius, -80 Celsius, {Glass}}, (* "1000mL Erlenmeyer Flask" *)
+		{Model[Container, Vessel, "id:AEqRl9KXBDoW"], 140 Milliliter, 14 Milliliter, 80 Celsius, -4 Celsius, {Polypropylene}},(*"Falcon Round-Bottom Polypropylene 14mL Test Tube With Cap"*)
+		{Model[Container, Vessel, "id:N80DNj0dwPBE"], 3 Milliliter, 35 Milliliter, 80 Celsius, -196 Celsius, {Polypropylene}}, (* "Membrane Aerated 50mL Tube" *)
+		{Model[Container, Vessel, "id:BYDOjv1VAAxz"], 500 Microliter, 5 Milliliter, 70 Celsius, -40 Celsius, {Polypropylene}}, (* "5mL Tube" *)
+		{Model[Container, Plate, "id:qdkmxzkKwn11"], 5 Microliter, 10 Milliliter, 121 Celsius, -196 Celsius, {Polypropylene}}, (* 24-well V-bottom 10 mL Deep Well Plate Sterile *)
+		{Model[Container, Plate, "id:E8zoYveRlldX"], 50 Microliter, 1 Milliliter, 100 Celsius, -80 Celsius, {Polypropylene}}, (* "24-well Tissue Culture Plate" *)
+		{Model[Container, Plate, "id:4pO6dMmErzez"], 1 Microliter, 2 Milliliter, 121 Celsius, -80 Celsius, {Polypropylene}}, (* "Sterile Deep Round Well, 2 mL, Polypropylene, U-Bottom" *)
+		{Model[Container, Plate, "id:Y0lXejMW7NMo"], 0 Milliliter, 0.4 Milliliter, 100 Celsius, -80 Celsius, {Polystyrene}}, (* "Nunc Non-Treated 48-well Plate" *)
+		{Model[Container, Plate, "id:1ZA60vLlZzrM"], 0.4 Milliliter, 1 Milliliter, 100 Celsius, -80 Celsius, {Polystyrene}}, (* "Nunc Non-Treated 24-well Plate" *)
+		{Model[Container, Plate, "id:dORYzZJwOJb5"], 1 Milliliter, 2 Milliliter, 100 Celsius, -80 Celsius, {Polystyrene}}, (* "Nunc Non-Treated 12-well Plate" *)
+		{Model[Container, Plate, "id:L8kPEjnY8dME"], 2 Milliliter, 3 Milliliter, 100 Celsius, -80 Celsius, {Polystyrene}} (* "Nunc Non-Treated 6-well Plate" *)
 	};
 	microbiologyRoboticNonSolidMediaCellContainerLookup={
-		{Model[Container, Plate, "id:Y0lXejMW7NMo"], 0 Milliliter,0.4 Milliliter,100 Celsius, -80 Celsius}, (* "Nunc Non-Treated 48-well Plate" *)
-		{Model[Container, Plate, "id:1ZA60vLlZzrM"], 0.4 Milliliter,1 Milliliter,100 Celsius, -80 Celsius}, (* "Nunc Non-Treated 24-well Plate" *)
-		{Model[Container, Plate, "id:dORYzZJwOJb5"], 1 Milliliter,2 Milliliter,100 Celsius, -80 Celsius}, (* "Nunc Non-Treated 12-well Plate" *)
-		{Model[Container, Plate, "id:L8kPEjnY8dME"], 2 Milliliter,3 Milliliter,100 Celsius, -80 Celsius}, (* "Nunc Non-Treated 6-well Plate" *)
-		{Model[Container, Vessel, "id:N80DNj0dwPBE"], 3 Milliliter, 35 Milliliter,80 Celsius, -196 Celsius} (* "Membrane Aerated 50mL Tube" *)
+		{Model[Container, Plate, "id:qdkmxzkKwn11"], 5 Microliter, 10 Milliliter, 121 Celsius, -196 Celsius, {Polypropylene}}, (* 24-well V-bottom 10 mL Deep Well Plate Sterile *)
+		{Model[Container, Plate, "id:4pO6dMmErzez"], 1 Microliter, 2 Milliliter, 121 Celsius, -80 Celsius, {Polypropylene}}, (* "Sterile Deep Round Well, 2 mL, Polypropylene, U-Bottom" *)
+		{Model[Container, Plate, "id:L8kPEjnY8dME"], 2 Milliliter,3 Milliliter,100 Celsius, -80 Celsius, {Polystyrene}}, (* "Nunc Non-Treated 6-well Plate" *)
+		{Model[Container, Vessel, "id:N80DNj0dwPBE"], 3 Milliliter, 35 Milliliter,80 Celsius, -196 Celsius, {Polypropylene}} (* "Membrane Aerated 50mL Tube" *)
 	};
 	vacuumFlaskContainerLookup={
-		{Model[Container, Vessel, "id:dORYzZJNGlVA"], 0 Milliliter, 125 Milliliter, 230 Celsius, -230 Celsius},
-		{Model[Container, Vessel, "id:eGakldJNAL4n"], 125 Milliliter, 500 Milliliter, 230 Celsius, -230 Celsius},
-		{Model[Container, Vessel, "id:pZx9jo8varzP"], 500 Milliliter, 1000 Milliliter, 230 Celsius, -230 Celsius}
+		{Model[Container, Vessel, "id:dORYzZJNGlVA"], 0 Milliliter, 125 Milliliter, 230 Celsius, -230 Celsius, {Glass}},(*Model[Container, Vessel, "125 mL Filter Flask"]*)
+		{Model[Container, Vessel, "id:eGakldJNAL4n"], 125 Milliliter, 500 Milliliter, 230 Celsius, -230 Celsius, {Glass}},(*Model[Container, Vessel, "500 mL Filter Flask"]*)
+		{Model[Container, Vessel, "id:pZx9jo8varzP"], 500 Milliliter, 1000 Milliliter, 230 Celsius, -230 Celsius, {Glass}}(*Model[Container, Vessel, "1000 mL Filter Flask"]*)
 	};
 
 	(* based on the option values, choose the lookup we need to use to find an appropriately-compatible container *)
-	(* TODO: Build LightSenstive and Sterile liquid handler lists *)
 	lookupToUse = Switch[{resolvedSterile, resolvedLightSensitive, resolvedLiquidHandler, resolvedAcousticLiquidHandler, resolvedUltracentrifuge, resolvedCultureAdhesion, resolvedCellType, vacuumFlask},
 		{False, False, True, False, False, Null, Null, False}, liquidHandlerContainerLookup,
+		{False, True, True, False, False, Null, Null, False}, lightSensitiveLiquidHandlerContainerLookup,
+		{True, True, True, False, False, Null, Null, False}, lightSensitiveSterileLiquidHandlerContainerLookup,
 		{False, False, False, True, False, Null, Null, False}, acousticLiquidHandlerContainerLookup,
 		{False, False, False, False, True, Null, Null, False},ultracentrifugeContainerLookup,
 		{True, True, False, False, False, Null, Null, False}, lightSensitiveSterileContainerLookup,
@@ -1610,8 +1821,8 @@ PreferredContainer[myVolume:(GreaterEqualP[0 Milliliter]|All),myOptions:OptionsP
 	(* If they asked for plates or vessels only, remove any others from the lookup list *)
 	typeCompatibleLookup = Switch[Lookup[safeOptions,Type],
 		All, lookupToUse,
-		Plate, Cases[lookupToUse, {ObjectP[Model[Container, Plate]], _, _, _, _}],
-		Vessel, Cases[lookupToUse, {ObjectP[Model[Container, Vessel]], _, _, _, _}]
+		Plate, Cases[lookupToUse, {ObjectP[Model[Container, Plate]], _, _, _, _, _}],
+		Vessel, Cases[lookupToUse, {ObjectP[Model[Container, Vessel]], _, _, _, _, _}]
 	];
 
 	(* it is possible that that our lookupToUse does not contain vessels. return a failure early here if typeCompatibleLookup is an empty list *)
@@ -1630,18 +1841,35 @@ PreferredContainer[myVolume:(GreaterEqualP[0 Milliliter]|All),myOptions:OptionsP
 
 	(* If they asked for a MaxTempreature, make sure that we filter out containers with a MaxTemperature below the one provided. *)
 	maxTemperatureCompatibleLookup = If[MatchQ[Lookup[safeOptions, MaxTemperature], TemperatureP],
-		Cases[typeCompatibleLookup, {_, _, _, GreaterP[Lookup[safeOptions, MaxTemperature]], _}],
+		Cases[typeCompatibleLookup, {_, _, _, GreaterP[Lookup[safeOptions, MaxTemperature]], _, _}],
 		typeCompatibleLookup
 	];
 
 	(* If they asked for a MinTempreature, make sure that we filter out containers with a MinTemperature above the one provided. *)
 	minTemperatureCompatibleLookup = If[MatchQ[Lookup[safeOptions, MinTemperature], TemperatureP],
-		Cases[maxTemperatureCompatibleLookup, {_, _, _, _, LessP[Lookup[safeOptions,MinTemperature]]}],
+		Cases[maxTemperatureCompatibleLookup, {_, _, _, _, LessP[Lookup[safeOptions,MinTemperature]], _}],
 		maxTemperatureCompatibleLookup
 	];
 
+	(* Check ContainerMaterial *)
+	materialCompatibleLookup = If[MatchQ[Lookup[safeOptions, IncompatibleMaterials], {MaterialP..}],
+		Select[minTemperatureCompatibleLookup, !MemberQ[#[[6]], Alternatives@@Lookup[safeOptions, IncompatibleMaterials]]&],
+		minTemperatureCompatibleLookup
+	];
+
+	If[Length[materialCompatibleLookup] == 0,
+		If[Lookup[safeOptions,Messages],
+			Message[PreferredContainer::NoContainerOfSpecifiedMaterials, Lookup[safeOptions, IncompatibleMaterials], myVolume]
+		];
+		Return[$Failed]
+	];
+
 	(* double-check that the lookup is sorted from smallest to largest volume (if we update the above lines well this should always be redundant) *)
-	sortedContainerLookup=SortBy[minTemperatureCompatibleLookup,(#[[3]]&)];
+	(*sortedContainerLookup=SortBy[materialCompatibleLookup,(#[[3]]&)];*)
+
+	(* Don't sort the list anymore. Since now we added IncompatibleMaterials option, we also needed to add some less-common container options to cover more sample types *)
+	(* Just let the function choose from top to bottom of the hard-coded list *)
+	sortedContainerLookup = materialCompatibleLookup;
 
 	(* select all entries in the lookup that match the volume/options provided *)
 	possibleContainers=If[MatchQ[myVolume,All],
@@ -1654,7 +1882,7 @@ PreferredContainer[myVolume:(GreaterEqualP[0 Milliliter]|All),myOptions:OptionsP
 	];
 
 	(* determine the min/max volume for the lookup we used; these will be helpful to report if we could not find a container with the given parameters *)
-	{minPossibleVolume,maxPossibleVolume}={First[sortedContainerLookup][[2]],Last[sortedContainerLookup][[3]]};
+	{minPossibleVolume,maxPossibleVolume}= {Min[sortedContainerLookup[[All, 2]]], Max[sortedContainerLookup[[All, 3]]]};
 
 	(* if we were looking for a single container, but didn't get one, return a failure; otherwise, return a list for All input, and a singleton for volume input *)
 	Which[

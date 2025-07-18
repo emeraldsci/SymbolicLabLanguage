@@ -8,29 +8,55 @@ DefineObjectType[Model[Qualification,Training,AsepticTechnique], {
   CreatePrivileges -> None,
   Cache -> Session,
   Fields -> {
-    Instrument -> {
+    BiosafetyCabinet -> {
       Format -> Single,
       Class -> Link,
       Pattern :> _Link,
       Relation -> Alternatives[
-        Object[Instrument, BiosafetyCabinet],
         Model[Instrument, BiosafetyCabinet]
       ],
-      Description -> "The BiosafetyCabinet Instrument that is selected for the training qualification of AsepticTechique.",
+      Description -> "The model of the biosafety cabinet instrument that is used for the training qualification of AsepticTechnique.",
       Category -> "General"
     },
-    SerologicalPipettePipetusTransferContainers -> {
+    Indicator -> {
       Format -> Single,
       Class -> Link,
       Pattern :> _Link,
       Relation -> Alternatives[
-        Object[Container],
-        Model[Container]
+        Model[Sample]
       ],
-      Description -> "The containers that buffer will be pipetted into with the pipetus serological pipette.",
+      Description -> "Fluorescent indicator that is spread to the biosafety cabinet surface, container, etc. and is not detected at the end of the training if there is proper decontamination.",
       Category -> "General"
     },
-    SerologicalPipettePipetusInstrument -> {
+    CulturePlates-> {
+      Format -> Single,
+      Class -> Link,
+      Pattern :> _Link,
+      Relation -> Alternatives[
+        Model[Sample]
+      ],
+      Description -> "The model of the culture plates tht will be placed in the biosafety cabinet surface throughout the HandsFreeOperation process, and incubated afterwards to check the aseptic technique performance.",
+      Category -> "General"
+    },
+    TransferSample -> {
+      Format -> Single,
+      Class -> Link,
+      Pattern :> _Link,
+      Relation -> Alternatives[
+        Model[Sample]
+      ],
+      Description -> "The model of the sample to transfer to the Container in the biosafety cabinet.",
+      Category -> "General"
+    },
+    Container -> {
+      Format -> Single,
+      Class -> Link,
+      Pattern :> _Link,
+      Relation -> Model[Container],
+      Description -> "The container model to transfer the sample to in the biosafety cabinet.",
+      Category -> "General"
+    },
+    Pipette -> {
       Format -> Single,
       Class -> Link,
       Pattern :> _Link,
@@ -38,10 +64,10 @@ DefineObjectType[Model[Qualification,Training,AsepticTechnique], {
         Object[Instrument, Pipette],
         Model[Instrument, Pipette]
       ],
-      Description -> "The pipetus serological pipette instrument used for transfer inside the BSC.",
-      Category -> "Pipetting Skills"
+      Description -> "The model of the pipette instrument used for transfer inside the BSC.",
+      Category -> "General"
     },
-    SerologicalPipettePipetusTips -> {
+    Tips-> {
       Format -> Single,
       Class -> Link,
       Pattern :> _Link,
@@ -49,16 +75,16 @@ DefineObjectType[Model[Qualification,Training,AsepticTechnique], {
         Model[Item],
         Object[Item]
       ],
-      Description -> "The model of the pipette tips used for this pipette in this qualification with the pipetus serological pipette.",
+      Description -> "The model of the pipette tips used in this qualification with the Pipette.",
       Category -> "General"
     },
-    SerologicalPipettePipetusBufferVolumes -> {
+    Amount -> {
       Format -> Single,
-      Class -> Real,
-      Pattern :> GreaterP[0 * Milliliter],
-      Units -> Milliliter,
-      Description -> "The amount of sample that will be transferred into the container.",
-      Category -> "General"
+      Class -> Expression,
+      Pattern :> VolumeP,
+      Description -> "The amount of the TransferSample to transfer to the Container.",
+      Category -> "General",
+      Abstract -> True
     }
   }
 }];

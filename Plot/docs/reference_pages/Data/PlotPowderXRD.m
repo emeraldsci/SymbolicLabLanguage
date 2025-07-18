@@ -12,7 +12,7 @@ DefineUsage[PlotPowderXRD,
 		BasicDefinitions -> {
 			{
 				Definition -> {"PlotPowderXRD[powderXRDData]", "plot"},
-				Description -> "returns a plot of intensity vs 2\[Theta] from a supplied 'powderXRDData' object.",
+				Description -> "returns a 'plot' of intensity vs 2\[Theta] from a supplied 'powderXRDData' object.",
 				Inputs :> {
 					{
 						InputName -> "powderXRDData",
@@ -27,6 +27,26 @@ DefineUsage[PlotPowderXRD,
 					{
 						OutputName -> "plot",
 						Description -> "The plot of the X-ray diffraction intensity as a function of 2\[Theta].",
+						Pattern :> ValidGraphicsP[]
+					}
+				}
+			},
+			{
+				Definition -> {"PlotPowderXRD[protocol]", "plot"},
+				Description -> "creates a 'plot' of intensity vs 2\[Theta] from data objects found in the Data field of 'protocol'.",
+				Inputs :> {
+					{
+						InputName -> "protocol",
+						Description -> "The protocol object containing powder XRD data objects.",
+						Widget -> Alternatives[
+							Widget[Type -> Object, Pattern :> ObjectP[Object[Protocol, PowderXRD]]]
+						]
+					}
+				},
+				Outputs :> {
+					{
+						OutputName -> "plot",
+						Description -> "The figure generated from data found in the powder XRD protocol.",
 						Pattern :> ValidGraphicsP[]
 					}
 				}

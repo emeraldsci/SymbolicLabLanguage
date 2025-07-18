@@ -211,6 +211,7 @@ validUnitOperationMeasureMeltingPointQTests[packet:PacketP[Object[UnitOperation,
 validUnitOperationExtractRNAQTests[packet:PacketP[Object[UnitOperation, ExtractRNA]]]:={};
 validUnitOperationExtractPlasmidDNATests[packet:Object[UnitOperation, ExtractPlasmidDNA]]={};
 validUnitOperationExtractProteinTests[packet:Object[UnitOperation, ExtractProtein]]={};
+validUnitOperationFreezeCellsTests[packet:Object[UnitOperation, FreezeCells]]={};
 
 (* ::Subsection::Closed:: *)
 (* Test Registration *)
@@ -236,3 +237,4 @@ registerValidQTestFunction[Object[UnitOperation,MeasureMeltingPoint],validUnitOp
 registerValidQTestFunction[Object[UnitOperation, ExtractRNA], validUnitOperationExtractRNAQTests];
 registerValidQTestFunction[Object[UnitOperation, ExtractPlasmidDNA], validUnitOperationExtractPlasmidDNATests];
 registerValidQTestFunction[Object[UnitOperation, ExtractProtein], validUnitOperationExtractProteinTests];
+registerValidQTestFunction[Object[UnitOperation, FreezeCells], validUnitOperationFreezeCellsTests];

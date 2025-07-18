@@ -81,7 +81,7 @@ DefineOptions[ExperimentMeasureViscosity,
 			Description -> "The temperature of the instrument's autosampler tray where samples are stored while awaiting measurement.",
 			Category -> "Autosampler"
 		},
-		{(* NEW *)
+		{
 			OptionName -> AutosamplerPrePressurization,
 			Default -> True,
 			AllowNull -> False,
@@ -90,21 +90,6 @@ DefineOptions[ExperimentMeasureViscosity,
 				Pattern :> BooleanP
 			],
 			Description -> "Indicates if the autosampler syringe should inject air into the dead volume of the sample container to help reduce air bubble formation during sample pick-up. If set to True, the autosampler syringe will aspirate air before puncturing the sample container septum and then inject air into the dead volume of the container to increase pressure.",
-			Category -> "Autosampler"
-		},
-		{
-			OptionName -> PressurizationInjectionRate,
-			Default -> Automatic,
-			AllowNull -> True,
-			Widget ->Widget[
-				Type -> Quantity,
-				Pattern :> RangeP[20 Millimeter/Second, 60 Millimeter/Second],
-				Units -> CompoundUnit[
-					{1,{Millimeter,{Millimeter,Meter}}},
-					{-1,{Minute,{Minute,Second}}}
-				]
-			],
-			Description -> "The rate at which the Autosampler syringe injects air into the sample vial prior to sample pick-up if AutosamplerPrePressurization is set to True.",
 			Category -> "Autosampler"
 		},
 		IndexMatching[
@@ -116,7 +101,7 @@ DefineOptions[ExperimentMeasureViscosity,
 				AllowNull -> False,
 				Widget ->Widget[
 					Type->Enumeration,
-					Pattern:>Alternatives[26*Microliter, 35*Microliter, 50*Microliter, 90*Microliter]
+					Pattern:>Alternatives[EqualP[26*Microliter], EqualP[35*Microliter], EqualP[50*Microliter], EqualP[90*Microliter]]
 				],
 				Description -> "The volume of sample that is dispensed from the Autosampler syringe into the chip injection syringe for viscosity measurements.",
 				ResolutionDescription -> "Defaults to the largest InjectionVolume possible based on the given sample's volume.",
@@ -251,7 +236,7 @@ DefineOptions[ExperimentMeasureViscosity,
 						]
 					]
 				],
-				Description -> "Indicates the pressure(s), as a percentage of the chip's maximum pressure, that the instrurment should achieve when flowing sample through the measurement channel. The instrument will automatically adjust the flow rate (which directly affects the shear rate) to reach the indicated RelativePressure(s). Specifiying TargetPressures will allow the instrument to optimize FlowRate (ShearRate) settings for shear rate sweeps in a particular chip if the viscosity of the sample is unknown. To use this option, the Priming option must be set to True in order to allow the instrument to sufficiently wet the measurement channel.",
+				Description -> "Indicates the pressure(s), as a percentage of the chip's maximum pressure, that the instrument should achieve when flowing sample through the measurement channel. The instrument will automatically adjust the flow rate (which directly affects the shear rate) to reach the indicated RelativePressure(s). Specifiying TargetPressures will allow the instrument to optimize FlowRate (ShearRate) settings for shear rate sweeps in a particular chip if the viscosity of the sample is unknown. To use this option, the Priming option must be set to True in order to allow the instrument to sufficiently wet the measurement channel.",
 				ResolutionDescription -> "Resolves to Null if MeasurementMethod is 'Optimize', 'TemperatureSweep', or 'Custom'. Resolves to {10 Percent, 25 Percent, 50 Percent, 75 Percent, 90 Percent} if RelativePressureSweep is specified and no FlowRates are specified.",
 				Category -> "Measurement"
 			},
@@ -501,7 +486,22 @@ DefineOptions[ExperimentMeasureViscosity,
 			Description -> "The non-default conditions under which the PrimaryBuffer of this experiment should be stored after the protocol is completed. If left unset, the PrimaryBuffer will be stored according to their current StorageCondition.",
 			Category -> "Post Experiment"
 		},
-		FuntopiaSharedOptions,
+		ModifyOptions[
+			ModelInputOptions,
+			PreparedModelAmount,
+			{
+				ResolutionDescription -> "Automatically set to 200 Microliter."
+			}
+		],
+		ModifyOptions[
+			ModelInputOptions,
+			PreparedModelContainer,
+			{
+				ResolutionDescription -> "If PreparedModelAmount is set to All and the input model has a product associated with both Amount and DefaultContainerModel populated, automatically set to the DefaultContainerModel value in the product. Otherwise, automatically set to Model[Container, Vessel, \"1mL HPLC Vial (total recovery) with Cap and PTFE/Silicone Septum\"]."
+			}
+		],
+		SimulationOption,
+		NonBiologyFuntopiaSharedOptions,
 		SubprotocolDescriptionOption,
 		SamplesInStorageOptions,
 		SamplesOutStorageOptions
@@ -525,7 +525,6 @@ Error::ViscosityIncompatibleSample="In ExperimentMeasureViscosity, one or more o
 Error::ViscosityRemeasurementAllowedConflict="In ExperimentMeasureViscosity, the options RemeasurementAllowed and RemeasurementReloadVolume, `1`, conflict for the following samples `2`. If RemeasurementAllowed is False, the RemeasurementReloadVolume must be Null. If RemeasurementAllowed is True, the RemeasurementReloadVolume cannot be Null.";
 Error::ViscosityInjectionVolumeHigh="In ExperimentMeasureViscosity, the InjectionVolume, `1`, with NumberOfReplicates, `2`, is greater the sample's `3` recorded volume. Please provide a sample with a larger volume (at least 26 uL per replicate), decrease the InjectionVolume, or decrease the NumberOfReplicates.";
 Error::ViscosityRecoupSampleConflict="In ExperimentMeasureViscosity, the options RecoupSample and RecoupSampleContainerSame, `1`, conflict for the following samples `2`. If RecoupSample is False, the RecoupSampleContainerSame must be Null. If RecoupSamples is True, the RecouopSampleContainerSame cannot be Null.";
-Error::ViscosityPrePressurizationConflict="In ExperimentMeasureViscosity, the options for AutosamplerPrePressurization and PressurizationInjectionRate, `1`, conflict. If AutosamplerPrePressurization is True, PressurizationInjectionRate cannot be Null. If AutosamplerPrePressurization is False, PressurizationInjectionRate cannot be be specified as a value.";
 
 Error::ViscosityUnsupportedInjectionVolume="In ExperimentMeasureViscosity, the resolved InjectionVolume, `1` for sample `2`, is incompatible with the sample's container. The sample must be aliquoted into a container of type Model[Container,Vessel, 1mL HPLC Vial (total recovery) with Cap and PTFE/Silicone Septum], but there is not enough sample volume to perform the injection after the aliquot (which has a 10 uL dead volume). Please select a sample with higher sample volume.";
 Warning::ViscosityPrimingFalse = "In ExperimentMeasureViscosity, Priming is False for sample(s) `1`. Priming is highly recommended to initially wet the measurement chip and before measuring at each new MeasurementTemperature.";
@@ -550,65 +549,59 @@ Warning::ViscosityPressureMeasurementTimeConflict = "In ExperimentMeasureViscosi
 (*ExperimentMeasureViscosity*)
 
 
-ExperimentMeasureViscosity[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:OptionsPattern[]]:=Module[
-	{listedSamples,listedOptions,cacheOption,outputSpecification,output,gatherTests,validSamplePreparationResult,mySamplesWithPreparedSamples,myOptionsWithPreparedSamples,
-	samplePreparationCache,safeOps,safeOpsTests,validLengths,validLengthTests,
-	templatedOptions,templateTests,inheritedOptions,expandedSafeOps,cacheBall,resolvedOptionsResult,
-	resolvedOptions,resolvedOptionsTests,collapsedResolvedOptions,protocolObject,resourcePackets,resourcePacketTests,measureViscosityOptionsAssociation,optionsWithObjects,
-	instrumentObjects,modelInstrumentObjects,viscInstrumentModels,allInstrumentModels,potentialContainers,objectSamplePacketFields,modelSamplePacketFields,objectContainerPacketFields,
-	modelContainerPacketFields,allSamplePackets,intstrumentModelPacket,instrumentObjectPacket,potentialContainerPacket,potentialContainerFields,
-		mySamplesWithPreparedSamplesNamed,myOptionsWithPreparedSamplesNamed,safeOpsNamed
+ExperimentMeasureViscosity[mySamples : ListableP[ObjectP[Object[Sample]]], myOptions : OptionsPattern[]] := Module[
+	{listedSamples, listedOptions, cacheOption, outputSpecification, output, gatherTests, validSamplePreparationResult, mySamplesWithPreparedSamples, myOptionsWithPreparedSamples,
+		safeOps, safeOpsTests, validLengths, validLengthTests,
+		templatedOptions, templateTests, inheritedOptions, expandedSafeOps, cacheBall, resolvedOptionsResult,
+		resolvedOptions, resolvedOptionsTests, collapsedResolvedOptions, protocolObject, resourcePackets, resourcePacketTests, measureViscosityOptionsAssociation, optionsWithObjects,
+		instrumentObjects, modelInstrumentObjects, viscInstrumentModels, allInstrumentModels, potentialContainers, objectSamplePacketFields, modelSamplePacketFields, objectContainerPacketFields,
+		modelContainerPacketFields, allSamplePackets, intstrumentModelPacket, instrumentObjectPacket, potentialContainerPacket, potentialContainerFields,
+		mySamplesWithPreparedSamplesNamed, myOptionsWithPreparedSamplesNamed, safeOpsNamed, updatedSimulation
 	},
 
 	(* Determine the requested return value from the function *)
-	outputSpecification=Quiet[OptionValue[Output]];
-	output=ToList[outputSpecification];
+	outputSpecification = Quiet[OptionValue[Output]];
+	output = ToList[outputSpecification];
 
 	(* Determine if we should keep a running list of tests *)
-	gatherTests=MemberQ[output,Tests];
+	gatherTests = MemberQ[output, Tests];
 
-	{listedSamples, listedOptions}=removeLinks[ToList[mySamples], ToList[myOptions]];
+	{listedSamples, listedOptions} = removeLinks[ToList[mySamples], ToList[myOptions]];
 
 	(* Make sure we're working with a list of options *)
-	cacheOption = ToList[Lookup[listedOptions,Cache,{}]];
+	cacheOption = ToList[Lookup[listedOptions, Cache, {}]];
 
 	(* Simulate our sample preparation. *)
-	validSamplePreparationResult=Check[
+	validSamplePreparationResult = Check[
 		(* Simulate sample preparation. *)
-		{mySamplesWithPreparedSamplesNamed,myOptionsWithPreparedSamplesNamed,samplePreparationCache}=simulateSamplePreparationPackets[
+		{mySamplesWithPreparedSamplesNamed, myOptionsWithPreparedSamplesNamed, updatedSimulation} = simulateSamplePreparationPacketsNew[
 			ExperimentMeasureViscosity,
 			listedSamples,
 			listedOptions
 		],
 		$Failed,
-		{Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
+		{Download::ObjectDoesNotExist, Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
 	];
 
 	(* If we are given an invalid define name, return early. *)
-	If[MatchQ[validSamplePreparationResult,$Failed],
+	If[MatchQ[validSamplePreparationResult, $Failed],
 		(* Return early. *)
-		(* Note: We've already thrown a message above in simulateSamplePreparationPackets. *)
-		ClearMemoization[Experiment`Private`simulateSamplePreparationPackets];Return[$Failed]
+		(* Note: We've already thrown a message above in simulateSamplePreparationPacketsNew. *)
+		Return[$Failed]
 	];
 
 	(* Call SafeOptions to make sure all options match pattern *)
-	{safeOpsNamed,safeOpsTests}=If[gatherTests,
-		SafeOptions[ExperimentMeasureViscosity,myOptionsWithPreparedSamplesNamed,AutoCorrect->False,Output->{Result,Tests}],
-		{SafeOptions[ExperimentMeasureViscosity,myOptionsWithPreparedSamplesNamed,AutoCorrect->False],{}}
+	{safeOpsNamed, safeOpsTests} = If[gatherTests,
+		SafeOptions[ExperimentMeasureViscosity, myOptionsWithPreparedSamplesNamed, AutoCorrect -> False, Output -> {Result, Tests}],
+		{SafeOptions[ExperimentMeasureViscosity, myOptionsWithPreparedSamplesNamed, AutoCorrect -> False], {}}
 	];
 
 	(* Call sanitize-inputs to clean any named objects *)
-	{mySamplesWithPreparedSamples,safeOps, myOptionsWithPreparedSamples} = sanitizeInputs[mySamplesWithPreparedSamplesNamed,safeOpsNamed, myOptionsWithPreparedSamplesNamed];
-
-	(* Call ValidInputLengthsQ to make sure all options are the right length *)
-	{validLengths,validLengthTests}=If[gatherTests,
-		ValidInputLengthsQ[ExperimentMeasureViscosity,{mySamplesWithPreparedSamples},myOptionsWithPreparedSamples,Output->{Result,Tests}],
-		{ValidInputLengthsQ[ExperimentMeasureViscosity,{mySamplesWithPreparedSamples},myOptionsWithPreparedSamples],Null}
-	];
+	{mySamplesWithPreparedSamples, safeOps, myOptionsWithPreparedSamples} = sanitizeInputs[mySamplesWithPreparedSamplesNamed, safeOpsNamed, myOptionsWithPreparedSamplesNamed, Simulation -> updatedSimulation];
 
 	(* If the specified options don't match their patterns or if option lengths are invalid return $Failed *)
-	If[MatchQ[safeOps,$Failed],
-		Return[outputSpecification/.{
+	If[MatchQ[safeOps, $Failed],
+		Return[outputSpecification /. {
 			Result -> $Failed,
 			Tests -> safeOpsTests,
 			Options -> $Failed,
@@ -616,37 +609,43 @@ ExperimentMeasureViscosity[mySamples:ListableP[ObjectP[Object[Sample]]],myOption
 		}]
 	];
 
+	(* Call ValidInputLengthsQ to make sure all options are the right length *)
+	{validLengths, validLengthTests} = If[gatherTests,
+		ValidInputLengthsQ[ExperimentMeasureViscosity, {mySamplesWithPreparedSamples}, myOptionsWithPreparedSamples, Output -> {Result, Tests}],
+		{ValidInputLengthsQ[ExperimentMeasureViscosity, {mySamplesWithPreparedSamples}, myOptionsWithPreparedSamples], Null}
+	];
+
 	(* If option lengths are invalid return $Failed (or the tests up to this point) *)
 	If[!validLengths,
-		Return[outputSpecification/.{
+		Return[outputSpecification /. {
 			Result -> $Failed,
-			Tests -> Join[safeOpsTests,validLengthTests],
+			Tests -> Join[safeOpsTests, validLengthTests],
 			Options -> $Failed,
 			Preview -> Null
 		}]
 	];
 
 	(* Use any template options to get values for options not specified in myOptions *)
-	{templatedOptions,templateTests}=If[gatherTests,
-		ApplyTemplateOptions[ExperimentMeasureViscosity,{ToList[mySamplesWithPreparedSamples]},myOptionsWithPreparedSamples,Output->{Result,Tests}],
-		{ApplyTemplateOptions[ExperimentMeasureViscosity,{ToList[mySamplesWithPreparedSamples]},myOptionsWithPreparedSamples],Null}
+	{templatedOptions, templateTests} = If[gatherTests,
+		ApplyTemplateOptions[ExperimentMeasureViscosity, {ToList[mySamplesWithPreparedSamples]}, myOptionsWithPreparedSamples, Output -> {Result, Tests}],
+		{ApplyTemplateOptions[ExperimentMeasureViscosity, {ToList[mySamplesWithPreparedSamples]}, myOptionsWithPreparedSamples], Null}
 	];
 
 	(* Return early if the template cannot be used - will only occur if the template object does not exist. *)
-	If[MatchQ[templatedOptions,$Failed],
-		Return[outputSpecification/.{
+	If[MatchQ[templatedOptions, $Failed],
+		Return[outputSpecification /. {
 			Result -> $Failed,
-			Tests -> Join[safeOpsTests,validLengthTests,templateTests],
+			Tests -> Join[safeOpsTests, validLengthTests, templateTests],
 			Options -> $Failed,
 			Preview -> Null
 		}]
 	];
 
 	(* Replace our safe options with our inherited options from our template. *)
-	inheritedOptions=ReplaceRule[safeOps,templatedOptions];
+	inheritedOptions = ReplaceRule[safeOps, templatedOptions];
 
 	(* Expand index-matching options *)
-	expandedSafeOps=Last[ExpandIndexMatchedInputs[ExperimentMeasureViscosity,{ToList[mySamplesWithPreparedSamples]},inheritedOptions]];
+	expandedSafeOps = Last[ExpandIndexMatchedInputs[ExperimentMeasureViscosity, {ToList[mySamplesWithPreparedSamples]}, inheritedOptions]];
 	measureViscosityOptionsAssociation = Association[expandedSafeOps];
 
 	(*-- DOWNLOAD THE INFORMATION THAT WE NEED FOR OUR OPTION RESOLVER AND RESOURCE PACKET FUNCTION --*)
@@ -660,112 +659,113 @@ ExperimentMeasureViscosity[mySamples:ListableP[ObjectP[Object[Sample]]],myOption
 		PrimaryBuffer
 	};
 
-	instrumentObjects = Cases[Lookup[expandedSafeOps,optionsWithObjects],ObjectP[Object[Instrument,Viscometer]]];
-	modelInstrumentObjects = Cases[Lookup[expandedSafeOps,optionsWithObjects],ObjectP[Model[Instrument,Viscometer]]];
-	viscInstrumentModels = Search[Model[Instrument,Viscometer]];
-	allInstrumentModels = Join[modelInstrumentObjects,viscInstrumentModels];
+	instrumentObjects = Cases[Lookup[expandedSafeOps, optionsWithObjects], ObjectP[Object[Instrument, Viscometer]]];
+	modelInstrumentObjects = Cases[Lookup[expandedSafeOps, optionsWithObjects], ObjectP[Model[Instrument, Viscometer]]];
+	viscInstrumentModels = Search[Model[Instrument, Viscometer]];
+	allInstrumentModels = Join[modelInstrumentObjects, viscInstrumentModels];
 
 	(*Note: the Rheosense Initium viscometer can only be calibrated for one Model of autosample vial and 96-well plate at any one time.
 		Currently, the autosampler is calibrated for the following containers. If you want to use a different container, the autosampler MUST be
  		re-calibrated to account for differences in the distance to the bottom of the container. *)
-	potentialContainers = {Model[Container, Plate, "96-well PCR Plate"],Model[Container, Vessel, "1mL HPLC Vial (total recovery) with Cap and PTFE/Silicone Septum"]};
+	potentialContainers = {Model[Container, Plate, "96-well PCR Plate"], Model[Container, Vessel, "1mL HPLC Vial (total recovery) with Cap and PTFE/Silicone Septum"]};
 
 
 	(* Create the Packet Download syntax for our Object and Model samples. *)
-	objectSamplePacketFields=Packet[
+	objectSamplePacketFields = Packet[
 		(*For sample prep*)
-		Sequence@@SamplePreparationCacheFields[Object[Sample]],
+		Sequence @@ SamplePreparationCacheFields[Object[Sample]],
 		(* For Experiment *)
-		Density,RequestedResources,Notebook,Status,Model,Container,State,Density,Volume,Composition,Solvent,IncompatibleMaterials,Status,Model,Container,State,Density,Volume,Composition,Solvent,IncompatibleMaterials,
+		Density, RequestedResources, Notebook, Status, Model, Container, State, Density, Volume, Composition, Solvent, IncompatibleMaterials, Status, Model, Container, State, Density, Volume, Composition, Solvent, IncompatibleMaterials,
 		(*Safety and transport, previously from model*)
-		Ventilated,TransportWarmed,TransportChilled,BoilingPoint
+		Ventilated, TransportTemperature, BoilingPoint
 	];
 
 	modelSamplePacketFields = Packet[Model[{
 		(*For sample prep*)
-		Sequence@@SamplePreparationCacheFields[Model[Sample]],
+		Sequence @@ SamplePreparationCacheFields[Model[Sample]],
 		(* For Experiment *)
-		Density,Notebook
+		Density, Notebook
 	}]];
 
 	objectContainerPacketFields = SamplePreparationCacheFields[Object[Container]];
 
 	modelContainerPacketFields = Packet[Container[Model][{
 		(*For sample prep*)
-		Sequence@@SamplePreparationCacheFields[Model[Container]],
+		Sequence @@ SamplePreparationCacheFields[Model[Container]],
 		(* Experiment required *)
-		NumberOfWells,WellDimensions,WellDiameter,WellDepth,MaxVolume,Name,DefaultStorageCondition
+		NumberOfWells, WellDimensions, WellDiameter, WellDepth, MaxVolume, Name, DefaultStorageCondition
 	}]];
 
-	potentialContainerFields = Packet@@SamplePreparationCacheFields[Model[Container]];
+	potentialContainerFields = Packet @@ SamplePreparationCacheFields[Model[Container]];
 
-		{
-			allSamplePackets,
-			intstrumentModelPacket,
-			instrumentObjectPacket,
-			potentialContainerPacket
-		} = Quiet[
-			Download[
+	{
+		allSamplePackets,
+		intstrumentModelPacket,
+		instrumentObjectPacket,
+		potentialContainerPacket
+	} = Quiet[
+		Download[
+			{
+				ToList[mySamplesWithPreparedSamples],
+				instrumentObjects,
+				allInstrumentModels,
+				potentialContainers
+			},
+			{
 				{
-					ToList[mySamplesWithPreparedSamples],
-					instrumentObjects,
-					allInstrumentModels,
-					potentialContainers
+					objectSamplePacketFields,
+					modelSamplePacketFields,
+					Packet[Container[objectContainerPacketFields]],
+					modelContainerPacketFields,
+
+					Packet[Model, Status, Container, Well, Volume, Composition, IncompatibleMaterials, Solvent, Density],
+					Packet[Container[Model][{MaxVolume, NumberOfWells, Name}]],
+
+					(*Mode*)
+					Packet[Container[{Object, Model, Contents, Name, Status, Sterile}]],
+					(* Model Composition *)
+					Packet[Composition[[All, 2]][{State, Density, Concentration, MolecularWeight}]],
+					Packet[Model[{IncompatibleMaterials, Composition, Name, Solvent, Density, State, Deprecated, Sterile, LiquidHandlerIncompatible, Tablet, SolidUnitWeight, Products, Dimensions, TransportTemperature, MolecularWeight}]]
 				},
-				{
-					{
-						objectSamplePacketFields,
-						modelSamplePacketFields,
-						Packet[Container[objectContainerPacketFields]],
-						modelContainerPacketFields,
-
-						Packet[Model,Status,Container,Well,Volume,Composition,IncompatibleMaterials,Solvent,Density],
-						Packet[Container[Model][{MaxVolume,NumberOfWells,Name}]],
-
-						(*Mode*)
-						Packet[Container[{Object,Model, Contents, Name, Status, Sterile}]],
-						(* Model Composition *)
-						Packet[Composition[[All,2]][{State, Density, Concentration,MolecularWeight}]],
-						Packet[Model[{IncompatibleMaterials,Composition,Name, Solvent,Density,State, Deprecated,Sterile,LiquidHandlerIncompatible,Tablet,TabletWeight,Products, Dimensions,TransportChilled,TransportWarmed,MolecularWeight}]]
-					},
-					{	(*Model[Instrument]*)
-						Packet[Model[{Object,Name,WettedMaterials,InjectionVolumes,MinSampleVolume}]]
-					},
-					{	(*Object[Instrument]*)
-						Packet[Object,Name,Status,Model,WettedMaterials,MinSampleVolume,InjectionVolumes],
-						(*Get the model information*)
-						Packet[Model[{Object,Name,WettedMaterials,InjectionVolumes,MinSampleVolume}]]
-					},
-
-					{ (*Potential Containers*)
-						potentialContainerFields
-					}
+				{    (*Model[Instrument]*)
+					Packet[Model[{Object, Name, WettedMaterials, InjectionVolumes, MinSampleVolume}]]
 				},
-				Cache->Flatten[{samplePreparationCache,cacheOption}],
-				Date->Now
-			],
-			{Download::FieldDoesntExist,Download::NotLinkField}
-		];
+				{    (*Object[Instrument]*)
+					Packet[Object, Name, Status, Model, WettedMaterials, MinSampleVolume, InjectionVolumes],
+					(*Get the model information*)
+					Packet[Model[{Object, Name, WettedMaterials, InjectionVolumes, MinSampleVolume}]]
+				},
+
+				{ (*Potential Containers*)
+					potentialContainerFields
+				}
+			},
+			Cache -> cacheOption,
+			Simulation -> updatedSimulation,
+			Date -> Now
+		],
+		{Download::FieldDoesntExist, Download::NotLinkField}
+	];
 
 	cacheBall = FlattenCachePackets[{
-		samplePreparationCache,allSamplePackets,intstrumentModelPacket,instrumentObjectPacket,potentialContainerPacket
+		cacheOption, allSamplePackets, intstrumentModelPacket, instrumentObjectPacket, potentialContainerPacket
 	}];
 	(* Build the resolved options *)
-	resolvedOptionsResult=If[gatherTests,
+	resolvedOptionsResult = If[gatherTests,
 		(* We are gathering tests. This silences any messages being thrown. *)
-		{resolvedOptions,resolvedOptionsTests}=resolveExperimentMeasureViscosityOptions[ToList[mySamples],expandedSafeOps,Cache->cacheBall,Output->{Result,Tests}];
+		{resolvedOptions, resolvedOptionsTests} = resolveExperimentMeasureViscosityOptions[ToList[mySamples], expandedSafeOps, Cache -> cacheBall, Simulation -> updatedSimulation, Output -> {Result, Tests}];
 
 		(* Therefore, we have to run the tests to see if we encountered a failure. *)
-		If[RunUnitTest[<|"Tests"->resolvedOptionsTests|>,OutputFormat->SingleBoolean,Verbose->False],
-			{resolvedOptions,resolvedOptionsTests},
+		If[RunUnitTest[<|"Tests" -> resolvedOptionsTests|>, OutputFormat -> SingleBoolean, Verbose -> False],
+			{resolvedOptions, resolvedOptionsTests},
 			$Failed
 		],
 
 		(* We are not gathering tests. Simply check for Error::InvalidInput and Error::InvalidOption. *)
 		Check[
-			{resolvedOptions,resolvedOptionsTests}={resolveExperimentMeasureViscosityOptions[ToList[mySamples],expandedSafeOps,Cache->cacheBall],{}},
+			{resolvedOptions, resolvedOptionsTests} = {resolveExperimentMeasureViscosityOptions[ToList[mySamples], expandedSafeOps, Cache -> cacheBall, Simulation -> updatedSimulation], {}},
 			$Failed,
-			{Error::InvalidInput,Error::InvalidOption}
+			{Error::InvalidInput, Error::InvalidOption}
 		]
 	];
 
@@ -773,67 +773,70 @@ ExperimentMeasureViscosity[mySamples:ListableP[ObjectP[Object[Sample]]],myOption
 	collapsedResolvedOptions = CollapseIndexMatchedOptions[
 		ExperimentMeasureViscosity,
 		resolvedOptions,
-		Ignore->ToList[myOptions],
-		Messages->False
+		Ignore -> ToList[myOptions],
+		Messages -> False
 	];
 
 	(* If option resolution failed, return early. *)
-	If[MatchQ[resolvedOptionsResult,$Failed],
-		Return[outputSpecification/.{
+	If[MatchQ[resolvedOptionsResult, $Failed],
+		Return[outputSpecification /. {
 			Result -> $Failed,
-			Tests->Join[safeOpsTests,validLengthTests,templateTests,resolvedOptionsTests],
-			Options->RemoveHiddenOptions[ExperimentMeasureViscosity,collapsedResolvedOptions],
-			Preview->Null
+			Tests -> Join[safeOpsTests, validLengthTests, templateTests, resolvedOptionsTests],
+			Options -> RemoveHiddenOptions[ExperimentMeasureViscosity, collapsedResolvedOptions],
+			Preview -> Null
 		}]
 	];
 
 	(* Build packets with resources *)
-	{resourcePackets,resourcePacketTests} = If[gatherTests,
-		experimentMeasureViscosityResourcePackets[mySamplesWithPreparedSamples,expandedSafeOps,resolvedOptions,Cache->cacheBall,Output->{Result,Tests}],
-		{experimentMeasureViscosityResourcePackets[mySamplesWithPreparedSamples,expandedSafeOps,resolvedOptions,Cache->cacheBall],{}}
+	{resourcePackets, resourcePacketTests} = If[gatherTests,
+		experimentMeasureViscosityResourcePackets[mySamplesWithPreparedSamples, expandedSafeOps, resolvedOptions, Cache -> cacheBall, Simulation -> updatedSimulation, Output -> {Result, Tests}],
+		{experimentMeasureViscosityResourcePackets[mySamplesWithPreparedSamples, expandedSafeOps, resolvedOptions, Cache -> cacheBall, Simulation -> updatedSimulation], {}}
 	];
 
 	(* If we don't have to return the Result, don't bother calling UploadProtocol[...]. *)
-	If[!MemberQ[output,Result],
-		Return[outputSpecification/.{
+	If[!MemberQ[output, Result],
+		Return[outputSpecification /. {
 			Result -> Null,
-			Tests -> Flatten[{safeOpsTests,validLengthTests,templateTests,resolvedOptionsTests,resourcePacketTests}],
-			Options -> RemoveHiddenOptions[ExperimentMeasureViscosity,collapsedResolvedOptions],
+			Tests -> Flatten[{safeOpsTests, validLengthTests, templateTests, resolvedOptionsTests, resourcePacketTests}],
+			Options -> RemoveHiddenOptions[ExperimentMeasureViscosity, collapsedResolvedOptions],
 			Preview -> Null
 		}]
 	];
 
 	(* We have to return the result. Call UploadProtocol[...] to prepare our protocol packet (and upload it if asked). *)
-	protocolObject = If[!MatchQ[resourcePackets,$Failed]&&!MatchQ[resolvedOptionsResult,$Failed],
+	protocolObject = If[!MatchQ[resourcePackets, $Failed] && !MatchQ[resolvedOptionsResult, $Failed],
 		UploadProtocol[
 			resourcePackets,
-			Upload->Lookup[safeOps,Upload],
-			Confirm->Lookup[safeOps,Confirm],
-			ParentProtocol->Lookup[safeOps,ParentProtocol],
-			Priority->Lookup[safeOps,Priority],
-			StartDate->Lookup[safeOps,StartDate],
-			HoldOrder->Lookup[safeOps,HoldOrder],
-			QueuePosition->Lookup[safeOps,QueuePosition],
-			ConstellationMessage->Object[Protocol,MeasureViscosity],
-			Cache->samplePreparationCache
+			Upload -> Lookup[safeOps, Upload],
+			Confirm -> Lookup[safeOps, Confirm],
+			CanaryBranch -> Lookup[safeOps, CanaryBranch],
+			ParentProtocol -> Lookup[safeOps, ParentProtocol],
+			Priority -> Lookup[safeOps, Priority],
+			StartDate -> Lookup[safeOps, StartDate],
+			HoldOrder -> Lookup[safeOps, HoldOrder],
+			QueuePosition -> Lookup[safeOps, QueuePosition],
+			ConstellationMessage -> Object[Protocol, MeasureViscosity],
+			Cache -> cacheBall,
+			Simulation -> updatedSimulation
 		],
 		$Failed
 	];
 
 	(* Return requested output *)
-	outputSpecification/.{
+	outputSpecification /. {
 		Result -> protocolObject,
-		Tests -> Flatten[{safeOpsTests,validLengthTests,templateTests,resolvedOptionsTests(*,resourcePacketTests*)}],
-		Options -> RemoveHiddenOptions[ExperimentMeasureViscosity,collapsedResolvedOptions],
+		Tests -> Flatten[{safeOpsTests, validLengthTests, templateTests, resolvedOptionsTests(*,resourcePacketTests*)}],
+		Options -> RemoveHiddenOptions[ExperimentMeasureViscosity, collapsedResolvedOptions],
 		Preview -> Null
 	}
 ];
 
 
 (* Note: The container overload should come after the sample overload. *)
-ExperimentMeasureViscosity[myContainers:ListableP[ObjectP[{Object[Container],Object[Sample]}]|_String|{LocationPositionP,_String|ObjectP[Object[Container]]}],myOptions:OptionsPattern[]]:=Module[
-	{listedOptions,listedContainers,listedSamples,outputSpecification,output,gatherTests,validSamplePreparationResult,mySamplesWithPreparedSamples,myOptionsWithPreparedSamples,
-	samplePreparationCache,containerToSampleResult,containerToSampleOutput,updatedCache,samples,sampleOptions,sampleCache,containerToSampleTests},
+ExperimentMeasureViscosity[myContainers:ListableP[ObjectP[{Object[Container],Object[Sample],Model[Sample]}]|_String|{LocationPositionP,_String|ObjectP[Object[Container]]}],myOptions:OptionsPattern[]]:=Module[
+	{listedOptions,listedContainers,outputSpecification,output,gatherTests,validSamplePreparationResult,mySamplesWithPreparedSamples,myOptionsWithPreparedSamples,
+		containerToSampleResult,containerToSampleOutput,samples,sampleOptions,containerToSampleTests, containerToSampleSimulation,
+		updatedSimulation},
 
 	(* Determine the requested return value from the function *)
 	outputSpecification=Quiet[OptionValue[Output]];
@@ -842,36 +845,38 @@ ExperimentMeasureViscosity[myContainers:ListableP[ObjectP[{Object[Container],Obj
 	(* Determine if we should keep a running list of tests *)
 	gatherTests=MemberQ[output,Tests];
 
-	{listedContainers, listedOptions}=removeLinks[ToList[myContainers], ToList[myOptions]];
+	{listedContainers, listedOptions}={ToList[myContainers], ToList[myOptions]};
 
 	(* First, simulate our sample preparation. *)
 	validSamplePreparationResult=Check[
 		(* Simulate sample preparation. *)
-		{mySamplesWithPreparedSamples,myOptionsWithPreparedSamples,samplePreparationCache}=simulateSamplePreparationPackets[
+		{mySamplesWithPreparedSamples,myOptionsWithPreparedSamples,updatedSimulation}=simulateSamplePreparationPacketsNew[
 			ExperimentMeasureViscosity,
 			ToList[listedContainers],
-			ToList[listedOptions]
+			ToList[listedOptions],
+			DefaultPreparedModelAmount -> 200 Microliter,
+			DefaultPreparedModelContainer -> Model[Container, Vessel, "1mL HPLC Vial (total recovery) with Cap and PTFE/Silicone Septum"]
 		],
 		$Failed,
-		{Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
+		{Download::ObjectDoesNotExist, Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
 	];
 
 	(* If we are given an invalid define name, return early. *)
 	If[MatchQ[validSamplePreparationResult,$Failed],
 		(* Return early. *)
-		(* Note: We've already thrown a message above in simulateSamplePreparationPackets. *)
-		ClearMemoization[Experiment`Private`simulateSamplePreparationPackets];Return[$Failed]
+		(* Note: We've already thrown a message above in simulateSamplePreparationPacketsNew. *)
+		Return[$Failed]
 	];
 
 	(* Convert our given containers into samples and sample index-matched options. *)
 	containerToSampleResult=If[gatherTests,
 		(* We are gathering tests. This silences any messages being thrown. *)
-		{containerToSampleOutput,containerToSampleTests}=containerToSampleOptions[
+		{containerToSampleOutput,containerToSampleTests, containerToSampleSimulation}=containerToSampleOptions[
 			ExperimentMeasureViscosity,
 			mySamplesWithPreparedSamples,
 			myOptionsWithPreparedSamples,
-			Output->{Result,Tests},
-			Cache->samplePreparationCache
+			Output->{Result,Tests,Simulation},
+			Simulation -> updatedSimulation
 		];
 
 		(* Therefore, we have to run the tests to see if we encountered a failure. *)
@@ -882,24 +887,17 @@ ExperimentMeasureViscosity[myContainers:ListableP[ObjectP[{Object[Container],Obj
 
 		(* We are not gathering tests. Simply check for Error::InvalidInput and Error::InvalidOption. *)
 		Check[
-			containerToSampleOutput=containerToSampleOptions[
+			{containerToSampleOutput, containerToSampleSimulation}=containerToSampleOptions[
 				ExperimentMeasureViscosity,
 				mySamplesWithPreparedSamples,
 				myOptionsWithPreparedSamples,
-				Output->Result,
-				Cache->samplePreparationCache
+				Output-> {Result, Simulation},
+				Simulation -> updatedSimulation
 			],
 			$Failed,
 			{Error::EmptyContainers, Error::ContainerEmptyWells, Error::WellDoesNotExist}
 		]
 	];
-
-	(* Update our cache with our new simulated values. *)
-	(* It is important the sample preparation cache appears first in the cache ball. *)
-	updatedCache=Flatten[{
-		samplePreparationCache,
-		Lookup[listedOptions,Cache,{}]
-	}];
 
 	(* If we were given an empty container, return early. *)
 	If[MatchQ[containerToSampleResult,$Failed],
@@ -911,10 +909,10 @@ ExperimentMeasureViscosity[myContainers:ListableP[ObjectP[{Object[Container],Obj
 			Preview -> Null
 		},
 		(* Split up our containerToSample result into the samples and sampleOptions. *)
-		{samples,sampleOptions, sampleCache}=containerToSampleOutput;
+		{samples,sampleOptions}=containerToSampleOutput;
 
 		(* Call our main function with our samples and converted options. *)
-		ExperimentMeasureViscosity[samples,ReplaceRule[sampleOptions,Cache->Flatten[{updatedCache,sampleCache}]]]
+		ExperimentMeasureViscosity[samples,ReplaceRule[sampleOptions,Simulation -> containerToSampleSimulation]]
 	]
 ];
 
@@ -925,11 +923,11 @@ ExperimentMeasureViscosity[myContainers:ListableP[ObjectP[{Object[Container],Obj
 
 DefineOptions[
 	resolveExperimentMeasureViscosityOptions,
-	Options:>{HelperOutputOption,CacheOption}
+	Options:>{HelperOutputOption,CacheOption,SimulationOption}
 ];
 
 resolveExperimentMeasureViscosityOptions[mySamples:{ObjectP[Object[Sample]]...},myOptions:{_Rule...},myResolutionOptions:OptionsPattern[resolveExperimentMeasureViscosityOptions]]:=Module[
-	{outputSpecification,output,gatherTests,cache,samplePrepOptions,measureViscosityOptions,simulatedSamples,resolvedSamplePrepOptions,simulatedCache,samplePrepTests,
+	{outputSpecification,output,gatherTests,cache,samplePrepOptions,measureViscosityOptions,simulatedSamples,resolvedSamplePrepOptions,samplePrepTests,
 	measureViscosityOptionsAssociation,invalidInputs,invalidOptions,targetContainers,resolvedAliquotOptions,aliquotTests,targetVolumes,
 
 	(* Sample, container, and instrument packets to download*)
@@ -940,7 +938,7 @@ resolveExperimentMeasureViscosityOptions[mySamples:{ObjectP[Object[Sample]]...},
 
 	(* options that do not need to be rounded *)
 		instrument,assayType,viscometerChip,viscometerChipModel, numberOfReplicates,residualIncubation,primaryBuffer,name,
-		suppliedViscometerChip, suppliedViscometerChipObject,suppliedPrimaryBuffer,primaryBufferStorage,injectionRate,prePressurization,
+		suppliedViscometerChip, suppliedViscometerChipObject,suppliedPrimaryBuffer,primaryBufferStorage,prePressurization,
 
 	(*for rounding options *)
 		viscosityOptionsChecks,viscosityOptionsPrecisions,roundedExperimentOptions,optionsPrecisionTests,roundedExperimentOptionsList,allOptionsRounded,
@@ -953,7 +951,7 @@ resolveExperimentMeasureViscosityOptions[mySamples:{ObjectP[Object[Sample]]...},
 		measTableMeasTimeRoundedAssociation,measTableMeasTimeRoundedTests,measTablePauseTimeRoundedAssociation,measTablePauseTimeRoundedTests,roundedMeasurementTable,
 
 	(* Options that should  be rounded *)
-		suppliedSampleTemperature,suppliedInjectionRate,suppliedTemperatureStabilityMargin,suppliedTemperatureStabilityTime,suppliedMeasurementTemperature,
+		suppliedSampleTemperature,suppliedTemperatureStabilityMargin,suppliedTemperatureStabilityTime,suppliedMeasurementTemperature,
 		suppliedFlowRate,suppliedEquilibrationTime,suppliedMeasurementTime,suppliedPauseTime,suppliedRemeasurementReloadVolume,suppliedTargetPressure,
 
 	(* input Validation *)
@@ -966,17 +964,16 @@ resolveExperimentMeasureViscosityOptions[mySamples:{ObjectP[Object[Sample]]...},
 		validNameQ,nameInvalidOption,validNameTest,
 		remeasurementConflicts,remeasurementConflictOptions,remeasurementConflictInputs,remeasurementInvalidOptions,remeasurementInvalidTest,
 		recoupSampleConflicts,recoupSampleConflictOptions,recoupSampleConflictInputs,recoupSampleInvalidOptions,recoupSampleInvalidTest,
-		measurementTableOptions,measurementTableOptionsBoolsmeasurementTableConflicts,recoupSampleContainerlist,recoupSampleContainerModels, prepressurizationConflicts, prepressurizationConflictOptions,prepressurizationConflictInputs, prepressurizationInvalidOptions, prepressurizationInvalidTest,
+		measurementTableOptions,measurementTableOptionsBoolsmeasurementTableConflicts,recoupSampleContainerlist,recoupSampleContainerModels,
 	(* Map thread*)
 		mapThreadFriendlyOptions,injectionVolumesList,
-		resolvedViscometerChip,resolvedPrimaryBuffer,resolvedPrimaryBufferStorage,resolvedSampleTemperature,resolvedInjectionRate,resolvedMeasurementMethod,resolvedPriming,resolvedTemperatureStabilityMargin,resolvedTemperatureStabilityTime,
+		resolvedViscometerChip,resolvedPrimaryBuffer,resolvedPrimaryBufferStorage,resolvedSampleTemperature,resolvedMeasurementMethod,resolvedPriming,resolvedTemperatureStabilityMargin,resolvedTemperatureStabilityTime,
 		resolvedMeasurementTemperature,resolvedRemeasurementAllowed,resolvedRecoupSample,resolvedRecoupSampleContainerSame,resolvedInjectionVolume,
 		resolvedFlowRate,resolvedEquilibrationTime,resolvedMeasurementTime,resolvedPauseTime,resolvedNumberOfReadings,resolvedMeasurementMethodTable,resolvedRemeasurementReloadVolume,resolvedTargetPressure,
 		resolvedRecoupSampleContainer,
 	(*Errors and testing *)
 		sampleVolumeTooLowForInjectionErrors,sampleVolumeTooLowForInjectionTests,sampleVolumeTooLowForInjectionOptions,
 		minInjectionAliquotErrors,minInjectionAliquotErrorTests,minInjectionAliquoErrorOptions,
-		(*injectionRateHighWarnings,injectionRateHighWarningTests,injectionRateHighWarningOptions,*)
 		primingWarnings,primingWarningTests,primingWarningOptions,
 		customMeasTableParameterErrors,customMeasTableParameterErrorTests,customMeasTableParameterOptions,failingCustomMeasInputs,failingCustomMeasOptions,
 		customMeasTableParameterWarnings,customMeasTableParameterWarningTests,customMeasTableParameterWarningOptions,
@@ -1002,9 +999,9 @@ resolveExperimentMeasureViscosityOptions[mySamples:{ObjectP[Object[Sample]]...},
 
 		validSampleStorageConditionQ,invalidStorageConditionOptions,validSampleStorageTests,
 		allTests,
-		aliquotMessage,resolvedOptions, emailOption, uploadOption, nameOption, confirmOption,parentProtocolOption,fastTrackOption,templateOption,samplesInStorageOption,samplesOutStorageOption,operator,resolvedEmail,
+		aliquotMessage,resolvedOptions, emailOption, uploadOption, nameOption, confirmOption,canaryBranchOption,parentProtocolOption,fastTrackOption,templateOption,samplesInStorageOption,samplesOutStorageOption,operator,resolvedEmail,
 
-		resolvedPostProcessingOptions
+		resolvedPostProcessingOptions, simulation, updatedSimulation
 	},
 
 	(*-- SETUP OUR USER SPECIFIED OPTIONS AND CACHE --*)
@@ -1018,14 +1015,15 @@ resolveExperimentMeasureViscosityOptions[mySamples:{ObjectP[Object[Sample]]...},
 
 	(* Fetch our cache from the parent function. *)
 	cache = Lookup[ToList[myResolutionOptions], Cache, {}];
+	simulation = Lookup[ToList[myResolutionOptions], Simulation, Simulation[]];
 
-	(* Seperate out our MeasureViscosity options from our Sample Prep options. *)
+	(* Separate out our MeasureViscosity options from our Sample Prep options. *)
 	{samplePrepOptions,measureViscosityOptions}=splitPrepOptions[myOptions];
 
 	(* Resolve our sample prep options *)
-	{{simulatedSamples,resolvedSamplePrepOptions,simulatedCache},samplePrepTests}=If[gatherTests,
-		resolveSamplePrepOptions[ExperimentMeasureViscosity,mySamples,samplePrepOptions,Cache->cache,Output->{Result,Tests}],
-		{resolveSamplePrepOptions[ExperimentMeasureViscosity,mySamples,samplePrepOptions,Cache->cache,Output->Result],{}}
+	{{simulatedSamples,resolvedSamplePrepOptions,updatedSimulation},samplePrepTests}=If[gatherTests,
+		resolveSamplePrepOptionsNew[ExperimentMeasureViscosity,mySamples,samplePrepOptions,Cache->cache,Simulation->simulation,Output->{Result,Tests}],
+		{resolveSamplePrepOptionsNew[ExperimentMeasureViscosity,mySamples,samplePrepOptions,Cache->cache,Simulation->simulation,Output->Result],{}}
 	];
 
 	(* Convert list of rules to Association so we can Lookup, Append, Join as usual. *)
@@ -1035,7 +1033,10 @@ resolveExperimentMeasureViscosityOptions[mySamples:{ObjectP[Object[Sample]]...},
 	(*Note: the Rheosense Initium viscometer can only be calibrated for one Model of autosample vial and 96-well plate at any one time.
 		Currently, the autosampler is calibrated for the following containers. If you want to use a different container, the autosampler must be
  		re-calibrated to account for differences in the distance to the bottom of the container. *)
-	potentialContainers={Model[Container, Plate, "96-well PCR Plate"],Model[Container, Vessel, "1mL HPLC Vial (total recovery) with Cap and PTFE/Silicone Septum"]};
+	potentialContainers={
+		Model[Container, Plate, "id:01G6nvkKrrYm"], (*Model[Container, Plate, "96-well PCR Plate"]*)
+		Model[Container, Vessel, "id:BYDOjvGj6q39"] (*Model[Container, Vessel, "1mL HPLC Vial (total recovery) with Cap and PTFE/Silicone Septum"]*)
+	};
 
 	(* --- DOWNLOAD THE INFORMATION THAT WE NEED FOR OUR OPTION RESOLVER AND RESOURCE PACKET FUNCTION --- *)
 	(* Get the instrument *)
@@ -1074,54 +1075,54 @@ resolveExperimentMeasureViscosityOptions[mySamples:{ObjectP[Object[Sample]]...},
 		Nothing
 	];
 	
-(* Extract the packets that we need from our downloaded cache. *)
-	(* Remember to download from simulatedSamples, using our simulatedCache *)
+	(* Extract the packets that we need from our downloaded cache. *)
+	(* Remember to download from simulatedSamples, using our updatedSimulation *)
+	{listedSampleContainerPackets, instrumentPacket, containerPackets, {viscometerChipPacket}} = Quiet[Download[
+		{
+			simulatedSamples,
+			{instrument},
+			potentialContainers,
+			ToList[suppliedViscometerChipObject]
+		},
+		{
+			{
+				Packet[Model, Status, Container, Well, Volume, Composition, IncompatibleMaterials, Solvent, Density, State],
+				Packet[Model[{IncompatibleMaterials, Composition, Name, Solvent, Density, MolecularWeight, State}]],
+				Packet[Container[{Model, Contents}]],
+				(*Packet[Container[Model[{MaxVolume,NumberOfWells,Name}]]],*)
+				Packet[Composition[[All, 2]][{State, Density, Concentration}]]
+			},
+			{instrumentDownloadFields},
+			{Packet[MaxVolume, NumberOfWells, Name]},
+			{viscometerChipDownloadFields}
+		},
+		Cache -> cache,
+		Simulation -> updatedSimulation,
+		Date -> Now
+	],
+		{Download::FieldDoesntExist, Download::NotLinkField}
+	];
 
-		{listedSampleContainerPackets,instrumentPacket,containerPackets,{viscometerChipPacket}}=Quiet[Download[
-				{
-					simulatedSamples,
-					{instrument},
-					potentialContainers,
-					ToList[suppliedViscometerChipObject]
-				},
-				{
-					{
-						Packet[Model,Status,Container,Well,Volume,Composition,IncompatibleMaterials,Solvent,Density,State],
-						Packet[Model[{IncompatibleMaterials,Composition,Name,Solvent,Density,MolecularWeight,State}]],
-						Packet[Container[{Model,Contents}]],
-						(*Packet[Container[Model[{MaxVolume,NumberOfWells,Name}]]],*)
-						Packet[Composition[[All,2]][{State,Density,Concentration}]]
-					},
-					{instrumentDownloadFields},
-					{Packet[MaxVolume,NumberOfWells,Name]},
-					{viscometerChipDownloadFields}
-				},
-				Cache->simulatedCache,
-				Date->Now
-			],
-			{Download::FieldDoesntExist,Download::NotLinkField}
-		];
+	(* --- Extract out the packets from the download --- *)
+	(* -- sample packets -- *)
+	samplePackets = listedSampleContainerPackets[[All, 1]];
+	sampleModelPackets = listedSampleContainerPackets[[All, 2]];
+	sampleComponentPackets = listedSampleContainerPackets[[All, 4]];
+	sampleContainerPackets = listedSampleContainerPackets[[All, 3]];
+	simulatedSampleContainerModels = If[NullQ[#], Null, Download[Lookup[#, Model], Object]]& /@ sampleContainerPackets;
+	simulatedSampleContainerObjects = Download[Lookup[samplePackets, Container], Object];
+	sampleSolvents = Lookup[Flatten[samplePackets], Solvent, Null];
 
-		(* --- Extract out the packets from the download --- *)
-		(* -- sample packets -- *)
-		samplePackets=listedSampleContainerPackets[[All,1]];
-		sampleModelPackets=listedSampleContainerPackets[[All,2]];
-		sampleComponentPackets=listedSampleContainerPackets[[All,4]];
-		sampleContainerPackets=listedSampleContainerPackets[[All,3]];
-		simulatedSampleContainerModels = If[NullQ[#],Null,Download[Lookup[#,Model],Object]]&/@sampleContainerPackets;
-		simulatedSampleContainerObjects = Download[Lookup[samplePackets,Container],Object];
-		sampleSolvents = Lookup[Flatten[samplePackets],Solvent,Null];
+	(* -- Instrument packet --*)
+	(* - Find the Model of the instrument, if it was specified - *)
+	instrumentModel = If[
+		MatchQ[instrumentPacket, {}],
+		Null,
+		FirstOrDefault[Lookup[Flatten[instrumentPacket], Object]]
+	];
 
-		(* -- Instrument packet --*)
-		(* - Find the Model of the instrument, if it was specified - *)
-		instrumentModel=If[
-			MatchQ[instrumentPacket,{}],
-			Null,
-			FirstOrDefault[Lookup[Flatten[instrumentPacket],Object]]
-		];
-
-		(* Pull out the list of all possible injection Volumes from the Model Packet *)
-		injectionVolumesList = Lookup[Flatten[instrumentPacket],InjectionVolumes];
+	(* Pull out the list of all possible injection Volumes from the Model Packet *)
+	injectionVolumesList = Lookup[Flatten[instrumentPacket], InjectionVolumes];
 
 	(* If you have Warning:: messages, do NOT throw them when MatchQ[$ECLApplication,Engine]. Warnings should NOT be surfaced in engine. *)
 
@@ -1135,7 +1136,7 @@ resolveExperimentMeasureViscosityOptions[mySamples:{ObjectP[Object[Sample]]...},
 
 	(* If there are invalid inputs and we are throwing messages, throw an error message .*)
 	If[Length[discardedInvalidInputs]>0&&!gatherTests,
-		Message[Error::DiscardedSamples, ObjectToString[discardedInvalidInputs, Cache->simulatedCache]]
+		Message[Error::DiscardedSamples, ObjectToString[discardedInvalidInputs, Simulation->updatedSimulation]]
 	];
 
 	(* If we are gathering tests, create a passing and/or failing test with the appropriate result. *)
@@ -1143,12 +1144,12 @@ resolveExperimentMeasureViscosityOptions[mySamples:{ObjectP[Object[Sample]]...},
 		Module[{failingTest,passingTest},
 			failingTest=If[Length[discardedInvalidInputs]==0,
 				Nothing,
-				Test["Our input samples "<>ObjectToString[discardedInvalidInputs, Cache->simulatedCache]<>" are not discarded:",True,False]
+				Test["Our input samples "<>ObjectToString[discardedInvalidInputs, Simulation->updatedSimulation]<>" are not discarded:",True,False]
 			];
 
 			passingTest=If[Length[discardedInvalidInputs]==Length[simulatedSamples],
 				Nothing,
-				Test["Our input samples "<>ObjectToString[Complement[simulatedSamples,discardedInvalidInputs], Cache->simulatedCache]<>" are not discarded:",True,True]
+				Test["Our input samples "<>ObjectToString[Complement[simulatedSamples,discardedInvalidInputs], Simulation->updatedSimulation]<>" are not discarded:",True,True]
 			];
 
 			{failingTest,passingTest}
@@ -1163,7 +1164,7 @@ resolveExperimentMeasureViscosityOptions[mySamples:{ObjectP[Object[Sample]]...},
 
 	(* If there are invalid inputs and we are throwing messages, throw an error message .*)
 	If[Length[containerlessSamples]>0&&!gatherTests,
-		Message[Error::ContainerlessSamples, ObjectToString[containerlessSamples, Cache->simulatedCache]]
+		Message[Error::ContainerlessSamples, ObjectToString[containerlessSamples, Simulation->updatedSimulation]]
 	];
 
 	(* If we are gathering tests, create a passing and/or failing test with the appropriate result. *)
@@ -1171,12 +1172,12 @@ resolveExperimentMeasureViscosityOptions[mySamples:{ObjectP[Object[Sample]]...},
 		Module[{failingTest,passingTest},
 			failingTest=If[Length[containerlessSamples]==0,
 				Nothing,
-				Test["Our input samples "<>ObjectToString[containerlessSamples, Cache->simulatedCache]<>" are not discarded:",True,False]
+				Test["Our input samples "<>ObjectToString[containerlessSamples, Simulation->updatedSimulation]<>" are not discarded:",True,False]
 			];
 
 			passingTest=If[Length[containerlessSamples]==Length[simulatedSamples],
 				Nothing,
-				Test["Our input samples "<>ObjectToString[Complement[simulatedSamples,containerlessSamples], Cache->simulatedCache]<>" are not discarded:",True,True]
+				Test["Our input samples "<>ObjectToString[Complement[simulatedSamples,containerlessSamples], Simulation->updatedSimulation]<>" are not discarded:",True,True]
 			];
 
 			{failingTest,passingTest}
@@ -1184,8 +1185,8 @@ resolveExperimentMeasureViscosityOptions[mySamples:{ObjectP[Object[Sample]]...},
 		Nothing
 	];
 
-	(* 2. Check to see if the number of samples is more than the limit depending on the ViscometerChip - B05 (20 samples), C05,E02 (12 samples). *)
-	(* Each chip has a specific amount of TertiaryCleaningSolvent that it uses per sample. The maximum amount of TertiaryCleaningSolvent that is prepared for one experiment is 250 mL. B05 uses 12 mL per sample, while C05 and E02 uses 20 mL per sample. *)
+	(* 2. Check to see if the number of samples is more than the limit depending on the ViscometerChip - B05 (72 samples), C05,E02 (48 samples). *)
+	(* Each chip has a specific amount of TertiaryCleaningSolvent that it uses per sample. The maximum amount of TertiaryCleaningSolvent that is prepared for one experiment is 1 L. B05 uses 12 mL per sample, while C05 and E02 uses 20 mL per sample. *)
 	viscometerChipModel=Which[
 		MatchQ[suppliedViscometerChip,ObjectP[]],
 		Lookup[viscometerChipPacket[[1]],Object],
@@ -1193,24 +1194,26 @@ resolveExperimentMeasureViscosityOptions[mySamples:{ObjectP[Object[Sample]]...},
 		True,
 		Null
 	];
-	
+	(* The maxNumberOfSamples is dependent on the limiting TertiaryCleaningSolvent used per Chip*)
 	maxNumberOfSamples =  Which[
+		(* Chip B05 *)
 		MatchQ[viscometerChipModel,ObjectP[Model[Part, ViscometerChip, "id:6V0npvmZXEAa"]]],
-		20,
+		72,
 		
+		(* Chip C05 or E02*)
 		MatchQ[viscometerChipModel,ObjectP[Model[Part, ViscometerChip, "id:pZx9jo8LKz04"]]|ObjectP[Model[Part, ViscometerChip, "id:4pO6dM504kjL"]]],
-		12,
+		48,
 		
 		(* If the ViscometerChip has not been supplied, maxNumberOfSamples depends on AssayType which has a default of LowViscosity. LowViscosity uses the B05 chip*)
 		MatchQ[Lookup[measureViscosityOptionsAssociation,AssayType],LowViscosity],
-		20,
+		72,
 		
-		(* If AssayType is not LowViscosity, the experiment is set to use either a C05 or E02 and can only accommodate 12 samples *)
+		(* If AssayType is not LowViscosity, the experiment is set to use either a C05 or E02 and can only accommodate 48 samples *)
 		True,
-		12
+		48
 	];
 	
-	(* If there are more than 96 input samples, set all of the samples to tooManyInvalidInputs *)
+	(* If there are more than maxNumberOfSamples input samples, set all of the samples to tooManyInvalidInputs *)
 	tooManyInvalidInputs=If[MatchQ[Length[simulatedSamples],GreaterP[maxNumberOfSamples]],
 			Lookup[Flatten[samplePackets],Object,Null],
 			{}
@@ -1226,7 +1229,7 @@ resolveExperimentMeasureViscosityOptions[mySamples:{ObjectP[Object[Sample]]...},
 		Module[{failingTest,passingTest},
 			failingTest=If[Length[tooManyInvalidInputs]==0,
 				Nothing,
-				Test["There are 96 or fewer input samples in "<>ObjectToString[tooManyInvalidInputs,Cache->simulatedCache],True,False]
+				Test["There are 96 or fewer input samples in "<>ObjectToString[tooManyInvalidInputs,Simulation->updatedSimulation],True,False]
 			];
 
 			passingTest=If[Length[tooManyInvalidInputs]==Length[simulatedSamples],
@@ -1246,7 +1249,7 @@ resolveExperimentMeasureViscosityOptions[mySamples:{ObjectP[Object[Sample]]...},
 
 	(* If there are invalid inputs and we are throwing messages, throw an error message .*)
 	If[Length[solidInvalidInputs]>0&&!gatherTests,
-		Message[Error::ViscositySolidSampleUnsupported, ObjectToString[solidInvalidInputs, Cache->simulatedCache]]
+		Message[Error::ViscositySolidSampleUnsupported, ObjectToString[solidInvalidInputs, Simulation->updatedSimulation]]
 	];
 
 	(* If we are gathering tests, create a passing and/or failing test with the appropriate result. *)
@@ -1254,12 +1257,12 @@ resolveExperimentMeasureViscosityOptions[mySamples:{ObjectP[Object[Sample]]...},
 		Module[{failingTest,passingTest},
 			failingTest=If[Length[solidInvalidInputs]==0,
 				Nothing,
-				Test["Our input samples "<>ObjectToString[solidInvalidInputs, Cache->simulatedCache]<>" are in a liquid state:",True,False]
+				Test["Our input samples "<>ObjectToString[solidInvalidInputs, Simulation->updatedSimulation]<>" are in a liquid state:",True,False]
 			];
 
 			passingTest=If[Length[solidInvalidInputs]==Length[simulatedSamples],
 				Nothing,
-				Test["Our input samples "<>ObjectToString[Complement[simulatedSamples,solidInvalidInputs], Cache->simulatedCache]<>" are in a liquid state:",True,True]
+				Test["Our input samples "<>ObjectToString[Complement[simulatedSamples,solidInvalidInputs], Simulation->updatedSimulation]<>" are in a liquid state:",True,True]
 			];
 
 			{failingTest,passingTest}
@@ -1275,7 +1278,7 @@ resolveExperimentMeasureViscosityOptions[mySamples:{ObjectP[Object[Sample]]...},
 
 	(* If there are invalid inputs and we are throwing messages, throw an error message .*)
 	If[Length[noVolumeInvalidInputs]>0&&!gatherTests,
-		Message[Error::ViscosityNoVolume, ObjectToString[noVolumeInvalidInputs, Cache->simulatedCache]]
+		Message[Error::ViscosityNoVolume, ObjectToString[noVolumeInvalidInputs, Simulation->updatedSimulation]]
 	];
 
 	(* If we are gathering tests, create a passing and/or failing test with the appropriate result. *)
@@ -1283,12 +1286,12 @@ resolveExperimentMeasureViscosityOptions[mySamples:{ObjectP[Object[Sample]]...},
 		Module[{failingTest,passingTest},
 			failingTest=If[Length[noVolumeInvalidInputs]==0,
 				Nothing,
-				Test["Our input samples "<>ObjectToString[noVolumeInvalidInputs, Cache->simulatedCache]<>" have volume populated:",True,False]
+				Test["Our input samples "<>ObjectToString[noVolumeInvalidInputs, Simulation->updatedSimulation]<>" have volume populated:",True,False]
 			];
 
 			passingTest=If[Length[noVolumeInvalidInputs]==Length[simulatedSamples],
 				Nothing,
-				Test["Our input samples "<>ObjectToString[Complement[simulatedSamples,noVolumeInvalidInputs], Cache->simulatedCache]<>" have volume populated:",True,True]
+				Test["Our input samples "<>ObjectToString[Complement[simulatedSamples,noVolumeInvalidInputs], Simulation->updatedSimulation]<>" have volume populated:",True,True]
 			];
 
 			{failingTest,passingTest}
@@ -1305,7 +1308,7 @@ resolveExperimentMeasureViscosityOptions[mySamples:{ObjectP[Object[Sample]]...},
 
 	(* If there are invalid inputs and we are throwing messages, throw an error message .*)
 	If[Length[insufficientVolInvalidInputs]>0&&!gatherTests,
-		Message[Error::ViscosityInsufficientVolume, ObjectToString[insufficientVolInvalidInputs, Cache->simulatedCache]]
+		Message[Error::ViscosityInsufficientVolume, ObjectToString[insufficientVolInvalidInputs, Simulation->updatedSimulation]]
 	];
 
 	(* If we are gathering tests, create a passing and/or failing test with the appropriate result. *)
@@ -1313,12 +1316,12 @@ resolveExperimentMeasureViscosityOptions[mySamples:{ObjectP[Object[Sample]]...},
 		Module[{failingTest,passingTest},
 			failingTest=If[Length[insufficientVolInvalidInputs]==0,
 				Nothing,
-				Test["Our input samples "<>ObjectToString[insufficientVolInvalidInputs, Cache->simulatedCache]<>" have a volume of at least 26 uL:",True,False]
+				Test["Our input samples "<>ObjectToString[insufficientVolInvalidInputs, Simulation->updatedSimulation]<>" have a volume of at least 26 uL:",True,False]
 			];
 
 			passingTest=If[Length[insufficientVolInvalidInputs]==Length[simulatedSamples],
 				Nothing,
-				Test["Our input samples "<>ObjectToString[Complement[simulatedSamples,insufficientVolInvalidInputs], Cache->simulatedCache]<>" have a volume of at least 26 uL:",True,True]
+				Test["Our input samples "<>ObjectToString[Complement[simulatedSamples,insufficientVolInvalidInputs], Simulation->updatedSimulation]<>" have a volume of at least 26 uL:",True,True]
 			];
 
 			{failingTest,passingTest}
@@ -1328,8 +1331,8 @@ resolveExperimentMeasureViscosityOptions[mySamples:{ObjectP[Object[Sample]]...},
 
 	(* 5.  Check if samples are chemically compatible with the instrument *)
 	{compatibleInputBools,incompatibleInputTests} = If[gatherTests,
-		CompatibleMaterialsQ[Lookup[Flatten[instrumentPacket],Object,{}][[1]],simulatedSamples,Cache -> simulatedCache,Output -> {Result, Tests}],
-		{CompatibleMaterialsQ[Lookup[Flatten[instrumentPacket],Object,{}][[1]],simulatedSamples,Cache->simulatedCache,Messages->!gatherTests],{}}
+		CompatibleMaterialsQ[Lookup[Flatten[instrumentPacket],Object,{}][[1]],simulatedSamples,Simulation -> updatedSimulation,Output -> {Result, Tests}],
+		{CompatibleMaterialsQ[Lookup[Flatten[instrumentPacket],Object,{}][[1]],simulatedSamples,Simulation -> updatedSimulation,Messages->!gatherTests],{}}
 	];
 
 	(*Get all the incompatible samples*)
@@ -1340,7 +1343,7 @@ resolveExperimentMeasureViscosityOptions[mySamples:{ObjectP[Object[Sample]]...},
 
 	(* If there are incompatible inputs and we are throwing messages, throw an error message .*)
 	If[Length[incompatibleInputs]>0&&!gatherTests,
-		Message[Error::ViscosityIncompatibleSample, ObjectToString[incompatibleInputs, Cache->simulatedCache]]
+		Message[Error::ViscosityIncompatibleSample, ObjectToString[incompatibleInputs, Simulation->updatedSimulation]]
 	];
 
 	(*-- OPTION PRECISION CHECKS --*)
@@ -1348,20 +1351,18 @@ resolveExperimentMeasureViscosityOptions[mySamples:{ObjectP[Object[Sample]]...},
 	(*List the options that we need to check the precisions of. These options are single values. *)
 	viscosityOptionsChecks = {
 		(*1*)SampleTemperature,
-		(*2*)PressurizationInjectionRate,
-		(*3*)TemperatureStabilityMargin,
-		(*4*)TemperatureStabilityTime,
-		(*5*)RemeasurementReloadVolume,
-		(*6*)PauseTime
+		(*2*)TemperatureStabilityMargin,
+		(*3*)TemperatureStabilityTime,
+		(*4*)RemeasurementReloadVolume,
+		(*5*)PauseTime
 	};
 
 	viscosityOptionsPrecisions = {
 		(*1*)10^-1 Celsius,
-		(*2*)10^0 Millimeter/Minute,
-		(*3*)10^-1 Celsius,
-		(*4*)2*10^-1 Second,
-		(*5*)10^0 Microliter,
-		(*6*)2*10^-1 Second
+		(*2*)10^-1 Celsius,
+		(*3*)2*10^-1 Second,
+		(*4*)10^0 Microliter,
+		(*5*)2*10^-1 Second
 	};
 
 	(* Round the options *)
@@ -1705,7 +1706,7 @@ resolveExperimentMeasureViscosityOptions[mySamples:{ObjectP[Object[Sample]]...},
 
 	(* If we are throwing messages, put the call here *)
 	If[Length[remeasurementConflictOptions]>0 &&!gatherTests,
-		Message[Error::ViscosityRemeasurementAllowedConflict,remeasurementConflictOptions,ObjectToString[remeasurementConflictInputs,Cache->simulatedCache]]
+		Message[Error::ViscosityRemeasurementAllowedConflict,remeasurementConflictOptions,ObjectToString[remeasurementConflictInputs,Simulation->updatedSimulation]]
 	];
 
 	(* Build a test for whether a values was specified for RemeasurementReloadVolume even though RemeasurementAllowed -> False *)
@@ -1759,7 +1760,7 @@ resolveExperimentMeasureViscosityOptions[mySamples:{ObjectP[Object[Sample]]...},
 	];
 
 	If[Length[recoupSampleConflictOptions]>0 && !gatherTests,
-		Message[Error::ViscosityRecoupSampleConflict,recoupSampleConflictOptions,ObjectToString[recoupSampleConflictInputs,Cache->simulatedCache]]
+		Message[Error::ViscosityRecoupSampleConflict,recoupSampleConflictOptions,ObjectToString[recoupSampleConflictInputs,Simulation->updatedSimulation]]
 	];
 
 	(* Build a test for whether values were specified for RecoupSampleContainerSame even though RecoupSample -> False *)
@@ -1773,54 +1774,6 @@ resolveExperimentMeasureViscosityOptions[mySamples:{ObjectP[Object[Sample]]...},
 			passingTest = If[Length[recoupSampleConflictOptions]!=0,
 				Nothing,
 				Test["The provided values for RecoupSample and RecoupSampleContainerSame are in conflict with each other:", True, True]
-			];
-		{failingTest,passingTest}
-		],
-		Nothing
-	];
-
-	(* - Check that if AutosamplerPrePressurization is True, then PressurizationInjectionRate is not Null - *)
-	prepressurizationConflicts = MapThread[
-		Function[
-			{prepressurizationBool,injectionRate},
-			If[
-				Or[
-						(* If AutosamplerPrePressurization -> False but a PressurizationInjectionRate was specified *)
-						MatchQ[prepressurizationBool,False] && !MatchQ[injectionRate,Alternatives[Automatic,Null]],
-
-						(* OR If AutosamplerPrePressurization -> True but a PressurizationInjectionRate was specified as Null *)
-						MatchQ[prepressurizationBool,True] && MatchQ[injectionRate,Null]
-				],
-				{prepressurizationBool,injectionRate},
-				Nothing
-			]
-		],
-		{ToList[Lookup[allOptionsRounded,AutosamplerPrePressurization]],ToList[Lookup[allOptionsRounded,PressurizationInjectionRate]]}
-	];
-
-	(* If there are invalid options and we are throwing messages, throw an error message and keep track of our invalid options for Error::InvalidOptions. *)
-	prepressurizationInvalidOptions = If[Length[prepressurizationConflicts]>0,
-		(* Store the errant options for later InvalidOption checks *)
-		{AutosamplerPrePressurization, PressurizationInjectionRate},
-		(* No errors so just initialize the variable to a list for joining later *)
-		{}
-	];
-
-	If[Length[prepressurizationConflicts]>0 && !gatherTests,
-		Message[Error::ViscosityPrePressurizationConflict,prepressurizationConflicts]
-	];
-
-	(* Build a test for whether values were specified for RecoupSampleContainerSame even though RecoupSample -> False *)
-	prepressurizationInvalidTest = If[gatherTests,
-		Module[{failingTest,passingTest},
-			failingTest = If[Length[prepressurizationConflicts]==0,
-				Nothing,
-				Test["The provided values for AutosamplerPrePressurization and PressurizationInjectionRate are in conflict with each other:", True, False]
-			];
-
-			passingTest = If[Length[prepressurizationConflicts]!=0,
-				Nothing,
-				Test["The provided values for AutosamplerPrePressurization and PressurizationInjectionRate are in conflict with each other:", True, True]
 			];
 		{failingTest,passingTest}
 		],
@@ -1842,21 +1795,12 @@ resolveExperimentMeasureViscosityOptions[mySamples:{ObjectP[Object[Sample]]...},
 	];
 
 	(* these options need to be resolved outside of the main map thread *)
-	{suppliedPrimaryBuffer,suppliedSampleTemperature,primaryBufferStorage,suppliedInjectionRate}
+	{suppliedPrimaryBuffer,suppliedSampleTemperature,primaryBufferStorage}
  		= Lookup[allOptionsRounded,
 			{
-				PrimaryBuffer,SampleTemperature,PrimaryBufferStorageCondition,PressurizationInjectionRate
+				PrimaryBuffer,SampleTemperature,PrimaryBufferStorageCondition
 			},
 			Null
-	];
-
-	(*Resolve the prepressurization*)
-	resolvedInjectionRate = If[MatchQ[suppliedInjectionRate,Automatic],
-		If[MatchQ[prePressurization,True],
-			30 Millimeter/Second,
-			Null
-		],
-		suppliedInjectionRate
 	];
 
 	(* Resolve the viscometer chip *)
@@ -1904,13 +1848,6 @@ resolveExperimentMeasureViscosityOptions[mySamples:{ObjectP[Object[Sample]]...},
 		(* Otherwise, the user supplied a value, so just use that *)
 		suppliedSampleTemperature
 	];
-
-	(*check to make sure injection rate isn't too high which may result in sample loss*)
-	(*injectionRateHighWarnings = If[
-		Greater[injectionRate,50 Millimeter/Second],
-		{True},
-		{False}
-	];*)
 
 	(* Convert our options into a MapThread friendly version. *)
 	mapThreadFriendlyOptions = OptionsHandling`Private`mapThreadOptions[ExperimentMeasureViscosity,allOptionsRounded];
@@ -2322,7 +2259,7 @@ resolveExperimentMeasureViscosityOptions[mySamples:{ObjectP[Object[Sample]]...},
 					MatchQ[Length[nulls],2|3],
 					{nulls,Keys[nulls]},
 
-					(* If only one option is Null, we need to check the lenght of the other two options to see if they conflict also *)
+					(* If only one option is Null, we need to check the length of the other two options to see if they conflict also *)
 					MatchQ[Length[nulls],1],
 					Module[{vals,sameLen,failingAssoc},
 						(*Extract the values of the non-automatic Keys*)
@@ -3364,7 +3301,7 @@ resolveExperimentMeasureViscosityOptions[mySamples:{ObjectP[Object[Sample]]...},
 			numberOfReadings,
 			measurementMethodTable,
 			remeasurementReloadVolume,
-			targetPressure,
+			targetPressure/.{{Null}->Null},
 
 			incompatibleContainerBool,
 			minInjectionAliquotBool,
@@ -3477,7 +3414,7 @@ resolveExperimentMeasureViscosityOptions[mySamples:{ObjectP[Object[Sample]]...},
 
 	(* (1) Throw an error message if the we don't have enough sample volume for the indicated injectionVolume --*)
 	If[MemberQ[sampleVolumeTooLowForInjectionErrors, True] && !gatherTests && Not[MatchQ[$ECLApplication, Engine]],
-		Message[Error::ViscosityInjectionVolumeHigh, PickList[resolvedInjectionVolume, sampleVolumeTooLowForInjectionErrors],numberOfReplicates,ObjectToString[PickList[simulatedSamples, sampleVolumeTooLowForInjectionErrors], Cache -> simulatedCache]]
+		Message[Error::ViscosityInjectionVolumeHigh, PickList[resolvedInjectionVolume, sampleVolumeTooLowForInjectionErrors],numberOfReplicates,ObjectToString[PickList[simulatedSamples, sampleVolumeTooLowForInjectionErrors], Simulation->updatedSimulation]]
 	];
 
 	(* generate the tests *)
@@ -3494,7 +3431,7 @@ resolveExperimentMeasureViscosityOptions[mySamples:{ObjectP[Object[Sample]]...},
 
 			(* create a test for the non-passing inputs *)
 			failingSampleTests = If[Length[failingSamples] > 0,
-				Test["For the provided samples " <> ObjectToString[failingSamples, Cache -> simulatedCache] <> ", the specified InjectionVolume" <> ObjectToString[failingInjectionVolumes, Cache -> simulatedCache] <> "is greater than the sample's recorded volume:",
+				Test["For the provided samples " <> ObjectToString[failingSamples, Simulation->updatedSimulation] <> ", the specified InjectionVolume" <> ObjectToString[failingInjectionVolumes, Simulation->updatedSimulation] <> "is greater than the sample's recorded volume:",
 					True,
 					False
 				],
@@ -3503,7 +3440,7 @@ resolveExperimentMeasureViscosityOptions[mySamples:{ObjectP[Object[Sample]]...},
 
 			(* create a test for the passing inputs *)
 			passingSampleTests = If[Length[passingSamples] > 0,
-				Test["For the provided samples " <> ObjectToString[passingSamples, Cache -> simulatedCache] <> ", the specified InjectionVolume" <> ObjectToString[passingInjectionVolumes, Cache -> simulatedCache] <> "is less than the sample's recorded volume:",
+				Test["For the provided samples " <> ObjectToString[passingSamples, Simulation->updatedSimulation] <> ", the specified InjectionVolume" <> ObjectToString[passingInjectionVolumes, Simulation->updatedSimulation] <> "is less than the sample's recorded volume:",
 					True,
 					True
 				],
@@ -3523,7 +3460,7 @@ resolveExperimentMeasureViscosityOptions[mySamples:{ObjectP[Object[Sample]]...},
 
 	(* (2) Throw a Warning message if the user wanted an InjectionVolume of 26 uL but the sample needs to be aliquoted into an autosampler vial since this is the only container that supports this Injection volume --*)
 	If[MemberQ[minInjectionAliquotErrors, True] && !gatherTests && Not[MatchQ[$ECLApplication, Engine]],
-		Message[Error::ViscosityUnsupportedInjectionVolume, PickList[resolvedInjectionVolume, minInjectionAliquotErrors],ObjectToString[PickList[simulatedSamples, minInjectionAliquotErrors], Cache -> simulatedCache]]
+		Message[Error::ViscosityUnsupportedInjectionVolume, PickList[resolvedInjectionVolume, minInjectionAliquotErrors],ObjectToString[PickList[simulatedSamples, minInjectionAliquotErrors], Simulation->updatedSimulation]]
 	];
 
 	(* generate the tests *)
@@ -3540,7 +3477,7 @@ resolveExperimentMeasureViscosityOptions[mySamples:{ObjectP[Object[Sample]]...},
 
 			(* create a test for the non-passing inputs *)
 			failingSampleTests = If[Length[failingSamples] > 0,
-				Test["For the provided samples " <> ObjectToString[failingSamples, Cache -> simulatedCache] <> ", the instrument does not support the specified InjectionVolume " <> ObjectToString[failingInjectionVolumes, Cache -> simulatedCache] <> " for the sample's container. The sample must be aliquoted into a compatible container but there is not enough sample volume to aliquot:",
+				Test["For the provided samples " <> ObjectToString[failingSamples, Simulation->updatedSimulation] <> ", the instrument does not support the specified InjectionVolume " <> ObjectToString[failingInjectionVolumes, Simulation->updatedSimulation] <> " for the sample's container. The sample must be aliquoted into a compatible container but there is not enough sample volume to aliquot:",
 					True,
 					False
 				],
@@ -3549,7 +3486,7 @@ resolveExperimentMeasureViscosityOptions[mySamples:{ObjectP[Object[Sample]]...},
 
 			(* create a test for the passing inputs *)
 			passingSampleTests = If[Length[passingSamples] > 0,
-				Test["For the provided samples " <> ObjectToString[passingSamples, Cache -> simulatedCache] <> ", the instrument does support the specified InjectionVolume " <> ObjectToString[passingInjectionVolumes, Cache -> simulatedCache] <> " for the sample's container:",
+				Test["For the provided samples " <> ObjectToString[passingSamples, Simulation->updatedSimulation] <> ", the instrument does support the specified InjectionVolume " <> ObjectToString[passingInjectionVolumes, Simulation->updatedSimulation] <> " for the sample's container:",
 					True,
 					True
 				],
@@ -3570,7 +3507,7 @@ resolveExperimentMeasureViscosityOptions[mySamples:{ObjectP[Object[Sample]]...},
 
 	(* (4) Throw a Warning message if the user set Priming to False  *)
 	If[MemberQ[primingWarnings, True] && !gatherTests && Not[MatchQ[$ECLApplication, Engine]],
-		Message[Warning::ViscosityPrimingFalse, ObjectToString[PickList[simulatedSamples, primingWarnings], Cache -> simulatedCache]]
+		Message[Warning::ViscosityPrimingFalse, ObjectToString[PickList[simulatedSamples, primingWarnings], Simulation->updatedSimulation]]
 	];
 
 	(* generate the tests *)
@@ -3587,7 +3524,7 @@ resolveExperimentMeasureViscosityOptions[mySamples:{ObjectP[Object[Sample]]...},
 
 			(* create a test for the non-passing inputs *)
 			failingSampleTests = If[Length[failingSamples] > 0,
-				Test["For the provided samples " <> ObjectToString[failingSamples, Cache -> simulatedCache] <> ", the provided value for Priming, " <> ObjectToString[failingPrimings, Cache -> simulatedCache] <> " is set to False:",
+				Test["For the provided samples " <> ObjectToString[failingSamples, Simulation->updatedSimulation] <> ", the provided value for Priming, " <> ObjectToString[failingPrimings, Simulation->updatedSimulation] <> " is set to False:",
 					True,
 					False
 				],
@@ -3596,7 +3533,7 @@ resolveExperimentMeasureViscosityOptions[mySamples:{ObjectP[Object[Sample]]...},
 
 			(* create a test for the passing inputs *)
 			passingSampleTests = If[Length[passingSamples] > 0,
-				Test["For the provided samples " <> ObjectToString[passingSamples, Cache -> simulatedCache] <> ", the provided value for Priming, " <> ObjectToString[passingPrimings, Cache -> simulatedCache] <> "  is set to True:",
+				Test["For the provided samples " <> ObjectToString[passingSamples, Simulation->updatedSimulation] <> ", the provided value for Priming, " <> ObjectToString[passingPrimings, Simulation->updatedSimulation] <> "  is set to True:",
 					True,
 					True
 				],
@@ -3616,11 +3553,11 @@ resolveExperimentMeasureViscosityOptions[mySamples:{ObjectP[Object[Sample]]...},
 
 	(* (5) Throw an Error message if the user set selected a Custom MeasurementMethod and also specified options outside of the MeasurementMethodTable *)
 	If[MemberQ[customMeasTableParameterErrors, True] && !gatherTests && Not[MatchQ[$ECLApplication, Engine]],
-		Message[Error::ViscosityCustomMeasurementMethodConflicts, Normal[failingCustomMeasInputs], ObjectToString[PickList[simulatedSamples, customMeasTableParameterErrors], Cache -> simulatedCache]]
+		Message[Error::ViscosityCustomMeasurementMethodConflicts, Normal[failingCustomMeasInputs], ObjectToString[PickList[simulatedSamples, customMeasTableParameterErrors], Simulation->updatedSimulation]]
 
 		(*PickList[resolvedMeasurementMethodTable, customMeasTableParameterErrors],PickList[resolvedMeasurementTemperature, customMeasTableParameterErrors],PickList[resolvedFlowRate, customMeasTableParameterErrors],
 			PickList[resolvedEquilibrationTime, customMeasTableParameterErrors],PickList[resolvedMeasurementTime, customMeasTableParameterErrors],PickList[resolvedPauseTime, customMeasTableParameterErrors],PickList[resolvedNumberOfReadings, customMeasTableParameterErrors],
-			ObjectToString[PickList[simulatedSamples, customMeasTableParameterErrors], Cache -> simulatedCache]]*)
+			ObjectToString[PickList[simulatedSamples, customMeasTableParameterErrors], Simulation->updatedSimulation]]*)
 	];
 
 	(* generate the tests *)
@@ -3635,7 +3572,7 @@ resolveExperimentMeasureViscosityOptions[mySamples:{ObjectP[Object[Sample]]...},
 
 			(* create a test for the non-passing inputs *)
 			failingSampleTests = If[Length[failingSamples] > 0,
-				Test["For the provided samples " <> ObjectToString[failingSamples, Cache -> simulatedCache] <> ", the provided values for MeasurementTemperature,FlowRate,EquilibrationTime,MeasurementTime, PauseTime, NumberOfReadings, and MeasurementMethodTable are in conflict with one another:",
+				Test["For the provided samples " <> ObjectToString[failingSamples, Simulation->updatedSimulation] <> ", the provided values for MeasurementTemperature,FlowRate,EquilibrationTime,MeasurementTime, PauseTime, NumberOfReadings, and MeasurementMethodTable are in conflict with one another:",
 					True,
 					False
 				],
@@ -3644,7 +3581,7 @@ resolveExperimentMeasureViscosityOptions[mySamples:{ObjectP[Object[Sample]]...},
 
 			(* create a test for the passing inputs *)
 			passingSampleTests = If[Length[passingSamples] > 0,
-				Test["For the provided samples " <> ObjectToString[passingSamples, Cache -> simulatedCache] <> ", the provided values for MeasurementTemperature,FlowRate,EquilibrationTime,MeasurementTime, PauseTime, NumberOfReadings, and MeasurementMethodTable are not in conflict with one another:",
+				Test["For the provided samples " <> ObjectToString[passingSamples, Simulation->updatedSimulation] <> ", the provided values for MeasurementTemperature,FlowRate,EquilibrationTime,MeasurementTime, PauseTime, NumberOfReadings, and MeasurementMethodTable are not in conflict with one another:",
 					True,
 					True
 				],
@@ -3664,7 +3601,7 @@ resolveExperimentMeasureViscosityOptions[mySamples:{ObjectP[Object[Sample]]...},
 
 	(* (6) Throw a Warning message if the user  selected a Custom MeasurementMethod but left MeasurementMethodTable as Automatic *)
 	If[MemberQ[customMeasTableParameterWarnings, True] && !gatherTests && Not[MatchQ[$ECLApplication, Engine]],
-		Message[Warning::ViscosityCustomMeasurementTableNotProvided,ObjectToString[PickList[simulatedSamples, customMeasTableParameterWarnings], Cache -> simulatedCache]]
+		Message[Warning::ViscosityCustomMeasurementTableNotProvided,ObjectToString[PickList[simulatedSamples, customMeasTableParameterWarnings], Simulation->updatedSimulation]]
 	];
 
 	(* generate the tests *)
@@ -3679,7 +3616,7 @@ resolveExperimentMeasureViscosityOptions[mySamples:{ObjectP[Object[Sample]]...},
 
 			(* create a test for the non-passing inputs *)
 			failingSampleTests = If[Length[failingSamples] > 0,
-				Test["For the provided samples " <> ObjectToString[failingSamples, Cache -> simulatedCache] <> ", no Custom values are entered in the MeasurementMethodTable:",
+				Test["For the provided samples " <> ObjectToString[failingSamples, Simulation->updatedSimulation] <> ", no Custom values are entered in the MeasurementMethodTable:",
 					True,
 					False
 				],
@@ -3688,7 +3625,7 @@ resolveExperimentMeasureViscosityOptions[mySamples:{ObjectP[Object[Sample]]...},
 
 			(* create a test for the passing inputs *)
 			passingSampleTests = If[Length[passingSamples] > 0,
-				Test["For the provided samples " <> ObjectToString[passingSamples, Cache -> simulatedCache] <> ", Custom values are specified in the MeasurementMethodTable:",
+				Test["For the provided samples " <> ObjectToString[passingSamples, Simulation->updatedSimulation] <> ", Custom values are specified in the MeasurementMethodTable:",
 					True,
 					True
 				],
@@ -3708,7 +3645,7 @@ resolveExperimentMeasureViscosityOptions[mySamples:{ObjectP[Object[Sample]]...},
 
 	(* (7) Throw an Error message if the user selected an Exploratory or TemperatureSweep MeasurementMethod and also specified values for FlowRate,EquilibrationTime,MeasurementTime and/or set Priming to False *)
 	If[MemberQ[exploratoryTempSweepParameterErrors, True] && !gatherTests && Not[MatchQ[$ECLApplication, Engine]],
-		Message[Error::ViscosityExploratoryTemperatureSweepParameterError,PickList[resolvedMeasurementMethod, exploratoryTempSweepParameterErrors],Normal[failingExploratoryTempSweepInputs],ObjectToString[PickList[simulatedSamples, exploratoryTempSweepParameterErrors], Cache -> simulatedCache]]
+		Message[Error::ViscosityExploratoryTemperatureSweepParameterError,PickList[resolvedMeasurementMethod, exploratoryTempSweepParameterErrors],Normal[failingExploratoryTempSweepInputs],ObjectToString[PickList[simulatedSamples, exploratoryTempSweepParameterErrors], Simulation->updatedSimulation]]
 	];
 
 	(* generate the tests *)
@@ -3723,7 +3660,7 @@ resolveExperimentMeasureViscosityOptions[mySamples:{ObjectP[Object[Sample]]...},
 
 			(* create a test for the non-passing inputs *)
 			failingSampleTests = If[Length[failingSamples] > 0,
-				Test["For the provided samples " <> ObjectToString[failingSamples, Cache -> simulatedCache] <> ", the values specified for MeasurementMethod, MeasurementMethodTable, FlowRate, EquilibrationTime, MeasurementTime, and Priming are in conflict with each other:",
+				Test["For the provided samples " <> ObjectToString[failingSamples, Simulation->updatedSimulation] <> ", the values specified for MeasurementMethod, MeasurementMethodTable, FlowRate, EquilibrationTime, MeasurementTime, and Priming are in conflict with each other:",
 					True,
 					False
 				],
@@ -3732,7 +3669,7 @@ resolveExperimentMeasureViscosityOptions[mySamples:{ObjectP[Object[Sample]]...},
 
 			(* create a test for the passing inputs *)
 			passingSampleTests = If[Length[passingSamples] > 0,
-				Test["For the provided samples " <> ObjectToString[passingSamples, Cache -> simulatedCache] <> ", the values specified for MeasurementMethod, MeasurementMethodTable, FlowRate, EquilibrationTime, MeasurementTime, and Priming are not in conflict with each other:",
+				Test["For the provided samples " <> ObjectToString[passingSamples, Simulation->updatedSimulation] <> ", the values specified for MeasurementMethod, MeasurementMethodTable, FlowRate, EquilibrationTime, MeasurementTime, and Priming are not in conflict with each other:",
 					True,
 					True
 				],
@@ -3752,7 +3689,7 @@ resolveExperimentMeasureViscosityOptions[mySamples:{ObjectP[Object[Sample]]...},
 
 	(* (7.5) Throw an Error message if there are mismathches in the number of values provided for FlowRate, EquilibrationTime, and MeasurementTime *)
 	If[MemberQ[measurementParameterErrors, True] && !gatherTests && Not[MatchQ[$ECLApplication, Engine]],
-		Message[Error::ViscosityFlowRateEquilibrationTimeMeasurementTimeError,failingMeasurementParameterInputs,ObjectToString[PickList[simulatedSamples, measurementParameterErrors], Cache -> simulatedCache]]
+		Message[Error::ViscosityFlowRateEquilibrationTimeMeasurementTimeError,failingMeasurementParameterInputs,ObjectToString[PickList[simulatedSamples, measurementParameterErrors], Simulation->updatedSimulation]]
 	];
 
 	(* generate the tests *)
@@ -3767,7 +3704,7 @@ resolveExperimentMeasureViscosityOptions[mySamples:{ObjectP[Object[Sample]]...},
 
 			(* create a test for the non-passing inputs *)
 			failingSampleTests = If[Length[failingSamples] > 0,
-				Test["For the provided samples " <> ObjectToString[failingSamples, Cache -> simulatedCache] <> ", the values specified for FlowRate, EquilibrationTime, and MeasurementTime are in conflict with each other:",
+				Test["For the provided samples " <> ObjectToString[failingSamples, Simulation->updatedSimulation] <> ", the values specified for FlowRate, EquilibrationTime, and MeasurementTime are in conflict with each other:",
 					True,
 					False
 				],
@@ -3776,7 +3713,7 @@ resolveExperimentMeasureViscosityOptions[mySamples:{ObjectP[Object[Sample]]...},
 
 			(* create a test for the passing inputs *)
 			passingSampleTests = If[Length[passingSamples] > 0,
-				Test["For the provided samples " <> ObjectToString[passingSamples, Cache -> simulatedCache] <> ", the values specified for FlowRate, EquilibrationTime, and MeasurementTime are not in conflict with each other:",
+				Test["For the provided samples " <> ObjectToString[passingSamples, Simulation->updatedSimulation] <> ", the values specified for FlowRate, EquilibrationTime, and MeasurementTime are not in conflict with each other:",
 					True,
 					True
 				],
@@ -3797,7 +3734,7 @@ resolveExperimentMeasureViscosityOptions[mySamples:{ObjectP[Object[Sample]]...},
 
 	(* (8) Throw an Error message if the user selected a ShearRateSweep MeasurementMethod and also specified values for MeasurementMethodTable or provided more than one MeasurementTemperature *)
 	If[MemberQ[shearSweepParameterErrors, True] && !gatherTests && Not[MatchQ[$ECLApplication, Engine]],
-		Message[Error::ViscosityFlowRateSweepParameterError,Normal[failingShearSweepInputs],ObjectToString[PickList[simulatedSamples, shearSweepParameterErrors], Cache -> simulatedCache]]
+		Message[Error::ViscosityFlowRateSweepParameterError,Normal[failingShearSweepInputs],ObjectToString[PickList[simulatedSamples, shearSweepParameterErrors], Simulation->updatedSimulation]]
 	];
 
 	(* generate the tests *)
@@ -3812,7 +3749,7 @@ resolveExperimentMeasureViscosityOptions[mySamples:{ObjectP[Object[Sample]]...},
 
 			(* create a test for the non-passing inputs *)
 			failingSampleTests = If[Length[failingSamples] > 0,
-				Test["For the provided samples " <> ObjectToString[failingSamples, Cache -> simulatedCache] <> ", the values specified for MeasurementMethod, MeasurementMethodTable, and MeasurementTempearature are in conflict with each other:",
+				Test["For the provided samples " <> ObjectToString[failingSamples, Simulation->updatedSimulation] <> ", the values specified for MeasurementMethod, MeasurementMethodTable, and MeasurementTempearature are in conflict with each other:",
 					True,
 					False
 				],
@@ -3821,7 +3758,7 @@ resolveExperimentMeasureViscosityOptions[mySamples:{ObjectP[Object[Sample]]...},
 
 			(* create a test for the passing inputs *)
 			passingSampleTests = If[Length[passingSamples] > 0,
-				Test["For the provided samples " <> ObjectToString[passingSamples, Cache -> simulatedCache] <> ", the values specified for MeasurementMethod, MeasurementMethodTable, and MeasurementTemperature are not in conflict with each other:",
+				Test["For the provided samples " <> ObjectToString[passingSamples, Simulation->updatedSimulation] <> ", the values specified for MeasurementMethod, MeasurementMethodTable, and MeasurementTemperature are not in conflict with each other:",
 					True,
 					True
 				],
@@ -3841,7 +3778,7 @@ resolveExperimentMeasureViscosityOptions[mySamples:{ObjectP[Object[Sample]]...},
 
 	(* (8.5) Throw an Error message if the user selected a RelativePressreSweep MeasurementMethod and also specified values for MeasurementMethodTable, EquilibrationTime, Measurementtime, or provided more than one MeasurementTemperature *)
 	If[MemberQ[pressureSweepParameterErrors, True] && !gatherTests && Not[MatchQ[$ECLApplication, Engine]],
-		Message[Error::ViscosityPressureSweepParameterError,Normal[failingPressureSweepInputs],ObjectToString[PickList[simulatedSamples, pressureSweepParameterErrors], Cache -> simulatedCache]]
+		Message[Error::ViscosityPressureSweepParameterError,Normal[failingPressureSweepInputs],ObjectToString[PickList[simulatedSamples, pressureSweepParameterErrors], Simulation->updatedSimulation]]
 	];
 
 	(* generate the tests *)
@@ -3856,7 +3793,7 @@ resolveExperimentMeasureViscosityOptions[mySamples:{ObjectP[Object[Sample]]...},
 
 			(* create a test for the non-passing inputs *)
 			failingSampleTests = If[Length[failingSamples] > 0,
-				Test["For the provided samples " <> ObjectToString[failingSamples, Cache -> simulatedCache] <> ", the values specified for MeasurementMethod, MeasurementMethodTable, MeasurementTemperature, EquilibrationTime, and MeasurementTime are in conflict with each other:",
+				Test["For the provided samples " <> ObjectToString[failingSamples, Simulation->updatedSimulation] <> ", the values specified for MeasurementMethod, MeasurementMethodTable, MeasurementTemperature, EquilibrationTime, and MeasurementTime are in conflict with each other:",
 					True,
 					False
 				],
@@ -3865,7 +3802,7 @@ resolveExperimentMeasureViscosityOptions[mySamples:{ObjectP[Object[Sample]]...},
 
 			(* create a test for the passing inputs *)
 			passingSampleTests = If[Length[passingSamples] > 0,
-				Test["For the provided samples " <> ObjectToString[passingSamples, Cache -> simulatedCache] <> ", the values specified for MeasurementMethod, MeasurementMethodTable, MeasurementTemperature,EquilibrationTime, and MeasurementTime are not in conflict with each other:",
+				Test["For the provided samples " <> ObjectToString[passingSamples, Simulation->updatedSimulation] <> ", the values specified for MeasurementMethod, MeasurementMethodTable, MeasurementTemperature,EquilibrationTime, and MeasurementTime are not in conflict with each other:",
 					True,
 					True
 				],
@@ -3885,7 +3822,7 @@ resolveExperimentMeasureViscosityOptions[mySamples:{ObjectP[Object[Sample]]...},
 
 	(* (9) Throw an Error message if the user selected a TemperatureSweep MeasurementMethod but only specified one MeasurementTemperature*)
 	If[MemberQ[tempSweepInsufficientErrors, True] && !gatherTests && Not[MatchQ[$ECLApplication, Engine]],
-		Message[Error::ViscosityTemperatureSweepInsufficientInput,PickList[resolvedMeasurementTemperature, tempSweepInsufficientErrors],ObjectToString[PickList[simulatedSamples, tempSweepInsufficientErrors], Cache -> simulatedCache]]
+		Message[Error::ViscosityTemperatureSweepInsufficientInput,PickList[resolvedMeasurementTemperature, tempSweepInsufficientErrors],ObjectToString[PickList[simulatedSamples, tempSweepInsufficientErrors], Simulation->updatedSimulation]]
 	];
 
 	(* generate the tests *)
@@ -3902,7 +3839,7 @@ resolveExperimentMeasureViscosityOptions[mySamples:{ObjectP[Object[Sample]]...},
 
 			(* create a test for the non-passing inputs *)
 			failingSampleTests = If[Length[failingSamples] > 0,
-				Test["For the provided samples " <> ObjectToString[failingSamples, Cache -> simulatedCache] <> ", only one MeasurementTemperature, " <> ObjectToString[failingMeasurementTemperatures, Cache -> simulatedCache] <> " is specified for a TemperatureSweep MeasurementMethod:",
+				Test["For the provided samples " <> ObjectToString[failingSamples, Simulation->updatedSimulation] <> ", only one MeasurementTemperature, " <> ObjectToString[failingMeasurementTemperatures, Simulation->updatedSimulation] <> " is specified for a TemperatureSweep MeasurementMethod:",
 					True,
 					False
 				],
@@ -3911,7 +3848,7 @@ resolveExperimentMeasureViscosityOptions[mySamples:{ObjectP[Object[Sample]]...},
 
 			(* create a test for the passing inputs *)
 			passingSampleTests = If[Length[passingSamples] > 0,
-				Test["For the provided samples " <> ObjectToString[passingSamples, Cache -> simulatedCache] <> ", more than one MeasurementTemperature, " <> ObjectToString[passingMeasurementTemperatures, Cache -> simulatedCache] <> " is specified for a TemperatureSweep MeasurementMethod:",
+				Test["For the provided samples " <> ObjectToString[passingSamples, Simulation->updatedSimulation] <> ", more than one MeasurementTemperature, " <> ObjectToString[passingMeasurementTemperatures, Simulation->updatedSimulation] <> " is specified for a TemperatureSweep MeasurementMethod:",
 					True,
 					True
 				],
@@ -3931,7 +3868,7 @@ resolveExperimentMeasureViscosityOptions[mySamples:{ObjectP[Object[Sample]]...},
 
 	(* (10) Throw a Warning message if the user selected a ShearRateSweep MeasurementMethod but only specified one FlowRate*)
 	If[MemberQ[shearRateSweepInsuffcientErrors, True] && !gatherTests && Not[MatchQ[$ECLApplication, Engine]],
-		Message[Warning::ViscosityFlowRateSweepInsufficientInput,PickList[resolvedFlowRate, shearRateSweepInsuffcientErrors],ObjectToString[PickList[simulatedSamples, shearRateSweepInsuffcientErrors], Cache -> simulatedCache]]
+		Message[Warning::ViscosityFlowRateSweepInsufficientInput,PickList[resolvedFlowRate, shearRateSweepInsuffcientErrors],ObjectToString[PickList[simulatedSamples, shearRateSweepInsuffcientErrors], Simulation->updatedSimulation]]
 	];
 
 	(* generate the tests *)
@@ -3948,7 +3885,7 @@ resolveExperimentMeasureViscosityOptions[mySamples:{ObjectP[Object[Sample]]...},
 
 			(* create a test for the non-passing inputs *)
 			failingSampleTests = If[Length[failingSamples] > 0,
-				Test["For the provided samples " <> ObjectToString[failingSamples, Cache -> simulatedCache] <> ", only one FlowRate, " <> ObjectToString[failingFlowRates, Cache -> simulatedCache] <> " is specified for a FlowRateSweep MeasurementMethod:",
+				Test["For the provided samples " <> ObjectToString[failingSamples, Simulation->updatedSimulation] <> ", only one FlowRate, " <> ObjectToString[failingFlowRates, Simulation->updatedSimulation] <> " is specified for a FlowRateSweep MeasurementMethod:",
 					True,
 					False
 				],
@@ -3957,7 +3894,7 @@ resolveExperimentMeasureViscosityOptions[mySamples:{ObjectP[Object[Sample]]...},
 
 			(* create a test for the passing inputs *)
 			passingSampleTests = If[Length[passingSamples] > 0,
-				Test["For the provided samples " <> ObjectToString[passingSamples, Cache -> simulatedCache] <> ", more than one FlowRate, " <> ObjectToString[passingFlowRates, Cache -> simulatedCache] <> " is specified for a ShearRateSweep MeasurementMethod:",
+				Test["For the provided samples " <> ObjectToString[passingSamples, Simulation->updatedSimulation] <> ", more than one FlowRate, " <> ObjectToString[passingFlowRates, Simulation->updatedSimulation] <> " is specified for a ShearRateSweep MeasurementMethod:",
 					True,
 					True
 				],
@@ -3977,7 +3914,7 @@ resolveExperimentMeasureViscosityOptions[mySamples:{ObjectP[Object[Sample]]...},
 
 	(* (11) Throw an Error message if the RemeasurementReloadVolume exceeds the InjectionVolume*)
 	If[MemberQ[remeasurementReloadVolumeTooHighErrors, True] && !gatherTests && Not[MatchQ[$ECLApplication, Engine]],
-		Message[Error::ViscosityRemeasurementReloadVolumeHigh,PickList[resolvedRemeasurementReloadVolume, remeasurementReloadVolumeTooHighErrors],ObjectToString[PickList[simulatedSamples, remeasurementReloadVolumeTooHighErrors], Cache -> simulatedCache],PickList[resolvedInjectionVolume, remeasurementReloadVolumeTooHighErrors]]
+		Message[Error::ViscosityRemeasurementReloadVolumeHigh,PickList[resolvedRemeasurementReloadVolume, remeasurementReloadVolumeTooHighErrors],ObjectToString[PickList[simulatedSamples, remeasurementReloadVolumeTooHighErrors], Simulation->updatedSimulation],PickList[resolvedInjectionVolume, remeasurementReloadVolumeTooHighErrors]]
 	];
 
 	(* generate the tests *)
@@ -3996,7 +3933,7 @@ resolveExperimentMeasureViscosityOptions[mySamples:{ObjectP[Object[Sample]]...},
 
 			(* create a test for the non-passing inputs *)
 			failingSampleTests = If[Length[failingSamples] > 0,
-				Test["For the provided samples " <> ObjectToString[failingSamples, Cache -> simulatedCache] <> ", the RemeasurementReloadVolume, " <> ObjectToString[failingReloadVols, Cache -> simulatedCache] <> ", is greater than the InjectionVolume, "  <> ObjectToString[failingInjectionVols, Cache -> simulatedCache] <> ":",
+				Test["For the provided samples " <> ObjectToString[failingSamples, Simulation->updatedSimulation] <> ", the RemeasurementReloadVolume, " <> ObjectToString[failingReloadVols, Simulation->updatedSimulation] <> ", is greater than the InjectionVolume, "  <> ObjectToString[failingInjectionVols, Simulation->updatedSimulation] <> ":",
 					True,
 					False
 				],
@@ -4005,7 +3942,7 @@ resolveExperimentMeasureViscosityOptions[mySamples:{ObjectP[Object[Sample]]...},
 
 			(* create a test for the passing inputs *)
 			passingSampleTests = If[Length[passingSamples] > 0,
-				Test["For the provided samples " <> ObjectToString[passingSamples, Cache -> simulatedCache] <> ", the RemeasurementReloadVolume, " <> ObjectToString[passingReloadVols, Cache -> simulatedCache] <> ", is less than or equal to the InjectionVolume, "  <> ObjectToString[passingInjectionVols, Cache -> simulatedCache] <> ":",
+				Test["For the provided samples " <> ObjectToString[passingSamples, Simulation->updatedSimulation] <> ", the RemeasurementReloadVolume, " <> ObjectToString[passingReloadVols, Simulation->updatedSimulation] <> ", is less than or equal to the InjectionVolume, "  <> ObjectToString[passingInjectionVols, Simulation->updatedSimulation] <> ":",
 					True,
 					True
 				],
@@ -4025,7 +3962,7 @@ resolveExperimentMeasureViscosityOptions[mySamples:{ObjectP[Object[Sample]]...},
 
 	(* (12) Throw a Warning message if the calculated total volume consumed for all measurement steps exceeds the InjectionVolume*)
 	If[MemberQ[notEnoughInjectionWarnings, True] && !gatherTests && Not[MatchQ[$ECLApplication, Engine]],
-		Message[Warning::ViscosityNotEnoughSampleInjected,ObjectToString[PickList[simulatedSamples, notEnoughInjectionWarnings],Cache -> simulatedCache], PickList[resolvedInjectionVolume, notEnoughInjectionWarnings]]
+		Message[Warning::ViscosityNotEnoughSampleInjected,ObjectToString[PickList[simulatedSamples, notEnoughInjectionWarnings],Simulation->updatedSimulation], PickList[resolvedInjectionVolume, notEnoughInjectionWarnings]]
 	];
 
 	(* generate the tests *)
@@ -4042,7 +3979,7 @@ resolveExperimentMeasureViscosityOptions[mySamples:{ObjectP[Object[Sample]]...},
 
 			(* create a test for the non-passing inputs *)
 			failingSampleTests = If[Length[failingSamples] > 0,
-				Test["For the provided samples " <> ObjectToString[failingSamples, Cache -> simulatedCache] <> ", the calculated Sample Volume consumed, is greater than the InjectionVolume, " <> ObjectToString[failingInjectionVols, Cache -> simulatedCache] <> " and there may not be enough sample to complete all measurement steps:",
+				Test["For the provided samples " <> ObjectToString[failingSamples, Simulation->updatedSimulation] <> ", the calculated Sample Volume consumed, is greater than the InjectionVolume, " <> ObjectToString[failingInjectionVols, Simulation->updatedSimulation] <> " and there may not be enough sample to complete all measurement steps:",
 					True,
 					False
 				],
@@ -4051,7 +3988,7 @@ resolveExperimentMeasureViscosityOptions[mySamples:{ObjectP[Object[Sample]]...},
 
 			(* create a test for the passing inputs *)
 			passingSampleTests = If[Length[passingSamples] > 0,
-				Test["For the provided samples " <> ObjectToString[passingSamples, Cache -> simulatedCache] <> ", the calculated Sample Volume consumed, is less than the InjectionVolume, " <> ObjectToString[passingInjectionVols, Cache -> simulatedCache] <> " and there is enough sample to complete all measurement steps:",
+				Test["For the provided samples " <> ObjectToString[passingSamples, Simulation->updatedSimulation] <> ", the calculated Sample Volume consumed, is less than the InjectionVolume, " <> ObjectToString[passingInjectionVols, Simulation->updatedSimulation] <> " and there is enough sample to complete all measurement steps:",
 					True,
 					True
 				],
@@ -4101,7 +4038,7 @@ resolveExperimentMeasureViscosityOptions[mySamples:{ObjectP[Object[Sample]]...},
 
 	(* (16) Throw an Error if the user (1) specified values in the MeasurementMethodTable, (2) Specified Measurements at a Relative Pressure, and (3) Did NOT provide a sufficient priming step  *)
 	If[MemberQ[customPressurePrimeErrors, True] && !gatherTests && Not[MatchQ[$ECLApplication, Engine]],
-		Message[Error::ViscosityInvalidPrimeMeasurementTable,PickList[resolvedMeasurementMethodTable, customPressurePrimeErrors],ObjectToString[PickList[simulatedSamples, customPressurePrimeErrors],Cache -> simulatedCache]]
+		Message[Error::ViscosityInvalidPrimeMeasurementTable,PickList[resolvedMeasurementMethodTable, customPressurePrimeErrors],ObjectToString[PickList[simulatedSamples, customPressurePrimeErrors],Simulation->updatedSimulation]]
 	];
 
 	(* generate the tests *)
@@ -4118,7 +4055,7 @@ resolveExperimentMeasureViscosityOptions[mySamples:{ObjectP[Object[Sample]]...},
 
 			(* create a test for the non-passing inputs *)
 			failingSampleTests = If[Length[failingSamples] > 0,
-				Test["For the provided samples " <> ObjectToString[failingSamples, Cache -> simulatedCache] <> ", the provided MeasurementMethodTable, " <> ObjectToString[failingTables, Cache -> simulatedCache] <> " contains a valid priming step before measurements at a RelativePressure:",
+				Test["For the provided samples " <> ObjectToString[failingSamples, Simulation->updatedSimulation] <> ", the provided MeasurementMethodTable, " <> ObjectToString[failingTables, Simulation->updatedSimulation] <> " contains a valid priming step before measurements at a RelativePressure:",
 					True,
 					False
 				],
@@ -4127,7 +4064,7 @@ resolveExperimentMeasureViscosityOptions[mySamples:{ObjectP[Object[Sample]]...},
 
 			(* create a test for the passing inputs *)
 			passingSampleTests = If[Length[passingSamples] > 0,
-				Test["For the provided samples " <> ObjectToString[passingSamples, Cache -> simulatedCache] <> ", the provided MeasurementMethodTable, " <> ObjectToString[passingTables, Cache -> simulatedCache] <> "contains a valid priming step before measurements at a RelativePressure:",
+				Test["For the provided samples " <> ObjectToString[passingSamples, Simulation->updatedSimulation] <> ", the provided MeasurementMethodTable, " <> ObjectToString[passingTables, Simulation->updatedSimulation] <> "contains a valid priming step before measurements at a RelativePressure:",
 					True,
 					True
 				],
@@ -4147,7 +4084,7 @@ resolveExperimentMeasureViscosityOptions[mySamples:{ObjectP[Object[Sample]]...},
 
 	(* (17) Throw a Warning if the user (1) specified values in the MeasurementMethodTable, (2) Specified a RelativePressure and EquilibrationTime and/or MeasurementTime *)
 	If[MemberQ[customPressureTimeWarnings, True] && !gatherTests && Not[MatchQ[$ECLApplication, Engine]],
-		Message[Warning::ViscosityPressureMeasurementTimeConflict,PickList[resolvedMeasurementMethodTable, customPressureTimeWarnings],ObjectToString[PickList[simulatedSamples, customPressureTimeWarnings],Cache -> simulatedCache]]
+		Message[Warning::ViscosityPressureMeasurementTimeConflict,PickList[resolvedMeasurementMethodTable, customPressureTimeWarnings],ObjectToString[PickList[simulatedSamples, customPressureTimeWarnings],Simulation->updatedSimulation]]
 	];
 
 	(* generate the tests *)
@@ -4164,7 +4101,7 @@ resolveExperimentMeasureViscosityOptions[mySamples:{ObjectP[Object[Sample]]...},
 
 			(* create a test for the non-passing inputs *)
 			failingSampleTests = If[Length[failingSamples] > 0,
-				Test["For the provided samples " <> ObjectToString[failingSamples, Cache -> simulatedCache] <> ", the provided MeasurementMethodTable, " <> ObjectToString[failingTables, Cache -> simulatedCache] <> " does not contain any steps where the RelativePressure is specified and the EquilibrationTime or MeasurementTIme are specified:",
+				Test["For the provided samples " <> ObjectToString[failingSamples, Simulation->updatedSimulation] <> ", the provided MeasurementMethodTable, " <> ObjectToString[failingTables, Simulation->updatedSimulation] <> " does not contain any steps where the RelativePressure is specified and the EquilibrationTime or MeasurementTIme are specified:",
 					True,
 					False
 				],
@@ -4173,7 +4110,7 @@ resolveExperimentMeasureViscosityOptions[mySamples:{ObjectP[Object[Sample]]...},
 
 			(* create a test for the passing inputs *)
 			passingSampleTests = If[Length[passingSamples] > 0,
-				Test["For the provided samples " <> ObjectToString[passingSamples, Cache -> simulatedCache] <> ", the provided MeasurementMethodTable, " <> ObjectToString[passingTables, Cache -> simulatedCache] <> " does not contain any steps where the RelativePressure is specified and the EquilibrationTime or MeasurementTIme are specified:",
+				Test["For the provided samples " <> ObjectToString[passingSamples, Simulation->updatedSimulation] <> ", the provided MeasurementMethodTable, " <> ObjectToString[passingTables, Simulation->updatedSimulation] <> " does not contain any steps where the RelativePressure is specified and the EquilibrationTime or MeasurementTIme are specified:",
 					True,
 					True
 				],
@@ -4193,7 +4130,7 @@ resolveExperimentMeasureViscosityOptions[mySamples:{ObjectP[Object[Sample]]...},
 
 	(* (18) Throw a Warning if the user (1) specified values in the MeasurementMethodTable, (2) Specified a RelativePressure and FlowRate in the same measurement step *)
 	If[MemberQ[customPressureFlowRateErrors, True] && !gatherTests && Not[MatchQ[$ECLApplication, Engine]],
-		Message[Error::ViscosityInvalidFlowRateMeasurementTable,PickList[resolvedMeasurementMethodTable, customPressureFlowRateErrors],ObjectToString[PickList[simulatedSamples, customPressureFlowRateErrors],Cache -> simulatedCache]]
+		Message[Error::ViscosityInvalidFlowRateMeasurementTable,PickList[resolvedMeasurementMethodTable, customPressureFlowRateErrors],ObjectToString[PickList[simulatedSamples, customPressureFlowRateErrors],Simulation->updatedSimulation]]
 	];
 
 	(* generate the tests *)
@@ -4210,7 +4147,7 @@ resolveExperimentMeasureViscosityOptions[mySamples:{ObjectP[Object[Sample]]...},
 
 			(* create a test for the non-passing inputs *)
 			failingSampleTests = If[Length[failingSamples] > 0,
-				Test["For the provided samples " <> ObjectToString[failingSamples, Cache -> simulatedCache] <> ", the provided MeasurementMethodTable, " <> ObjectToString[failingTables, Cache -> simulatedCache] <> " does not contain any steps where the RelativePressure is specified and the EquilibrationTime or MeasurementTIme are specified:",
+				Test["For the provided samples " <> ObjectToString[failingSamples, Simulation->updatedSimulation] <> ", the provided MeasurementMethodTable, " <> ObjectToString[failingTables, Simulation->updatedSimulation] <> " does not contain any steps where the RelativePressure is specified and the EquilibrationTime or MeasurementTIme are specified:",
 					True,
 					False
 				],
@@ -4219,7 +4156,7 @@ resolveExperimentMeasureViscosityOptions[mySamples:{ObjectP[Object[Sample]]...},
 
 			(* create a test for the passing inputs *)
 			passingSampleTests = If[Length[passingSamples] > 0,
-				Test["For the provided samples " <> ObjectToString[passingSamples, Cache -> simulatedCache] <> ", the provided MeasurementMethodTable, " <> ObjectToString[passingTables, Cache -> simulatedCache] <> " does not contain any steps where the RelativePressure is specified and the EquilibrationTime or MeasurementTIme are specified:",
+				Test["For the provided samples " <> ObjectToString[passingSamples, Simulation->updatedSimulation] <> ", the provided MeasurementMethodTable, " <> ObjectToString[passingTables, Simulation->updatedSimulation] <> " does not contain any steps where the RelativePressure is specified and the EquilibrationTime or MeasurementTIme are specified:",
 					True,
 					True
 				],
@@ -4238,14 +4175,14 @@ resolveExperimentMeasureViscosityOptions[mySamples:{ObjectP[Object[Sample]]...},
 	];
 
 	(* Pull out Miscellaneous options *)
-	{emailOption, uploadOption, nameOption, confirmOption,parentProtocolOption,fastTrackOption,templateOption,samplesInStorageOption,samplesOutStorageOption,operator} =
+	{emailOption, uploadOption, nameOption, confirmOption,canaryBranchOption,parentProtocolOption,fastTrackOption,templateOption,samplesInStorageOption,samplesOutStorageOption,operator} =
 		Lookup[allOptionsRounded,
-			{Email, Upload, Name,Confirm,ParentProtocol,FastTrack,Template,SamplesInStorageCondition,SamplesOutStorageCondition,Operator}];
+			{Email, Upload, Name,Confirm,CanaryBranch,ParentProtocol,FastTrack,Template,SamplesInStorageCondition,SamplesOutStorageCondition,Operator}];
 
 	(* check if the provided sampleStorageCondtion is valid*)
 	{validSampleStorageConditionQ,validSampleStorageTests}=If[gatherTests,
-			ValidContainerStorageConditionQ[simulatedSamples,samplesInStorageOption,Cache->simulatedCache,Output->{Result,Tests}],
-			{ValidContainerStorageConditionQ[simulatedSamples,samplesInStorageOption,Cache->simulatedCache,Output->Result],{}}
+			ValidContainerStorageConditionQ[simulatedSamples,samplesInStorageOption,Simulation->updatedSimulation,Output->{Result,Tests}],
+			{ValidContainerStorageConditionQ[simulatedSamples,samplesInStorageOption,Simulation->updatedSimulation,Output->Result],{}}
 	];
 
 	(* if the test above passes, there's no invalid option, otherwise, SamplesInStorageCondition will be an invalid option *)
@@ -4260,7 +4197,7 @@ resolveExperimentMeasureViscosityOptions[mySamples:{ObjectP[Object[Sample]]...},
 	invalidOptions=DeleteDuplicates[Flatten[{nameInvalidOption,recoupSampleConflictOptions,remeasurementConflictOptions,
 		sampleVolumeTooLowForInjectionOptions,minInjectionAliquotErrorOptions,customMeasTableParameterOptions,exploratoryTempSweepParameterErrorOptions,measurementParameterErrorOptions,shearSweepParameterErrorOptions,
 		tempSweepInsufficientErrorOptions,remeasurementReloadVolumeTooHighErrorOptions,
-		tooManyRecoupContainerOptions,invalidStorageConditionOptions,prepressurizationInvalidOptions,failingPressureSweepOptions,
+		tooManyRecoupContainerOptions,invalidStorageConditionOptions,failingPressureSweepOptions,
 		customPressurePrimeErrorOptions,customPressureFlowRateErrorOptions}]];
 
 	allTests = Flatten[{
@@ -4274,7 +4211,7 @@ resolveExperimentMeasureViscosityOptions[mySamples:{ObjectP[Object[Sample]]...},
 		validNameTest,remeasurementInvalidTest,recoupSampleInvalidTest,validSampleStorageTests,
 
 		(*Tests from the MapThread*)
-		sampleVolumeTooLowForInjectionTests,minInjectionAliquotErrorTests,(*injectionRateHighWarningTests,*)primingWarningTests,
+		sampleVolumeTooLowForInjectionTests,minInjectionAliquotErrorTests,primingWarningTests,
 		customMeasTableParameterErrorTests,customMeasTableParameterWarningTests,exploratoryTempSweepParameterErrorTests,measurementParameterErrorTests,shearSweepParameterErrorTests,
 		tempSweepInsufficientErrorTests,shearRateSweepInsufficientErrorTests,remeasurementReloadVolumeTooHighErrorTests,notEnoughInjectionWarningTests,pressureSweepParameterErrorTests,customPressurePrimeErrorTests,customPressureTimeWarningTests,customPressureFlowRateErrorTests
 	}];
@@ -4282,7 +4219,7 @@ resolveExperimentMeasureViscosityOptions[mySamples:{ObjectP[Object[Sample]]...},
 
 	(* Throw Error::InvalidInput if there are invalid inputs. *)
 	If[Length[invalidInputs]>0&&!gatherTests,
-		Message[Error::InvalidInput,ObjectToString[invalidInputs,Cache->simulatedCache]]
+		Message[Error::InvalidInput,ObjectToString[invalidInputs,Simulation->updatedSimulation]]
 	];
 
 	(* Throw Error::InvalidOption if there are invalid options. *)
@@ -4304,7 +4241,8 @@ resolveExperimentMeasureViscosityOptions[mySamples:{ObjectP[Object[Sample]]...},
 			mySamples,
 			simulatedSamples,
 			ReplaceRule[myOptions,resolvedSamplePrepOptions],
-			Cache -> simulatedCache,
+			Cache -> cache,
+			Simulation->updatedSimulation,
 			RequiredAliquotContainers->targetContainers,
 			RequiredAliquotAmounts->targetVolumes,
 			AliquotWarningMessage->aliquotMessage,
@@ -4314,7 +4252,8 @@ resolveExperimentMeasureViscosityOptions[mySamples:{ObjectP[Object[Sample]]...},
 			mySamples,
 			simulatedSamples,
 			ReplaceRule[myOptions,resolvedSamplePrepOptions],
-			Cache -> simulatedCache,
+			Cache -> cache,
+			Simulation->updatedSimulation,
 			RequiredAliquotContainers->targetContainers,
 			RequiredAliquotAmounts->targetVolumes,
 			AliquotWarningMessage->aliquotMessage,
@@ -4353,7 +4292,6 @@ resolveExperimentMeasureViscosityOptions[mySamples:{ObjectP[Object[Sample]]...},
 				ViscometerChip->resolvedViscometerChip,
 				SampleTemperature->resolvedSampleTemperature,
 				InjectionVolume->resolvedInjectionVolume,
-				PressurizationInjectionRate->resolvedInjectionRate,
 				MeasurementMethod->resolvedMeasurementMethod,
 				Priming->resolvedPriming,
 				TemperatureStabilityMargin->resolvedTemperatureStabilityMargin,
@@ -4374,6 +4312,7 @@ resolveExperimentMeasureViscosityOptions[mySamples:{ObjectP[Object[Sample]]...},
 				PrimaryBuffer->resolvedPrimaryBuffer,
 				PrimaryBufferStorageCondition->resolvedPrimaryBufferStorage,
 				Confirm -> confirmOption,
+				CanaryBranch -> canaryBranchOption,
 				Name -> name,
 				Email -> resolvedEmail,
 				ParentProtocol -> parentProtocolOption,
@@ -4403,7 +4342,7 @@ resolveExperimentMeasureViscosityOptions[mySamples:{ObjectP[Object[Sample]]...},
 
 DefineOptions[
 	experimentMeasureViscosityResourcePackets,
-	Options:>{OutputOption,CacheOption}
+	Options:>{OutputOption,CacheOption,SimulationOption}
 ];
 
 
@@ -4419,11 +4358,11 @@ experimentMeasureViscosityResourcePackets[mySamples:{ObjectP[Object[Sample]]..},
 		resourceSamplesIn,expandedSamplePacketsWithNumReplicates,workingContainers,measurementTable,recoupSampleCount,
 		plateSealResource,rackResource,coolingInsertResource,viscometerChip,viscometerChipResource,viscometerChipWrenchResource,viscometerChipTweezersResource,viscometerPliersResource,viscometerChipFerruleResource,recoupSampleContainerSame,recoupContainerCount,recoupContainerResource,
 		measurementTableFlat,measurementTableReformat,allTimes,allTimesSummed,allNumReadings,totalMeasurementTimes,recoupSample,containersInResources,
-		sampleTemperature,nitroValveBool,needleResource,residualIncubation,instrumentSetupTearDown,processingTime,recoupSamples,
+		sampleTemperature,nitroValveBool,needleResource,residualIncubation,instrumentSetupTearDown,processingTime,recoupSamples, simulation,
 
 		(*Cleaning buffers*)
 		primaryBuffer,primaryBufferResource,secondaryCleaningSolutionResource,tertiaryCleaningSolutionResource,primaryBufferAmount,secondaryCleaningAmount,tertiaryCleaningAmount,
-		numSamples,volCleaning,bufferedVol,allWasteWeight,optionsRule,previewRule
+		numSamples,assayType,primaryVolumePerSampleB05, secondaryVolumePerSampleB05, tertiaryVolumePerSampleB05, primaryVolumePerSampleC05, secondaryVolumePerSampleC05, tertiaryVolumePerSampleC05, primaryVolumePerSampleE02, secondaryVolumePerSampleE02, tertiaryVolumePerSampleE02,volCleaning,bufferedVol,allWasteWeight,optionsRule,previewRule
 	},
 	(* expand the resolved options if they weren't expanded already *)
 	{expandedInputs, expandedResolvedOptions} = ExpandIndexMatchedInputs[ExperimentMeasureViscosity, {mySamples}, myResolvedOptions];
@@ -4446,13 +4385,16 @@ experimentMeasureViscosityResourcePackets[mySamples:{ObjectP[Object[Sample]]..},
 
 	(* Get the inherited cache *)
 	inheritedCache = Lookup[myResolvedOptions,Cache];
+	simulation = Lookup[ToList[ops], Simulation];
 
 	(* --- Make our one big Download call --- *)
-	{sampleDownloads}=Quiet[Download[
+	{sampleDownloads} = Quiet[
+		Download[
 			{mySamples},
-			{Packet[Container,Volume,Object]},
-			Cache->inheritedCache,
-			Date->Now
+			{Packet[Container, Volume, Object]},
+			Cache -> inheritedCache,
+			Simulation -> simulation,
+			Date -> Now
 		],
 		Download::FieldDoesntExist
 	];
@@ -4464,7 +4406,10 @@ experimentMeasureViscosityResourcePackets[mySamples:{ObjectP[Object[Sample]]..},
 	(*Note: the Rheosense Initium viscometer can only be calibrated for one Model of autosample vial and 96-well plate at any one time.
 		Currently, the autosampler is calibrated for the following containers. If you want to use a different container, the autosampler MUST be
  		re-calibrated to account for differences in the distance to the bottom of the container. *)
-	potentialContainers = {Model[Container, Plate, "96-well PCR Plate"],Model[Container, Vessel, "1mL HPLC Vial (total recovery) with Cap and PTFE/Silicone Septum"]};
+	potentialContainers = {
+		Model[Container, Plate, "id:01G6nvkKrrYm"], (*Model[Container, Plate, "96-well PCR Plate"]*)
+		Model[Container, Vessel, "id:BYDOjvGj6q39"] (*Model[Container, Vessel, "1mL HPLC Vial (total recovery) with Cap and PTFE/Silicone Septum"]*)
+	};
 
 	(* -- Generate resources for the SamplesIn -- *)
 
@@ -4662,28 +4607,82 @@ experimentMeasureViscosityResourcePackets[mySamples:{ObjectP[Object[Sample]]..},
 	];
 
 	(*-- Generate the resources for the cleaning buffers --*)
-		(* Get the number of samples to estimate the amount of cleaning solutions that we need.  *)
-		numSamples = Length[pairedSamplesInAndVolumes];
+	(* Get the number of samples to estimate the amount of cleaning solutions that we need.  *)
+	numSamples = Length[pairedSamplesInAndVolumes];
+	
+	(* The assayType determines the chip model used and also determines the amount of cleaning solutions required *)
+	assayType = Lookup[myResolvedOptions,AssayType];
 
-		(* We need approximately 15 ml of each for each sample. We'll add a 100 mL buffer, to account for sample loss during filtration, and just in case the instrument uses more *)
-		volCleaning = 15 Milliliter;
-		bufferedVol = 100 Milliliter;
+	(* These are the approximate amounts of buffer used per sample when using a corresponding chip according to Software update as of January 2024 *)
 
-		(* PrimaryBuffer : user specified *)
-		primaryBuffer = Lookup[myResolvedOptions,PrimaryBuffer];
-		primaryBufferAmount = Min[bufferedVol+numSamples*volCleaning,500 Milliliter];
-		primaryBufferResource = Resource[Sample->primaryBuffer,Amount-> primaryBufferAmount,Container->Model[Container, Vessel, "500mL Glass Bottle"]];
-		(*Note: the instrument buffer deck only allows containers of type Model[Container, Vessel, "500mL Glass Bottle"] or Model[Container, Vessel, "250mL Glass Bottle"] *)
+	primaryVolumePerSampleB05 = 8.1 Milliliter;
+	secondaryVolumePerSampleB05 = 6.9 Milliliter;
+	tertiaryVolumePerSampleB05 = 11.9 Milliliter;
+	primaryVolumePerSampleC05 = 12.1 Milliliter;
+	secondaryVolumePerSampleC05 = 11.3 Milliliter;
+	tertiaryVolumePerSampleC05 = 19.3 Milliliter;
+	primaryVolumePerSampleE02 = 11.8 Milliliter;
+	secondaryVolumePerSampleE02 = 11.1 Milliliter;
+	tertiaryVolumePerSampleE02 = 19.2 Milliliter;
 
-		(*Note: we make resources for the secondar and tertiary cleaning solvents here since we want to ensure that there are enough cleaning solvents for the run (vs. having it refilled as a maintenance). We also want to leave open the possibility of custom cleaning solvents in the future, pending method development from Rheosense and cust.omer requests*)
+	(* In order to ensure effective pick-up of solvent, an extra 100 Milliliter is always added *)
+	bufferedVol = 100 Milliliter;
 
-		(* Secondary Cleaning Solvent 1% Aquet in RO Water *)
-		secondaryCleaningAmount = Min[bufferedVol+numSamples*volCleaning,500 Milliliter];
-		secondaryCleaningSolutionResource = Resource[Sample->Model[Sample, StockSolution, "id:R8e1Pjeapqjj"],Amount->secondaryCleaningAmount,Container->Model[Container, Vessel, "500mL Glass Bottle"]];
+	(* PrimaryBuffer : user specified *)
+	primaryBuffer = Lookup[myResolvedOptions,PrimaryBuffer];
 
-		(* TertiaryCleaning Solvent: Acetone *)
-		tertiaryCleaningAmount = Min[bufferedVol+numSamples*volCleaning,250 Milliliter];
-		tertiaryCleaningSolutionResource = Resource[Sample->Model[Sample,"Acetone, Reagent Grade"],Amount->tertiaryCleaningAmount,Container->Model[Container, Vessel, "250mL Glass Bottle"]];
+	primaryBufferAmount = Which[
+		MatchQ[assayType,LowViscosity],
+		Min[(primaryVolumePerSampleB05*numberOfSamples)+100 Milliliter,1 Liter],
+		
+		MatchQ[assayType,HighViscosity],
+		Min[(primaryVolumePerSampleC05*numberOfSamples)+100 Milliliter,1 Liter],
+		
+		MatchQ[assayType,HighShearRate],
+		Min[(primaryVolumePerSampleE02*numberOfSamples)+100 Milliliter,1 Liter],
+		
+		True,
+		Min[(primaryVolumePerSampleB05*numberOfSamples)+100 Milliliter,1 Liter]
+	];
+	
+	primaryBufferResource = Resource[Sample->primaryBuffer,Amount-> primaryBufferAmount,Container->Model[Container, Vessel, "1L Glass Bottle"]];
+	(* Note: the instrument buffer deck only allows Model[Container, Vessel, "1L Glass Bottle"] *)
+
+	(*Note: we make resources for the secondary and tertiary cleaning solvents here since we want to ensure that there are enough cleaning solvents for the run (vs. having it refilled as a maintenance). We also want to leave open the possibility of custom cleaning solvents in the future, pending method development from Rheosense and customer requests*)
+
+	(* Secondary Cleaning Solvent 1% Aquet in RO Water *)
+	secondaryCleaningAmount = Which[
+		MatchQ[assayType,LowViscosity],
+		Min[(secondaryVolumePerSampleB05*numberOfSamples)+100 Milliliter,1 Liter],
+		
+		MatchQ[assayType,HighViscosity],
+		Min[(secondaryVolumePerSampleC05*numberOfSamples)+100 Milliliter,1 Liter],
+		
+		MatchQ[assayType,HighShearRate],
+		Min[(secondaryVolumePerSampleE02*numberOfSamples)+100 Milliliter,1 Liter],
+		
+		True,
+		Min[(secondaryVolumePerSampleB05*numberOfSamples)+100 Milliliter,1 Liter]
+	];
+	
+	secondaryCleaningSolutionResource = Resource[Sample->Model[Sample, StockSolution, "id:R8e1Pjeapqjj"],Amount->secondaryCleaningAmount,Container->Model[Container, Vessel, "1L Glass Bottle"]];
+
+	(* TertiaryCleaning Solvent: Acetone *)
+	tertiaryCleaningAmount = Which[
+		MatchQ[assayType,LowViscosity],
+		Min[(tertiaryVolumePerSampleB05*numberOfSamples)+100 Milliliter,1 Liter],
+		
+		MatchQ[assayType,HighViscosity],
+		Min[(tertiaryVolumePerSampleC05*numberOfSamples)+100 Milliliter,1 Liter],
+		
+		MatchQ[assayType,HighShearRate],
+		Min[(tertiaryVolumePerSampleE02*numberOfSamples)+100 Milliliter,1 Liter],
+		
+		True,
+		Min[(tertiaryVolumePerSampleB05*numberOfSamples)+100 Milliliter,1 Liter]
+	];
+	
+	tertiaryCleaningSolutionResource = Resource[Sample->Model[Sample,"Acetone, Reagent Grade"],Amount->tertiaryCleaningAmount,Container->Model[Container, Vessel, "1L Glass Bottle"]];
 
 	(* -- Generate instrument resources -- *)
 
@@ -4701,16 +4700,16 @@ experimentMeasureViscosityResourcePackets[mySamples:{ObjectP[Object[Sample]]..},
 	];
 
 	(* For each row in the measurementmethodTable, sum the EquilTime, MeasurementTime, and PauseTime, and multiply by the number of readings *)
-		allTimes = measurementTableFlat[[All,4;;6]];
+	allTimes = measurementTableFlat[[All,4;;6]];
 
-		(*For each row, sum together the Equilibraiton Time, MeasurementTime, and PauseTime*)
-		allTimesSummed = (Total/@allTimes) /. Null->7 Second; (* for the Null entries, which indicate priming steps, set to  7 seconds*)
+	(*For each row, sum together the Equilibraiton Time, MeasurementTime, and PauseTime*)
+	allTimesSummed = (Total/@allTimes) /. Null->7 Second; (* for the Null entries, which indicate priming steps, set to  7 seconds*)
 
-		(* Get the numberofReadings for each row*)
-		allNumReadings = measurementTableFlat[[All,8]];
+	(* Get the numberofReadings for each row*)
+	allNumReadings = measurementTableFlat[[All,8]];
 
-		(*Get the total measurement times by multiplying the number of readings by allTimes summed*)
-		totalMeasurementTimes = Total[MapThread[#1*#2 &, {allTimesSummed, allNumReadings}]];
+	(*Get the total measurement times by multiplying the number of readings by allTimes summed*)
+	totalMeasurementTimes = Total[MapThread[#1*#2 &, {allTimesSummed, allNumReadings}]];
 
 	(* Get the RecoupSample value *)
 	recoupSample = Lookup[optionsWithReplicates,RecoupSample];
@@ -4790,7 +4789,6 @@ experimentMeasureViscosityResourcePackets[mySamples:{ObjectP[Object[Sample]]..},
 		(* Method Information *)
 		SampleTemperature -> Lookup[myResolvedOptions,SampleTemperature],
 		AutosamplerPrePressurization -> Lookup[myResolvedOptions,AutosamplerPrePressurization],
-		PressurizationInjectionRate -> Lookup[expandedResolvedOptions,PressurizationInjectionRate],
 		Replace[InjectionVolumes] -> Lookup[optionsWithReplicates,InjectionVolume],
 		Replace[MeasurementMethods] -> Lookup[optionsWithReplicates,MeasurementMethod],
 		Replace[TemperatureStabilityMargins] -> Lookup[optionsWithReplicates,TemperatureStabilityMargin],
@@ -4823,16 +4821,16 @@ experimentMeasureViscosityResourcePackets[mySamples:{ObjectP[Object[Sample]]..},
 		EstimatedProcessingTime->processingTime,
 
 		Replace[Checkpoints] -> {
-			{"Picking Resources",30 Minute,"Samples required to execute this protocol are gathered from storage.", Resource[Operator -> Model[User, Emerald, Operator, "Trainee"], Time -> 10 Minute]},
-			{"Preparing Samples",45 Minute,"Preprocessing, such as incubation, mixing, centrifuging, and aliquoting, is performed.",Resource[Operator -> Model[User, Emerald, Operator, "Trainee"], Time -> 45 Minute]},
-			{"Measuring Viscosity", instrumentTime,"The viscometer is prepared, the samples are injected into the measurement chip, the viscosity of samples are measured, and the viscometer is cleaned between each sample.", Resource[Operator -> Model[User, Emerald, Operator, "Trainee"], Time -> instrumentTime]},
-			{"Sample Post-Processing",1 Hour,"Any measuring of volume, weight, or sample imaging post experiment is performed.", Resource[Operator -> Model[User, Emerald, Operator, "Trainee"], Time -> 1*Hour]},
-			{"Returning Materials",20 Minute,"Samples are returned to storage.", Resource[Operator -> Model[User, Emerald, Operator, "Trainee"], Time -> 20*Minute]}
+			{"Picking Resources",30 Minute,"Samples required to execute this protocol are gathered from storage.", Resource[Operator -> $BaselineOperator, Time -> 10 Minute]},
+			{"Preparing Samples",45 Minute,"Preprocessing, such as incubation, mixing, centrifuging, and aliquoting, is performed.",Resource[Operator -> $BaselineOperator, Time -> 45 Minute]},
+			{"Measuring Viscosity", instrumentTime,"The viscometer is prepared, the samples are injected into the measurement chip, the viscosity of samples are measured, and the viscometer is cleaned between each sample.", Resource[Operator -> $BaselineOperator, Time -> instrumentTime]},
+			{"Sample Post-Processing",1 Hour,"Any measuring of volume, weight, or sample imaging post experiment is performed.", Resource[Operator -> $BaselineOperator, Time -> 1*Hour]},
+			{"Returning Materials",20 Minute,"Samples are returned to storage.", Resource[Operator -> $BaselineOperator, Time -> 20*Minute]}
 		}
 	|>;
 
 	(* generate a packet with the shared fields *)
-	sharedFieldPacket = populateSamplePrepFields[mySamples, myResolvedOptions,Cache->inheritedCache];
+	sharedFieldPacket = populateSamplePrepFields[mySamples, myResolvedOptions,Cache->inheritedCache,Simulation->simulation];
 
 	(* Merge the shared fields with the specific fields *)
 	finalizedPacket = Join[sharedFieldPacket, protocolPacket];
@@ -4844,8 +4842,8 @@ experimentMeasureViscosityResourcePackets[mySamples:{ObjectP[Object[Sample]]..},
 	(* call fulfillableResourceQ on all the resources we created *)
 	{fulfillable, frqTests} = Which[
 		MatchQ[$ECLApplication, Engine], {True, {}},
-		gatherTests, Resources`Private`fulfillableResourceQ[allResourceBlobs, Output -> {Result, Tests}, FastTrack -> Lookup[myResolvedOptions, FastTrack],Site->Lookup[myResolvedOptions,Site], Cache->inheritedCache],
-		True, {Resources`Private`fulfillableResourceQ[allResourceBlobs, FastTrack -> Lookup[myResolvedOptions, FastTrack],Site->Lookup[myResolvedOptions,Site], Messages -> messages, Cache->inheritedCache], Null}
+		gatherTests, Resources`Private`fulfillableResourceQ[allResourceBlobs, Output -> {Result, Tests}, FastTrack -> Lookup[myResolvedOptions, FastTrack],Site->Lookup[myResolvedOptions,Site], Cache->inheritedCache, Simulation -> simulation],
+		True, {Resources`Private`fulfillableResourceQ[allResourceBlobs, FastTrack -> Lookup[myResolvedOptions, FastTrack],Site->Lookup[myResolvedOptions,Site], Messages -> messages, Cache->inheritedCache, Simulation -> simulation], Null}
 	];
 
 	(* --- Output --- *)

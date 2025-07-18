@@ -52,7 +52,7 @@ DefineUsage[
 			" The processing time for any backlogged protocols.",
 			" The expected queue time (based on recent historical data) for any yet unstarted processing protocols.",
 			" The expected queue time (based on recent historical data) for any backlogged protocols.",
-			" The maxium number of threads.",
+			" The maximum number of threads.",
 			" The predicated number of available threads at any given time as protocols are being promoted from the backlog to the queue and processing protocols are completed."
 		},
 		Input :> {

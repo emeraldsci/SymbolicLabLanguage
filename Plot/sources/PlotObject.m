@@ -19,16 +19,25 @@
 (*plotInputPattern[Object[Data,type:AbsorbanceSpectroscopy]] := {ObjectP[Object[Data,type]]..}*)
 
 plotInputPattern[Object[Data,type:(AlphaScreen)]] := Alternatives[
+	ObjectP[Object[Data,type]],
 	{ObjectP[Object[Data,type]]..},
 	{{ObjectP[Object[Data,type]]..}..}
 ]
 
 
 (* ::Subsubsection::Closed:: *)
-(*Object[Data,FluorescenceIntensity] & Object[Data,Volume]*)
+(*Object[Data,Volume]*)
 
+plotInputPattern[Object[Data,type:Volume]] := Alternatives[
+	{ObjectP[Object[Data,type]]..},
+	{{ObjectP[Object[Data,type]]..}..}
+]
 
-plotInputPattern[Object[Data,type:(FluorescenceIntensity|Volume)]] := Alternatives[
+(* ::Subsubsection::Closed:: *)
+(*Object[Data,FluorescenceIntensity]*)
+
+plotInputPattern[Object[Data,type:FluorescenceIntensity]] := Alternatives[
+	ObjectP[Object[Data,type]],
 	{ObjectP[Object[Data,type]]..},
 	{{ObjectP[Object[Data,type]]..}..}
 ]
@@ -83,6 +92,15 @@ plotObject[AbsorbanceKinetics,xy:(CoordinatesP|{CoordinatesP..}|{{CoordinatesP..
 
 
 (* ::Subsubsection:: *)
+(*Object[Data, CyclicVoltammetry]*)
+
+
+(* CyclicVoltammetry *)
+plotObject[in: plotInputPattern[Object[Data, CyclicVoltammetry]], ops: OptionsPattern[PlotCyclicVoltammetry]] :=
+	PlotCyclicVoltammetry[in,ops];
+
+
+(* ::Subsubsection:: *)
 (*Object[Data, IRSpectroscopy]*)
 
 
@@ -91,6 +109,13 @@ plotObject[in:plotInputPattern[Object[Data,IRSpectroscopy]],ops:OptionsPattern[P
 		PlotIRSpectroscopy[in,ops];
 plotObject[IR,xy:(CoordinatesP|{CoordinatesP..}|{{CoordinatesP..}..}),ops:OptionsPattern[PlotIRSpectroscopy]]:=
 		PlotIRSpectroscopy[xy,ops];
+
+(* ::Subsubsection:: *)
+(*Object[Data, MeltingPoint]*)
+
+(* MeasureMeltingPoint *)
+plotObject[in:plotInputPattern[Object[Data,MeltingPoint]],ops:OptionsPattern[PlotMeasureMeltingPoint]]:=
+	PlotMeasureMeltingPoint[in,ops];
 
 
 (* ::Subsubsection:: *)
@@ -191,6 +216,11 @@ plotObject[FragmentAnalysis,xy:(CoordinatesP|{CoordinatesP..}|{{CoordinatesP..}.
 
 
 plotObject[in:ObjectP[Object[Data,FreezeCells]],ops:OptionsPattern[PlotFreezeCells]]:=PlotFreezeCells[in,ops];
+
+(* ::Subsubsection:: *)
+(* Object[Data, ICPMS] *)
+
+plotObject[in: plotInputPattern[Object[Data, ICPMS]], ops: OptionsPattern[PlotICPMS]] := PlotICPMS[in, ops];
 
 
 (* ::Subsubsection:: *)
@@ -296,6 +326,7 @@ plotObject[in:plotInputPattern[Object[Data,AlphaScreen]],ops:OptionsPattern[Plot
 	PlotAlphaScreen[in,ops]
 
 plotObject[in:Alternatives[
+	PatternSequence[ObjectP[Object[Data,AlphaScreen]]],
 	PatternSequence[{ObjectP[Object[Data,AlphaScreen]]..},{ObjectP[Object[Data,AlphaScreen]]..}],
 	PatternSequence[{{ObjectP[Object[Data,AlphaScreen]]..}..},{{ObjectP[Object[Data,AlphaScreen]]..}..}]
 ],ops:OptionsPattern[PlotAlphaScreen]]:=PlotAlphaScreen[in,ops]
@@ -360,6 +391,22 @@ plotObject[in:plotInputPattern[Object[Data,FluorescenceKinetics]],ops:OptionsPat
 		PlotFluorescenceKinetics[in,ops]
 plotObject[FluorescenceKinetics,xy:(CoordinatesP|{CoordinatesP..}|{{CoordinatesP..}..}),ops:OptionsPattern[PlotFluorescenceKinetics]]:=
 		PlotFluorescenceKinetics[xy,ops]
+
+
+(* ::Subsubsection:: *)
+(*Object[Data, FluorescencePolarization]*)
+
+(* Fluorescence Kinetics  *)
+plotObject[in: plotInputPattern[Object[Data, FluorescencePolarization]], ops: OptionsPattern[PlotFluorescencePolarization]]:=
+	PlotFluorescencePolarization[in, ops]
+
+
+(* ::Subsubsection:: *)
+(*Object[Data, FluorescencePolarizationKinetics]*)
+
+(* Fluorescence Kinetics  *)
+plotObject[in: plotInputPattern[Object[Data, FluorescencePolarizationKinetics]], ops: OptionsPattern[PlotFluorescencePolarizationKinetics]]:=
+	PlotFluorescencePolarizationKinetics[in, ops]
 
 
 (* ::Subsubsection:: *)
@@ -651,8 +698,17 @@ plotObject[in:ObjectP[Object[Simulation,PrimerSet]],ops:OptionsPattern[PlotProbe
 (*Object[Simulation,Folding]*)
 
 
-plotObject[in:ObjectP[Object[Simulation,Folding]],ops:OptionsPattern[PlotProbeConcentration]]:=Download[in,FoldedStructures];
-
+plotObject[in:ObjectP[Object[Simulation,Folding]],ops:OptionsPattern[PlotProbeConcentration]]:= With[
+	{packet = Download[in, Packet[FoldedStructures, ResolvedOptions]]},
+	ReplaceAll[
+		OptionValue[Output],
+		{
+			Result -> Lookup[packet,FoldedStructures],
+			Options -> Lookup[packet,ResolvedOptions],
+			Tests -> {}
+		}
+	]
+];
 
 (* ::Subsubsection:: *)
 (*Object[Simulation,EquilibriumConstant]*)
@@ -671,7 +727,8 @@ plotObject[in:ObjectP[Model[Sample]],ops:OptionsPattern[]]:=Module[
 	{compositions,groupedTypes,safeOps,outputResult,outputOptions,resolvedOptions,flattenedResult,listedOutput},
 
 	(* get the compositions *)
-	compositions=Download[in,Composition[[All,2]][{Object,Type}]];
+	(* we may have {Null, Null} entry in Composition indicating unknown impurity that we need to remove *)
+	compositions=DeleteCases[Download[in,Composition[[All,2]][{Object,Type}]],Null];
 
 	(* group the components by type so components of the same type will be sent as a list to the same overloads *)
 	groupedTypes=Values[GroupBy[compositions,Last->First]];
@@ -797,8 +854,21 @@ plotObject[in:ListableP[ObjectP[Model[Molecule]]],ops:OptionsPattern[]]:=Module[
 (*Object[Method,Gradient]*)
 
 
-plotObject[gradientObject:ObjectP[Object[Method,Gradient]],ops:OptionsPattern[PlotGradient]]:=PlotGradient[gradientObject,ops]
+plotObject[gradientObject:ObjectP[Object[Method,Gradient]],ops:OptionsPattern[PlotGradient]]:=PlotGradient[gradientObject,ops];
 
+
+(* ::Subsubsection:: *)
+(*Object[Method,SupercriticalFluidGradient]*)
+
+
+plotObject[gradientObject:ObjectP[Object[Method,SupercriticalFluidGradient]],ops:OptionsPattern[PlotGradient]]:=PlotGradient[gradientObject,ops];
+
+
+(* ::Subsubsection:: *)
+(*Object[Method,IonChromatographyGradient*)
+
+
+plotObject[gradientObject:ObjectP[Object[Method,IonChromatographyGradient]],ops:OptionsPattern[PlotGradient]]:=PlotGradient[gradientObject,ops];
 
 
 (* ::Subsubsection:: *)
@@ -865,6 +935,17 @@ plotObject[in:ObjectP[Object[Analysis,DynamicLightScatteringLoading]],ops:Option
 (* ::Subsubsection:: *)
 (*Object[Analysis,DynamicLightScattering]*)
 plotObject[in:ObjectP[Object[Analysis,DynamicLightScattering]],ops:OptionsPattern[PlotDynamicLightScatteringAnalysis]]:=PlotDynamicLightScatteringAnalysis[in,ops]
+
+
+(* ::Subsubsection:: *)
+(*Object[Data,pHAdjustment]*)
+plotObject[in:ObjectP[Object[Data,pHAdjustment]],ops:OptionsPattern[PlotAdjustpH]]:=PlotAdjustpH[in,ops];
+
+
+(* ::Subsubsection:: *)
+(* Specific overload for Inventories *)
+plotObject[in:ListableP[ObjectP[Object[Inventory]]],ops:OptionsPattern[PlotInventoryLevels]]:=PlotInventoryLevels[in,ops];
+
 
 (* ::Subsubsection:: *)
 (*Object[Analysis, ParallelLine]*)
@@ -986,16 +1067,72 @@ plotObject[input:ObjectP[Object[Qualification,HPLC]], ops:OptionsPattern[PlotChr
 
 plotObject[input:ObjectP[Object[Calibration,Sensor,pH]], ops:OptionsPattern[]]:=plotObject[input[FitAnalysis],ops];
 
+(* ::Subsubsection:: *)
+(*plotObject overloads for protocol objects*)
+plotObject[input:ObjectP[Object[Protocol, AbsorbanceKinetics]], ops:OptionsPattern[PlotAbsorbanceKinetics]] := PlotAbsorbanceKinetics[input, ops];
+plotObject[input:ObjectP[Object[Protocol, AbsorbanceQuantification]], ops:OptionsPattern[PlotAbsorbanceQuantification]] := PlotAbsorbanceQuantification[input, ops];
+plotObject[input:ObjectP[Object[Protocol, AbsorbanceSpectroscopy]], ops:OptionsPattern[PlotAbsorbanceSpectroscopy]] := PlotAbsorbanceSpectroscopy[input, ops];
+plotObject[input:ObjectP[Object[Protocol, TotalProteinQuantification]], ops:OptionsPattern[PlotAbsorbanceSpectroscopy]] := PlotAbsorbanceSpectroscopy[input, ops];
+plotObject[input:ObjectP[Object[Protocol, ThermalShift]], ops:OptionsPattern[PlotAbsorbanceThermodynamics]] := PlotAbsorbanceThermodynamics[input, ops];
+plotObject[input:ObjectP[Object[Protocol, UVMelting]], ops:OptionsPattern[PlotAbsorbanceThermodynamics]] := PlotAbsorbanceThermodynamics[input, ops];
+plotObject[input:ObjectP[Object[Protocol, AgaroseGelElectrophoresis]], ops:OptionsPattern[PlotAgarose]] := PlotAgarose[input, ops];
+plotObject[input:ObjectP[Object[Protocol, AlphaScreen]], ops:OptionsPattern[PlotAlphaScreen]] := PlotAlphaScreen[input, ops];
+plotObject[input:ObjectP[Object[Protocol, BioLayerInterferometry]], ops:OptionsPattern[PlotBioLayerInterferometry]] := PlotBioLayerInterferometry[input, ops];
+plotObject[input:ObjectP[Object[Protocol, CapillaryGelElectrophoresisSDS]], ops:OptionsPattern[PlotCapillaryGelElectrophoresisSDS]] := PlotCapillaryGelElectrophoresisSDS[input, ops];
+plotObject[input:ObjectP[Object[Protocol, CapillaryIsoelectricFocusing]], ops:OptionsPattern[PlotCapillaryIsoelectricFocusing]] := PlotCapillaryIsoelectricFocusing[input, ops];
+plotObject[input:ObjectP[Object[Protocol, FPLC]], ops:OptionsPattern[PlotChromatography]] := PlotChromatography[input, ops];
+plotObject[input:ObjectP[Object[Protocol, GasChromatography]], ops:OptionsPattern[PlotChromatography]] := PlotChromatography[input, ops];
+plotObject[input:ObjectP[Object[Protocol, HPLC]], ops:OptionsPattern[PlotChromatography]] := PlotChromatography[input, ops];
+plotObject[input:ObjectP[Object[Protocol, IonChromatography]], ops:OptionsPattern[PlotChromatography]] := PlotChromatography[input, ops];
+plotObject[input:ObjectP[Object[Protocol, SupercriticalFluidChromatography]], ops:OptionsPattern[PlotChromatography]] := PlotChromatography[input, ops];
+plotObject[input:ObjectP[Object[Protocol, LCMS]], ops:OptionsPattern[PlotChromatographyMassSpectra]] := PlotChromatographyMassSpectra[input, ops];
+plotObject[input:ObjectP[Object[Protocol, CircularDichroism]], ops:OptionsPattern[PlotCircularDichroism]] := PlotCircularDichroism[input, ops];
+plotObject[input:ObjectP[Object[Protocol, MeasureConductivity]], ops:OptionsPattern[PlotConductivity]] := PlotConductivity[input, ops];
+plotObject[input:ObjectP[Object[Protocol, CoulterCount]], ops:OptionsPattern[PlotCoulterCount]] := PlotCoulterCount[input, ops];
+plotObject[input:ObjectP[Object[Protocol, MeasureSurfaceTension]], ops:OptionsPattern[PlotCriticalMicelleConcentration]] := PlotCriticalMicelleConcentration[input, ops];
+plotObject[input:ObjectP[Object[Protocol, CyclicVoltammetry]], ops:OptionsPattern[PlotCyclicVoltammetry]] := PlotCyclicVoltammetry[input, ops];
+plotObject[input:ObjectP[Object[Protocol, DifferentialScanningCalorimetry]], ops:OptionsPattern[PlotDifferentialScanningCalorimetry]] := PlotDifferentialScanningCalorimetry[input, ops];
+plotObject[input:ObjectP[Object[Protocol, DigitalPCR]], ops:OptionsPattern[PlotDigitalPCR]] := PlotDigitalPCR[input, ops];
+plotObject[input:ObjectP[Object[Protocol, MeasureDissolvedOxygen]], ops:OptionsPattern[PlotDissolvedOxygen]] := PlotDissolvedOxygen[input, ops];
+plotObject[input:ObjectP[Object[Protocol, DNASequencing]], ops:OptionsPattern[PlotDNASequencing]] := PlotDNASequencing[input, ops];
+plotObject[input:ObjectP[Object[Protocol, DynamicFoamAnalysis]], ops:OptionsPattern[PlotDynamicFoamAnalysis]] := PlotDynamicFoamAnalysis[input, ops];
+plotObject[input:ObjectP[Object[Protocol, DynamicLightScattering]], ops:OptionsPattern[PlotDynamicLightScattering]] := PlotDynamicLightScattering[input, ops];
+plotObject[input:ObjectP[Object[Protocol, ELISA]], ops:OptionsPattern[PlotELISA]] := PlotELISA[input, ops];
+plotObject[input:ObjectP[Object[Protocol, CapillaryELISA]], ops:OptionsPattern[PlotELISA]] := PlotELISA[input, ops];
+plotObject[input:ObjectP[Object[Protocol, FlowCytometry]], ops:OptionsPattern[PlotFlowCytometry]] := PlotFlowCytometry[input, ops];
+plotObject[input:ObjectP[Object[Protocol, FluorescenceIntensity]], ops:OptionsPattern[PlotFluorescenceIntensity]] := PlotFluorescenceIntensity[input, ops];
+plotObject[input:ObjectP[Object[Protocol, FluorescenceKinetics]], ops:OptionsPattern[PlotFluorescenceKinetics]] := PlotFluorescenceKinetics[input, ops];
+plotObject[input:ObjectP[Object[Protocol, FluorescenceSpectroscopy]], ops:OptionsPattern[PlotFluorescenceSpectroscopy]] := PlotFluorescenceSpectroscopy[input, ops];
+plotObject[input:ObjectP[Object[Protocol, FluorescenceThermodynamics]], ops:OptionsPattern[PlotFluorescenceThermodynamics]] := PlotFluorescenceThermodynamics[input, ops];
+plotObject[input:ObjectP[Object[Protocol, FragmentAnalysis]], ops:OptionsPattern[PlotFragmentAnalysis]] := PlotFragmentAnalysis[input, ops];
+plotObject[input:ObjectP[Object[Protocol, ICPMS]], ops:OptionsPattern[PlotICPMS]] := PlotICPMS[input, ops];
+plotObject[input:ObjectP[Object[Protocol, IRSpectroscopy]], ops:OptionsPattern[PlotIRSpectroscopy]] := PlotIRSpectroscopy[input, ops];
+plotObject[input:ObjectP[Object[Protocol, LuminescenceKinetics]], ops:OptionsPattern[PlotLuminescenceKinetics]] := PlotLuminescenceKinetics[input, ops];
+plotObject[input:ObjectP[Object[Protocol, LuminescenceSpectroscopy]], ops:OptionsPattern[PlotLuminescenceSpectroscopy]] := PlotLuminescenceSpectroscopy[input, ops];
+plotObject[input:ObjectP[Object[Protocol, MassSpectrometry]], ops:OptionsPattern[PlotMassSpectrometry]] := PlotMassSpectrometry[input, ops];
+plotObject[input:ObjectP[Object[Protocol, MeasureMeltingPoint]], ops:OptionsPattern[PlotMeasureMeltingPoint]] := PlotMeasureMeltingPoint[input, ops];
+plotObject[input:ObjectP[Object[Protocol, NephelometryKinetics]], ops:OptionsPattern[PlotNephelometryKinetics]] := PlotNephelometryKinetics[input, ops];
+plotObject[input:ObjectP[Object[Protocol, NMR]], ops:OptionsPattern[PlotNMR]] := PlotNMR[input, ops];
+plotObject[input:ObjectP[Object[Protocol, NMR2D]], ops:OptionsPattern[PlotNMR2D]] := PlotNMR2D[input, ops];
+plotObject[input:ObjectP[Object[Protocol, PAGE]], ops:OptionsPattern[PlotPAGE]] := PlotPAGE[input, ops];
+plotObject[input:ObjectP[Object[Protocol, MeasurepH]], ops:OptionsPattern[PlotpH]] := PlotpH[input, ops];
+plotObject[input:ObjectP[Object[Protocol, PowderXRD]], ops:OptionsPattern[PlotPowderXRD]] := PlotPowderXRD[input, ops];
+plotObject[input:ObjectP[Object[Protocol, qPCR]], ops:OptionsPattern[PlotqPCR]] := PlotqPCR[input, ops];
+plotObject[input:ObjectP[Object[Protocol, RamanSpectroscopy]], ops:OptionsPattern[PlotRamanSpectroscopy]] := PlotRamanSpectroscopy[input, ops];
+plotObject[input:ObjectP[Object[Protocol, MeasureSurfaceTension]], ops:OptionsPattern[PlotSurfaceTension]] := PlotSurfaceTension[input, ops];
+plotObject[input:ObjectP[Object[Protocol, TotalProteinDetection]], ops:OptionsPattern[PlotWestern]] := PlotWestern[input, ops];
+plotObject[input:ObjectP[Object[Protocol, Western]], ops:OptionsPattern[PlotWestern]] := PlotWestern[input, ops];
+plotObject[input:ObjectP[Object[Protocol, AdjustpH]], ops:OptionsPattern[PlotAdjustpH]] := PlotAdjustpH[input, ops];
 
 (* ::Subsubsection:: *)
-(*plotObject overloads for data objects*)
-
+(*plotObject overloads for analysis and data objects*)
 
 plotObject[input:ListableP[ObjectP[Object[Data, Microscope]]], ops:OptionsPattern[PlotMicroscope]] := PlotMicroscope[input, ops];
-plotObject[input:ListableP[ObjectP[Object[Protocol, AbsorbanceQuantification]]], ops:OptionsPattern[PlotAbsorbanceQuantification]] := PlotAbsorbanceQuantification[input, ops];
 
 plotObject[input:ListableP[ObjectP[Object[Analysis, AbsorbanceQuantification]]], ops:OptionsPattern[PlotAbsorbanceQuantification]] := PlotAbsorbanceQuantification[input, ops];
 plotObject[input:ListableP[ObjectP[Object[Analysis, CellCount]]], ops:OptionsPattern[PlotCellCount]] := PlotCellCount[input, ops];
+plotObject[input:ListableP[ObjectP[Object[Analysis, Colonies]]], ops:OptionsPattern[PlotColonies]] := PlotColonies[input, ops];
+plotObject[input:ObjectP[Object[Analysis, ColonyGrowth]], ops:OptionsPattern[PlotColonyGrowth]] := PlotColonyGrowth[input, ops];
 plotObject[input:ListableP[ObjectP[Object[Analysis, CopyNumber]]], ops:OptionsPattern[PlotCopyNumber]] := PlotCopyNumber[input, ops];
 plotObject[input:ListableP[ObjectP[Object[Analysis, CriticalMicelleConcentration]]], ops:OptionsPattern[PlotCriticalMicelleConcentration]] := PlotCriticalMicelleConcentration[input, ops];
 plotObject[input:ListableP[ObjectP[Object[Analysis, BindingQuantitation]]], ops:OptionsPattern[PlotBindingQuantitation]]:=PlotBindingQuantitation[input, ops];
@@ -1004,7 +1141,7 @@ plotObject[input:ListableP[ObjectP[Object[Analysis, EpitopeBinning]]], ops:Optio
 plotObject[input:ListableP[ObjectP[Object[Analysis, Fit]]], ops:OptionsPattern[PlotFit]] := PlotFit[input, ops];
 plotObject[input:ListableP[ObjectP[Object[Analysis, Fractions]]], ops:OptionsPattern[PlotFractions]] := PlotFractions[input, ops];
 plotObject[input:ListableP[ObjectP[Object[Analysis, Gating]]], ops:OptionsPattern[PlotGating]] := PlotGating[input, ops];
-
+plotObject[input:ObjectP[Object[Analysis, ImageExposure]], ops:OptionsPattern[PlotImageExposure]] := PlotImageExposure[input, ops];
 plotObject[input:ListableP[ObjectP[Object[Analysis, Kinetics]]], ops:OptionsPattern[PlotKineticRates]] := PlotKineticRates[input, ops];
 plotObject[input:ListableP[ObjectP[Object[Analysis, Ladder]]], ops:OptionsPattern[PlotLadder]] := PlotLadder[input, ops];
 plotObject[input:ListableP[ObjectP[Object[Analysis, MeltingPoint]]], ops:OptionsPattern[PlotMeltingPoint]] := PlotMeltingPoint[input, ops];
@@ -1019,7 +1156,8 @@ plotObject[input:ListableP[ObjectP[Object[Analysis, DNASequencing]]], ops:Option
 
 plotObject[input:ListableP[ObjectP[Object[Analysis, Smoothing]]], ops:OptionsPattern[PlotSmoothing]] := PlotSmoothing[input, ops];
 
-plotObject[input:ListableP[ObjectP[{Object[Instrument],Model[Instrument],Model[Part], Model[Sensor],Model[Item,Column]}]],ops:OptionsPattern[plotCloudFile]]:=plotCloudFile[input,ops];
+(* Plot ImageFile of these types *)
+plotObject[input:ListableP[ObjectP[{Object[Instrument],Model[Instrument], Object[Part], Model[Part], Object[Sensor], Model[Sensor], Object[Item], Model[Item], Object[Plumbing], Model[Plumbing], Object[Wiring], Model[Wiring], Object[Product]}]],ops:OptionsPattern[plotCloudFile]]:=plotCloudFile[input,ops];
 
 plotObject[input:ListableP[ObjectP[Model[Container]]], ops:OptionsPattern[PlotImage]] := PlotImage[input, ops];
 
@@ -1033,8 +1171,7 @@ plotObject[input:ListableP[ObjectP[Object[EmeraldCloudFile]]],ops:OptionsPattern
 
 plotObject[input:ListableP[ObjectP[{Object[MassFragmentationSpectrum], Object[Simulation, FragmentationSpectra]}]], ops:OptionsPattern[PlotPeptideFragmentationSpectraSimulation]]:=PlotPeptideFragmentationSpectraSimulation[input, ops];
 
-plotObject[input:ListableP[ObjectP[Object[Analysis, MassSpectrumDeconvolution]]], ops:OptionsPattern[EmeraldListLinePlot]] :=
-    Analysis`Private`plotObjectMassSpectrumDeconvolution[input, ops];
+plotObject[input:ListableP[ObjectP[Object[Analysis, MassSpectrumDeconvolution]]], ops:OptionsPattern[EmeraldListLinePlot]] := Analysis`Private`plotObjectMassSpectrumDeconvolution[input, ops];
 
 
 (* ::Subsection::Closed:: *)
@@ -1058,7 +1195,7 @@ plotObject[in_,ops:OptionsPattern[]]:=Module[{plotType,plotFunction},
 
 
 (* Explicitly resolve all the plotObject overloads that use a Module rather than directly calling another function *)
- resolvePlotFunction[input:ObjectP[Object[Sample]],plotType_]:=PlotImage;
+resolvePlotFunction[input:ObjectP[Object[Sample]],plotType_]:=PlotImage;
 (*resolvePlotFunction[input:ObjectP[Object[Sample]],plotType_]:=DynamicImage;*)
 resolvePlotFunction[input:ObjectP[Object[Analysis, ParallelLine]],plotType_]:=PlotFit;
 
@@ -1143,7 +1280,7 @@ DefineOptions[plotCloudFile,
 
 (*plotCloudFile[object:ObjectP[],ops:OptionsPattern[plotCloudFile]]:=First[plotCloudFile[{object},ops]]*)
 plotCloudFile[objects:ListableP[ObjectP[]],ops:OptionsPattern[plotCloudFile]]:=Module[
-	{safeOps,suppliedImageSize,imageSize,updatedOps,images,opsWithoutAutomaticColor,output,finalPlot},
+	{safeOps,suppliedImageSize,imageSize,updatedOps,imageDownload,images,opsWithoutAutomaticColor,output,finalPlot},
 
 	(* Resolve ImageSize - use smaller value for container models since they are often super tall images*)
 	safeOps=SafeOptions[plotCloudFile,ToList[ops]];
@@ -1160,7 +1297,27 @@ plotCloudFile[objects:ListableP[ObjectP[]],ops:OptionsPattern[plotCloudFile]]:=M
 	(* If ColorSpace->Automatic, Image sometimes turns the image blue. To prevent this, remove this option if the value is automatic.*)
 	(* NOTE: PassOptions adds the ColorSpace -> Automatic option, so we have to filer it out here. *)
 	opsWithoutAutomaticColor=DeleteCases[ToList[PassOptions[Image, updatedOps]], ColorSpace->Automatic];
-	images=ImportCloudFile/@Download[ToList@objects,ImageFile];
+
+	(* Download cloud file images. If the image is not available from the object, we can use model's image *)
+	imageDownload=Quiet[
+		Download[
+			ToList@objects,
+			{ImageFile,Model[ImageFile]}
+		],
+		{Download::FieldDoesntExist,Download::NotLinkField}
+	];
+	images=Map[
+		Which[
+			(* Input ImageFile directly *)
+			MatchQ[#[[1]],ObjectP[]],
+			ImportCloudFile[#[[1]]],
+			(* Input Model ImageFile directly *)
+			MatchQ[#[[2]],ObjectP[]],
+			ImportCloudFile[#[[2]]],
+			True,Null
+		]&,
+		imageDownload
+	];
 
 	(* Generate final plot *)
 	finalPlot=Map[
@@ -1220,15 +1377,16 @@ analysisPlots={
 
 dataPlots={
 	PlotAbsorbanceKinetics,PlotAbsorbanceSpectroscopy,PlotAbsorbanceThermodynamics,
-	PlotAgarose,PlotBindingQuantitation,PlotBioLayerInterferometry,PlotChromatography,
-	PlotCrossFlowFiltration,PlotConductivity,PlotCriticalMicelleConcentration,PlotDifferentialScanningCalorimetry,
-	PlotDynamicLightScattering,PlotEpitopeBinning,PlotFlowCytometry,PlotFluorescenceIntensity,
+	PlotAgarose, PlotAlphaScreen, PlotBindingKinetics, PlotBindingQuantitation,PlotBioLayerInterferometry, PlotCapillaryGelElectrophoresisSDS,
+	PlotCapillaryIsoelectricFocusing, PlotChromatography, PlotCoulterCount,
+	PlotCrossFlowFiltration,PlotConductivity,PlotCriticalMicelleConcentration, PlotCyclicVoltammetry, PlotDifferentialScanningCalorimetry,
+	PlotDissolvedOxygen, PlotDNASequencing, PlotDynamicLightScattering, PlotELISA, PlotICPMS, PlotEpitopeBinning,PlotFlowCytometry,PlotFluorescenceIntensity,
 	PlotFluorescenceKinetics,PlotFluorescenceSpectroscopy,PlotFluorescenceThermodynamics,PlotFragmentAnalysis,PlotFreezeCells,
 	PlotGasChromatographyMethod,PlotGradient,PlotIRSpectroscopy,PlotLuminescenceKinetics,
-	PlotLuminescenceSpectroscopy,PlotMassSpectrometry,PlotMicroscope,PlotNMR,PlotNMR2D,
-	PlotPAGE,PlotpH,PlotPowderXRD,PlotqPCR,PlotDigitalPCR,PlotRamanSpectroscopy,PlotSensor,
+	PlotLuminescenceSpectroscopy,PlotMassSpectrometry, PlotMeasureMeltingPoint, PlotMicroscope, PlotNephelometry, PlotNephelometryKinetics, PlotNMR,PlotNMR2D,
+	PlotPAGE,PlotpH,PlotPowderXRD,PlotCrystallizationImagingLog,PlotqPCR,PlotDigitalPCR,PlotRamanSpectroscopy,PlotSensor,
 	PlotSurfaceTension,PlotTLC,PlotVacuumEvaporation,PlotVolume,PlotWestern,PlotCircularDichroism,
-	PlotChromatographyMassSpectra,PlotDynamicFoamAnalysis
+	PlotChromatographyMassSpectra,PlotDynamicFoamAnalysis,PlotAdjustpH
 };
 
 simulationPlots={
@@ -1405,7 +1563,7 @@ PlotObject[in__,ops:OptionsPattern[]]:=Module[
 	{
 		safeOps,plotType,output,plotFunc,resolvedPlotFunc,getOptionSymbols,unusedOpsRules,
 		internalOps,result,preview,resolvedInternalOps,safeResolvedInternalOps,plotCallResults,resolvedOps,
-		plotOps,plotOut,plotResult
+		plotOps,preResolvedPlotLabel,plotResult, plotFuncOptionNames, functionContainsPlotLabelQ, plotLabelNullOrNone
 	},
 
 	(* Check the options pattern and return a list of all options, using defaults for unspecified or invalid options. *)
@@ -1439,6 +1597,10 @@ PlotObject[in__,ops:OptionsPattern[]]:=Module[
 		getOptionSymbols[resolvedPlotFunc]
 	];
 
+	(* get the option names for the plot function *)
+	plotFuncOptionNames = Keys[SafeOptions[resolvedPlotFunc]];
+	functionContainsPlotLabelQ = MemberQ[plotFuncOptionNames, PlotLabel];
+
 	(* Ops to be passed to the resolved plot function type *)
 	internalOps=Join[
 		ToList[ops],
@@ -1446,10 +1608,42 @@ PlotObject[in__,ops:OptionsPattern[]]:=Module[
 		If[plotFunc===Module,{PlotType->plotType},{}]
 	];
 
+	(* pick None or Null for the "empty" PlotLabel value becuase for some ridiculous reason some PlotObject functions can take None but not Null and some vice versa *)
+	plotLabelNullOrNone = With[{plotLabelDefinition = FirstCase[OptionDefinition[resolvedPlotFunc], KeyValuePattern[{"OptionName" -> "PlotLabel"}], <||>]},
+		If[MatchQ[None, ReleaseHold[Lookup[plotLabelDefinition, "SingletonPattern"]]],
+			None,
+			Null
+		]
+	];
+
+	(* pre resolve the PlotLabel to be None or Null if we have a single object or multiple objects without Map -> True *)
+	preResolvedPlotLabel = Which[
+		(* if we don't have PlotLabel, this is just dumb *)
+		Not[functionContainsPlotLabelQ], Null,
+		Not[MatchQ[Lookup[safeOps, PlotLabel], Automatic]], Lookup[safeOps, PlotLabel],
+		Not[TrueQ[Lookup[safeOps, Map]]] && MatchQ[ToList[in], {ObjectP[]..}], plotLabelNullOrNone,
+		MatchQ[ToList[in], {ObjectP[]}], plotLabelNullOrNone,
+		True, Automatic
+	];
+
 	(* Get both Result and Options *)
 	(* plotObject will take any object and try to plot it. If it can't it will return Null *)
 	(* be robust to that case since Inspect is always trying to call PlotObject on every object *)
-	plotCallResults=plotObject[in,Sequence@@ReplaceRule[internalOps,Output->{Result,Options}]];
+	plotCallResults=plotObject[
+		in,
+		Sequence@@ReplaceRule[
+			internalOps,
+			{
+				Output->{Result,Options},
+				(* if we actually have a PlotLabel option and it's something besides Automatic, set it here according to the pre-resolution *)
+				(* note also that we can't just pass Automatic because some of the plot functions don't let you do Automatic *)
+				If[functionContainsPlotLabelQ && Not[MatchQ[preResolvedPlotLabel, Automatic]],
+					PlotLabel -> preResolvedPlotLabel,
+					Nothing
+				]
+			}
+		]
+	];
 	{plotResult,plotOps}=Which[
 	    ListQ[plotCallResults]&&Length[plotCallResults]==2,plotCallResults,
 	    SameLengthQ[plotCallResults,in],Transpose[plotCallResults],

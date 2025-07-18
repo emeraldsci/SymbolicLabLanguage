@@ -45,6 +45,14 @@ DefineObjectType[Object[Part, Camera], {
 			Description -> "The sample inspector to which this camera is attached.",
 			Category -> "Part Specifications"
 		},
+		HandlingStation -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[Instrument, HandlingStation][PipetteCamera],
+			Description -> "The handling station to which this camera serves as a detector of pipette dial settings.",
+			Category -> "Part Specifications"
+		},
 		TargetSize -> {
 			Format -> Computable,
 			Expression :> SafeEvaluate[{Field[Model]}, Download[Field[Model],TargetSize]],

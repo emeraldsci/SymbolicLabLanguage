@@ -49,7 +49,6 @@ DefineOptions[ExperimentThermalShift,
 		},
 		(* === Non-index matched Sample Preparation === *)
 		PreparatoryUnitOperationsOption,
-		PreparatoryPrimitivesOption,
 
 		(* === Additional nucleic acid analyte specific sample preparation options === *)
 		{
@@ -572,7 +571,7 @@ DefineOptions[ExperimentThermalShift,
 				Description -> "The wavelength(s) of light used to illuminate static light scattering measurements.",
 				ResolutionDescription-> "Automatically set to {266 Nanometer, 473 Nanometer} if the instrument is Model[Instrument, MultimodeSpectrophotometer, \"Uncle\"] or an object with this model and Null if the instrument is Model[Instrument, Thermocycler, \"ViiA 7\"] or Model[Instrument, Thermocycler, \"QuantStudio 7 Flex\"] or an object with these models.",
 				AllowNull-> True,
-				Widget->Widget[Type->MultiSelect, Pattern:>DuplicateFreeListableP[266*Nanometer|473*Nanometer]],
+				Widget->Widget[Type->MultiSelect, Pattern:>DuplicateFreeListableP[EqualP[266*Nanometer]|EqualP[473*Nanometer]]],
 				Category->"Detection"
 			}
 		],
@@ -718,10 +717,24 @@ DefineOptions[ExperimentThermalShift,
 		},
 
 		(*===Shared Options===*)
+		SimulationOption,
 		ProtocolOptions,
-		PostProcessingOptions,
-		FuntopiaSharedOptionsPooled,
-		SubprotocolDescriptionOption
+		NonBiologyPostProcessingOptions,
+		NonBiologyFuntopiaSharedOptionsPooled,
+		SubprotocolDescriptionOption,
+		ModifyOptions[
+			ModelInputOptions,
+			{
+				{
+					OptionName -> PreparedModelAmount,
+					NestedIndexMatching -> True
+				},
+				{
+					OptionName -> PreparedModelContainer,
+					NestedIndexMatching -> True
+				}
+			}
+		]
 	}
 ];
 
@@ -795,18 +808,24 @@ Warning::UnusedOptimizationParameters = "For the following samples, `1` option(s
 
 (* Overload for mixed input like {s1,{s2,s3}} -> We assume the first sample is going to be inside a pool and turn this into {{s1},{s2,s3}} *)
 (*This overload also converts container inputs into sample inputs and expands options such that index matching is preserved.*)
-ExperimentThermalShift[mySemiPooledInputsNamed:ListableP[ListableP[Alternatives[ObjectP[Object[Sample]],ObjectP[Object[Container]],_String,{LocationPositionP,_String|ObjectP[Object[Container]]}]]],myOptions:OptionsPattern[]]:=Module[
+ExperimentThermalShift[mySemiPooledInputsNamed:ListableP[ListableP[Alternatives[ObjectP[{Object[Sample],Object[Container],Model[Sample]}],_String,{LocationPositionP,_String|ObjectP[Object[Container]]}]]],myOptions:OptionsPattern[]]:=Module[
 	{listedOptions,listedInputs,outputSpecification,output,gatherTests,containerToSampleResult,containerToSampleOutput,
 		containerToSampleTests,samples,sampleOptions,validSamplePreparationResult,mySamplesWithPreparedSamples,myOptionsWithPreparedSamples,
-		samplePreparationCache,updatedCache,listedInputsNoTemporalLinks,prepPrim,contentsPerDefinedContainerObject,totalSampleCountsPerDefinedContainerRules,
+		listedInputsNoTemporalLinks,prepPrim,contentsPerDefinedContainerObject,totalSampleCountsPerDefinedContainerRules,
 		defineAssociations,prepUnitOperations,labelContainerPrimitives,definedContainerRules,uniqueSampleTransfersPerDefinedContainer,
-		totalSampleCountsPerDefinedContainer,mySemiPooledInputs,listedOptionsNamed},
+		totalSampleCountsPerDefinedContainer,mySemiPooledInputs,listedOptionsNamed, updatedSimulation,containerToSampleSimulation},
 
 	(* Make sure we're working with a list of options *)
 	listedOptionsNamed=ToList[myOptions];
 
 	(* remove named objects *)
-	{mySemiPooledInputs,listedOptions}=sanitizeInputs[ToList@mySemiPooledInputsNamed,listedOptionsNamed];
+	{mySemiPooledInputs,listedOptions}=sanitizeInputs[ToList@mySemiPooledInputsNamed,listedOptionsNamed, Simulation->Lookup[listedOptionsNamed,Simulation,Null]];
+
+	(* If this failed because of ODNE, fail gracefully here *)
+	If[MatchQ[listedOptions,$Failed],
+		(* Return early. *)
+		Return[$Failed]
+	];
 
 	(* in the next step we will be wrapping a list around any single sample inputs except plates. in order to not pool all the samples in a Defined container that has more than one sample, we need to get the containers for the defined inputs and wrap a list only around ones that do not have more than one sample in them.*)
 	prepPrim = Lookup[listedOptions,PreparatoryUnitOperations];
@@ -860,35 +879,35 @@ ExperimentThermalShift[mySemiPooledInputsNamed:ListableP[ListableP[Alternatives[
 	{listedInputsNoTemporalLinks, listedOptions}=removeLinks[listedInputs, listedOptions];
 
 	(* First, simulate our sample preparation and check if MissingDefineNames, InvalidInput, InvalidOption error messages are thrown.
-	If none of these messages are thrown, returns mySamplesWithPreparedSamples, myOptionsWithPreparedSamples, samplePreparationCache*)
+	If none of these messages are thrown, returns mySamplesWithPreparedSamples, myOptionsWithPreparedSamples, updatedSimulation*)
 	validSamplePreparationResult=Check[
 		(* Simulate sample preparation. *)
-		{mySamplesWithPreparedSamples,myOptionsWithPreparedSamples,samplePreparationCache}=simulateSamplePreparationPackets[
+		{mySamplesWithPreparedSamples,myOptionsWithPreparedSamples,updatedSimulation}=simulateSamplePreparationPacketsNew[
 			ExperimentThermalShift,
 			listedInputsNoTemporalLinks,
 			listedOptions
 		],
 		$Failed,
-		{Error::MissingDefineNames,Error::InvalidInput,Error::InvalidOption}
+		{Download::ObjectDoesNotExist, Error::MissingDefineNames,Error::InvalidInput,Error::InvalidOption}
 	];
 
 	(* If we are given MissingDefineNames, InvalidInput, InvalidOption error messages, return early. *)
 	If[MatchQ[validSamplePreparationResult,$Failed],
 		(* Return early. *)
-		(* Note: We've already thrown a message above in simulateSamplePreparationPackets. *)
-		ClearMemoization[Experiment`Private`simulateSamplePreparationPackets];Return[$Failed]
+		(* Note: We've already thrown a message above in simulateSamplePreparationPacketsNew. *)
+		Return[$Failed]
 	];
 
 	(* For each group, map containerToSampleOptions over each sample or simulated sample group to get the object samples from the contents of the container *)
 	(* ignoring the options, since we will use the ones from from ExpandIndexMatchedInputs *)
 	containerToSampleResult=If[gatherTests,
 		(* We are gathering tests. This silences any messages being thrown. *)
-		{containerToSampleOutput,containerToSampleTests}=pooledContainerToSampleOptions[
+		{containerToSampleOutput,containerToSampleTests,containerToSampleSimulation}=pooledContainerToSampleOptions[
 			ExperimentThermalShift,
 			mySamplesWithPreparedSamples,
 			myOptionsWithPreparedSamples,
-			Output->{Result,Tests},
-			Cache->samplePreparationCache
+			Output->{Result,Tests,Simulation},
+			Simulation -> updatedSimulation
 		];
 
 		(* Therefore,we have to run the tests to see if we encountered a failure. *)
@@ -900,12 +919,12 @@ ExperimentThermalShift[mySemiPooledInputsNamed:ListableP[ListableP[Alternatives[
 		(* We are not gathering tests. Simply check for Error::EmptyContainers. *)
 		{
 			Check[
-				containerToSampleOutput=pooledContainerToSampleOptions[
+				{containerToSampleOutput,containerToSampleSimulation}=pooledContainerToSampleOptions[
 					ExperimentThermalShift,
 					mySamplesWithPreparedSamples,
 					myOptionsWithPreparedSamples,
-					Output->Result,
-					Cache->samplePreparationCache
+					Output-> {Result,Simulation},
+					Simulation -> updatedSimulation
 				],
 				$Failed,
 				{Error::EmptyContainers, Error::ContainerEmptyWells, Error::WellDoesNotExist}
@@ -913,12 +932,6 @@ ExperimentThermalShift[mySemiPooledInputsNamed:ListableP[ListableP[Alternatives[
 			{}
 		}
 	];
-
-	(*If all above checks pass, update our cache with our new simulated values. *)
-	updatedCache=Flatten[{
-		samplePreparationCache,
-		Lookup[listedOptions,Cache,{}]
-	}];
 
 	(* If we were given an empty container,return early. *)
 	If[ContainsAny[containerToSampleResult,{$Failed}],
@@ -936,21 +949,21 @@ ExperimentThermalShift[mySemiPooledInputsNamed:ListableP[ListableP[Alternatives[
 
 		(* take the samples from the mapped containerToSampleOptions, and the options from expandedOptions *)
 		(* this way we'll end up index matching each grouping to an option *)
-		ExperimentThermalShiftCore[samples,ReplaceRule[sampleOptions,Cache->updatedCache]]
+		ExperimentThermalShiftCore[samples,ReplaceRule[sampleOptions,Simulation->containerToSampleSimulation]]
 	]
 ];
 
 (* This is the core function taking only clean pooled lists of samples in the form -> {{s1},{s2},{s3,s4},{s5,s6,s7}} *)
 ExperimentThermalShiftCore[myPooledSamples:ListableP[{ObjectP[Object[Sample]]..}],myOptions:OptionsPattern[ExperimentThermalShift]]:=Module[
 	{listedOptions,outputSpecification,output,gatherTests,validSamplePreparationResult,mySamplesWithPreparedSamples,myOptionsWithPreparedSamples,
-		samplePreparationCache,safeOps,safeOpsTests,validLengths,validLengthTests,updatedCacheBall,
+		safeOps,safeOpsTests,validLengths,validLengthTests,
 		templatedOptions,templateTests,inheritedOptions,expandedSafeOps,cacheBall,resolvedOptionsResult,
 		resolvedOptions,resolvedOptionsTests,collapsedResolvedOptions,protocolObject,
-		upload,confirm,fastTrack,parentProtocol,cache,preferredContainers,containerOutModels,specifiedAliquotContainerObjects,specifiedAliquotContainerModels,instrumentModels,userInstrumentOption,
+		upload,confirm,canaryBranch,fastTrack,parentProtocol,cache,preferredContainers,containerOutModels,specifiedAliquotContainerObjects,specifiedAliquotContainerModels,instrumentModels,userInstrumentOption,
 		specifiedInstrumentModels,specifiedInstrumentObjects,sampleList,passiveReferenceObject,passiveReferenceModel,possibleDetectionReagentModels,detectionReagentObjects,detectionReagentModels,sampleObjectPacketFields,containerObjectFields,
 		sampleIdentityModelPacketFields,sampleContainerPacketFields,containerObjectPacketFields,containerModelPacketFields,instrumentObjectPacketFields,instrumentModelPacketFields,fluorescentDyeIdentityModelPacketFields,
 		fluorescentDyeObjectPacketFields,fluorescentDyeModelPacketFields,resourcePacketTests,resourcePackets,specifiedContainerOutObj,
-		specifiedContainerOutModel,instrumentModelFields,instrumentObjectFields,
+		specifiedContainerOutModel,instrumentModelFields,instrumentObjectFields,updatedSimulation,
 		listedPooledSamples,mySamplesWithPreparedSamplesNamed,myOptionsWithPreparedSamplesNamed,safeOpsNamed
 	},
 
@@ -968,20 +981,20 @@ ExperimentThermalShiftCore[myPooledSamples:ListableP[{ObjectP[Object[Sample]]..}
 	(* Simulate our sample preparation and check if any prepared samples are not defined using the PreparatoryUnitOperations option. *)
 	validSamplePreparationResult=Check[
 		(* Simulate sample preparation. *)
-		{mySamplesWithPreparedSamplesNamed,myOptionsWithPreparedSamplesNamed,samplePreparationCache}=simulateSamplePreparationPackets[
+		{mySamplesWithPreparedSamplesNamed,myOptionsWithPreparedSamplesNamed,updatedSimulation}=simulateSamplePreparationPacketsNew[
 			ExperimentThermalShift,
 			listedPooledSamples,
 			listedOptions
 		],
 		$Failed,
-		{Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
+		{Download::ObjectDoesNotExist, Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
 	];
 
 	(* If we are given an invalid define name, return early. *)
 	If[MatchQ[validSamplePreparationResult,$Failed],
 		(* Return early. *)
-		(* Note: We've already thrown a message above in simulateSamplePreparationPackets. *)
-		ClearMemoization[Experiment`Private`simulateSamplePreparationPackets];Return[$Failed]
+		(* Note: We've already thrown a message above in simulateSamplePreparationPacketsNew. *)
+		Return[$Failed]
 	];
 
 	(* Call SafeOptions to make sure all options match pattern *)
@@ -990,7 +1003,7 @@ ExperimentThermalShiftCore[myPooledSamples:ListableP[{ObjectP[Object[Sample]]..}
 		{SafeOptions[ExperimentThermalShift,myOptionsWithPreparedSamplesNamed,AutoCorrect->False],{}}
 	];
 
-	{mySamplesWithPreparedSamples,safeOps,myOptionsWithPreparedSamples}=sanitizeInputs[mySamplesWithPreparedSamplesNamed,safeOpsNamed,myOptionsWithPreparedSamplesNamed];
+	{mySamplesWithPreparedSamples,safeOps,myOptionsWithPreparedSamples}=sanitizeInputs[mySamplesWithPreparedSamplesNamed,safeOpsNamed,myOptionsWithPreparedSamplesNamed, Simulation->updatedSimulation];
  
 	(* Call ValidInputLengthsQ to make sure all options are the right length *)
 	{validLengths,validLengthTests}=If[gatherTests,
@@ -1036,7 +1049,7 @@ ExperimentThermalShiftCore[myPooledSamples:ListableP[{ObjectP[Object[Sample]]..}
 	(* Replace our safe options with our inherited options from our template. *)
 	inheritedOptions=ReplaceRule[safeOps,templatedOptions];
 	(* get assorted hidden options *)
-	{upload,confirm,fastTrack,parentProtocol,cache} = Lookup[inheritedOptions,{Upload,Confirm,FastTrack,ParentProtocol,Cache}];
+	{upload,confirm,canaryBranch,fastTrack,parentProtocol,cache} = Lookup[inheritedOptions,{Upload,Confirm,CanaryBranch,FastTrack,ParentProtocol,Cache}];
 
 	(* Expand index-matching options *)
 	expandedSafeOps=Last[ExpandIndexMatchedInputs[ExperimentThermalShift,{mySamplesWithPreparedSamples},inheritedOptions]];
@@ -1227,19 +1240,18 @@ ExperimentThermalShiftCore[myPooledSamples:ListableP[{ObjectP[Object[Sample]]..}
 					(*Container out model packet*)
 					{containerModelPacketFields}
 				},
-				Cache->Flatten[{Lookup[expandedSafeOps,Cache,{}],samplePreparationCache}],
+				Cache->cache,
+				Simulation -> updatedSimulation,
 				Date->Now
 			],
 			{Download::FieldDoesntExist,Download::NotLinkField}
 		]
 	];
 
-	updatedCacheBall = DeleteDuplicates[FlattenCachePackets[{cacheBall,samplePreparationCache}]];
-
 	(* Build the resolved options *)
 	resolvedOptionsResult=If[gatherTests,
 		(*If we are gathering tests silence any messages being thrown. *)
-		{resolvedOptions,resolvedOptionsTests}=resolveExperimentThermalShiftOptions[mySamplesWithPreparedSamples,expandedSafeOps,Cache->updatedCacheBall,Output->{Result,Tests}];
+		{resolvedOptions,resolvedOptionsTests}=resolveExperimentThermalShiftOptions[mySamplesWithPreparedSamples,expandedSafeOps,Cache->cacheBall,Simulation->updatedSimulation,Output->{Result,Tests}];
 
 		(* Because messages are silenced, we have to run the tests to see if we encountered a failure. If no failures were encountered return the result from above*)
 		If[RunUnitTest[<|"Tests"->resolvedOptionsTests|>,OutputFormat->SingleBoolean,Verbose->False],
@@ -1249,7 +1261,7 @@ ExperimentThermalShiftCore[myPooledSamples:ListableP[{ObjectP[Object[Sample]]..}
 
 		(* If we are not gathering tests simply check for Error::InvalidInput and Error::InvalidOption. If any of these messages were generated return failed.*)
 		Check[
-			{resolvedOptions,resolvedOptionsTests}={resolveExperimentThermalShiftOptions[mySamplesWithPreparedSamples,expandedSafeOps,Cache->updatedCacheBall],{}},
+			{resolvedOptions,resolvedOptionsTests}={resolveExperimentThermalShiftOptions[mySamplesWithPreparedSamples,expandedSafeOps,Cache->cacheBall,Simulation->updatedSimulation],{}},
 			$Failed,
 			{Error::InvalidInput,Error::InvalidOption}
 		]
@@ -1275,8 +1287,8 @@ ExperimentThermalShiftCore[myPooledSamples:ListableP[{ObjectP[Object[Sample]]..}
 	
 	(* Build packets with resources *)
 	{resourcePackets,resourcePacketTests} = If[gatherTests,
-		experimentThermalShiftResourcePackets[ToList[mySamplesWithPreparedSamples],listedOptions,resolvedOptions,Cache->updatedCacheBall,Output->{Result,Tests}],
-		{experimentThermalShiftResourcePackets[ToList[mySamplesWithPreparedSamples],listedOptions,resolvedOptions,Cache->updatedCacheBall],{}}
+		experimentThermalShiftResourcePackets[ToList[mySamplesWithPreparedSamples],listedOptions,resolvedOptions,Cache->cacheBall,Simulation->updatedSimulation,Output->{Result,Tests}],
+		{experimentThermalShiftResourcePackets[ToList[mySamplesWithPreparedSamples],listedOptions,resolvedOptions,Cache->cacheBall,Simulation->updatedSimulation],{}}
 	];
 
 	(* If we don't have to return the Result, don't bother calling UploadProtocol[...]. *)
@@ -1295,13 +1307,15 @@ ExperimentThermalShiftCore[myPooledSamples:ListableP[{ObjectP[Object[Sample]]..}
 			resourcePackets,
 			Upload->upload,
 			Confirm->confirm,
+			CanaryBranch->canaryBranch,
 			ParentProtocol->parentProtocol,
 			Priority->Lookup[inheritedOptions,Priority],
 			StartDate->Lookup[inheritedOptions,StartDate],
 			HoldOrder->Lookup[inheritedOptions,HoldOrder],
 			QueuePosition->Lookup[inheritedOptions,QueuePosition],
 			ConstellationMessage->Object[Protocol,ThermalShift],
-			Cache->samplePreparationCache
+			Cache->cacheBall,
+			Simulation->updatedSimulation
 		],
 		$Failed
 	];
@@ -1321,11 +1335,11 @@ ExperimentThermalShiftCore[myPooledSamples:ListableP[{ObjectP[Object[Sample]]..}
 
 DefineOptions[
 	resolveExperimentThermalShiftOptions,
-	Options:>{HelperOutputOption,CacheOption}
+	Options:>{SimulationOption,HelperOutputOption,CacheOption}
 ];
 
 resolveExperimentThermalShiftOptions[myPooledSamples:ListableP[{ObjectP[Object[Sample]]...}],myOptions:{_Rule...},myResolutionOptions:OptionsPattern[resolveExperimentThermalShiftOptions]]:=Module[
-	{outputSpecification,output,gatherTests,cache,samplePrepOptions,thermalShiftOptions,simulatedSamples,resolvedSamplePrepOptions,simulatedCache,samplePrepTests,
+	{outputSpecification,output,gatherTests,cache,samplePrepOptions,thermalShiftOptions,simulatedSamples,resolvedSamplePrepOptions,samplePrepTests,
 		(*Download Variables*)
 		messages,flatSimulatedSamples,poolingLengths,assayContainers,dilutionContainerObjects,dilutionContainerModels,preferredDilutionContainerModel,
 		allDilutionContainerModels,instrumentModels,passiveReferenceObject,passiveReferenceModel,possibleDetectionReagentModels,
@@ -1402,7 +1416,7 @@ resolveExperimentThermalShiftOptions[myPooledSamples:ListableP[{ObjectP[Object[S
 		bufferVolumesWithNulls, detectionReagentVolumesWithNulls, passiveReferenceVolumeWithNulls,invalidLaserOptiBoolean, invalidLaserOptiBooleanTest,
 		invalidLaserOptiOptionsTest, unsuedOptimizationOptionSamples, unusedLaserOptiOptionsTest,invalidPassRefVol,invalidPassRefOption,invalidSampleReactionVolumes,
 		invalidSampleReactionVolOption,invalidSampleReactionVolumesTest,invalidPooledDilutions,invalidPooledDilutionOptions, invalidPooledDilutionsTest,containerOutCapacity,invalidContainerOutCapacity,invalidContainerOutCapacityTest,invalidContainerOutCapacityOption,
-		dilutionStorageRules, mergedStorageRules,invalidDilutionStorageCondition,invalidinvalidDilutionStorageConditionTest,
+		dilutionStorageRules, mergedStorageRules,invalidDilutionStorageCondition,invalidinvalidDilutionStorageConditionTest,simulation,updatedSimulation,
 		invalidConflictingDLSInstrumentOptions,invalidDLSTemperature,invalidDLSTemperatureOptions,invalidDLSTempTest,resultRule,testsRule,
 
 
@@ -1421,18 +1435,16 @@ resolveExperimentThermalShiftOptions[myPooledSamples:ListableP[{ObjectP[Object[S
 
 	(* Fetch our cache from the parent function. *)
 	cache = Lookup[ToList[myResolutionOptions], Cache, {}];
+	simulation = Lookup[ToList[myResolutionOptions], Simulation, Simulation[]];
 
 	(* Separate out our thermal shift options from our Sample Prep options. *)
 	{samplePrepOptions,thermalShiftOptions}=splitPrepOptions[myOptions];
 
 	(* Resolve our sample prep options *)
-	{{simulatedSamples,resolvedSamplePrepOptions,simulatedCache},samplePrepTests}=If[gatherTests,
-		resolveSamplePrepOptions[ExperimentThermalShift,myPooledSamples,samplePrepOptions,Cache->cache,Output->{Result,Tests}],
-		{resolveSamplePrepOptions[ExperimentThermalShift,myPooledSamples,samplePrepOptions,Cache->cache,Output->Result],{}}
+	{{simulatedSamples,resolvedSamplePrepOptions,updatedSimulation},samplePrepTests}=If[gatherTests,
+		resolveSamplePrepOptionsNew[ExperimentThermalShift,myPooledSamples,samplePrepOptions,Cache->cache,Simulation->simulation,Output->{Result,Tests}],
+		{resolveSamplePrepOptionsNew[ExperimentThermalShift,myPooledSamples,samplePrepOptions,Cache->cache,Simulation->simulation,Output->Result],{}}
 	];
-
-	(*Since multiple of the same sample can be used during pooling, delete any duplicated cache packets*)
-	simulatedCache=DeleteDuplicates[simulatedCache];
 
 	(*Since pooled samples are designated by wrapping in a list, flatten list so all samples can be easily used.*)
 	flatSimulatedSamples=Flatten[simulatedSamples];
@@ -1620,7 +1632,8 @@ resolveExperimentThermalShiftOptions[myPooledSamples:ListableP[{ObjectP[Object[S
 				(*Container out model packet*)
 				{containerModelPacketFields}
 			},
-			Cache->simulatedCache,
+			Cache->cache,
+			Simulation->updatedSimulation,
 			Date->Now
 		],
 		{Download::FieldDoesntExist,Download::NotLinkField}
@@ -1672,19 +1685,19 @@ resolveExperimentThermalShiftOptions[myPooledSamples:ListableP[{ObjectP[Object[S
 
 	(* If there are invalid inputs and we are throwing messages, throw an error message and keep track of the invalid inputs.*)
 	If[Length[discardedInvalidInputs]>0&&!gatherTests,
-		Message[Error::DiscardedSamples,ObjectToString[discardedInvalidInputs,Cache->simulatedCache]];
+		Message[Error::DiscardedSamples,ObjectToString[discardedInvalidInputs,Simulation->updatedSimulation]];
 	];
 
 	(* If we are gathering tests, create a passing and/or failing test with the appropriate result. *)
 	discardedTest=If[gatherTests,
 		Module[{failingTest,passingTest},
 			failingTest=If[Length[discardedInvalidInputs]>0,
-				Test["Our input samples "<>ObjectToString[discardedInvalidInputs,Cache->simulatedCache]<>" are not discarded:",True,False],
+				Test["Our input samples "<>ObjectToString[discardedInvalidInputs,Simulation->updatedSimulation]<>" are not discarded:",True,False],
 				Nothing
 			];
 
 			passingTest=If[Length[discardedInvalidInputs]==0,
-				Test["Our input samples "<>ObjectToString[Complement[myPooledSamples,discardedInvalidInputs],Cache->simulatedCache]<>" are not discarded:",True,True],
+				Test["Our input samples "<>ObjectToString[Complement[myPooledSamples,discardedInvalidInputs],Simulation->updatedSimulation]<>" are not discarded:",True,True],
 				Nothing
 			];
 
@@ -2012,12 +2025,12 @@ resolveExperimentThermalShiftOptions[myPooledSamples:ListableP[{ObjectP[Object[S
 				Module[{failingTest, passingTest},
 					failingTest =
 							If[Length[invalidPooledMixSamples] > 0,
-								Test["Our user specified nested index matching mix options are compatible for the inputs "<>ObjectToString[invalidPooledMixSamples,Cache->simulatedCache]<>" :", True, False],
+								Test["Our user specified nested index matching mix options are compatible for the inputs "<>ObjectToString[invalidPooledMixSamples,Simulation->updatedSimulation]<>" :", True, False],
 								Nothing];
 
 					passingTest =
 							If[Length[invalidPooledMixSamples] == 0,
-								Test["Our user specified nested index matching mix options are compatible for the inputs "<>ObjectToString[myPooledSamples,Cache->simulatedCache]<>" :", True, True],
+								Test["Our user specified nested index matching mix options are compatible for the inputs "<>ObjectToString[myPooledSamples,Simulation->updatedSimulation]<>" :", True, True],
 								Nothing
 							];
 					{failingTest, passingTest}
@@ -2089,12 +2102,12 @@ resolveExperimentThermalShiftOptions[myPooledSamples:ListableP[{ObjectP[Object[S
 				Module[{failingTest, passingTest},
 					failingTest =
 							If[Length[invalidPooledIncubateSamples] > 0,
-								Test["Our nested index matching incubate options are compatible for the inputs "<>ObjectToString[invalidPooledIncubateSamples,Cache->simulatedCache]<>" :", True, False],
+								Test["Our nested index matching incubate options are compatible for the inputs "<>ObjectToString[invalidPooledIncubateSamples,Simulation->updatedSimulation]<>" :", True, False],
 								Nothing
 							];
 					passingTest =
 							If[Length[invalidPooledIncubateSamples] == 0,
-								Test["Our nested index matching incubate options are compatible for the inputs "<>ObjectToString[myPooledSamples,Cache->simulatedCache]<>" :", True, True],
+								Test["Our nested index matching incubate options are compatible for the inputs "<>ObjectToString[myPooledSamples,Simulation->updatedSimulation]<>" :", True, True],
 								Nothing
 							];
 					{failingTest, passingTest}
@@ -2145,12 +2158,12 @@ resolveExperimentThermalShiftOptions[myPooledSamples:ListableP[{ObjectP[Object[S
 				Module[{failingTest, passingTest},
 					failingTest =
 							If[Length[filteredIncompatibleMixList] > 0,
-								Test["Our nested index matching mix type is compatible with our nested index matching mix volume for the inputs "<>ObjectToString[incompatibleMixSamples,Cache->simulatedCache]<>" :", True, False],
+								Test["Our nested index matching mix type is compatible with our nested index matching mix volume for the inputs "<>ObjectToString[incompatibleMixSamples,Simulation->updatedSimulation]<>" :", True, False],
 								Nothing
 							];
 					passingTest =
 							If[Length[filteredIncompatibleMixList] == 0,
-								Test["Our nested index matching mix type is compatible with our nested index matching mix volume for the inputs "<>ObjectToString[myPooledSamples,Cache->simulatedCache]<>" :", True, True],
+								Test["Our nested index matching mix type is compatible with our nested index matching mix volume for the inputs "<>ObjectToString[myPooledSamples,Simulation->updatedSimulation]<>" :", True, True],
 								Nothing
 							];
 					{failingTest, passingTest}
@@ -2249,12 +2262,12 @@ resolveExperimentThermalShiftOptions[myPooledSamples:ListableP[{ObjectP[Object[S
 				Module[{failingTest, passingTest},
 					failingTest =
 							If[Length[filteredInvalidEmissionOptions] > 0,
-								Test["Our user specified emission wavelength options are compatible for the inputs "<>ObjectToString[invalidEmissionSamples,Cache->simulatedCache]<>" :", True, False],
+								Test["Our user specified emission wavelength options are compatible for the inputs "<>ObjectToString[invalidEmissionSamples,Simulation->updatedSimulation]<>" :", True, False],
 								Nothing
 							];
 					passingTest =
 							If[Length[filteredInvalidEmissionOptions] == 0,
-								Test["Our user specified emission wavelength options are compatible for the inputs "<>ObjectToString[myPooledSamples,Cache->simulatedCache]<>" :", True, True],
+								Test["Our user specified emission wavelength options are compatible for the inputs "<>ObjectToString[myPooledSamples,Simulation->updatedSimulation]<>" :", True, True],
 								Nothing];
 					{failingTest, passingTest}
 				],
@@ -2309,11 +2322,11 @@ resolveExperimentThermalShiftOptions[myPooledSamples:ListableP[{ObjectP[Object[S
 				Module[{failingTest, passingTest},
 					failingTest =
 							If[Length[filteredIncompatibleEmissionList] > 0,
-								Test["Our emission wavelength range options are compatible for the inputs "<>ObjectToString[incompatibleEmissionSamples,Cache->simulatedCache]<>" :", True, False],
+								Test["Our emission wavelength range options are compatible for the inputs "<>ObjectToString[incompatibleEmissionSamples,Simulation->updatedSimulation]<>" :", True, False],
 								Nothing];
 					passingTest =
 							If[Length[filteredIncompatibleEmissionList] == 0,
-								Test["Our emission wavelength range options are compatible for the inputs "<>ObjectToString[myPooledSamples,Cache->simulatedCache]<>" :", True, True],
+								Test["Our emission wavelength range options are compatible for the inputs "<>ObjectToString[myPooledSamples,Simulation->updatedSimulation]<>" :", True, True],
 								Nothing];
 					{failingTest, passingTest}
 				],
@@ -2407,11 +2420,11 @@ resolveExperimentThermalShiftOptions[myPooledSamples:ListableP[{ObjectP[Object[S
 				Module[{failingTest, passingTest},
 					failingTest =
 							If[Length[filteredIncompatibleReagentList] > 0,
-								Test["Our detection reagent options are compatible for the inputs "<>ObjectToString[incompatibleReagentSamples,Cache->simulatedCache]<>" :", True, False],
+								Test["Our detection reagent options are compatible for the inputs "<>ObjectToString[incompatibleReagentSamples,Simulation->updatedSimulation]<>" :", True, False],
 								Nothing];
 					passingTest =
 							If[Length[filteredIncompatibleReagentList] == 0,
-								Test["Our detection reagent options are compatible for the inputs "<>ObjectToString[myPooledSamples,Cache->simulatedCache]<>" :", True, True],
+								Test["Our detection reagent options are compatible for the inputs "<>ObjectToString[myPooledSamples,Simulation->updatedSimulation]<>" :", True, True],
 								Nothing];
 					{failingTest, passingTest}
 				],
@@ -2463,11 +2476,11 @@ resolveExperimentThermalShiftOptions[myPooledSamples:ListableP[{ObjectP[Object[S
 				Module[{failingTest, passingTest},
 					failingTest =
 							If[Length[filteredDilutionsList] > 0,
-								Test["Only one type of dilution curve for each of the inputs "<>ObjectToString[tooManyDilutionSamples,Cache->simulatedCache]<>" is specified:", True, False],
+								Test["Only one type of dilution curve for each of the inputs "<>ObjectToString[tooManyDilutionSamples,Simulation->updatedSimulation]<>" is specified:", True, False],
 								Nothing];
 					passingTest =
 							If[Length[filteredDilutionsList] == 0,
-								Test["Only one type of dilution curve for each of the inputs "<>ObjectToString[myPooledSamples,Cache->simulatedCache]<>" is specified:", True, True],
+								Test["Only one type of dilution curve for each of the inputs "<>ObjectToString[myPooledSamples,Simulation->updatedSimulation]<>" is specified:", True, True],
 								Nothing];
 					{failingTest, passingTest}
 				],
@@ -2531,12 +2544,12 @@ resolveExperimentThermalShiftOptions[myPooledSamples:ListableP[{ObjectP[Object[S
 				Module[{failingTest, passingTest},
 					failingTest =
 							If[Length[filteredIncompatibleDilutionsList] > 0,
-								Test["Our sample dilution curve options for inputs "<>ObjectToString[filteredIncompatibleDilutionsList[[All,1]],Cache->simulatedCache]<>" are compatible:", True, False],
+								Test["Our sample dilution curve options for inputs "<>ObjectToString[filteredIncompatibleDilutionsList[[All,1]],Simulation->updatedSimulation]<>" are compatible:", True, False],
 								Nothing
 							];
 					passingTest =
 							If[Length[filteredIncompatibleDilutionsList] == 0,
-								Test["Our sample dilution curve options for inputs "<>ObjectToString[myPooledSamples,Cache->simulatedCache]<>" are compatible:", True, True],
+								Test["Our sample dilution curve options for inputs "<>ObjectToString[myPooledSamples,Simulation->updatedSimulation]<>" are compatible:", True, True],
 								Nothing
 							];
 					{failingTest, passingTest}
@@ -2638,7 +2651,7 @@ resolveExperimentThermalShiftOptions[myPooledSamples:ListableP[{ObjectP[Object[S
 
 	(* If there are invalid inputs and we are throwing messages,do so *)
 	If[Length[nonLiquidSampleInvalidInputs]>0&&messages,
-		Message[Error::SolidSamplesUnsupported,ObjectToString[nonLiquidSampleInvalidInputs,Cache->simulatedCache],ExperimentThermalShift];
+		Message[Error::SolidSamplesUnsupported,ObjectToString[nonLiquidSampleInvalidInputs,Simulation->updatedSimulation],ExperimentThermalShift];
 	];
 
 	(* If we are gathering tests,create a passing and/or failing test with the appropriate result. *)
@@ -2646,12 +2659,12 @@ resolveExperimentThermalShiftOptions[myPooledSamples:ListableP[{ObjectP[Object[S
 		Module[{failingTest,passingTest},
 			failingTest=If[Length[nonLiquidSampleInvalidInputs]==0,
 				Nothing,
-				Test["Our input samples "<>ObjectToString[nonLiquidSampleInvalidInputs,Cache->simulatedCache]<>" have a Liquid State:",True,False]
+				Test["Our input samples "<>ObjectToString[nonLiquidSampleInvalidInputs,Simulation->updatedSimulation]<>" have a Liquid State:",True,False]
 			];
 
 			passingTest=If[Length[nonLiquidSampleInvalidInputs]==Length[flatSampleList],
 				Nothing,
-				Test["Our input samples "<>ObjectToString[Complement[flatSampleList,nonLiquidSampleInvalidInputs],Cache->simulatedCache]<>" have a Liquid State:",True,True]
+				Test["Our input samples "<>ObjectToString[Complement[flatSampleList,nonLiquidSampleInvalidInputs],Simulation->updatedSimulation]<>" have a Liquid State:",True,True]
 			];
 
 			{failingTest,passingTest}
@@ -3097,16 +3110,16 @@ resolveExperimentThermalShiftOptions[myPooledSamples:ListableP[{ObjectP[Object[S
 						{True|Automatic,ObjectP[],_}, aliquotContainer,
 
 						(*If aliquot is true, pooled mix typ eis pipette, and aliquot container is not an object reference, return 2-mL deep well plate*)
-						{True,Except[ObjectP[]],Pipette}, Model[Container,Plate,"96-well 2mL Deep Well Plate"],
+						{True,Except[ObjectP[]],Pipette}, Model[Container, Plate, "id:L8kPEjkmLbvW"](* 96-well 2mL Deep Well Plate *),
 
 						(*If aliquot is true, pooled mix type is invert and aliquot container is not an object reference, return 2-mL tube*)
-						{True,Except[ObjectP[]],Invert}, Model[Container,Vessel,"2mL Tube"],
+						{True,Except[ObjectP[]],Invert}, Model[Container, Vessel, "id:3em6Zv9NjjN8"](* 2mL Tube *),
 
 						(*If aliquot is false, return Null*)
 						{False,_,_}, Null,
 
 						(*In all other cases return a 2mL deep well plate (catch-all)*)
-						{Except[False],_,_}, Model[Container,Plate,"96-well 2mL Deep Well Plate"]
+						{Except[False],_,_}, Model[Container, Plate, "id:L8kPEjkmLbvW"](* 96-well 2mL Deep Well Plate *)
 					];
 					(*-- 3. POOLED INCUBATE OPTIONS RESOLUTION --*)
 
@@ -3171,11 +3184,11 @@ resolveExperimentThermalShiftOptions[myPooledSamples:ListableP[{ObjectP[Object[S
 
 						(*If the analyte type is Oligomer, the default reagent will be SYBR Gold*)
 						{Except[Null],Oligomer,_},
-						{Model[Sample, StockSolution, "10X SYBR Gold in filtered 1X TBE Alternative Preparation"],reactionVolume/10},
+						{Model[Sample, StockSolution, "id:3em6ZvLn86AB"](* 10X SYBR Gold in filtered 1X TBE Alternative Preparation *),reactionVolume/10},
 
 						(*If the analyte type is Protein and the instrument is a thermocycler, the default reagent will be SYPRO Orange*)
 						{Except[Null],Protein,ObjectP[{Model[Instrument,Thermocycler],Object[Instrument,Thermocycler]}]},
-						{Model[Sample,StockSolution,"10X SYPRO Orange"],reactionVolume/2},
+						{Model[Sample, StockSolution, "id:zGj91a7ZK9An"](* 10X SYPRO Orange *),reactionVolume/2},
 
 						(*If the analyte type is Protein and the instrument is a Uncle, there should be no detection reagent*)
 						{Except[Null],Protein, ObjectP[{Model[Instrument,MultimodeSpectrophotometer],Object[Instrument,MultimodeSpectrophotometer]}]},
@@ -3245,11 +3258,11 @@ resolveExperimentThermalShiftOptions[myPooledSamples:ListableP[{ObjectP[Object[S
 
 						(*If the analyte is a protein use 1X PBS*)
 						{Automatic,Protein,GreaterP[0*Microliter]},
-						{Model[Sample,StockSolution,"1x PBS from 10x stock, pH 7"]},
+						{Model[Sample, StockSolution, "id:L8kPEjnmM03N"](* 1x PBS from 10x stock, pH 7 *)},
 
 						(*For any other combination of options default to nuclease free water*)
 						{_,_,GreaterP[0*Microliter]},
-						resolveAutomaticOptions[{unresolvedBuffer},{Model[Sample,"Nuclease-free Water"]}]
+						resolveAutomaticOptions[{unresolvedBuffer},{Model[Sample, "id:O81aEBZnWMRO"](* Nuclease-free Water *)}]
 					];
 
 					(*-- 7. DILUTION CURVE VOLUME CALCULATIONS --*)
@@ -3346,9 +3359,9 @@ resolveExperimentThermalShiftOptions[myPooledSamples:ListableP[{ObjectP[Object[S
 								(*Set the dilution parameter defaults*)
 								defaultDiluent = Switch[{analyteType},
 									(*If the nested index matching sample analyteType is Oligomer use Nuclease-free Water*)
-									{Oligomer}, Model[Sample,"Nuclease-free Water"],
+									{Oligomer}, Model[Sample, "id:O81aEBZnWMRO"](* Nuclease-free Water *),
 									(*If the nested index matching sample analyteType is Protein use 1X PBS*)
-									{Protein}, Model[Sample,StockSolution,"1x PBS from 10x stock, pH 7"]
+									{Protein}, Model[Sample, StockSolution, "id:L8kPEjnmM03N"](* 1x PBS from 10x stock, pH 7 *)
 								];
 
 								defaultMixRate = 100 Microliter/Second;
@@ -3366,7 +3379,7 @@ resolveExperimentThermalShiftOptions[myPooledSamples:ListableP[{ObjectP[Object[S
 								storageCondRules = MapThread[#2 ->#1 &, {Range[1, 1+Length[List@@SampleStorageTypeP]], Join[{Disposal},List@@SampleStorageTypeP]}];
 
 								(*set default*)
-								defaultDilutionContainer = {1,Model[Container,Plate,"96-well 2mL Deep Well Plate"]};
+								defaultDilutionContainer = {1,Model[Container, Plate, "id:L8kPEjkmLbvW"](* 96-well 2mL Deep Well Plate *)};
 
 								(*set default storage condition*)
 
@@ -3584,7 +3597,7 @@ resolveExperimentThermalShiftOptions[myPooledSamples:ListableP[{ObjectP[Object[S
 					(*Check that if the instrument is ViiA 7, resolvedFluorFilter,resolvedSLSFilter,resolvedSLSEx are Null.*)
 					invalidThermocyclerOption = If[MatchQ[resolvedInstrument,ObjectP[{Model[Instrument,Thermocycler],Object[Instrument,Thermocycler]}]]&&MemberQ[{resolvedFluorFilter,resolvedSLSFilter,resolvedSLSEx},Except[Null]],True,False];
 
-					(*Check that if the isntrument is ViiA 7, resolvedEmissionDetection is a single number not a range.*)
+					(*Check that if the instrument is ViiA 7, resolvedEmissionDetection is a single number not a range.*)
 					invalidEmissionRange = If[MatchQ[resolvedInstrument,ObjectP[{Model[Instrument,Thermocycler],Object[Instrument,Thermocycler]}]]&&Length[resolvedEmissionDetection]>1,True,False];
 
 					(*Check that if the instrument is Uncle, resolvedFluorFilter,resolvedSLSFilter,resolvedSLSEx are not Null.*)
@@ -3886,12 +3899,12 @@ resolveExperimentThermalShiftOptions[myPooledSamples:ListableP[{ObjectP[Object[S
 				Module[{failingTest, passingTest},
 					failingTest =
 							If[Length[invalidSampleOptionList]>0,
-								Test["Our resolved pool mix volumes are less than the available nested index matching sample volume for the inputs "<>ObjectToString[invalidSampleOptionList[[All,1]],Cache->simulatedCache]<>" :", True, False],
+								Test["Our resolved pool mix volumes are less than the available nested index matching sample volume for the inputs "<>ObjectToString[invalidSampleOptionList[[All,1]],Simulation->updatedSimulation]<>" :", True, False],
 								Nothing
 							];
 					passingTest =
 							If[Length[invalidSampleOptionList]==0,
-								Test["Our resolved pool mix volumes are less than the available nested index matching sample volume for the inputs "<>ObjectToString[myPooledSamples,Cache->simulatedCache]<>" :", True, True],
+								Test["Our resolved pool mix volumes are less than the available nested index matching sample volume for the inputs "<>ObjectToString[myPooledSamples,Simulation->updatedSimulation]<>" :", True, True],
 								Nothing];
 					{failingTest, passingTest}
 				],
@@ -3908,7 +3921,7 @@ resolveExperimentThermalShiftOptions[myPooledSamples:ListableP[{ObjectP[Object[S
 	invalidDetectionReagentOption = If[Length@invalidSampleOptionList>=1,{DetectionReagent,DetectionReagentVolume},{}];
 
 	(*Throw an error if there are invalid sample pools.*)
-	If[Length[invalidSampleOptionList]>0&&messages,Message[Error::InvalidDetectionReagentVolumes,ObjectToString[invalidSampleOptionList,Cache->simulatedCache]],Nothing];
+	If[Length[invalidSampleOptionList]>0&&messages,Message[Error::InvalidDetectionReagentVolumes,ObjectToString[invalidSampleOptionList,Simulation->updatedSimulation]],Nothing];
 
 	(*If we are gathering tests,create a passing and/or failing test with the appropriate result.*)
 	invalidDetectionReagentVolumesTest =
@@ -3916,11 +3929,11 @@ resolveExperimentThermalShiftOptions[myPooledSamples:ListableP[{ObjectP[Object[S
 				Module[{failingTest, passingTest},
 					failingTest =
 							If[Length[invalidSampleOptionList]>0,
-								Test["Our detection reagent volumes could be resolved for the inputs "<>ObjectToString[invalidSampleOptionList[[All,1]],Cache->simulatedCache]<>" :", True, False],
+								Test["Our detection reagent volumes could be resolved for the inputs "<>ObjectToString[invalidSampleOptionList[[All,1]],Simulation->updatedSimulation]<>" :", True, False],
 								Nothing];
 					passingTest =
 							If[Length[invalidSampleOptionList]==0,
-								Test["Our detection reagent volumes could be resolved for the inputs "<>ObjectToString[myPooledSamples,Cache->simulatedCache]<>" :", True, True],
+								Test["Our detection reagent volumes could be resolved for the inputs "<>ObjectToString[myPooledSamples,Simulation->updatedSimulation]<>" :", True, True],
 								Nothing];
 					{failingTest, passingTest}
 				],
@@ -3937,7 +3950,7 @@ resolveExperimentThermalShiftOptions[myPooledSamples:ListableP[{ObjectP[Object[S
 	invalidSampleVolOption = If[Length@invalidSampleOptionList>0,{SampleVolume},{}];
 
 	(*Throw an error if there are invalid sample pools.*)
-	If[Length[invalidSampleOptionList]>0&&messages,Message[Error::InvalidSampleVolumes,ObjectToString[invalidSampleOptionList,Cache->simulatedCache]],Nothing];
+	If[Length[invalidSampleOptionList]>0&&messages,Message[Error::InvalidSampleVolumes,ObjectToString[invalidSampleOptionList,Simulation->updatedSimulation]],Nothing];
 
 	(*If we are gathering tests,create a passing and/or failing test with the appropriate result.*)
 	invalidSampleVolumesTest =
@@ -3945,11 +3958,11 @@ resolveExperimentThermalShiftOptions[myPooledSamples:ListableP[{ObjectP[Object[S
 				Module[{failingTest, passingTest},
 					failingTest =
 							If[Length[invalidSampleOptionList]>0,
-								Test["Our sample volumes could be resolved for the inputs "<>ObjectToString[invalidSampleOptionList[[All,1]],Cache->simulatedCache]<>" :", True, False],
+								Test["Our sample volumes could be resolved for the inputs "<>ObjectToString[invalidSampleOptionList[[All,1]],Simulation->updatedSimulation]<>" :", True, False],
 								Nothing];
 					passingTest =
 							If[Length[invalidSampleOptionList]==0,
-								Test["Our sample volumes could be resolved for the inputs "<>ObjectToString[myPooledSamples,Cache->simulatedCache]<>" :", True, True],
+								Test["Our sample volumes could be resolved for the inputs "<>ObjectToString[myPooledSamples,Simulation->updatedSimulation]<>" :", True, True],
 								Nothing];
 					{failingTest, passingTest}
 				],
@@ -3966,7 +3979,7 @@ resolveExperimentThermalShiftOptions[myPooledSamples:ListableP[{ObjectP[Object[S
 	invalidBufferVolOption = If[Length@invalidSampleOptionList>0,{BufferVolume},{}];
 
 	(*Throw an error if there are invalid sample pools.*)
-	If[Length[invalidSampleOptionList]>0&&messages,Message[Error::InvalidBufferVolumes,ObjectToString[invalidSampleOptionList,Cache->simulatedCache]],Nothing];
+	If[Length[invalidSampleOptionList]>0&&messages,Message[Error::InvalidBufferVolumes,ObjectToString[invalidSampleOptionList,Simulation->updatedSimulation]],Nothing];
 
 	(*If we are gathering tests,create a passing and/or failing test with the appropriate result.*)
 	invalidBufferVolumesTest =
@@ -3974,11 +3987,11 @@ resolveExperimentThermalShiftOptions[myPooledSamples:ListableP[{ObjectP[Object[S
 				Module[{failingTest, passingTest},
 					failingTest =
 							If[Length[invalidSampleOptionList]>0,
-								Test["Our buffer volumes could be resolved for the inputs "<>ObjectToString[invalidSampleOptionList[[All,1]],Cache->simulatedCache]<>" :", True, False],
+								Test["Our buffer volumes could be resolved for the inputs "<>ObjectToString[invalidSampleOptionList[[All,1]],Simulation->updatedSimulation]<>" :", True, False],
 								Nothing];
 					passingTest =
 							If[Length[invalidSampleOptionList]==0,
-								Test["Our buffer volumes could be resolved for the inputs "<>ObjectToString[myPooledSamples,Cache->simulatedCache]<>" :", True, True],
+								Test["Our buffer volumes could be resolved for the inputs "<>ObjectToString[myPooledSamples,Simulation->updatedSimulation]<>" :", True, True],
 								Nothing];
 					{failingTest, passingTest}
 				],
@@ -3992,7 +4005,7 @@ resolveExperimentThermalShiftOptions[myPooledSamples:ListableP[{ObjectP[Object[S
 	invalidDilutionVolOption = If[Length@invalidDilutionVolSamples>0,{AliquotAmount},{}];
 
 	(*Throw an error if there are invalid sample pools.*)
-	If[Length[invalidDilutionVolSamples]>0&&messages,Message[Error::InsufficientDilutionVolume,ObjectToString[invalidDilutionVolSamples,Cache->simulatedCache]],Nothing];
+	If[Length[invalidDilutionVolSamples]>0&&messages,Message[Error::InsufficientDilutionVolume,ObjectToString[invalidDilutionVolSamples,Simulation->updatedSimulation]],Nothing];
 
 	(*If we are gathering tests,create a passing and/or failing test with the appropriate result.*)
 	invalidRequiredSamplesVolumesTest =
@@ -4000,11 +4013,11 @@ resolveExperimentThermalShiftOptions[myPooledSamples:ListableP[{ObjectP[Object[S
 				Module[{failingTest, passingTest},
 					failingTest =
 							If[Length[invalidDilutionVolSamples]>0,
-								Test["Our required sample volume is less than or equal to the available nested index matching volume for the inputs "<>ObjectToString[invalidDilutionVolSamples,Cache->simulatedCache]<>" :", True, False],
+								Test["Our required sample volume is less than or equal to the available nested index matching volume for the inputs "<>ObjectToString[invalidDilutionVolSamples,Simulation->updatedSimulation]<>" :", True, False],
 								Nothing];
 					passingTest =
 							If[Length[invalidDilutionVolSamples]==0,
-								Test["Our required sample volume is less than or equal to the available nested index matching volume for the inputs "<>ObjectToString[myPooledSamples,Cache->simulatedCache]<>" :", True, True],
+								Test["Our required sample volume is less than or equal to the available nested index matching volume for the inputs "<>ObjectToString[myPooledSamples,Simulation->updatedSimulation]<>" :", True, True],
 								Nothing];
 					{failingTest, passingTest}
 				],
@@ -4018,7 +4031,7 @@ resolveExperimentThermalShiftOptions[myPooledSamples:ListableP[{ObjectP[Object[S
 	invalidDilutionMixVolOption = If[Length@invalidDilutionMixSamples>0,{DilutionMixVolume},{}];
 
 	(*Throw an error if there are invalid sample pools.*)
-	If[Length[invalidDilutionMixSamples]>0&&messages,Message[Error::InvalidDilutionMixVolumes,ObjectToString[invalidDilutionMixSamples,Cache->simulatedCache]],Nothing];
+	If[Length[invalidDilutionMixSamples]>0&&messages,Message[Error::InvalidDilutionMixVolumes,ObjectToString[invalidDilutionMixSamples,Simulation->updatedSimulation]],Nothing];
 
 	(*If we are gathering tests,create a passing and/or failing test with the appropriate result.*)
 	invalidDilutionMixVolumesTest =
@@ -4026,11 +4039,11 @@ resolveExperimentThermalShiftOptions[myPooledSamples:ListableP[{ObjectP[Object[S
 				Module[{failingTest, passingTest},
 					failingTest =
 							If[Length[invalidDilutionMixSamples]>0,
-								Test["Our required dilution mix volume is less than or equal to the smallest dilution volume for the inputs "<>ObjectToString[invalidDilutionMixSamples,Cache->simulatedCache]<>" :", True, False],
+								Test["Our required dilution mix volume is less than or equal to the smallest dilution volume for the inputs "<>ObjectToString[invalidDilutionMixSamples,Simulation->updatedSimulation]<>" :", True, False],
 								Nothing];
 					passingTest =
 							If[Length[invalidDilutionMixSamples]==0,
-								Test["Our required dilution mix volume is less than or equal to the smallest dilution volume for the inputs "<>ObjectToString[myPooledSamples,Cache->simulatedCache]<>" :", True, True],
+								Test["Our required dilution mix volume is less than or equal to the smallest dilution volume for the inputs "<>ObjectToString[myPooledSamples,Simulation->updatedSimulation]<>" :", True, True],
 								Nothing];
 					{failingTest, passingTest}
 				],
@@ -4044,7 +4057,7 @@ resolveExperimentThermalShiftOptions[myPooledSamples:ListableP[{ObjectP[Object[S
 	invalidDilutionContainerOption = If[Length@invalidSampleOptionList>0,{DilutionContainer},{}];
 
 	(*Throw an error if there are invalid sample pools.*)
-	If[Length[invalidSampleOptionList]>0&&messages,Message[Error::InvalidDilutionContainers,ObjectToString[invalidSampleOptionList,Cache->simulatedCache]],Nothing];
+	If[Length[invalidSampleOptionList]>0&&messages,Message[Error::InvalidDilutionContainers,ObjectToString[invalidSampleOptionList,Simulation->updatedSimulation]],Nothing];
 
 	(*If we are gathering tests,create a passing and/or failing test with the appropriate result.*)
 	invalidDilutionContainersTest =
@@ -4052,11 +4065,11 @@ resolveExperimentThermalShiftOptions[myPooledSamples:ListableP[{ObjectP[Object[S
 				Module[{failingTest, passingTest},
 					failingTest =
 							If[Length[invalidSampleOptionList]>0,
-								Test["Our resolved dilution container can accomodate the largest dilution volume for the inputs "<>ObjectToString[invalidSampleOptionList,Cache->simulatedCache]<>" :", True, False],
+								Test["Our resolved dilution container can accomodate the largest dilution volume for the inputs "<>ObjectToString[invalidSampleOptionList,Simulation->updatedSimulation]<>" :", True, False],
 								Nothing];
 					passingTest =
 							If[Length[invalidSampleOptionList]==0,
-								Test["Our resolved dilution container can accomodate the largest dilution volume for the inputs "<>ObjectToString[myPooledSamples,Cache->simulatedCache]<>" :", True, True],
+								Test["Our resolved dilution container can accomodate the largest dilution volume for the inputs "<>ObjectToString[myPooledSamples,Simulation->updatedSimulation]<>" :", True, True],
 								Nothing];
 					{failingTest, passingTest}
 				],
@@ -4070,7 +4083,7 @@ resolveExperimentThermalShiftOptions[myPooledSamples:ListableP[{ObjectP[Object[S
 	invalidThermocyclerOption = If[Length@invalidSampleOptionList>0,{FluorescenceLaserPower,StaticLightScatteringLaserPower,StaticLightScatteringExcitationWavelength},{}];
 
 	(*Throw an error if there are invalid sample pools.*)
-	If[Length[invalidSampleOptionList]>0&&messages,Message[Error::InvalidThermocyclerOptions,ObjectToString[resolvedInstrument,Cache->simulatedCache],ObjectToString[invalidSampleOptionList,Cache->simulatedCache],"Model[Instrument,MultimodeSpectrophotometer,\"Uncle\"]"],Nothing];
+	If[Length[invalidSampleOptionList]>0&&messages,Message[Error::InvalidThermocyclerOptions,ObjectToString[resolvedInstrument,Simulation->updatedSimulation],ObjectToString[invalidSampleOptionList,Simulation->updatedSimulation],"Model[Instrument,MultimodeSpectrophotometer,\"Uncle\"]"],Nothing];
 
 	(*If we are gathering tests,create a passing and/or failing test with the appropriate result.*)
 	invalidThermocyclerOptionsTest =
@@ -4078,11 +4091,11 @@ resolveExperimentThermalShiftOptions[myPooledSamples:ListableP[{ObjectP[Object[S
 				Module[{failingTest, passingTest},
 					failingTest =
 							If[Length[invalidSampleOptionList]>0,
-								Test["Our resolved detection parameters for the inputs "<>ObjectToString[invalidSampleOptionList[[All,1]],Cache->simulatedCache]<>" are compatible with the resolved instrument:", True, False],
+								Test["Our resolved detection parameters for the inputs "<>ObjectToString[invalidSampleOptionList[[All,1]],Simulation->updatedSimulation]<>" are compatible with the resolved instrument:", True, False],
 								Nothing];
 					passingTest =
 							If[Length[invalidSampleOptionList]==0,
-								Test["Our resolved detection parameters for the inputs "<>ObjectToString[myPooledSamples,Cache->simulatedCache]<>" are compatible with the resolved instrument:", True, True],
+								Test["Our resolved detection parameters for the inputs "<>ObjectToString[myPooledSamples,Simulation->updatedSimulation]<>" are compatible with the resolved instrument:", True, True],
 								Nothing];
 					{failingTest, passingTest}
 				],
@@ -4099,7 +4112,7 @@ resolveExperimentThermalShiftOptions[myPooledSamples:ListableP[{ObjectP[Object[S
 	invalidThermocyclerEmissionsOption = If[Length@invalidSampleOptionList>0,{MinEmissionWavelength,MaxEmissionWavelength},{}];
 
 	(*Throw an error if there are invalid sample pools.*)
-	If[Length[invalidSampleOptionList]>0&&messages,Message[Error::InvalidEmissionRange,ObjectToString[resolvedInstrument,Cache->simulatedCache],ObjectToString[invalidSampleOptionList,Cache->simulatedCache]],Nothing];
+	If[Length[invalidSampleOptionList]>0&&messages,Message[Error::InvalidEmissionRange,ObjectToString[resolvedInstrument,Simulation->updatedSimulation],ObjectToString[invalidSampleOptionList,Simulation->updatedSimulation]],Nothing];
 
 	(*If we are gathering tests,create a passing and/or failing test with the appropriate result.*)
 	invalidResolvedEmissionRangeTest =
@@ -4107,11 +4120,11 @@ resolveExperimentThermalShiftOptions[myPooledSamples:ListableP[{ObjectP[Object[S
 				Module[{failingTest, passingTest},
 					failingTest =
 							If[Length[invalidSampleOptionList]>0,
-								Test["Our resolved emission range for the inputs "<>ObjectToString[invalidSampleOptionList[[All,1]],Cache->simulatedCache]<>" are compatible with the resolved instrument:", True, False],
+								Test["Our resolved emission range for the inputs "<>ObjectToString[invalidSampleOptionList[[All,1]],Simulation->updatedSimulation]<>" are compatible with the resolved instrument:", True, False],
 								Nothing];
 					passingTest =
 							If[Length[invalidSampleOptionList]==0,
-								Test["Our resolved emission range for the inputs "<>ObjectToString[myPooledSamples,Cache->simulatedCache]<>" are compatible with the resolved instrument:", True, True],
+								Test["Our resolved emission range for the inputs "<>ObjectToString[myPooledSamples,Simulation->updatedSimulation]<>" are compatible with the resolved instrument:", True, True],
 								Nothing];
 					{failingTest, passingTest}
 				],
@@ -4128,7 +4141,7 @@ resolveExperimentThermalShiftOptions[myPooledSamples:ListableP[{ObjectP[Object[S
 	invalidMultiModeSpecOption = If[Length@invalidSampleOptionList>0,{FluorescenceLaserPower,StaticLightScatteringLaserPower,StaticLightScatteringExcitationWavelength},{}];
 
 	(*Throw an error if there are invalid sample pools.*)
-	If[Length[invalidSampleOptionList]>0&&messages,Message[Error::InvalidMultiModeSpectrometerOptions,ObjectToString[resolvedInstrument,Cache->simulatedCache],ObjectToString[invalidSampleOptionList,Cache->simulatedCache]],Nothing];
+	If[Length[invalidSampleOptionList]>0&&messages,Message[Error::InvalidMultiModeSpectrometerOptions,ObjectToString[resolvedInstrument,Simulation->updatedSimulation],ObjectToString[invalidSampleOptionList,Simulation->updatedSimulation]],Nothing];
 
 	(*If we are gathering tests,create a passing and/or failing test with the appropriate result.*)
 	invalidMMSpecOptionsTest =
@@ -4136,11 +4149,11 @@ resolveExperimentThermalShiftOptions[myPooledSamples:ListableP[{ObjectP[Object[S
 				Module[{failingTest, passingTest},
 					failingTest =
 							If[Length[invalidSampleOptionList]>0,
-								Test["Our resolved laser power settings and SLS excitation for the inputs "<>ObjectToString[invalidSampleOptionList[[All,1]],Cache->simulatedCache]<>" are compatible with the resolved instrument:", True, False],
+								Test["Our resolved laser power settings and SLS excitation for the inputs "<>ObjectToString[invalidSampleOptionList[[All,1]],Simulation->updatedSimulation]<>" are compatible with the resolved instrument:", True, False],
 								Nothing];
 					passingTest =
 							If[Length[invalidSampleOptionList]==0,
-								Test["Our resolved laser power settings and SLS excitaiton for the inputs "<>ObjectToString[myPooledSamples,Cache->simulatedCache]<>" are compatible with the resolved instrument:", True, True],
+								Test["Our resolved laser power settings and SLS excitaiton for the inputs "<>ObjectToString[myPooledSamples,Simulation->updatedSimulation]<>" are compatible with the resolved instrument:", True, True],
 								Nothing];
 					{failingTest, passingTest}
 				],
@@ -4156,7 +4169,7 @@ resolveExperimentThermalShiftOptions[myPooledSamples:ListableP[{ObjectP[Object[S
 	invalidExcitationOption = If[Length@invalidSampleOptionList>0,{ExcitationWavelength},{}];
 
 	(*Throw an error if there are invalid sample pools.*)
-	If[Length[invalidSampleOptionList]>0&&messages,Message[Error::InvalidExcitationWavelengths,ObjectToString[invalidSampleOptionList,Cache->simulatedCache]],Nothing];
+	If[Length[invalidSampleOptionList]>0&&messages,Message[Error::InvalidExcitationWavelengths,ObjectToString[invalidSampleOptionList,Simulation->updatedSimulation]],Nothing];
 
 	(*If we are gathering tests,create a passing and/or failing test with the appropriate result.*)
 	invalidExWavelengthsTest =
@@ -4164,11 +4177,11 @@ resolveExperimentThermalShiftOptions[myPooledSamples:ListableP[{ObjectP[Object[S
 				Module[{failingTest, passingTest},
 					failingTest =
 							If[Length[invalidSampleOptionList]>0,
-								Test["Our excitation wavelengths can be resolved for the inputs "<>ObjectToString[invalidSampleOptionList[[All,1]],Cache->simulatedCache]" :", True, False],
+								Test["Our excitation wavelengths can be resolved for the inputs "<>ObjectToString[invalidSampleOptionList[[All,1]],Simulation->updatedSimulation]" :", True, False],
 								Nothing];
 					passingTest =
 							If[Length[invalidSampleOptionList]==0,
-								Test["Our excitation wavelengths can be resolved for the inputs "<>ObjectToString[myPooledSamples,Cache->simulatedCache]<>" :", True, True],
+								Test["Our excitation wavelengths can be resolved for the inputs "<>ObjectToString[myPooledSamples,Simulation->updatedSimulation]<>" :", True, True],
 								Nothing];
 					{failingTest, passingTest}
 				],
@@ -4184,7 +4197,7 @@ resolveExperimentThermalShiftOptions[myPooledSamples:ListableP[{ObjectP[Object[S
 	invalidEmissionDetectionOptions=If[Length@invalidSampleOptionList>0,{EmissionWavelength,MinEmissionWavelength,MaxEmissionWavelength},{}];
 
 	(*Throw an error if there are invalid sample pools.*)
-	If[Length[invalidSampleOptionList]>0&&messages,Message[Error::InvalidEmissionWavelengths,ObjectToString[invalidSampleOptionList[[All,1]],Cache->simulatedCache]],Nothing];
+	If[Length[invalidSampleOptionList]>0&&messages,Message[Error::InvalidEmissionWavelengths,ObjectToString[invalidSampleOptionList[[All,1]],Simulation->updatedSimulation]],Nothing];
 
 	(*If we are gathering tests,create a passing and/or failing test with the appropriate result.*)
 	invalidEmWavelengthsTest =
@@ -4192,11 +4205,11 @@ resolveExperimentThermalShiftOptions[myPooledSamples:ListableP[{ObjectP[Object[S
 				Module[{failingTest, passingTest},
 					failingTest =
 							If[Length[invalidSampleOptionList]>0,
-								Test["Our emission wavelengths can be resolved for the inputs "<>ObjectToString[invalidSampleOptionList[[All,1]],Cache->simulatedCache]" :", True, False],
+								Test["Our emission wavelengths can be resolved for the inputs "<>ObjectToString[invalidSampleOptionList[[All,1]],Simulation->updatedSimulation]" :", True, False],
 								Nothing];
 					passingTest =
 							If[Length[invalidSampleOptionList]==0,
-								Test["Our emission wavelengths can be resolved for the inputs "<>ObjectToString[myPooledSamples,Cache->simulatedCache]<>" :", True, True],
+								Test["Our emission wavelengths can be resolved for the inputs "<>ObjectToString[myPooledSamples,Simulation->updatedSimulation]<>" :", True, True],
 								Nothing];
 					{failingTest, passingTest}
 				],
@@ -4213,7 +4226,7 @@ resolveExperimentThermalShiftOptions[myPooledSamples:ListableP[{ObjectP[Object[S
 	incompatibleExcitationOption = If[Length@invalidSampleOptionList>0,{ExcitationWavelength,Instrument},{}];
 
 	(*Throw an error if there are invalid sample pools.*)
-	If[Length[invalidSampleOptionList]>0&&messages,Message[Error::IncompatibleExcitationWavelength,ObjectToString[resolvedInstrument,Cache->simulatedCache],ObjectToString[invalidSampleOptionList,Cache->simulatedCache]],Nothing];
+	If[Length[invalidSampleOptionList]>0&&messages,Message[Error::IncompatibleExcitationWavelength,ObjectToString[resolvedInstrument,Simulation->updatedSimulation],ObjectToString[invalidSampleOptionList,Simulation->updatedSimulation]],Nothing];
 
 	(*If we are gathering tests,create a passing and/or failing test with the appropriate result.*)
 	incompatibleExWavelengthsTest =
@@ -4221,11 +4234,11 @@ resolveExperimentThermalShiftOptions[myPooledSamples:ListableP[{ObjectP[Object[S
 				Module[{failingTest, passingTest},
 					failingTest =
 							If[Length[invalidSampleOptionList]>0,
-								Test["Our resolved excitation wavelengths for the inputs "<>ObjectToString[invalidSampleOptionList[[All,1]],Cache->simulatedCache]" are compatible with the resolved instrument:", True, False],
+								Test["Our resolved excitation wavelengths for the inputs "<>ObjectToString[invalidSampleOptionList[[All,1]],Simulation->updatedSimulation]" are compatible with the resolved instrument:", True, False],
 								Nothing];
 					passingTest =
 							If[Length[invalidSampleOptionList]==0,
-								Test["Our resolved excitation wavelengths for the inputs "<>ObjectToString[myPooledSamples,Cache->simulatedCache]<>" are compatible with the resolved instrument:", True, True],
+								Test["Our resolved excitation wavelengths for the inputs "<>ObjectToString[myPooledSamples,Simulation->updatedSimulation]<>" are compatible with the resolved instrument:", True, True],
 								Nothing];
 					{failingTest, passingTest}
 				],
@@ -4242,7 +4255,7 @@ resolveExperimentThermalShiftOptions[myPooledSamples:ListableP[{ObjectP[Object[S
 	incompatibleEmissionOption = If[Length@invalidSampleOptionList>0,{EmissionWavelength,MinEmissionWavelength,MaxEmissionWavelength,Instrument},{}];
 
 	(*Throw an error if there are invalid sample pools.*)
-	If[Length[invalidSampleOptionList]>0&&messages,Message[Error::IncompatibleEmissionOptions,ObjectToString[resolvedInstrument,Cache->simulatedCache],ObjectToString[invalidSampleOptionList,Cache->simulatedCache]],Nothing];
+	If[Length[invalidSampleOptionList]>0&&messages,Message[Error::IncompatibleEmissionOptions,ObjectToString[resolvedInstrument,Simulation->updatedSimulation],ObjectToString[invalidSampleOptionList,Simulation->updatedSimulation]],Nothing];
 
 	(*If we are gathering tests,create a passing and/or failing test with the appropriate result.*)
 	incompatibleEmOptionsTest =
@@ -4250,11 +4263,11 @@ resolveExperimentThermalShiftOptions[myPooledSamples:ListableP[{ObjectP[Object[S
 				Module[{failingTest, passingTest},
 					failingTest =
 							If[Length[invalidSampleOptionList]>0,
-								Test["Our resolved emission parameters for the inputs "<>ObjectToString[invalidSampleOptionList[[All,1]],Cache->simulatedCache]" are compatible with the resolved instrument:", True, False],
+								Test["Our resolved emission parameters for the inputs "<>ObjectToString[invalidSampleOptionList[[All,1]],Simulation->updatedSimulation]" are compatible with the resolved instrument:", True, False],
 								Nothing];
 					passingTest =
 							If[Length[invalidSampleOptionList]==0,
-								Test["Our resolved emission parameters for the inputs "<>ObjectToString[myPooledSamples,Cache->simulatedCache]<>" are compatible with the resolved instrument:", True, True],
+								Test["Our resolved emission parameters for the inputs "<>ObjectToString[myPooledSamples,Simulation->updatedSimulation]<>" are compatible with the resolved instrument:", True, True],
 								Nothing];
 					{failingTest, passingTest}
 				],
@@ -4268,7 +4281,7 @@ resolveExperimentThermalShiftOptions[myPooledSamples:ListableP[{ObjectP[Object[S
 	invalidSampleReactionVolOption = If[Length@invalidSampleOptionList>0,{ReactionVolume,SampleVolume,BufferVolume,DetectionReagentVolume,PassiveReferenceVolume},{}];
 
 	(*Throw an error if there are invalid sample pools.*)
-	If[Length[invalidSampleOptionList]>0&&messages,Message[Error::InvalidTotalReactionVolume,ObjectToString[invalidSampleOptionList,Cache->simulatedCache],invalidSampleReactionVolOption],Nothing];
+	If[Length[invalidSampleOptionList]>0&&messages,Message[Error::InvalidTotalReactionVolume,ObjectToString[invalidSampleOptionList,Simulation->updatedSimulation],invalidSampleReactionVolOption],Nothing];
 
 	(*If we are gathering tests,create a passing and/or failing test with the appropriate result.*)
 	invalidSampleReactionVolumesTest =
@@ -4276,11 +4289,11 @@ resolveExperimentThermalShiftOptions[myPooledSamples:ListableP[{ObjectP[Object[S
 				Module[{failingTest, passingTest},
 					failingTest =
 							If[Length[invalidSampleOptionList]>0,
-								Test["Our reaction volume is equal to the sum of reaction component volumes inputs "<>ObjectToString[invalidSampleOptionList[[All,1]],Cache->simulatedCache]<>" :", True, False],
+								Test["Our reaction volume is equal to the sum of reaction component volumes inputs "<>ObjectToString[invalidSampleOptionList[[All,1]],Simulation->updatedSimulation]<>" :", True, False],
 								Nothing];
 					passingTest =
 							If[Length[invalidSampleOptionList]==0,
-								Test["Our reaction volume is equal to the sum of reaction component volumes inputs "<>ObjectToString[myPooledSamples,Cache->simulatedCache]<>" :", True, True],
+								Test["Our reaction volume is equal to the sum of reaction component volumes inputs "<>ObjectToString[myPooledSamples,Simulation->updatedSimulation]<>" :", True, True],
 								Nothing];
 					{failingTest, passingTest}
 				],
@@ -4294,7 +4307,7 @@ resolveExperimentThermalShiftOptions[myPooledSamples:ListableP[{ObjectP[Object[S
 	invalidPooledDilutionOptions = If[Length@invalidSampleOptionList>0,{SerialDilutionCurve,DilutionCurve},{}];
 
 	(*Throw an error if there are invalid sample pools.*)
-	If[Length[invalidSampleOptionList]>0&&messages,Message[Error::InvalidNestedIndexMatchingDilutions,ObjectToString[invalidSampleOptionList,Cache->simulatedCache],invalidPooledDilutionOptions],Nothing];
+	If[Length[invalidSampleOptionList]>0&&messages,Message[Error::InvalidNestedIndexMatchingDilutions,ObjectToString[invalidSampleOptionList,Simulation->updatedSimulation],invalidPooledDilutionOptions],Nothing];
 
 	(*If we are gathering tests,create a passing and/or failing test with the appropriate result.*)
 	invalidPooledDilutionsTest =
@@ -4302,11 +4315,11 @@ resolveExperimentThermalShiftOptions[myPooledSamples:ListableP[{ObjectP[Object[S
 				Module[{failingTest, passingTest},
 					failingTest =
 							If[Length[invalidSampleOptionList]>0,
-								Test["Our dilution options for nested index matching inputs "<>ObjectToString[invalidSampleOptionList[[All,1]],Cache->simulatedCache]<>" are compatible:", True, False],
+								Test["Our dilution options for nested index matching inputs "<>ObjectToString[invalidSampleOptionList[[All,1]],Simulation->updatedSimulation]<>" are compatible:", True, False],
 								Nothing];
 					passingTest =
 							If[Length[invalidSampleOptionList]==0,
-								Test["Our dilution options for nested index matching inputs "<>ObjectToString[myPooledSamples,Cache->simulatedCache]<>" are compatible:", True, True],
+								Test["Our dilution options for nested index matching inputs "<>ObjectToString[myPooledSamples,Simulation->updatedSimulation]<>" are compatible:", True, True],
 								Nothing];
 					{failingTest, passingTest}
 				],
@@ -4322,7 +4335,7 @@ resolveExperimentThermalShiftOptions[myPooledSamples:ListableP[{ObjectP[Object[S
 
 	invalidInstrumentOption = If[invalidInstrumentBoolean==True,{Instrument,TemperatureResolution},{}];
 
-	If[invalidInstrumentBoolean==True&&messages, Message[Error::InvalidTemperatureResolution,resolvedTempResolution,ObjectToString[resolvedInstrument,Cache->simulatedCache]]];
+	If[invalidInstrumentBoolean==True&&messages, Message[Error::InvalidTemperatureResolution,resolvedTempResolution,ObjectToString[resolvedInstrument,Simulation->updatedSimulation]]];
 
 	(*If we are gathering tests,create a passing and/or failing test with the appropriate result.*)
 	invalidTempResTest =
@@ -4372,7 +4385,7 @@ resolveExperimentThermalShiftOptions[myPooledSamples:ListableP[{ObjectP[Object[S
 	instrumentMaxRate = Sequence@@Convert[Lookup[resolvedInstrumentPacket, MaxTemperatureRamp],Units[resolvedRampRate]];
 
 	If[resolvedRampRate>instrumentMaxRate&&messages,
-		Message[Error::InvalidRampRate,resolvedRampRate,ObjectToString[resolvedInstrument,Cache->simulatedCache],instrumentMaxRate]
+		Message[Error::InvalidRampRate,resolvedRampRate,ObjectToString[resolvedInstrument,Simulation->updatedSimulation],instrumentMaxRate]
 	];
 
 	invalidRampRateOption = If[resolvedRampRate<=instrumentMaxRate,{},{TemperatureRampRate}];
@@ -4451,7 +4464,7 @@ resolveExperimentThermalShiftOptions[myPooledSamples:ListableP[{ObjectP[Object[S
 
 	invalidSampleNumberOption = If[invalidSampleNumber==True,{SerialDilutionCurve,DilutionCurve,NumberOfReplicates},{}];
 
-	If[invalidSampleNumber==True&&messages, Message[Error::TooManySamples,requiredWells,ObjectToString[resolvedInstrument,Cache->simulatedCache],maxSampleNum],Nothing];
+	If[invalidSampleNumber==True&&messages, Message[Error::TooManySamples,requiredWells,ObjectToString[resolvedInstrument,Simulation->updatedSimulation],maxSampleNum],Nothing];
 
 	(*If we are gathering tests,create a passing and/or failing test with the appropriate result.*)
 	invalidSampleNumberTest =
@@ -4480,7 +4493,7 @@ resolveExperimentThermalShiftOptions[myPooledSamples:ListableP[{ObjectP[Object[S
 
 	invalidReactionVolOption = If[invalidReactionVolume==True,{ReactionVolume},{}];
 
-	If[invalidReactionVolume==True&&messages, Message[Error::InvalidReactionVolume,ObjectToString[resolvedInstrument,Cache->simulatedCache],compatibleVolume],Nothing];
+	If[invalidReactionVolume==True&&messages, Message[Error::InvalidReactionVolume,ObjectToString[resolvedInstrument,Simulation->updatedSimulation],compatibleVolume],Nothing];
 
 	(*If we are gathering tests,create a passing and/or failing test with the appropriate result.*)
 	invalidReactionVolumeTest =
@@ -4507,7 +4520,7 @@ resolveExperimentThermalShiftOptions[myPooledSamples:ListableP[{ObjectP[Object[S
 
 	invalidContainerOutOption = If[invalidContainerOutBoolean==True,{Instrument,ContainerOut},{}];
 
-	If[invalidContainerOutBoolean==True&&messages, Message[Error::InvalidContainerOut,containerOption,ObjectToString[resolvedInstrument,Cache->simulatedCache]]];
+	If[invalidContainerOutBoolean==True&&messages, Message[Error::InvalidContainerOut,containerOption,ObjectToString[resolvedInstrument,Simulation->updatedSimulation]]];
 
 	(*If we are gathering tests,create a passing and/or failing test with the appropriate result.*)
 	invalidRecoupSampleTest =
@@ -4534,7 +4547,7 @@ resolveExperimentThermalShiftOptions[myPooledSamples:ListableP[{ObjectP[Object[S
 
 	invalidCycleNumOption = If[invalidCycleNumBoolean==True,{Instrument,NumberOfCycles},{}];
 
-	If[invalidCycleNumBoolean==True&&messages, Message[Error::InvalidNumberOfCycles,resolvedCycleNum,ObjectToString[resolvedInstrument,Cache->simulatedCache]]];
+	If[invalidCycleNumBoolean==True&&messages, Message[Error::InvalidNumberOfCycles,resolvedCycleNum,ObjectToString[resolvedInstrument,Simulation->updatedSimulation]]];
 
 	(*If we are gathering tests,create a passing and/or failing test with the appropriate result.*)
 	invalidCycleNumTest =
@@ -4691,7 +4704,7 @@ resolveExperimentThermalShiftOptions[myPooledSamples:ListableP[{ObjectP[Object[S
 
 	(* If there are any invalidConflictingDLSInstrumentOptions has any Contents and we are throwing Messages, throw an Error *)
 	If[Length[invalidConflictingDLSInstrumentOptions]>0&&messages,
-		Message[Error::ConflictingThermalShiftDynamicLightScatteringInstrument,ObjectToString[resolvedInstrument,Cache->simulatedCache],dynamicLightScatteringOption]
+		Message[Error::ConflictingThermalShiftDynamicLightScatteringInstrument,ObjectToString[resolvedInstrument,Simulation->updatedSimulation],dynamicLightScatteringOption]
 	];
 
 	(* Define the tests the user will see for the above message *)
@@ -4699,7 +4712,7 @@ resolveExperimentThermalShiftOptions[myPooledSamples:ListableP[{ObjectP[Object[S
 		Module[{failingTest,passingTest},
 			failingTest=If[Length[invalidConflictingDLSInstrumentOptions]==0,
 				Nothing,
-				Test["The Instrument option, "<>ObjectToString[resolvedInstrument,Cache->simulatedCache]<>", and DynamicLightScattering option, "<>ToString[dynamicLightScatteringOption]<>", are in conflict. DynamicLightScattering can only be True if the Instrument is a MultimodeSpectrophotometer:",True,False]
+				Test["The Instrument option, "<>ObjectToString[resolvedInstrument,Simulation->updatedSimulation]<>", and DynamicLightScattering option, "<>ToString[dynamicLightScatteringOption]<>", are in conflict. DynamicLightScattering can only be True if the Instrument is a MultimodeSpectrophotometer:",True,False]
 			];
 			passingTest=If[Length[invalidConflictingDLSInstrumentOptions]>0,
 				Nothing,
@@ -4871,7 +4884,7 @@ resolveExperimentThermalShiftOptions[myPooledSamples:ListableP[{ObjectP[Object[S
 
 	(* Throw Error::InvalidInput if there are invalid inputs and we're throwing messages. *)
 	If[Length[invalidInputs]>0&&messages,
-		Message[Error::InvalidInput,ObjectToString[invalidInputs,Cache->simulatedCache]]
+		Message[Error::InvalidInput,ObjectToString[invalidInputs,Simulation->updatedSimulation]]
 	];
 
 	(* Throw Error::InvalidOption if there are invalid options and we're throwing messages. *)
@@ -4896,7 +4909,8 @@ resolveExperimentThermalShiftOptions[myPooledSamples:ListableP[{ObjectP[Object[S
 			RequiredAliquotAmounts->Null,
 			AliquotWarningMessage->Null,
 			AllowSolids->False,
-			Cache->simulatedCache,
+			Cache->cache,
+			Simulation->updatedSimulation,
 			Output -> {Result, Tests}
 		],
 		{
@@ -4909,7 +4923,8 @@ resolveExperimentThermalShiftOptions[myPooledSamples:ListableP[{ObjectP[Object[S
 				RequiredAliquotAmounts->Null,
 				AliquotWarningMessage->Null,
 				AllowSolids->False,
-				Cache->simulatedCache,
+				Cache->cache,
+				Simulation->updatedSimulation,
 				Output->Result
 			],
 			{}
@@ -4970,7 +4985,8 @@ resolveExperimentThermalShiftOptions[myPooledSamples:ListableP[{ObjectP[Object[S
 				LaserOptimizationEmissionWavelengthRange->resolvedLaserOptiWavelengths,
 				LaserOptimizationTargetEmissionIntensityRange->resolvedLaserOptiIntensities,
 				DynamicLightScatteringMeasurements->resolvedDynamicLightScatteringMeasurements,
-				DynamicLightScatteringMeasurementTemperatures->resolvedDynamicLightScatteringMeasurementTemperatures,
+				(*if we have only one measurement - don't have a list here*)
+				DynamicLightScatteringMeasurementTemperatures->If[Length[resolvedDynamicLightScatteringMeasurementTemperatures]==1,First@resolvedDynamicLightScatteringMeasurementTemperatures,resolvedDynamicLightScatteringMeasurementTemperatures],
 				NumberOfDynamicLightScatteringAcquisitions->resolvedNumberOfDynamicLightScatteringAcquisitions,
 				DynamicLightScatteringAcquisitionTime->resolvedDynamicLightScatteringAcquisitionTime,
 				AutomaticDynamicLightScatteringLaserSettings->resolvedAutomaticDynamicLightScatteringLaserSettings,
@@ -5062,7 +5078,7 @@ resolveExperimentThermalShiftOptions[myPooledSamples:ListableP[{ObjectP[Object[S
 
 (* ==========Resource packets Helper function ========== *)
 DefineOptions[experimentThermalShiftResourcePackets,
-	Options:>{CacheOption,HelperOutputOption}
+	Options:>{SimulationOption,CacheOption,HelperOutputOption}
 ];
 
 experimentThermalShiftResourcePackets[myPooledSamples:ListableP[{ObjectP[Object[Sample]]..}], myUnresolvedOptions:{___Rule}, myResolvedOptions:{___Rule},ops:OptionsPattern[]]:=Module[
@@ -5092,7 +5108,7 @@ experimentThermalShiftResourcePackets[myPooledSamples:ListableP[{ObjectP[Object[
 		manualLoadingPlateResource,manualLoadingPipetteResource,manualLoadingTipsResource,reactionContainerResource,dilutionCurvesNoNulls,serialDilutionCurvesNoNulls,
 		optiWavelengthRangeWithReplicates,optiIntensityRangeWithReplicates,optiWavelengthSpan, optiIntensityPercentSpan, optiWavelengthRanges,
 		optiIntensityRanges,optimizeFluorLaserWithReps,optimizeSLSLaserWithReps,optiIntensityPercentRanges,instrumentFields,instrumentData,
-		expandedFluorescenceOptiBool,expandedSlsOptiBool,expandedOptiEmWavelength,expandedOptiIntensity,pooledSampleVolume,
+		expandedFluorescenceOptiBool,expandedSlsOptiBool,expandedOptiEmWavelength,expandedOptiIntensity,pooledSampleVolume, simulation,
 		expandedLaserOptiOptions,dilutionLengths,pooledDilutionLengths,maxDilutionLengths,dilStorageCondWithReps,dilutionStorageConditionRules,uniqueDilutionStorageConditions,
 		liquidHandlerCompatibleContainers, samplesInLHContainerQ, preparedPlateQ,thermocyclerPreparedPlateQ,currentSampleVolume,sampleVolumePackets,aliquotRequiredQ
 	},
@@ -5113,8 +5129,9 @@ experimentThermalShiftResourcePackets[myPooledSamples:ListableP[{ObjectP[Object[
 
 	(* lookup the cache *)
 	inheritedCache=Lookup[ToList[ops],Cache];
+	simulation=Lookup[ToList[ops],Simulation];
 
-	(* determine the pool lenghts*)
+	(* determine the pool lengths*)
 	poolLengths=Map[Length[#]&,myPooledSamples];
 
 	(* expand the resolved options if they weren't expanded already *)
@@ -5324,6 +5341,7 @@ experimentThermalShiftResourcePackets[myPooledSamples:ListableP[{ObjectP[Object[
 				{instrumentFields}
 			},
 			Cache->cache,
+			Simulation->simulation,
 			Date->Now
 		],
 		{Download::FieldDoesntExist}
@@ -5350,7 +5368,7 @@ experimentThermalShiftResourcePackets[myPooledSamples:ListableP[{ObjectP[Object[
 	
 	(* -- Generate samples in resources -- *)
 
-	(*Find which pooled samples are being aliquotted and expand to match the number of samples in*)
+	(*Find which pooled samples are being aliquoted and expand to match the number of samples in*)
 	aliquotBool = MapThread[ConstantArray[#1,#2]&,{Lookup[expandedResolvedOptions,Aliquot],poolLengths}];
 
 	(*Find which samples in are serially diluted prior to pooling*)
@@ -5643,7 +5661,7 @@ experimentThermalShiftResourcePackets[myPooledSamples:ListableP[{ObjectP[Object[
 	 this is a bit ugly, but saves the trouble of re-engineering the whole plate thing*)
 	manualLoadingPlateResource=If[MatchQ[dynamicLightScatteringCapillaryLoading, Manual],
 		Resource[
-			Sample->Model[Container, Plate, "96-well PCR Plate"]
+			Sample->Model[Container, Plate, "id:01G6nvkKrrYm"](* 96-well PCR Plate *)
 		],
 		Null
 	];
@@ -5651,7 +5669,7 @@ experimentThermalShiftResourcePackets[myPooledSamples:ListableP[{ObjectP[Object[
 	(* - ManualLoadingPipette - only if we are loading manual. I am not a huge fan of this solution, but its a simpler fix than to rearrange how the sample prep plate is set *)
 	manualLoadingPipetteResource=If[MatchQ[dynamicLightScatteringCapillaryLoading, Manual],
 		Resource[
-			Instrument->Model[Instrument, Pipette, "Eppendorf Research Plus, 8-channel 10uL"]
+			Instrument->Model[Instrument, Pipette, "id:qdkmxzqZMw31"](* Eppendorf Research Plus, 8-channel 10uL *)
 		],
 		Null
 	];
@@ -5659,7 +5677,7 @@ experimentThermalShiftResourcePackets[myPooledSamples:ListableP[{ObjectP[Object[
 	(* - ManualLoadingTips - only if we are loading manual. I am not a huge fan of this solution, but its a simpler fix than to rearrange how the sample prep plate is set *)
 	manualLoadingTipsResource=If[MatchQ[dynamicLightScatteringCapillaryLoading, Manual],
 		Resource[
-			Sample->Model[Item, Tips, "0.1 - 10 uL Tips, Low Retention, Non-Sterile"],
+			Sample->Model[Item, Tips, "id:8qZ1VW0Vx7jP"](* 0.1 - 10 uL Tips, Low Retention, Non-Sterile *),
 			Amount->requiredWells
 		],
 		Null
@@ -5713,7 +5731,7 @@ experimentThermalShiftResourcePackets[myPooledSamples:ListableP[{ObjectP[Object[
 	samplesInLHContainerQ = AllTrue[DeleteDuplicates[Flatten[myPooledSamples]/.allSampleContainerModels],MatchQ[#,ObjectP[liquidHandlerCompatibleContainers]]&];
 
 	thermocyclerPreparedPlateQ = If[MatchQ[instrument,ObjectP[{Model[Instrument,Thermocycler],Object[Instrument,Thermocycler]}]],
-		AllTrue[DeleteDuplicates[Flatten[myPooledSamples]/.allSampleContainerModels],MatchQ[#,ObjectP[{Model[Container, Plate, "384-well qPCR Optical Reaction Plate"]}]]&],
+		AllTrue[DeleteDuplicates[Flatten[myPooledSamples]/.allSampleContainerModels],MatchQ[#,ObjectP[{Model[Container, Plate, "id:pZx9jo83G0VP"](* 384-well qPCR Optical Reaction Plate *)}]]&],
 		True
 	];
 
@@ -5743,7 +5761,7 @@ experimentThermalShiftResourcePackets[myPooledSamples:ListableP[{ObjectP[Object[
 	{reactionContainerResource} = Switch[
 		{Download[instrument,Object], preparedPlateQ},
 		{ObjectP[{Object[Instrument,MultimodeSpectrophotometer],Model[Instrument,MultimodeSpectrophotometer]}], False},
-		{Link[Resource[Sample ->Model[Container, Plate, "96-well PCR Plate"], Name -> ToString[Unique[]]]]},
+		{Link[Resource[Sample ->Model[Container, Plate, "id:01G6nvkKrrYm"](* 96-well PCR Plate *), Name -> ToString[Unique[]]]]},
 		{ObjectP[{Object[Instrument,MultimodeSpectrophotometer],Model[Instrument,MultimodeSpectrophotometer]}], True},
 		Link/@containersIn,
 		{_,_}, {Null}
@@ -5752,8 +5770,8 @@ experimentThermalShiftResourcePackets[myPooledSamples:ListableP[{ObjectP[Object[
 	(* -- Generate assay container resources -- *)
 	(*Get the assay container object based on the resolved instrument*)
 	assayContainerObject = Switch[instrument,
-		ObjectP[{Model[Instrument,Thermocycler],Object[Instrument,Thermocycler]}],Model[Container, Plate, "384-well qPCR Optical Reaction Plate"],
-		ObjectP[{Model[Instrument,MultimodeSpectrophotometer],Object[Instrument,MultimodeSpectrophotometer]}], Model[Container,Plate,CapillaryStrip,"Uncle 16-capillary strip"]
+		ObjectP[{Model[Instrument,Thermocycler],Object[Instrument,Thermocycler]}],Model[Container, Plate, "id:pZx9jo83G0VP"](* 384-well qPCR Optical Reaction Plate *),
+		ObjectP[{Model[Instrument,MultimodeSpectrophotometer],Object[Instrument,MultimodeSpectrophotometer]}], Model[Container, Plate, CapillaryStrip, "id:R8e1Pjp9Kjjj"](* Uncle 16-capillary strip *)
 	];
 
 	(*Get the number of required containers based on the total number of sample wells*)
@@ -5775,7 +5793,7 @@ experimentThermalShiftResourcePackets[myPooledSamples:ListableP[{ObjectP[Object[
 
 	If[MatchQ[instrument,ObjectP[{Model[Instrument,Thermocycler],Object[Instrument,Thermocycler]}]],
 		{
-			plateSealResource = Link[Resource[Sample -> Model[Item, PlateSeal, "qPCR Plate Seal, Clear"], Name -> ToString[Unique[]]]],
+			plateSealResource = Link[Resource[Sample -> Model[Item, PlateSeal, "id:L8kPEjnvlDrN"](* qPCR Plate Seal, Clear *), Name -> ToString[Unique[]]]],
 			capillaryClipResource = Null,
 			capillaryClipGasketResource = Null,
 			uncleStageLid = Null,
@@ -5784,12 +5802,12 @@ experimentThermalShiftResourcePackets[myPooledSamples:ListableP[{ObjectP[Object[
 		{
 			plateSealResource = Null,
 			capillaryStripPlateLoader = If[MatchQ[dynamicLightScatteringCapillaryLoading, Manual],
-				Link[Resource[Sample->Model[Container, Plate, "Uncle 16-capillary strip plate loader V3.0"],Rent->True, Name -> ToString[Unique[]]]],
-				Link[Resource[Sample->Model[Container,Plate,"Uncle 16-capillary strip plate loader"],Rent->True, Name -> ToString[Unique[]]]]
+				Link[Resource[Sample->Model[Container, Plate, "id:3em6ZvLwoEK7"](* Uncle 16-capillary strip plate loader V3.0 *),Rent->True, Name -> ToString[Unique[]]]],
+				Link[Resource[Sample->Model[Container, Plate, "id:GmzlKjP9KdJ9"](* Uncle 16-capillary strip plate loader *),Rent->True, Name -> ToString[Unique[]]]]
 			],
-			capillaryClipResource = Link/@Table[Resource[Sample->Model[Container,Rack,"Uncle capillary strip clip"], Rent->True, Name -> ToString[Unique[]]],reqAssayContainerNum],
-			capillaryClipGasketResource = Link[Resource[Sample->Model[Item,Consumable,"Uncle capillary strip clip gaskets"],Amount->2*reqAssayContainerNum,Name -> ToString[Unique[]]]],
-			uncleStageLid = Link[Resource[Sample->Model[Part,"Uncle sample stage lid"], Rent->True, Name -> ToString[Unique[]]]]
+			capillaryClipResource = Link/@Table[Resource[Sample->Model[Container, Rack, "id:3em6ZvLn3XJW"](* Uncle capillary strip clip *), Rent->True, Name -> ToString[Unique[]]],reqAssayContainerNum],
+			capillaryClipGasketResource = Link[Resource[Sample->Model[Item, Consumable, "id:dORYzZJxz8mG"](* Uncle capillary strip clip gaskets *),Amount->2*reqAssayContainerNum,Name -> ToString[Unique[]]]],
+			uncleStageLid = Link[Resource[Sample->Model[Part, "id:wqW9BP7nKP1R"](* Uncle sample stage lid *), Rent->True, Name -> ToString[Unique[]]]]
 		}
 	];
 
@@ -5975,19 +5993,19 @@ experimentThermalShiftResourcePackets[myPooledSamples:ListableP[{ObjectP[Object[
 		Replace[SamplesOutStorage]->Lookup[expandedResolvedOptions,SamplesOutStorageCondition],
 
 		Replace[Checkpoints] -> {
-			{"Picking Resources",10 Minute,"Samples required to execute this protocol are gathered from storage.", Link[Resource[Operator -> Model[User, Emerald, Operator, "Trainee"], Time -> 10 Minute]]},
-			{"Preparing Samples",30 Minute,"Preprocessing, such as thermal incubation/mixing, centrifugation, and filtration is performed.",Link[Resource[Operator -> Model[User, Emerald, Operator, "Trainee"], Time -> 30 Minute]]},
-			{"Diluting Samples",30 Minute,"Dilution curves or serial dilution curves are generated.",Link[Resource[Operator -> Model[User, Emerald, Operator, "Trainee"], Time -> 30 Minute]]},
-			{"Pooling Samples",30 Minute,"Sample pooling is performed followed by pool mixing and incubation.",Link[Resource[Operator -> Model[User, Emerald, Operator, "Trainee"], Time -> 30 Minute]]},
-			{"Preparing Assay Containers",15 Minute,"Final assay reaction assembly and transfer to assay containers if necessary is performed.",Link[Resource[Operator -> Model[User, Emerald, Operator, "Trainee"], Time -> 15 Minute]]},
-			{"Acquiring Data",instrumentTime,"Thermal cycling is performed and sample measurements are taken.",Link[Resource[Operator -> Model[User, Emerald, Operator, "Trainee"], Time -> instrumentTime]]},
-			{"Sample Post-Processing",5 Minute,"Sample transfer to storage container, if necessary, is performed.", Link[Resource[Operator -> Model[User, Emerald, Operator, "Trainee"], Time -> 5 Minute]]},
-			{"Returning Materials",10 Minute,"Samples are returned to storage.", Link[Resource[Operator -> Model[User, Emerald, Operator, "Trainee"], Time -> 10*Minute]]}
+			{"Picking Resources",10 Minute,"Samples required to execute this protocol are gathered from storage.", Link[Resource[Operator -> $BaselineOperator, Time -> 10 Minute]]},
+			{"Preparing Samples",30 Minute,"Preprocessing, such as thermal incubation/mixing, centrifugation, and filtration is performed.",Link[Resource[Operator -> $BaselineOperator, Time -> 30 Minute]]},
+			{"Diluting Samples",30 Minute,"Dilution curves or serial dilution curves are generated.",Link[Resource[Operator -> $BaselineOperator, Time -> 30 Minute]]},
+			{"Pooling Samples",30 Minute,"Sample pooling is performed followed by pool mixing and incubation.",Link[Resource[Operator -> $BaselineOperator, Time -> 30 Minute]]},
+			{"Preparing Assay Containers",15 Minute,"Final assay reaction assembly and transfer to assay containers if necessary is performed.",Link[Resource[Operator -> $BaselineOperator, Time -> 15 Minute]]},
+			{"Acquiring Data",instrumentTime,"Thermal cycling is performed and sample measurements are taken.",Link[Resource[Operator -> $BaselineOperator, Time -> instrumentTime]]},
+			{"Sample Post-Processing",5 Minute,"Sample transfer to storage container, if necessary, is performed.", Link[Resource[Operator -> $BaselineOperator, Time -> 5 Minute]]},
+			{"Returning Materials",10 Minute,"Samples are returned to storage.", Link[Resource[Operator -> $BaselineOperator, Time -> 10*Minute]]}
 		}
 	|>;
 
 	(* generate a packet with the shared fields *)
-	sharedFieldPacket = Quiet@populateSamplePrepFields[myPooledSamples, myResolvedOptions,Cache->inheritedCache];
+	sharedFieldPacket = Quiet@populateSamplePrepFields[myPooledSamples, myResolvedOptions,Cache->inheritedCache,Simulation->simulation];
 
 	(* Merge the shared fields with the specific fields *)
 	finalizedPacket = Join[sharedFieldPacket, protocolPacket];
@@ -5999,8 +6017,8 @@ experimentThermalShiftResourcePackets[myPooledSamples:ListableP[{ObjectP[Object[
 	(* call fulfillableResourceQ on all the resources we created *)
 	{fulfillable, frqTests} = Which[
 		MatchQ[$ECLApplication, Engine], {True, {}},
-		gatherTests, Resources`Private`fulfillableResourceQ[allResourceBlobs, Output -> {Result, Tests}, FastTrack -> Lookup[myResolvedOptions, FastTrack],Site->Lookup[myResolvedOptions,Site], Cache->inheritedCache],
-		True, {Resources`Private`fulfillableResourceQ[allResourceBlobs, FastTrack -> Lookup[myResolvedOptions, FastTrack],Site->Lookup[myResolvedOptions,Site], Messages -> messages, Cache->inheritedCache], Null}
+		gatherTests, Resources`Private`fulfillableResourceQ[allResourceBlobs, Output -> {Result, Tests}, FastTrack -> Lookup[myResolvedOptions, FastTrack],Site->Lookup[myResolvedOptions,Site], Cache->inheritedCache, Simulation->simulation],
+		True, {Resources`Private`fulfillableResourceQ[allResourceBlobs, FastTrack -> Lookup[myResolvedOptions, FastTrack],Site->Lookup[myResolvedOptions,Site], Messages -> messages, Cache->inheritedCache, Simulation->simulation], Null}
 	];
 
 	(* generate the Preview option; that is always Null *)
