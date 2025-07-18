@@ -296,11 +296,11 @@ DefineTests[
 				Download[Object[Calibration, Volume, "id:10"],CalibrationFunction] := (#^2&)
 			}
 		],
-		Example[{Messages,"MismatchedEmptyAndSampleLenghts","The function will fail if the empty and sample absorbance lists do not match in length:"},
+		Example[{Messages,"MismatchedEmptyAndSampleLengths","The function will fail if the empty and sample absorbance lists do not match in length:"},
 			PathLength[{Object[Data,AbsorbanceSpectroscopy,"id:L8kPEjN3mqBw"],Object[Data,AbsorbanceSpectroscopy,"id:E8zoYveX4Z3A"]},{Object[Data,AbsorbanceSpectroscopy,"id:Y0lXejGp93zv"]},Object[Calibration,PathLength,"id:GmzlKjY5eBrE"]],
 			$Failed,
 			Messages:>{
-				PathLength::MismatchedEmptyAndSampleLenghts
+				PathLength::MismatchedEmptyAndSampleLengths
 			}
 		]
 	}

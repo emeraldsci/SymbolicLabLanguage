@@ -294,7 +294,7 @@ DefineTests[
 
 	Test["No options, single object:",
 		Analysis`Private`opsFromJSON[ECL`AppHelpers`ResolvedOptionsJSON[AnalyzeFractions,{{Object[Data,Chromatography,"id:1ZA60vwj7GRE"]}},{}]],
-		{"0","Null","Null","{0., 65.*Minute}"}
+		{"0","Null","Null","{0, 65*Minute}"}
 	],
 	Test["Yes options, single object:",
 		Analysis`Private`opsFromJSON[ECL`AppHelpers`ResolvedOptionsJSON[AnalyzeFractions,
@@ -305,7 +305,7 @@ DefineTests[
 	],
 	Test["No options, two objects:",
 		Analysis`Private`opsFromJSON[ECL`AppHelpers`ResolvedOptionsJSON[AnalyzeFractions,{{Object[Data,Chromatography,"id:54n6evKxbxRB"],Object[Data,Chromatography,"id:1ZA60vwj7GRE"]}},{}]],
-		{"0","Null","Null","{{0., 65.006667*Minute}, {0., 65.*Minute}}"}
+		{"0","Null","Null","{{0, 65.0067*Minute}, {0, 65*Minute}}"}
 	],
 	Test["Yes options, two objects:",
 		Analysis`Private`opsFromJSON[ECL`AppHelpers`ResolvedOptionsJSON[AnalyzeFractions,{{Object[Data,Chromatography,"id:54n6evKxbxRB"],Object[Data,Chromatography,"id:1ZA60vwj7GRE"]}},{TopPeaks->{2,1},Exclude->{{5},{1,2}},Domain->{{10Minute,50Minute},{5Minute,33Minute}}}]],

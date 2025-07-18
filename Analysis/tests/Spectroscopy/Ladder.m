@@ -873,7 +873,7 @@ DefineTests[
   SymbolTearDown :> (
     Quiet[EraseObject[$CreatedObjects, Force -> True]];
     Unset[$CreatedObjects]
-  )
+  ),
 	Platform->{"Windows"}
 ];
 

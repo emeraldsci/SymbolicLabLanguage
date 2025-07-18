@@ -1,3 +1,673 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:5302909ce78521c9e034a6b2674b6738cbbe05e76d3e92b02dc58de4355ebef7
-size 28195
+(* Content-type: application/vnd.wolfram.mathematica *)
+
+(*** Wolfram Notebook File ***)
+(* http://www.wolfram.com/nb *)
+
+(* CreatedBy='Mathematica 11.3' *)
+
+(*CacheID: 234*)
+(* Internal cache information:
+NotebookFileLineBreakTest
+NotebookFileLineBreakTest
+NotebookDataPosition[       158,          7]
+NotebookDataLength[     27322,        663]
+NotebookOptionsPosition[     18933,        518]
+NotebookOutlinePosition[     20514,        556]
+CellTagsIndexPosition[     20471,        553]
+WindowTitle->ExperimentAnalysis
+WindowFrame->Normal*)
+
+(* Beginning of Notebook Content *)
+Notebook[{
+Cell[BoxData[GridBox[{
+   {GridBox[{
+      {
+       ItemBox[Cell[BoxData[
+         RowBox[{
+          InterpretationBox[
+           StyleBox[
+            GraphicsBox[{},
+             BaselinePosition->Baseline,
+             ImageSize->{8, 0}],
+            CacheGraphics->False],
+           Spacer[8],
+           Selectable->False], Cell["EMERALD GUIDE", "PacletNameCell",
+           TextAlignment->Center,ExpressionUUID->
+           "7908e89f-b893-47ac-459a-a815c351d89e"], 
+          InterpretationBox[
+           StyleBox[
+            GraphicsBox[{},
+             BaselinePosition->Baseline,
+             ImageSize->{8, 0}],
+            CacheGraphics->False],
+           Spacer[8],
+           Selectable->False]}]],
+         TextAlignment->Center,ExpressionUUID->
+         "867f6861-a9ab-4486-7f3f-3ad8f927adfb"],
+        Background->RGBColor[
+         0.24313725490196078`, 0.27058823529411763`, 0.2980392156862745],
+        ItemSize->Full], ""}
+     },
+     GridBoxAlignment->{"Rows" -> {{Center}}},
+     GridBoxItemSize->{"Columns" -> {Full, 
+         Scaled[0.02]}, "Rows" -> {{2.5}}}], Cell[TextData[{
+     Cell[BoxData[
+      ActionMenuBox[
+       FrameBox[Cell[TextData[{
+         "Functions",
+         " ",
+         Cell[BoxData[
+          GraphicsBox[
+           {RGBColor[183/256., 197/256., 211/256.], Thickness[0.13], 
+            LineBox[{{-1.8, 0.5}, {0, 0}, {1.8, 0.5}}]},
+           AspectRatio->1,
+           ImageSize->20,
+           PlotRange->{{-3, 4}, {-1, 1}}]],ExpressionUUID->
+          "e79ae3c3-d607-4413-96d7-5bf948281cf1"]
+        }],ExpressionUUID->"6f0c616e-5add-4041-9bab-0e2a284e8a6d"],
+        StripOnInput->False], {"\<\"AnalyzeAbsorbanceQuantification\"\>":>
+       Documentation`HelpLookup[
+       "paclet:EmeraldAnalysis/ref/AnalyzeAbsorbanceQuantification"], \
+"\<\"AnalyzeCellCount\"\>":>Documentation`HelpLookup[
+       "paclet:EmeraldAnalysis/ref/AnalyzeCellCount"], "\<\"AnalyzeCopyNumber\
+\"\>":>Documentation`HelpLookup[
+       "paclet:EmeraldAnalysis/ref/AnalyzeCopyNumber"], "\<\"AnalyzeFractions\
+\"\>":>Documentation`HelpLookup[
+       "paclet:EmeraldAnalysis/ref/AnalyzeFractions"], \
+"\<\"AnalyzeGating\"\>":>Documentation`HelpLookup[
+       "paclet:EmeraldAnalysis/ref/AnalyzeGating"], "\<\"AnalyzeKinetics\"\>":>
+       Documentation`HelpLookup[
+       "paclet:EmeraldAnalysis/ref/AnalyzeKinetics"], "\<\"AnalyzeLadder\"\>":>
+       Documentation`HelpLookup[
+       "paclet:EmeraldAnalysis/ref/AnalyzeLadder"], \
+"\<\"AnalyzeMeltingPoint\"\>":>Documentation`HelpLookup[
+       "paclet:EmeraldAnalysis/ref/AnalyzeMeltingPoint"], \
+"\<\"AnalyzeMicroscopeOverlay\"\>":>Documentation`HelpLookup[
+       "paclet:EmeraldAnalysis/ref/AnalyzeMicroscopeOverlay"], \
+"\<\"AnalyzePeaks\"\>":>Documentation`HelpLookup[
+       "paclet:EmeraldAnalysis/ref/AnalyzePeaks"], \
+"\<\"AnalyzeQuantificationCycle\"\>":>Documentation`HelpLookup[
+       "paclet:EmeraldAnalysis/ref/AnalyzeQuantificationCycle"], \
+"\<\"AnalyzeThermodynamics\"\>":>Documentation`HelpLookup[
+       "paclet:EmeraldAnalysis/ref/AnalyzeThermodynamics"], \
+"\<\"AnalyzeTotalProteinQuantification\"\>":>Documentation`HelpLookup[
+       "paclet:EmeraldAnalysis/ref/AnalyzeTotalProteinQuantification"]},
+       LineSpacing -> {1.4, 0},
+       Appearance->None,
+       MenuAppearance->Automatic,
+       MenuStyle->"GuideFunction"]],ExpressionUUID->
+      "526b7615-6387-46d8-9f2a-8616396d73ec"],
+     "\[ThickSpace]\[ThickSpace]\[ThickSpace]\[ThickSpace]\[ThickSpace]\
+\[ThickSpace]",
+     Cell[BoxData[
+      ActionMenuBox[
+       FrameBox[Cell[TextData[{
+         "Related Guides",
+         " ",
+         Cell[BoxData[
+          GraphicsBox[
+           {RGBColor[183/256., 197/256., 211/256.], Thickness[0.13], 
+            LineBox[{{-1.8, 0.5}, {0, 0}, {1.8, 0.5}}]},
+           AspectRatio->1,
+           ImageSize->20,
+           PlotRange->{{-3, 4}, {-1, 1}}]],ExpressionUUID->
+          "b9e847cb-373d-41da-bf20-191ad5c36c77"]
+        }],ExpressionUUID->"af76c8df-f8e8-40f8-b85b-afb14d246472"],
+        StripOnInput->False], {"\<\"Analysis Categories\"\>":>
+       Documentation`HelpLookup[
+       "paclet:EmeraldAnalysis/guide/AnalysisCategories"]},
+       LineSpacing -> {1.4, 0},
+       Appearance->None,
+       MenuAppearance->Automatic,
+       MenuStyle->"GuideFunction"]],ExpressionUUID->
+      "04a3bd27-0896-4f71-852e-0a7afb3f0a73"]
+    }], "AnchorBar",ExpressionUUID->"46fda9e5-bc6b-4aac-ab31-716418650cf7"]}
+  }]], "AnchorBarGrid",
+ CellID->1,ExpressionUUID->"80b3b223-099a-4f5d-a38f-02c09faa85aa"],
+
+Cell["Experiment Analysis", "GuideTitle",
+ CellID->97462064,ExpressionUUID->"692793af-d64d-4431-ae08-b43ba77acbf9"],
+
+Cell["", "GuideAbstract",
+ CellID->389688243,ExpressionUUID->"36b39131-39d3-4f0c-9727-c67a709f9b24"],
+
+Cell["\t", "GuideDelimiterSubsection",
+ CellID->95767887,ExpressionUUID->"7601719f-1f7f-4ecb-a22f-0fc105c1a261"],
+
+Cell["Chromatography", "GuideFunctionsSubsection",
+ CellID->3120420,ExpressionUUID->"9c62e28e-ebe1-4b73-8521-3e8cadac65b8"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["AnalyzePeaks"]],"paclet:EmeraldAnalysis/ref/AnalyzePeaks"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "df50f4d3-8129-4d92-a0ac-17389cf135e5"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Pick peaks from a chromatograph."
+}], "GuideText",
+ CellID->302210964,ExpressionUUID->"ad874be7-deeb-42d2-9254-7289ecceee26"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["AnalyzeLadder"]],"paclet:EmeraldAnalysis/ref/AnalyzeLadder"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "187ac257-da22-43d0-94ff-1fb75002c986"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Associate ladder peak positions with lengths and fit expression relating \
+retention time to oligomer length."
+}], "GuideText",
+ CellID->732005872,ExpressionUUID->"04c85ad1-5391-484c-ae8e-79c8ca850900"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["AnalyzeFractions"]],
+    "paclet:EmeraldAnalysis/ref/AnalyzeFractions"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "58e4144c-c760-4881-b4fa-a2528ce2edd0"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Select fractions samples from all collected fractions."
+}], "GuideText",
+ CellID->11956512,ExpressionUUID->"40481bdc-f43d-4486-8742-4e7514703b25"],
+
+Cell["\t", "GuideDelimiterSubsection",
+ CellID->271407760,ExpressionUUID->"1e51501a-17dd-440d-b62e-c8e4ce42790f"],
+
+Cell["AbsorbanceThermodynamics", "GuideFunctionsSubsection",
+ CellID->220061074,ExpressionUUID->"20607d5a-2723-42fa-a8e1-ccb73c35b2ac"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["AnalyzeMeltingPoint"]],
+    "paclet:EmeraldAnalysis/ref/AnalyzeMeltingPoint"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "5f6b49d1-da19-4b9c-a1b0-f76749a025cc"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Determine melting points in melting or cooling curves."
+}], "GuideText",
+ CellID->474503687,ExpressionUUID->"32678966-81bc-401b-b020-f31b9152b3ba"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["AnalyzeThermodynamics"]],
+    "paclet:EmeraldAnalysis/ref/AnalyzeThermodynamics"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "15b5c42f-f7c0-449a-9f1c-dc4a6761e8c5"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Determine enthalpy and entropy values from a set of melting point analyses."
+}], "GuideText",
+ CellID->87432165,ExpressionUUID->"ec461c2a-c566-45ca-b407-c6c9da3b17e1"],
+
+Cell["\t", "GuideDelimiterSubsection",
+ CellID->40843681,ExpressionUUID->"760375a1-6697-496b-84dc-4bcb6d88a21e"],
+
+Cell["Quantification", "GuideFunctionsSubsection",
+ CellID->156540860,ExpressionUUID->"1705e8c2-7db3-41e3-8f39-1c5840832aa2"],
+
+Cell[TextData[Cell[BoxData[
+ TemplateBox[{Cell[
+    TextData["AnalyzeAbsorbanceQuantification"]],
+   "paclet:EmeraldAnalysis/ref/AnalyzeAbsorbanceQuantification"},
+  "RefLink",
+  BaseStyle->
+   "InlineFunctionSans"]], \
+"InlineFunctionSans",ExpressionUUID->"84b6aa52-6cfb-4826-b348-a3e754841df1"]],\
+ "InlineGuideFunctionListing",
+ CellID->52227555,ExpressionUUID->"a2de60d7-bee7-4f2e-965a-f320bb32d7df"],
+
+Cell[TextData[Cell[BoxData[
+ TemplateBox[{Cell[
+    TextData["AnalyzeTotalProteinQuantification"]],
+   "paclet:EmeraldAnalysis/ref/AnalyzeTotalProteinQuantification"},
+  "RefLink",
+  BaseStyle->
+   "InlineFunctionSans"]], \
+"InlineFunctionSans",ExpressionUUID->"e8cdffd0-93eb-4a04-85e3-4a84924e4ee4"]],\
+ "InlineGuideFunctionListing",
+ CellID->141773490,ExpressionUUID->"8adaf89f-525c-4a88-850c-f4b226d6b37c"],
+
+Cell["\t", "GuideDelimiterSubsection",
+ CellID->524899129,ExpressionUUID->"b26eed13-b7c1-4af5-8152-783ff81601c6"],
+
+Cell["QPCR", "GuideFunctionsSubsection",
+ CellID->212675896,ExpressionUUID->"248a5de6-c2ff-407d-ae93-50cb8ca76bd1"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["AnalyzeQuantificationCycle"]],
+    "paclet:EmeraldAnalysis/ref/AnalyzeQuantificationCycle"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "63e2f479-adf9-4d96-904d-b6537230f069"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Calculate quantification cycle from an amplification curve."
+}], "GuideText",
+ CellID->524110416,ExpressionUUID->"49ece6a9-45a9-4d46-bd4f-0d4a7d716bf6"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["AnalyzeCopyNumber"]],
+    "paclet:EmeraldAnalysis/ref/AnalyzeCopyNumber"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "81e0e5d5-e680-45b7-9909-bc254f53d21a"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Compute copy number from quantification cycle and standard curve."
+}], "GuideText",
+ CellID->552259234,ExpressionUUID->"a07f8ead-2dcf-4b87-a1cc-5dfd5fe8492a"],
+
+Cell["\t", "GuideDelimiterSubsection",
+ CellID->45355105,ExpressionUUID->"5a9b3f1b-3594-4559-99de-8e243e07b490"],
+
+Cell["NMR", "GuideFunctionsSubsection",
+ CellID->133057306,ExpressionUUID->"e08c7f17-a738-40cc-bc77-74053ed7338b"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["AnalyzePeaks"]],"paclet:EmeraldAnalysis/ref/AnalyzePeaks"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "66e682dc-183b-4b15-ab70-92e9c919c57a"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Pick peaks from NMR spectrum."
+}], "GuideText",
+ CellID->252430474,ExpressionUUID->"a256fda6-18a6-43ee-b823-7bc0d74a4ec7"],
+
+Cell["\t", "GuideDelimiterSubsection",
+ CellID->464361891,ExpressionUUID->"99637f11-512e-47dc-8259-3f2c1271ccfa"],
+
+Cell["MassSpectrometry", "GuideFunctionsSubsection",
+ CellID->392951400,ExpressionUUID->"4d60e65e-a5bb-4eee-96c7-8a0a07663f71"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["AnalyzePeaks"]],"paclet:EmeraldAnalysis/ref/AnalyzePeaks"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "9f4682dc-988d-4da4-ab8c-3715e1f5465e"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Pick peaks from mass spectrum."
+}], "GuideText",
+ CellID->40873957,ExpressionUUID->"d3af1ed2-680e-4411-a360-a171b6c1e0a7"],
+
+Cell["\t", "GuideDelimiterSubsection",
+ CellID->93089050,ExpressionUUID->"cd275737-fb64-4ce2-9b37-9a983ecb8c2d"],
+
+Cell["Western", "GuideFunctionsSubsection",
+ CellID->131458758,ExpressionUUID->"6bb02a73-afd4-4aa3-b693-121f32a5b61a"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["AnalyzePeaks"]],"paclet:EmeraldAnalysis/ref/AnalyzePeaks"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "93d5990f-3b67-48c9-8b35-579d186e7c0d"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Pick peaks from mass spectrum."
+}], "GuideText",
+ CellID->2457775,ExpressionUUID->"9cd3b04c-848b-4504-8256-9d3a5f1834cc"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["AnalyzeLadder"]],"paclet:EmeraldAnalysis/ref/AnalyzeLadder"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "a67f0ab7-bb72-47ae-9d75-bc8c4465ba37"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Associate ladder peak positions with lengths and fit expression relating \
+retention position to oligomer length."
+}], "GuideText",
+ CellID->280322681,ExpressionUUID->"b4245081-eebb-42a7-814a-834ed8952c1c"],
+
+Cell["\t", "GuideDelimiterSubsection",
+ CellID->126306917,ExpressionUUID->"d5bd869c-5051-49a2-8098-6571907540c1"],
+
+Cell["AbsorbanceSpectroscopy", "GuideFunctionsSubsection",
+ CellID->411198745,ExpressionUUID->"12794e8a-3452-442e-8220-11c4f228f21c"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["AnalyzePeaks"]],"paclet:EmeraldAnalysis/ref/AnalyzePeaks"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "d11542d0-cc73-4990-912f-1675629cf9c3"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Pick peaks from absorbance spectrum."
+}], "GuideText",
+ CellID->627751506,ExpressionUUID->"fde18c9f-4f53-4b2a-b4e9-7e2b121aeafe"],
+
+Cell["\t", "GuideDelimiterSubsection",
+ CellID->427987,ExpressionUUID->"752eda5a-d4b1-4767-a58b-d96644e87548"],
+
+Cell["PAGE", "GuideFunctionsSubsection",
+ CellID->286607329,ExpressionUUID->"34282c22-0490-4dd5-8300-2bde5d14f5db"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["AnalyzePeaks"]],"paclet:EmeraldAnalysis/ref/AnalyzePeaks"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "731aaae1-3eb9-4d45-adf0-ad3a19aa3284"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Pick peaks from lane image intensity."
+}], "GuideText",
+ CellID->844600177,ExpressionUUID->"4b7ea0f0-0890-4c4e-bc70-8d03e8befaf0"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["AnalyzeLadder"]],"paclet:EmeraldAnalysis/ref/AnalyzeLadder"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "e36cbc67-f149-4d11-8229-a61f30269f06"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " "
+}], "GuideText",
+ CellID->665512050,ExpressionUUID->"26238d6d-d7f7-4a96-8ea5-c72a6e54d8d1"],
+
+Cell["\t", "GuideDelimiterSubsection",
+ CellID->142536556,ExpressionUUID->"12ee8a15-cb32-4b4b-9275-66787770dc03"],
+
+Cell["TLC", "GuideFunctionsSubsection",
+ CellID->404309030,ExpressionUUID->"90e70fea-a787-49aa-9c79-74ee668f062e"],
+
+Cell[TextData[Cell[BoxData[
+ TemplateBox[{Cell[
+    TextData["AnalyzePeaks"]],"paclet:EmeraldAnalysis/ref/AnalyzePeaks"},
+  "RefLink",
+  BaseStyle->
+   "InlineFunctionSans"]], \
+"InlineFunctionSans",ExpressionUUID->"105ed6e0-28d7-4142-a742-d2b2fc3eab19"]],\
+ "InlineGuideFunctionListing",
+ CellID->903780710,ExpressionUUID->"aafec9cc-5761-4257-abb2-fbdc5601b366"],
+
+Cell["\t", "GuideDelimiterSubsection",
+ CellID->355945497,ExpressionUUID->"f3c35ac1-7622-4f47-84d4-9051de48d18e"],
+
+Cell["Microscope", "GuideFunctionsSubsection",
+ CellID->182205665,ExpressionUUID->"337c31c9-9780-4f62-baca-7d2cff690ee8"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["AnalyzeCellCount"]],
+    "paclet:EmeraldAnalysis/ref/AnalyzeCellCount"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "36c2c589-0e66-42ba-94d8-23da26609b3c"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Count cells in a micropscope image."
+}], "GuideText",
+ CellID->495606813,ExpressionUUID->"95d3485f-9e01-4981-a9a7-58b844082ccd"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["AnalyzeMicroscopeOverlay"]],
+    "paclet:EmeraldAnalysis/ref/AnalyzeMicroscopeOverlay"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "fd8c4c37-f667-4455-9246-04acf42ab717"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " "
+}], "GuideText",
+ CellID->371067668,ExpressionUUID->"a79f7693-1081-4edd-b29b-99588d2f54fb"],
+
+Cell["\t", "GuideDelimiterSubsection",
+ CellID->88513375,ExpressionUUID->"3262d91e-56cf-4ce6-8155-6bb7eb2926f2"],
+
+Cell["FluorescenceKinetics", "GuideFunctionsSubsection",
+ CellID->112647747,ExpressionUUID->"234f774f-6978-4680-b910-5eb4dd1bfcbb"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["AnalyzeKinetics"]],
+    "paclet:EmeraldAnalysis/ref/AnalyzeKinetics"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "9b3590ad-0468-42c4-aa81-16e330db80a4"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " Find a mechansim's kinetic rates from fluorescence kinetics trajectories."
+}], "GuideText",
+ CellID->529138318,ExpressionUUID->"c53e4bed-7f87-41d8-a030-c1e3d328a55d"],
+
+Cell["\t", "GuideDelimiterSubsection",
+ CellID->25318179,ExpressionUUID->"31165c44-ee99-46d0-8de8-eaea6fe8e1d3"],
+
+Cell["FlowCytommetry", "GuideFunctionsSubsection",
+ CellID->21652164,ExpressionUUID->"bf3ce6dd-4999-44b7-9b0c-be5af7dc926b"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  TemplateBox[{Cell[
+     TextData["AnalyzeGating"]],"paclet:EmeraldAnalysis/ref/AnalyzeGating"},
+   "RefLink",
+   BaseStyle->"InlineFunctionSans"]], "InlineFunctionSans",ExpressionUUID->
+  "e5c54651-7685-431e-a5fe-2626c9a26526"],
+ " ",
+ StyleBox["\[LongDash]", "GuideEmDash"],
+ " "
+}], "GuideText",
+ CellID->58704172,ExpressionUUID->"679c9045-b38f-45d8-ae8c-ff86bce894dc"],
+
+Cell["", "SectionFooterSpacer",
+ CellID->61364733,ExpressionUUID->"7e0e937e-249d-4d45-8d0b-2b1658a89cd2"],
+
+Cell[TextData[{
+ Cell[BoxData[
+  InterpretationBox[
+   StyleBox[
+    GraphicsBox[{},
+     BaselinePosition->Baseline,
+     ImageSize->{6, 0}],
+    CacheGraphics->False],
+   Spacer[6]]],ExpressionUUID->"cfab685b-9505-4dc8-aefe-140c0f673b88"],
+ "Related Guides"
+}], "GuideMoreAboutSection",
+ WholeCellGroupOpener->True,
+ CellID->11250279,ExpressionUUID->"e4075c1d-3822-4e10-ae21-af160a908b64"],
+
+Cell["", "SectionHeaderSpacer",
+ CellID->428318994,ExpressionUUID->"b880c766-9c3f-4016-a5a5-3c251f658a6a"],
+
+Cell[BoxData[
+ TemplateBox[{Cell[
+    TextData["Analysis Categories"]],
+   "paclet:EmeraldAnalysis/guide/AnalysisCategories"},
+  "RefLink",
+  BaseStyle->"GuideMoreAboutSub"]], "GuideMoreAboutSub",
+ CellID->168817813,ExpressionUUID->"3511e887-25cc-45ed-984e-25d9916de781"],
+
+Cell["", "FooterCell",
+ CellID->8812639,ExpressionUUID->"1162cdc1-1881-4cf8-ba07-3906540e34ab"]
+},
+Saveable->False,
+ScreenStyleEnvironment->"Working",
+WindowSize->{775, 872},
+WindowMargins->{{564, Automatic}, {Automatic, 54}},
+WindowTitle->"ExperimentAnalysis",
+Visible->False,
+TaggingRules->{
+ "ModificationHighlight" -> False, "ColorType" -> "GuideColor", 
+  "ExampleCounter" -> 1, "NeedPlatMsgIn" -> None, "RootCaptions" -> "", 
+  "Metadata" -> {
+   "built" -> "Wed 16 May 2018 21:58:51", "context" -> "Emerald`Analysis`", 
+    "keywords" -> {
+     "AnalyzePeaks", "AnalyzeLadder", "AnalyzeFractions", 
+      "AnalyzeMeltingPoint", "AnalyzeThermodynamics", 
+      "AnalyzeAbsorbanceQuantification", "AnalyzeTotalProteinQuantification", 
+      "AnalyzeQuantificationCycle", "AnalyzeCopyNumber", "AnalyzeCellCount", 
+      "AnalyzeMicroscopeOverlay", "AnalyzeKinetics", "AnalyzeGating"}, 
+    "specialkeywords" -> {}, "tutorialcollectionlinks" -> {}, "index" -> True,
+     "label" -> "ECL Guide", "language" -> "en", "paclet" -> 
+    "EmeraldAnalysis", "status" -> "None", "summary" -> "", "synonyms" -> {}, 
+    "titlemodifier" -> "", "Windowtitle" -> "ExperimentAnalysis", "title" -> 
+    "ExperimentAnalysis", "type" -> "Guide", "uri" -> 
+    "EmeraldAnalysis/guide/ExperimentAnalysis", "WorkflowDockedCell" -> ""}, 
+  "SearchTextTranslated" -> "", "LinkTrails" -> ""},
+FrontEndVersion->"11.3 for Microsoft Windows (64-bit) (March 6, 2018)",
+StyleDefinitions->"EmeraldReference.nb",
+CharacterEncoding -> "UTF-8"
+]
+(* End of Notebook Content *)
+
+(* Internal cache information *)
+(*CellTagsOutline
+CellTagsIndex->{}
+*)
+(*CellTagsIndex
+CellTagsIndex->{}
+*)
+(*NotebookFileOutline
+Notebook[{
+Cell[590, 21, 4520, 104, 58, "AnchorBarGrid",ExpressionUUID->"80b3b223-099a-4f5d-a38f-02c09faa85aa",
+ CellID->1],
+Cell[5113, 127, 115, 1, 50, "GuideTitle",ExpressionUUID->"692793af-d64d-4431-ae08-b43ba77acbf9",
+ CellID->97462064],
+Cell[5231, 130, 100, 1, 31, "GuideAbstract",ExpressionUUID->"36b39131-39d3-4f0c-9727-c67a709f9b24",
+ CellID->389688243],
+Cell[5334, 133, 112, 1, 22, "GuideDelimiterSubsection",ExpressionUUID->"7601719f-1f7f-4ecb-a22f-0fc105c1a261",
+ CellID->95767887],
+Cell[5449, 136, 123, 1, 36, "GuideFunctionsSubsection",ExpressionUUID->"9c62e28e-ebe1-4b73-8521-3e8cadac65b8",
+ CellID->3120420],
+Cell[5575, 139, 435, 11, 31, "GuideText",ExpressionUUID->"ad874be7-deeb-42d2-9254-7289ecceee26",
+ CellID->302210964],
+Cell[6013, 152, 514, 12, 58, "GuideText",ExpressionUUID->"04c85ad1-5391-484c-ae8e-79c8ca850900",
+ CellID->732005872],
+Cell[6530, 166, 469, 12, 35, "GuideText",ExpressionUUID->"40481bdc-f43d-4486-8742-4e7514703b25",
+ CellID->11956512],
+Cell[7002, 180, 113, 1, 22, "GuideDelimiterSubsection",ExpressionUUID->"1e51501a-17dd-440d-b62e-c8e4ce42790f",
+ CellID->271407760],
+Cell[7118, 183, 135, 1, 36, "GuideFunctionsSubsection",ExpressionUUID->"20607d5a-2723-42fa-a8e1-ccb73c35b2ac",
+ CellID->220061074],
+Cell[7256, 186, 476, 12, 31, "GuideText",ExpressionUUID->"32678966-81bc-401b-b020-f31b9152b3ba",
+ CellID->474503687],
+Cell[7735, 200, 500, 12, 35, "GuideText",ExpressionUUID->"ec461c2a-c566-45ca-b407-c6c9da3b17e1",
+ CellID->87432165],
+Cell[8238, 214, 112, 1, 22, "GuideDelimiterSubsection",ExpressionUUID->"760375a1-6697-496b-84dc-4bcb6d88a21e",
+ CellID->40843681],
+Cell[8353, 217, 125, 1, 36, "GuideFunctionsSubsection",ExpressionUUID->"1705e8c2-7db3-41e3-8f39-1c5840832aa2",
+ CellID->156540860],
+Cell[8481, 220, 404, 9, 23, "InlineGuideFunctionListing",ExpressionUUID->"a2de60d7-bee7-4f2e-965a-f320bb32d7df",
+ CellID->52227555],
+Cell[8888, 231, 409, 9, 23, "InlineGuideFunctionListing",ExpressionUUID->"8adaf89f-525c-4a88-850c-f4b226d6b37c",
+ CellID->141773490],
+Cell[9300, 242, 113, 1, 22, "GuideDelimiterSubsection",ExpressionUUID->"b26eed13-b7c1-4af5-8152-783ff81601c6",
+ CellID->524899129],
+Cell[9416, 245, 115, 1, 36, "GuideFunctionsSubsection",ExpressionUUID->"248a5de6-c2ff-407d-ae93-50cb8ca76bd1",
+ CellID->212675896],
+Cell[9534, 248, 495, 12, 31, "GuideText",ExpressionUUID->"49ece6a9-45a9-4d46-bd4f-0d4a7d716bf6",
+ CellID->524110416],
+Cell[10032, 262, 483, 12, 35, "GuideText",ExpressionUUID->"a07f8ead-2dcf-4b87-a1cc-5dfd5fe8492a",
+ CellID->552259234],
+Cell[10518, 276, 112, 1, 22, "GuideDelimiterSubsection",ExpressionUUID->"5a9b3f1b-3594-4559-99de-8e243e07b490",
+ CellID->45355105],
+Cell[10633, 279, 114, 1, 36, "GuideFunctionsSubsection",ExpressionUUID->"e08c7f17-a738-40cc-bc77-74053ed7338b",
+ CellID->133057306],
+Cell[10750, 282, 432, 11, 31, "GuideText",ExpressionUUID->"a256fda6-18a6-43ee-b823-7bc0d74a4ec7",
+ CellID->252430474],
+Cell[11185, 295, 113, 1, 22, "GuideDelimiterSubsection",ExpressionUUID->"99637f11-512e-47dc-8259-3f2c1271ccfa",
+ CellID->464361891],
+Cell[11301, 298, 127, 1, 36, "GuideFunctionsSubsection",ExpressionUUID->"4d60e65e-a5bb-4eee-96c7-8a0a07663f71",
+ CellID->392951400],
+Cell[11431, 301, 432, 11, 31, "GuideText",ExpressionUUID->"d3af1ed2-680e-4411-a360-a171b6c1e0a7",
+ CellID->40873957],
+Cell[11866, 314, 112, 1, 22, "GuideDelimiterSubsection",ExpressionUUID->"cd275737-fb64-4ce2-9b37-9a983ecb8c2d",
+ CellID->93089050],
+Cell[11981, 317, 118, 1, 36, "GuideFunctionsSubsection",ExpressionUUID->"6bb02a73-afd4-4aa3-b693-121f32a5b61a",
+ CellID->131458758],
+Cell[12102, 320, 431, 11, 31, "GuideText",ExpressionUUID->"9cd3b04c-848b-4504-8256-9d3a5f1834cc",
+ CellID->2457775],
+Cell[12536, 333, 518, 12, 58, "GuideText",ExpressionUUID->"b4245081-eebb-42a7-814a-834ed8952c1c",
+ CellID->280322681],
+Cell[13057, 347, 113, 1, 22, "GuideDelimiterSubsection",ExpressionUUID->"d5bd869c-5051-49a2-8098-6571907540c1",
+ CellID->126306917],
+Cell[13173, 350, 133, 1, 36, "GuideFunctionsSubsection",ExpressionUUID->"12794e8a-3452-442e-8220-11c4f228f21c",
+ CellID->411198745],
+Cell[13309, 353, 439, 11, 31, "GuideText",ExpressionUUID->"fde18c9f-4f53-4b2a-b4e9-7e2b121aeafe",
+ CellID->627751506],
+Cell[13751, 366, 110, 1, 22, "GuideDelimiterSubsection",ExpressionUUID->"752eda5a-d4b1-4767-a58b-d96644e87548",
+ CellID->427987],
+Cell[13864, 369, 115, 1, 36, "GuideFunctionsSubsection",ExpressionUUID->"34282c22-0490-4dd5-8300-2bde5d14f5db",
+ CellID->286607329],
+Cell[13982, 372, 440, 11, 31, "GuideText",ExpressionUUID->"4b7ea0f0-0890-4c4e-bc70-8d03e8befaf0",
+ CellID->844600177],
+Cell[14425, 385, 405, 11, 35, "GuideText",ExpressionUUID->"26238d6d-d7f7-4a96-8ea5-c72a6e54d8d1",
+ CellID->665512050],
+Cell[14833, 398, 113, 1, 22, "GuideDelimiterSubsection",ExpressionUUID->"12ee8a15-cb32-4b4b-9275-66787770dc03",
+ CellID->142536556],
+Cell[14949, 401, 114, 1, 36, "GuideFunctionsSubsection",ExpressionUUID->"90e70fea-a787-49aa-9c79-74ee668f062e",
+ CellID->404309030],
+Cell[15066, 404, 363, 8, 23, "InlineGuideFunctionListing",ExpressionUUID->"aafec9cc-5761-4257-abb2-fbdc5601b366",
+ CellID->903780710],
+Cell[15432, 414, 113, 1, 22, "GuideDelimiterSubsection",ExpressionUUID->"f3c35ac1-7622-4f47-84d4-9051de48d18e",
+ CellID->355945497],
+Cell[15548, 417, 121, 1, 36, "GuideFunctionsSubsection",ExpressionUUID->"337c31c9-9780-4f62-baca-7d2cff690ee8",
+ CellID->182205665],
+Cell[15672, 420, 451, 12, 31, "GuideText",ExpressionUUID->"95d3485f-9e01-4981-a9a7-58b844082ccd",
+ CellID->495606813],
+Cell[16126, 434, 432, 12, 35, "GuideText",ExpressionUUID->"a79f7693-1081-4edd-b29b-99588d2f54fb",
+ CellID->371067668],
+Cell[16561, 448, 112, 1, 22, "GuideDelimiterSubsection",ExpressionUUID->"3262d91e-56cf-4ce6-8155-6bb7eb2926f2",
+ CellID->88513375],
+Cell[16676, 451, 131, 1, 36, "GuideFunctionsSubsection",ExpressionUUID->"234f774f-6978-4680-b910-5eb4dd1bfcbb",
+ CellID->112647747],
+Cell[16810, 454, 487, 12, 31, "GuideText",ExpressionUUID->"c53e4bed-7f87-41d8-a030-c1e3d328a55d",
+ CellID->529138318],
+Cell[17300, 468, 112, 1, 22, "GuideDelimiterSubsection",ExpressionUUID->"31165c44-ee99-46d0-8de8-eaea6fe8e1d3",
+ CellID->25318179],
+Cell[17415, 471, 124, 1, 36, "GuideFunctionsSubsection",ExpressionUUID->"bf3ce6dd-4999-44b7-9b0c-be5af7dc926b",
+ CellID->21652164],
+Cell[17542, 474, 404, 11, 31, "GuideText",ExpressionUUID->"679c9045-b38f-45d8-ae8c-ff86bce894dc",
+ CellID->58704172],
+Cell[17949, 487, 105, 1, 29, "SectionFooterSpacer",ExpressionUUID->"7e0e937e-249d-4d45-8d0b-2b1658a89cd2",
+ CellID->61364733],
+Cell[18057, 490, 391, 12, 72, "GuideMoreAboutSection",ExpressionUUID->"e4075c1d-3822-4e10-ae21-af160a908b64",
+ CellID->11250279],
+Cell[18451, 504, 106, 1, 14, "SectionHeaderSpacer",ExpressionUUID->"b880c766-9c3f-4016-a5a5-3c251f658a6a",
+ CellID->428318994],
+Cell[18560, 507, 271, 6, 24, "GuideMoreAboutSub",ExpressionUUID->"3511e887-25cc-45ed-984e-25d9916de781",
+ CellID->168817813],
+Cell[18834, 515, 95, 1, 41, "FooterCell",ExpressionUUID->"1162cdc1-1881-4cf8-ba07-3906540e34ab",
+ CellID->8812639]
+}
+]
+*)
+
+(* End of internal cache information *)
+

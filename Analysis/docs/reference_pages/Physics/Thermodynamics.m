@@ -78,12 +78,7 @@ DefineUsageWithCompanions[AnalyzeThermodynamics,
 		"SimulateFreeEnergy"
 	},
 	Author -> {
-		"jay.li",
-		"david.hattery",
-		"qian",
-		"brad",
-		"jonathan",
-		"jenny"
+		"scicomp"
 	},
 	Guides -> {
 		"AnalysisCategories",

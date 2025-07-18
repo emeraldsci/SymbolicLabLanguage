@@ -394,6 +394,16 @@ AnalyzeMicroscopeOverlay[myData:ListableP[ObjectP[Object[Data,Microscope]]], myO
 		Null
 	];
 
+	(* return early here to prevent trainwrecking if we already know we're done *)
+	If[MatchQ[resolvedOptionsResult, $Failed],
+		Return[outputSpecification /. Flatten[{
+			optionsRule,
+			testsRule,
+			Preview -> Null,
+			Result -> $Failed
+		}]]
+	];
+
 	(* Prepare the upload packets if either Preview or Result is specified *)
 	dataPacket = If[MemberQ[output,Alternatives[Preview,Result]],
 		Module[

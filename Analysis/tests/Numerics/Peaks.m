@@ -626,7 +626,7 @@ DefineTests[AnalyzePeaks, {
 			Unset[$CreatedObjects]
 		)
 	],
-    
+
     Test["Supports AgaroseGelElectrophoresis data with negative sampleElectropherogramData:",
         Download[
             AnalyzePeaks[

@@ -1271,8 +1271,8 @@ combineHistWithFrame[hist_,frameImage_]:= Module[
 	  ImageSize option for image seems to only affect the hist image, not the frame image.
 	  However, the Grid displayed image is impacted regardless. Note that ImagePad must be inside Image for this to work.
 	*)
-	frameResized = Image[ImagePad[frameImage, 20], ImageSize->{Automatic,500}];
-	histResized = Image[ImagePad[hist, 20], ImageSize->{Automatic,500}];
+	frameResized = Image[ImagePad[frameImage, 20], ImageSize->{325,Automatic}];
+	histResized = Image[ImagePad[hist, 20], ImageSize->{325,Automatic}];
 
 	If[$VersionNumber>=12.2,
 		Grid[

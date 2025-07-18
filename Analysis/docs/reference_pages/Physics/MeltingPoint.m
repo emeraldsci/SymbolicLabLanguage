@@ -231,7 +231,7 @@ DefineUsage[AnalyzeMeltingPointOptions,
 		"ValidAnalyzeMeltingPointQ"
 	},
 	Author -> {
-		"amir.saadat",
+		"scicomp",
 		"brad"
 	}
 }];
@@ -325,7 +325,7 @@ DefineUsage[AnalyzeMeltingPointPreview,
 		"ValidAnalyzeMeltingPointQ"
 	},
 	Author -> {
-		"amir.saadat",
+		"scicomp",
 		"brad"
 	}
 }];
@@ -419,7 +419,7 @@ DefineUsage[ValidAnalyzeMeltingPointQ,
 		"AnalyzeMeltingPointPreview"
 	},
 	Author -> {
-		"amir.saadat",
+		"scicomp",
 		"brad"
 	}
 }];

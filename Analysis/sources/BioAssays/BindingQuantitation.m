@@ -310,7 +310,7 @@ Error::InvalidBindingQuantitationDataType = "The given data objects are not of t
 
 (* this is the key overload to convert to raw data and to check that it is usable *)
 (* each data will only contain one set of measurement data for BLI, and a standard curve if one was generated. *)
-(* each data object will come with a baseline if one exists. If they want to baseline using a well in teh same column or something silly they are on their own *)
+(* each data object will come with a baseline if one exists. If they want to baseline using a well in the same column or something silly they are on their own *)
 AnalyzeBindingQuantitation[
   dataObjects:{ObjectP[{Object[Data, BioLayerInterferometry]}]..},
   ops:OptionsPattern[]
@@ -536,7 +536,7 @@ AnalyzeBindingQuantitation[
   (* Make sure we're working with a list of options *)
   listedOptions = ToList[ops];
 
-  (* remove the cache that had been passed as an option - we dont want it to show up in the unresolved options *)
+  (* remove the cache that had been passed as an option - we don't want it to show up in the unresolved options *)
   cachelessOptions = DeleteCases[listedOptions, (Cache -> _)];
 
   (* Determine the requested return value from the function *)
@@ -737,7 +737,7 @@ AnalyzeBindingQuantitation[
   (* grab the concentration units to use later *)
   concentrationUnits = Units[First[safeStandardConcentrations]];
 
-  (*TODO: somethign a little funny here with quantity array not gettign resepcted. I think it also gets passed into teh helper and does nto evaluate*)
+  (*TODO: something a little funny here with quantity array not gettign resepcted. I think it also gets passed into the helper and does nto evaluate*)
   (* -- get the matched standard baselines also -- *)
   matchedStandardBaselines = Which[
     (* if there is an object, look up the baselines from it *)
@@ -927,7 +927,7 @@ AnalyzeBindingQuantitation[
   (* -- GENERATE STANDARD CURVE -- *)
   (* ----------------------------- *)
 
-  (* extract the relevant fit parameter from teh standard Curve *)
+  (* extract the relevant fit parameter from the standard Curve *)
   standardCurveFitParameters = Which[
 
     (* AverageEquilibriumResponse *)
@@ -980,7 +980,7 @@ AnalyzeBindingQuantitation[
 
   (*
 
-(* make the standard curve points based on teh std curve fits *)
+(* make the standard curve points based on the std curve fits *)
   standardCurvePoints = If[MatchQ[standardCurveFitParameters, Except[Null]],
     Transpose[{standardCurveFitParameters, safeStandardConcentrations}],
     Null
@@ -1045,7 +1045,7 @@ AnalyzeBindingQuantitation[
 
 
   (* -- Analysis upload packets -- *)
-  (*dont upload if we are just doign tests*)
+  (*don't upload if we are just doign tests*)
   standardDataFitAnalysis = If[upload&&MemberQ[output,Result],
     Upload[Cases[standardFitPackets, PacketP[Object[Analysis, Fit]]]],
     ConstantArray[Null, Length[quantitationData]]
@@ -1612,7 +1612,7 @@ resolveAnalyzeBindingQuantitationOptions[
     Null
   ];
 
-  (* error check that they dont use inital domain with eq response or final domain with initail rate *)
+  (* error check that they don't use initial domain with eq response or final domain with initail rate *)
   conflictingDomainAndParameterOptions = Which[
 
     MatchQ[resolvedInitialFitDomain, Except[Null]]&&MatchQ[fittedParameter, AverageEquilibriumResponse],
@@ -1761,7 +1761,7 @@ resolveAnalyzeBindingQuantitationOptions[
       standardDataMinMax
     ]]],
 
-    (* in every other case, we are throwing a different error for a mismatch, so we dont need to error for this *)
+    (* in every other case, we are throwing a different error for a mismatch, so we don't need to error for this *)
     True,
     {}
 
@@ -1813,7 +1813,7 @@ resolveAnalyzeBindingQuantitationOptions[
       sampleDataMinMax
     ]]],
 
-    (* in every other case, we are throwing a different error for a mismatch, so we dont need to error for this *)
+    (* in every other case, we are throwing a different error for a mismatch, so we don't need to error for this *)
     True,
     {}
   ];
@@ -2042,7 +2042,7 @@ baselineBLIQuantitationData[dataSets:{_?QuantityArrayQ..}, constant:_?QuantityQ,
 ];
 
 (* -- FUNCTION OVERLOAD -- *)
-(* TODO: this overload bugs out when given a function with units. It shoudl be upgraded at some point though I dont anticipate it will get a lot of use. *)
+(* TODO: this overload bugs out when given a function with units. It shoudl be upgraded at some point though I don't anticipate it will get a lot of use. *)
 baselineBLIQuantitationData[singleDataSet:_?QuantityArrayQ, function_Function, filterFlag_]:=baselineBLIQuantitationData[ToList[singleDataSet], function, False];
 baselineBLIQuantitationData[dataSets:{_?QuantityArrayQ..}, function_Function, filterFlag_]:=Module[
   {dataLengths, dataXVals, dataXUnits, dataYUnits, baselineResponseValues, unitlessBaseline, baselineWithUnits},
@@ -2145,7 +2145,7 @@ baselineBLIQuantitationData[dataSets:{_?QuantityArrayQ..},baseline:_?QuantityArr
   ];*)
 
   (* with the correct part of the baseline and the correct units, we can now do our baseline subtraction *)
-  (* note that for BLI, we dont really care the absolute values of the baselien or data sicne it will be aligned later *)
+  (* note that for BLI, we don't really care the absolute values of the baselien or data sicne it will be aligned later *)
   (* we just care that systematic drift and noise are subtracted out *)
 
   (* constant array to account for there possibly beign multiple samples *)
@@ -2220,7 +2220,7 @@ filterBLIQuantitationData[dataSets:{_?QuantityArrayQ..}, filterType_,filterWidth
     MatchQ[dataProcessingMethod, GaussianFilter],
     MeanFilter[#, meanFilterRangeInteger]&/@unitlessResponseData,
 
-    (* if for some reason we dont have a valid filter type then just return the response data *)
+    (* if for some reason we don't have a valid filter type then just return the response data *)
     True,
     unitlessResponseData
   ];
@@ -2423,7 +2423,7 @@ quantitateBLIData[data:{_?QuantityArrayQ..}, fitType_, domains_]:=Module[
       Function[{dataSet, domain},
         Module[{dataToAverage},
 
-          (*select teh data to average, if the domain is for soem reason All, use all the data*)
+          (*select the data to average, if the domain is for soem reason All, use all the data*)
           dataToAverage = If[MatchQ[domain, {_?QuantityQ, _?QuantityQ}],
             Select[Unitless[dataSet], MatchQ[First[#], RangeP[Sequence@@domain]]& ][[All, 2]],
             Unitless[dataSet][[All,2]]

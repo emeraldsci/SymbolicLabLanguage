@@ -170,9 +170,5 @@ DefineUsage[LinearFunctionQ,
 		"RSquared",
 		"AnalyzeFit"
 	},
-	Author -> {
-		"alice",
-		"catherine",
-		"brad"
-	}
+	Author -> {"melanie.reschke", "alice", "catherine", "brad"}
 }];

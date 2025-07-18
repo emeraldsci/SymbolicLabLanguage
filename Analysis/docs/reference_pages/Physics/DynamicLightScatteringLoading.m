@@ -41,6 +41,7 @@ DefineUsage[AnalyzeDynamicLightScatteringLoading,
 		"AnalyzeDynamicLightScattering"
 	},
 	Author -> {
+		"scicomp",
 		"derek.machalek",
 		"brad"
 	},
@@ -125,6 +126,7 @@ DefineUsage[AnalyzeDynamicLightScatteringLoadingPreview,
 		"ValidAnalyzeDynamicLightScatteringLoadingQ"
 	},
 	Author -> {
+		"scicomp",
 		"derek.machalek",
   		"brad"
 	}
@@ -165,6 +167,7 @@ DefineUsage[ValidAnalyzeDynamicLightScatteringLoadingQ,
 		"AnalyzeDynamicLightScatteringLoadingPreview"
 	},
 	Author -> {
+		"scicomp",
 		"derek.machalek",
   		"brad"
 	}

@@ -580,7 +580,11 @@ resolveAnalyzeFitOptions[xyMags_, expr_, inputUnit_, outputUnit_, firstOpsSet_, 
 	(* --- Check if Name existed in DB --- *)
 	name = Lookup[myOptions, Name];
 	nameTestDescription="Check if the given Name already existed in the database:";
-	nameTest = FitTestOrNull[Name, collectTestsBoolean, nameTestDescription, Length[Search[Object[Analysis, Fit], Name=name]] == 0 || NullQ[name]];
+	nameTest = If[StringQ[name],
+		FitTestOrNull[Name, collectTestsBoolean, nameTestDescription, Length[Search[Object[Analysis, Fit], Name=name]] == 0 ],
+		FitTestOrNull[Name, collectTestsBoolean, nameTestDescription, True]
+	];
+
 
 	resolvedOptions = ReplaceRule[myOptions,
 		{
@@ -2061,7 +2065,7 @@ AnalyzeFitOptions[xy:analyzeFitDataP,expr:_Symbol|_Function,ops:OptionsPattern[]
 
 	listedOptions = ToList[ops];
 
-	(* remove the Output and OutputFormat option before passing to the core function because it doens't make sense here *)
+	(* remove the Output and OutputFormat option before passing to the core function because it doesn't make sense here *)
 	noOutputOptions = DeleteCases[listedOptions, Alternatives[Output -> _, OutputFormat->_]];
 
 	options = AnalyzeFit[xy,expr,Append[noOutputOptions,Output->Options]];
