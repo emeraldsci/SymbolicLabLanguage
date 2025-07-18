@@ -43,11 +43,7 @@ DefineUsage[AnalyzeClusters,
 			"ValidAnalyzeClustersQ",
 			"AnalyzeDigitalPCR"
 		},
-		Author -> {
-			"kevin.hou",
-			"sebastian.bernasek",
-			"brad"
-		},
+		Author -> {"malav.desai", "kevin.hou", "sebastian.bernasek", "brad"},
 		Guides -> {
 			"AnalysisCategories",
 			"ExperimentAnalysis"

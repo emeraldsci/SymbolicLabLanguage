@@ -682,7 +682,7 @@ resolveAnalyzeClustersOptions[tabularData_,ops_]:=Module[
 		]
 	];
 
-	(* Resolve DimensionLabels - throw a warning if they dont match the number of dimensions in the input data *)
+	(* Resolve DimensionLabels - throw a warning if they don't match the number of dimensions in the input data *)
 	dimensionLabels=Lookup[ops,DimensionLabels];
 	resolvedDimensionLabels=If[
 		MatchQ[dimensionLabels,None],dimensionLabels,

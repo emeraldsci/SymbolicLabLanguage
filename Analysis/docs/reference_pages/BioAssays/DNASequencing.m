@@ -82,10 +82,7 @@ DefineUsage[AnalyzeDNASequencing,
 			"PlotDNASequencing",
       "SequenceAlignmentTable"
     },
-    Author -> {
-      "kevin.hou",
-      "nont.kosaisawe"
-    },
+    Author -> {"taylor.hochuli", "kevin.hou", "nont.kosaisawe"},
     Preview->True
   }
 ];

@@ -50,12 +50,12 @@ DefineOptions[AnalyzePeaks,
 							LowExposureLadderIntensity,MediumLowExposureLadderIntensity,MediumHighExposureLadderIntensity,HighExposureLadderIntensity,
 							LowExposureGelImage,MediumLowExposureGelImage,MediumHighExposureGelImage,HighExposureGelImage,
 							LowExposureGelImageFile,MediumLowExposureGelImageFile,MediumHighExposureGelImageFile,HighExposureGelImageFile,
-							LaneImage,DiffractionSpectrum,SampleElectropherogram,MarkerElectropherogram,
+							LaneImage,BlankedDiffractionPattern,SampleElectropherogram,MarkerElectropherogram,
 							PostSelectionElectropherogram,HeatingCurves,MolarHeatingCurves,FIDResponse,Charge,
 							InitialIntensityDistribution,InitialMassDistribution,FinalIntensityDistribution,FinalMassDistribution,
 							AbsorbanceSpectrum,AbsorbanceDifferenceSpectrum,CircularDichroismAbsorbanceSpectrum,CircularDichroismSpectrum,
 							UnblankedAbsorbanceSpectrum,UnblankedAbsorbanceDifferenceSpectrum,UnblankedCircularDichroismAbsorbanceSpectrum,
-							IntensityDistribution,MassDistribution,IonAbundance,ProcessedUVAbsorbanceData,RelativeMigrationData,
+							IntensityDistribution,MassDistribution,IonAbundance,ProcessedUVAbsorbanceData,RelativeMigrationData,Electropherogram,DNAFragmentSizeAnalyses,RNAFragmentSizeAnalyses,
 							(* 3D Fields *)
 							Absorbance3D,Chromatogram3D,IonAbundance3D
 						]
@@ -685,7 +685,10 @@ peakDataTypes={
 	Object[Data,Western],
 	Object[Data,XRayDiffraction],
 	Object[Data,CircularDichroism],
-	Object[Data,DynamicLightScattering]
+	Object[Data,DynamicLightScattering],
+	Object[Data,CoulterCount],
+	Object[Data,CapillaryIsoelectricFocusing],
+	Object[Data,FragmentAnalysis]
 };
 
 (* List of Object[Protocol, _] types which can be analyzed for peaks *)
@@ -708,7 +711,10 @@ peakProtocolTypes={
 	Object[Protocol,SupercriticalFluidChromatography],
 	Object[Protocol,Western],
 	Object[Protocol,CircularDichroism],
-	Object[Protocol, DynamicLightScattering]
+	Object[Protocol,DynamicLightScattering],
+	Object[Protocol,CoulterCount],
+	Object[Protocol,CapillaryIsoelectricFocusing],
+	Object[Protocol,FragmentAnalysis]
 };
 
 (* Raw (non-object) data types which can be analyzed for peaks *)
@@ -1503,6 +1509,14 @@ analyzePeaksPreview[xyIn_, image_, units_, resolvedOps_, dataTag_, templateRules
 				peakSplitDomainEpilogs[True,Lookup[pksPacket,PeakGroupDomains]]
 			},
 
+		(* CoulterCount data *)
+		Object[Data,CoulterCount],
+			{
+				baselinePrimitive[True,Lookup[resolvedOps,Baseline],pks,baselineFunction],
+				peakRangeEpilogs[True,pks],
+				baselineEpilog[showBaseline]
+			},
+
 		(* Everything else *)
 		_,
 			{
@@ -1560,13 +1574,17 @@ analyzePeaksPreview[xyIn_, image_, units_, resolvedOps_, dataTag_, templateRules
 		Object[Data,NMR],
 			ECL`PlotNMR[QuantityArray[xy,units],Peaks->stripAppendReplaceKeyHeads[finalPeakPacket],PlotRange->plotRange,FrameLabel->{"Chemical Shift (PPM)",None},Prolog->epilogs],
 
+		(* CoulterCount Data *)
+		Object[Data,CoulterCount],
+			ECL`PlotCoulterCount[QuantityArray[xy, units], Peaks -> stripAppendReplaceKeyHeads[finalPeakPacket], Legend -> Null, PlotLabel -> ECL`InternalUpload`ObjectToString[dataTag], PlotRange -> plotRange, Epilog -> epilogs],
+
 		(* Default Case is a plot of the raw data *)
 		_,
 			Unzoomable[ECL`PlotObject[xy,PlotRange->plotRange,ImageSize->550]]
 	];
 
 	(* TODO: Wrap this into the fig switch *)
-	If[MatchQ[dataType,Object[Data,NMR]],
+	If[MatchQ[dataType,Object[Data,NMR]|Object[Data,CoulterCount]],
 		fig,
 		Zoomable[Show[fig, Epilog->epilogs]]
 	]
@@ -2418,6 +2436,51 @@ resolveChromatography[pkt_, _, wavelengthOps_]:=Module[{},
 (**********************************)
 (*** Special Object Resolutions ***)
 (**********************************)
+
+(* CoulterCount overload - there can be multiple diameter distribution curves if NumberOfReadings is greater than 1, so we have to merge the count *)
+resolveSingleInput[obj:ObjectP[Object[Data, CoulterCount]], safeOps_, refOption_, collectTestsBoolean_] := Module[{dataField, data, samplesIn, diamCountAssocList, combinedDiameterCountAssoc, mergedData},
+
+	(* Get the default field to search for data in the object *)
+	dataField = defaultPeakData[obj, safeReferenceField@Lookup[safeOps, ReferenceField]];
+
+	(* Download data to analyze and SamplesIn *)
+	{data, samplesIn} = Download[obj, {dataField, SamplesIn}];
+
+	diamCountAssocList = Map[
+		(* We cannot directly Rule@@@ since each distribution is a quantity array, so have to do this weird thing to get rid of the _QuantityArray head *)
+		Association[Rule @@@ #]&,
+		data
+	];
+
+	(* Merge the associations by adding the count up *)
+	combinedDiameterCountAssoc = Merge[diamCountAssocList, Total];
+
+	(* Convert the merged association back to quantity arrays *)
+	mergedData = QuantityArray[KeyValueMap[{##}&, combinedDiameterCountAssoc]];
+
+	(* Return resolved inputs *)
+	{dataField, Sequence @@ unitsAndMagnitudes[mergedData], samplesIn, Null, {}, {}}
+];
+
+(* FragmentAnalysis overload *)
+resolveSingleInput[obj:ObjectP[Object[Data,FragmentAnalysis]],safeOps_,refOption_,collectTestsBoolean_]:=Module[{dataField,data,samplesIn},
+	
+	(* Get the default field to search for data in the object *)
+	dataField=defaultPeakData[obj,safeReferenceField@Lookup[safeOps,ReferenceField]];
+	
+	(* Download data to analyze and SamplesIn *)
+	{data,samplesIn}=Download[obj,{dataField,SamplesIn}];
+	
+	(* remove negative x-values from data otherwise issues with logLinear transform *)
+	(* use normal and quantity array to pull out list of points for selection but transform back to quantity array *)
+	data = QuantityArray[
+		Select[Normal[data], QuantityMagnitude[First[#]]>0&]
+	];
+	
+	(* Return resolved inputs *)
+	{dataField,Sequence@@unitsAndMagnitudes[data],samplesIn,Null,{},{}}
+];
+
 
 (* DSC overload - there can be multiple heating curves, so the output must be mapped and converted to a sequence *)
 resolveSingleInput[obj:ObjectP[Object[Data,DifferentialScanningCalorimetry]],safeOps_,refOption_,collectTestsBoolean_]:=Module[{heatingCurves,samplesIn},
@@ -3458,7 +3521,7 @@ analyzePeaksResult[in_, rawData_, xyUnits_, peakPacket_, resolvedOps_] := Module
 
 	(* Use helper function to upload single peak packet. Must pass as list. *)
 	uploadedPacket=Check[
-		Part[uploadAnalyzePackets[{{{peakPacket},{secondaryPacket}}}],1,1,1],
+		Quiet[Part[uploadAnalyzePackets[{{{peakPacket},{secondaryPacket}}}],1,1,1], {Upload::Warning}],
 		$Failed
 	];
 
@@ -7778,7 +7841,7 @@ PeakEpilog[
 		{transformedPeakRangeStart,transformedPeakRangeEnd}
 	];
 
-	(* Strip units of the values which dont have to be transformed *)
+	(* Strip units of the values which don't have to be transformed *)
 	transformedPeakHeights=Unitless[peakHeights];
 
 	(* Remove the transformation function from the options and call PeakEpilog with the transformed values *)

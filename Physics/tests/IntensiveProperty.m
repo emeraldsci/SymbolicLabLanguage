@@ -174,32 +174,32 @@ DefineTests[LookupIntensiveProperty,
         Type -> Object[Sample],
         Name -> "test sample with matching composition",
         Replace[Composition] -> {
-          {100 VolumePercent, Link[Model[Molecule, "id:vXl9j57PmP5D"]]},
-          {1.2 Milligram/Milliliter, Link[Model[Molecule, "id:E8zoYvN6m61A"]]}
+          {100 VolumePercent, Link[Model[Molecule, "id:vXl9j57PmP5D"]], Now},
+          {1.2 Milligram/Milliliter, Link[Model[Molecule, "id:E8zoYvN6m61A"]], Now}
         }
       |>,
       <|
         Type -> Object[Sample],
         Name -> "test sample with matching models",
         Replace[Composition] -> {
-          {100 VolumePercent, Link[Model[Molecule, "id:vXl9j57PmP5D"]]},
-          {1.2 Milligram/Milliliter, Link[Model[Molecule, Oligomer, "id:Y0lXejlOVBka"]]}
+          {100 VolumePercent, Link[Model[Molecule, "id:vXl9j57PmP5D"]], Now},
+          {1.2 Milligram/Milliliter, Link[Model[Molecule, Oligomer, "id:Y0lXejlOVBka"]], Now}
         }
       |>,
       <|
         Type -> Object[Sample],
         Name -> "test sample with matching close composition",
         Replace[Composition] -> {
-          {100 VolumePercent, Link[Model[Molecule, "id:vXl9j57PmP5D"]]},
-          {9 Micro Molar, Link[Model[Molecule, Oligomer, "id:Y0lXejlOVBka"]]}
+          {100 VolumePercent, Link[Model[Molecule, "id:vXl9j57PmP5D"]], Now},
+          {9 Micro Molar, Link[Model[Molecule, Oligomer, "id:Y0lXejlOVBka"]], Now}
         }
       |>,
       <|
         Type -> Object[Sample],
         Name -> "test sample with exactly matching composition",
         Replace[Composition] -> {
-          {100 VolumePercent, Link[Model[Molecule, "id:vXl9j57PmP5D"]]},
-          {10 Micro Molar, Link[Model[Molecule, Oligomer, "id:Y0lXejlOVBka"]]}
+          {100 VolumePercent, Link[Model[Molecule, "id:vXl9j57PmP5D"]], Now},
+          {10 Micro Molar, Link[Model[Molecule, Oligomer, "id:Y0lXejlOVBka"]], Now}
         }
       |>,
       <|
@@ -213,8 +213,8 @@ DefineTests[LookupIntensiveProperty,
         Type -> Object[Sample],
         Name -> "test sample with no matching composition",
         Replace[Composition] -> {
-          {80 VolumePercent, Link[Model[Molecule, "id:vXl9j57PmP5D"]]},
-          {3.2 Milligram/Milliliter, Link[Model[Molecule, "id:E8zoYvN6m61A"]]}
+          {80 VolumePercent, Link[Model[Molecule, "id:vXl9j57PmP5D"]], Now},
+          {3.2 Milligram/Milliliter, Link[Model[Molecule, "id:E8zoYvN6m61A"]], Now}
         }
       |>,
       <|
@@ -225,7 +225,7 @@ DefineTests[LookupIntensiveProperty,
       <|
         Type -> Object[Sample],
         Name -> "test sample with composition field",
-        Replace[Composition] -> {{100 VolumePercent, Link[Model[Molecule, "id:vXl9j57PmP5D"]]}}
+        Replace[Composition] -> {{100 VolumePercent, Link[Model[Molecule, "id:vXl9j57PmP5D"]], Now}}
       |>
     }];
   ),

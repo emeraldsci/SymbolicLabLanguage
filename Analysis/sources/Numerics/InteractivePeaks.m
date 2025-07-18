@@ -238,8 +238,8 @@ getModelNameListsFromSamplesIn[compositionList_]:=
 
         (*For multiple SamplesIn, each one will supply a list of Compositions, so join them, and delete any duplicated entries*)
         processedCompositionList=DeleteDuplicates[Join@@compositionList];
-        (*Sometimes compositionList has {_,Null} in it.  That means customer doesn't want to disclose that component, so we remove them from the list.*)
-        processedCompositionList=DeleteCases[processedCompositionList, {_,Null} ,{1}];
+        (*Sometimes compositionList has {_,Null,_} in it.  That means customer doesn't want to disclose that component, so we remove them from the list.*)
+        processedCompositionList=DeleteCases[processedCompositionList, {_,Null,_} ,{1}];
 
         (*Split the list of Model[Molecule] from the Name which is a String.*)
 

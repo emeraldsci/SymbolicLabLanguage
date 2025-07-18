@@ -244,6 +244,11 @@ opsFromJSON[raw_] := Lookup[Lookup[ImportString[raw, "RawJSON"],
    connection between the preview symbol (formerly dvar, now a Clump), and the analysis
    function name.  PreviewSymbol is exported, and called during ResolvedOptionsJSON to inform
    Command Builder of the Clump at initialization *)
+
+
+(* Authors definition for Analysis`Private`DefinePreviewClump *)
+Authors[Analysis`Private`DefinePreviewClump]:={"malav.desai"};
+
 DefinePreviewClump[analysisFunction_Symbol, clump_Clump] :=
 	(
 		PreviewSymbol[analysisFunction] = clump;
@@ -336,16 +341,26 @@ commandBuilderSimulate[inputExpr_] :=
 				nb=nb},
 
 				(*
-					The ScheduledTask makes calls from outside MM to simulate the fact that CC calls AnalyzeFunctions from JS.
-					This is critical in revealing any crashes/hangups that would occur in CC.
+					The ScheduledTask makes calls external to kernel to simulate the fact that CC calls AnalyzeFunctions from JS.
+					This is critical for revealing any crashes/hangups that would occur in CC.
 				*)
 				ScheduledTask[
-					Block[{ECL`$FastDownload=True,$Notebook=Object[LaboratoryNotebook,"dummyNotebook"]},
-						ECL`AppHelpers`ResolvedOptionsJSON[
+					Block[{
+						ECL`$CCD=True,
+						ECL`$ECLApplication=ECL`CommandCenter,
+						ECL`$FastDownload=True,
+						$Notebook=Object[LaboratoryNotebook,"dummyNotebook"],
+						returnJSON
+					},
+						returnJSON = ECL`AppHelpers`ResolvedOptionsJSON[
 							functionName,
 							inputArgumentsList,
 							inputOptionsList,
 							nb
+						];
+						Print[MapAt[Iconize,
+							ImportString[returnJSON,"RawJSON"],
+							{{Key["ResolvedOptions"]}, {Key["ResolvedOptionValues"]}}]
 						]
 					],
 					Now
@@ -362,6 +377,11 @@ commandBuilderSimulate[inputExpr_] :=
 
 (* given button guide rules *)
 mouseGuideRulesP = {KeyValuePattern[{Description->_String}]..};
+
+
+
+(* Authors definition for Analysis`Private`makeMouseGuideToggler *)
+Authors[Analysis`Private`makeMouseGuideToggler]:={"malav.desai"};
 
 makeMouseGuideToggler[guideRules:mouseGuideRulesP] := Module[
 	{
@@ -424,6 +444,11 @@ addMouseGuideToggler::usage = "addMouseGuideToggler[expression,function] places 
 The guide contains the information from function's ButtonActionsGuide usage rule."
 
 (* pull BuggtonActionsGuide from function's usage *)
+
+
+(* Authors definition for Analysis`Private`addMouseGuideToggler *)
+Authors[Analysis`Private`addMouseGuideToggler]:={"malav.desai"};
+
 addMouseGuideToggler[expression_,function_Symbol] := With[
 	{ mouseGuideRules = Lookup[Usage[function],"ButtonActionsGuide",{}] },
 	addMouseGuideToggler[expression, mouseGuideRules ]
@@ -436,6 +461,11 @@ addMouseGuideToggler[expression_, guideRules:mouseGuideRulesP] := $PreviewMouseG
 addMouseGuideToggler[expression_, else_] := expression;
 
 AdjustForCCD::usage = "AdjustForCCD[expression, function] modifies expression, if $CCD=Tru, to have a mouse guide around it.";
+
+
+
+(* Authors definition for Analysis`Private`AdjustForCCD *)
+Authors[Analysis`Private`AdjustForCCD]:={"malav.desai"};
 
 AdjustForCCD[ expression_ , function_Symbol] := If[TrueQ[$CCD],
 	addMouseGuideToggler[expression, function];

@@ -176,7 +176,7 @@ DefineTests[AnalyzeComposition,
 				AnalyzeComposition[multiAnalyteHPLCProtocol,PreferredConcentrationType->MassConcentration]=First@AnalyzeComposition[Object[Protocol,HPLC,"id:qdkmxzq09ARa"],PreferredConcentrationType->MassConcentration,Upload->False]
 			}
 		],
-		Example[{Options,UpdateSampleComposition,"Indicate wheter the Composition fields of objects in the StandardsIn field of the input protocol should be updated with the results of this analysis:"},
+		Example[{Options,UpdateSampleComposition,"Indicate whether the Composition fields of objects in the StandardsIn field of the input protocol should be updated with the results of this analysis:"},
 			AnalyzeComposition[myHPLCProtocol,UpdateSampleComposition->False],
 			ObjectP[Object[Analysis,Composition]],
 			TimeConstraint->5000

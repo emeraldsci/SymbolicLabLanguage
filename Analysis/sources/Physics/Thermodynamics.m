@@ -418,7 +418,7 @@ resolveAnalyzeThermodynamicsConcentrations[prots_,datas_]:=Module[{
 	sampleComposition = Map[assoc[#]&, samples];
 
 	(* resolve the QuantificationAnalyte option *)
-	analyteConcentration = FirstCase[#,{___,ObjectP[Model[Molecule,Oligomer]]},{Null,Null}][[1]]&/@sampleComposition;
+	analyteConcentration = FirstCase[#,{___,ObjectP[Model[Molecule,Oligomer]],_},{Null,Null,Null}][[1]]&/@sampleComposition;
 
 	If[MemberQ[analyteConcentration,Null],
 		Message[Error::MissingConcentration,

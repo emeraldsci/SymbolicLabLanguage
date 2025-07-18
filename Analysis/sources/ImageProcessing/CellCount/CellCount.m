@@ -301,7 +301,8 @@ imageSelectPrimitive=DefinePrimitive[ImageSelect,
 	Icon->Import[FileNameJoin[{PackageDirectory["Analysis`"],"resources","images","ImageSelect.png"}]],
 	Generative->False,
 	Category->"Image Selection",
-	Description->"Selects the images from the data object by matching the features that are requested by the user with the ones stored in the Images field of the data object."
+	Description->"Selects the images from the data object by matching the features that are requested by the user with the ones stored in the Images field of the data object.",
+	Author -> "scicomp"
 ];
 
 (* Imaging Primitive Pattern *)
@@ -402,7 +403,7 @@ setupImagePrimitives[]:=Module[
 		Generative->False,
 		Category->"Image Adjustment",
 		Description->"This function can be used to create an image of a specified data type. Values in data are coerced to the specified type by rounding or clipping. By default, \"Real32\" is assumed.",
-		Author -> "madeleine.sutherland"
+		Author -> "scicomp"
 	];
 
 	(** ImageAdjust **)
@@ -784,7 +785,7 @@ setupImagePrimitives[]:=Module[
 		Generative->False,
 		Category->"Image Adjustment",
 		Description->"The function gives local brightness adjustment which is also known as flat fielding, and is used for removing image artifacts caused by nonuniform lighting or variations in sensor sensitivities.",
-		Author -> {"Yahya.Benslimane", "pnafisi"}
+		Author -> {"scicomp"}
 	];
 
 	(** ImageMultiply **)
@@ -816,7 +817,7 @@ setupImagePrimitives[]:=Module[
 		Generative->False,
 		Category->"Image Adjustment",
 		Description->"Gives an image in which each pixel is the product of the corresponding pixels in Image and SecondImage.",
-		Author -> {"Yahya.Benslimane", "pnafisi"}
+		Author -> {"scicomp"}
 	];
 
 	(** StandardDeviationFilter **)
@@ -1357,7 +1358,7 @@ setupImagePrimitives[]:=Module[
 		Generative->False,
 		Category->"Image Segmentation",
 		Description->"Detects the edges of an image that are a set of points between image regions and are typically computed by linking high-gradient pixels.",
-		Author -> {"Yahya.Benslimane", "pnafisi"}
+		Author -> {"scicomp"}
 	];
 
 	(** Erosion **)
@@ -1381,7 +1382,7 @@ setupImagePrimitives[]:=Module[
 		Generative->False,
 		Category->"Image Segmentation",
 		Description->"Gives the morphological erosion of the image by removing pixels from the boundary of the image components. This removal is performed with respect to a structuring element specified as Kernel.",
-		Author -> {"Yahya.Benslimane", "pnafisi"}
+		Author -> {"scicomp", "pnafisi"}
 	];
 
 	(** Dilation **)
@@ -1405,7 +1406,7 @@ setupImagePrimitives[]:=Module[
 		Generative->False,
 		Category->"Image Segmentation",
 		Description->"Gives the morphological dilation of the image by expanding/adding pixels to the boundary of the components. This addition is performed with respect to a structuring element specified as Kernel.",
-		Author -> {"Yahya.Benslimane", "pnafisi"}
+		Author -> {"scicomp"}
 	];
 
 	(** Closing **)
@@ -1424,7 +1425,7 @@ setupImagePrimitives[]:=Module[
 		Generative->False,
 		Category->"Image Segmentation",
 		Description->"Gives the morphological closing of Image with respect to a structuring element specified as Kernel. Closing is equivalent to erosion of the dilated image, Erosion[Dilation[image]].",
-		Author -> {"Yahya.Benslimane", "pnafisi"}
+		Author -> {"scicomp"}
 	];
 
 	(** Opening **)
@@ -1443,7 +1444,7 @@ setupImagePrimitives[]:=Module[
 		Generative->False,
 		Category->"Image Segmentation",
 		Description->"Gives the morphological opening of Image with respect to a structuring element specified as Kernel. Opening is equivalent to dilation of the eroded image, Dilation[Erosion[image]].",
-		Author -> {"Yahya.Benslimane", "pnafisi"}
+		Author -> {"scicomp"}
 	];
 
 	(** Inpaint **)
@@ -1512,7 +1513,7 @@ setupImagePrimitives[]:=Module[
 		Generative->False,
 		Category->"Image Segmentation",
 		Description->"Gives a binary image in which white pixels correspond to constant extended maxima in the image. An extended maximum is a connected set of pixels with values greater than their surroundings. By default \"TextureSynthesis\" is used. Inpaint operates on different channels except for \"TextureSynthesis\".",
-		Author -> {"Yahya.Benslimane", "pnafisi"}
+		Author -> {"scicomp"}
 	];
 
 	(** DistanceTransform **)
@@ -1562,7 +1563,7 @@ setupImagePrimitives[]:=Module[
 		Generative->False,
 		Category->"Image Segmentation",
 		Description->"Gives the distance transform of an image, in which the value of each pixel is replaced by its distance to the nearest background pixel.",
-		Author -> {"Yahya.Benslimane", "pnafisi"}
+		Author -> {"scicomp", "pnafisi"}
 	];
 
 	(** MinDetect **)
@@ -1594,7 +1595,7 @@ setupImagePrimitives[]:=Module[
 		Generative->False,
 		Category->"Image Segmentation",
 		Description->"Gives a binary image in which white pixels correspond to constant extended mimima in the Image. An extended minimum is a connected set of pixels with values less than their surroundings.",
-		Author -> {"Yahya.Benslimane", "pnafisi"}
+		Author -> {"scicomp", "pnafisi"}
 	];
 
 
@@ -1627,7 +1628,7 @@ setupImagePrimitives[]:=Module[
 		Generative->False,
 		Category->"Image Segmentation",
 		Description->"Gives a binary image in which white pixels correspond to constant extended maxima in the Image. An extended maximum is a connected set of pixels with values greater than their surroundings.",
-		Author -> {"Yahya.Benslimane", "pnafisi"}
+		Author -> {"scicomp", "pnafisi"}
 	];
 
 	(** WatershedComponents **)
@@ -1686,7 +1687,7 @@ setupImagePrimitives[]:=Module[
 		Generative->False,
 		Category->"Image Segmentation",
 		Description->"Computes the watershed transform of an image, returning the result as an array in which positive integers label the catchment basins. Zeros are the regions that do not belong to any component. The \"Watershed\" and \"Immersion\" methods return the watershed lines, represented as 0s in the label array.",
-		Author -> {"Yahya.Benslimane", "pnafisi"}
+		Author -> {"scicomp"}
 	];
 
 	(** MorphologicalComponents **)
@@ -1739,7 +1740,7 @@ setupImagePrimitives[]:=Module[
 		Generative->False,
 		Category->"Image Segmentation",
 		Description->"Assigns sequential integers to different connected components and 0 to pixels that correspond to the background in the image. Without the second argument is equivalent to setting threshold to zero.",
-		Author -> {"Yahya.Benslimane", "pnafisi"}
+		Author -> {"scicomp"}
 	];
 
 	(** SelectComponents **)
@@ -1835,7 +1836,7 @@ setupImagePrimitives[]:=Module[
 		Generative->False,
 		Category->"Image Segmentation",
 		Description->"SelectComponents can be used to select image components with specific desired characteristics. Selection may be performed on components' location, shapes, and intensity properties.",
-		Author -> {"Yahya.Benslimane", "pnafisi"}
+		Author -> {"scicomp"}
 	];
 
 	(* Imaging Primitive Pattern *)
@@ -1969,34 +1970,44 @@ DefineOptions[AnalyzeCellCount,
 	Options :> {
 
 		IndexMatching[
-      IndexMatchingInput->"Microscope data",
+			IndexMatchingInput -> "Microscope data",
 
 			(*** Non-Pooled Options ***)
 
 			(** Microscope Image Selection **)
 			{
-				OptionName->ImageSelection,
-				Default->All,
-				AllowNull->True,
-				Widget->Alternatives[
-					Widget[Type->Enumeration,Pattern:>({}|Automatic|Preview|All|MicroscopeModeP)],
-					Adder[Widget[Type->Primitive,Pattern:>ImageSelectionPrimitiveP]]
+				OptionName -> ImageSelection,
+				Default -> All,
+				AllowNull -> True,
+				Widget -> Alternatives[
+					Widget[Type -> Enumeration, Pattern :> ({} | Automatic | Preview | All | MicroscopeModeP)],
+					Adder[Widget[Type -> Primitive, Pattern :> ImageSelectionPrimitiveP]]
 				],
-				Description->"A unit operation to select the microscope images using a short-hand notation, for instance, by choosing \"All\" or the microscope mode such as \"BrightField\", or a specific feature like \"ImagingSite\", i.e., \"ImageSelect[ImagingSite->1]\".",
-				ResolutionDescription->"If Automatic and the input is a data object, the steps will be selected based on the instrument.",
-				Category->"Image Selection"
+				Description -> "A unit operation to select the microscope images using a short-hand notation, for instance, by choosing \"All\" or the microscope mode such as \"BrightField\", or a specific feature like \"ImagingSite\", i.e., \"ImageSelect[ImagingSite->1]\".",
+				ResolutionDescription -> "If Automatic and the input is a data object, the steps will be selected based on the instrument.",
+				Category -> "Image Selection"
 			},
 			{
-				OptionName->Images,
-				Default->Automatic,
-				AllowNull->True,
-				Widget->Alternatives[
-					Widget[Type->Enumeration,Pattern:>Alternatives[{}|Automatic]],
-					Adder[Widget[Type->Primitive,Pattern:>ImagesPrimitiveP]]
+				OptionName -> Images,
+				Default -> Automatic,
+				AllowNull -> True,
+				Widget -> Alternatives[
+					Widget[Type -> Enumeration, Pattern :> Alternatives[{} | Automatic]],
+					Adder[Widget[Type -> Primitive, Pattern :> ImagesPrimitiveP]]
 				],
-				Description->"A unit operation to specify the microscope images by giving all of the image specifications including \"Mode\", \"ExposureTime\", \"ExcitationWavelength\" etc. By default, this option is auto-populated using the \"ImageSelection\" option. However, if Images option is given explicitly, it will be prioritized over \"ImageSelection\".",
-				ResolutionDescription->"If Automatic and the input is a data object, the steps will be selected based on the instrument.",
-				Category->"Image Selection"
+				Description -> "A unit operation to specify the microscope images by giving all of the image specifications including \"Mode\", \"ExposureTime\", \"ExcitationWavelength\" etc. By default, this option is auto-populated using the \"ImageSelection\" option. However, if Images option is given explicitly, it will be prioritized over \"ImageSelection\".",
+				ResolutionDescription -> "If Automatic and the input is a data object, the steps will be selected based on the instrument.",
+				Category -> "Image Selection"
+			},
+			{
+				OptionName -> IndexMatchingAnchor,
+				Default -> Automatic,
+				AllowNull -> True,
+				Widget -> Widget[Type -> Number, Pattern :> GreaterEqualP[1]],
+				Description -> "Used to nested index match options to Images correctly.",
+				ResolutionDescription -> "Resolves to a nested list of 1s the same shape as the resolved Images option.",
+				NestedIndexMatching -> True,
+				Category -> "Hidden"
 			},
 			(** Source Specifications **)
 			{
@@ -2004,9 +2015,9 @@ DefineOptions[AnalyzeCellCount,
 				Default -> Automatic,
 				Description -> "The primary type of cells that are used within the samples that the images are acquired from. This will impact the automatic resolution of adjustment steps as well as automatic segmentation and property measurement in the data object.",
 				ResolutionDescription -> "If Automatic, the cell type will be resolved to the one provided in the data object.",
-				AllowNull->True,
-				Widget ->Widget[Type->Enumeration, Pattern:>CellTypeP],
-				NestedIndexMatching->False,
+				AllowNull -> True,
+				Widget -> Widget[Type -> Enumeration, Pattern :> CellTypeP],
+				NestedIndexMatching -> False,
 				Category -> "Source Specifications"
 			},
 			{
@@ -2014,9 +2025,9 @@ DefineOptions[AnalyzeCellCount,
 				Default -> Automatic,
 				Description -> "The culture adhesion type that indicates whether the cells adhere to the container that the images are aquired from. This will impact the automatic resolution of adjustment steps as well as automatic properties in the data object.",
 				ResolutionDescription -> "If Automatic, the culture adhesion will be resolved to the one provided in the data object.",
-				AllowNull->True,
-				Widget ->Widget[Type->Enumeration, Pattern:>CultureAdhesionP],
-				NestedIndexMatching->False,
+				AllowNull -> True,
+				Widget -> Widget[Type -> Enumeration, Pattern :> CultureAdhesionP],
+				NestedIndexMatching -> False,
 				Category -> "Source Specifications"
 			},
 
@@ -2026,36 +2037,36 @@ DefineOptions[AnalyzeCellCount,
 				Default -> Automatic,
 				Description -> "The scale of the image in x and y directions in [Length Unit]/Pixel or Pixel/[Length unit].",
 				ResolutionDescription -> "If Automatic, the image scale will be resolved to the one provided in the data object.",
-				AllowNull->True,
-				Widget->Alternatives[
-					"Scale"->Widget[
-						Type->Quantity,
-						Pattern:>GreaterP[0*Micrometer/Pixel],
-						Units->CompoundUnit[
-							{1,{Micrometer,{Micrometer}}},
-							{-1,{Pixel,{Pixel}}}
+				AllowNull -> True,
+				Widget -> Alternatives[
+					"Scale" -> Widget[
+						Type -> Quantity,
+						Pattern :> GreaterP[0 * Micrometer / Pixel],
+						Units -> CompoundUnit[
+							{1, {Micrometer, {Micrometer}}},
+							{-1, {Pixel, {Pixel}}}
 						]
 					],
-					""->{
-						"X Scale"->Widget[
-							Type->Quantity,
-							Pattern:>GreaterP[0*Micrometer/Pixel],
-							Units->CompoundUnit[
-								{1,{Micrometer,{Micrometer}}},
-								{-1,{Pixel,{Pixel}}}
+					"" -> {
+						"X Scale" -> Widget[
+							Type -> Quantity,
+							Pattern :> GreaterP[0 * Micrometer / Pixel],
+							Units -> CompoundUnit[
+								{1, {Micrometer, {Micrometer}}},
+								{-1, {Pixel, {Pixel}}}
 							]
 						],
-						"Y Scale"->Widget[
-							Type->Quantity,
-							Pattern:>GreaterP[0*Micrometer/Pixel],
-							Units->CompoundUnit[
-								{1,{Micrometer,{Micrometer}}},
-								{-1,{Pixel,{Pixel}}}
+						"Y Scale" -> Widget[
+							Type -> Quantity,
+							Pattern :> GreaterP[0 * Micrometer / Pixel],
+							Units -> CompoundUnit[
+								{1, {Micrometer, {Micrometer}}},
+								{-1, {Pixel, {Pixel}}}
 							]
 						]
 					}
 				],
-				NestedIndexMatching->True,
+				NestedIndexMatching -> True,
 				Category -> "Source Specifications"
 			},
 
@@ -2064,8 +2075,8 @@ DefineOptions[AnalyzeCellCount,
 				OptionName -> Method,
 				Default -> Automatic,
 				Description -> "The counting method for hemocytometer, manual will provide a preview for the user to select the cells manually. For Hybrid, first automatic counting is performed followed by an interface for user to select manually.",
-				AllowNull ->True,
-				Widget ->Widget[Type->Enumeration, Pattern:>Alternatives[Automatic|Manual|Hybrid]],
+				AllowNull -> True,
+				Widget -> Widget[Type -> Enumeration, Pattern :> Alternatives[Automatic | Manual | Hybrid]],
 				Category -> "Source Specifications"
 			},
 			{
@@ -2073,8 +2084,8 @@ DefineOptions[AnalyzeCellCount,
 				Default -> Automatic,
 				Description -> "Indicates if the images are taken for the hemocytometer instrument.",
 				ResolutionDescription -> "If Automatic and a microscope data object is provided, the container model of the SamplesIn will be checked and Hemocytometer is set to True if the container with Object[Container,Hemocytometer] pattern exists.",
-				AllowNull ->True,
-				Widget ->Widget[Type->Enumeration, Pattern:>BooleanP],
+				AllowNull -> True,
+				Widget -> Widget[Type -> Enumeration, Pattern :> BooleanP],
 				Category -> "Source Specifications"
 			},
 			{
@@ -2082,9 +2093,9 @@ DefineOptions[AnalyzeCellCount,
 				Default -> Automatic,
 				Description -> "Indicates the grid pattern of the hemocytometer that the images are aquired from. There exists different standard grid patterns which differ in the number of sub-squares they contain and also the mesh size.",
 				ResolutionDescription -> "If Automatic and the Hemocytometer is resolved to False, GridPattern is set to Null. If Automatic and Hemocytometer is True and Object[Container,Hemocytometer] exists, the GridPattern field is set to the GridPattern field of the object. Otherwise Neubauer is used as default.",
-				AllowNull ->True,
-				Widget ->Widget[Type->Enumeration, Pattern:>HemocytometerGridPatternP],
-				NestedIndexMatching->True,
+				AllowNull -> True,
+				Widget -> Widget[Type -> Enumeration, Pattern :> HemocytometerGridPatternP],
+				NestedIndexMatching -> True,
 				Category -> "Source Specifications"
 			},
 			{
@@ -2092,17 +2103,17 @@ DefineOptions[AnalyzeCellCount,
 				Default -> Automatic,
 				Description -> "Indicates the position of the sub-square within the grid pattern that is cropped and used for cell counting, where {1,1} is the bottom left square and {n,n} is the top right square. If All, the whole image is used, i.e., no cropping is performed.",
 				ResolutionDescription -> "If Automatic and the Hemocytometer is resolved to False, HemocytometerSquarePosition is Null. If Automatic and Hemocytometer is True {1,1} will be used as the default.",
-				AllowNull ->True,
-				Widget ->Alternatives[
-					"Short-hand"->Widget[Type->Enumeration, Pattern:>Alternatives[All]],
-					"Position indices"->Alternatives[
+				AllowNull -> True,
+				Widget -> Alternatives[
+					"Short-hand" -> Widget[Type -> Enumeration, Pattern :> Alternatives[All]],
+					"Position indices" -> Alternatives[
 						{
-							"X index"->Widget[Type->Number, Pattern:>RangeP[1,4,1]],
-							"Y index"->Widget[Type->Number, Pattern:>RangeP[1,4,1]]
+							"X index" -> Widget[Type -> Number, Pattern :> RangeP[1, 4, 1]],
+							"Y index" -> Widget[Type -> Number, Pattern :> RangeP[1, 4, 1]]
 						}
 					]
 				],
-				NestedIndexMatching->True,
+				NestedIndexMatching -> True,
 				Category -> "Source Specifications"
 			},
 
@@ -2112,9 +2123,9 @@ DefineOptions[AnalyzeCellCount,
 				Default -> Automatic,
 				Description -> "Indicates if the confluency measurement is intended for an image with adherent cultured cells.",
 				ResolutionDescription -> "If Automatic and a microscope data object is provided, this information is taken from the data object. If Automatic and the input in a raw image, confluency measurement is set to False.",
-				AllowNull ->True,
-				Widget ->Widget[Type->Enumeration, Pattern:>BooleanP],
-				NestedIndexMatching->True,
+				AllowNull -> True,
+				Widget -> Widget[Type -> Enumeration, Pattern :> BooleanP],
+				NestedIndexMatching -> True,
 				Category -> "Confluency Measurement"
 			},
 
@@ -2124,9 +2135,9 @@ DefineOptions[AnalyzeCellCount,
 				Default -> Automatic,
 				Description -> "Indicates if the viability measurement is intended for an image.",
 				ResolutionDescription -> "If Automatic and a microscope data object is provided, this information is taken from the data object. If Automatic and the input in a raw image, viability measurement is set to False.",
-				AllowNull ->True,
-				Widget ->Widget[Type->Enumeration, Pattern:>BooleanP],
-				NestedIndexMatching->True,
+				AllowNull -> True,
+				Widget -> Widget[Type -> Enumeration, Pattern :> BooleanP],
+				NestedIndexMatching -> True,
 				Category -> "Property Measurement"
 			},
 			{
@@ -2134,9 +2145,9 @@ DefineOptions[AnalyzeCellCount,
 				Default -> Automatic,
 				Description -> "Indicates the normalized viability threshold (0-1 value) to use for filtering the counted cells and intensity analysis.",
 				ResolutionDescription -> "If Automatic and the ImagingChannel is Null, this will be set to Null. If Automatic and the ImagingChannel is provided, the default will be 0.5.",
-				AllowNull ->True,
-				Widget ->Widget[Type->Number,Pattern:>RangeP[0,1]],
-				NestedIndexMatching->True,
+				AllowNull -> True,
+				Widget -> Widget[Type -> Number, Pattern :> RangeP[0, 1]],
+				NestedIndexMatching -> True,
 				Category -> "Property Measurement"
 			},
 
@@ -2146,9 +2157,9 @@ DefineOptions[AnalyzeCellCount,
 				Default -> Automatic,
 				Description -> "Indicates the normalized fluoresence threshold (0-1 value) to use for filtering the counted cells and intensity analysis.",
 				ResolutionDescription -> "If Automatic and the ImagingChannel is Null, this will be set to Null. If Automatic and the ImagingChannel is provided, the default will be 0.5.",
-				AllowNull ->True,
-				Widget ->Widget[Type->Number,Pattern:>RangeP[0,1]],
-				NestedIndexMatching->True,
+				AllowNull -> True,
+				Widget -> Widget[Type -> Number, Pattern :> RangeP[0, 1]],
+				NestedIndexMatching -> True,
 				Category -> "Property Measurement"
 			},
 
@@ -2158,12 +2169,12 @@ DefineOptions[AnalyzeCellCount,
 				Default -> Automatic,
 				Description -> "Indicates the minimum area of the components that will be included in the counting. All connected components with area below this value are excluded.",
 				ResolutionDescription -> "If Automatic and the input is data object, the value is selected based on the instrument. If Automatic and the input is a raw image, the value is selected based on the image size.",
-				AllowNull ->True,
-				Widget ->Alternatives[
- 					"Pixel"->Widget[Type -> Quantity, Pattern :> GreaterEqualP[0 Pixel^2], Units -> CompoundUnit[{2, {Pixel, {Pixel}}}]],
- 					"Micrometer"->Widget[Type -> Quantity, Pattern :> GreaterEqualP[0 Micrometer^2], Units -> CompoundUnit[{2, {Micrometer, {Micrometer}}}]]
- 				],
-				NestedIndexMatching->True,
+				AllowNull -> True,
+				Widget -> Alternatives[
+					"Pixel" -> Widget[Type -> Quantity, Pattern :> GreaterEqualP[0 Pixel^2], Units -> CompoundUnit[{2, {Pixel, {Pixel}}}]],
+					"Micrometer" -> Widget[Type -> Quantity, Pattern :> GreaterEqualP[0 Micrometer^2], Units -> CompoundUnit[{2, {Micrometer, {Micrometer}}}]]
+				],
+				NestedIndexMatching -> True,
 				Category -> "Property Measurement"
 			},
 			{
@@ -2171,12 +2182,12 @@ DefineOptions[AnalyzeCellCount,
 				Default -> Automatic,
 				Description -> "Indicates the minimum radius of the components that will be included in the counting. All connected components with radius below this value are excluded.",
 				ResolutionDescription -> "If Automatic and the input is data object, the value is selected based on the instrument. If Automatic and the input is a raw image, the value is set as 1 percent of the image size.",
-				AllowNull ->True,
-				Widget->Alternatives[
-					"Pixel"->Widget[Type->Quantity,Pattern:>GreaterEqualP[0 Pixel],Units->Pixel],
-					"Micrometer"->Widget[Type->Quantity,Pattern:>GreaterEqualP[0 Micrometer],Units->Micrometer]
+				AllowNull -> True,
+				Widget -> Alternatives[
+					"Pixel" -> Widget[Type -> Quantity, Pattern :> GreaterEqualP[0 Pixel], Units -> Pixel],
+					"Micrometer" -> Widget[Type -> Quantity, Pattern :> GreaterEqualP[0 Micrometer], Units -> Micrometer]
 				],
-				NestedIndexMatching->True,
+				NestedIndexMatching -> True,
 				Category -> "Property Measurement"
 			},
 			{
@@ -2184,12 +2195,12 @@ DefineOptions[AnalyzeCellCount,
 				Default -> Automatic,
 				Description -> "Indicates the maximum radius of the components that will be included in the counting. All connected components with radius greater than this value are excluded.",
 				ResolutionDescription -> "If Automatic and the input is data object, the value is selected based on the instrument. If Automatic and the input is a raw image, the value is set as 2.5 percent of the image size.",
-				AllowNull ->True,
-				Widget->Alternatives[
-					"Pixel"->Widget[Type->Quantity,Pattern:>GreaterEqualP[0 Pixel],Units->Pixel],
-					"Micrometer"->Widget[Type->Quantity,Pattern:>GreaterEqualP[0 Micrometer],Units->Micrometer]
+				AllowNull -> True,
+				Widget -> Alternatives[
+					"Pixel" -> Widget[Type -> Quantity, Pattern :> GreaterEqualP[0 Pixel], Units -> Pixel],
+					"Micrometer" -> Widget[Type -> Quantity, Pattern :> GreaterEqualP[0 Micrometer], Units -> Micrometer]
 				],
-				NestedIndexMatching->True,
+				NestedIndexMatching -> True,
 				Category -> "Property Measurement"
 			},
 			{
@@ -2197,12 +2208,12 @@ DefineOptions[AnalyzeCellCount,
 				Default -> Automatic,
 				Description -> "Indicates the minimum radius of the cells that will be used for estimating the number of cells from the number of connected components.",
 				ResolutionDescription -> "If Automatic and the input is data object, the value is selected based on the instrument. If Automatic the value defaults to 1 percentage of image size.",
-				AllowNull ->True,
-				Widget->Alternatives[
-					"Pixel"->Widget[Type->Quantity,Pattern:>GreaterEqualP[0 Pixel],Units->Pixel],
-					"Micrometer"->Widget[Type->Quantity,Pattern:>GreaterEqualP[0 Micrometer],Units->Micrometer]
+				AllowNull -> True,
+				Widget -> Alternatives[
+					"Pixel" -> Widget[Type -> Quantity, Pattern :> GreaterEqualP[0 Pixel], Units -> Pixel],
+					"Micrometer" -> Widget[Type -> Quantity, Pattern :> GreaterEqualP[0 Micrometer], Units -> Micrometer]
 				],
-				NestedIndexMatching->True,
+				NestedIndexMatching -> True,
 				Category -> "Property Measurement"
 			},
 			{
@@ -2210,107 +2221,107 @@ DefineOptions[AnalyzeCellCount,
 				Default -> Automatic,
 				Description -> "Indicates the maximum radius of the cells that will be used for estimating the number of cells from the number of connected components.",
 				ResolutionDescription -> "If Automatic and the input is data object, the value is selected based on the instrument. If Automatic the value defaults to 2.5 percentage of image size.",
-				AllowNull ->True,
-				Widget->Alternatives[
-					"Pixel"->Widget[Type->Quantity,Pattern:>GreaterEqualP[0 Pixel],Units->Pixel],
-					"Micrometer"->Widget[Type->Quantity,Pattern:>GreaterEqualP[0 Micrometer],Units->Micrometer]
+				AllowNull -> True,
+				Widget -> Alternatives[
+					"Pixel" -> Widget[Type -> Quantity, Pattern :> GreaterEqualP[0 Pixel], Units -> Pixel],
+					"Micrometer" -> Widget[Type -> Quantity, Pattern :> GreaterEqualP[0 Micrometer], Units -> Micrometer]
 				],
-				NestedIndexMatching->True,
+				NestedIndexMatching -> True,
 				Category -> "Property Measurement"
 			},
 
 			(** Property Measurement **)
 			{
-				OptionName->PropertyMeasurement,
-				Default->Automatic,
-				Description->"The cell properties that will be measured or inquired in the morphological components and will be included in the output analysis object.",
-				ResolutionDescription->"If Automatic, resolved values of CellType, CultureAdhesion, Hemocytometer, ImagingChannel and MicroscopeMode will be used to identify the properties to measure.",
-				AllowNull->True,
-				Widget->Alternatives[
-					"Single Property"->Widget[Type->Enumeration,Pattern:>ComponentPropertiesP],
+				OptionName -> PropertyMeasurement,
+				Default -> Automatic,
+				Description -> "The cell properties that will be measured or inquired in the morphological components and will be included in the output analysis object.",
+				ResolutionDescription -> "If Automatic, resolved values of CellType, CultureAdhesion, Hemocytometer, ImagingChannel and MicroscopeMode will be used to identify the properties to measure.",
+				AllowNull -> True,
+				Widget -> Alternatives[
+					"Single Property" -> Widget[Type -> Enumeration, Pattern :> ComponentPropertiesP],
 					(* Choosing from any of the known symbols *)
-					"Standard Mathematica"->Adder[
+					"Standard Mathematica" -> Adder[
 						Alternatives[
-							"Area Measurement"->Widget[Type->Enumeration,Pattern:>ComponentPropertiesAreaP],
-							"Perimeter Properties"->Widget[Type->Enumeration,Pattern:>ComponentPropertiesPerimeterP],
-							"Centroid Properties"->Widget[Type->Enumeration,Pattern:>ComponentPropertiesCentroidP],
-							"Best-fit Ellipse"->Widget[Type->Enumeration,Pattern:>ComponentPropertiesEllipseP],
-							"Shape Measurements"->Widget[Type->Enumeration,Pattern:>ComponentPropertiesShapeP],
-							"Bounding-box Properties"->Widget[Type->Enumeration,Pattern:>ComponentPropertiesBoundingBoxP],
-							"Topological Properties"->Widget[Type->Enumeration,Pattern:>ComponentPropertiesTopologyP],
-							"Image Intensity"->Widget[Type->Enumeration,Pattern:>ComponentPropertiesIntensityP]
+							"Area Measurement" -> Widget[Type -> Enumeration, Pattern :> ComponentPropertiesAreaP],
+							"Perimeter Properties" -> Widget[Type -> Enumeration, Pattern :> ComponentPropertiesPerimeterP],
+							"Centroid Properties" -> Widget[Type -> Enumeration, Pattern :> ComponentPropertiesCentroidP],
+							"Best-fit Ellipse" -> Widget[Type -> Enumeration, Pattern :> ComponentPropertiesEllipseP],
+							"Shape Measurements" -> Widget[Type -> Enumeration, Pattern :> ComponentPropertiesShapeP],
+							"Bounding-box Properties" -> Widget[Type -> Enumeration, Pattern :> ComponentPropertiesBoundingBoxP],
+							"Topological Properties" -> Widget[Type -> Enumeration, Pattern :> ComponentPropertiesTopologyP],
+							"Image Intensity" -> Widget[Type -> Enumeration, Pattern :> ComponentPropertiesIntensityP]
 						]
 					],
-					"Category"->Adder[
-						Widget[Type->Enumeration,Pattern:>ComponentPropertyCategoriesP]
+					"Category" -> Adder[
+						Widget[Type -> Enumeration, Pattern :> ComponentPropertyCategoriesP]
 					],
-					"Category & Property"->Adder[
+					"Category & Property" -> Adder[
 						Alternatives[
-							"Category"->Widget[Type->Enumeration,Pattern:>ComponentPropertyCategoriesP],
-							"Area Measurement"->Widget[Type->Enumeration,Pattern:>ComponentPropertiesAreaP],
-							"Perimeter Properties"->Widget[Type->Enumeration,Pattern:>ComponentPropertiesPerimeterP],
-							"Centroid Properties"->Widget[Type->Enumeration,Pattern:>ComponentPropertiesCentroidP],
-							"Best-fit Ellipse"->Widget[Type->Enumeration,Pattern:>ComponentPropertiesEllipseP],
-							"Shape Measurements"->Widget[Type->Enumeration,Pattern:>ComponentPropertiesShapeP],
-							"Bounding-box Properties"->Widget[Type->Enumeration,Pattern:>ComponentPropertiesBoundingBoxP],
-							"Topological Properties"->Widget[Type->Enumeration,Pattern:>ComponentPropertiesTopologyP],
-							"Image Intensity"->Widget[Type->Enumeration,Pattern:>ComponentPropertiesIntensityP]
+							"Category" -> Widget[Type -> Enumeration, Pattern :> ComponentPropertyCategoriesP],
+							"Area Measurement" -> Widget[Type -> Enumeration, Pattern :> ComponentPropertiesAreaP],
+							"Perimeter Properties" -> Widget[Type -> Enumeration, Pattern :> ComponentPropertiesPerimeterP],
+							"Centroid Properties" -> Widget[Type -> Enumeration, Pattern :> ComponentPropertiesCentroidP],
+							"Best-fit Ellipse" -> Widget[Type -> Enumeration, Pattern :> ComponentPropertiesEllipseP],
+							"Shape Measurements" -> Widget[Type -> Enumeration, Pattern :> ComponentPropertiesShapeP],
+							"Bounding-box Properties" -> Widget[Type -> Enumeration, Pattern :> ComponentPropertiesBoundingBoxP],
+							"Topological Properties" -> Widget[Type -> Enumeration, Pattern :> ComponentPropertiesTopologyP],
+							"Image Intensity" -> Widget[Type -> Enumeration, Pattern :> ComponentPropertiesIntensityP]
 						]
 					],
 					(* Providing a pure function *)
-					"Custom Function"->Widget[Type->Expression,Pattern:>_Function,PatternTooltip->"A function that uses any of the above properties",Size->Paragraph]
+					"Custom Function" -> Widget[Type -> Expression, Pattern :> _Function, PatternTooltip -> "A function that uses any of the above properties", Size -> Paragraph]
 				],
-				NestedIndexMatching->True,
-				Category->"Property Measurement"
+				NestedIndexMatching -> True,
+				Category -> "Property Measurement"
 			},
 
 			(** Image Adjustments **)
 			{
-				OptionName->ImageAdjustment,
-				Default->Automatic,
-				AllowNull->True,
-				Widget->Alternatives[
-					Widget[Type->Enumeration,Pattern:>Alternatives[None|{}]],
-					Adder[Widget[Type->Primitive,Pattern:>ImageAdjustmentPrimitiveP]]
+				OptionName -> ImageAdjustment,
+				Default -> Automatic,
+				AllowNull -> True,
+				Widget -> Alternatives[
+					Widget[Type -> Enumeration, Pattern :> Alternatives[None | {}]],
+					Adder[Widget[Type -> Primitive, Pattern :> ImageAdjustmentPrimitiveP]]
 				],
-				NestedIndexMatching->True,
-				Description->"A set of adjustment unit operations that are performed prior to the segmentation of the image.",
-				ResolutionDescription->"If Automatic, resolved values of CellType, CultureAdhesion, Hemocytometer, ImagingChannel and MicroscopeMode will be used to identify the adjustment steps.",
-				Category->"Image Processing"
+				NestedIndexMatching -> True,
+				Description -> "A set of adjustment unit operations that are performed prior to the segmentation of the image.",
+				ResolutionDescription -> "If Automatic, resolved values of CellType, CultureAdhesion, Hemocytometer, ImagingChannel and MicroscopeMode will be used to identify the adjustment steps.",
+				Category -> "Image Processing"
 			},
 
 			(** Image Segmentation **)
 			{
-				OptionName->ImageSegmentation,
-				Default->Automatic,
-				AllowNull->True,
-				Widget->Alternatives[
-					Widget[Type->Enumeration,Pattern:>Alternatives[None|{}]],
-					Adder[Widget[Type->Primitive,Pattern:>ImageSegmentationPrimitiveP]]
+				OptionName -> ImageSegmentation,
+				Default -> Automatic,
+				AllowNull -> True,
+				Widget -> Alternatives[
+					Widget[Type -> Enumeration, Pattern :> Alternatives[None | {}]],
+					Adder[Widget[Type -> Primitive, Pattern :> ImageSegmentationPrimitiveP]]
 				],
-				NestedIndexMatching->True,
-				Description->"A set of unit operations that are performed in order to segment the image and find the cells.",
-				ResolutionDescription->"If Automatic, resolved values of CellType, CultureAdhesion, Hemocytometer, ImagingChannel and MicroscopeMode will be used to identify the segmentation steps.",
-				Category->"Image Processing"
+				NestedIndexMatching -> True,
+				Description -> "A set of unit operations that are performed in order to segment the image and find the cells.",
+				ResolutionDescription -> "If Automatic, resolved values of CellType, CultureAdhesion, Hemocytometer, ImagingChannel and MicroscopeMode will be used to identify the segmentation steps.",
+				Category -> "Image Processing"
 			},
 
 			{
-				OptionName->HighlightedCellsFormat,
-				Default->LabeledCircle,
-				AllowNull->True,
-				Widget->Widget[Type->Enumeration,Pattern:>HighlightedCellsFormatP],
-				NestedIndexMatching->True,
-				Description->"The style of the highlighted cells.",
-				Category->"Image Processing"
+				OptionName -> HighlightedCellsFormat,
+				Default -> LabeledCircle,
+				AllowNull -> True,
+				Widget -> Widget[Type -> Enumeration, Pattern :> HighlightedCellsFormatP],
+				NestedIndexMatching -> True,
+				Description -> "The style of the highlighted cells.",
+				Category -> "Image Processing"
 			},
 
 			{
 				OptionName -> ManualCoordinates,
 				Default -> {},
 				Description -> "The manual coordinates that was clicked on the image.",
-				AllowNull ->True,
-				Widget->Widget[Type->Expression, Pattern:>CoordinatesP|{}, Size->Line],
-				NestedIndexMatching->True,
+				AllowNull -> True,
+				Widget -> Widget[Type -> Expression, Pattern :> CoordinatesP | {}, Size -> Line],
+				NestedIndexMatching -> True,
 				Category -> "Output Processing"
 			},
 
@@ -2318,9 +2329,9 @@ DefineOptions[AnalyzeCellCount,
 				OptionName -> NumberOfManualCells,
 				Default -> Null,
 				Description -> "The number of cells in the squares of a hemocytometer. The matrix layout indicates the grid pattern which is 3 by 3 for most of the hemocytometer patterns or 4 by 4 for FuchsRosenthal.",
-				AllowNull ->True,
-				Widget->Widget[Type->Expression, Pattern:>{{GreaterEqualP[0]...}...}, Size->Line],
-				NestedIndexMatching->True,
+				AllowNull -> True,
+				Widget -> Widget[Type -> Expression, Pattern :> {{GreaterEqualP[0]...}...}, Size -> Line],
+				NestedIndexMatching -> True,
 				Category -> "Output Processing"
 			},
 
@@ -2328,9 +2339,9 @@ DefineOptions[AnalyzeCellCount,
 				OptionName -> ManualSampleCellDensity,
 				Default -> Null,
 				Description -> "The number of manual cells per volume in the squares of a hemocytometer, which is calculated using the dilution factor given in the data object. The matrix layout indicates the grid pattern which is 3 by 3 for most of the hemocytometer patterns or 4 by 4 for FuchsRosenthal.",
-				AllowNull ->True,
-				Widget->Widget[Type->Expression,Pattern:>{{GreaterEqualP[0 1/Milliliter]...}...}, Size->Line],
-				NestedIndexMatching->True,
+				AllowNull -> True,
+				Widget -> Widget[Type -> Expression, Pattern :> {{GreaterEqualP[0 1 / Milliliter]...}...}, Size -> Line],
+				NestedIndexMatching -> True,
 				Category -> "Output Processing"
 			}
 
@@ -2341,8 +2352,8 @@ DefineOptions[AnalyzeCellCount,
 			OptionName -> PlotProcessingSteps,
 			Default -> False,
 			Description -> "Indicates if the preview needs to contain all processing steps.",
-			AllowNull ->False,
-			Widget ->Widget[Type->Enumeration, Pattern:>BooleanP],
+			AllowNull -> False,
+			Widget -> Widget[Type -> Enumeration, Pattern :> BooleanP],
 			Category -> "Hidden"
 		},
 
@@ -2350,8 +2361,8 @@ DefineOptions[AnalyzeCellCount,
 			OptionName -> HistogramType,
 			Default -> ComponentDiameter,
 			Description -> "The default histogram type to demonstrate on the preview image.",
-			AllowNull ->True,
-			Widget ->Widget[Type->Enumeration, Pattern:>Alternatives[ComponentArea,ComponentDiameter,ComponentIntensity]],
+			AllowNull -> True,
+			Widget -> Widget[Type -> Enumeration, Pattern :> Alternatives[ComponentArea, ComponentDiameter, ComponentIntensity]],
 			Category -> "Output Processing"
 		},
 
@@ -2359,8 +2370,8 @@ DefineOptions[AnalyzeCellCount,
 			OptionName -> IncludeComponentMatrix,
 			Default -> False,
 			Description -> "Whether to include image components matrix in the output object. This is often a large matrix and delays object inspection.",
-			AllowNull ->True,
-			Widget ->Widget[Type->Enumeration, Pattern:>BooleanP],
+			AllowNull -> True,
+			Widget -> Widget[Type -> Enumeration, Pattern :> BooleanP],
 			Category -> "Hidden"
 		},
 
@@ -2368,26 +2379,26 @@ DefineOptions[AnalyzeCellCount,
 			"Shared",
 			PlotImage,
 			{
-				OptionName->TargetUnits,
-				Widget->Alternatives[
-					Widget[Type->Expression,Pattern:>Alternatives[Pixel,Micrometer],Size->Word],
+				OptionName -> TargetUnits,
+				Widget -> Alternatives[
+					Widget[Type -> Expression, Pattern :> Alternatives[Pixel, Micrometer], Size -> Word],
 					{
-						""->{
-							"Left"->Widget[Type->Enumeration,Pattern:>Alternatives[Pixel,Micrometer]],
-							"Right"->Widget[Type->Enumeration,Pattern:>Alternatives[Pixel,Micrometer]]
+						"" -> {
+							"Left" -> Widget[Type -> Enumeration, Pattern :> Alternatives[Pixel, Micrometer]],
+							"Right" -> Widget[Type -> Enumeration, Pattern :> Alternatives[Pixel, Micrometer]]
 						},
-						""->{
-							"Top"->Widget[Type->Enumeration,Pattern:>Alternatives[Pixel,Micrometer]],
-							"Bottom"->Widget[Type->Enumeration,Pattern:>Alternatives[Pixel,Micrometer]]
+						"" -> {
+							"Top" -> Widget[Type -> Enumeration, Pattern :> Alternatives[Pixel, Micrometer]],
+							"Bottom" -> Widget[Type -> Enumeration, Pattern :> Alternatives[Pixel, Micrometer]]
 						}
 					}
 				],
-				Category->"Output Processing",
-				AllowNull->True
+				Category -> "Output Processing",
+				AllowNull -> True
 			}
 		],
 		AnalysisPreviewSymbolOption,
-    AnalysisTemplateOption,
+		AnalysisTemplateOption,
 		CacheOption,
 		OutputOption,
 		UploadOption
@@ -2458,9 +2469,9 @@ AnalyzeCellCount[
 ] := Module[
 	{
 		listedOptions,listedData,outputSpecification,output,gatherTests,safeOptions,safeOptionTests,validLengths,validLengthTests,
-		suppliedCache,downloadedPackets,cache,updatedOptions,unresolvedOptions,templateTests,combinedOptions,resolvedOptionsResult,
-		resolvedOptionTests,resolvedOptionsTestResult,resolvedOptions,resolvedOptionsTests,previewRule,optionsRule,dataPacket,testsRule,resultRule,
-		processingSteps,imageScale,dilutionFactor,sampleVolume,imageSelectionPreview
+		suppliedCache,cache,unresolvedOptions,templateTests,combinedOptions,resolvedOptionsResult,
+		collapsedOptions,resolvedOptions,resolvedOptionsTests,previewRule,optionsRule,dataPacket,testsRule,resultRule,
+		processingSteps,imageScale,dilutionFactor,sampleVolume,imageSelectionPreview,expandedResolvedOptions
 	},
 
 	(* Clearing the ImageLookup *)
@@ -2632,7 +2643,7 @@ AnalyzeCellCount[
 	(* Build the resolved options *)
 	resolvedOptionsResult = If[gatherTests,
 		(* We are gathering tests. This silences any messages being thrown. *)
-		{resolvedOptions,resolvedOptionsTests} = resolveAnalyzeCellCountOptions[listedData,listedOptions,combinedOptions,1,Output->{Result,Tests},Cache->cache];
+		{expandedResolvedOptions,resolvedOptionsTests} = resolveAnalyzeCellCountOptions[listedData,listedOptions,combinedOptions,1,Output->{Result,Tests},Cache->cache];
 		(* Therefore, we have to run the tests to see if we encountered a failure. *)
 		If[RunUnitTest[<|"AnalyzeCellCount"->resolvedOptionsTests|>,OutputFormat->Boolean,Verbose->False]["AnalyzeCellCount"],
 			True,
@@ -2641,10 +2652,32 @@ AnalyzeCellCount[
 
 		(* We are not gathering tests. Check for Errors and return $Failed if necessary *)
 		Check[
-			{resolvedOptions,resolvedOptionsTests}={resolveAnalyzeCellCountOptions[listedData,listedOptions,combinedOptions,1,Output->Result,Cache->cache],{}},
+			{expandedResolvedOptions,resolvedOptionsTests}={resolveAnalyzeCellCountOptions[listedData,listedOptions,combinedOptions,1,Output->Result,Cache->cache],{}},
 			$Failed,
 			{Error::InvalidInput,Error::InvalidOption}
 		]
+	];
+
+	(* Convert expanded options back to singletons whenever possible to display clean values to the user (e.g. OptionName\[Rule]A, not OptionName\[Rule]{A,A,A,A,...})*)
+	collapsedOptions=CollapseIndexMatchedOptions[AnalyzeCellCount,expandedResolvedOptions,Messages->False];
+
+	(* CollapseOptions chanes the {x,x} value to a single digit which violates *)
+	resolvedOptions=ReplaceAll[collapsedOptions,
+		{
+			(HemocytometerSquarePosition->position_Integer) :> (HemocytometerSquarePosition->{position,position}),
+			(* Collapse mistakenly assumes that a pair of numbers is a scalar *)
+			(ImageScale->scale:UnitsP[Micrometer/Pixel]) :> (ImageScale->{scale,scale}),
+			(* In case of empty list we retain the listedness *)
+			(ImageAdjustment->{}) :> (ImageAdjustment->Map[Map[{}&,Range[Length[referenceImages[[#]]]]]&,Range[Length[myInputs]]]),
+			(ImageSegmentation->{}) :> (ImageSegmentation->Map[Map[{}&,Range[Length[referenceImages[[#]]]]]&,Range[Length[myInputs]]]),
+			(* If ImageAdjustment was turned into a singlet, return as triple listed listed the way we expect in the later steps *)
+			(ImageAdjustment->head_Symbol[assoc_Association]) :> (ImageAdjustment->Map[Map[{head[assoc]}&,Range[Length[referenceImages[[#]]]]]&,Range[Length[myInputs]]]),
+			(ImageSegmentation->head_Symbol[assoc_Association]) :> (ImageSegmentation->Map[Map[{head[assoc]}&,Range[Length[referenceImages[[#]]]]]&,Range[Length[myInputs]]]),
+			(* In case of the manual coordinates, we need to keep the nested empty lists *)
+			(ManualCoordinates->{}) :> (ManualCoordinates->Map[Map[{}&,Range[Length[referenceImages[[#]]]]]&,Range[Length[myInputs]]]),
+			(* Collapse mistakenly assumes that a pair of numbers is a scalar *)
+			(ManualCoordinates->scalar_?NumericQ) :> FirstCase[resolvedOptions,HoldPattern[ManualCoordinates->_]]
+		}
 	];
 
 	(* --- Generate rules for each possible Output value --- *)
@@ -2669,7 +2702,7 @@ AnalyzeCellCount[
 
 	(* Prepare the upload packets if either Preview or Result is specified *)
 	dataPacket = If[ MemberQ[output,Alternatives[Preview,Result]] && !MatchQ[resolvedOptionsResult,$Failed],
-		runImageProcessingSteps[listedData,unresolvedOptions,resolvedOptions,1,dilutionFactor,sampleVolume,Cache->cache],
+		runImageProcessingSteps[listedData,unresolvedOptions,expandedResolvedOptions,1,dilutionFactor,sampleVolume,Cache->cache],
 		Null
 	];
 
@@ -3175,9 +3208,9 @@ resolveAnalyzeCellCountOptions[
 		minComponentRadius,maxComponentRadius,resolvedMinComponentRadius,resolvedMaxComponentRadius,areaThreshold,resolvedAreaThreshold,
 		imageScale,resolvedImageScale,referenceImageScaleX,referenceImageScaleY,targetUnits,resolvedTargetUnits,
 		resolvedCultureAdhesion,cultureAdhesion,minCellRadius,maxCellRadius,resolvedMinCellRadius, resolvedMaxCellRadius,
-		objectiveMagnification,method,methodTest,allPooledOptions,pooledOptionsLengthTest,invalidPooledOptionsQ=False,
+		objectiveMagnification,method,methodTest,allPooledOptions,pooledOptionsLengthTest,indexMatchingAnchorList,invalidPooledOptionsQ=False,
 		myRound,
-		(* resolve primtive *)
+		(* resolve primitive *)
 		resolvedImageAdjustment,imageAdjustmentTests,resolvedImageSegmentation,imageSegmentationTests,
 		resolvedPropertyMeasurement,resolvedImageSelection,imageSelectionTests,resolvedImages,imagesTests,
 		updatedPartiallyResolvedOptions,selectComponentsAvailableTest,resolvedImageSelectionPrimitives,
@@ -3247,12 +3280,15 @@ resolveAnalyzeCellCountOptions[
 		{myInputs,Range[Length[myInputs]]}
 	];
 
+	(* Create a list that is of the same structure as resolvedImages that we can use to expand the rest of our options properly *)
+	indexMatchingAnchorList = Map[Function[{imageList},Map[Function[{resolvedImage},1],imageList]],resolvedImages];
+
 	(* Expand any index-matched options from OptionName\[Rule]A to OptionName\[Rule]{A,A,A,...} so that it's safe to MapThread over pairs of options, inputs when resolving/validating values *)
 	(** NOTE: we are going to use these expanded options to resolve all options except ImageSelection and Images **)
 	{objects,expandedOptions} = If[invalidPooledOptionsQ,
 		(* We are gonna set all options to Null if any of the pooled options are invalid *)
-		ExpandIndexMatchedInputs[AnalyzeCellCount,{resolvedImages},SafeOptions[AnalyzeCellCount],definitionNumber,Messages->False],
-		ExpandIndexMatchedInputs[AnalyzeCellCount,{resolvedImages},mySafeOptions,definitionNumber,Messages->False]
+		ExpandIndexMatchedInputs[AnalyzeCellCount,{myInputs},ReplaceRule[SafeOptions[AnalyzeCellCount],{IndexMatchingAnchor->indexMatchingAnchorList}],definitionNumber,Messages->False],
+		ExpandIndexMatchedInputs[AnalyzeCellCount,{myInputs},ReplaceRule[mySafeOptions,{IndexMatchingAnchor->indexMatchingAnchorList}],definitionNumber,Messages->False]
 	];
 
 	(* Obtain all the microscope images in a list for each image channel *)
@@ -3746,8 +3782,8 @@ resolveAnalyzeCellCountOptions[
 							],
 							(* Throw a message indicating for which input we failed *)
 							If[!testsQ,Message[Warning::SelectComponentsNotSpecified,myInput,imageIndex]];
-							Test["The SelectComponents primtitive is specified in the ImageSegmentation if at least one of IntensityThreshold, AreaThreshold, MinComponentRadius, MaxComponentRadius is specified.", True, False],
-							Test["The SelectComponents primtitive is specified in the ImageSegmentation if at least one of IntensityThreshold, AreaThreshold, MinComponentRadius, MaxComponentRadius is specified.", True, True]
+							Test["The SelectComponents primitive is specified in the ImageSegmentation if at least one of IntensityThreshold, AreaThreshold, MinComponentRadius, MaxComponentRadius is specified.", True, False],
+							Test["The SelectComponents primitive is specified in the ImageSegmentation if at least one of IntensityThreshold, AreaThreshold, MinComponentRadius, MaxComponentRadius is specified.", True, True]
 						]
 					],
 					{Range[Length[inputReferenceImages]],inputIntensityThreshold,inputAreaThreshold,inputMinComponentRadius,inputMaxComponentRadius,inputImageSegmentation}
@@ -3775,7 +3811,7 @@ resolveAnalyzeCellCountOptions[
 						DeleteDuplicates[
 							Join[
 								{Area,Circularity,EquivalentDiskRadius,Centroid,ImageIntensity},
-								ToList@propertyMeasurement
+								ToList@#1
 							]
 						]
 				]&,
@@ -3803,28 +3839,6 @@ resolveAnalyzeCellCountOptions[
 		}
 	];
 
-	(* Convert expanded options back to singletons whenever possible to display clean values to the user (e.g. OptionName\[Rule]A, not OptionName\[Rule]{A,A,A,A,...})*)
-	collapsedOptions=CollapseIndexMatchedOptions[AnalyzeCellCount,resolvedOptions,Messages->False];
-
-	(* CollapseOptions chanes the {x,x} value to a single digit which violates *)
-	updatedCollapsedOptions=ReplaceAll[collapsedOptions,
-		{
-			(HemocytometerSquarePosition->position_Integer) :> (HemocytometerSquarePosition->{position,position}),
-			(* Collapse mistakenly assumes that a pair of numbers is a scalar *)
-			(ImageScale->scale:UnitsP[Micrometer/Pixel]) :> (ImageScale->{scale,scale}),
-			(* In case of empty list we retain the listedness *)
-			(ImageAdjustment->{}) :> (ImageAdjustment->Map[Map[{}&,Range[Length[referenceImages[[#]]]]]&,Range[Length[myInputs]]]),
-			(ImageSegmentation->{}) :> (ImageSegmentation->Map[Map[{}&,Range[Length[referenceImages[[#]]]]]&,Range[Length[myInputs]]]),
-			(* If ImageAdjustment was turned into a singlet, return as triple listed listed the way we expect in the later steps *)
-			(ImageAdjustment->head_Symbol[assoc_Association]) :> (ImageAdjustment->Map[Map[{head[assoc]}&,Range[Length[referenceImages[[#]]]]]&,Range[Length[myInputs]]]),
-			(ImageSegmentation->head_Symbol[assoc_Association]) :> (ImageSegmentation->Map[Map[{head[assoc]}&,Range[Length[referenceImages[[#]]]]]&,Range[Length[myInputs]]]),
-			(* In case of the manual coordinates, we need to keep the nested empty lists *)
-			(ManualCoordinates->{}) :> (ManualCoordinates->Map[Map[{}&,Range[Length[referenceImages[[#]]]]]&,Range[Length[myInputs]]]),
-			(* Collapse mistakenly assumes that a pair of numbers is a scalar *)
-			(ManualCoordinates->scalar_?NumericQ) :> FirstCase[resolvedOptions,HoldPattern[ManualCoordinates->_]]
-		}
-	];
-
 	(* Return the requested values *)
 	(* Construct the Tests output (Null if Tests weren't requested) *)
 	testRule=Tests->{
@@ -3837,7 +3851,7 @@ resolveAnalyzeCellCountOptions[
 
 	(* Gather our resolved options. *)
 	resultRule=Result->If[MemberQ[ToList@output,Result],
-    updatedCollapsedOptions,
+    resolvedOptions,
     Null
   ];
 
@@ -3869,7 +3883,7 @@ resolveAnalyzeCellCountOptions[
 		minRadiusUnitTest,maxRadiusUnitTest,targetUnits,resolvedTargetUnits,acceptableTargetUnitsTest,resolvedCultureAdhesion,
 		cultureAdhesion,resolvedCellType,cellType,minCellRadius,maxCellRadius,resolvedMinCellRadius,resolvedMaxCellRadius,
 		method,methodTest,myRound,
-		(* resolve primtive *)
+		(* resolve primitive *)
 		resolvedImageAdjustment,imageAdjustmentTests,resolvedImageSegmentation,imageSegmentationTests,
 		resolvedPropertyMeasurement,resolvedImageSelection,imageSelectionTests,resolvedImages,imagesTests,
 		updatedPartiallyResolvedOptions,selectComponentsAvailableTest,propertyMeasurement,partiallyResolvedOptions
@@ -4370,8 +4384,8 @@ resolveAnalyzeCellCountOptions[
 				],
 				(* Throw a message indicating for which input we failed *)
 				If[!testsQ,Message[Warning::SelectComponentsNotSpecified,myInput,1]];
-				Test["The SelectComponents primtitive is specified in the ImageSegmentation if at least one of IntensityThreshold, AreaThreshold, MinComponentRadius, MaxComponentRadius is specified.", True, False],
-				Test["The SelectComponents primtitive is specified in the ImageSegmentation if at least one of IntensityThreshold, AreaThreshold, MinComponentRadius, MaxComponentRadius is specified.", True, True]
+				Test["The SelectComponents primitive is specified in the ImageSegmentation if at least one of IntensityThreshold, AreaThreshold, MinComponentRadius, MaxComponentRadius is specified.", True, False],
+				Test["The SelectComponents primitive is specified in the ImageSegmentation if at least one of IntensityThreshold, AreaThreshold, MinComponentRadius, MaxComponentRadius is specified.", True, True]
 			]
 		],
 		{myInputs,intensityThresholds,areaThresholds,minCellRadii,maxCellRadii,resolvedImageSegmentation}
@@ -4412,7 +4426,8 @@ resolveAnalyzeCellCountOptions[
 				(* The conversion to bypass collapsedOptions *)
 				ImageAdjustment->Replace[resolvedImageAdjustment,{{}..} :> {}],
 				ImageSegmentation->Replace[resolvedImageSegmentation,{{}..} :> {}],
-				PropertyMeasurement->resolvedPropertyMeasurement
+				PropertyMeasurement->resolvedPropertyMeasurement,
+				IndexMatchingAnchor->1
 			}
 		],
 		{
@@ -4492,7 +4507,7 @@ DefineOptions[runImageProcessingSteps,
 runImageProcessingSteps[
 	myInputs:{ObjectP[microscopeInputDataObjectTypes]..},
 	unresolvedOptions:{(_Rule|_RuleDelayed)...},
-	resolvedOptions:{(_Rule|_RuleDelayed)..},
+	resolvedOptions:{(_Rule|_RuleDelayed)..}, (* NOTE: These resolved options are expected to be expanded to the nested level *)
 	definitionNumber_Integer,
 	myDilutionFactor_,
 	mySampleVolume_,
@@ -4501,25 +4516,21 @@ runImageProcessingSteps[
 	{
 		referenceImageObjects,referenceImages,objects,expandedOptions,allMapThreadedOptions,adjustedImages,highlightedCells,
 		adjustedImagesCloudFiles,highlightedCellsCloudFiles,propertyMeasurementPackets,packetMainInformation,packetCategorizedProperties,
-		cache,images,temporaryExpandedOptions,imageLookupKeys,packetImageLookup,referenceImageScaleX,referenceImageScaleY,
+		cache,images,imageLookupKeys,packetImageLookup,referenceImageScaleX,referenceImageScaleY,
 		imageScale,imageScaleX,objectiveMagnification,method
 	},
 
 	(* Lookup our supplied cache. *)
 	cache = Lookup[{myOptions},Cache,{}];
 
-	(* Expand any index-matched options from OptionName\[Rule]A to OptionName\[Rule]{A,A,A,...} so that it's safe to MapThread over pairs of options, inputs when resolving/validating values *)
-	(** NOTE: we are going to use these temporary expanded options to resolve ImageSelection and Images options **)
-	{objects,temporaryExpandedOptions} = ExpandIndexMatchedInputs[AnalyzeCellCount,{myInputs},resolvedOptions,definitionNumber,Messages->False];
-
 	(* The resolved value for Images field *)
-	images=Lookup[temporaryExpandedOptions,Images];
+	images=Lookup[resolvedOptions,Images];
 
 	(* Obtain all the microscope images *)
 	{referenceImageObjects,referenceImages,referenceImageScaleX,referenceImageScaleY,objectiveMagnification} = getAllMicroscopeImages[myInputs,images,Cache->cache];
 
 	(* Expand index matched options to lists that match the specified input length *)
-	{objects,expandedOptions} = ExpandIndexMatchedInputs[AnalyzeCellCount,{images},resolvedOptions,definitionNumber,Messages->False];
+	{objects,expandedOptions} = ExpandIndexMatchedInputs[AnalyzeCellCount,{myInputs},resolvedOptions,definitionNumber,Messages->False];
 
 	(* Take the image scale from the resolvedOptions - expand it if it is collapsed - take only the x scale *)
 	imageScale=Lookup[expandedOptions,ImageScale];
@@ -4693,7 +4704,7 @@ runImageProcessingSteps[
 							(* All keyvalues of the MicroscopeImage primitive for this current image *)
 							microscopeImagePrimitive=KeyDrop[Association@@microscopeImage,Object];
 
-							(* The results of analysis appended to the microscope image primtive info *)
+							(* The results of analysis appended to the microscope image primitive info *)
 							fullLookupInformation=Join[
 								microscopeImagePrimitive,
 								propertyMeasurementPacket,
@@ -5090,7 +5101,7 @@ adjustImage[image_Image,imageIndex_Integer,resolvedOptions:_?AssociationQ]:=Modu
     ToList@imageAdjustmentOption
   ];
 
-	(* Initialize the primtive index and the last label *)
+	(* Initialize the primitive index and the last label *)
 	primitiveIndex=0;
 	lastLabel="Reference Image";
 
@@ -7629,7 +7640,7 @@ AnalyzeCellCountOptions[
 
 	listedOptions = ToList[myOptions];
 
-	(* remove the Output and OutputFormat option before passing to the core function because it doens't make sense here *)
+	(* remove the Output and OutputFormat option before passing to the core function because it doesn't make sense here *)
 	noOutputOptions = DeleteCases[listedOptions, Alternatives[Output -> _, OutputFormat->_]];
 
 	options = AnalyzeCellCount[myData,Append[noOutputOptions,Output->Options]];

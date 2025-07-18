@@ -1050,7 +1050,7 @@ Warning::DeprecatedModel="The object `1` is deprecated and results may be incorr
 Error::ObjectDoesNotExist="The object `1` can not be found in the database. Please inspect the object to ensure that the object exist in the database.";
 Error::ModelDoesNotExist="For monomer `1`, a model for the given strategy `2` does not exist. Please inspect the Model[Physics,Oligomer] object `3` for available SyntheticMonomers or DownloadMonomers.";
 
-Authors[lookupModelOligomer]={"clayton.schwarz","amir.saadat","kevin.hou"};
+Authors[lookupModelOligomer]={"dirk.schild", "clayton.schwarz", "amir.saadat", "kevin.hou"};
 
 (* -------------------------- *)
 (* --- Option Definitions --- *)
@@ -1894,7 +1894,7 @@ DefineOptions[lookupModelThermodynamics,
 	}
 ];
 
-Authors[lookupModelThermodynamics]={"clayton.schwarz","amir.saadat"};
+Authors[lookupModelThermodynamics]={"dirk.schild", "clayton.schwarz", "amir.saadat"};
 
 (* ---------------------- *)
 (* --- Core Functions --- *)

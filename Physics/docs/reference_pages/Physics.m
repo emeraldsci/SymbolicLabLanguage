@@ -103,13 +103,7 @@ DefineUsage[Physics`Private`thermodynamicParameters,
 		"Parameters",
 		"SimulateFreeEnergy"
 	},
-	Author -> {
-		"amir.saadat",
-		"brad",
-		"alice",
-		"qian",
-		"thomas"
-	}
+	Author -> {"dirk.schild", "amir.saadat", "brad", "alice", "qian", "thomas"}
 }];
 
 
@@ -132,10 +126,7 @@ DefineUsage[ValidPolymerQ,
 			"ValidPacketFormatQ",
 			"ValidDatabaseQ"
 		},
-		Author -> {
-			"amir.saadat",
-			"brad"
-		}
+		Author -> {"dirk.schild", "amir.saadat", "brad"}
 	}
 ];
 

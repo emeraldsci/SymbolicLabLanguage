@@ -94,6 +94,7 @@ AnalyzeDesignOfExperiment::MismatchedParameterSpace="The input ParameterSpace fo
 
 
 (* overload to take in a completed script *)
+Authors[AnalyzeDesignOfExperiment]:={"scicomp"};
 AnalyzeDesignOfExperiment[myDOE:ObjectP[Object[DesignOfExperiment]], myOps:OptionsPattern[]]:= Module[{},
 
     (*check for objective function in options*)
